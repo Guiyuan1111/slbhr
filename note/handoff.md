@@ -17,6 +17,7 @@
 - **断线重连**：服务器冻结等待 60 秒。仅「网络闪断但页面没刷新」时浏览器会用内存里的重连令牌自动回座；**刷新/关闭标签会丢失令牌**，对方需等 60 秒超时后重新进房。如需刷新也能回座，M2 可把令牌存 sessionStorage。
 - **房间码 = Colyseus roomId**（9 位随机串），未做 6 位短码映射；需要更短码时在房间层加映射表即可。
 - **插值**：指数平滑（自己 22/s、对方 12/s 的收敛速率），局域网够顺滑；公网要顺滑需升级为 100ms 快照缓冲插值（M3）。
+- **bat 脚本编码坑**（改动 start*.bat 前必读）：cmd 按 GBK 解析批处理，**禁止用 UTF-8 保存含中文的 .bat 或加 `chcp 65001`**——UTF-8 中文字节按 GBK 解码会撕裂整行命令（症状：双击窗口一闪而过，报 `'xx' 不是内部或外部命令`）。正确做法：文件存 **GBK 编码 + CRLF 行尾**，不写 chcp。生成方式：UTF-8 写临时文件后 `iconv -f UTF-8 -t GBK`，再 `sed -i 's/$/\r/'`。
 - **Colyseus 版本坑**（重要，升级前必读）：
   - `colyseus` 必须钉 `0.16.0` 整版——0.16.1+ 硬依赖 git 仓库的 uWebSockets transport，npm 12 默认拒绝装 git 依赖（EALLOWGIT）。
   - 所有 colyseus 运行时导入统一从 `packages/server/src/colyseus.cjs.ts` 走 require 链；直接 `import "@colyseus/ws-transport"` 会加载它的 ESM 入口，与主包分裂成两个 core 实例（症状：seat reservation expired）。

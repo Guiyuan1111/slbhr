@@ -1,11 +1,14 @@
 @echo off
-chcp 65001 >nul
-cd /d %~dp0
-echo [æ£®æ—å†°ç«äººè”æœºç‰ˆ] æ„å»ºå®¢æˆ·ç«¯...
-call npm run build || goto :err
-echo [å¯åŠ¨æœåŠ¡å™¨] http://127.0.0.1:2567  ï¼ˆCtrl+C åœæ­¢ï¼‰
+cd /d "%~dp0"
+echo [É­ÁÖ±ù»ğÈËÁª»ú°æ] ¹¹½¨¿Í»§¶Ë...
+call npm run build
+if errorlevel 1 (
+  echo ¹¹½¨Ê§°Ü£¬Çë¼ì²éÉÏ·½±¨´í¡£
+  pause
+  exit /b 1
+)
+echo [Æô¶¯·şÎñÆ÷] http://127.0.0.1:2567  £¨Ctrl+C Í£Ö¹£¬¹Ø±Õ´Ë´°¿Ú=Í£·ş£©
 call npx tsx packages/server/src/index.ts
-goto :eof
-:err
-echo æ„å»ºå¤±è´¥ï¼Œè¯·æ£€æŸ¥ä¸Šæ–¹æŠ¥é”™ã€‚
+echo.
+echo ·şÎñÆ÷ÒÑÍË³ö¡£ÈôÉÏ·½ÓĞ±¨´í£¬Çë°Ñ±¨´íÄÚÈİ½ØÍ¼·´À¡¡£
 pause
