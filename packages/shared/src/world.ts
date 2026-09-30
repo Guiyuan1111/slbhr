@@ -266,7 +266,7 @@ export class World {
 
   private solidsNear(pl: PlayerSim): Rect[] {
     const out: Rect[] = [];
-    const { tile, solid, cols, rows, widthPx, heightPx } = this.level;
+    const { tile, solid, liquid, cols, rows, widthPx, heightPx } = this.level;
     const t = tile;
     const x0 = Math.max(0, Math.floor((pl.x - t) / t));
     const x1 = Math.min(cols - 1, Math.floor((pl.x + P.playerW + t) / t));
@@ -274,13 +274,20 @@ export class World {
     const y1 = Math.min(rows - 1, Math.floor((pl.y + P.playerH + t) / t));
     for (let cy = y0; cy <= y1; cy++) {
       for (let cx = x0; cx <= x1; cx++) {
-        if (solid[cy * cols + cx]) out.push({ x: cx * t, y: cy * t, w: t, h: t });
+        const i = cy * cols + cx;
+        if (solid[i]) {
+          out.push({ x: cx * t, y: cy * t, w: t, h: t });
+        } else if (liquid[i]) {
+          // 液体格：下半格实心（对应原版半高池底蒙版）——免疫角色蹚水时站进去、没腰
+          out.push({ x: cx * t, y: cy * t + t / 2, w: t, h: t / 2 });
+        }
       }
     }
     for (const pf of this.platforms) out.push({ x: pf.x, y: pf.y, w: pf.def.w, h: pf.def.h });
-    // 边界墙
+    // 边界墙（四周封闭，底部兜底防坠出世界）
     out.push({ x: -t, y: -t, w: t, h: heightPx + 2 * t });
     out.push({ x: widthPx, y: -t, w: t, h: heightPx + 2 * t });
+    out.push({ x: -t, y: heightPx, w: widthPx + 2 * t, h: t });
     return out;
   }
 

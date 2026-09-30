@@ -29,6 +29,6 @@ export const P = {
   platformSpeed: 130,
   /** 拉杆触发冷却 s（接触翻转的最小间隔） */
   leverCooldown: 0.6,
-  /** 钻石拾取判定半径 px */
-  diamondRadius: 30,
+  /** 钻石拾取判定半径 px（原版蹚池行走必拾到池中钻石，实测需 ≥40） */
+  diamondRadius: 40,
 } as const;
