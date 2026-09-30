@@ -30,7 +30,7 @@
   - **液体行扫描**：run 结束时循环变量已归 0，液体族必须取 run 起始格的值（buildLiquids）。
   - **内嵌浏览器 rAF 冻结**：遮挡/后台页签 `visibilityState==="visible"` 但 requestAnimationFrame 永不触发，Phaser 场景队列卡死（`loop.frame=0`）。已用 `fps:{forceSetTimeOut:true,target:60}` 修复，别删。
   - **场景数据传递**：Phaser `settings.data` 未传数据时是 `{}` 不是 undefined，`??` 兜底永远不触发——统一走 `globalThis.__fwInit`（main.ts 注入）。
-  - 原版层序/坐标公式/动画帧率全部记录在 GameScene.ts 头注释与各 build* 注释内；原版参照截图在 TEMP/reference/（清理前自行留存）。
+  - 原版层序/坐标公式/动画帧率全部记录在 GameScene.ts 头注释与各 build* 注释内；验收对照样张在 `note/report/visual-0.2.0/`。
   - **已知行为差异**：原版参考页（8099 魔改版）教学文字渐进显示，我们按真实原版静态全显；原版有动态变焦相机（minScale≈全景），我们固定 1312×992 全景。
 - 服务器只绑定 `127.0.0.1`，公网访问必须走穿透隧道（wss 由隧道 HTTPS 自动升级，客户端 `net.ts` 按页面协议自适应）。
 

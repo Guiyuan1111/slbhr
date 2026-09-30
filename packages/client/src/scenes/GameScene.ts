@@ -475,14 +475,14 @@ export class GameScene extends Phaser.Scene {
     this.clockText = this.add
       .text(clockX, 62, "02:00", {
         fontFamily: 'Georgia, "Times New Roman", serif',
-        fontSize: "24px",
-        color: "#f5efd5",
-        stroke: "#1a140a",
-        strokeThickness: 4,
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5)
-      .setDepth(9);
+          fontSize: "24px",
+          color: "#f3e6a8",
+          stroke: "#1a140a",
+          strokeThickness: 4,
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5)
+        .setDepth(9);
 
     const counter = (x: number, frame: string, total: number): Phaser.GameObjects.Text => {
       this.add.image(x, 28, ATLAS_CHARS, frame).setOrigin(0.5).setScale(0.34).setDepth(9);
