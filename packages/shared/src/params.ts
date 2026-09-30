@@ -4,14 +4,14 @@ export const P = {
   tickRate: 60,
   /** 图块边长（像素），官方 Tiled 数据为 32 */
   tile: 32,
-  /** 重力加速度 px/s² */
-  gravity: 2300,
+  /** 重力加速度 px/s²（原版 box2d 实测：gravity.y=1000px/s²，ptm=50） */
+  gravity: 1000,
   /** 下落终端速度 px/s */
   maxFall: 950,
-  /** 水平移速 px/s（官方风格：无加速/无惯性，按键即达速） */
-  moveSpeed: 270,
-  /** 起跳初速 px/s（负=向上） */
-  jumpVel: -780,
+  /** 水平移速 px/s（原版 defaultMaxSpeed=8.5m/s×50ptm=425） */
+  moveSpeed: 425,
+  /** 起跳初速 px/s（负=向上；原版 jumpVelocity=15.5m/s×50=775，跳高≈300px） */
+  jumpVel: -775,
   /** 土狼时间 s：离开地面后仍可起跳的宽限 */
   coyote: 0.09,
   /** 跳跃缓冲 s：落地前按跳的预存时长 */

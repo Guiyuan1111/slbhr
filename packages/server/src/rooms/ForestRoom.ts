@@ -175,6 +175,10 @@ export class ForestRoom extends Room<RoomState> {
       ps.x = Math.round(pf.x * 10) / 10;
       ps.y = Math.round(pf.y * 10) / 10;
     }
+    if (this.world.box) {
+      this.state.box.x = Math.round(this.world.box.x * 10) / 10;
+      this.state.box.y = Math.round(this.world.box.y * 10) / 10;
+    }
     this.state.timerMs = Math.round(this.world.timerMs);
   }
 }

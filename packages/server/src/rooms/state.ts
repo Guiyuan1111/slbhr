@@ -52,6 +52,17 @@ export class PlatformState extends Schema {
   }
 }
 
+export class BoxState extends Schema {
+  x!: number;
+  y!: number;
+
+  constructor() {
+    super();
+    this.x = 0;
+    this.y = 0;
+  }
+}
+
 export class RoomState extends Schema {
   phase!: string;
   levelId!: string;
@@ -59,6 +70,7 @@ export class RoomState extends Schema {
   players!: MapSchemaType<PlayerState>;
   diamonds!: MapSchemaType<DiamondState>;
   platforms!: MapSchemaType<PlatformState>;
+  box!: BoxState;
 
   constructor() {
     super();
@@ -68,6 +80,7 @@ export class RoomState extends Schema {
     this.players = new MapSchema();
     this.diamonds = new MapSchema();
     this.platforms = new MapSchema();
+    this.box = new BoxState();
   }
 }
 
@@ -90,6 +103,11 @@ defineTypes(PlatformState, {
   y: "number",
 });
 
+defineTypes(BoxState, {
+  x: "number",
+  y: "number",
+});
+
 defineTypes(RoomState, {
   phase: "string",
   levelId: "string",
@@ -97,4 +115,5 @@ defineTypes(RoomState, {
   players: { map: PlayerState },
   diamonds: { map: DiamondState },
   platforms: { map: PlatformState },
+  box: BoxState,
 });

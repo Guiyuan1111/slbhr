@@ -40,6 +40,13 @@ export interface LeverDef {
   rect: Rect;
 }
 
+/** 按钮板（原版 pusher）：被玩家/推箱压住时其组平台到端点 B，松开回端点 A */
+export interface PlateDef {
+  id: string;
+  group: number;
+  rect: Rect;
+}
+
 export interface PlatformDef {
   id: string;
   /** 端点 A（初始，左上角像素） */
@@ -95,6 +102,7 @@ export interface LevelData {
   doors: Record<Role, Rect>;
   diamonds: DiamondDef[];
   levers: LeverDef[];
+  plates: PlateDef[];
   platforms: PlatformDef[];
   /** 未纳入物理的机关对象（拉杆/按钮/推箱等），客户端照贴图渲染 */
   mechProps: MechPropDef[];
@@ -170,6 +178,7 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
   };
   const diamonds: DiamondDef[] = [];
   const levers: LeverDef[] = [];
+  const plates: PlateDef[] = [];
   const platforms: PlatformDef[] = [];
   const mechProps: MechPropDef[] = [];
   const tutorialVariants = new Map<string, TutorialTextDef[]>();
@@ -231,13 +240,17 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
         }
         if (o.gid !== undefined) {
           const r = objRect(o);
+          const local = objLocal(o.gid);
           mechProps.push({
-            gid: objLocal(o.gid),
+            gid: local,
             rect: r,
             props: (o.properties ?? {}) as Record<string, unknown>,
           });
-          if (objLocal(o.gid) === 0) {
-            // 拉杆（参与物理）
+          if (local === 0) {
+            // 按钮板（原版实证：gid0=pusher，按住生效；教学文案「必须要有1个人留下来按住按钮」）
+            plates.push({ id: `b${plates.length}`, group: Number(o.properties?.group ?? 0), rect: r });
+          } else if (local === 2) {
+            // 拉杆（接触翻转，带冷却）
             levers.push({ id: `l${levers.length}`, group: Number(o.properties?.group ?? 0), rect: r });
           }
           continue;
@@ -284,6 +297,7 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
     doors,
     diamonds,
     levers,
+    plates,
     platforms,
     mechProps,
     tutorials,

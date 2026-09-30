@@ -1,6 +1,8 @@
 import { P } from "./params.js";
-import type { DiamondDef, LevelData, Rect } from "./level.js";
+import type { DiamondDef, LevelData, PlateDef, Rect } from "./level.js";
 import { copyInput, EMPTY_INPUT, type Anim, type InputState, type Role, type WorldEvent } from "./types.js";
+
+const ROLES = ["fireboy", "watergirl"] as const;
 
 export interface PlayerSim {
   x: number;
@@ -35,6 +37,21 @@ interface LeverSim {
   cd: number;
 }
 
+export interface PlateSim {
+  def: PlateDef;
+  pressed: boolean;
+}
+
+/** 推箱：可被玩家推行、可站立、可压住按钮板 */
+export interface BoxSim {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  vy: number;
+  grounded: boolean;
+}
+
 export class World {
   readonly level: LevelData;
   readonly inputs = new Map<Role, InputState>();
@@ -42,6 +59,8 @@ export class World {
   diamonds: (DiamondDef & { collected: boolean; by?: Role })[];
   platforms: PlatformSim[];
   levers: LeverSim[];
+  plates: PlateSim[];
+  box: BoxSim | null;
   phase: "playing" | "finished" = "playing";
   timerMs = 0;
 
@@ -51,7 +70,12 @@ export class World {
     this.diamonds = level.diamonds.map((d) => ({ ...d, collected: false }));
     this.platforms = level.platforms.map((def) => ({ def, x: def.x, y: def.y, target: 0 }));
     this.levers = level.levers.map((l) => ({ ...l, on: false, cd: 0 }));
-    for (const role of ["fireboy", "watergirl"] as Role[]) this.inputs.set(role, copyInput(EMPTY_INPUT));
+    this.plates = level.plates.map((def) => ({ def, pressed: false }));
+    const boxDef = level.mechProps.find((m) => m.gid === 4);
+    this.box = boxDef
+      ? { x: boxDef.rect.x, y: boxDef.rect.y, w: boxDef.rect.w, h: boxDef.rect.h, vy: 0, grounded: false }
+      : null;
+    for (const role of ROLES) this.inputs.set(role, copyInput(EMPTY_INPUT));
   }
 
   /** 重开本关（保留输入映射） */
@@ -61,10 +85,12 @@ export class World {
     this.diamonds = fresh.diamonds;
     this.platforms = fresh.platforms;
     this.levers = fresh.levers;
+    this.plates = fresh.plates;
+    this.box = fresh.box;
     this.phase = "playing";
     this.timerMs = 0;
     this.platformPrev.clear();
-    for (const role of ["fireboy", "watergirl"] as Role[]) {
+    for (const role of ROLES) {
       this.inputs.set(role, { ...EMPTY_INPUT });
     }
   }
@@ -114,7 +140,7 @@ export class World {
     for (const lv of this.levers) {
       lv.cd = Math.max(0, lv.cd - dt);
       if (lv.cd > 0) continue;
-      for (const role of ["fireboy", "watergirl"] as Role[]) {
+      for (const role of ROLES) {
         const pl = this.players[role];
         if (pl.alive && overlap(plRect(pl), lv.rect)) {
           lv.on = !lv.on;
@@ -126,8 +152,49 @@ export class World {
       }
     }
 
+    // 2.5) 按钮板（原版语义：被存活玩家或推箱压住 → 组平台到端点 B；无人压 → 回端点 A）
+    if (this.plates.length > 0) {
+      const pressedGroups = new Set<number>();
+      const plateGroups = new Set(this.plates.map((pt) => pt.def.group));
+      for (const pt of this.plates) {
+        pt.pressed = false;
+        for (const role of ROLES) {
+          const pl = this.players[role];
+          if (pl.alive && overlap(plRect(pl), pt.def.rect)) {
+            pt.pressed = true;
+            break;
+          }
+        }
+        if (!pt.pressed && this.box && overlap(this.box, pt.def.rect)) pt.pressed = true;
+        if (pt.pressed) pressedGroups.add(pt.def.group);
+      }
+      for (const pf of this.platforms) {
+        if (pf.def.group !== undefined && plateGroups.has(pf.def.group)) {
+          pf.target = pressedGroups.has(pf.def.group) ? 1 : 0;
+        }
+      }
+    }
+
+    // 2.7) 推箱：重力下落 + 与地形/平台/边界解算（玩家推挤在玩家位移阶段处理）
+    if (this.box) {
+      const b = this.box;
+      b.vy = Math.min(b.vy + P.gravity * dt, P.maxFall);
+      b.y += b.vy * dt;
+      b.grounded = false;
+      for (const r of this.solidsFor(b.x, b.y, b.w, b.h)) {
+        if (!overlap(b, r)) continue;
+        if (b.vy > 0) {
+          b.y = r.y - b.h;
+          b.grounded = true;
+        } else if (b.vy < 0) {
+          b.y = r.y + r.h;
+        }
+        b.vy = 0;
+      }
+    }
+
     // 3) 玩家
-    for (const role of ["fireboy", "watergirl"] as Role[]) {
+    for (const role of ROLES) {
       const pl = this.players[role];
       if (!pl.alive) {
         pl.respawnT -= dt;
@@ -181,6 +248,7 @@ export class World {
       pl.vy = Math.min(pl.vy + P.gravity * dt, P.maxFall);
 
       // 位移 + 碰撞：先 X 后 Y，瓦片与平台同为实心
+      // X 阶段不含推箱：撞到推箱时改为推行（见下方推挤逻辑）
       const solids = this.solidsNear(pl);
       pl.x += pl.vx * dt;
       for (const r of solids) {
@@ -190,6 +258,23 @@ export class World {
           pl.vx = 0;
         }
       }
+      // 推挤推箱：玩家嵌入箱子则推动箱子同样的位移，再贴回箱子边缘
+      if (this.box && pl.vx !== 0) {
+        const b = this.box;
+        const pr = plRect(pl);
+        if (overlap(pr, b)) {
+          if (pl.vx > 0) {
+            this.moveBoxX(pr.x + pr.w - b.x);
+            pl.x = b.x - P.playerW;
+          } else {
+            this.moveBoxX(-(b.x + b.w - pr.x));
+            pl.x = b.x + b.w;
+          }
+          pl.vx = 0;
+        }
+      }
+      // Y 阶段：推箱同为实心（可站立）
+      if (this.box) solids.push({ ...this.box });
       const wasGrounded = pl.grounded;
       pl.grounded = false;
       pl.y += pl.vy * dt;
@@ -264,14 +349,25 @@ export class World {
 
   private platformPrev = new Map<PlatformSim, { x: number; y: number }>();
 
-  private solidsNear(pl: PlayerSim): Rect[] {
+  /** 推行推箱：位移后与地形解算，撞墙则停在墙上 */
+  private moveBoxX(dx: number): void {
+    const b = this.box;
+    if (!b || dx === 0) return;
+    b.x += dx;
+    for (const r of this.solidsFor(b.x, b.y, b.w, b.h)) {
+      if (!overlap({ x: b.x, y: b.y, w: b.w, h: b.h }, r)) continue;
+      b.x = dx > 0 ? r.x - b.w : r.x + r.w;
+    }
+  }
+
+  private solidsFor(x: number, y: number, w: number, h: number): Rect[] {
     const out: Rect[] = [];
     const { tile, solid, liquid, cols, rows, widthPx, heightPx } = this.level;
     const t = tile;
-    const x0 = Math.max(0, Math.floor((pl.x - t) / t));
-    const x1 = Math.min(cols - 1, Math.floor((pl.x + P.playerW + t) / t));
-    const y0 = Math.max(0, Math.floor((pl.y - t) / t));
-    const y1 = Math.min(rows - 1, Math.floor((pl.y + P.playerH + t) / t));
+    const x0 = Math.max(0, Math.floor((x - t) / t));
+    const x1 = Math.min(cols - 1, Math.floor((x + w + t) / t));
+    const y0 = Math.max(0, Math.floor((y - t) / t));
+    const y1 = Math.min(rows - 1, Math.floor((y + h + t) / t));
     for (let cy = y0; cy <= y1; cy++) {
       for (let cx = x0; cx <= x1; cx++) {
         const i = cy * cols + cx;
@@ -289,6 +385,10 @@ export class World {
     out.push({ x: widthPx, y: -t, w: t, h: heightPx + 2 * t });
     out.push({ x: -t, y: heightPx, w: widthPx + 2 * t, h: t });
     return out;
+  }
+
+  private solidsNear(pl: PlayerSim): Rect[] {
+    return this.solidsFor(pl.x, pl.y, P.playerW, P.playerH);
   }
 
   private liquidTouch(pl: PlayerSim): "water" | "lava" | "green" | null {

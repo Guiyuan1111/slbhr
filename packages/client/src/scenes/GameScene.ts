@@ -70,6 +70,7 @@ export class GameScene extends Phaser.Scene {
   private views = new Map<Role, PlayerView>();
   private diamondSprites = new Map<string, Phaser.GameObjects.Image>();
   private platformViews = new Map<string, Phaser.GameObjects.Container>();
+  private boxView: Phaser.GameObjects.Image | null = null;
   private doorSprites = new Map<Role, Phaser.GameObjects.Sprite>();
   private doorOpen = new Map<Role, boolean>();
   private clockText!: Phaser.GameObjects.Text;
@@ -278,7 +279,7 @@ export class GameScene extends Phaser.Scene {
         this.add.image(c.x + 2, c.y + 1, ATLAS_MECH, "lever_stick0000").setOrigin(0.5).setAngle(31 * dir).setDepth(3);
         this.add.image(c.x, c.y, ATLAS_MECH, "lever_base0000").setOrigin(0.5).setDepth(3);
       } else if (m.gid === 4) {
-        this.add.image(c.x, c.y, ATLAS_MECH, "movingbox0000").setOrigin(0.5).setDepth(1.2);
+        this.boxView = this.add.image(c.x, c.y, ATLAS_MECH, "movingbox0000").setOrigin(0.5).setDepth(1.2);
       }
     }
 
@@ -608,6 +609,12 @@ export class GameScene extends Phaser.Scene {
       const def = this.d.level.platforms.find((x) => x.id === id);
       if (def) v.setPosition(ps.x + def.w / 2 + PAD, ps.y + def.h / 2 + PAD);
     });
+
+    // 推箱跟随服务端（左上角 → 贴图中心）
+    if (this.boxView && st.box) {
+      const b = this.d.level.mechProps.find((m) => m.gid === 4);
+      if (b) this.boxView.setPosition(st.box.x + b.rect.w / 2 + PAD, st.box.y + b.rect.h / 2 + PAD);
+    }
 
     // 通关演出（原版：双门到位 → 停 BGM 播通关曲 → 黑罩 + 结算板滑入）
     if (st.phase === "finished") {

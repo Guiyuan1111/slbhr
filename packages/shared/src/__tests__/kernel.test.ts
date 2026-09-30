@@ -40,9 +40,11 @@ describe("level 解析（forest_02 官方数据）", () => {
     expect(level.diamonds.filter((d) => d.kind === "blue").length).toBe(8);
   });
 
-  it("含液体、拉杆与平台（实证：4 拉杆 + 2 平台）", () => {
+  it("含液体、按钮板与平台（实证：4 按钮板(gid0，其中 2 块 group2) + 2 平台）", () => {
     expect(level.liquid.some((v) => v > 0)).toBe(true);
-    expect(level.levers.length).toBe(4);
+    expect(level.plates.length).toBe(4);
+    expect(level.plates.filter((p) => p.group === 2).length).toBe(2);
+    expect(level.levers.length).toBe(0);
     expect(level.platforms.length).toBe(2);
   });
 
@@ -122,7 +124,7 @@ describe("World 仿真", () => {
   it("拉杆翻转同组平台目标", () => {
     const w = freshWorld();
     const grouped = w.platforms.find((p) => p.def.group !== undefined);
-    if (!grouped || w.levers.length === 0) return; // 数据变化时跳过
+    if (!grouped || w.levers.length === 0) return; // 数据变化时跳过（forest_02 无拉杆）
     const before = grouped.target;
     const lever = w.levers.find((l) => l.group === grouped.def.group)!;
     // 把火人传送到拉杆上触发翻转
