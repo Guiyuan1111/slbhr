@@ -139,6 +139,12 @@
     </style>
   </head>
   <body>
+    <script>
+      // 早期错误捕获（验收自动化读取 window.__errs）
+      window.__errs = [];
+      window.addEventListener("error", (e) => window.__errs.push(String(e.message || e)));
+      window.addEventListener("unhandledrejection", (e) => window.__errs.push("promise:" + String(e.reason)));
+    </script>
     <div id="game-root"></div>
 
     <div id="menu">
@@ -164,8 +170,6 @@
 
     <div id="hud" class="hidden">
       <div id="hud-top">
-        <span id="hud-time">00:00</span>
-        <span id="hud-diamonds">红 0/0 · 蓝 0/0</span>
         <span id="hud-role"></span>
         <span id="hud-room"></span>
         <span id="hud-status"></span>
