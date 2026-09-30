@@ -34,7 +34,7 @@ function synthLevel(): LevelData {
     diamonds: [],
     levers: [],
     plates: [{ id: "b0", group: 7, rect: { x: 160, y: 256, w: 32, h: 32 } }],
-    platforms: [{ id: "p0", x: 128, y: 128, w: 64, h: 16, dx: 0, dy: 64, group: 7 }],
+    platforms: [{ id: "p0", x: 128, y: 128, w: 64, h: 16, dx: 0, dy: -64, group: 7 }],
     mechProps: [{ gid: 4, rect: { x: 320, y: 224, w: 64, h: 64 }, props: {} }],
     tutorials: [],
   };
@@ -54,14 +54,14 @@ describe("按钮板（按住语义）", () => {
     w.step(dt);
     expect(w.plates[0].pressed).toBe(true);
     expect(pf.target).toBe(1);
-    for (let i = 0; i < 60; i++) w.step(dt);
-    expect(pf.y).toBeCloseTo(192, 0); // 128+64
+    for (let i = 0; i < 300; i++) w.step(dt); // 16px/s，64px 行程需 4s
+    expect(pf.y).toBeCloseTo(192, 0); // 端点B = def−(dx,dy) = 128+64（下沉端）
     // 走开
     fb.x = 400;
     w.step(dt);
     expect(w.plates[0].pressed).toBe(false);
     expect(pf.target).toBe(0);
-    for (let i = 0; i < 60; i++) w.step(dt);
+    for (let i = 0; i < 300; i++) w.step(dt);
     expect(pf.y).toBeCloseTo(128, 0);
   });
 
@@ -129,5 +129,38 @@ describe("推箱物理", () => {
     for (let i = 0; i < 120; i++) w.step(dt);
     expect(box.grounded).toBe(true);
     expect(box.y + box.h).toBeCloseTo(288, 0);
+  });
+});
+
+describe("原版实证语义回归", () => {
+  const dt = 1 / 60;
+
+  /** 32px 台阶合成关卡：底行实心 + 贴地一格台阶 (col5,row8) */
+  function stepLevel(): LevelData {
+    const base = synthLevel();
+    base.solid[8 * COLS + 5] = 1;
+    return base;
+  }
+
+  it("自动上台阶：贴地右行撞 32px 台阶自动走上去（复现原版斜坡可走性）", () => {
+    const w = new World(stepLevel());
+    const fb = w.players.fireboy;
+    fb.x = 4 * T - 10;
+    fb.y = 9 * T - 56;
+    w.inputs.get("fireboy")!.right = true;
+    for (let i = 0; i < 120; i++) w.step(dt);
+    // 无自动上台阶会被墙挡在 x=134；能越过即证台阶可走（越过台阶后继续走落回地面）
+    expect(fb.x).toBeGreaterThan(6 * T + 8);
+  });
+
+  it("拉杆 startPos=1：开局拉杆 ON、同组平台位于下沉端(def−(dx,dy))", () => {
+    const base = synthLevel();
+    base.levers = [{ id: "l0", group: 8, rect: { x: 96, y: 224, w: 32, h: 64 }, startOn: true }];
+    base.platforms = [{ id: "p1", x: 128, y: 128, w: 64, h: 16, dx: 0, dy: -64, group: 8 }];
+    const w = new World(base);
+    expect(w.levers[0].on).toBe(true);
+    expect(w.platforms[0].target).toBe(1);
+    for (let i = 0; i < 400; i++) w.step(dt);
+    expect(w.platforms[0].y).toBeCloseTo(192, 0); // 128 − (−64)
   });
 });

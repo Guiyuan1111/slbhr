@@ -68,8 +68,16 @@ export class World {
     this.level = level;
     this.players = { fireboy: this.makePlayer("fireboy"), watergirl: this.makePlayer("watergirl") };
     this.diamonds = level.diamonds.map((d) => ({ ...d, collected: false }));
-    this.platforms = level.platforms.map((def) => ({ def, x: def.x, y: def.y, target: 0 }));
-    this.levers = level.levers.map((l) => ({ ...l, on: false, cd: 0 }));
+    // 原版实证（live jt 读数）：对象矩形位=高位端（target 0）；state 1=下沉端=target 0−(dx,dy)。
+    // 开局带 startPos=1 拉杆的组平台位于下沉端（左平台 jt=-3.01）。
+    const startLoweredGroups = new Set(level.levers.filter((l) => l.startOn).map((l) => l.group));
+    this.platforms = level.platforms.map((def) => ({
+      def,
+      x: def.x,
+      y: def.y,
+      target: def.group !== undefined && startLoweredGroups.has(def.group) ? 1 : 0,
+    }));
+    this.levers = level.levers.map((l) => ({ ...l, on: l.startOn, cd: 0 }));
     this.plates = level.plates.map((def) => ({ def, pressed: false }));
     const boxDef = level.mechProps.find((m) => m.gid === 4);
     this.box = boxDef
@@ -120,10 +128,10 @@ export class World {
     if (this.phase !== "playing") return events;
     this.timerMs += dt * 1000;
 
-    // 1) 平台移动（先于玩家，产生位移用于载具）
+    // 1) 平台移动（先于玩家，产生位移用于载具）。target 0=高位端(def)，target 1=下沉端(def−(dx,dy))
     for (const pl of this.platforms) {
-      const tx = pl.target === 0 ? pl.def.x : pl.def.x + pl.def.dx;
-      const ty = pl.target === 0 ? pl.def.y : pl.def.y + pl.def.dy;
+      const tx = pl.target === 0 ? pl.def.x : pl.def.x - pl.def.dx;
+      const ty = pl.target === 0 ? pl.def.y : pl.def.y - pl.def.dy;
       const dx = tx - pl.x;
       const dy = ty - pl.y;
       const dist = Math.hypot(dx, dy);
@@ -252,11 +260,20 @@ export class World {
       const solids = this.solidsNear(pl);
       pl.x += pl.vx * dt;
       for (const r of solids) {
-        if (overlap(plRect(pl), r)) {
-          if (pl.vx > 0) pl.x = r.x - P.playerW;
-          else if (pl.vx < 0) pl.x = r.x + r.w;
-          pl.vx = 0;
+        if (!overlap(plRect(pl), r)) continue;
+        // 自动上台阶：贴地行走撞上 ≤stepHeight 的矮台且头顶无遮挡 → 抬升走上去
+        // （原版此处是 45° 整格斜坡可直接走上，本内核以整格实心+自动上台阶复现同一可走性）
+        const lift = pl.y + P.playerH - r.y;
+        if (pl.grounded && lift > 0 && lift <= P.stepHeight) {
+          const lifted = { x: pl.x, y: r.y - P.playerH, w: P.playerW, h: P.playerH };
+          if (!solids.some((o) => o !== r && overlap(lifted, o))) {
+            pl.y = lifted.y;
+            continue;
+          }
         }
+        if (pl.vx > 0) pl.x = r.x - P.playerW;
+        else if (pl.vx < 0) pl.x = r.x + r.w;
+        pl.vx = 0;
       }
       // 推挤推箱：玩家嵌入箱子则推动箱子同样的位移，再贴回箱子边缘
       if (this.box && pl.vx !== 0) {

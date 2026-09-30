@@ -38,6 +38,8 @@ export interface LeverDef {
   id: string;
   group: number;
   rect: Rect;
+  /** 原版 startPos=1：初始为 ON，其组平台开局位于「下沉端」（实证：左平台开局 jt=-3.01） */
+  startOn: boolean;
 }
 
 /** 按钮板（原版 pusher）：被玩家/推箱压住时其组平台到端点 B，松开回端点 A */
@@ -250,8 +252,13 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
             // 按钮板（原版实证：gid0=pusher，按住生效；教学文案「必须要有1个人留下来按住按钮」）
             plates.push({ id: `b${plates.length}`, group: Number(o.properties?.group ?? 0), rect: r });
           } else if (local === 2) {
-            // 拉杆（接触翻转，带冷却）
-            levers.push({ id: `l${levers.length}`, group: Number(o.properties?.group ?? 0), rect: r });
+            // 拉杆（接触翻转，带冷却）；startPos=1 表示开局 ON（组平台初始在下沉端）
+            levers.push({
+              id: `l${levers.length}`,
+              group: Number(o.properties?.group ?? 0),
+              rect: r,
+              startOn: Number(o.properties?.startPos ?? 0) === 1,
+            });
           }
           continue;
         }
