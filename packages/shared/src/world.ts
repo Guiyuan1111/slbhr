@@ -69,15 +69,15 @@ export class World {
     this.players = { fireboy: this.makePlayer("fireboy"), watergirl: this.makePlayer("watergirl") };
     this.diamonds = level.diamonds.map((d) => ({ ...d, collected: false }));
     // 原版实证（live jt 读数）：对象矩形位=高位端（target 0）；state 1=下沉端=target 0−(dx,dy)。
-    // 开局带 startPos=1 拉杆的组平台位于下沉端（左平台 jt=-3.01）。
-    const startLoweredGroups = new Set(level.levers.filter((l) => l.startOn).map((l) => l.group));
+    // 拉杆组平台开局位于下沉端（原版左平台无任何操作时 jt=-3.01）；按钮板组开局在高位端。
+    const leverGroups = new Set(level.levers.map((l) => l.group));
     this.platforms = level.platforms.map((def) => ({
       def,
       x: def.x,
       y: def.y,
-      target: def.group !== undefined && startLoweredGroups.has(def.group) ? 1 : 0,
+      target: def.group !== undefined && leverGroups.has(def.group) ? 1 : 0,
     }));
-    this.levers = level.levers.map((l) => ({ ...l, on: l.startOn, cd: 0 }));
+    this.levers = level.levers.map((l) => ({ ...l, on: l.startOn || leverGroups.has(l.group), cd: 0 }));
     this.plates = level.plates.map((def) => ({ def, pressed: false }));
     const boxDef = level.mechProps.find((m) => m.gid === 4);
     this.box = boxDef
@@ -150,7 +150,9 @@ export class World {
       if (lv.cd > 0) continue;
       for (const role of ROLES) {
         const pl = this.players[role];
-        if (pl.alive && overlap(plRect(pl), lv.rect)) {
+        // 原版实证：拉杆碰撞体是中央 10px 柱体（poly ±5px），不是整块 64px 标记——否则跳跃掠过会误触发
+        const post = { x: lv.rect.x + lv.rect.w / 2 - 5, y: lv.rect.y, w: 10, h: lv.rect.h };
+        if (pl.alive && overlap(plRect(pl), post)) {
           lv.on = !lv.on;
           lv.cd = P.leverCooldown;
           for (const pf of this.platforms) if (pf.def.group === lv.group) pf.target = pf.target === 0 ? 1 : 0;
