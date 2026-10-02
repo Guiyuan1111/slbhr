@@ -35,7 +35,7 @@ export class ForestRoom extends Room<RoomState> {
   onCreate(options: JoinOptions) {
     // 房间密码：创建者决定，之后加入者必须一致
     this.roomPassword = String(options.password ?? "");
-    const levelId = options.levelId ?? "forest_02";
+    const levelId = options.levelId ?? "forest_01";
 
     this.bundle = loadLevel(levelId);
     this.world = new World(this.bundle.level);
@@ -174,6 +174,10 @@ export class ForestRoom extends Room<RoomState> {
       }
       ps.x = Math.round(pf.x * 10) / 10;
       ps.y = Math.round(pf.y * 10) / 10;
+    }
+    if (this.world.box) {
+      this.state.box.x = Math.round(this.world.box.x * 10) / 10;
+      this.state.box.y = Math.round(this.world.box.y * 10) / 10;
     }
     this.state.timerMs = Math.round(this.world.timerMs);
   }

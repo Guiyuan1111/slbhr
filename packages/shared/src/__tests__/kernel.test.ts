@@ -40,9 +40,11 @@ describe("level 解析（forest_02 官方数据）", () => {
     expect(level.diamonds.filter((d) => d.kind === "blue").length).toBe(8);
   });
 
-  it("含液体、拉杆与平台（实证：4 拉杆 + 2 平台）", () => {
+  it("含液体、按钮板与平台（实证：4 按钮板(gid0，其中 2 块 group2) + 2 平台）", () => {
     expect(level.liquid.some((v) => v > 0)).toBe(true);
-    expect(level.levers.length).toBe(4);
+    expect(level.plates.length).toBe(4);
+    expect(level.plates.filter((p) => p.group === 2).length).toBe(2);
+    expect(level.levers.length).toBe(0);
     expect(level.platforms.length).toBe(2);
   });
 
@@ -122,7 +124,7 @@ describe("World 仿真", () => {
   it("拉杆翻转同组平台目标", () => {
     const w = freshWorld();
     const grouped = w.platforms.find((p) => p.def.group !== undefined);
-    if (!grouped || w.levers.length === 0) return; // 数据变化时跳过
+    if (!grouped || w.levers.length === 0) return; // 数据变化时跳过（forest_02 无拉杆）
     const before = grouped.target;
     const lever = w.levers.find((l) => l.group === grouped.def.group)!;
     // 把火人传送到拉杆上触发翻转
@@ -130,5 +132,42 @@ describe("World 仿真", () => {
     w.players.fireboy.y = lever.rect.y + lever.rect.h - 56;
     w.step(dt);
     expect(grouped.target).not.toBe(before);
+  });
+
+  it("免疫角色可站在液体池中（半高池底，没腰不穿底）", () => {
+    const w = freshWorld();
+    // 找一格岩浆，且其上方为开放空间（液面无遮挡）
+    const { cols, rows, tile, solid, liquid } = w.level;
+    let cell = -1;
+    for (let i = 0; i < liquid.length; i++) {
+      if (liquid[i] !== 2) continue; // lava
+      const cy = Math.floor(i / cols);
+      if (cy === 0 || solid[i - cols]) continue;
+      cell = i;
+      break;
+    }
+    if (cell < 0) return; // 数据无可用岩浆池则跳过
+    const cx = (cell % cols) * tile + 4;
+    const cellTop = Math.floor(cell / cols) * tile;
+    const fb = w.players.fireboy;
+    fb.x = cx;
+    fb.y = cellTop - 80; // 从液面上方落下
+    for (let i = 0; i < 120; i++) w.step(dt);
+    expect(fb.alive).toBe(true); // 火男孩趟岩浆无害
+    expect(fb.grounded).toBe(true);
+    // 站在下半格：脚底 = 格顶 + 半格
+    expect(fb.y + 56).toBeCloseTo(cellTop + tile / 2, 0);
+    expect(fb.y).toBeLessThan(w.level.heightPx);
+  });
+
+  it("世界四周封闭：持续下坠不会掉出地图", () => {
+    const w = freshWorld();
+    const fb = w.players.fireboy;
+    // 找不到开放竖井就随便放，断言统一：任意位置下落最终被世界接住
+    fb.x = w.level.widthPx / 2;
+    fb.y = 0;
+    for (let i = 0; i < 600; i++) w.step(dt);
+    expect(fb.y).toBeLessThanOrEqual(w.level.heightPx);
+    expect(fb.alive).toBe(true);
   });
 });

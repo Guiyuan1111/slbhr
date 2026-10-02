@@ -1,0 +1,176 @@
+/**
+ * 机关机制测试（合成关卡，确定性）：
+ * - 按钮板按住语义（玩家/推箱压住 → 组平台到端点 B；松开回端点 A）
+ * - 推箱物理（推行、站立、压板、悬空下落）
+ */
+import { describe, expect, it } from "vitest";
+import type { LevelData } from "../level.js";
+import { World } from "../world.js";
+
+const T = 32;
+const COLS = 20;
+const ROWS = 10;
+
+/** 合成关卡：底行实心，一块 group7 平台(128,128 → +64)、一块 group7 按钮板、一只推箱 */
+function synthLevel(): LevelData {
+  const solid = new Uint8Array(COLS * ROWS);
+  for (let c = 0; c < COLS; c++) solid[(ROWS - 1) * COLS + c] = 1; // 底行 y=288..320
+  return {
+    id: "synth",
+    widthPx: COLS * T,
+    heightPx: ROWS * T,
+    tile: T,
+    solid,
+    liquid: new Uint8Array(COLS * ROWS),
+    ground: new Uint16Array(COLS * ROWS),
+    groundTypes: new Int16Array(COLS * ROWS).fill(-99),
+    cols: COLS,
+    rows: ROWS,
+    spawn: { fireboy: { x: 32, y: 288 - 56 }, watergirl: { x: 64, y: 288 - 56 } },
+    doors: {
+      fireboy: { x: 500, y: 224, w: 64, h: 64 },
+      watergirl: { x: 560, y: 224, w: 64, h: 64 },
+    },
+    diamonds: [],
+    levers: [],
+    plates: [{ id: "b0", group: 7, rect: { x: 160, y: 256, w: 32, h: 32 } }],
+    platforms: [{ id: "p0", x: 128, y: 128, w: 64, h: 16, dx: 0, dy: -64, group: 7 }],
+    mechProps: [{ gid: 4, rect: { x: 320, y: 224, w: 64, h: 64 }, props: {} }],
+    tutorials: [],
+  };
+}
+
+describe("按钮板（按住语义）", () => {
+  const dt = 1 / 60;
+
+  it("玩家压住 → 组平台去端点 B；走开 → 回端点 A", () => {
+    const w = new World(synthLevel());
+    const pf = w.platforms[0];
+    expect(pf.target).toBe(0);
+    // 站在按钮板上（板贴地 256..288，玩家站地板：身体 232..288 与板相交）
+    const fb = w.players.fireboy;
+    fb.x = 168;
+    fb.y = 288 - 56;
+    w.step(dt);
+    expect(w.plates[0].pressed).toBe(true);
+    expect(pf.target).toBe(1);
+    for (let i = 0; i < 300; i++) w.step(dt); // 16px/s，64px 行程需 4s
+    expect(pf.y).toBeCloseTo(192, 0); // 端点B = def−(dx,dy) = 128+64（下沉端）
+    // 走开
+    fb.x = 400;
+    w.step(dt);
+    expect(w.plates[0].pressed).toBe(false);
+    expect(pf.target).toBe(0);
+    for (let i = 0; i < 300; i++) w.step(dt);
+    expect(pf.y).toBeCloseTo(128, 0);
+  });
+
+  it("推箱压住同样生效；推离后释放", () => {
+    const w = new World(synthLevel());
+    const pf = w.platforms[0];
+    // 推箱初始在 (320,224)，地板顶 288：落地
+    for (let i = 0; i < 10; i++) w.step(dt);
+    expect(w.box!.grounded).toBe(true);
+    expect(w.box!.y + w.box!.h).toBeCloseTo(288, 0);
+    // 直接把推箱放到按钮板上
+    w.box!.x = 160;
+    for (let i = 0; i < 5; i++) w.step(dt);
+    expect(w.plates[0].pressed).toBe(true);
+    expect(pf.target).toBe(1);
+    // 推离（玩家从左侧向右推箱子）
+    const fb = w.players.fireboy;
+    fb.x = 96;
+    fb.y = 288 - 56;
+    w.inputs.set("fireboy", { up: false, left: false, right: true });
+    for (let i = 0; i < 90; i++) w.step(dt);
+    w.inputs.set("fireboy", { up: false, left: false, right: false });
+    expect(w.box!.x).toBeGreaterThan(200); // 被推离按钮板
+    expect(w.plates[0].pressed).toBe(false);
+    expect(pf.target).toBe(0);
+  });
+});
+
+describe("推箱物理", () => {
+  const dt = 1 / 60;
+
+  it("玩家可推行推箱，箱子撞墙停住且玩家被挡", () => {
+    const w = new World(synthLevel());
+    for (let i = 0; i < 10; i++) w.step(dt);
+    const fb = w.players.fireboy;
+    // 站到箱子左侧
+    fb.x = 320 - 26 - 1;
+    fb.y = 288 - 56;
+    w.inputs.set("fireboy", { up: false, left: false, right: true });
+    for (let i = 0; i < 60; i++) w.step(dt);
+    w.inputs.set("fireboy", { up: false, left: false, right: false });
+    expect(w.box!.x).toBeGreaterThan(320); // 箱子被推走
+    expect(w.box!.x + w.box!.w).toBeLessThanOrEqual(w.level.widthPx); // 没穿右墙
+    // 玩家贴在箱子左侧
+    expect(fb.x + 26).toBeLessThanOrEqual(w.box!.x + 1);
+  });
+
+  it("玩家可以站上推箱", () => {
+    const w = new World(synthLevel());
+    for (let i = 0; i < 10; i++) w.step(dt);
+    const fb = w.players.fireboy;
+    fb.x = 320 + 16; // 箱子上方
+    fb.y = 224 - 56 - 8; // 略高于箱顶，落下
+    for (let i = 0; i < 60; i++) w.step(dt);
+    expect(fb.grounded).toBe(true);
+    expect(fb.y + 56).toBeCloseTo(224, 0); // 站在箱顶
+  });
+
+  it("推箱悬空会下落落地", () => {
+    const w = new World(synthLevel());
+    const box = w.box!;
+    box.x = 480;
+    box.y = 100;
+    box.vy = 0;
+    for (let i = 0; i < 120; i++) w.step(dt);
+    expect(box.grounded).toBe(true);
+    expect(box.y + box.h).toBeCloseTo(288, 0);
+  });
+});
+
+describe("原版实证语义回归", () => {
+  const dt = 1 / 60;
+
+  /** 32px 台阶合成关卡：底行实心 + 贴地一格台阶 (col5,row8) */
+  function stepLevel(): LevelData {
+    const base = synthLevel();
+    base.solid[8 * COLS + 5] = 1;
+    return base;
+  }
+
+  it("自动上台阶：贴地右行撞 32px 台阶自动走上去（复现原版斜坡可走性）", () => {
+    const w = new World(stepLevel());
+    const fb = w.players.fireboy;
+    fb.x = 4 * T - 10;
+    fb.y = 9 * T - 56;
+    w.inputs.get("fireboy")!.right = true;
+    for (let i = 0; i < 120; i++) w.step(dt);
+    // 无自动上台阶会被墙挡在 x=134；能越过即证台阶可走（越过台阶后继续走落回地面）
+    expect(fb.x).toBeGreaterThan(6 * T + 8);
+  });
+
+  it("拉杆：原版出厂默认 OFF、同组平台开局位于高位端；拨动后下沉到 def−(dx,dy)", () => {
+    const base = synthLevel();
+    base.levers = [{ id: "l0", group: 8, rect: { x: 96, y: 224, w: 32, h: 64 }, startOn: false }];
+    base.platforms = [{ id: "p1", x: 128, y: 128, w: 64, h: 16, dx: 0, dy: -64, group: 8 }];
+    const w = new World(base);
+    // 活体实证（forest_01）：拉杆开局 state 0（jt≈−0.66 下限），P1 body y=496 位于高位端
+    expect(w.levers[0].on).toBe(false);
+    expect(w.platforms[0].target).toBe(0);
+    // 玩家接触拨动（原版：跑上倾斜杆体翻转）→ 平台下沉（电机 16px/s；400 步 @60Hz 足够 64px 行程）
+    w.players.fireboy.x = 100; // 覆盖拉杆中央 10px 柱（x107-117）
+    w.players.fireboy.y = 232;
+    w.step(dt);
+    expect(w.levers[0].on).toBe(true);
+    w.players.fireboy.x = 800; // 离开拉杆（否则冷却后接触再翻转回去）
+    for (let i = 0; i < 400; i++) w.step(dt);
+    expect(w.levers[0].on).toBe(true);
+    expect(w.platforms[0].target).toBe(1);
+    // 精确落位：浮点步进残差若残留（曾达0.27px），玩家32px自动上台阶的 lift 判定会永久差临界值
+    expect(w.platforms[0].y).toBe(192); // 128 − (−64)
+  });
+});

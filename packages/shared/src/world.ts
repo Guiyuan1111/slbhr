@@ -1,6 +1,8 @@
 import { P } from "./params.js";
-import type { DiamondDef, LevelData, Rect } from "./level.js";
+import type { DiamondDef, LevelData, PlateDef, Rect } from "./level.js";
 import { copyInput, EMPTY_INPUT, type Anim, type InputState, type Role, type WorldEvent } from "./types.js";
+
+const ROLES = ["fireboy", "watergirl"] as const;
 
 export interface PlayerSim {
   x: number;
@@ -35,6 +37,21 @@ interface LeverSim {
   cd: number;
 }
 
+export interface PlateSim {
+  def: PlateDef;
+  pressed: boolean;
+}
+
+/** 推箱：可被玩家推行、可站立、可压住按钮板 */
+export interface BoxSim {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  vy: number;
+  grounded: boolean;
+}
+
 export class World {
   readonly level: LevelData;
   readonly inputs = new Map<Role, InputState>();
@@ -42,6 +59,8 @@ export class World {
   diamonds: (DiamondDef & { collected: boolean; by?: Role })[];
   platforms: PlatformSim[];
   levers: LeverSim[];
+  plates: PlateSim[];
+  box: BoxSim | null;
   phase: "playing" | "finished" = "playing";
   timerMs = 0;
 
@@ -49,9 +68,16 @@ export class World {
     this.level = level;
     this.players = { fireboy: this.makePlayer("fireboy"), watergirl: this.makePlayer("watergirl") };
     this.diamonds = level.diamonds.map((d) => ({ ...d, collected: false }));
+    // 原版实证（fresh-load jt=0 / lever state=0）：所有平台开局位于对象矩形位（高位端 target 0），
+    // state 1=下沉端=target 0−(dx,dy)；拉杆开局 state 0（杆体倾斜 0.535rad），首次拨动 → 平台下沉。
     this.platforms = level.platforms.map((def) => ({ def, x: def.x, y: def.y, target: 0 }));
-    this.levers = level.levers.map((l) => ({ ...l, on: false, cd: 0 }));
-    for (const role of ["fireboy", "watergirl"] as Role[]) this.inputs.set(role, copyInput(EMPTY_INPUT));
+    this.levers = level.levers.map((l) => ({ ...l, on: l.startOn ?? false, cd: 0 }));
+    this.plates = level.plates.map((def) => ({ def, pressed: false }));
+    const boxDef = level.mechProps.find((m) => m.gid === 4);
+    this.box = boxDef
+      ? { x: boxDef.rect.x, y: boxDef.rect.y, w: boxDef.rect.w, h: boxDef.rect.h, vy: 0, grounded: false }
+      : null;
+    for (const role of ROLES) this.inputs.set(role, copyInput(EMPTY_INPUT));
   }
 
   /** 重开本关（保留输入映射） */
@@ -61,10 +87,12 @@ export class World {
     this.diamonds = fresh.diamonds;
     this.platforms = fresh.platforms;
     this.levers = fresh.levers;
+    this.plates = fresh.plates;
+    this.box = fresh.box;
     this.phase = "playing";
     this.timerMs = 0;
     this.platformPrev.clear();
-    for (const role of ["fireboy", "watergirl"] as Role[]) {
+    for (const role of ROLES) {
       this.inputs.set(role, { ...EMPTY_INPUT });
     }
   }
@@ -94,17 +122,23 @@ export class World {
     if (this.phase !== "playing") return events;
     this.timerMs += dt * 1000;
 
-    // 1) 平台移动（先于玩家，产生位移用于载具）
+    // 1) 平台移动（先于玩家，产生位移用于载具）。target 0=高位端(def)，target 1=下沉端(def−(dx,dy))
     for (const pl of this.platforms) {
-      const tx = pl.target === 0 ? pl.def.x : pl.def.x + pl.def.dx;
-      const ty = pl.target === 0 ? pl.def.y : pl.def.y + pl.def.dy;
+      const tx = pl.target === 0 ? pl.def.x : pl.def.x - pl.def.dx;
+      const ty = pl.target === 0 ? pl.def.y : pl.def.y - pl.def.dy;
       const dx = tx - pl.x;
       const dy = ty - pl.y;
       const dist = Math.hypot(dx, dy);
       if (dist > 0.5) {
         const mv = Math.min(P.platformSpeed * dt, dist);
-        pl.x += (dx / dist) * mv;
-        pl.y += (dy / dist) * mv;
+        if (mv >= dist || dist - mv <= 0.5) {
+          // 落位吸附：步进若将落入/残留于0.5px死区，浮点残差(可达0.27px)会让玩家32px自动上台阶的 lift 判定永久差临界值
+          pl.x = tx;
+          pl.y = ty;
+        } else {
+          pl.x += (dx / dist) * mv;
+          pl.y += (dy / dist) * mv;
+        }
       } else if (pl.def.group === undefined) {
         pl.target = pl.target === 0 ? 1 : 0; // 无组平台自动往返
       }
@@ -114,9 +148,11 @@ export class World {
     for (const lv of this.levers) {
       lv.cd = Math.max(0, lv.cd - dt);
       if (lv.cd > 0) continue;
-      for (const role of ["fireboy", "watergirl"] as Role[]) {
+      for (const role of ROLES) {
         const pl = this.players[role];
-        if (pl.alive && overlap(plRect(pl), lv.rect)) {
+        // 原版实证：拉杆碰撞体是中央 10px 柱体（poly ±5px），不是整块 64px 标记——否则跳跃掠过会误触发
+        const post = { x: lv.rect.x + lv.rect.w / 2 - 5, y: lv.rect.y, w: 10, h: lv.rect.h };
+        if (pl.alive && overlap(plRect(pl), post)) {
           lv.on = !lv.on;
           lv.cd = P.leverCooldown;
           for (const pf of this.platforms) if (pf.def.group === lv.group) pf.target = pf.target === 0 ? 1 : 0;
@@ -126,8 +162,49 @@ export class World {
       }
     }
 
+    // 2.5) 按钮板（原版语义：被存活玩家或推箱压住 → 组平台到端点 B；无人压 → 回端点 A）
+    if (this.plates.length > 0) {
+      const pressedGroups = new Set<number>();
+      const plateGroups = new Set(this.plates.map((pt) => pt.def.group));
+      for (const pt of this.plates) {
+        pt.pressed = false;
+        for (const role of ROLES) {
+          const pl = this.players[role];
+          if (pl.alive && overlap(plRect(pl), pt.def.rect)) {
+            pt.pressed = true;
+            break;
+          }
+        }
+        if (!pt.pressed && this.box && overlap(this.box, pt.def.rect)) pt.pressed = true;
+        if (pt.pressed) pressedGroups.add(pt.def.group);
+      }
+      for (const pf of this.platforms) {
+        if (pf.def.group !== undefined && plateGroups.has(pf.def.group)) {
+          pf.target = pressedGroups.has(pf.def.group) ? 1 : 0;
+        }
+      }
+    }
+
+    // 2.7) 推箱：重力下落 + 与地形/平台/边界解算（玩家推挤在玩家位移阶段处理）
+    if (this.box) {
+      const b = this.box;
+      b.vy = Math.min(b.vy + P.gravity * dt, P.maxFall);
+      b.y += b.vy * dt;
+      b.grounded = false;
+      for (const r of this.solidsFor(b.x, b.y, b.w, b.h)) {
+        if (!overlap(b, r)) continue;
+        if (b.vy > 0) {
+          b.y = r.y - b.h;
+          b.grounded = true;
+        } else if (b.vy < 0) {
+          b.y = r.y + r.h;
+        }
+        b.vy = 0;
+      }
+    }
+
     // 3) 玩家
-    for (const role of ["fireboy", "watergirl"] as Role[]) {
+    for (const role of ROLES) {
       const pl = this.players[role];
       if (!pl.alive) {
         pl.respawnT -= dt;
@@ -181,15 +258,42 @@ export class World {
       pl.vy = Math.min(pl.vy + P.gravity * dt, P.maxFall);
 
       // 位移 + 碰撞：先 X 后 Y，瓦片与平台同为实心
+      // X 阶段不含推箱：撞到推箱时改为推行（见下方推挤逻辑）
       const solids = this.solidsNear(pl);
       pl.x += pl.vx * dt;
       for (const r of solids) {
-        if (overlap(plRect(pl), r)) {
-          if (pl.vx > 0) pl.x = r.x - P.playerW;
-          else if (pl.vx < 0) pl.x = r.x + r.w;
+        if (!overlap(plRect(pl), r)) continue;
+        // 自动上台阶：贴地行走撞上 ≤stepHeight 的矮台且头顶无遮挡 → 抬升走上去
+        // （原版此处是 45° 整格斜坡可直接走上，本内核以整格实心+自动上台阶复现同一可走性）
+        const lift = pl.y + P.playerH - r.y;
+        if (pl.grounded && lift > 0 && lift <= P.stepHeight) {
+          const lifted = { x: pl.x, y: r.y - P.playerH, w: P.playerW, h: P.playerH };
+          if (!solids.some((o) => o !== r && overlap(lifted, o))) {
+            pl.y = lifted.y;
+            continue;
+          }
+        }
+        if (pl.vx > 0) pl.x = r.x - P.playerW;
+        else if (pl.vx < 0) pl.x = r.x + r.w;
+        pl.vx = 0;
+      }
+      // 推挤推箱：玩家嵌入箱子则推动箱子同样的位移，再贴回箱子边缘
+      if (this.box && pl.vx !== 0) {
+        const b = this.box;
+        const pr = plRect(pl);
+        if (overlap(pr, b)) {
+          if (pl.vx > 0) {
+            this.moveBoxX(pr.x + pr.w - b.x);
+            pl.x = b.x - P.playerW;
+          } else {
+            this.moveBoxX(-(b.x + b.w - pr.x));
+            pl.x = b.x + b.w;
+          }
           pl.vx = 0;
         }
       }
+      // Y 阶段：推箱同为实心（可站立）
+      if (this.box) solids.push({ ...this.box });
       const wasGrounded = pl.grounded;
       pl.grounded = false;
       pl.y += pl.vy * dt;
@@ -264,24 +368,46 @@ export class World {
 
   private platformPrev = new Map<PlatformSim, { x: number; y: number }>();
 
-  private solidsNear(pl: PlayerSim): Rect[] {
+  /** 推行推箱：位移后与地形解算，撞墙则停在墙上 */
+  private moveBoxX(dx: number): void {
+    const b = this.box;
+    if (!b || dx === 0) return;
+    b.x += dx;
+    for (const r of this.solidsFor(b.x, b.y, b.w, b.h)) {
+      if (!overlap({ x: b.x, y: b.y, w: b.w, h: b.h }, r)) continue;
+      b.x = dx > 0 ? r.x - b.w : r.x + r.w;
+    }
+  }
+
+  private solidsFor(x: number, y: number, w: number, h: number): Rect[] {
     const out: Rect[] = [];
-    const { tile, solid, cols, rows, widthPx, heightPx } = this.level;
+    const { tile, solid, liquid, cols, rows, widthPx, heightPx } = this.level;
     const t = tile;
-    const x0 = Math.max(0, Math.floor((pl.x - t) / t));
-    const x1 = Math.min(cols - 1, Math.floor((pl.x + P.playerW + t) / t));
-    const y0 = Math.max(0, Math.floor((pl.y - t) / t));
-    const y1 = Math.min(rows - 1, Math.floor((pl.y + P.playerH + t) / t));
+    const x0 = Math.max(0, Math.floor((x - t) / t));
+    const x1 = Math.min(cols - 1, Math.floor((x + w + t) / t));
+    const y0 = Math.max(0, Math.floor((y - t) / t));
+    const y1 = Math.min(rows - 1, Math.floor((y + h + t) / t));
     for (let cy = y0; cy <= y1; cy++) {
       for (let cx = x0; cx <= x1; cx++) {
-        if (solid[cy * cols + cx]) out.push({ x: cx * t, y: cy * t, w: t, h: t });
+        const i = cy * cols + cx;
+        if (solid[i]) {
+          out.push({ x: cx * t, y: cy * t, w: t, h: t });
+        } else if (liquid[i]) {
+          // 液体格：下半格实心（对应原版半高池底蒙版）——免疫角色蹚水时站进去、没腰
+          out.push({ x: cx * t, y: cy * t + t / 2, w: t, h: t / 2 });
+        }
       }
     }
     for (const pf of this.platforms) out.push({ x: pf.x, y: pf.y, w: pf.def.w, h: pf.def.h });
-    // 边界墙
+    // 边界墙（四周封闭，底部兜底防坠出世界）
     out.push({ x: -t, y: -t, w: t, h: heightPx + 2 * t });
     out.push({ x: widthPx, y: -t, w: t, h: heightPx + 2 * t });
+    out.push({ x: -t, y: heightPx, w: widthPx + 2 * t, h: t });
     return out;
+  }
+
+  private solidsNear(pl: PlayerSim): Rect[] {
+    return this.solidsFor(pl.x, pl.y, P.playerW, P.playerH);
   }
 
   private liquidTouch(pl: PlayerSim): "water" | "lava" | "green" | null {

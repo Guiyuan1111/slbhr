@@ -1,6 +1,6 @@
 # Handoff：需要真人完成的事与已知限制
 
-**更新**：2026-09-30（M1 完成）
+**更新**：2026-09-30（0.2.0 视觉复刻完成）
 
 ## 你要做的事
 
@@ -22,8 +22,16 @@
   - `colyseus` 必须钉 `0.16.0` 整版——0.16.1+ 硬依赖 git 仓库的 uWebSockets transport，npm 12 默认拒绝装 git 依赖（EALLOWGIT）。
   - 所有 colyseus 运行时导入统一从 `packages/server/src/colyseus.cjs.ts` 走 require 链；直接 `import "@colyseus/ws-transport"` 会加载它的 ESM 入口，与主包分裂成两个 core 实例（症状：seat reservation expired）。
   - Schema 子类字段一律在 `constructor` 里赋值；tsconfig 已设 `useDefineForClassFields: false`。
-- **渲染**：官方素材是高清帧（玩家 130×172），统一缩放系数 `PLAYER_SCALE=64/172`；头/腿按画布底对齐叠加，偏移量 `headLift=10*PLAYER_SCALE` 为估算值，试玩后可微调。平台贴图按逻辑尺寸拉伸（128×32）。
-- **关卡数据**：`level.ground` 保存原始 gid 供客户端画花纹；`liquid` 的水/岩浆语义待真人验证（见上）。
+- **渲染**：0.2.0 起为像素级复刻（配方逆向自原版 init.js，见下「视觉复刻坑」）。角色 `PLAYER_SCALE=0.95`（原版实测），legs/head/glow 同锚点同心叠加，组锚点在脚底上方 `FEET_TO_CENTER=29px`。
+- **视觉复刻坑**（改 GameScene/BootScene 前必读）：
+  - **图块集必须预取后同步供给** `parseLevel`——直接把 fetch Promise 传进 TilesetProvider 会让 `tileTypeOf` 全部失败，所有地块退化成实心（液体/斜坡消失）。见 `main.ts` `fetchLevel`。
+  - **帧名陷阱**：Phaser `texture.get(不存在的名字)` 静默返回图集第一帧（GroundAssets 是 `BeamDust0000`），不报错。MaskBox 实心帧是 5 位数字（`MaskBox00000`~`00003`），decor 帧带 `0000` 后缀（`decor_X0000`）。
+  - **机关 gid 是图块集本地 id**：parseLevel 输出 `原始gid − Objects图块集firstgid(24)`，即本地 0=推块、2=拉杆、4=推箱（GameScene.buildMechs 有注释）。
+  - **液体行扫描**：run 结束时循环变量已归 0，液体族必须取 run 起始格的值（buildLiquids）。
+  - **内嵌浏览器 rAF 冻结**：遮挡/后台页签 `visibilityState==="visible"` 但 requestAnimationFrame 永不触发，Phaser 场景队列卡死（`loop.frame=0`）。已用 `fps:{forceSetTimeOut:true,target:60}` 修复，别删。
+  - **场景数据传递**：Phaser `settings.data` 未传数据时是 `{}` 不是 undefined，`??` 兜底永远不触发——统一走 `globalThis.__fwInit`（main.ts 注入）。
+  - 原版层序/坐标公式/动画帧率全部记录在 GameScene.ts 头注释与各 build* 注释内；验收对照样张在 `note/report/visual-0.2.0/`。
+  - **已知行为差异**：原版参考页（8099 魔改版）教学文字渐进显示，我们按真实原版静态全显；原版有动态变焦相机（minScale≈全景），我们固定 1312×992 全景。
 - 服务器只绑定 `127.0.0.1`，公网访问必须走穿透隧道（wss 由隧道 HTTPS 自动升级，客户端 `net.ts` 按页面协议自适应）。
 
 ## 里程碑进度
