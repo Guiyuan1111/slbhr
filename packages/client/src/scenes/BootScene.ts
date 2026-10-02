@@ -36,6 +36,8 @@ export class BootScene extends Phaser.Scene {
     this.load.atlas(ATLAS_MENU, "/assets/atlasses/MenuAssets.png", "/assets/atlasses/MenuAssets.json");
 
     // 音频（仅本场景触发全集：跳跃/拾取/死亡/开门/拉杆/音乐）
+    // 统一走无扩展名流式路由（/s/ 前缀，服务器补 .mp3）：IDM 等下载接管工具
+    // 按 URL 扩展名拦截媒体请求，浏览器侧只会拿到 204 空响应
     for (const [key, file] of [
       ["sfx_jump_fb", "Jump_fb.mp3"],
       ["sfx_jump_wg", "Jump_wg.mp3"],
@@ -47,7 +49,7 @@ export class BootScene extends Phaser.Scene {
       ["bgm_level", "LevelMusic.mp3"],
       ["bgm_finish", "LevelMusicFinish.mp3"],
     ] as const) {
-      this.load.audio(key, `/assets/audio/${file}`);
+      this.load.audio(key, `/assets/audio/s/${file.replace(/\.mp3$/, "")}`);
     }
   }
 
