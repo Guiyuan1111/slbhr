@@ -131,8 +131,14 @@ export class World {
       const dist = Math.hypot(dx, dy);
       if (dist > 0.5) {
         const mv = Math.min(P.platformSpeed * dt, dist);
-        pl.x += (dx / dist) * mv;
-        pl.y += (dy / dist) * mv;
+        if (mv >= dist || dist - mv <= 0.5) {
+          // 落位吸附：步进若将落入/残留于0.5px死区，浮点残差(可达0.27px)会让玩家32px自动上台阶的 lift 判定永久差临界值
+          pl.x = tx;
+          pl.y = ty;
+        } else {
+          pl.x += (dx / dist) * mv;
+          pl.y += (dy / dist) * mv;
+        }
       } else if (pl.def.group === undefined) {
         pl.target = pl.target === 0 ? 1 : 0; // 无组平台自动往返
       }

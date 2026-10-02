@@ -170,6 +170,7 @@ describe("原版实证语义回归", () => {
     for (let i = 0; i < 400; i++) w.step(dt);
     expect(w.levers[0].on).toBe(true);
     expect(w.platforms[0].target).toBe(1);
-    expect(w.platforms[0].y).toBeCloseTo(192, 0); // 128 − (−64)
+    // 精确落位：浮点步进残差若残留（曾达0.27px），玩家32px自动上台阶的 lift 判定会永久差临界值
+    expect(w.platforms[0].y).toBe(192); // 128 − (−64)
   });
 });
