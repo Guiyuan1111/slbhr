@@ -129,7 +129,12 @@ export class GameScene extends Phaser.Scene {
     this.buildHud(level);
 
     this.sound.stopByKey("bgm_level");
-    this.sound.play("bgm_level", { loop: true, volume: 0.35 });
+    this.sfx("bgm_level", { loop: true, volume: 0.35 });
+  }
+
+  /** 播音频（键未入缓存时静默跳过：音频缺失不应炸掉整个场景更新循环） */
+  private sfx(key: string, opts?: Phaser.Types.Sound.SoundConfig): void {
+    if (this.cache.audio.exists(key)) this.sound.play(key, opts);
   }
 
   /** 地面：岩壁纹理 × 蒙版合成 + 黑外描边 + 右下软投影（canvas 一次性合成） */
@@ -323,7 +328,7 @@ export class GameScene extends Phaser.Scene {
             .sprite(k * tile + tile / 2 + PAD, cy * tile + tile / 2 + 2 + PAD, ATLAS_GROUND, `${fam}${pos}0000`)
             .setOrigin(0.5)
             .setDepth(7);
-          s.playAfterDelay(`liquid_${key}${pos.toLowerCase()}`, Math.random() * 900);
+          s.playAfterDelay(`liquid_${key}${pos ? `_${pos.toLowerCase()}` : ""}`, Math.random() * 900);
         }
         run = 0;
       }
@@ -547,7 +552,7 @@ export class GameScene extends Phaser.Scene {
       // 死亡 → 烟 + 音效；复活 → 还原
       if (view.alive && !ps.alive) {
         view.smoke.setVisible(true).setPosition(view.cx, view.cy - 9).play("smoke");
-        this.sound.play("sfx_death", { volume: 0.55 });
+        this.sfx("sfx_death", { volume: 0.55 });
       } else if (!view.alive && ps.alive) {
         view.smoke.setVisible(false).stop();
       }
@@ -566,7 +571,7 @@ export class GameScene extends Phaser.Scene {
           case "jump":
             view.legs.play(`${p}_legs_idle`);
             view.head.play(`${role}_jump`);
-            if (role === this.myRole) this.sound.play(role === "fireboy" ? "sfx_jump_fb" : "sfx_jump_wg", { volume: 0.45 });
+            if (role === this.myRole) this.sfx(role === "fireboy" ? "sfx_jump_fb" : "sfx_jump_wg", { volume: 0.45 });
             break;
           case "fall":
             view.legs.play(`${p}_legs_idle`);
@@ -583,7 +588,7 @@ export class GameScene extends Phaser.Scene {
       const wasOpen = this.doorOpen.get(role) ?? false;
       if (atDoor && !wasOpen) {
         this.doorSprites.get(role)?.play(role === "fireboy" ? "door_fb_open" : "door_wg_open");
-        this.sound.play("sfx_door", { volume: 0.45 });
+        this.sfx("sfx_door", { volume: 0.45 });
       } else if (!atDoor && wasOpen) {
         this.doorSprites.get(role)?.stop().setFrame(role === "fireboy" ? "FinishBoy0000" : "FinishGirl0000");
       }
@@ -596,7 +601,7 @@ export class GameScene extends Phaser.Scene {
       if (!img) return;
       if (ds.collected && img.visible) {
         img.setVisible(false);
-        this.sound.play("sfx_diamond", { volume: 0.5 });
+        this.sfx("sfx_diamond", { volume: 0.5 });
       }
     });
     this.redHudText.setText(`${countCollected(this.d, "red", this.redTotal)}/${this.redTotal}`);
@@ -621,7 +626,7 @@ export class GameScene extends Phaser.Scene {
       if (!this.finished) {
         this.finished = true;
         this.sound.stopByKey("bgm_level");
-        this.sound.play("bgm_finish", { volume: 0.4 });
+        this.sfx("bgm_finish", { volume: 0.4 });
       }
       const bothIn = ROLES.every((r) => this.doorOpen.get(r) === true);
       if (bothIn && !this.finishShown) {
