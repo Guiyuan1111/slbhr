@@ -23,8 +23,6 @@ export interface GameInit {
 
 /** 关卡四周留白（原版 groundTexture 1312×992 @(-32,-32) 实测） */
 const PAD = 32;
-/** 关卡倒计时（原版时钟 2:00 起倒） */
-const LEVEL_SECONDS = 120;
 /** 角色组锚点=帧中心；足圆心在锚点下方 28.8px（0.95 标定），换算 0.4 比例 */
 const FEET_TO_CENTER = Math.round((28.8 * PLAYER_SCALE) / 0.95);
 /** 机关组色（原版 Device.groupColors），用于点亮贴图 tint */
@@ -474,7 +472,7 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** ui 层：顶部藤蔓时钟（倒计时 MM:SS）+ 左上角红/蓝钻石计数 */
+  /** ui 层：顶部藤蔓时钟（正计时 MM:SS，原版实拍实证） + 左上角红/蓝钻石计数 */
   private buildHud(level: LevelData): void {
     const clockX = level.widthPx / 2 + PAD;
     this.add.image(clockX, 0, ATLAS_TEMPLE, "Clock0000").setOrigin(0.5, 0).setDepth(9);
@@ -518,10 +516,9 @@ export class GameScene extends Phaser.Scene {
     const st = this.d.net.room?.state;
     if (!st) return;
 
-    // 倒计时（原版 2:00 起倒，归零停住）
+    // 正计时（原版顶部藤蔓牌为已用时间 MM:SS，00:00 起递增；实拍 f3/f4 实证）
     if (!this.finished) {
-      const remain = Math.max(0, LEVEL_SECONDS * 1000 - (st.timerMs ?? 0));
-      const s = Math.floor(remain / 1000);
+      const s = Math.floor((st.timerMs ?? 0) / 1000);
       this.clockText.setText(`${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`);
     }
 
@@ -721,7 +718,7 @@ export class GameScene extends Phaser.Scene {
 
   private elapsedText(): string {
     const st = this.d.net.room?.state;
-    const ms = Math.min(st?.timerMs ?? 0, LEVEL_SECONDS * 1000);
+    const ms = st?.timerMs ?? 0;
     const s = Math.floor(ms / 1000);
     return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
   }
