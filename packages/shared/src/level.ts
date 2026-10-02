@@ -38,7 +38,9 @@ export interface LeverDef {
   id: string;
   group: number;
   rect: Rect;
-  /** 原版 startPos=1：初始为 ON，其组平台开局位于「下沉端」（实证：左平台开局 jt=-3.01） */
+  /** 原版出厂默认 startPos=−1（onis=−1）：杆体停在关节角下限 −0.2π（实测 jt≈−0.66），state=0（OFF），
+   *  组平台开局位于高位端 target 0（实测 P1 body y=496）；玩家接触拨动 → 电机转向上限 +0.2π → 平台下沉。
+   *  内核简化为接触翻转模型，startOn 恒为 false（startPos 缺省）。 */
   startOn: boolean;
 }
 
@@ -93,8 +95,9 @@ export interface LevelData {
   /** Ground 层原始 gid（0=空），客户端按它画花纹 */
   ground: Uint16Array;
   /**
-   * Ground 层每格原始 type（行优先）：−99=空格；0=实心；1-4=斜坡三角；
-   * 5/6/7=液体池底（水/岩浆/绿浆）；8/9=液体端盖兼坡瓦；-1=装饰空砖。
+   * Ground 层每格原始 type（行优先）：−99=空格；0/1/3=实心；2=非实心斜坡楔（活体实证 8 格可穿行，
+   * 坡面行为由下方实心格 + stepHeight 32 攀步呈现）；5/6/7=液体池底（岩浆/水/绿浆）；
+   * 8/9=液体端盖兼坡瓦；-1=装饰空砖。
    * 客户端按它选 MaskBox 蒙版帧与前景装饰（原版 drawTile 语义）。
    */
   groundTypes: Int16Array;
@@ -112,9 +115,10 @@ export interface LevelData {
   tutorials: TutorialTextDef[];
 }
 
-/** ⚠ 5/6 的水/岩浆归属待真机对照（note/handoff.md） */
+/** 液体归属已活体实证：左侧盆地=岩浆(6)、右侧盆地=水(5)、大厅凹槽=绿浆(7)（fireboy 蹚绿浆即死×2） */
 export const LIQUID_TILE = { water: 5, lava: 6, green: 7 } as const;
-const SOLID_TYPES = new Set([0, 1, 2, 3, 4, 8, 9, 11, -1]);
+// 原版活体实证：type 2 的 8 个斜坡楔格无碰撞（角色直接穿行），不得计入实心
+const SOLID_TYPES = new Set([0, 1, 3, 4, 8, 9, 11, -1]);
 
 export type TilesetProvider = (source: string) => unknown;
 

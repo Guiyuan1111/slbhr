@@ -153,14 +153,23 @@ describe("原版实证语义回归", () => {
     expect(fb.x).toBeGreaterThan(6 * T + 8);
   });
 
-  it("拉杆 startPos=1：开局拉杆 ON、同组平台位于下沉端(def−(dx,dy))", () => {
+  it("拉杆：原版出厂默认 OFF、同组平台开局位于高位端；拨动后下沉到 def−(dx,dy)", () => {
     const base = synthLevel();
-    base.levers = [{ id: "l0", group: 8, rect: { x: 96, y: 224, w: 32, h: 64 }, startOn: true }];
+    base.levers = [{ id: "l0", group: 8, rect: { x: 96, y: 224, w: 32, h: 64 }, startOn: false }];
     base.platforms = [{ id: "p1", x: 128, y: 128, w: 64, h: 16, dx: 0, dy: -64, group: 8 }];
     const w = new World(base);
+    // 活体实证（forest_01）：拉杆开局 state 0（jt≈−0.66 下限），P1 body y=496 位于高位端
+    expect(w.levers[0].on).toBe(false);
+    expect(w.platforms[0].target).toBe(0);
+    // 玩家接触拨动（原版：跑上倾斜杆体翻转）→ 平台下沉（电机 16px/s；400 步 @60Hz 足够 64px 行程）
+    w.players.fireboy.x = 100; // 覆盖拉杆中央 10px 柱（x107-117）
+    w.players.fireboy.y = 232;
+    w.step(dt);
+    expect(w.levers[0].on).toBe(true);
+    w.players.fireboy.x = 800; // 离开拉杆（否则冷却后接触再翻转回去）
+    for (let i = 0; i < 400; i++) w.step(dt);
     expect(w.levers[0].on).toBe(true);
     expect(w.platforms[0].target).toBe(1);
-    for (let i = 0; i < 400; i++) w.step(dt);
     expect(w.platforms[0].y).toBeCloseTo(192, 0); // 128 − (−64)
   });
 });

@@ -68,16 +68,10 @@ export class World {
     this.level = level;
     this.players = { fireboy: this.makePlayer("fireboy"), watergirl: this.makePlayer("watergirl") };
     this.diamonds = level.diamonds.map((d) => ({ ...d, collected: false }));
-    // 原版实证（live jt 读数）：对象矩形位=高位端（target 0）；state 1=下沉端=target 0−(dx,dy)。
-    // 拉杆组平台开局位于下沉端（原版左平台无任何操作时 jt=-3.01）；按钮板组开局在高位端。
-    const leverGroups = new Set(level.levers.map((l) => l.group));
-    this.platforms = level.platforms.map((def) => ({
-      def,
-      x: def.x,
-      y: def.y,
-      target: def.group !== undefined && leverGroups.has(def.group) ? 1 : 0,
-    }));
-    this.levers = level.levers.map((l) => ({ ...l, on: l.startOn || leverGroups.has(l.group), cd: 0 }));
+    // 原版实证（fresh-load jt=0 / lever state=0）：所有平台开局位于对象矩形位（高位端 target 0），
+    // state 1=下沉端=target 0−(dx,dy)；拉杆开局 state 0（杆体倾斜 0.535rad），首次拨动 → 平台下沉。
+    this.platforms = level.platforms.map((def) => ({ def, x: def.x, y: def.y, target: 0 }));
+    this.levers = level.levers.map((l) => ({ ...l, on: l.startOn ?? false, cd: 0 }));
     this.plates = level.plates.map((def) => ({ def, pressed: false }));
     const boxDef = level.mechProps.find((m) => m.gid === 4);
     this.box = boxDef
