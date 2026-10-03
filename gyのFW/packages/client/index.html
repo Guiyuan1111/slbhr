@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>森林冰火人 · 双人联机</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --panel: rgba(10, 18, 6, 0.86);
+        --line: rgba(255, 255, 255, 0.14);
+        --accent: #ffb64c;
+        --water: #4cc2ff;
+        --fire: #ff7a4c;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: #0a1206;
+        color: #eee;
+        font-family: system-ui, "Microsoft YaHei", sans-serif;
+        overflow: hidden;
+      }
+      #game-root { height: 100%; }
+      #game-root canvas { image-rendering: auto; }
+      .hidden { display: none !important; }
+
+      /* ---- 菜单 ---- */
+      #menu {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(ellipse at center, #14300f 0%, #0a1206 70%);
+        z-index: 10;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 28px 32px;
+        width: min(420px, 92vw);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+      }
+      .panel h1 {
+        margin: 0 0 6px;
+        font-size: 22px;
+        text-align: center;
+        letter-spacing: 2px;
+      }
+      .panel h1 .fire { color: var(--fire); }
+      .panel h1 .water { color: var(--water); }
+      .panel .sub { text-align: center; color: #9aa892; font-size: 13px; margin-bottom: 20px; }
+      label { display: block; font-size: 13px; color: #b9c6b2; margin: 12px 0 4px; }
+      input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.06);
+        color: #fff;
+        font-size: 15px;
+        outline: none;
+      }
+      input:focus { border-color: var(--accent); }
+      .btn {
+        display: block;
+        width: 100%;
+        margin-top: 14px;
+        padding: 11px;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        color: #20140a;
+        background: var(--accent);
+      }
+      .btn.blue { background: var(--water); color: #06202e; }
+      .btn:active { transform: translateY(1px); }
+      #menu-error { color: #ff8f8f; font-size: 13px; min-height: 18px; margin-top: 12px; text-align: center; }
+      .hint { font-size: 12px; color: #8a987f; margin-top: 14px; line-height: 1.6; }
+
+      /* ---- HUD ---- */
+      #hud {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 5;
+      }
+      #hud-top {
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 6px 14px;
+        font-size: 14px;
+        white-space: nowrap;
+      }
+      #hud-time { font-variant-numeric: tabular-nums; font-weight: 700; }
+      #hud-role { font-size: 12.5px; color: #b9c6b2; }
+      #hud-room { font-size: 12px; color: #8a987f; }
+      #hud-status { font-size: 13px; color: #ffd479; }
+      #hud-status.warn { color: #ff8f8f; font-weight: 700; }
+
+      #toast {
+        position: absolute;
+        top: 56px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(120, 20, 20, 0.85);
+        padding: 6px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+      }
+      #toast:empty { display: none; }
+
+      #win-panel {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.55);
+        pointer-events: auto;
+      }
+      #win-panel .panel { text-align: center; }
+      #win-panel h2 { margin: 0 0 8px; color: var(--accent); }
+      #win-time { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+      #win-panel .hint { margin-top: 2px; }
+    </style>
+  </head>
+  <body>
+    <script>
+      // 早期错误捕获（验收自动化读取 window.__errs）
+      window.__errs = [];
+      window.addEventListener("error", (e) => window.__errs.push(String(e.message || e)));
+      window.addEventListener("unhandledrejection", (e) => window.__errs.push("promise:" + String(e.reason)));
+    </script>
+    <div id="game-root"></div>
+
+    <div id="menu">
+      <div class="panel">
+        <h1><span class="fire">森林</span>·<span class="water">冰火人</span></h1>
+        <div class="sub">双人联机 · 一人火人一人水女孩</div>
+
+        <label for="password">房间密码（创建者设定，两人一致才能进同一房）</label>
+        <input id="password" type="text" maxlength="16" placeholder="例如 4321" />
+
+        <label for="roomcode">房间码（加入时填写）</label>
+        <input id="roomcode" type="text" maxlength="12" placeholder="创建后会显示房间码" />
+
+        <button class="btn" id="btn-create">创建房间（我当火人）</button>
+        <button class="btn blue" id="btn-join">加入房间（水女孩）</button>
+        <div id="menu-error"></div>
+        <div class="hint">
+          火人用方向键，水女孩用 WASD。碰到自己克制的液体没事，碰到对方的液体会化成烟。<br />
+          两人各自站进自己的门即可通关。
+        </div>
+      </div>
+    </div>
+
+    <div id="hud" class="hidden">
+      <div id="hud-top">
+        <span id="hud-role"></span>
+        <span id="hud-room"></span>
+        <span id="hud-status"></span>
+      </div>
+      <div id="toast"></div>
+      <div id="win-panel" class="hidden">
+        <div class="panel">
+          <h2>通关！</h2>
+          <div id="win-time">00:00</div>
+          <div class="hint">两人都到门口即可通关</div>
+          <button class="btn" id="btn-restart">再来一局</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

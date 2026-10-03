@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "noEmit": true,
+    "useDefineForClassFields": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["vite/client", "node"],
+    "baseUrl": ".",
+    "paths": {
+      "@fw/shared": ["packages/shared/src/index.ts"],
+      "@fw/shared/*": ["packages/shared/src/*"]
+    }
+  },
+  "include": [
+    "packages/shared/src",
+    "packages/server/src",
+    "packages/client/src",
+    "scripts",
+    "vite.config.ts",
+    "vitest.config.ts"
+  ]
+}
