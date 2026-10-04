@@ -192,10 +192,13 @@ export interface TutorialStep {
   id: number;
   /** 触发矩形（无文本的矩形对象；原版角色进入后文字 400ms 淡入） */
   trigger?: Rect;
-  /** 显示文本 */
+  /** 首条显示文本（兼容字段，= texts[0]） */
   text?: string;
-  /** 文本显示区（文本对象的矩形） */
+  /** 首条文本显示区（= textRects[0]） */
   textRect?: Rect;
+  /** 全部文本（同 id 多条，forest_01 Tutorial_dual id=0 实测 2 条） */
+  texts: string[];
+  textRects: Rect[];
 }
 
 export interface LevelData {
@@ -528,10 +531,12 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
       for (const o of layer.objects ?? []) {
         const stepId = num(o.properties?.id, -1);
         if (stepId < 0) continue;
-        const step = steps.get(stepId) ?? { id: stepId };
+        const step = steps.get(stepId) ?? { id: stepId, texts: [], textRects: [] };
         if (o.text?.text) {
-          step.text = String(o.text.text);
-          step.textRect = { x: num(o.x), y: num(o.y), w: num(o.width), h: num(o.height) };
+          step.texts.push(String(o.text.text));
+          step.textRects.push({ x: num(o.x), y: num(o.y), w: num(o.width), h: num(o.height) });
+          step.text = step.texts[0];
+          step.textRect = step.textRects[0];
         } else {
           step.trigger = { x: num(o.x), y: num(o.y), w: num(o.width), h: num(o.height) };
         }

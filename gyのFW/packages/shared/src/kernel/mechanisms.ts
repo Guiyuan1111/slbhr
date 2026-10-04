@@ -91,8 +91,8 @@ export class Lever extends Device {
   constructor(B: B2, world: any, groundBody: any, def: { x: number; y: number; group: number; onis: number; startPos: number }) {
     super(B, def.group, true);
     this.onis = def.onis;
-    // BoxedDevice 中心矫正：杆体中心 = 图块中心 (o.x+32, o.y−32)
-    const center = phys(B, def.x + 32, def.y - 32);
+    // level2 的 x,y 已是图块中心（BoxedDevice 中心矫正已在解析层完成）
+    const center = phys(B, def.x, def.y);
     const bd = new B.b2BodyDef();
     bd.type = B.b2BodyType.b2_dynamicBody;
     bd.position = center;
@@ -161,7 +161,7 @@ export class Pusher extends Device {
 
   constructor(B: B2, world: any, groundBody: any, def: { x: number; y: number; group: number }) {
     super(B, def.group, true);
-    const center = phys(B, def.x + 32, def.y - 32);
+    const center = phys(B, def.x, def.y); // level2 已是中心
     const bd = new B.b2BodyDef();
     bd.type = B.b2BodyType.b2_dynamicBody;
     bd.position = center;
@@ -326,9 +326,9 @@ export interface PropBody {
 }
 
 export function buildBox(B: B2, world: any, def: { x: number; y: number }, heavy: boolean): PropBody {
-  // BoxedDevice 中心 = 图块中心；boxWidth/Height 1.77（BoxHeavy 同几何，密度/圆摩擦不同）
+  // level2 的 x,y 已是图块中心；boxWidth/Height 1.77（BoxHeavy 同几何，密度/圆摩擦不同）
   const size = 1.77;
-  const center = phys(B, def.x + 32, def.y - 32);
+  const center = phys(B, def.x, def.y);
   const bd = new B.b2BodyDef();
   bd.type = B.b2BodyType.b2_dynamicBody;
   bd.position = center;
@@ -380,7 +380,7 @@ export function buildBox(B: B2, world: any, def: { x: number; y: number }, heavy
 }
 
 export function buildBall(B: B2, world: any, def: { x: number; y: number }): PropBody {
-  // 出生偏移：x−=mpx(0.5)（−16px）、y+=mpx(0.65)（+20.8px）→ 净 (+16, −11.2)px 于图块角
+  // 原版偏移：x−=mpx(0.5)（−16px）、y+=mpx(0.65)（+20.8px）；def 已是图块中心 → 净同原始公式结果
   const center = phys(B, def.x - 16, def.y + 20.8);
   const bd = new B.b2BodyDef();
   bd.type = B.b2BodyType.b2_dynamicBody;
