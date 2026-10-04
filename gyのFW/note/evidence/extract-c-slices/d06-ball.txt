@@ -1,0 +1,58 @@
+@1662570| totype), (a.prototype = new d()), (a.__super__ = c.prototype), a;
+@1662637| 			},
+@1662644| 			b = {}.hasOwnProperty;
+@1662671| 		define("States/Level/Devices/Ball", ["./BoxedDevice"], function (b) {
+@1662744| 			"use strict";
+@1662762| 			var c;
+@1662773| 			return (c = c = (function (b) {
+@1662809| 				function c(a, b) {
+@1662833| 					var d, e, f, g;
+@1662855| 					return (
+@1662870| 						(b.x -= a.physics.box2d.mpx(0.5)),
+@1662912| 						(b.y += a.physics.box2d.mpx(0.65)),
+@1662955| 						c.__super__.constructor.call(this, a, b),
+@1663004| 						(g = new box2d.b2CircleShape(this.radius)),
+@1663055| 						(f = new box2d.b2FixtureDef()),
+@1663094| 						(f.shape = g),
+@1663116| 						(f.friction = 0.2),
+@1663143| 						(f.restitution = 0.1),
+@1663173| 						(f.density = 2.3),
+@1663199| 						(f.filter.categoryBits = 17),
+@1663236| 						(e = this.body.data.CreateFixture(f)),
+@1663282| 						(e.id = this.body.world.getNextFixtureId()),
+@1663334| 						null != this.options.properties && null != this.options.properties.linearDamping && this.body.data.SetLinearDamping(this.options.properties.linearDamping),
+@1663497| 						null != this.options.properties && null != this.options.properties.angularDamping && this.body.data.SetAngularDamping(this.options.properties.angularDamping),
+@1663663| 						(d = new box2d.b2CircleShape(0.1)),
+@1663706| 						d.m_p.SetXY(0, 0),
+@1663732| 						(f = new box2d.b2FixtureDef()),
+@1663771| 						(f.shape = d),
+@1663793| 						(f.filter.categoryBits = 4096),
+@1663832| 						(f.filter.maskBits = 4096),
+@1663867| 						(f.friction = 0.5),
+@1663894| 						(f.density = 0),
+@1663918| 						(f.userData = { "portal-sensor": !0 }),
+@1663965| 						(e = this.body.data.CreateFixture(f)),
+@1664011| 						(e.id = this.body.world.getNextFixtureId()),
+@1664063| 						this
+@1664075| 					);
+@1664084| 				}
+@1664091| 				return a(c, b), (c.prototype.options = { boxWidth: 1.8, boxHeight: 1.8, atlasName: "MechAssets", frameName: "ball0000" }), (c.prototype.radius = 0.4), c;
+@1664250| 			})(b));
+@1664262| 		});
+@1664269| 	}.call(this),
+@1664285| 	function () {
+@1664301| 		var a = function (a, b) {
+@1664330| 				return function () {
+@1664356| 					return a.apply(b, arguments);
+@1664392| 				};
+@1664400| 			},
+@1664407| 			b = function (a, b) {
+@1664433| 				function d() {
+@1664453| 					this.constructor = a;
+@1664481| 				}
+@1664488| 				for (var e in b) c.call(b, e) && (a[e] = b[e]);
+@1664541| 				return (d.prototype = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1664639| 			},
+@1664646| 			c = {}.hasOwnProperty;
+@1664673| 		define("States/Level/Devices/Beamer", ["./BoxedDevice"], function (c) {
+@1664748| 		

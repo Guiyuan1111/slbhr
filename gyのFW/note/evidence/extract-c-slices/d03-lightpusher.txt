@@ -1,0 +1,79 @@
+@1696150| type), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1696215| 			},
+@1696222| 			c = {}.hasOwnProperty;
+@1696249| 		define("States/Level/Devices/LightPusher", ["./BoxedDevice"], function (c) {
+@1696329| 			"use strict";
+@1696347| 			var d;
+@1696358| 			return (d = d = (function (c) {
+@1696394| 				function d(b, c) {
+@1696418| 					(this.checkState = a(this.checkState, this)), (this.sounds = a(this.sounds, this));
+@1696508| 					var e, f, g, h, i;
+@1696533| 					return (
+@1696548| 						d.__super__.constructor.call(this, b, c),
+@1696597| 						(this.body.mass = 0),
+@1696626| 						(f = new box2d.b2PolygonShape()),
+@1696667| 						f.SetAsOrientedBox(this.options.sensorWidth / 2, this.options.pusherHeight / 2, new box2d.b2Vec2(0, 0), 0),
+@1696782| 						(e = new box2d.b2FixtureDef()),
+@1696821| 						(e.shape = f),
+@1696843| 						(e.friction = 0.7),
+@1696870| 						(e.restitution = 0),
+@1696898| 						(e.density = 0),
+@1696922| 						(e.isSensor = !0),
+@1696948| 						(e.userData = { lightProperties: { type: "normal", sensor: !0 } }),
+@1697023| 						(this.sensorFixture = g = this.body.data.CreateFixture(e)),
+@1697090| 						(g.id = this.body.world.getNextFixtureId()),
+@1697142| 						(i = []),
+@1697159| 						i.push(new box2d.b2Vec2(-this.options.pusherWidth / 2 - 0.5, 0)),
+@1697232| 						i.push(new box2d.b2Vec2(this.options.pusherWidth / 2 + 0.5, 0)),
+@1697304| 						i.push(new box2d.b2Vec2(this.options.pusherWidth / 2, this.options.pusherHeight - 0.1)),
+@1697400| 						i.push(new box2d.b2Vec2(-this.options.pusherWidth / 2, this.options.pusherHeight - 0.1)),
+@1697497| 						(h = new box2d.b2PolygonShape()),
+@1697538| 						h.Set(i),
+@1697555| 						(e = new box2d.b2FixtureDef()),
+@1697594| 						(e.shape = h),
+@1697616| 						(e.friction = 0.7),
+@1697643| 						(e.restitution = 0),
+@1697671| 						(e.density = 0),
+@1697695| 						(e.isSensor = !1),
+@1697721| 						(e.userData = { lightProperties: { type: "transparent" } }),
+@1697789| 						this.body.data.CreateFixture(e),
+@1697829| 						(g.id = this.body.world.getNextFixtureId()),
+@1697881| 						(this.signal = new Phaser.Signal()),
+@1697925| 						this.registerDevice(),
+@1697955| 						this
+@1697967| 					);
+@1697976| 				}
+@1697983| 				return (
+@1697997| 					b(d, c),
+@1698012| 					(d.prototype.options = { pusherWidth: 1, pusherHeight: 0.4, sensorWidth: 1.5, atlasName: "MechAssets", frameName: "lightpusher_base0000", lightAtlas: "MechAssets", lightFrame: "lightpusher_light" }),
+@1698218| 					(d.prototype.sounds = function () {
+@1698260| 						return "lightPusher";
+@1698289| 					}),
+@1698299| 					(d.prototype.checkState = function () {
+@1698345| 						return (
+@1698361| 							0 === this.state && this.sensorFixture.m_userData.lightProperties.iluminated === this.options.properties.color
+@1698480| 								? ((this.state = 1), this.game.level.sounds.lightPusher.play(), this.signal.dispatch(this))
+@1698581| 								: 1 === this.state && this.sensorFixture.m_userData.lightProperties.iluminated !== this.options.properties.color && ((this.state = 0), this.signal.dispatch(this)),
+@1698754| 							(this.sensorFixture.m_userData.lightProperties.iluminated = null)
+@1698828| 						);
+@1698838| 					}),
+@1698848| 					d
+@1698856| 				);
+@1698864| 			})(c));
+@1698876| 		});
+@1698883| 	}.call(this),
+@1698899| 	function () {
+@1698915| 		var a = function (a, b) {
+@1698944| 				return function () {
+@1698970| 					return a.apply(b, arguments);
+@1699006| 				};
+@1699014| 			},
+@1699021| 			b = function (a, b) {
+@1699047| 				function d() {
+@1699067| 					this.constructor = a;
+@1699095| 				}
+@1699102| 				for (var e in b) c.call(b, e) && (a[e] = b[e]);
+@1699155| 				return (d.prototype = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1699253| 			},
+@1699260| 			c = {}.hasOwnProperty;
+@1699287| 		define("States/Level/Devices/Liquid", ["Phaser"], f

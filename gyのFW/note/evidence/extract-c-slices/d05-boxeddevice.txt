@@ -1,0 +1,40 @@
+@1661360| type), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1661425| 			},
+@1661432| 			c = {}.hasOwnProperty;
+@1661459| 		define("States/Level/Devices/BoxedDevice", ["./Device"], function (c) {
+@1661534| 			"use strict";
+@1661552| 			var d;
+@1661563| 			return (d = d = (function (c) {
+@1661599| 				function d(b, c) {
+@1661623| 					this.ocupy = a(this.ocupy, this);
+@1661663| 					var e;
+@1661676| 					(this._defaults.enableBody = !0),
+@1661716| 						(e = new box2d.b2Vec2(b.physics.box2d.mpx(this.boxSize.x / 2), b.physics.box2d.mpx(this.boxSize.y / 2))),
+@1661829| 						(e = e.SelfRotateRadians((-Math.PI * c.rotation) / 180 || 0)),
+@1661899| 						(c.x = c.x + e.x),
+@1661925| 						(c.y = c.y - e.y),
+@1661951| 						d.__super__.constructor.call(this, b, c);
+@1662000| 				}
+@1662007| 				return (
+@1662021| 					b(d, c),
+@1662036| 					(d.prototype.boxSize = { x: 2, y: 2 }),
+@1662082| 					(d.prototype.ocupy = function (a) {
+@1662124| 						var b, c;
+@1662141| 						return (b = this.options.x / 32), (c = this.options.y / 32), this.ocupyTile(a, b, c), this.ocupyTile(a, b - 1, c - 1), this.ocupyTile(a, b - 1, c), this.ocupyTile(a, b, c - 1);
+@1662325| 					}),
+@1662335| 					d
+@1662343| 				);
+@1662351| 			})(c));
+@1662363| 		});
+@1662370| 	}.call(this),
+@1662386| 	function () {
+@1662402| 		var a = function (a, c) {
+@1662431| 				function d() {
+@1662451| 					this.constructor = a;
+@1662479| 				}
+@1662486| 				for (var e in c) b.call(c, e) && (a[e] = c[e]);
+@1662539| 				return (d.prototype = c.prototype), (a.prototype = new d()), (a.__super__ = c.prototype), a;
+@1662637| 			},
+@1662644| 			b = {}.hasOwnProperty;
+@1662671| 		define("States/Level/Devices/Ball", ["./BoxedDevice"], function (b) {
+@1662744| 			"use strict";

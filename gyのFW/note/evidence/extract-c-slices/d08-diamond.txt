@@ -1,0 +1,84 @@
+@1677780| prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1677850| 			},
+@1677857| 			c = {}.hasOwnProperty;
+@1677884| 		define("States/Level/Devices/Diamond", ["Phaser"], function () {
+@1677952| 			"use strict";
+@1677970| 			var c;
+@1677981| 			return (c = c = (function (c) {
+@1678017| 				function d(b, c, e, f) {
+@1678047| 					this.grabbed = a(this.grabbed, this);
+@1678091| 					var g, h, i;
+@1678110| 					return (
+@1678125| 						(c += b.physics.box2d.mpx(1)),
+@1678163| 						(e -= b.physics.box2d.mpx(1)),
+@1678201| 						d.__super__.constructor.call(this, b, c, e, "CharAssets", "_default0000"),
+@1678283| 						this.game.physics.box2d.enable(this),
+@1678328| 						(this.sprite = b.make.sprite(0, 0, "CharAssets", "diamond_" + f + "0000")),
+@1678411| 						this.sprite.anchor.set(0.5),
+@1678447| 						this.addChild(this.sprite),
+@1678482| 						(this.signal = new Phaser.Signal()),
+@1678526| 						this.body.clearFixtures(),
+@1678560| 						(this.body.mass = 0),
+@1678589| 						(i = new box2d.b2PolygonShape()),
+@1678630| 						i.SetAsOrientedBox(this.options.width / 2, this.options.height / 2, new box2d.b2Vec2(0, 0), 0),
+@1678733| 						(h = new box2d.b2FixtureDef()),
+@1678772| 						(h.shape = i),
+@1678794| 						(h.friction = 0.7),
+@1678821| 						(h.restitution = 0),
+@1678849| 						(h.density = 0),
+@1678873| 						(h.userData = "diamond-" + f),
+@1678911| 						(h.isSensor = !0),
+@1678937| 						(h.userData = { lightProperties: { type: "transparent" } }),
+@1679005| 						(this.data.char = f),
+@1679034| 						(g = this.body.data.CreateFixture(h)),
+@1679080| 						(g.id = this.body.world.getNextFixtureId()),
+@1679132| 						this.game.layers.underGround.addChild(this),
+@1679184| 						this.body.setFixtureContactCallback(
+@1679228| 							g,
+@1679239| 							(function (a) {
+@1679263| 								return function (b, c, d, e, f, g) {
+@1679309| 									if (null != c.sprite.character && c.sprite.character.data.char && ("silver" === a.data.char || "fbwg" === a.data.char || c.sprite.character.data.char === a.data.char) && f)
+@1679492| 										return console.log("Grabbed!"), a.grabbed(c.sprite.character), a.signal.dispatch();
+@1679587| 								};
+@1679599| 							})(this),
+@1679617| 							this
+@1679630| 						),
+@1679640| 						(this.sprite.y = -5),
+@1679669| 						_.delay(
+@1679685| 							(function (a) {
+@1679709| 								return function () {
+@1679739| 									var b;
+@1679756| 									return (b = a.game.add.tween(a.sprite).to({ y: 5 }, 2e3, Phaser.Easing.Sinusoidal.InOut, !0)), b.yoyo(!0).loop();
+@1679880| 								};
+@1679892| 							})(this),
+@1679910| 							2e3 * Math.random()
+@1679938| 						),
+@1679948| 						this
+@1679960| 					);
+@1679969| 				}
+@1679976| 				return (
+@1679990| 					b(d, c),
+@1680005| 					(d.prototype.options = { width: 0.7, height: 0.7 }),
+@1680064| 					(d.prototype.grabbed = function (a) {
+@1680108| 						return this.game.level.sounds.diamond.play(), "silver" === this.data.char ? a.data.silverDiamond++ : a.data.diamonds++, this.destroy();
+@1680251| 					}),
+@1680261| 					d
+@1680269| 				);
+@1680277| 			})(Phaser.Sprite));
+@1680301| 		});
+@1680308| 	}.call(this),
+@1680324| 	function () {
+@1680340| 		var a = function (a, b) {
+@1680369| 				return function () {
+@1680395| 					return a.apply(b, arguments);
+@1680431| 				};
+@1680439| 			},
+@1680446| 			b = function (a, b) {
+@1680472| 				function d() {
+@1680492| 					this.constructor = a;
+@1680520| 				}
+@1680527| 				for (var e in b) c.call(b, e) && (a[e] = b[e]);
+@1680580| 				return (d.prototype = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1680678| 			},
+@1680685| 			c = {}.hasOwnProperty;
+@1680712| 		define("States/Level/Devices/Door", ["Phaser"], function

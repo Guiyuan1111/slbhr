@@ -1,0 +1,172 @@
+@1671570| ototype), (a.prototype = new d()), (a.__super__ = c.prototype), a;
+@1671638| 			},
+@1671645| 			b = {}.hasOwnProperty;
+@1671672| 		define("States/Level/Devices/BoxPrototype", ["./BoxedDevice"], function (b) {
+@1671753| 			"use strict";
+@1671771| 			var c;
+@1671782| 			return (c = c = (function (b) {
+@1671818| 				function c(a, b) {
+@1671842| 					var d, e, f, g, h, i, j, k, l;
+@1671879| 					return (
+@1671894| 						c.__super__.constructor.call(this, a, b),
+@1671943| 						null != this.options.properties.boxSize && ((this.options.boxWidth = this.options.properties.boxSize), (this.options.boxWidth = this.options.properties.boxSize)),
+@1672113| 						(this.sprite.cacheAsBitmap = !0),
+@1672154| 						(g = 0.1),
+@1672172| 						(k = new box2d.b2PolygonShape()),
+@1672213| 						(l = []),
+@1672230| 						l.push(new box2d.b2Vec2(-this.options.boxWidth / 2 + g, -this.options.boxHeight / 2)),
+@1672324| 						l.push(new box2d.b2Vec2(this.options.boxWidth / 2 - g, -this.options.boxHeight / 2)),
+@1672417| 						l.push(new box2d.b2Vec2(this.options.boxWidth / 2, -this.options.boxHeight / 2 + g)),
+@1672510| 						l.push(new box2d.b2Vec2(this.options.boxWidth / 2, +this.options.boxHeight / 2 - g)),
+@1672603| 						l.push(new box2d.b2Vec2(this.options.boxWidth / 2 - g, +this.options.boxHeight / 2)),
+@1672696| 						l.push(new box2d.b2Vec2(-this.options.boxWidth / 2 + g, +this.options.boxHeight / 2)),
+@1672790| 						l.push(new box2d.b2Vec2(-this.options.boxWidth / 2, +this.options.boxHeight / 2 - g)),
+@1672884| 						l.push(new box2d.b2Vec2(-this.options.boxWidth / 2, -this.options.boxHeight / 2 + g)),
+@1672978| 						k.Set(l.reverse()),
+@1673005| 						(i = new box2d.b2FixtureDef()),
+@1673044| 						(i.shape = k),
+@1673066| 						(i.friction = null != this.options.properties.friction ? this.options.properties.friction : 0.4),
+@1673171| 						(i.restitution = 0),
+@1673199| 						(i.density = this.options.density),
+@1673242| 						(h = this.body.data.CreateFixture(i)),
+@1673288| 						(h.id = this.body.world.getNextFixtureId()),
+@1673340| 						(this.boxFixture = h),
+@1673370| 						(j = (function (a) {
+@1673398| 							return function (b, c) {
+@1673431| 								var d;
+@1673447| 								return (
+@1673465| 									(d = new box2d.b2CircleShape(b)),
+@1673509| 									d.m_p.SetXY(c[0], c[1]),
+@1673544| 									(i = new box2d.b2FixtureDef()),
+@1673586| 									(i.shape = d),
+@1673611| 									(i.filter.categoryBits = 17),
+@1673651| 									(i.filter.maskBits = 4097),
+@1673689| 									(i.friction = a.options.circleFriction),
+@1673740| 									(i.density = 0),
+@1673767| 									(i.userData = { lightProperties: { type: "transparent" } }),
+@1673838| 									(h = a.body.data.CreateFixture(i)),
+@1673884| 									(h.id = a.body.world.getNextFixtureId()),
+@1673936| 									h
+@1673948| 								);
+@1673960| 							};
+@1673971| 						})(this)),
+@1673989| 						(d = g),
+@1674005| 						(f = this.options.boxWidth / 2 - 0.6 * g),
+@1674055| 						j(d, [-f, -f]),
+@1674078| 						j(d, [f, -f]),
+@1674100| 						j(d, [-f, f]),
+@1674122| 						j(d, [f, f]),
+@1674143| 						(e = new box2d.b2CircleShape(0.1)),
+@1674186| 						e.m_p.SetXY(0, 0),
+@1674212| 						(i = new box2d.b2FixtureDef()),
+@1674251| 						(i.shape = e),
+@1674273| 						(i.filter.categoryBits = 4096),
+@1674312| 						(i.filter.maskBits = 4096),
+@1674347| 						(i.friction = 0.5),
+@1674374| 						(i.density = 0),
+@1674398| 						(i.userData = { "portal-sensor": !0, lightProperties: { type: "transparent" } }),
+@1674487| 						(h = this.body.data.CreateFixture(i)),
+@1674533| 						(h.id = this.body.world.getNextFixtureId()),
+@1674585| 						this.body.data.SetLinearDamping(1),
+@1674628| 						this.body.data.SetAngularDamping(20),
+@1674673| 						this
+@1674685| 					);
+@1674694| 				}
+@1674701| 				return a(c, b), (c.prototype.options = { boxWidth: 1.77, boxHeight: 1.77, atlasName: "MechAssets", frameName: "movingbox0000", layer: "overGround", density: 0.45, circleFriction: 0.1 }), c;
+@1674896| 			})(b));
+@1674908| 		});
+@1674915| 	}.call(this),
+@1674931| 	function () {
+@1674947| 		var a = function (a, c) {
+@1674976| 				function d() {
+@1674996| 					this.constructor = a;
+@1675024| 				}
+@1675031| 				for (var e in c) b.call(c, e) && (a[e] = c[e]);
+@1675084| 				return (d.prototype = c.prototype), (a.prototype = new d()), (a.__super__ = c.prototype), a;
+@1675182| 			},
+@1675189| 			b = {}.hasOwnProperty;
+@1675216| 		define("States/Level/Devices/Box", ["./BoxedDevice", "./BoxPrototype"], function (b, c) {
+@1675309| 			"use strict";
+@1675327| 			var d;
+@1675338| 			return (d = d = (function (b) {
+@1675374| 				function c(a, b) {
+@1675398| 					return c.__super__.constructor.call(this, a, b), this;
+@1675459| 				}
+@1675466| 				return a(c, b), c;
+@1675490| 			})(c));
+@1675502| 		});
+@1675509| 	}.call(this),
+@1675525| 	function () {
+@1675541| 		var a = function (a, c) {
+@1675570| 				function d() {
+@1675590| 					this.constructor = a;
+@1675618| 				}
+@1675625| 				for (var e in c) b.call(c, e) && (a[e] = c[e]);
+@1675678| 				return (d.prototype = c.prototype), (a.prototype = new d()), (a.__super__ = c.prototype), a;
+@1675776| 			},
+@1675783| 			b = {}.hasOwnProperty;
+@1675810| 		define("States/Level/Devices/BoxHeavy", ["./BoxedDevice", "./BoxPrototype"], function (b, c) {
+@1675908| 			"use strict";
+@1675926| 			var d;
+@1675937| 			return (d = d = (function (b) {
+@1675973| 				function c(a, b) {
+@1675997| 					return (b.frameName = "movingbox20000"), (b.density = 0.8), (b.circleFriction = 0.05), c.__super__.constructor.call(this, a, b), this;
+@1676138| 				}
+@1676145| 				return a(c, b), c;
+@1676169| 			})(c));
+@1676181| 		});
+@1676188| 	}.call(this),
+@1676204| 	function () {
+@1676220| 		var a = function (a, c) {
+@1676249| 				function d() {
+@1676269| 					this.constructor = a;
+@1676297| 				}
+@1676304| 				for (var e in c) b.call(c, e) && (a[e] = c[e]);
+@1676357| 				return (d.prototype = c.prototype), (a.prototype = new d()), (a.__super__ = c.prototype), a;
+@1676455| 			},
+@1676462| 			b = {}.hasOwnProperty;
+@1676489| 		define("States/Level/Devices/BoxMirror", ["./BoxedDevice", "./BoxPrototype"], function (b, c) {
+@1676588| 			"use strict";
+@1676606| 			var d;
+@1676617| 			return (d = d = (function (b) {
+@1676653| 				function c(a, b) {
+@1676677| 					var d, e, f;
+@1676696| 					return (
+@1676711| 						(b.mirrorWidth = 2),
+@1676739| 						(b.mirrorHeight = 0.05),
+@1676771| 						(b.frameName = "BoxMirror0000"),
+@1676811| 						c.__super__.constructor.call(this, a, b),
+@1676860| 						(this.boxFixture.m_userData = { lightProperties: { type: "transparent" } }),
+@1676944| 						(f = new box2d.b2PolygonShape()),
+@1676985| 						f.SetAsOrientedBox(this.options.mirrorWidth / 2, this.options.mirrorHeight / 2, new box2d.b2Vec2(0, 0), Math.PI / 4),
+@1677110| 						(e = new box2d.b2FixtureDef()),
+@1677149| 						(e.shape = f),
+@1677171| 						(e.friction = 0),
+@1677196| 						(e.restitution = 0),
+@1677224| 						(e.density = 0),
+@1677248| 						(e.userData = { lightProperties: { type: "mirror" } }),
+@1677311| 						(d = this.body.data.CreateFixture(e)),
+@1677357| 						(d.id = this.body.world.getNextFixtureId()),
+@1677409| 						this
+@1677421| 					);
+@1677430| 				}
+@1677437| 				return a(c, b), c;
+@1677461| 			})(c));
+@1677473| 		});
+@1677480| 	}.call(this),
+@1677496| 	function () {
+@1677512| 		var a = function (a, b) {
+@1677541| 				return function () {
+@1677567| 					return a.apply(b, arguments);
+@1677603| 				};
+@1677611| 			},
+@1677618| 			b = function (a, b) {
+@1677644| 				function d() {
+@1677664| 					this.constructor = a;
+@1677692| 				}
+@1677699| 				for (var e in b) c.call(b, e) && (a[e] = b[e]);
+@1677752| 				return (d.prototype = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1677850| 			},
+@1677857| 			c = {}.hasOwnProperty;
+@1677884| 		define("States/Level/Devices/Diamond", ["Phaser"], function () {
+@1677952| 			"use 

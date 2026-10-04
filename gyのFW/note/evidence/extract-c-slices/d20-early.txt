@@ -1,0 +1,46 @@
+@44300| e.position),
+@44314| 								this.contactEquations.push(q),
+@44354| 								this.enableFriction && this.frictionEquations.push(this.createFrictionFromContact(q)),
+@44450| 								1
+@44461| 							);
+@44472| 						}),
+@44483| 						(d.prototype[q.PLANE | q.CONVEX] = d.prototype[q.PLANE | q.BOX] = d.prototype.planeConvex = function (a, b, c, d, e, f, k, l, m) {
+@44621| 							var n = t,
+@44640| 								o = u,
+@44656| 								p = v,
+@44672| 								q = 0;
+@44688| 							g.rotate(o, s, d);
+@44715| 							for (var r = 0; r !== f.vertices.length; r++) {
+@44771| 								var w = f.vertices[r];
+@44803| 								if ((g.rotate(n, w, l), i(n, n, k), h(p, n, c), j(p, o) <= 0)) {
+@44877| 									if (m) return !0;
+@44905| 									q++;
+@44920| 									var x = this.createContactEquation(a, e, b, f);
+@44978| 									h(p, n, c), g.copy(x.normalA, o);
+@45022| 									var y = j(p, x.normalA);
+@45057| 									g.scale(p, x.normalA, y),
+@45093| 										h(x.contactPointB, n, e.position),
+@45139| 										h(x.contactPointA, n, p),
+@45176| 										h(x.contactPointA, x.contactPointA, a.position),
+@45236| 										this.contactEquations.push(x),
+@45278| 										this.enableFrictionReduction || (this.enableFriction && this.frictionEquations.push(this.createFrictionFromContact(x)));
+@45410| 								}
+@45421| 							}
+@45431| 							return this.enableFrictionReduction && this.enableFriction && q && this.frictionEquations.push(this.createFrictionFromAverage(q)), q;
+@45573| 						}),
+@45584| 						(d.prototype[q.PARTICLE | q.PLANE] = d.prototype.particlePlane = function (a, b, c, d, e, f, i, k, l) {
+@45695| 							var m = t,
+@45714| 								n = u;
+@45730| 							(k = k || 0), h(m, c, i), g.rotate(n, s, k);
+@45783| 							var o = j(m, n);
+@45808| 							if (o > 0) return 0;
+@45837| 							if (l) return !0;
+@45863| 							var p = this.createContactEquation(e, a, f, b);
+@45919| 							return (
+@45936| 								g.copy(p.normalA, n),
+@45967| 								g.scale(m, p.normalA, o),
+@46002| 								h(p.contactPointA, c, m),
+@46037| 								h(p.contactPointA, p.contactPointA, e.position),
+@46095| 								h(p.contactPointB, c, a.position),
+@46139| 								this.contactEquations.push(p),
+@46179| 								this.enableFr

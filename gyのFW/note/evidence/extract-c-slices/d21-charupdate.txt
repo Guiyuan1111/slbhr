@@ -1,0 +1,89 @@
+@1869500| 						(function (a) {
+@1869523| 											return function (a) {
+@1869557| 												return a.m_normal.Dot(j);
+@1869596| 											};
+@1869611| 										})(this)
+@1869631| 									)),
+@1869645| 									(d = this.feetSensor.contacts[0]),
+@1869690| 									(n = d.m_normal)),
+@1869719| 								(g = this.game.time.elapsed / 1e3),
+@1869764| 								(e = (130 * g) / this.currentRunForce),
+@1869813| 								this.body.data.GetLinearVelocity().Length() < 1 && this.currentRunForce > 0.5 * s && (e = s),
+@1869916| 								this.cursors.left.isDown
+@1869950| 									? null != d
+@1869972| 										? (this.currentRunForce < s && (this.currentRunForce = Math.min(this.currentRunForce + e, s)),
+@1870078| 										  (p = n.y > 0.6 ? n.y : 0),
+@1870118| 										  (i = n
+@1870138| 											  .Clone()
+@1870161| 											  .SelfCrossSV(-this.currentRunForce)
+@1870211| 											  .SelfMul(Math.max(0, Math.sqrt(p)))),
+@1870263| 										  p > 0.6 && i.y >= 0 && i.y < 20 && (i.y += 20))
+@1870324| 										: (i = new box2d.b2Vec2(h, 0))
+@1870366| 									: this.cursors.right.isDown
+@1870404| 									? null != d
+@1870426| 										? (this.currentRunForce < s && (this.currentRunForce = Math.min(this.currentRunForce + e, s)),
+@1870532| 										  (p = n.y > 0.6 ? n.y : 0),
+@1870572| 										  (i = n
+@1870592| 											  .Clone()
+@1870615| 											  .SelfCrossSV(this.currentRunForce)
+@1870664| 											  .SelfMul(Math.max(0, Math.sqrt(p)))),
+@1870716| 										  p > 0.6 && i.y >= 0 && i.y < 20 && (i.y += 20))
+@1870777| 										: (i = new box2d.b2Vec2(-h, 0))
+@1870820| 									: ((this.currentRunForce = 0.475 * s),
+@1870869| 									  this.isOnIce && "wg" === this.data.char
+@1870921| 										  ? ((i = new box2d.b2Vec2(20 * -this.body.data.GetLinearVelocity().x, 0)), this.body.data.SetLinearVelocity(new box2d.b2Vec2(0, 0)))
+@1871066| 										  : (i = new box2d.b2Vec2(7 * -this.body.data.GetLinearVelocity().x, 0))),
+@1871152| 								this.prohibitJump && !this.cursors.up.isDown && (this.prohibitJump = !1),
+@1871235| 								!this.prohibitJump && this.cursors.up.isDown && ((null != n && n.y > 0.2) || this.feetSensor.contacts.length >= 2))
+@1871360| 							) {
+@1871372| 								for (
+@1871387| 									this.body.data.ApplyLinearImpulse({ x: 0, y: k }, { x: 0, y: 0 }),
+@1871464| 										this.isOnIce
+@1871488| 											? "fb" === this.data.char
+@1871526| 												? n.y > 0.9
+@1871551| 													? ((v = new box2d.b2Vec2(this.body.data.GetLinearVelocity().x, 3 * n.y)), this.body.data.SetLinearVelocity(v))
+@1871676| 													: ((v = new box2d.b2Vec2(3 * n.x, 3 * n.y)), this.body.data.SetLinearVelocity(v))
+@1871772| 												: ((v = new box2d.b2Vec2(this.body.data.GetLinearVelocity().x, this.jumpIceVelocity)), this.body.data.SetLinearVelocity(v))
+@1871909| 											: ((v =
+@1871929| 												  n.y > 0.65
+@1871955| 													  ? new box2d.b2Vec2(this.body.data.GetLinearVelocity().x, this.jumpVelocity)
+@1872047| 													  : new box2d.b2Vec2(this.body.data.GetLinearVelocity().x, Math.sqrt(Math.sqrt(n.y)) * this.jumpVelocity)),
+@1872169| 											  v.Length() > this.jumpVelocity && v.SelfNormalize().SelfMul(this.jumpVelocity),
+@1872263| 											  this.body.data.SetLinearVelocity(v),
+@1872314| 											  (f = !0)),
+@1872339| 										q = this.feetSensor.m_body.m_contactList,
+@1872392| 										r = new box2d.b2Vec2(0, -1),
+@1872432| 										w = r;
+@1872450| 									null != q;
+@1872471| 
+@1872473| 								)
+@1872484| 									(c = q.contact.m_fixtureA.m_body), "reactable" === c.m_userData && c.ApplyLinearImpulse(r, { x: 0, y: 0 }, !0), (q = q.next);
+@1872620| 								(this.prohibitJump = !0), "wg" === this.char ? this.game.level.sounds.jump_wg.play() : this.game.level.sounds.jump_fb.play();
+@1872755| 							}
+@1872765| 							null != i &&
+@1872786| 								(f && ((i.y = 0), (f = !1)),
+@1872824| 								this.isOnIce &&
+@1872849| 									("fb" === this.data.char && i.SelfMul(0.2),
+@1872903| 									"wg" === this.data.char && i.SelfMul(1),
+@1872954| 									(u = this.body.data.GetLinearVelocity()),
+@1873006| 									u.Length() > this.maxSpeed && (u.SelfNormalize().SelfMul(this.maxSpeed), this.body.data.SetLinearVelocity(u))),
+@1873128| 								(u = this.body.data.GetLinearVelocity()),
+@1873179| 								i.x > 0 && u.x < this.maxSpeed && this.body.data.ApplyForce(i, { x: 0, y: 0 }),
+@1873268| 								i.x < 0 && u.x > -this.maxSpeed && this.body.data.ApplyForce(i, { x: 0, y: 0 })),
+@1873359| 								u.Length() > this.absoluteMaxSpeed && (u.SelfNormalize().SelfMul(this.absoluteMaxSpeed), this.body.data.SetLinearVelocity(u)),
+@1873495| 								(u = this.body.data.GetLinearVelocity()),
+@1873546| 								(o = u.Clone().SelfNormalize()),
+@1873588| 								(a = Math.atan2(Math.max(-0.333, o.y), o.x)),
+@1873643| 								null != n
+@1873662| 									? this.cursors.left.isDown
+@1873699| 										? ((b = "jumping"), (t = -1), (a = Math.atan2(n.y, n.x) - Math.PI / 2), (a = Math.max(Math.min(a, 0.25 * Math.PI), 0.1 * -Math.PI)))
+@1873843| 										: this.cursors.right.isDown
+@1873882| 										? ((b = "jumping"), (t = 1), (a = Math.atan2(n.y, n.x) - Math.PI / 2), (a = Math.max(Math.min(a, 0.1 * Math.PI), 0.25 * -Math.PI)))
+@1874025| 										: ((b = "idle"), (t = 1), (a = 0))
+@1874071| 									: u.x > 4
+@1874091| 									? ((b = "jumping"), (t = -1), (a = a))
+@1874140| 									: u.x < -4
+@1874161| 									? ((b = "jumping"), (t = 1), (a += Math.PI))
+@1874216| 									: u.y > 3
+@1874236| 									? ((b = "rising"), (t = 1), (a = 0))
+@1874283| 									: u.y < 

@@ -1,5 +1,5 @@
 /**
- * box2d 内核 —— 角色类（火/水共用，原版 States/Level/character 逐行转写，源码存 TEMP/char-region.js）。
+ * box2d 内核 —— 角色类（火/水共用，原版 States/Level/character 逐行转写，源码存 note/evidence/init-js-regions/char-region.js）。
  *
  * 复合碰撞体（body 原点=贴图中心，fixedRotation，bullet）：
  *   - 躯干圆 r1@(0,y1) friction 0、脚底圆 r2@(0,y2) friction 0.5（feetSensor）

@@ -1,0 +1,157 @@
+@1737240| .prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1737311| 			},
+@1737318| 			c = {}.hasOwnProperty;
+@1737345| 		define("States/Level/Devices/Pulley", ["./Device"], function (c) {
+@1737415| 			"use strict";
+@1737433| 			var d;
+@1737444| 			return (d = d = (function (c) {
+@1737480| 				function d(b, c) {
+@1737504| 					this.update = a(this.update, this);
+@1737546| 					var e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u;
+@1737607| 					for (
+@1737619| 						d.__super__.constructor.call(this, b, c),
+@1737668| 							this.barWidth = this.options.properties.barWidth || this.options.barWidth,
+@1737751| 							this.anchor1 = new box2d.b2Vec2(this.options.polyline[1][0] + this.options.x, this.options.polyline[1][1] + this.options.y - this.mpx(2)),
+@1737898| 							this.anchor2 = new box2d.b2Vec2(this.options.polyline[2][0] + this.options.x, this.options.polyline[2][1] + this.options.y - this.mpx(2)),
+@1738045| 							o = { x: this.options.polyline[0][0] + this.options.x, y: this.options.polyline[0][1] + this.options.y },
+@1738159| 							p = { x: this.options.polyline[3][0] + this.options.x, y: this.options.polyline[3][1] + this.options.y },
+@1738273| 							this.ropeLeft = this.game.make.tileSprite(o.x, o.y, 200, 20, "MechAssets", "pulley_rope0000"),
+@1738376| 							this.ropeCenter = this.game.make.tileSprite(this.anchor1.x, this.anchor1.y, 200, 20, "MechAssets", "pulley_rope0000"),
+@1738503| 							this.ropeRight = this.game.make.tileSprite(p.x, p.y, 200, 20, "MechAssets", "pulley_rope0000"),
+@1738607| 							this.ropeLeft.anchor.set(0, 0.5),
+@1738649| 							this.ropeCenter.anchor.set(0, 0.5),
+@1738693| 							this.ropeRight.anchor.set(0, 0.5),
+@1738736| 							this.game.layers.underGround.addChild(this.ropeLeft),
+@1738798| 							this.game.layers.underGround.addChild(this.ropeCenter),
+@1738862| 							this.game.layers.underGround.addChild(this.ropeRight),
+@1738925| 							this.platform1 = q = this.game.make.sprite(o.x, o.y, "MechAssets", "_default0000"),
+@1739017| 							this.platform2 = r = this.game.make.sprite(p.x, p.y, "MechAssets", "_default0000"),
+@1739109| 							this.game.physics.box2d.enable(q),
+@1739152| 							this.game.physics.box2d.enable(r),
+@1739195| 							this.plat1 = this.game.make.sprite(0, 0, "MechAssets", "pulley_platform0000"),
+@1739282| 							this.plat2 = this.game.make.sprite(0, 0, "MechAssets", "pulley_platform0000"),
+@1739369| 							this.plat1.anchor.set(0.5),
+@1739405| 							this.plat2.anchor.set(0.5),
+@1739441| 							this.plat1.width = 1.3 * this.mpx(this.barWidth),
+@1739499| 							this.plat2.width = 1.3 * this.mpx(this.barWidth),
+@1739557| 							this.base1 = this.game.make.sprite(0, 0, "MechAssets", "pulley_base0000"),
+@1739640| 							this.base2 = this.game.make.sprite(0, 0, "MechAssets", "pulley_base0000"),
+@1739723| 							this.base1.anchor.set(0.5),
+@1739759| 							this.base2.anchor.set(0.5),
+@1739795| 							this.platform1.addChild(this.base1),
+@1739840| 							this.platform2.addChild(this.base2),
+@1739885| 							this.platform1.addChild(this.plat1),
+@1739930| 							this.platform2.addChild(this.plat2),
+@1739975| 							this.game.layers.underGround.addChild(this.platform1),
+@1740038| 							this.game.layers.underGround.addChild(this.platform2),
+@1740101| 							q.body.data.SetFixedRotation(!0),
+@1740143| 							r.body.data.SetFixedRotation(!0),
+@1740185| 							q.body.data.m_userData = "reactable",
+@1740231| 							r.body.data.m_userData = "reactable",
+@1740277| 							q.body.data.SetLinearDamping(0.1),
+@1740320| 							r.body.data.SetLinearDamping(0.1),
+@1740363| 							t = [this.platform1.body, this.platform2.body],
+@1740419| 							l = 0,
+@1740434| 							n = t.length;
+@1740456| 						l < n;
+@1740470| 						l++
+@1740481| 					)
+@1740489| 						(g = t[l]),
+@1740508| 							g.clearFixtures(),
+@1740535| 							(j = this.barWidth / 2),
+@1740568| 							(k = j + 0.1),
+@1740591| 							(u = []),
+@1740609| 							u.push(new box2d.b2Vec2(j, 0.12)),
+@1740652| 							u.push(new box2d.b2Vec2(-j, 0.12)),
+@1740696| 							u.push(new box2d.b2Vec2(-k, 0)),
+@1740737| 							u.push(new box2d.b2Vec2(-j, -0.12)),
+@1740782| 							u.push(new box2d.b2Vec2(j, -0.12)),
+@1740826| 							u.push(new box2d.b2Vec2(k, 0)),
+@1740866| 							(s = new box2d.b2PolygonShape()),
+@1740908| 							s.Set(u),
+@1740926| 							(i = new box2d.b2FixtureDef()),
+@1740966| 							(i.shape = s),
+@1740989| 							(i.friction = 0.4),
+@1741017| 							(i.restitution = 0),
+@1741046| 							(i.density = 3),
+@1741071| 							(h = g.data.CreateFixture(i)),
+@1741110| 							(h.id = g.world.getNextFixtureId());
+@1741155| 					return (
+@1741170| 						(this.wheel1 = this.game.make.sprite(this.anchor1.x + 10, this.anchor1.y + 10 - this.baseHeight, "MechAssets", "pulley_anchor0000")),
+@1741311| 						(this.wheel2 = this.game.make.sprite(this.anchor2.x - 10, this.anchor2.y + 10 - this.baseHeight, "MechAssets", "pulley_anchor0000")),
+@1741452| 						this.wheel1.anchor.set(0.5),
+@1741488| 						this.wheel2.anchor.set(0.5),
+@1741524| 						this.game.layers.underGround.addChild(this.wheel1),
+@1741583| 						this.game.layers.underGround.addChild(this.wheel2),
+@1741642| 						(m = new box2d.b2PulleyJointDef()),
+@1741685| 						(e = { x: this.pxm(this.anchor1.x), y: this.pxm(this.anchor1.y) }),
+@1741760| 						(f = { x: this.pxm(this.anchor2.x), y: this.pxm(this.anchor2.y) }),
+@1741835| 						m.Initialize(q.body.data, r.body.data, e, f, q.body.data.GetWorldCenter(), r.body.data.GetWorldCenter(), 1),
+@1741951| 						(this.joint = this.game.physics.box2d.world.CreateJoint(m)),
+@1742019| 						this
+@1742031| 					);
+@1742040| 				}
+@1742047| 				return (
+@1742061| 					b(d, c),
+@1742076| 					(d.prototype.options = { barWidth: 2.7 }),
+@1742125| 					(d.prototype.lastp1 = { x: 0, y: 0 }),
+@1742170| 					(d.prototype.baseHeight = 60),
+@1742207| 					(d.prototype.update = function () {
+@1742249| 						var a, b, c, d, e, f, g;
+@1742281| 						return (
+@1742297| 							(f = new box2d.b2Vec2(this.platform1.position.x, this.platform1.position.y - this.baseHeight)),
+@1742401| 							(a = new box2d.b2Vec2(this.anchor1.x, this.anchor1.y - this.baseHeight)),
+@1742483| 							(g = new box2d.b2Vec2(this.platform2.position.x, this.platform2.position.y - this.baseHeight)),
+@1742587| 							(b = new box2d.b2Vec2(this.anchor2.x, this.anchor2.y - this.baseHeight)),
+@1742669| 							Math.round(1 * this.lastp1.x) !== Math.round(1 * f.x) ||
+@1742734| 							Math.round(1 * this.lastp1.y) !== Math.round(1 * f.y) ||
+@1742799| 							Math.round(1 * this.lastp2.x) !== Math.round(1 * g.x) ||
+@1742864| 							Math.round(1 * this.lastp2.y) !== Math.round(1 * g.y)
+@1742926| 								? ((this.cacheAsBitmap = !1),
+@1742965| 								  (this.lastp1 = f.Clone()),
+@1743003| 								  (this.lastp2 = g.Clone()),
+@1743041| 								  (d = f.Clone().SelfSub(a)),
+@1743080| 								  (c = a.Clone().SelfSub(b)),
+@1743119| 								  (e = b.Clone().SelfSub(g)),
+@1743158| 								  (this.ropeLeft.position = { x: a.x, y: a.y }),
+@1743216| 								  (this.ropeLeft.width = d.Length()),
+@1743263| 								  (this.ropeLeft.height = 20),
+@1743303| 								  (this.ropeLeft.rotation = Math.atan2(-d.y, -d.x) + Math.PI),
+@1743375| 								  (this.ropeLeft.tilePosition.x = d.Length()),
+@1743431| 								  (this.ropeCenter.position = { x: a.x, y: a.y }),
+@1743491| 								  (this.ropeCenter.width = c.Length()),
+@1743540| 								  (this.ropeCenter.height = 20),
+@1743582| 								  (this.ropeCenter.rotation = Math.atan2(-c.y, -c.x)),
+@1743646| 								  (this.ropeCenter.tilePosition.x = e.Length()),
+@1743704| 								  (this.ropeRight.position = { x: b.x, y: b.y }),
+@1743763| 								  (this.ropeRight.width = e.Length()),
+@1743811| 								  (this.ropeRight.height = 20),
+@1743852| 								  (this.ropeRight.rotation = Math.atan2(-e.y, -e.x)),
+@1743915| 								  (this.ropeRight.tilePosition.x = e.Length()),
+@1743972| 								  (this.wheel1.rotation = e.Length() / Math.PI / 10),
+@1744035| 								  (this.wheel2.rotation = e.Length() / Math.PI / 10))
+@1744098| 								: this.cacheAsBitmap
+@1744128| 								? void 0
+@1744146| 								: (this.cacheAsBitmap = !0)
+@1744183| 						);
+@1744193| 					}),
+@1744203| 					d
+@1744211| 				);
+@1744219| 			})(c));
+@1744231| 		});
+@1744238| 	}.call(this),
+@1744254| 	function () {
+@1744270| 		var a = function (a, b) {
+@1744299| 				return function () {
+@1744325| 					return a.apply(b, arguments);
+@1744361| 				};
+@1744369| 			},
+@1744376| 			b = function (a, b) {
+@1744402| 				function d() {
+@1744422| 					this.constructor = a;
+@1744450| 				}
+@1744457| 				for (var e in b) c.call(b, e) && (a[e] = b[e]);
+@1744510| 				return (d.prototype = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1744608| 			},
+@1744615| 			c = {}.hasOwnProperty;
+@1744642| 		define("States/Level/Devices/Pusher", ["./BoxedDevice"],

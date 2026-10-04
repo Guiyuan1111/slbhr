@@ -1,0 +1,676 @@
+@1927450|  = b.prototype), a;
+@1927471| 			},
+@1927478| 			c = {}.hasOwnProperty;
+@1927505| 		define("States/Level/Level", [
+@1927539| 			"require",
+@1927554| 			"box2d",
+@1927567| 			"States/Level/Devices/_define",
+@1927603| 			"hammer",
+@1927617| 			"outlineFilter",
+@1927638| 			"inlineFilter",
+@1927658| 			"shadowFilter",
+@1927678| 			"bevelFilter",
+@1927697| 			"colorMatrix",
+@1927716| 			"./Ground",
+@1927732| 			"./character",
+@1927751| 			"./MechManager",
+@1927772| 			"./CameraManager",
+@1927795| 			"./PauseMenu",
+@1927814| 			"./CursorToggle",
+@1927836| 			"./LevelUI",
+@1927853| 			"States/End",
+@1927871| 			"../Common/Navies",
+@1927895| 		], function (c) {
+@1927916| 			var d, e, f, g, h, i, j, k, l, m;
+@1927954| 			return (
+@1927967| 				c("box2d"),
+@1927984| 				c("States/Level/Devices/_define"),
+@1928024| 				c("hammer"),
+@1928042| 				c("outlineFilter"),
+@1928067| 				c("inlineFilter"),
+@1928091| 				c("shadowFilter"),
+@1928115| 				c("bevelFilter"),
+@1928138| 				c("colorMatrix"),
+@1928161| 				(h = c("./Ground")),
+@1928187| 				(e = c("./character")),
+@1928216| 				(k = c("./MechManager")),
+@1928247| 				(d = c("./CameraManager")),
+@1928280| 				(m = c("./PauseMenu")),
+@1928309| 				(f = c("./CursorToggle")),
+@1928341| 				(j = c("./LevelUI")),
+@1928368| 				(g = c("States/End")),
+@1928396| 				(l = c("../Common/Navies")),
+@1928430| 				(i = i = (function (c) {
+@1928460| 					function i() {
+@1928481| 						(this.quit = a(this.quit, this)),
+@1928522| 							(this.gameOver = a(this.gameOver, this)),
+@1928572| 							(this.retry = a(this.retry, this)),
+@1928616| 							(this.updateDust = a(this.updateDust, this)),
+@1928670| 							(this.updateTutorial = a(this.updateTutorial, this)),
+@1928732| 							(this.update = a(this.update, this)),
+@1928778| 							(this.gameFinish = a(this.gameFinish, this)),
+@1928832| 							(this.animateFinish = a(this.animateFinish, this)),
+@1928892| 							(this.checkEndGame = a(this.checkEndGame, this)),
+@1928950| 							(this.updateMusic = a(this.updateMusic, this)),
+@1929006| 							(this.setupCursorToggle = a(this.setupCursorToggle, this)),
+@1929074| 							(this.onSettingChange = a(this.onSettingChange, this)),
+@1929138| 							(this.createCharObjects = a(this.createCharObjects, this)),
+@1929206| 							(this.createObjects = a(this.createObjects, this)),
+@1929266| 							(this.fillDustLayer = a(this.fillDustLayer, this)),
+@1929326| 							(this.updateDarkness = a(this.updateDarkness, this)),
+@1929388| 							(this.setupDarkness = a(this.setupDarkness, this)),
+@1929448| 							(this.setupLayers = a(this.setupLayers, this)),
+@1929504| 							(this.pauseUpdate = a(this.pauseUpdate, this)),
+@1929560| 							(this.togglePause = a(this.togglePause, this)),
+@1929616| 							(this.startLevel = a(this.startLevel, this)),
+@1929670| 							(this.start = a(this.start, this)),
+@1929714| 							(this.layoutContent = a(this.layoutContent, this)),
+@1929774| 							(this.loadComplete = a(this.loadComplete, this)),
+@1929832| 							(this.setupTutorial = a(this.setupTutorial, this)),
+@1929892| 							(this.parseMapPropper = a(this.parseMapPropper, this)),
+@1929956| 							(this.killAll = a(this.killAll, this)),
+@1930004| 							(this.shutdown = a(this.shutdown, this)),
+@1930054| 							(this.decodeAudio = a(this.decodeAudio, this)),
+@1930110| 							(this.preloadAudioFiles = a(this.preloadAudioFiles, this)),
+@1930178| 							(this.baseLoadComplete = a(this.baseLoadComplete, this)),
+@1930244| 							(this.create = a(this.create, this)),
+@1930290| 							(this.init = a(this.init, this)),
+@1930332| 							(this.onReady = new Phaser.Signal()),
+@1930378| 							i.__super__.constructor.call(this);
+@1930422| 					}
+@1930430| 					return (
+@1930445| 						b(i, c),
+@1930461| 						(i.prototype.useDust = !0),
+@1930496| 						(i.prototype.init = function (a) {
+@1930538| 							return (
+@1930555| 								(this.levelPath = "data/" + a.filename),
+@1930605| 								(this.levelData = a),
+@1930636| 								(this.levelState = { diamonds: { red: 0, blue: 0, silver: 0 }, time: 1 / 0 }),
+@1930724| 								(this.game.time.advancedTiming = !0),
+@1930771| 								(this.game.sound.mute = !this.game.settings.fx)
+@1930828| 							);
+@1930839| 						}),
+@1930850| 						(i.prototype.create = function () {
+@1930893| 							this.game.load.tilemap("map", this.levelPath, null, Phaser.Tilemap.TILED_JSON), this.game.load.onLoadComplete.addOnce(this.baseLoadComplete, this), this.game.load.start();
+@1931073| 						}),
+@1931084| 						(i.prototype.baseLoadComplete = function () {
+@1931137| 							_.defer(
+@1931154| 								(function (a) {
+@1931179| 									return function () {
+@1931210| 										var b;
+@1931228| 										return (
+@1931248| 											(a.mapData = a.parseMapPropper()),
+@1931295| 											(b = "assets/atlasses/Temples/" + a.game.currentTemple.id),
+@1931367| 											a.game.load.atlasJSONArray("TempleAssets", b + "/TempleAssets.png", b + "/TempleAssets.json"),
+@1931474| 											a.preloadAudioFiles(),
+@1931509| 											a.game.load.onLoadComplete.addOnce(a.loadComplete, a),
+@1931576| 											a.game.load.start()
+@1931608| 										);
+@1931622| 									};
+@1931635| 								})(this)
+@1931653| 							);
+@1931664| 						}),
+@1931675| 						(i.prototype.preloadAudioFiles = function () {
+@1931729| 							var a, b, c, d, e, f, g, h, i, j, l, m, n, o, p, q, r;
+@1931792| 							for (
+@1931806| 								"dark" === this.levelData.type
+@1931846| 									? ((h = "levelMusic_dark"), (j = "levelMusicOver"), (i = "levelMusicFinish"))
+@1931934| 									: "speed" === this.levelData.type
+@1931978| 									? ((h = "levelMusic_speed"), (j = "levelMusicOver"), (i = "levelMusicFinish_speed"))
+@1932073| 									: ((h = "levelMusic"), (j = "levelMusicOver"), (i = "levelMusicFinish")),
+@1932157| 									r = { levelMusic: h, levelMusicOver: j, levelMusicFinish: i },
+@1932230| 									this.sounds = [],
+@1932258| 									this.sounds = this.sounds.concat([
+@1932303| 										"levelMusic",
+@1932328| 										"levelMusicOver",
+@1932357| 										"levelMusicFinish",
+@1932388| 										"charToggle1",
+@1932414| 										"charToggle2",
+@1932440| 										"endPass",
+@1932462| 										"endFail",
+@1932484| 										"endDiamond",
+@1932509| 										"jump_fb",
+@1932531| 										"jump_wg",
+@1932553| 										"waterSteps",
+@1932578| 										"iceSteps_fb",
+@1932604| 										"iceSteps_wg",
+@1932630| 										"death",
+@1932650| 										"diamond",
+@1932672| 										"door",
+@1932691| 										"freeze",
+@1932712| 										"melt",
+@1932731| 									]),
+@1932745| 									m = this.mapData.objects.Objects,
+@1932789| 									d = 0,
+@1932806| 									f = m.length;
+@1932830| 								d < f;
+@1932846| 								d++
+@1932859| 							)
+@1932869| 								(l = m[d]),
+@1932890| 									(a = k.className(l.type)),
+@1932927| 									null != a
+@1932947| 										? ((b = (null != a.prototype.sounds && a.prototype.sounds()) || []), Array.isArray(b) || (q = [b]), (this.sounds = this.sounds.concat(b)))
+@1933097| 										: console.warn("Object type " + l.type + " not found!");
+@1933165| 							for (this.sounds = _.uniq(this.sounds), n = this.sounds, o = [], e = 0, g = n.length; e < g; e++)
+@1933271| 								(p = n[e]), (c = (r[p] || p).charAt(0).toUpperCase() + (r[p] || p).slice(1)), o.push(this.game.load.audio(p, "assets/audio/" + c + ".mp3"));
+@1933421| 							return o;
+@1933439| 						}),
+@1933450| 						(i.prototype.decodeAudio = function (a) {
+@1933499| 							var b, c, d, e, f;
+@1933526| 							for (f = {}, d = this.sounds, b = 0, c = d.length; b < c; b++) (e = d[b]), (f[e] = this.game.add.audio(e));
+@1933642| 							return (
+@1933659| 								(this.sounds = f),
+@1933687| 								this.game.sound.setDecodedCallback(
+@1933732| 									_.map(this.sounds),
+@1933762| 									(function (a) {
+@1933788| 										return function () {
+@1933820| 											if (a.game.settings.music) return (a.sounds.levelMusic.loop = !0), a.sounds.levelMusic.play();
+@1933927| 										};
+@1933941| 									})(this),
+@1933961| 									this
+@1933976| 								),
+@1933988| 								a()
+@1934001| 							);
+@1934012| 						}),
+@1934023| 						(i.prototype.shutdown = function () {
+@1934068| 							var a, b, c, d, e;
+@1934095| 							if (
+@1934108| 								(this.pers1.destroy(!0),
+@1934142| 								this.pers2.destroy(!0),
+@1934175| 								this.door1.destroy(!0),
+@1934208| 								this.door2.destroy(!0),
+@1934241| 								this.camManager.destroy(),
+@1934277| 								null != this.darknessBmd &&
+@1934314| 									this.darkness.events.onRemovedFromGroup.add(
+@1934369| 										(function (a) {
+@1934396| 											return function () {
+@1934429| 												return a.darknessBmd.destroy();
+@1934474| 											};
+@1934489| 										})(this)
+@1934509| 									),
+@1934522| 								_.each(this.objects, function (a) {
+@1934567| 									return a.destroy(!0);
+@1934599| 								}),
+@1934612| 								_.each(this.game.layers, function (a) {
+@1934661| 									return (a.update = (function (a) {
+@1934706| 										return function () {};
+@1934740| 									})(this));
+@1934761| 								}),
+@1934774| 								this.game.settingsSignal.remove(this.onSettingChange),
+@1934838| 								null != this.cursorToggle && (this.game.TouchManager.unregister(this.pers1.bodySprite, "tap"), this.game.TouchManager.unregister(this.pers2.bodySprite, "tap")),
+@1935008| 								null != this.navies)
+@1935038| 							) {
+@1935050| 								for (d = this.navies, e = [], a = 0, b = d.length; a < b; a++) (c = d[a]), e.push(c.destroy(!0));
+@1935157| 								return e;
+@1935176| 							}
+@1935186| 						}),
+@1935197| 						(i.prototype.killAll = function () {
+@1935241| 							if (null != this.game)
+@1935272| 								return (
+@1935290| 									(this.game.physics.box2d.paused = !0),
+@1935339| 									(this.game.paused = !0),
+@1935374| 									this.ui.clock.destroy(!0),
+@1935411| 									this.ui.destroy(!0),
+@1935442| 									_.each(
+@1935460| 										this.sounds,
+@1935484| 										(function (a) {
+@1935511| 											return function (a) {
+@1935545| 												return a.destroy();
+@1935578| 											};
+@1935593| 										})(this)
+@1935613| 									)
+@1935625| 								);
+@1935637| 						}),
+@1935648| 						(i.prototype.parseMapPropper = function () {
+@1935700| 							var a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r;
+@1935766| 							for (g = this.game.cache.getTilemapData("map").data, a = [], i = [], l = g.tilesets, b = 0, d = l.length; b < d; b++)
+@1935892| 								(p = l[b]), null != p.source && ((p.src = p.source), (h = p.src.split("/").pop().replace(".json", "")), delete p.source, "Ground" === h ? a.push(p) : i.push(p));
+@1936063| 							for (g.tilesets = a, m = g.tilesets, c = 0, e = m.length; c < e; c++) (p = m[c]), null != p.src && ((h = p.src.split("/").pop().replace(".json", "")), "Ground" === h && _.extend(p, this.game.cache.getJSON(h)));
+@1936282| 							for (q = Phaser.TilemapParser.parseTiledJSON(g), g.tilesets = a.concat(i), n = g.tilesets, k = 0, f = n.length; k < f; k++)
+@1936414| 								(p = n[k]), null != p.src && ((h = p.src.split("/").pop().replace(".json", "")), "Ground" !== h && q.tilesets.push(_.extend(p, this.game.cache.getJSON(h))));
+@1936581| 							return (
+@1936598| 								(j = (function (a) {
+@1936628| 									return function () {
+@1936659| 										var a, b, c, d, e, f, g;
+@1936695| 										for (g = {}, e = q.tilesets, d = 0, b = e.length; d < b; d++)
+@1936768| 											if (((f = e[d]), null != f.tiles)) for (a in f.tiles) (c = f.tileproperties[a]), (g[+f.firstgid + +a] = { type: f.tiles[a].type, properties: c });
+@1936927| 										return g;
+@1936948| 									};
+@1936961| 								})(this)),
+@1936981| 								(r = j()),
+@1937001| 								(o = (function (a) {
+@1937031| 									return function (a) {
+@1937063| 										var b, c, d, e;
+@1937090| 										for (e = [], d = 0, b = a.length; d < b; d++) (c = a[d]), null != c.gid && null != r[+c.gid] ? ("" === c.type && delete c.type, e.push(_.deepObjectExtend(c, r[+c.gid]))) : e.push(void 0);
+@1937289| 										return e;
+@1937310| 									};
+@1937323| 								})(this)),
+@1937343| 								o(q.objects.Objects),
+@1937374| 								o(q.objects.Chars),
+@1937403| 								q
+@1937414| 							);
+@1937425| 						}),
+@1937436| 						(i.prototype.setupTutorial = function () {
+@1937486| 							var a, b, c, d, e, f, g, h, i, j, k, l, m, n, o;
+@1937543| 							if (((f = this.game.cache.getTilemapData("map").data), null != (o = _.findWhere(f.layers, { name: "Tutorial_" + this.game.settings.controls }) || _.findWhere(f.layers, { name: "Tutorial" })))) {
+@1937746| 								for (n = {}, i = o.objects, c = 0, e = i.length; c < e; c++)
+@1937816| 									(h = i[c]),
+@1937838| 										n[(g = h.properties.id)] || (n[g] = {}),
+@1937890| 										null != h.text
+@1937916| 											? ((a = n[h.properties.id]).texts || (a.texts = []), n[h.properties.id].texts.push(h))
+@1938015| 											: ((b = n[h.properties.id]).rects || (b.rects = []), n[h.properties.id].rects.push(new Phaser.Rectangle(h.x, h.y, h.width, h.height)));
+@1938163| 								(this.tutorialTexts = []), (j = []);
+@1938209| 								for (d in n)
+@1938231| 									(l = n[d]),
+@1938253| 										console.log("text object", l),
+@1938295| 										j.push(
+@1938314| 											function () {
+@1938340| 												var a, b, c, d;
+@1938369| 												for (c = l.texts, d = [], a = 0, b = c.length; a < b; a++)
+@1938441| 													(k = c[a]),
+@1938467| 														(m = this.game.make.bitmapText(k.x, k.y, "font", k.text.text, 18, k.text.halign)),
+@1938565| 														(m.maxWidth = k.width),
+@1938604| 														(m.cacheAsBitmap = !0),
+@1938643| 														(m.visible = !1),
+@1938676| 														(m.rects = l.rects),
+@1938712| 														this.game.layers.tutorial.addChild(m),
+@1938766| 														d.push(this.tutorialTexts.push(m));
+@1938817| 												return d;
+@1938840| 											}.call(this)
+@1938865| 										);
+@1938879| 								return j;
+@1938898| 							}
+@1938908| 						}),
+@1938919| 						(i.prototype.loadComplete = function () {
+@1938968| 							var a, b, c, e, f, g, i;
+@1939001| 							if (
+@1939014| 								((this.loadCompleted = !0),
+@1939051| 								(this.game.clearBeforeRender = !1),
+@1939096| 								(this.game.level = this),
+@1939131| 								this.setupLayers(),
+@1939160| 								(a = $('<div style="top:0; left: 0; width: 100%; height: 100%; position:absolute"></div>')),
+@1939262| 								this.game.config.enableDebug &&
+@1939303| 									$(window).on(
+@1939327| 										"keydown",
+@1939349| 										(function (a) {
+@1939376| 											return function (b) {
+@1939410| 												if (81 === b.keyCode) return (a.debug = !a.debug);
+@1939474| 											};
+@1939489| 										})(this)
+@1939509| 									),
+@1939522| 								(this.showfps = this.game.config.showFps),
+@1939574| 								(this.game.MechManager = new k(this.game)),
+@1939627| 								this.game.physics.startSystem(Phaser.Physics.BOX2D),
+@1939689| 								this.game.physics.box2d.setPTMRatio(32),
+@1939739| 								(this.game.physics.setBoundsToWorld = (function (a) {
+@1939802| 									return function () {};
+@1939835| 								})(this)),
+@1939855| 								(b = new h(this.game, this.mapData)),
+@1939902| 								(this.ground = b),
+@1939930| 								(this.size = { width: b.options.width, height: b.options.height }),
+@1940007| 								(this.game.physics.box2d.gravity.y = 1e3),
+@1940059| 								(this.objects = this.createObjects(this.map, this.mapData.objects.Objects)),
+@1940145| 								this.createCharObjects(this.map, this.mapData.objects.Chars),
+@1940216| 								this.useDust)
+@1940239| 							)
+@1940249| 								for (i = b.getNaviesPoints(), this.navies = [], c = 0, e = i.length; c < e; c++)
+@1940339| 									(g = i[c]), (f = new l(this.game, g.x, g.y, Math.floor(1 + 3 * Math.random()))), f.scale.set(0.3 + 0.7 * Math.random()), this.game.layers.overGround.addChild(f), this.navies.push(f);
+@1940532| 							this.useDust &&
+@1940556| 								null !=
+@1940573| 									_.find(this.objects, function (a) {
+@1940619| 										return "beamer" === a.options.type;
+@1940666| 									}) &&
+@1940682| 								this.fillDustLayer(),
+@1940713| 								b.decorate(this.objects),
+@1940748| 								this.setupDarkness(),
+@1940779| 								this.setupTutorial(),
+@1940810| 								(this.pauseMenu = new m(this.game, this)),
+@1940862| 								(this.pauseKey = this.game.input.keyboard.addKey(Phaser.Keyboard.P)),
+@1940941| 								this.pauseKey.onDown.add(this.togglePause),
+@1940994| 								(this.ui = new j(this.game, this)),
+@1941039| 								(this.camManager = new d(this)),
+@1941081| 								(this.root.alpha = 0),
+@1941113| 								requestAnimationFrame(
+@1941145| 									(function (a) {
+@1941171| 										return function () {
+@1941203| 											if (((a.game.stage.backgroundColor = 0), a.onReady.dispatch(), (a.root.alpha = 1), (a.game.layers.ui.alpha = 1), a.ui.show(), null != a.cursorToggle)) return a.cursorToggle.init();
+@1941396| 										};
+@1941410| 									})(this)
+@1941429| 								),
+@1941441| 								(this.game.physics.box2d.useElapsedTime = !0),
+@1941497| 								(this.game.physics.box2d.paused = !0),
+@1941545| 								(this.game.physics.box2d.update = function () {
+@1941602| 									var a;
+@1941619| 									if (!this.paused) return (a = Math.min(0.04, this.game.time.elapsed / 1e3)), this.world.Step(a, this.velocityIterations, this.positionIterations);
+@1941776| 								}),
+@1941789| 								this.decodeAudio(
+@1941816| 									(function (a) {
+@1941842| 										return function () {
+@1941874| 											return console.log("load completed"), a.startLevel();
+@1941940| 										};
+@1941954| 									})(this)
+@1941973| 								);
+@1941985| 						}),
+@1941996| 						(i.prototype.layoutContent = function () {
+@1942046| 							if (
+@1942059| 								(this.ui.layoutContent(),
+@1942094| 								this.pauseMenu.layoutContent(),
+@1942135| 								null != this.cursorToggle && this.cursorToggle.layoutContent(),
+@1942208| 								null != this.pers1.cursors.layoutContent && this.pers1.cursors.layoutContent(),
+@1942297| 								null != this.pers2.cursors.layoutContent)
+@1942348| 							)
+@1942358| 								return this.pers2.cursors.layoutContent();
+@1942410| 						}),
+@1942421| 						(i.prototype.start = function () {}),
+@1942466| 						(i.prototype.startLevel = function () {
+@1942513| 							var a, b;
+@1942531| 							for (
+@1942545| 								this.game.time.addvancedTiming = !0,
+@1942591| 									_.delay(
+@1942610| 										(function (a) {
+@1942637| 											return function () {
+@1942670| 												if (a.game.time.suggestedFps < 40)
+@1942718| 													return (
+@1942741| 														(a.useDust = !1),
+@1942774| 														_.each(a.navies, function (a) {
+@1942821| 															return a.destroy();
+@1942857| 														}),
+@1942876| 														a.game.layers.dust.destroy()
+@1942920| 													);
+@1942937| 											};
+@1942952| 										})(this),
+@1942973| 										3e3
+@1942988| 									),
+@1943001| 									this.levelStarted = !0,
+@1943035| 									this.game.MechManager.resetStates(),
+@1943082| 									this.game.physics.box2d.paused = !1,
+@1943129| 									this.game.forceSingleUpdate = !1,
+@1943173| 									a = b = 0;
+@1943194| 								b <= 3;
+@1943211| 								a = ++b
+@1943228| 							)
+@1943238| 								this.game.updateLogic(this.game.time.desiredFpsMult);
+@1943301| 							return (
+@1943318| 								this.game.updateRender(this.game.time.slowMotion * this.game.time.desiredFps),
+@1943406| 								(this.game.forceSingleUpdate = !0),
+@1943451| 								(this.game.physics.box2d.paused = !0),
+@1943499| 								console.log("start timer, and whatever"),
+@1943550| 								_.delay(
+@1943568| 									(function (a) {
+@1943594| 										return function () {
+@1943626| 											return (
+@1943647| 												(a.camManager.camFreeze = !1),
+@1943691| 												_.delay(function () {
+@1943726| 													if (null != a.game.physics.box2d) return a.ui.clock.start(), (a.game.physics.box2d.paused = !1);
+@1943837| 												}, 400)
+@1943858| 											);
+@1943873| 										};
+@1943887| 									})(this),
+@1943907| 									1600
+@1943922| 								)
+@1943933| 							);
+@1943944| 						}),
+@1943955| 						(i.prototype.togglePause = function () {
+@1944003| 							return (
+@1944020| 								(this.game.paused = !this.game.paused),
+@1944069| 								this.game.paused
+@1944095| 									? ((this.root.alpha.cacheAsBitmap = !0), this.pauseMenu.show(), this.ui.clock.pause())
+@1944192| 									: ((this.root.alpha.cacheAsBitmap = !1), (this.root.alpha = 1), this.pauseMenu.hide(), this.ui.clock.resume())
+@1944313| 							);
+@1944324| 						}),
+@1944335| 						(i.prototype.pauseUpdate = function () {
+@1944383| 							if (this.loadCompleted) return this.pauseMenu.update(), null != this.pauseMenu.settingsMenu && this.pauseMenu.settingsMenu.update(), this.game.tweens.update(), this.camManager.update();
+@1944577| 						}),
+@1944588| 						(i.prototype.setupLayers = function () {
+@1944636| 							var a, b;
+@1944654| 							return (
+@1944671| 								(b = {}),
+@1944690| 								(this.root = this.game.make.group(0, 0)),
+@1944741| 								(a = (function (a) {
+@1944771| 									return function (c) {
+@1944803| 										return (b[c] = a.game.make.group()), (b[c].name = c), a.root.addChild(b[c]);
+@1944891| 									};
+@1944904| 								})(this)),
+@1944924| 								a("background"),
+@1944950| 								a("tutorial"),
+@1944974| 								a("underGround"),
+@1945001| 								a("lights"),
+@1945023| 								a("ground"),
+@1945045| 								a("overGround"),
+@1945071| 								a("chars"),
+@1945092| 								a("overChars"),
+@1945117| 								a("decorations"),
+@1945144| 								a("liquids"),
+@1945167| 								(b.liquids.update = function () {
+@1945210| 									return _.each(this.children, function (a) {
+@1945264| 										return a.update();
+@1945294| 									});
+@1945308| 								}),
+@1945321| 								this.game.add.existing(this.root),
+@1945365| 								(b.ui = this.game.make.group()),
+@1945407| 								(b.ui.alpha = 0),
+@1945434| 								this.game.add.existing(b.ui),
+@1945473| 								(b.ui.update = function () {
+@1945511| 									return _.each(this.children, function (a) {
+@1945565| 										return a.update();
+@1945595| 									});
+@1945609| 								}),
+@1945622| 								(b.dust = this.game.make.group()),
+@1945666| 								(b.dust.sources = []),
+@1945698| 								this.root.addChild(b.dust),
+@1945735| 								(this.game.layers = b)
+@1945767| 							);
+@1945778| 						}),
+@1945789| 						(i.prototype.setupDarkness = function () {
+@1945839| 							var a, b;
+@1945857| 							if (null != this.levelData.type && "dark" === this.levelData.type)
+@1945932| 								return (
+@1945950| 									(this.darknessBmd = a = this.game.add.bitmapData(this.size.width + 64, this.size.height + 64)),
+@1946056| 									(a.offset = { x: 32, y: 32 }),
+@1946097| 									(this.darkness = b = this.game.make.sprite(-32, -32, a)),
+@1946165| 									(b.blendMode = Phaser.blendModes.MULTIPLY),
+@1946219| 									(this.game.layers.darkGradients = this.game.make.group(0, 0)),
+@1946292| 									this.root.addChild(this.game.layers.darkGradients),
+@1946354| 									this.root.addChild(b),
+@1946387| 									this.updateDarkness(a),
+@1946421| 									(this.game.layers.darkGradients.update = (function (b) {
+@1946488| 										return function () {
+@1946520| 											if (null != b.game.physics) return b.updateDarkness(a);
+@1946588| 										};
+@1946602| 									})(this))
+@1946622| 								);
+@1946634| 						}),
+@1946645| 						(i.prototype.updateDarkness = function (a) {
+@1946697| 							var b, c, d, e;
+@1946721| 							for (
+@1946735| 								a.ctx.globalCompositeOperation = "source-over",
+@1946792| 									a.ctx.beginPath(),
+@1946821| 									a.ctx.rect(0, 0, this.size.width + 64, this.size.height + 64),
+@1946894| 									a.ctx.fillStyle = "#000000",
+@1946933| 									a.ctx.fill(),
+@1946957| 									this.pers1.drawDarkMask(a),
+@1946995| 									this.pers2.drawDarkMask(a),
+@1947033| 									e = this.objects,
+@1947061| 									b = 0,
+@1947078| 									c = e.length;
+@1947102| 								b < c;
+@1947118| 								b++
+@1947131| 							)
+@1947141| 								(d = e[b]), null != d.drawDarkMask && d.drawDarkMask(a);
+@1947207| 							return (a.dirty = !0);
+@1947238| 						}),
+@1947249| 						(i.prototype.fillDustLayer = function () {
+@1947299| 							var a, b, c, d, e;
+@1947326| 							for (e = this.game.layers.dust, a = b = 0, c = Math.ceil(this.size.width / 10); 0 <= c ? b <= c : b >= c; a = 0 <= c ? ++b : --b)
+@1947464| 								(d = this.game.make.sprite(Math.random() * this.size.width, Math.random() * this.size.height, "GroundAssets", "BeamDust0000")), (d.rotation = 180 * Math.random()), e.add(d);
+@1947647| 							return (e.maskGraphics = this.game.make.graphics(0, 0)), this.root.addChild(e.maskGraphics), (e.mask = e.maskGraphics), e;
+@1947778| 						}),
+@1947789| 						(i.prototype.createObjects = function (a, b) {
+@1947843| 							var c, d, e, f, g, h;
+@1947873| 							for (e = [], f = 0, g = b.length; f < g; f++)
+@1947927| 								(h = b[f]), console.log("create", h.name, h.type), (c = k.className(h.type)), null != c ? ((d = new c(this.game, h)), e.push(d)) : console.warn("Object type " + h.type + " not found!");
+@1948122| 							return this.game.MechManager.connectPortals(), e;
+@1948180| 						}),
+@1948191| 						(i.prototype.createCharObjects = function (a, b) {
+@1948249| 							var c, d, f;
+@1948270| 							for (this.totalDiamonds = 0, c = 0, d = b.length; c < d; c++)
+@1948340| 								(f = b[c]),
+@1948361| 									console.log("found char object", f.type),
+@1948413| 									"char" === f.type &&
+@1948444| 										(null == f.properties || "fb" === f.properties.char
+@1948507| 											? ((this.pers1 = new e(this.game, f.x, f.y, "fb")), this.pers1.signal.add(this.checkEndGame))
+@1948613| 											: "wg" === f.properties.char && ((this.pers2 = new e(this.game, f.x, f.y, "wg")), this.pers2.signal.add(this.checkEndGame))),
+@1948751| 									"door" === f.type &&
+@1948782| 										(null == f.properties || "fb" === f.properties.char
+@1948845| 											? ((this.door1 = new Devices.Door(this.game, f.x, f.y, "fb")), this.door1.signal.add(this.checkEndGame))
+@1948962| 											: "wg" === f.properties.char && ((this.door2 = new Devices.Door(this.game, f.x, f.y, "wg")), this.door2.signal.add(this.checkEndGame))),
+@1949111| 									"diamond" === f.type && (new Devices.Diamond(this.game, f.x, f.y, f.properties.char), "silver" !== f.properties.char && this.totalDiamonds++);
+@1949264| 							return this.setupCursorToggle(), this.game.settingsSignal.add(this.onSettingChange);
+@1949357| 						}),
+@1949368| 						(i.prototype.onSettingChange = function (a) {
+@1949421| 							if ("controls" === a) return null != this.cursorToggle && (this.cursorToggle.destroy(), (this.cursorToggle = null)), this.setupCursorToggle();
+@1949572| 						}),
+@1949583| 						(i.prototype.setupCursorToggle = function () {
+@1949637| 							if ("single" === this.game.settings.controls)
+@1949691| 								return (
+@1949709| 									this.game.TouchManager.register(
+@1949752| 										this.pers1.bodySprite,
+@1949786| 										"tap",
+@1949804| 										(function (a) {
+@1949831| 											return function (b) {
+@1949865| 												return a.cursorToggle.setChar("fb", b);
+@1949918| 											};
+@1949933| 										})(this)
+@1949953| 									),
+@1949966| 									this.game.TouchManager.register(
+@1950009| 										this.pers2.bodySprite,
+@1950043| 										"tap",
+@1950061| 										(function (a) {
+@1950088| 											return function (b) {
+@1950122| 												return a.cursorToggle.setChar("wg", b);
+@1950175| 											};
+@1950190| 										})(this)
+@1950210| 									),
+@1950223| 									(this.cursorToggle = new f(this.game)),
+@1950273| 									this.game.layers.ui.addChild(this.cursorToggle),
+@1950332| 									this.cursorToggle.onChange.add(
+@1950374| 										(function (a) {
+@1950401| 											return function (b) {
+@1950435| 												return "fb" === b ? (a.pers1.cursors.show(), a.pers2.cursors.hide()) : (a.pers1.cursors.hide(), a.pers2.cursors.show());
+@1950569| 											};
+@1950584| 										})(this)
+@1950604| 									)
+@1950616| 								);
+@1950628| 						}),
+@1950639| 						(i.prototype.updateMusic = function () {
+@1950687| 							if ((null != this.sounds.levelMusic && this.sounds.levelMusic.stop(), this.game.settings.music)) return this.sounds.levelMusic.play();
+@1950830| 						}),
+@1950841| 						(i.prototype.checkEndGame = function () {
+@1950890| 							if (!this.ended)
+@1950915| 								return (
+@1950933| 									this.door1.isUp && this.door2.isUp && ((this.ended = !0), (this.game.physics.box2d.paused = !0), this.animateFinish()),
+@1951063| 									this.pers1.isDead || this.pers2.isDead ? ((this.ended = !0), (this.game.physics.box2d.paused = !0), this.gameOver()) : void 0
+@1951199| 								);
+@1951211| 						}),
+@1951222| 						(i.prototype.animateFinish = function () {
+@1951272| 							return (
+@1951289| 								this.game.level.sounds.levelMusic.stop(),
+@1951340| 								this.game.level.sounds.levelMusicFinish.play(),
+@1951397| 								this.pers1.animateStairs(this.door1),
+@1951444| 								this.pers2.animateStairs(this.door2),
+@1951491| 								_.delay(
+@1951509| 									(function (a) {
+@1951535| 										return function () {
+@1951567| 											return a.gameFinish();
+@1951602| 										};
+@1951616| 									})(this),
+@1951636| 									1600
+@1951651| 								)
+@1951662| 							);
+@1951673| 						}),
+@1951684| 						(i.prototype.gameFinish = function () {
+@1951731| 							return (
+@1951748| 								(this.levelState.diamonds = this.pers1.data.diamonds + this.pers2.data.diamonds),
+@1951839| 								(this.levelState.silverDiamond = this.pers1.data.silverDiamond + this.pers2.data.silverDiamond),
+@1951945| 								(this.levelState.time = this.ui.clock.getElapsedSeconds()),
+@1952014| 								this.ui.clock.stop(),
+@1952045| 								(this.levelData.totalDiamonds = this.totalDiamonds),
+@1952107| 								this.game.state.add("endGame", g),
+@1952151| 								this.game.state.start("endGame", !1, !1, { success: !0, data: this.levelData, state: this.levelState })
+@1952264| 							);
+@1952275| 						}),
+@1952286| 						(i.prototype.update = function () {
+@1952329| 							if (this.loadCompleted)
+@1952361| 								return (
+@1952379| 									this.showfps && $("#debug-fps").html(this.game.time.fps),
+@1952447| 									this.debug && this.game.debug.box2dWorld(),
+@1952501| 									this.ui.update(),
+@1952529| 									this.useDust && this.updateDust(),
+@1952574| 									null != this.tutorialTexts && this.updateTutorial(),
+@1952637| 									this.camManager.update()
+@1952672| 								);
+@1952684| 						}),
+@1952695| 						(i.prototype.updateTutorial = function () {
+@1952746| 							var a, b, c, d, e, f, g;
+@1952779| 							for (d = this.tutorialTexts, e = [], a = 0, b = d.length; a < b; a++)
+@1952857| 								(g = d[a]),
+@1952878| 									e.push(
+@1952896| 										function () {
+@1952921| 											var a, b, d, e;
+@1952949| 											for (d = g.rects, e = [], a = 0, b = d.length; a < b; a++)
+@1953020| 												if (((c = d[a]), c.contains(this.pers1.sprite.x, this.pers1.sprite.y) || c.contains(this.pers2.sprite.x, this.pers2.sprite.y))) {
+@1953163| 													if (!g.shown) {
+@1953193| 														(g.shown = !0), (g.visible = !0), (g.alpha = 0), this.game.add.tween(g).to({ alpha: 1 }, 400, "Linear", !0);
+@1953317| 														break;
+@1953339| 													}
+@1953355| 													e.push(void 0);
+@1953385| 												} else {
+@1953407| 													if (g.shown) {
+@1953436| 														(g.shown = !1), (f = this.game.add.tween(g).to({ alpha: 0 }, 400, "Linear", !0));
+@1953533| 														break;
+@1953555| 													}
+@1953571| 													e.push(void 0);
+@1953601| 												}
+@1953616| 											return e;
+@1953638| 										}.call(this)
+@1953662| 									);
+@1953675| 							return e;
+@1953693| 						}),
+@1953704| 						(i.prototype.updateDust = function () {
+@1953751| 							var a, b, c, d, e, f, g, h, i, j, k, l, m, n, o;
+@1953808| 							if (null != this.game.layers.dust && this.game.layers.dust.sources.length > 0) {
+@1953897| 								for (i = !1, j = this.game.layers.dust.sources, c = 0, e = j.length; c < e; c++) (o = j[c]), o.dirty && (i = !0);
+@1954020| 								if (i) {
+@1954038| 									for (this.game.layers.dust.maskGraphics.clear(), this.game.layers.dust.maskGraphics.lineStyle(40, 0, 1), a = !0, k = this.game.layers.dust.sources, d = 0, f = k.length; d < f; d++)
+@1954229| 										(o = k[d]), null != o.points && o.points.length > 0 && ((a = !1), o.drawBeam(this.game.layers.dust.maskGraphics, o.points));
+@1954365| 									this.game.layers.dust.visible = !a;
+@1954411| 								}
+@1954422| 								for (l = this.game.layers.dust.children, m = [], b = h = 0, g = l.length; h < g; b = ++h) (n = l[b]), (n.angle += 0.002 * ((b % 2) * 2 - 1)), m.push(n.anchor.set(Math.sin(n.angle), Math.cos(n.angle)));
+@1954633| 								return m;
+@1954652| 							}
+@1954662| 						}),
+@1954673| 						(i.prototype.retry = function () {
+@1954715| 							return this.game.level.sounds.levelMusic.stop(), this.game.state.add("level", i), this.game.state.fade("level", !0, !1, this.levelData), this.killAll();
+@1954876| 						}),
+@1954887| 						(i.prototype.gameOver = function () {
+@1954932| 							return this.ui.clock.stop(), this.game.state.add("endGame", g), this.game.state.start("endGame", !1, !1, { success: !1, data: this.levelData, state: this.levelState });
+@1955109| 						}),
+@1955120| 						(i.prototype.quit = function () {
+@1955161| 							return this.game.level.sounds.levelMusic.stop(), this.game.state.fade("levelMenu", !0, !1, this.game.currentTemple), this.killAll();
+@1955302| 						}),
+@1955313| 						i
+@1955322| 					);
+@1955331| 				})(Phaser.State))
+@1955354| 			);
+@1955361| 		});
+@1955368| 	}.call(this),
+@1955384| 	function () {
+@1955400| 		var a = function (a, c) {
+@1955429| 				function d() {
+@1955449| 					this.constructor = a;
+@1955477| 				}
+@1955484| 				for (var e in c) b.call(c, e) && (a[e] = c[e]);
+@1955537| 				return (d.prototype = c.prototype), (a.prototype = new d()), (a.__super__ = c.prototype), a;
+@1955635| 			},
+@1955642| 			b = {}.hasOwnProperty;
+@1955669| 	

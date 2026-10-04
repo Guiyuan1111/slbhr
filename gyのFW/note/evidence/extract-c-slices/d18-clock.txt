@@ -1,0 +1,65 @@
+@1912000| ), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1912061| 			},
+@1912068| 			c = {}.hasOwnProperty;
+@1912095| 		define("States/Level/Clock", ["./IngameMenu", "../Common/StoneButton", "Phaser"], function (c, d) {
+@1912198| 			"use strict";
+@1912216| 			var e;
+@1912227| 			return (e = e = (function (c) {
+@1912263| 				function d(b, c, e) {
+@1912290| 					(this.getElapsedSeconds = a(this.getElapsedSeconds, this)),
+@1912356| 						(this.resume = a(this.resume, this)),
+@1912401| 						(this.stop = a(this.stop, this)),
+@1912442| 						(this.pause = a(this.pause, this)),
+@1912485| 						(this.update = a(this.update, this)),
+@1912530| 						(this.start = a(this.start, this));
+@1912573| 					var f;
+@1912586| 					d.__super__.constructor.call(this, b, c, e, "TempleAssets", "Clock0000"),
+@1912666| 						(this.text = f = b.make.bitmapText(0, 0, "font", "00:00", 24)),
+@1912737| 						f.anchor.set(0),
+@1912761| 						(f.x = -this.text.textWidth / 2),
+@1912802| 						(f.y = -this.height / 2 + this.text.textHeight + 20),
+@1912863| 						this.addChild(f),
+@1912888| 						(this.text.text = this.game.secondsToString(0));
+@1912944| 				}
+@1912951| 				return (
+@1912965| 					b(d, c),
+@1912980| 					(d.prototype.start = function () {
+@1913021| 						if (null != this.game) return (this.startTime = this.game.time.now);
+@1913097| 					}),
+@1913107| 					(d.prototype.update = function () {
+@1913149| 						var a;
+@1913163| 						if (null != this.startTime && !this.stopped && null == this.pauseTime)
+@1913241| 							return (a = this.getElapsedSeconds()), (this.text.text = this.game.secondsToString(a)), (this.text.x = -this.text.textWidth / 2), (this.text.y = -this.height / 2 + this.text.textHeight + 20);
+@1913441| 					}),
+@1913451| 					(d.prototype.pause = function () {
+@1913492| 						if (null == this.pauseTime) return (this.pauseTime = this.game.time.now);
+@1913573| 					}),
+@1913583| 					(d.prototype.stop = function () {
+@1913623| 						return (this.stopped = !0);
+@1913658| 					}),
+@1913668| 					(d.prototype.resume = function () {
+@1913710| 						return (this.startTime = this.startTime + (this.game.time.now - this.pauseTime)), (this.pauseTime = null);
+@1913824| 					}),
+@1913834| 					(d.prototype.getElapsedSeconds = function () {
+@1913887| 						return Math.round((this.game.time.now - this.startTime) / 1e3);
+@1913958| 					}),
+@1913968| 					d
+@1913976| 				);
+@1913984| 			})(Phaser.Sprite));
+@1914008| 		});
+@1914015| 	}.call(this),
+@1914031| 	function () {
+@1914047| 		var a = function (a, b) {
+@1914076| 				return function () {
+@1914102| 					return a.apply(b, arguments);
+@1914138| 				};
+@1914146| 			},
+@1914153| 			b = function (a, b) {
+@1914179| 				function d() {
+@1914199| 					this.constructor = a;
+@1914227| 				}
+@1914234| 				for (var e in b) c.call(b, e) && (a[e] = b[e]);
+@1914287| 				return (d.prototype = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1914385| 			},
+@1914392| 			c = {}.hasOwnProperty;
+@1914419| 		define("S

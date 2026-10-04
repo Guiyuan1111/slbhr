@@ -1,0 +1,184 @@
+@1772560|  = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1772635| 			},
+@1772642| 			c = {}.hasOwnProperty;
+@1772669| 		define("States/Level/Devices/Wind", ["./BoxedDevice"], function (c) {
+@1772742| 			"use strict";
+@1772760| 			var d;
+@1772771| 			return (d = d = (function (c) {
+@1772807| 				function d(b, c) {
+@1772831| 					(this.drawDarkMask = a(this.drawDarkMask, this)),
+@1772887| 						(this.ocupy = a(this.ocupy, this)),
+@1772930| 						(this.updateState = a(this.updateState, this)),
+@1772985| 						(this.update = a(this.update, this)),
+@1773030| 						(this.destroy = a(this.destroy, this)),
+@1773077| 						(this.sounds = a(this.sounds, this));
+@1773122| 					var e, f, g, h, i, j, k, l;
+@1773156| 					c.rotation || (c.rotation = 0),
+@1773194| 						(c.rotation += 90),
+@1773221| 						d.__super__.constructor.call(this, b, c),
+@1773270| 						this.sprite.anchor.set(0.5),
+@1773306| 						(i = new box2d.b2PolygonShape()),
+@1773347| 						this.options.properties.flat
+@1773383| 							? i.SetAsOrientedBox(this.options.boxWidth / 2, this.options.boxHeight / 2, new box2d.b2Vec2(0, 0.3), 0)
+@1773496| 							: ((j = []),
+@1773517| 							  j.push(new box2d.b2Vec2(-this.options.boxWidth / 2 - 0.6, 0)),
+@1773590| 							  j.push(new box2d.b2Vec2(this.options.boxWidth / 2 + 0.6, 0)),
+@1773662| 							  j.push(new box2d.b2Vec2(this.options.boxWidth / 2, this.options.boxHeight)),
+@1773749| 							  j.push(new box2d.b2Vec2(-this.options.boxWidth / 2, this.options.boxHeight)),
+@1773837| 							  i.Set(j)),
+@1773858| 						(f = new box2d.b2FixtureDef()),
+@1773897| 						(f.shape = i),
+@1773919| 						(f.friction = 0.4),
+@1773946| 						(f.restitution = 0),
+@1773974| 						(f.density = 0.2),
+@1774000| 						(g = new box2d.b2Vec2(0, 0)),
+@1774037| 						(g = g.SelfRotateRadians(this.options.rotation || 0)),
+@1774099| 						(e = this.body.data.CreateFixture(f)),
+@1774145| 						(e.id = this.body.world.getNextFixtureId()),
+@1774197| 						(this.body.mass = 0),
+@1774226| 						(l = null != this.options.properties.windWidth ? this.options.properties.windWidth : this.options.windWidth),
+@1774343| 						(h = new box2d.b2PolygonShape()),
+@1774384| 						h.SetAsOrientedBox(l / 2, this.options.properties.length / 2, new box2d.b2Vec2(0, this.options.properties.length / 2 + 0.5), 0),
+@1774520| 						(f = new box2d.b2FixtureDef()),
+@1774559| 						(f.shape = h),
+@1774581| 						(f.isSensor = !0),
+@1774607| 						(f.userData = { lightProperties: { type: "transparent" } }),
+@1774675| 						(this.windSensor = this.body.data.CreateFixture(f)),
+@1774735| 						(this.windSensor.id = this.body.world.getNextFixtureId()),
+@1774801| 						(this.body.mass = 0),
+@1774830| 						(this.activeBodies = {}),
+@1774863| 						this.body.setFixtureContactCallback(
+@1774907| 							this.windSensor,
+@1774932| 							(function (a) {
+@1774956| 								return function (b, c, d, e, f, g) {
+@1775002| 									var h;
+@1775019| 									if (null != c.sprite.character) {
+@1775063| 										if (!f && null != a.activeBodies[c.id]) return delete a.activeBodies[c.id];
+@1775150| 										if (f && null == a.activeBodies[c.id]) return (h = { body: c }), (a.activeBodies[c.id] = h);
+@1775254| 									}
+@1775266| 								};
+@1775278| 							})(this)
+@1775295| 						),
+@1775305| 						this.sprite.animations.add("loop", Phaser.Animation.generateFrameNames("wind_base", 0, 4, "", 4), 30, !0),
+@1775419| 						(k = this.windEffect = this.game.make.sprite(this.options.x - b.physics.box2d.mpx(g.x), this.options.y - b.physics.box2d.mpx(g.y), "MechAssets")),
+@1775573| 						(k.anchor.y = 1),
+@1775598| 						(k.anchor.x = 0.5),
+@1775625| 						k.animations.add("loop", Phaser.Animation.generateFrameNames("wind_effect", 0, 30, "", 4), 30, !0),
+@1775732| 						k.animations.play("loop"),
+@1775766| 						k.animations.next(Math.floor(30 * Math.random())),
+@1775824| 						(k.height = b.physics.box2d.mpx(this.options.properties.length)),
+@1775897| 						(k.rotation = this.options.rotation || 0),
+@1775947| 						(k.visible = !1),
+@1775972| 						this.game.layers.overChars.addChild(k),
+@1776019| 						this.registerDevice();
+@1776049| 				}
+@1776056| 				return (
+@1776070| 					b(d, c),
+@1776085| 					(d.prototype.options = { boxWidth: 2.5, boxHeight: 0.6, windWidth: 2.6, windHeight: 10, atlasName: "MechAssets", frameName: "wind_base0000", lightAtlas: "MechAssets", lightFrame: "wind_base_light", layer: "liquids" }),
+@1776310| 					(d.prototype.boxSize = { x: -3, y: 2 }),
+@1776357| 					(d.prototype.sounds = function () {
+@1776399| 						return "wind";
+@1776421| 					}),
+@1776431| 					(d.prototype.destroy = function () {
+@1776474| 						return null != this.sound && this.sound.stopInstance(), d.__super__.destroy.apply(this, arguments);
+@1776581| 					}),
+@1776591| 					(d.prototype.update = function () {
+@1776633| 						var a, b, c, d, e, f, g, h;
+@1776668| 						if (((g = this.options.properties.invertInput ? +!this.state : this.state), 1 === g)) {
+@1776763| 							(e = this.activeBodies), (f = []);
+@1776806| 							for (c in e)
+@1776827| 								(d = e[c]),
+@1776848| 									(b = new box2d.b2Vec2(0, 1)),
+@1776888| 									(b = b.SelfRotateRadians(this.options.rotation || 0)),
+@1776953| 									(a = d.body.data.GetPosition().SelfSub(this.body.data.GetPosition())),
+@1777034| 									b
+@1777046| 										.SelfMul(1.2 + 0.2 * Math.sin(this.game.time.now / 1e3))
+@1777114| 										.SelfMul(100)
+@1777139| 										.SelfMul(1 - a.GetLength() / this.options.properties.length),
+@1777212| 									d.body.data.ApplyForce(b, new box2d.b2Vec2(0, 0)),
+@1777273| 									// Damping factor should be dependent on delta time, not constant.
+@1777350| 									// Use 60 as reference since the game assumed 60FPS.
+@1777413| 									// Note that the this.game.time.elapsed is in milliseconds.
+@1777483| 									d.body.data.SetLinearVelocity(d.body.data.GetLinearVelocity().SelfMul(
+@1777564| 										0.975 ** (this.game.time.elapsed / (1000 / 60))
+@1777623| 									)),
+@1777637| 									// Speed cap
+@1777660| 									(h = d.body.data.GetLinearVelocity().GetLength()),
+@1777721| 									f.push(d.body.data.SetLinearVelocity(d.body.data.GetLinearVelocity().SelfNormalize().SelfMul(Math.min(h, 15))));
+@1777844| 							return f;
+@1777862| 						}
+@1777871| 					}),
+@1777881| 					(d.prototype.updateState = function () {
+@1777928| 						var a;
+@1777942| 						return (
+@1777958| 							this.running || (this.running = !1),
+@1778003| 							(a = this.options.properties.invertInput ? +!this.state : this.state),
+@1778082| 							1 === a && this.windEffect.visible === !1
+@1778132| 								? ((this.windEffect.visible = !0),
+@1778176| 								  this.sprite.animations.play("loop"),
+@1778224| 								  (this.running = !0),
+@1778256| 								  (this.game.level.sounds.wind.loop = !0),
+@1778308| 								  (this.sound = this.game.level.sounds.wind.playInstance()),
+@1778378| 								  (this.sound.volume = 0.2))
+@1778416| 								: 0 === a && this.windEffect.visible === !0
+@1778469| 								? ((this.windEffect.visible = !1),
+@1778513| 								  null != this.sound && (this.sound.stopInstance(), (this.sound = null)),
+@1778596| 								  _.delay(
+@1778616| 									  (function (a) {
+@1778644| 										  return function () {
+@1778678| 											  return a.sprite.animations.stop(), (a.sprite.frameName = "wind_base0000");
+@1778767| 										  };
+@1778783| 									  })(this),
+@1778805| 									  400
+@1778821| 								  ))
+@1778835| 								: void 0
+@1778853| 						);
+@1778863| 					}),
+@1778873| 					(d.prototype.ocupy = function (a) {
+@1778915| 						var b, c;
+@1778932| 						return (
+@1778948| 							(b = this.options.x / 32),
+@1778983| 							(c = this.options.y / 32),
+@1779018| 							this.ocupyTile(a, b - 1, c),
+@1779055| 							this.ocupyTile(a, b - 1, c - 1),
+@1779096| 							this.ocupyTile(a, b, c),
+@1779129| 							this.ocupyTile(a, b, c - 1),
+@1779166| 							this.ocupyTile(a, b - 2, c),
+@1779203| 							this.ocupyTile(a, b - 2, c - 1)
+@1779243| 						);
+@1779253| 					}),
+@1779263| 					(d.prototype.drawDarkMask = function (a) {
+@1779312| 						var b, c, d, e;
+@1779335| 						if (1 === this.state)
+@1779364| 							return (
+@1779381| 								(a.ctx.globalCompositeOperation = "lighter"),
+@1779436| 								(e = { x: this.sprite.x + a.offset.x, y: this.sprite.y + a.offset.y }),
+@1779517| 								(b = new box2d.b2Vec2(36, 0).SelfRotateRadians(this.options.rotation)),
+@1779598| 								(c = new box2d.b2Vec2(-36, 0).SelfRotateRadians(this.options.rotation)),
+@1779680| 								(d = a.ctx.createRadialGradient(e.x + b.x, e.y + b.y, 20, e.x + b.x, e.y + b.y, 90)),
+@1779775| 								d.addColorStop(0, "rgba(255,255,255,1)"),
+@1779826| 								d.addColorStop(0.5, "rgba(255,255,255,0.3)"),
+@1779881| 								d.addColorStop(1, "transparent"),
+@1779924| 								a.circle(e.x + b.x, e.y + b.y, 90, d),
+@1779972| 								(d = a.ctx.createRadialGradient(e.x + c.x, e.y + c.y, 20, e.x + c.x, e.y + c.y, 90)),
+@1780067| 								d.addColorStop(0, "rgba(255,255,255,1)"),
+@1780118| 								d.addColorStop(0.5, "rgba(255,255,255,0.3)"),
+@1780173| 								d.addColorStop(1, "transparent"),
+@1780216| 								a.circle(e.x + c.x, e.y + c.y, 90, d)
+@1780263| 							);
+@1780274| 					}),
+@1780284| 					d
+@1780292| 				);
+@1780300| 			})(c));
+@1780312| 		});
+@1780319| 	}.call(this),
+@1780335| 	function () {
+@1780351| 		var a = function (a, c) {
+@1780380| 				function d() {
+@1780400| 					this.constructor = a;
+@1780428| 				}
+@1780435| 				for (var e in c) b.call(c, e) && (a[e] = c[e]);
+@1780488| 				return (d.prototype = c.prototype), (a.prototype = new d()), (a.__super__ = c.prototype), a;
+@1780586| 			},
+@1780593| 			b = {}.hasOwnProperty;
+@1780620| 		define("States/Level/Devices/Window", ["./Device

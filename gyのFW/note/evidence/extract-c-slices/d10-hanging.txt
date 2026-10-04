@@ -1,0 +1,101 @@
+@1684160| ototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1684228| 			},
+@1684235| 			c = {}.hasOwnProperty;
+@1684262| 		define("States/Level/Devices/Hanging", ["./Device"], function (c) {
+@1684333| 			"use strict";
+@1684351| 			var d;
+@1684362| 			return (d = d = (function (c) {
+@1684398| 				function d(b, c) {
+@1684422| 					this.update = a(this.update, this);
+@1684464| 					var e, f, g, h, i, j, k, l, m, n, o, p, q, r;
+@1684516| 					return (
+@1684531| 						d.__super__.constructor.call(this, b, c),
+@1684580| 						(this.barWidth = this.options.properties.barWidth || this.options.barWidth),
+@1684664| 						(this.anchor = new box2d.b2Vec2(this.options.polyline[0][0] + this.options.x, this.options.polyline[0][1] + this.options.y)),
+@1684797| 						(this.pos = { x: this.options.polyline[1][0] + this.options.x, y: this.options.polyline[1][1] + this.options.y }),
+@1684919| 						(this.rope = this.game.make.tileSprite(this.anchor.x, this.anchor.y, this.options.polyline[0][1] - this.options.polyline[1][1], 20, "MechAssets", "pulley_rope0000")),
+@1685093| 						this.rope.anchor.set(0, 0.5),
+@1685130| 						this.game.layers.underGround.addChild(this.rope),
+@1685187| 						(this.platform = p = this.game.make.sprite(this.pos.x, this.pos.y)),
+@1685263| 						(h = this.game.make.sprite(0, 0, "MechAssets", "hanging_platform0000")),
+@1685343| 						h.anchor.set(0.5),
+@1685369| 						(h.width = 1.15 * this.mpx(this.barWidth)),
+@1685420| 						this.platform.addChild(h),
+@1685454| 						(g = this.game.make.sprite(this.anchor.x, this.anchor.y, "MechAssets", "hanging_anchor0000")),
+@1685556| 						(i = this.game.make.sprite(0, 0, "MechAssets", "hanging_base0000")),
+@1685632| 						i.anchor.set(0.5),
+@1685658| 						this.game.physics.box2d.enable(p, !1),
+@1685704| 						this.game.physics.box2d.enable(g),
+@1685746| 						(g.body.data.m_fixtureList.m_filter.categoryBits = 0),
+@1685808| 						this.platform.addChild(i),
+@1685842| 						this.game.layers.underGround.addChild(this.platform),
+@1685903| 						this.game.layers.underGround.addChild(g),
+@1685952| 						p.body.data.SetLinearDamping(0.4),
+@1685994| 						p.body.data.SetAngularDamping(0.3),
+@1686037| 						(j = this.platform.body),
+@1686070| 						j.clearFixtures(),
+@1686096| 						(r = []),
+@1686113| 						(m = this.barWidth / 2),
+@1686145| 						(n = m + 0.1),
+@1686167| 						r.push(new box2d.b2Vec2(m, 0.12)),
+@1686209| 						r.push(new box2d.b2Vec2(-m, 0.12)),
+@1686252| 						r.push(new box2d.b2Vec2(-n, 0)),
+@1686292| 						r.push(new box2d.b2Vec2(-m, -0.12)),
+@1686336| 						r.push(new box2d.b2Vec2(m, -0.12)),
+@1686379| 						r.push(new box2d.b2Vec2(n, 0)),
+@1686418| 						(q = new box2d.b2PolygonShape()),
+@1686459| 						q.Set(r),
+@1686476| 						(l = new box2d.b2FixtureDef()),
+@1686515| 						(l.shape = q),
+@1686537| 						(l.friction = 0.4),
+@1686564| 						(l.restitution = 0),
+@1686592| 						(l.density = 2.5),
+@1686618| 						(l.filter.categoryBits = 65535),
+@1686658| 						(l.filter.maskBits = 65535),
+@1686694| 						(k = j.data.CreateFixture(l)),
+@1686732| 						(k.id = j.world.getNextFixtureId()),
+@1686776| 						(o = new box2d.b2DistanceJointDef()),
+@1686821| 						(e = { x: this.pxm(this.anchor.x), y: this.pxm(this.anchor.y) }),
+@1686894| 						(f = { x: this.pxm(this.pos.x), y: this.pxm(this.pos.y) }),
+@1686961| 						o.Initialize(g.body.data, p.body.data, e, f),
+@1687014| 						(this.joint = this.game.physics.box2d.world.CreateJoint(o)),
+@1687082| 						(o = new box2d.b2RevoluteJointDef()),
+@1687127| 						o.Initialize(g.body.data, p.body.data, f),
+@1687177| 						(o.lowerAngle = (-0.85 * Math.PI) / 2),
+@1687224| 						(o.upperAngle = (0.85 * Math.PI) / 2),
+@1687270| 						this.options.properties.fullRotation || (o.enableLimit = !0),
+@1687339| 						(this.joint = this.game.physics.box2d.world.CreateJoint(o)),
+@1687407| 						(o = new box2d.b2RevoluteJointDef()),
+@1687452| 						o.Initialize(g.body.data, this.game.level.groundBody, e),
+@1687517| 						(this.joint = this.game.physics.box2d.world.CreateJoint(o)),
+@1687585| 						this
+@1687597| 					);
+@1687606| 				}
+@1687613| 				return (
+@1687627| 					b(d, c),
+@1687642| 					(d.prototype.options = { barWidth: 3.2 }),
+@1687691| 					(d.prototype.baseHeight = 60),
+@1687728| 					(d.prototype.update = function () {
+@1687770| 						var a, b;
+@1687787| 						return (b = new box2d.b2Vec2(this.platform.position.x, this.platform.position.y)), (a = b.Clone().SelfSub(this.anchor)), (this.rope.rotation = Math.atan2(-a.y, -a.x));
+@1687962| 					}),
+@1687972| 					d
+@1687980| 				);
+@1687988| 			})(c));
+@1688000| 		});
+@1688007| 	}.call(this),
+@1688023| 	function () {
+@1688039| 		var a = function (a, b) {
+@1688068| 				return function () {
+@1688094| 					return a.apply(b, arguments);
+@1688130| 				};
+@1688138| 			},
+@1688145| 			b = function (a, b) {
+@1688171| 				function d() {
+@1688191| 					this.constructor = a;
+@1688219| 				}
+@1688226| 				for (var e in b) c.call(b, e) && (a[e] = b[e]);
+@1688279| 				return (d.prototype = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1688377| 			},
+@1688384| 			c = {}.hasOwnProperty;
+@1688411| 		define("States/Level/Devices/InfiniteMirror", [

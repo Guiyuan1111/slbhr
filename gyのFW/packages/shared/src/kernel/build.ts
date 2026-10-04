@@ -1,8 +1,8 @@
 /**
  * box2d 内核 —— 关卡世界构建。
  *
- * 逐字节转写原版 States/Level/Ground.convertTilemap（TEMP/ground-region.js）+ 插件 setBounds
- * （vendor bundle）+ Liquid（TEMP/liquid-region.js）+ Diamond/Door（TEMP/door-diamond-region.js）。
+ * 逐字节转写原版 States/Level/Ground.convertTilemap（note/evidence/init-js-regions/ground-region.js）+ 插件 setBounds
+ * （vendor bundle）+ Liquid（note/evidence/init-js-regions/liquid-region.js）+ Diamond/Door（note/evidence/init-js-regions/door-diamond-region.js）。
  * 关卡网格 type 语义见 ../level2.ts（GROUND_TYPE）。
  *
  * 坐标：LevelData 是屏幕像素（y 向下）；物理 = (−x/32, −y/32)。原版多边形的负号

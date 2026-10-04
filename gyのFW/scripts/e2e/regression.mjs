@@ -35,8 +35,10 @@ const LEVEL = argOf("level", "forest_01");
 const log = (...a) => console.log("[e2e]", ...a);
 
 function startServer() {
+  // --import tsx：进程内加载 TS（无 CLI 子进程）——kill 才能真正杀掉服务器，
+  // 否则 tsx CLI 的 node 子进程会变孤儿霸占端口（实测坑，见冻结文档）
   const child = spawn(process.execPath, [
-    join(ROOT, "node_modules", "tsx", "dist", "cli.mjs"),
+    "--import", "tsx",
     join(ROOT, "packages", "server", "src", "index.ts"),
   ], {
     env: { ...process.env, PORT: String(PORT), FW_HOST: "127.0.0.1" },
@@ -47,7 +49,10 @@ function startServer() {
     const ondata = (buf) => {
       const s = String(buf);
       process.stdout.write(s);
-      if (s.includes("http+ws")) {
+      if (s.includes("EADDRINUSE")) {
+        clearTimeout(timer);
+        reject(new Error("端口被占用（疑似孤儿服务器进程，先按端口清理）"));
+      } else if (s.includes("http+ws")) {
         clearTimeout(timer);
         resolve(child);
       }
@@ -101,7 +106,10 @@ async function runOnce(browser, inputTimeline, expectWin, tag) {
   if (!code) throw new Error("创建房间未取到房间码");
   await enterAs(b, "join", code);
   log(`[${tag}] 房间 ${code} 双方入座，等待 ready→started`);
-  await a.waitForTimeout(2600); // ready 2.0s + 余量
+  // 等 started（HUD 状态清空即 started；ready 文案"双人就绪，即将开始…"）
+  await a.waitForFunction(() => document.querySelector("#hud-status")?.textContent === "", null, { timeout: 20000 });
+  await b.waitForFunction(() => document.querySelector("#hud-status")?.textContent === "", null, { timeout: 20000 });
+  await a.waitForTimeout(300);
 
   if (inputTimeline.length > 0) {
     await Promise.all([runInputs(a, inputTimeline), runInputs(b, inputTimeline)]);
@@ -110,14 +118,17 @@ async function runOnce(browser, inputTimeline, expectWin, tag) {
   // 轮询结果（最长 180s）
   const deadline = Date.now() + 180000;
   let shot10 = false;
+  let poll = 0;
   while (Date.now() < deadline) {
     await a.waitForTimeout(1000);
+    poll++;
     const errs = [...(await a.evaluate(() => window.__errs)), ...(await b.evaluate(() => window.__errs))];
     if (errs.length > 0) {
       result.errors = errs;
       break;
     }
     const statusA = await a.textContent("#hud-status");
+    if (poll % 3 === 0) log(`[${tag}] poll${poll} status="${statusA}" role=${await a.textContent("#hud-role")}`);
     if (!shot10) {
       shot10 = true;
       await a.waitForTimeout(2000);
