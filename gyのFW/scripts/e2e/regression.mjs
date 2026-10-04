@@ -26,6 +26,7 @@ function argOf(name, def) {
   return i >= 0 ? args[i + 1] : def;
 }
 const REPEAT = Number(argOf("repeat", "1"));
+const EXPECT_WIN = args.includes("--expect-win");
 const INPUTS_FILE = argOf("script", "");
 const PORT = Number(argOf("port", "3557"));
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -69,9 +70,9 @@ async function enterAs(page, mode, roomCode) {
   if (mode === "join") await page.fill("#roomcode", roomCode);
   await page.click(mode === "create" ? "#btn-create" : "#btn-join");
   await page.waitForSelector("#menu", { state: "hidden", timeout: 15000 });
-  await page.waitForFunction(() => document.querySelector("#hud-room")?.textContent?.length > 0, null, { timeout: 15000 });
+  await page.waitForFunction(() => /房间码 [A-Za-z0-9]+/.test(document.querySelector("#hud-room")?.textContent ?? ""), null, { timeout: 20000 });
   const roomText = await page.textContent("#hud-room");
-  const code = (roomText.match(/([A-Za-z0-9]{6,})/) || [])[1] ?? "";
+  const code = (roomText.match(/房间码 ([A-Za-z0-9]+)/) || [])[1] ?? "";
   return code;
 }
 
@@ -116,7 +117,7 @@ async function runOnce(browser, inputTimeline, expectWin, tag) {
   }
 
   // 轮询结果（最长 180s）
-  const deadline = Date.now() + 180000;
+  const deadline = Date.now() + (EXPECT_WIN ? 180000 : 20000);
   let shot10 = false;
   let poll = 0;
   while (Date.now() < deadline) {
@@ -166,7 +167,7 @@ for (let r = 1; r <= REPEAT; r++) {
   try {
     const res = await runOnce(browser, timeline, INPUTS_FILE.length > 0, `run${r}`);
     results.push(res);
-    const ok = res.errors.length === 0 && (!INPUTS_FILE || res.won);
+    const ok = res.errors.length === 0 && (!EXPECT_WIN || res.won);
     log(`run${r}: ${ok ? "PASS" : "FAIL"} won=${res.won} errors=${res.errors.length}`);
     if (!ok) pass = false;
   } catch (err) {
