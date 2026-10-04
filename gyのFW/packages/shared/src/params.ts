@@ -164,42 +164,11 @@ export const HANGING = {
 export const TICK_HZ = 60;
 
 /**
- * 兼容层：现内核 world.ts / 客户端仍以 P.* 引用旧臆造参数（coyote/jumpBuffer/jumpVel 等，
- * 全部无原版对应物，见 research/02 G1-G7）。这些字段仅为保编译绿的过渡品，
- * **随 box2d 内核切换一并删除**——新内核代码一律用上述原版实证分组常量，禁止引用下列字段。
+ * 兼容层：旧代码以 P 命名引用 tickRate/tile。
+ * 旧内核臆造参数（coyote/jumpBuffer/jumpVel 等）已随 AABB 内核退役删除（0.3.0），
+ * 新代码一律用上方原版实证分组常量。
  */
 export const P = {
   tickRate: TICK_HZ,
   tile: WORLD.tile,
-
-  /** @deprecated 旧内核臆造值，内核切换时删除 */
-  gravity: 1000,
-  /** @deprecated */
-  maxFall: 1280,
-  /** @deprecated */
-  moveSpeed: 272,
-  /** @deprecated */
-  jumpVel: -496,
-  /** @deprecated */
-  coyote: 0.09,
-  /** @deprecated */
-  jumpBuffer: 0.12,
-  /** @deprecated */
-  playerW: 26,
-  /** @deprecated */
-  playerH: 56,
-  /** @deprecated */
-  liquidInset: 4,
-  /** @deprecated */
-  respawnDelay: 1.1,
-  /** @deprecated */
-  doorTolerance: 12,
-  /** @deprecated */
-  platformSpeed: 16,
-  /** @deprecated */
-  stepHeight: 32,
-  /** @deprecated */
-  leverCooldown: 0.6,
-  /** @deprecated */
-  diamondRadius: 40,
 } as const;
