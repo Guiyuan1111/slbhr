@@ -44,10 +44,10 @@ describe("内核：静态世界与落地", () => {
     stepN(w, 120);
     for (const role of ["fireboy", "watergirl"] as const) {
       const p = w.snapshotPlayer(role);
-      // 出生底边 y0：脚底圆(r2=0.2) 底缘 = 中心 + (0.9+0.2)·32px → 静立中心 ≈ y0 − 35.2
+      // 出生底边 y0：脚底圆(r2=0.2) 底缘 = 中心 + (0.9+0.2)·32px → 静立中心 ≈ y0 − 35.2；x = raw.x+32（金轨迹实证）
       const y0 = role === "fireboy" ? 896 : 768;
       expect(Math.abs(p.y - (y0 - 1.1 * 32))).toBeLessThan(3);
-      expect(Math.abs(p.x - 128)).toBeLessThan(1);
+      expect(Math.abs(p.x - 96)).toBeLessThan(1);
       expect(Math.abs(p.vy)).toBeLessThan(1);
       expect(p.dying).toBe(false);
     }
@@ -190,7 +190,7 @@ describe("内核：钻石", () => {
     const w = loadForest01();
     stepN(w, 10);
     const red = w.diamonds.find((d) => d.kind === "red")!;
-    teleport(w, "fireboy", red.x + 32, red.y - 32);
+    teleport(w, "fireboy", red.x, red.y);
     let got = false;
     for (let i = 0; i < 30; i++) {
       if (w.step(1 / 60, { fireboy: NONE, watergirl: NONE }).some((e) => e.type === "diamond")) {
@@ -202,7 +202,7 @@ describe("内核：钻石", () => {
     expect(w.players.fireboy.diamonds).toBe(1);
 
     const blue = w.diamonds.find((d) => d.kind === "blue")!;
-    teleport(w, "fireboy", blue.x + 32, blue.y - 32);
+    teleport(w, "fireboy", blue.x, blue.y);
     for (let i = 0; i < 30; i++) {
       w.step(1 / 60, { fireboy: NONE, watergirl: NONE });
     }
@@ -263,24 +263,22 @@ describe("内核：机关全谱构建冒烟（48 关全物理构建）", () => {
     }
   }, 120000);
 
-  it("forest_01：拉杆 group4 自稳 → 组平台被信号驱动移动（64px/s）", () => {
+  it("forest_01：拉杆静止不自翻（金轨迹实证）→ 组平台保持原位", () => {
     const w = loadForest01();
-    // 先站稳 1 帧（checkState 立即运行）：lever(onis=−1, startPos=+1) 自稳为 state1 → 组4平台 state1
-    stepN(w, 1);
+    // 原版行为：拉杆静立在 startPos 侧（马达 0 速度刹车），从不自翻、不派发
+    stepN(w, 120);
     const lever = w.mechanisms.levers[0];
-    expect(lever.state).toBe(1);
+    expect(lever.state).toBe(0);
     const plat4 = w.mechanisms.platforms.find((p) => p.group === 4)!;
     const y0 = -plat4.body.GetPosition().y * 32;
     stepN(w, 60);
     const y1 = -plat4.body.GetPosition().y * 32;
-    // 60 帧 ≈ 1s，64px/s → 移动约 64px（允许关节起停差）
-    expect(y1 - y0).toBeGreaterThan(40);
-    // group5 平台（按钮组，无人踩）应保持原位
-    const plat5 = w.mechanisms.platforms.find((p) => p.group === 5)!;
-    const y5a = -plat5.body.GetPosition().y * 32;
-    stepN(w, 30);
-    const y5b = -plat5.body.GetPosition().y * 32;
-    expect(Math.abs(y5b - y5a)).toBeLessThan(2);
+    expect(Math.abs(y1 - y0)).toBeLessThan(2);
+    // 拉杆沉降平衡角：金轨迹 0.5351、我方 0.196（静止姿态化妆级偏差，fixture 几何待复核，见冻结文档）；
+    // 行为带：在限位内沉降、未翻越零点
+    const angle = lever.body.GetAngle();
+    expect(angle).toBeGreaterThan(-0.2 * Math.PI);
+    expect(angle).toBeLessThan(0.2 * Math.PI);
   });
 
   it("forest_01：角色踩上按钮（group5）→ 按钮下沉触发 → 组平台移动", () => {

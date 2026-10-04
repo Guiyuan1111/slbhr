@@ -85,6 +85,8 @@ export class Lever extends Device {
   readonly body: any;
   private joint: any;
   private readonly onis: number;
+  /** 过零边沿检测：上一帧的 angle·onis 符号（null=未初始化） */
+  private prevSide: number | null = null;
   /** 事件监听：翻转时通知（音效/快照） */
   onFlip: (() => void) | undefined;
 
@@ -132,18 +134,25 @@ export class Lever extends Device {
   }
 
   checkState(events: MechEvent[]): void {
-    const angle = this.joint.GetJointAngleRadians();
-    if (this.state === 0 && angle * this.onis < 0) {
+    // 过零边沿检测（金轨迹实证：原版拉杆静止时永不自翻——恒真的源码条件在原版中并未生效，
+    // 真实翻转只发生在杆体被玩家推过零点的瞬间）。以 angle·onis 符号变化的边沿为判据；
+    // 进入负侧（source 的 state→1 语义）：马达 −4·onis；进入正侧（state→0 语义）：马达 +4·onis。
+    const side = Math.sign(this.joint.GetJointAngleRadians() * this.onis);
+    if (this.prevSide === null) {
+      this.prevSide = side;
+      return;
+    }
+    if (side === 0 || side === this.prevSide) return;
+    this.prevSide = side;
+    if (side < 0) {
       this.state = 1;
       this.joint.SetMotorSpeed(-4 * this.onis);
-      this.onFlip?.();
-      events.push({ kind: "lever", group: this.group, state: this.state });
-    } else if (this.state === 1 && angle * this.onis > 0) {
+    } else {
       this.state = 0;
       this.joint.SetMotorSpeed(4 * this.onis);
-      this.onFlip?.();
-      events.push({ kind: "lever", group: this.group, state: this.state });
     }
+    this.onFlip?.();
+    events.push({ kind: "lever", group: this.group, state: this.state });
   }
 
   /** 快照：杆角（度，屏幕系） */

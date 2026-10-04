@@ -264,11 +264,11 @@ export function buildLevelWorld(level: LevelData): BuiltWorld {
   // bottom：center(3.125, −H/32−6.25)
   boxFixture(wallDef(), B, W / 32 + m, m, { x: -(-100 / 32), y: -(H + 200) / 32 - m - -100 / 32 }, 0, wallOpts);
 
-  // ---- 钻石（Diamond 构造体：位置 (x+32, y−32) 屏幕 → 物理；sensor 0.7×0.7m）----
+  // ---- 钻石（Diamond 构造体：(raw.x+32, raw.y−32)——level2 中心恰为该值，无需再加偏移）----
   const diamonds: DiamondInfo[] = level.diamonds.map((d) => {
     const bd = new B.b2BodyDef();
     bd.type = B.b2BodyType.b2_staticBody;
-    bd.position = new B.b2Vec2(px2m(d.x + 32), px2m(d.y - 32));
+    bd.position = new B.b2Vec2(px2m(d.x), px2m(d.y));
     const body = world.CreateBody(bd);
     boxFixture(body, B, 0.35, 0.35, { x: 0, y: 0 }, 0, {
       friction: 0.7,

@@ -71,10 +71,11 @@ export class Character {
   constructor(B: B2, world: any, role: Role, spawn: { x: number; y: number }) {
     this.role = role;
     this.char = role === "fireboy" ? "fb" : "wg";
-    // 原版：d += mpx(1), f -= mpx(1)（屏幕 +32px 右、−32px 上）→ 物理 (−(x+32)/32, −(y−32)/32)
+    // 原版：d += mpx(1), f -= mpx(1)（自 RAW 图块对象 (o.x, o.y底边)）。
+    // level2 spawn 已是 (o.x+32, o.y)——只剩 y−32；金轨迹实证：fb 体中心 = (96, 864)screen = (−3, −27)phys
     const bd = new B.b2BodyDef();
     bd.type = B.b2BodyType.b2_dynamicBody;
-    bd.position = new B.b2Vec2(px2m(spawn.x + 32), px2m(spawn.y - 32));
+    bd.position = new B.b2Vec2(px2m(spawn.x), px2m(spawn.y - 32));
     bd.fixedRotation = true;
     const body = world.CreateBody(bd);
     body.SetUserData("pers");
