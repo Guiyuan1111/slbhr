@@ -1,43 +1,50 @@
 /**
- * 游戏渲染场景（按原版 output/A 的逆向配方 1:1 复刻，报告见 note/）：
+ * 游戏渲染场景（按原版 output/A 的逆向配方复刻，报告见 note/）：
  *
  * 原版层序（自底向上，root 内）：
  *   background(背景平铺+门) → tutorial → underGround(钻石/平台/推块) →
- *   ground(岩壁蒙版合成) → overGround(拉杆) → chars(角色) →
- *   decorations(前景植物) → liquids(液体) → dust → ui(时钟)
+ *   ground(岩壁蒙版合成) → overGround(拉杆/箱/球) → chars(角色) →
+ *   decorations(前景植物) → liquids(液体/风) → ui(时钟)
  *
  * 坐标系：世界 = 关卡 (1248×928) 四周各扩 32px 边距 → 1312×992，内容统一 +PAD。
- * 地面 = ForeGround0000 岩壁纹理 × MaskBox 蒙版（每格随机 4 变体），叠加
- * 3.5px 黑外描边与右下 8px 软投影——用 2D canvas 合成后一次性贴上，等价原版
- * BitmapData + 三滤镜管线。服务器是唯一权威：本场景不做任何物理。
+ * 数据源：LevelData v2（@fw/shared/level2，全机制解析）；运行时状态全部来自服务器
+ * 快照（phase/players/diamonds/levers/pushers/platforms/props/winds/doors）——
+ * 服务器是唯一权威，本场景不做任何玩法判定。
+ * 快照角度约定：服务器统一发 -body.GetAngle()（物理弧度），客户端换算
+ * Phaser 角（度）= -快照角·180/π（点反射映射保旋转方向，见 b2.ts 头注）。
+ * 快照坐标约定：players/props/platforms 均为"屏幕像素中心坐标"（m2px 已换算），
+ * 客户端直接 +PAD 使用，不再做 0.2.0 时代的 feet→center 换算。
  */
 import Phaser from "phaser";
-import { ROLES, type LevelData, type Role } from "@fw/shared";
-import type { Net } from "../net";
+import { DOOR, ROLES, type Role } from "@fw/shared";
+import type { LevelData, Rect } from "@fw/shared/level2";
+import type { FinishData, Net } from "../net";
+import type { KeyboardInput } from "../input";
 import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, PLAYER_SCALE } from "./BootScene";
 
 export interface GameInit {
   net: Net;
   level: LevelData;
+  keyboard: KeyboardInput;
 }
 
 /** 关卡四周留白（原版 groundTexture 1312×992 @(-32,-32) 实测） */
 const PAD = 32;
-/** 角色组锚点=帧中心；足圆心在锚点下方 28.8px（0.95 标定），换算 0.4 比例 */
-const FEET_TO_CENTER = Math.round((28.8 * PLAYER_SCALE) / 0.95);
 /** 机关组色（原版 Device.groupColors），用于点亮贴图 tint */
 const GROUP_COLORS: Record<number, number> = {
   1: 0xff0000, 2: 0x00cc00, 3: 0x0d3eff, 4: 0xffff00, 5: 0xec0ef1, 6: 0x57beff, 7: 0x9933ff,
 };
 
 const EMPTY_TYPE = -99;
-const LIQUID_FAMILY = ["", "WaterBox", "FireBox", "GreenBox"] as const;
+const LIQUID_ATLAS: Record<string, string> = { water: "WaterBox", lava: "FireBox", green: "GreenBox" };
 const DIAMOND_FRAME: Record<string, string> = {
   red: "diamond_fb0000",
   blue: "diamond_wg0000",
   silver: "diamond_silver0000",
   fbwg: "diamond_fbwg0000",
 };
+/** 角色贴图前缀（动画键/帧名用 fire|water，角色标识用 fireboy|watergirl） */
+const PREFIX: Record<Role, string> = { fireboy: "fire", watergirl: "water" };
 
 interface PlayerView {
   glow: Phaser.GameObjects.Image;
@@ -47,10 +54,47 @@ interface PlayerView {
   cx: number; // 平滑后的角色组中心 x
   cy: number; // 平滑后的角色组中心 y
   anim: string;
-  alive: boolean;
+  legsKey: string;
+  dying: boolean;
 }
 
-/** 可复现的伪随机（原版装饰撒点用固定种子 seedrandom("ASDFA")） */
+interface LeverView {
+  stick: Phaser.GameObjects.Image;
+  light: Phaser.GameObjects.Image;
+  /** 当前贴图角（Phaser 度） */
+  angle: number;
+  lightOn: boolean;
+}
+
+interface PusherView {
+  block: Phaser.GameObjects.Image;
+  light: Phaser.GameObjects.Image;
+  baseY: number;
+  state: number;
+}
+
+interface WindView {
+  base: Phaser.GameObjects.Sprite;
+  on: boolean;
+}
+
+/** Navies 单只光点（原版 States/Common/Navies @1116883：极坐标正弦漂移） */
+interface NavyItem {
+  img: Phaser.GameObjects.Image;
+  offsetCart: { x: number; y: number };
+  offset: { r: number; theta: number };
+  rprime: number;
+  speed: { r: number; theta: number };
+  pos: { r: number; theta: number };
+}
+
+interface TutorialItem {
+  text: Phaser.GameObjects.Text;
+  trigger: Rect | undefined;
+  shown: boolean;
+}
+
+/** 可复现的伪随机（地面蒙版/装饰撒点用；原版装饰种子 seedrandom("ASDFA")——G12 待 0.3.1） */
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
@@ -62,22 +106,48 @@ function mulberry32(seed: number): () => number {
   };
 }
 
+function mmss(totalSec: number): string {
+  const s = Math.max(0, Math.floor(totalSec));
+  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+}
+
 export class GameScene extends Phaser.Scene {
   private d!: GameInit;
   private myRole: Role | null = null;
   private views = new Map<Role, PlayerView>();
   private diamondSprites = new Map<string, Phaser.GameObjects.Image>();
+  private diamondKinds = new Map<string, string>();
   private platformViews = new Map<string, Phaser.GameObjects.Container>();
-  private boxView: Phaser.GameObjects.Image | null = null;
+  private leverViews = new Map<string, LeverView>();
+  private pusherViews = new Map<string, PusherView>();
+  private bodyViews = new Map<string, Phaser.GameObjects.Image>();
+  private windViews = new Map<string, WindView>();
   private doorSprites = new Map<Role, Phaser.GameObjects.Sprite>();
-  private doorOpen = new Map<Role, boolean>();
+  private doorFrames = new Map<Role, number>();
   private clockText!: Phaser.GameObjects.Text;
   private redHudText!: Phaser.GameObjects.Text;
   private blueHudText!: Phaser.GameObjects.Text;
+  private silverHudText: Phaser.GameObjects.Text | null = null;
   private redTotal = 0;
   private blueTotal = 0;
-  private finished = false;
-  private finishShown = false;
+  private silverTotal = 0;
+  private navyItems: NavyItem[] = [];
+  private tutorialItems: TutorialItem[] = [];
+  private stairsSprites = new Map<Role, Phaser.GameObjects.Sprite>();
+  /** 通关演出/结算板状态 */
+  private stairsPlayed = false;
+  private finishData: FinishData | null = null;
+  private finishLayer: Phaser.GameObjects.Container | null = null;
+  private finishDelayEvent: Phaser.Time.TimerEvent | undefined;
+  /** phase 差分（场景侧自算，net.onPhase 仅刷新 DOM HUD） */
+  private prevPhase = "";
+  /** ready 瞬移标记（跨图平滑会把角色从门口滑回出生点，E15/E1） */
+  private snapPending = false;
+  /** 原版限时（data/forest/temple.json 的 time 字段；取不到=不限时） */
+  private templeTimeSec: number | null = null;
+  private waterPlaying = false;
+  private platformPrev = new Map<string, { x: number; y: number }>();
+  private platformMoving = new Set<string>();
 
   constructor() {
     super("Game");
@@ -90,11 +160,27 @@ export class GameScene extends Phaser.Scene {
     this.d = d;
     this.views.clear();
     this.diamondSprites.clear();
+    this.diamondKinds.clear();
     this.platformViews.clear();
+    this.leverViews.clear();
+    this.pusherViews.clear();
+    this.bodyViews.clear();
+    this.windViews.clear();
     this.doorSprites.clear();
-    this.doorOpen.clear();
-    this.finished = false;
-    this.finishShown = false;
+    this.doorFrames.clear();
+    this.navyItems = [];
+    this.tutorialItems = [];
+    this.stairsSprites.clear();
+    this.stairsPlayed = false;
+    this.finishData = null;
+    this.finishLayer = null;
+    this.finishDelayEvent = undefined;
+    this.prevPhase = "";
+    this.snapPending = false;
+    this.templeTimeSec = null;
+    this.waterPlaying = false;
+    this.platformPrev.clear();
+    this.platformMoving.clear();
     this.myRole = this.d.net.myRole ?? this.myRole;
   }
 
@@ -105,8 +191,10 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, worldW, worldH);
 
     for (const d of level.diamonds) {
+      this.diamondKinds.set(d.id, d.kind);
       if (d.kind === "red") this.redTotal++;
       else if (d.kind === "blue") this.blueTotal++;
+      else if (d.kind === "silver") this.silverTotal++;
     }
 
     // background：BackGround 256×256 砖纹只铺关卡本体（原版 tileSprite(0,0,1248,928)，边距留黑）
@@ -123,16 +211,35 @@ export class GameScene extends Phaser.Scene {
     this.buildPlayers(level);
     this.buildDecorations(level);
     this.buildLiquids(level);
-    this.buildDust(level);
-    this.buildHud(level);
+    this.buildNavies(level); // 替换 0.2.0 臆造 buildDust（G13：森林从不出现 BeamDust/Dust）
+    this.buildHud();
+    this.fetchTempleTime(level.id);
 
     this.sound.stopByKey("bgm_level");
     this.sfx("bgm_level", { loop: true, volume: 0.35 });
+
+    // 场景晚于 phase 启动（如重连进 won 房）：补一次演出
+    this.prevPhase = String(this.d.net.room?.state?.phase ?? "");
+    if (this.prevPhase === "won") this.playStairsSequence();
   }
 
   /** 播音频（键未入缓存时静默跳过：音频缺失不应炸掉整个场景更新循环） */
   private sfx(key: string, opts?: Phaser.Types.Sound.SoundConfig): void {
     if (this.cache.audio.exists(key)) this.sound.play(key, opts);
+  }
+
+  /** 原版限时（E17：EndMenu TimeIcon 的 limit 来自 temple.json 的 time 字段） */
+  private fetchTempleTime(levelId: string): void {
+    fetch("/data/forest/temple.json")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { levels?: Array<{ filename?: string; time?: number }> } | null) => {
+        const entry = (j?.levels ?? []).find((lv) => String(lv?.filename ?? "").endsWith(`/${levelId}.json`));
+        const t = Number(entry?.time);
+        this.templeTimeSec = Number.isFinite(t) && t > 0 ? t : null;
+      })
+      .catch(() => {
+        this.templeTimeSec = null;
+      });
   }
 
   /** 地面：岩壁纹理 × 蒙版合成 + 黑外描边 + 右下软投影（canvas 一次性合成） */
@@ -155,7 +262,7 @@ export class GameScene extends Phaser.Scene {
     mask.height = H;
     const mc = mask.getContext("2d")!;
     const rnd = mulberry32(0x1a2b3c);
-    const typeAt = (i: number): number => level.groundTypes[i];
+    const typeAt = (i: number): number => level.groundType[i];
     for (let cy = 0; cy < rows; cy++) {
       for (let cx = 0; cx < cols; cx++) {
         const i = cy * cols + cx;
@@ -164,9 +271,9 @@ export class GameScene extends Phaser.Scene {
         const px = cx * tile + tile / 2;
         const py = cy * tile + tile / 2;
         if (t === 0 || t === 10 || t === 11 || t === 12 || t === -1) {
-          // 实心（10/11/12 归一为 0；-1 装饰空砖只画不建刚体）；帧名 5 位数字
+          // 实心（10/11/12 雪地变体解析期已 remap，留分支兜底；-1 装饰空砖只画不建刚体）
           stamp(mc, `MaskBox0000${Math.floor(rnd() * 4)}`, px, py);
-        } else if (t >= 1 && t <= 9) {
+        } else if (t >= 1 && t <= 4) {
           stamp(mc, `MaskBox${t}0000`, px, py);
         }
       }
@@ -256,34 +363,50 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * 机关（贴图中心 = 对象矩形中心 + 边距，原版公式 x+32 / y−32）：
-   * gid24=推块（underGround）、gid26=拉杆（overGround）、gid28=推箱（underGround）
+   * 机关视图（贴图中心 = 对象矩形中心 + 边距）。运行时位姿全部由快照驱动（E13）：
+   * levers{id→{group,state,angle}} / pushers{id→{group,state}} /
+   * platforms|props{id→{x,y,angle}} / winds{id→{group,state}}。
+   * 快照 key 是机关数组下标（"0","1",…；props 另带 kind 前缀），视图 key 是
+   * LevelData v2 的 id（l0/b0/p0/x0/a0/f0），消费时按下标回映射。
    */
   private buildMechs(level: LevelData): void {
-    const center = (r: { x: number; y: number; w: number; h: number }): { x: number; y: number } => ({
-      x: r.x + r.w / 2 + PAD,
-      y: r.y + r.h / 2 + PAD,
-    });
-    for (const m of level.mechProps) {
-      const c = center(m.rect);
-      // parseLevel 的 gid 是 Objects 图块集本地 id（原始 gid − firstgid 24）：
-      // 本地 0=推块(原始24)、2=拉杆(26)、4=推箱(28)
-      if (m.gid === 0) {
-        // 推块：block 110×86 + 点亮层（tint 组色），underGround 层
-        this.add.image(c.x, c.y, ATLAS_MECH, "pusher_block0000").setOrigin(0.5).setDepth(1.2);
-        this.add
-          .image(c.x, c.y, ATLAS_MECH, "pusher_block_light0000")
-          .setOrigin(0.5)
-          .setTint(GROUP_COLORS[Number(m.props.group ?? 2)] ?? 0xffffff)
-          .setDepth(1.2);
-      } else if (m.gid === 2) {
-        // 拉杆：先杆后底座（底座盖住杆根），原版静止时杆向左倾（−31°，限位 ±36°）
-        const dir = Number(m.props.startPos ?? -1) >= 0 ? 1 : -1;
-        this.add.image(c.x + 2, c.y + 1, ATLAS_MECH, "lever_stick0000").setOrigin(0.5).setAngle(31 * dir).setDepth(3);
-        this.add.image(c.x, c.y, ATLAS_MECH, "lever_base0000").setOrigin(0.5).setDepth(3);
-      } else if (m.gid === 4) {
-        this.boxView = this.add.image(c.x, c.y, ATLAS_MECH, "movingbox0000").setOrigin(0.5).setDepth(1.2);
-      }
+    // 推块（underGround）：block + 点亮层（tint 组色）。快照只有压下二值（state 0|1），
+    // 贴图压下取 6px≈0.2m 阈值位移（原版 0.7m 连续行程二档化，冻结偏离 #5）
+    for (const m of level.pushers) {
+      const block = this.add.image(m.x + PAD, m.y + PAD, ATLAS_MECH, "pusher_block0000").setOrigin(0.5).setDepth(1.2);
+      const light = this.add
+        .image(m.x + PAD, m.y + PAD, ATLAS_MECH, "pusher_block_light0000")
+        .setOrigin(0.5)
+        .setTint(GROUP_COLORS[m.group] ?? 0xffffff)
+        .setDepth(1.2);
+      this.pusherViews.set(m.id, { block, light, baseY: m.y + PAD, state: 0 });
+    }
+
+    // 拉杆（overGround）：先杆后底座（底座盖住杆根）+ 亮灯层（lever_base_light_on/off）。
+    // 初始角按 startPos（-1 → 左倾 -31°），运行时吃快照连续角
+    for (const m of level.levers) {
+      const dir = m.startPos >= 0 ? 1 : -1;
+      const stick = this.add.image(m.x + 2 + PAD, m.y + 1 + PAD, ATLAS_MECH, "lever_stick0000").setOrigin(0.5).setAngle(31 * dir).setDepth(3);
+      this.add.image(m.x + PAD, m.y + PAD, ATLAS_MECH, "lever_base0000").setOrigin(0.5).setDepth(3);
+      const light = this.add
+        .image(m.x + PAD, m.y + PAD, ATLAS_MECH, "lever_base_light_off0000")
+        .setOrigin(0.5)
+        .setTint(GROUP_COLORS[m.group] ?? 0xffffff)
+        .setDepth(3.05);
+      this.leverViews.set(m.id, { stick, light, angle: 31 * dir, lightOn: false });
+    }
+
+    // 箱/球（overGround，原版 BoxedDevice/Ball）：movingbox0000 / boxheavy=movingbox20000（d07 字证）/ ball0000
+    for (const b of level.boxes) {
+      const img = this.add
+        .image(b.x + PAD, b.y + PAD, ATLAS_MECH, b.heavy ? "movingbox20000" : "movingbox0000")
+        .setOrigin(0.5)
+        .setDepth(3);
+      this.bodyViews.set(b.id, img);
+    }
+    for (const ball of level.balls) {
+      const img = this.add.image(ball.x + PAD, ball.y + PAD, ATLAS_MECH, "ball0000").setOrigin(0.5).setDepth(3);
+      this.bodyViews.set(ball.id, img);
     }
 
     // 移动平台（underGround：从岩缝里伸出）：黄帽+中段+黄帽，整体 scale(1.05,0.95)
@@ -299,41 +422,46 @@ export class GameScene extends Phaser.Scene {
         .setScale(1.05, 0.95);
       this.platformViews.set(p.id, c);
     }
+
+    // 风区机身（liquids 层，depth 7）：wind_base 0000..0003@30fps；state≠0 时播循环
+    for (const w of level.winds) {
+      const base = this.add
+        .sprite(w.rect.x + w.rect.w / 2 + PAD, w.rect.y + w.rect.h / 2 + PAD, ATLAS_MECH, "wind_base0000")
+        .setOrigin(0.5)
+        .setDepth(7)
+        .setAngle(w.rotation + 90); // 内核 bd.angle=π(rotation+90)/180，物理角=Phaser 角
+      this.windViews.set(w.id, { base, on: false });
+    }
   }
 
-  /** 液体：每池 Left/中/Right 三段精灵 30fps，随机相位；整体下移 2px */
+  /** props 快照 key（"box:0"/"boxheavy:2"/"ball:3"）→ 视图 key（x 下标 / a 下标-boxes 数） */
+  private propViewKey(key: string): string | undefined {
+    const i = key.indexOf(":");
+    if (i < 0) return undefined;
+    const kind = key.slice(0, i);
+    const idx = Number(key.slice(i + 1));
+    if (!Number.isFinite(idx)) return undefined;
+    if (kind === "ball") return `a${idx - this.d.level.boxes.length}`;
+    return `x${idx}`; // box / boxheavy 同数组（level.boxes 顺序）
+  }
+
+  /** 液体：LiquidRun 行段 Left/中/Right 三类精灵 30fps，随机相位；整体下移 2px */
   private buildLiquids(level: LevelData): void {
-    const { tile, cols, rows } = level;
-    const animOf = ["", "water", "lava", "green"] as const;
-    for (let cy = 0; cy < rows; cy++) {
-      let run = 0;
-      for (let cx = 0; cx <= cols; cx++) {
-        const v = cx < cols ? level.liquid[cy * cols + cx] : 0;
-        if (v > 0) {
-          run++;
-          continue;
-        }
-        if (run === 0) continue;
-        const a = cx - run;
-        const b = cx - 1;
-        // v 此刻已归 0，液体族必须取自 run 起始格
-        const type = level.liquid[cy * cols + a];
-        const fam = LIQUID_FAMILY[type];
-        const key = animOf[type];
-        for (let k = a; k <= b; k++) {
-          const pos = k === a ? "Left" : k === b && b > a ? "Right" : "";
-          const s = this.add
-            .sprite(k * tile + tile / 2 + PAD, cy * tile + tile / 2 + 2 + PAD, ATLAS_GROUND, `${fam}${pos}0000`)
-            .setOrigin(0.5)
-            .setDepth(7);
-          s.playAfterDelay(`liquid_${key}${pos ? `_${pos.toLowerCase()}` : ""}`, Math.random() * 900);
-        }
-        run = 0;
+    const { tile } = level;
+    for (const run of level.liquidRuns) {
+      const fam = LIQUID_ATLAS[run.kind] ?? "WaterBox";
+      for (let k = run.col0; k <= run.col1; k++) {
+        const pos = k === run.col0 ? "Left" : k === run.col1 && run.col1 > run.col0 ? "Right" : "";
+        const s = this.add
+          .sprite(k * tile + tile / 2 + PAD, run.row * tile + tile / 2 + 2 + PAD, ATLAS_GROUND, `${fam}${pos}0000`)
+          .setOrigin(0.5)
+          .setDepth(7);
+        s.playAfterDelay(`liquid_${run.kind}${pos ? `_${pos.toLowerCase()}` : ""}`, Math.random() * 900);
       }
     }
   }
 
-  /** 门：FinishBoy/Girl 0000 静帧，scale 0.8，anchor(0.5,0.99)，位置=(中心, 底边+4) */
+  /** 门：FinishBoy/Girl 0000 静帧，scale 0.8，anchor(0.5,0.99)，位置=(中心, 底边+4)；帧号由快照驱动 */
   private buildDoors(level: LevelData): void {
     const frameOf: Record<Role, string> = { fireboy: "FinishBoy0000", watergirl: "FinishGirl0000" };
     for (const role of ROLES) {
@@ -348,38 +476,44 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * 角色（chars 层）：原版 legs+head+glow 同心叠加（anchor 0.5 同点），
-   * 组锚点在脚底上方 FEET_TO_CENTER 处；死亡烟在组内 (0,−22.4px) 等比。
+   * 角色（chars 层）：原版 legs+head+glow 同心叠加（anchor 0.5 同点）。
+   * 内核出生偏移 (+32,−32)px（character.ts 构造体），快照坐标即贴图中心。
+   * 死亡烟：原版 _doKill 挂在角色容器 (0,−0.7·mpx(1)) ≈ 足部上方 21px（0.95 比例）。
    */
   private buildPlayers(level: LevelData): void {
     for (const role of ROLES) {
       const s = level.spawn[role];
-      const feetX = s.x + 13 + PAD;
-      const feetY = s.y + 56 + PAD;
-      const cx = feetX;
-      const cy = feetY - FEET_TO_CENTER;
-      const p = role === "fireboy" ? "fire" : "water";
+      const cx = s.x + 32 + PAD;
+      const cy = s.y - 32 + PAD;
+      const p = PREFIX[role];
       const glow = this.add.image(cx, cy, ATLAS_CHARS, `${p}_glow0000`).setOrigin(0.5).setScale(PLAYER_SCALE).setAlpha(0.9).setDepth(4);
       const legs = this.add.sprite(cx, cy, ATLAS_CHARS, `${p}_legs_idle0000`).setOrigin(0.5).setScale(PLAYER_SCALE).setDepth(5);
       const head = this.add.sprite(cx, cy, ATLAS_CHARS, `${p}_head_idle0000`).setOrigin(0.5).setScale(PLAYER_SCALE).setDepth(5);
-      const smoke = this.add.sprite(cx, cy - 9, ATLAS_CHARS, "death_smoke0000").setOrigin(0.5).setScale(PLAYER_SCALE).setDepth(5.5).setVisible(false);
+      const smoke = this.add.sprite(cx, cy + 21, ATLAS_CHARS, "death_smoke0000").setOrigin(0.5).setScale(PLAYER_SCALE).setDepth(5.5).setVisible(false);
       smoke.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => smoke.setVisible(false));
       legs.play(`${p}_legs_idle`);
-      head.play(`${role}_idle`);
-      this.views.set(role, { glow, legs, head, smoke, cx, cy, anim: "idle", alive: true });
+      head.play(`${p}_idle`);
+      this.views.set(role, { glow, legs, head, smoke, cx, cy, anim: "idle", legsKey: `${p}_legs_idle`, dying: false });
     }
   }
 
   /** 前景装饰（decorations 层，在角色之上）：固定种子撒点 + 原版分派规则 */
   private buildDecorations(level: LevelData): void {
-    const rnd = mulberry32(0x5eedfa); // ASDFA 的哈希种子（分布复刻，逐点位置无感知差异）
+    const rnd = mulberry32(0x5eedfa); // ASDFA 的哈希种子（分布复刻，逐点位置无感知差异；G12 待 0.3.1）
     const z = () => Math.round(3 * rnd() + 3.5); // 行列步进 4~6 格
     const { tile, cols, rows } = level;
     const typeAt = (cx: number, cy: number): number =>
-      cx < 0 || cy < 0 || cx >= cols || cy >= rows ? EMPTY_TYPE : level.groundTypes[cy * cols + cx];
+      cx < 0 || cy < 0 || cx >= cols || cy >= rows ? EMPTY_TYPE : level.groundType[cy * cols + cx];
     const hasGid = (cx: number, cy: number): boolean => typeAt(cx, cy) !== EMPTY_TYPE;
+    // 机关占位矩形（图块对象 64×64 中心 ±32；矩形对象用自身矩形）——语义同旧 mechProps 检查
+    const deviceRects: Rect[] = [];
+    for (const m of [...level.levers, ...level.pushers, ...level.boxes, ...level.balls]) {
+      deviceRects.push({ x: m.x - 32, y: m.y - 32, w: 64, h: 64 });
+    }
+    for (const m of level.platforms) deviceRects.push({ x: m.x, y: m.y, w: m.w, h: m.h });
+    for (const m of level.winds) deviceRects.push(m.rect);
     const deviceAt = (px: number, py: number): boolean =>
-      level.mechProps.some((m) => px >= m.rect.x && px <= m.rect.x + m.rect.w && py >= m.rect.y && py <= m.rect.y + m.rect.h);
+      deviceRects.some((r) => px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h);
 
     let py = Math.floor(rnd() * 4);
     while (py < rows) {
@@ -431,11 +565,16 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** 教学文字（tutorial 层：背景之上、钻石之下；淡金衬线 + 细描边） */
+  /**
+   * 教学文字（tutorial 层：背景之上、钻石之下；淡金衬线 + 细描边）。
+   * E20 触发式渐显：原版 setupTutorial 按 properties.id 分组，角色进触发矩形
+   * 400ms Linear 淡入、离开淡出（updateTutorial @1952695）。
+   */
   private buildTutorial(level: LevelData): void {
-    for (const t of level.tutorials) {
-      this.add
-        .text(t.x + PAD, t.y + PAD, t.text, {
+    for (const step of level.tutorials) {
+      if (!step.text || !step.textRect) continue;
+      const text = this.add
+        .text(step.textRect.x + PAD, step.textRect.y + PAD, step.text, {
           fontFamily: 'Georgia, "KaiTi", "STKaiti", "SimSun", serif',
           fontSize: "21px",
           color: "#efe6b0",
@@ -444,53 +583,96 @@ export class GameScene extends Phaser.Scene {
           fontStyle: "bold",
         })
         .setOrigin(0, 0)
-        .setDepth(0.8);
+        .setDepth(0.8)
+        .setVisible(false)
+        .setAlpha(0);
+      this.tutorialItems.push({ text, trigger: step.trigger, shown: false });
     }
   }
 
-  /** 气尘（dust 层，液体之上）：黑暗区域漂浮的白色光点，原版 dust 层 */
-  private buildDust(level: LevelData): void {
-    const rnd = mulberry32(0xd057);
-    for (let i = 0; i < 18; i++) {
-      const x = PAD + rnd() * level.widthPx;
-      const y = PAD + rnd() * level.heightPx;
-      const s = this.add
-        .image(x, y, ATLAS_GROUND, rnd() < 0.5 ? "Dust0000" : "BeamDust0000")
-        .setOrigin(0.5)
-        .setDepth(7.5)
-        .setAlpha(0.3 + rnd() * 0.4);
-      this.tweens.add({
-        targets: s,
-        y: y - 14 - rnd() * 20,
-        alpha: 0.05,
-        duration: 2600 + rnd() * 2600,
-        repeat: -1,
-        yoyo: true,
-        ease: "Sine.inOut",
-        delay: rnd() * 3000,
-      });
+  /** 教学渐显判定（冻结偏离 #4：按本机角色；原版=任一角色进矩形，结构上可直接扩展） */
+  private updateTutorial(x: number, y: number): void {
+    for (const item of this.tutorialItems) {
+      const r = item.trigger;
+      if (!r) continue;
+      const inside = x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+      if (inside && !item.shown) {
+        item.shown = true;
+        item.text.setVisible(true).setAlpha(0);
+        this.tweens.add({ targets: item.text, alpha: 1, duration: 400 });
+      } else if (!inside && item.shown) {
+        item.shown = false;
+        this.tweens.add({ targets: item.text, alpha: 0, duration: 400, onComplete: () => item.text.setVisible(false) });
+      }
     }
   }
 
-  /** ui 层：顶部藤蔓时钟（正计时 MM:SS，原版实拍实证） + 左上角红/蓝钻石计数 */
-  private buildHud(level: LevelData): void {
-    const clockX = level.widthPx / 2 + PAD;
+  /**
+   * Navies（overGround 层，depth 3.5）：原版 @1940249 spawn + @1116883 Navies 类逐字节复刻。
+   * 取点（getNaviesPoints @1836428）：4 个种子点全部由行数导出（第 4 点与第 2 点重复是
+   * 原版原样），沿随机 ±1 对角步进走到第一格空地（type 缺省 = groundType −99）即 valid。
+   * 每组 2..4 只（floor(1+3·rand)+1，原版循环含端点），容器整体随机缩放 0.3+0.7·rand。
+   */
+  private buildNavies(level: LevelData): void {
+    const { cols, rows, tile } = level;
+    const seeds: Array<{ x: number; y: number }> = [
+      { x: Math.floor(rows / 4), y: Math.floor(rows / 4) },
+      { x: Math.floor((3 * rows) / 4), y: Math.floor(rows / 4) },
+      { x: Math.floor(rows / 4), y: Math.floor((3 * rows) / 4) },
+      { x: Math.floor((3 * rows) / 4), y: Math.floor(rows / 4) },
+    ];
+    const signOf = (v: number): number => (v > 0 ? 1 : v < 0 ? -1 : 0);
+    for (const seed of seeds) {
+      let x = seed.x;
+      let y = seed.y;
+      let valid = false;
+      const sx = signOf(Math.random() - 0.5);
+      const sy = signOf(Math.random() - 0.5);
+      while (x > 0 && x < cols && y > 0 && y < rows) {
+        if (level.groundType[y * cols + x] === EMPTY_TYPE) {
+          valid = true;
+          break;
+        }
+        x += sx;
+        y += sy;
+      }
+      if (!valid) continue;
+      const group = this.add.container(x * tile + PAD, y * tile + PAD).setDepth(3.5).setScale(0.3 + 0.7 * Math.random());
+      const count = Math.floor(1 + 3 * Math.random()) + 1;
+      for (let i = 0; i < count; i++) {
+        const img = this.add.image(0, 0, ATLAS_MENU, "Navy0000").setOrigin(0.5).setScale(0.3 + 0.7 * Math.random());
+        group.add(img);
+        this.navyItems.push({
+          img,
+          offsetCart: { x: 200 * (Math.random() - 0.5), y: 50 * (Math.random() - 0.5) },
+          offset: { r: 400 * Math.random(), theta: Math.random() },
+          rprime: 0,
+          speed: { r: 7e-4 + 5e-4 * Math.random(), theta: 3e-4 + 5e-4 * (Math.random() - 0.5) },
+          pos: { r: Math.random(), theta: Math.random() * Math.PI * 2 },
+        });
+      }
+    }
+  }
+
+  /** ui 层：顶部藤蔓时钟（正计时 MM:SS 真实秒，G14 去占位）+ 左上角红/蓝/银钻石计数 */
+  private buildHud(): void {
+    const clockX = this.d.level.widthPx / 2 + PAD;
     this.add.image(clockX, 0, ATLAS_TEMPLE, "Clock0000").setOrigin(0.5, 0).setDepth(9);
     this.clockText = this.add
-      .text(clockX, 62, "02:00", {
+      .text(clockX, 62, "00:00", {
         fontFamily: 'Georgia, "Times New Roman", serif',
-          fontSize: "24px",
-          color: "#f3e6a8",
-          stroke: "#1a140a",
-          strokeThickness: 4,
-          fontStyle: "bold",
-        })
-        .setOrigin(0.5)
-        .setDepth(9);
+        fontSize: "24px",
+        color: "#f3e6a8",
+        stroke: "#1a140a",
+        strokeThickness: 4,
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5)
+      .setDepth(9);
 
     const counter = (x: number, frame: string, total: number): Phaser.GameObjects.Text => {
       this.add.image(x, 28, ATLAS_CHARS, frame).setOrigin(0.5).setScale(0.34).setDepth(9);
-      const t = this.add
+      return this.add
         .text(x + 26, 28, `0/${total}`, {
           fontFamily: 'Georgia, "Times New Roman", serif',
           fontSize: "20px",
@@ -501,10 +683,11 @@ export class GameScene extends Phaser.Scene {
         })
         .setOrigin(0, 0.5)
         .setDepth(9);
-      return t;
     };
     this.redHudText = counter(34, DIAMOND_FRAME.red, this.redTotal);
     this.blueHudText = counter(150, DIAMOND_FRAME.blue, this.blueTotal);
+    // 银钻单列（E17：银钻不进红蓝栏、不计入 total）
+    if (this.silverTotal > 0) this.silverHudText = counter(266, DIAMOND_FRAME.silver, this.silverTotal);
   }
 
   setMyRole(role: Role): void {
@@ -516,131 +699,327 @@ export class GameScene extends Phaser.Scene {
     const st = this.d.net.room?.state;
     if (!st) return;
 
-    // 正计时（原版顶部藤蔓牌为已用时间 MM:SS，00:00 起递增；实拍 f3/f4 实证）
-    if (!this.finished) {
-      const s = Math.floor((st.timerMs ?? 0) / 1000);
-      this.clockText.setText(`${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`);
+    // 时钟：真实正计时秒（服务端只在 started 步进内累计，won/gameover 天然冻结）
+    this.clockText.setText(mmss((Number(st.timerMs) || 0) / 1000));
+
+    // phase 差分（won 演出、ready 瞬移与整轮复位都挂在这里）
+    const phase = String(st.phase ?? "");
+    if (phase !== this.prevPhase) {
+      const prev = this.prevPhase;
+      this.prevPhase = phase;
+      this.onPhaseChanged(prev, phase);
     }
 
+    this.drainSfx();
+
+    this.updatePlayers(st, delta);
+    this.updateDiamonds(st);
+    this.updateMechs(st);
+    this.updatePlatformSound(st);
+
+    // 教学渐显按本机角色（传世界坐标=快照中心+PAD，与触发矩形同域）
+    const myPs = this.myRole ? st.players?.get?.(this.myRole) : null;
+    if (myPs && myPs.dying !== true) {
+      this.updateTutorial((Number(myPs.x) || 0) + PAD, (Number(myPs.y) || 0) + PAD);
+    }
+
+    this.updateNavies();
+    this.snapPending = false;
+  }
+
+  /** phase 迁移副作用（E15/E1/M9） */
+  private onPhaseChanged(prev: string, cur: string): void {
+    if (cur === "ready") this.resetRound(prev);
+    if (cur === "won" && !this.stairsPlayed) this.playStairsSequence();
+  }
+
+  /** 整轮复位（重开=ready）：瞬移标记 + 清演出/门帧/烟，跨图平滑会把角色滑回出生点 */
+  private resetRound(prev: string): void {
+    this.snapPending = true;
+    this.stairsPlayed = false;
+    this.finishData = null;
+    this.d.net.lastFinish = null;
+    this.finishDelayEvent?.remove();
+    this.finishDelayEvent = undefined;
+    this.finishLayer?.destroy();
+    this.finishLayer = null;
+    this.doorFrames.clear();
+    for (const role of ROLES) {
+      this.doorSprites.get(role)?.setFrame(role === "fireboy" ? "FinishBoy0000" : "FinishGirl0000");
+      this.stairsSprites.get(role)?.destroy();
+      this.stairsSprites.delete(role);
+      const view = this.views.get(role);
+      if (view) {
+        view.anim = "";
+        view.legsKey = "";
+        view.dying = false;
+        view.smoke.setVisible(false).stop();
+      }
+    }
+    this.stopWater();
+    if (prev === "won" || prev === "gameover") {
+      // 原版 retry=整状态重载：BGM 重新起（首次开局 prev=lobby/"" 不重播）
+      this.sound.stopByKey("bgm_level");
+      this.sfx("bgm_level", { loop: true, volume: 0.35 });
+    }
+  }
+
+  /** 通关演出（原版 animateFinish @1951222：停 BGM → levelMusicFinish → 双 animateStairs → 1600ms → 结算） */
+  private playStairsSequence(): void {
+    this.stairsPlayed = true;
+    this.sound.stopByKey("bgm_level");
+    this.sfx("bgm_finish", { volume: 0.4 });
     for (const role of ROLES) {
       const view = this.views.get(role);
-      const ps = st.players?.get?.(role);
+      const door = this.d.level.doors[role];
+      if (view) {
+        // 原版 animateStairs：藏 head/legs（glow 随组隐藏），body 传送门口
+        view.legs.visible = view.head.visible = view.glow.visible = false;
+        view.smoke.setVisible(false).stop();
+      }
+      const p = PREFIX[role];
+      const s = this.add
+        .sprite(door.x + door.w / 2 + PAD, door.y + door.h + 4 + PAD, ATLAS_CHARS, `${p}_stairs0000`)
+        .setOrigin(0.5, 1)
+        .setScale(PLAYER_SCALE)
+        .setDepth(5);
+      this.tweens.add({ targets: s, scale: 0.8, duration: 360 }); // 原版 0.95→0.8 / 360ms Linear
+      s.play(`${p}_stairs`);
+      this.stairsSprites.set(role, s);
+    }
+    this.finishDelayEvent = this.time.delayedCall(DOOR.finishDelayMs, () => {
+      const fd = this.d.net.lastFinish;
+      if (fd) this.showFinishBoard(fd);
+    });
+  }
+
+  /** 服务器 sfx 消息消费（机关音）；diamond/door 客户端差分已覆盖，忽略防双发 */
+  private drainSfx(): void {
+    const q = this.d.net.sfxQueue;
+    while (q.length > 0) {
+      const m = q.shift()!;
+      if (m.kind === "lever") this.sfx("sfx_lever", { volume: 0.6 });
+      else if (m.kind === "pusher") this.sfx("sfx_pusher", { volume: 0.6 });
+    }
+  }
+
+  private updatePlayers(st: any, delta: number): void {
+    for (const role of ROLES) {
+      const view = this.views.get(role);
       if (!view) continue;
+      const ps = st.players?.get?.(role);
       if (!ps) {
         view.glow.visible = view.legs.visible = view.head.visible = false;
         continue;
       }
-      const tx = ps.x + 13 + PAD;
-      const ty = ps.y + 56 + PAD - FEET_TO_CENTER;
-      // 帧率无关指数平滑：自己跟手（更快），对方稍缓
-      const rate = role === this.myRole ? 22 : 12;
-      const k = 1 - Math.exp((-rate * delta) / 1000);
-      view.cx += (tx - view.cx) * k;
-      view.cy += (ty - view.cy) * k;
+      const tx = (Number(ps.x) || 0) + PAD;
+      const ty = (Number(ps.y) || 0) + PAD;
+      if (this.snapPending) {
+        view.cx = tx;
+        view.cy = ty;
+      } else {
+        // 帧率无关指数平滑：自己跟手（更快），对方稍缓
+        const rate = role === this.myRole ? 22 : 12;
+        const k = 1 - Math.exp((-rate * delta) / 1000);
+        view.cx += (tx - view.cx) * k;
+        view.cy += (ty - view.cy) * k;
+      }
       view.glow.setPosition(view.cx, view.cy);
       view.legs.setPosition(view.cx, view.cy);
       view.head.setPosition(view.cx, view.cy);
-      view.smoke.setPosition(view.cx, view.cy - 9);
-      view.glow.visible = view.legs.visible = view.head.visible = ps.alive;
-      const flip = ps.facing < 0;
+      view.smoke.setPosition(view.cx, view.cy + 21);
+      // isDead（烟雾 onComplete）后原版 sprite.visible=false；dying 期间仍可见
+      const visible = ps.isDead !== true;
+      view.glow.visible = view.legs.visible = view.head.visible = visible;
+      const flip = Number(ps.facing) < 0;
       view.legs.setFlipX(flip);
       view.head.setFlipX(flip);
 
-      // 死亡 → 烟 + 音效；复活 → 还原
-      if (view.alive && !ps.alive) {
-        view.smoke.setVisible(true).setPosition(view.cx, view.cy - 9).play("smoke");
+      // 死亡烟雾（dying 触发，45 帧@30fps 一次性；原版 _doKill：death 音 + 烟随初速镜像）
+      if (!view.dying && ps.dying === true) {
+        view.smoke.setVisible(true).setPosition(view.cx, view.cy + 21).setFlipX(Number(ps.vx) > 0).play("smoke");
         this.sfx("sfx_death", { volume: 0.55 });
-      } else if (!view.alive && ps.alive) {
+      } else if (view.dying && ps.dying !== true) {
         view.smoke.setVisible(false).stop();
       }
-      view.alive = ps.alive;
-      if (!ps.alive) continue;
+      view.dying = ps.dying === true;
+      if (view.dying || !visible) {
+        if (role === this.myRole) this.stopWater();
+        continue;
+      }
 
-      // 动画切换
-      if (view.anim !== ps.anim) {
-        view.anim = ps.anim;
-        const p = role === "fireboy" ? "fire" : "water";
-        switch (ps.anim) {
-          case "run":
-            view.legs.play(`${p}_legs_run`);
-            view.head.play(`${role}_idle`);
+      // 动画切换（内核 AnimState：idle/jumping/rising/falling → 头部四态；
+      // 腿部原版按地面移动播 running，快照无接地信息，用"jumping 且 |vx| 明显"近似）
+      const anim = String(ps.anim ?? "idle");
+      const p = PREFIX[role];
+      if (view.anim !== anim) {
+        view.anim = anim;
+        switch (anim) {
+          case "jumping":
+            view.head.play(`${p}_jump`);
+            // 起跳帧向上速度显著；起跑也进 jumping（vy≈0）不播跳声
+            if (role === this.myRole && Number(ps.vy) < -60) {
+              this.sfx(role === "fireboy" ? "sfx_jump_fb" : "sfx_jump_wg", { volume: 0.45 });
+            }
             break;
-          case "jump":
-            view.legs.play(`${p}_legs_idle`);
-            view.head.play(`${role}_jump`);
-            if (role === this.myRole) this.sfx(role === "fireboy" ? "sfx_jump_fb" : "sfx_jump_wg", { volume: 0.45 });
+          case "rising":
+            view.head.play(`${p}_rising`);
             break;
-          case "fall":
-            view.legs.play(`${p}_legs_idle`);
-            view.head.play(`${role}_fall`);
+          case "falling":
+            view.head.play(`${p}_fall`);
             break;
           default:
-            view.legs.play(`${p}_legs_idle`);
-            view.head.play(`${role}_idle`);
+            view.head.play(`${p}_idle`);
+        }
+      }
+      const wantLegs = anim === "jumping" && Math.abs(Number(ps.vx) || 0) > 20 ? `${p}_legs_run` : `${p}_legs_idle`;
+      if (view.legsKey !== wantLegs) {
+        view.legsKey = wantLegs;
+        view.legs.play(wantLegs);
+      }
+
+      // 水声（原版 @1868233：左右键按住 && isOnLiquid → waterSteps loop volume .5）
+      if (role === this.myRole) {
+        const want = ps.inLiquid === true && this.d.keyboard.isMoveDown();
+        if (want && !this.waterPlaying) {
+          this.waterPlaying = true;
+          this.sfx("sfx_water_steps", { loop: true, volume: 0.5 });
+        } else if (!want && this.waterPlaying) {
+          this.stopWater();
         }
       }
 
-      // 门前开门（原版 0→21 帧，离开反向关门）
-      const atDoor = ps.atDoor === true;
-      const wasOpen = this.doorOpen.get(role) ?? false;
-      if (atDoor && !wasOpen) {
-        this.doorSprites.get(role)?.play(role === "fireboy" ? "door_fb_open" : "door_wg_open");
-        this.sfx("sfx_door", { volume: 0.45 });
-      } else if (!atDoor && wasOpen) {
-        this.doorSprites.get(role)?.stop().setFrame(role === "fireboy" ? "FinishBoy0000" : "FinishGirl0000");
+      // 门逐帧扫（E10：快照 doorFrame 0..DOOR.frames@25fps，setFrame 驱动；开门即播音 @1681104）
+      const frame = Math.max(0, Math.min(DOOR.frames, Math.round(Number(ps.doorFrame) || 0)));
+      const prev = this.doorFrames.get(role) ?? 0;
+      if (frame !== prev) {
+        this.doorSprites.get(role)?.setFrame(`${role === "fireboy" ? "FinishBoy" : "FinishGirl"}${String(frame).padStart(4, "0")}`);
+        if (prev === 0 && frame > 0) this.sfx("sfx_door", { volume: 0.45 });
+        this.doorFrames.set(role, frame);
       }
-      this.doorOpen.set(role, atDoor);
     }
+  }
 
-    // 钻石收集：隐藏 + 音效（HUD 计数按定义色统计）
+  private stopWater(): void {
+    if (!this.waterPlaying) return;
+    this.waterPlaying = false;
+    this.sound.stopByKey("sfx_water_steps");
+  }
+
+  /** 钻石双向差分（隐藏 + 音效；整关重开 collected=false 时复位可见，E1） */
+  private updateDiamonds(st: any): void {
+    let redGot = 0;
+    let blueGot = 0;
+    let silverGot = 0;
     st.diamonds?.forEach?.((ds: { collected: boolean }, id: string) => {
+      const kind = this.diamondKinds.get(id);
+      if (ds.collected) {
+        if (kind === "red") redGot++;
+        else if (kind === "blue") blueGot++;
+        else if (kind === "silver") silverGot++;
+      }
       const img = this.diamondSprites.get(id);
       if (!img) return;
       if (ds.collected && img.visible) {
         img.setVisible(false);
         this.sfx("sfx_diamond", { volume: 0.5 });
+      } else if (!ds.collected && !img.visible) {
+        img.setVisible(true);
       }
     });
-    this.redHudText.setText(`${countCollected(this.d, "red", this.redTotal)}/${this.redTotal}`);
-    this.blueHudText.setText(`${countCollected(this.d, "blue", this.blueTotal)}/${this.blueTotal}`);
+    // E17：红栏只数红、蓝栏只数蓝（fbwg/银钻不进红蓝栏），银钻单列
+    this.redHudText.setText(`${redGot}/${this.redTotal}`);
+    this.blueHudText.setText(`${blueGot}/${this.blueTotal}`);
+    this.silverHudText?.setText(`${silverGot}/${this.silverTotal}`);
+  }
 
-    // 平台跟随服务端（左上角 → 容器中心）
-    st.platforms?.forEach?.((ps: { x: number; y: number }, id: string) => {
-      const v = this.platformViews.get(id);
+  /** 机关快照消费（E13）：lever 角度+灯、pusher 压下、平台/箱/球位姿、风区显隐 */
+  private updateMechs(st: any): void {
+    st.levers?.forEach?.((s: { state: number; angle: number }, id: string) => {
+      const v = this.leverViews.get(`l${id}`);
       if (!v) return;
-      const def = this.d.level.platforms.find((x) => x.id === id);
-      if (def) v.setPosition(ps.x + def.w / 2 + PAD, ps.y + def.h / 2 + PAD);
+      const deg = -(Number(s.angle) || 0) * (180 / Math.PI);
+      if (Math.abs(deg - v.angle) > 0.25) {
+        v.angle = deg;
+        v.stick.setAngle(deg);
+      }
+      const on = Number(s.state) === 1;
+      if (on !== v.lightOn) {
+        v.lightOn = on;
+        v.light.setFrame(`lever_base_light_${on ? "on" : "off"}0000`);
+      }
     });
+    st.pushers?.forEach?.((s: { state: number }, id: string) => {
+      const v = this.pusherViews.get(`b${id}`);
+      if (!v) return;
+      const state = Number(s.state) === 1 ? 1 : 0;
+      if (state === v.state) return;
+      v.state = state;
+      const y = v.baseY + (state === 1 ? 6 : 0);
+      v.block.y = y;
+      v.light.y = y;
+    });
+    st.platforms?.forEach?.((b: { x: number; y: number; angle: number }, id: string) => {
+      const v = this.platformViews.get(`p${id}`);
+      if (!v) return;
+      v.setPosition((Number(b.x) || 0) + PAD, (Number(b.y) || 0) + PAD);
+      v.setAngle(-(Number(b.angle) || 0) * (180 / Math.PI));
+    });
+    st.props?.forEach?.((b: { x: number; y: number; angle: number }, key: string) => {
+      const v = this.bodyViews.get(this.propViewKey(key) ?? "");
+      if (!v) return;
+      v.setPosition((Number(b.x) || 0) + PAD, (Number(b.y) || 0) + PAD);
+      v.setAngle(-(Number(b.angle) || 0) * (180 / Math.PI)); // 球必转，angle 必吃
+    });
+    st.winds?.forEach?.((wd: { state: number }, id: string) => {
+      const v = this.windViews.get(`f${id}`);
+      if (!v) return;
+      const on = Number(wd.state) !== 0;
+      if (on === v.on) return;
+      v.on = on;
+      if (on) v.base.play("wind_base");
+      else v.base.stop().setFrame("wind_base0000");
+    });
+  }
 
-    // 推箱跟随服务端（左上角 → 贴图中心）
-    if (this.boxView && st.box) {
-      const b = this.d.level.mechProps.find((m) => m.gid === 4);
-      if (b) this.boxView.setPosition(st.box.x + b.rect.w / 2 + PAD, st.box.y + b.rect.h / 2 + PAD);
-    }
+  /** 平台电机声（原版 updateState 激活时 playInstance @1719824；无事件通道，按位移自检） */
+  private updatePlatformSound(st: any): void {
+    let anyStart = false;
+    st.platforms?.forEach?.((b: { x: number; y: number }, id: string) => {
+      const x = Number(b.x) || 0;
+      const y = Number(b.y) || 0;
+      const prev = this.platformPrev.get(id);
+      const moved = prev ? Math.abs(prev.x - x) + Math.abs(prev.y - y) > 0.5 : false;
+      if (moved && !this.platformMoving.has(id)) anyStart = true;
+      if (moved) this.platformMoving.add(id);
+      else this.platformMoving.delete(id);
+      this.platformPrev.set(id, { x, y });
+    });
+    if (anyStart) this.sfx("sfx_platform", { volume: 0.5 });
+  }
 
-    // 通关演出（原版：双门到位 → 停 BGM 播通关曲 → 黑罩 + 结算板滑入）
-    if (st.phase === "finished") {
-      if (!this.finished) {
-        this.finished = true;
-        this.sound.stopByKey("bgm_level");
-        this.sfx("bgm_finish", { volume: 0.4 });
-      }
-      const bothIn = ROLES.every((r) => this.doorOpen.get(r) === true);
-      if (bothIn && !this.finishShown) {
-        this.finishShown = true;
-        this.showFinishBoard();
-      }
+  /** Navies 漂移（原版每帧：r′+=speed.r → pos.r=offset.r·sin r′ → 极坐标转直角坐标） */
+  private updateNavies(): void {
+    for (const it of this.navyItems) {
+      it.rprime += it.speed.r;
+      it.pos.r = it.offset.r * Math.sin(it.rprime);
+      it.pos.theta += it.speed.theta;
+      it.img.x = it.offsetCart.x + it.pos.r * Math.cos(it.pos.theta);
+      it.img.y = it.offsetCart.y + it.pos.r * Math.sin(it.pos.theta);
     }
   }
 
-  /** 结算板（PopupAssets）：黑罩 → 板滑入 → 三行徽章 + 星级石碑 + 继续按钮 */
-  private showFinishBoard(): void {
+  /** 结算板（PopupAssets）：黑罩 → 板滑入 → 徽章行 + 星级石碑 + 继续按钮（数据全由 finish 消息提供） */
+  private showFinishBoard(data: FinishData): void {
+    if (this.finishLayer) return;
+    this.finishData = data;
     const { level } = this.d;
     const W = level.widthPx + PAD * 2;
     const H = level.heightPx + PAD * 2;
     const cx = W / 2;
     const cy = H / 2;
     const layer = this.add.container(0, 0).setDepth(20);
+    this.finishLayer = layer;
 
     const shade = this.add.rectangle(cx, cy, W, H, 0x000000, 0);
     layer.add(shade);
@@ -651,13 +1030,22 @@ export class GameScene extends Phaser.Scene {
     layer.add(board);
     this.tweens.add({ targets: board, y: cy, duration: 650, ease: "Cubic.Out" });
 
-    // 三行：通关徽章 / 钻石 / 用时（收集数判定 ✓/✗）
-    const top = cy - (board.height * board.scaleY) / 2;
+    // 数据（原版 gameFinish/EndMenu @1918401-1921711）：
+    // 恒 ✓ / got>=total（total 不含银钻 @1948500）/ 有银钻加一行（silver>0 ✓）/ 限时内 ✓
+    const total = level.diamonds.filter((d) => d.kind !== "silver").length;
+    const got = data.fbDiamonds + data.wgDiamonds;
+    const limit = this.templeTimeSec;
+    const timeS = Math.round(data.timeMs / 1000);
     const rows: Array<{ frame: string; h: number; ok: boolean; value: string }> = [
       { frame: "FinishIcon0000", h: 107, ok: true, value: "" },
-      { frame: "DiamondsIcon0000", h: 73, ok: this.collectedAll(), value: `${this.countGot()}/${this.d.level.diamonds.length}` },
-      { frame: "TimeIcon0000", h: 73, ok: true, value: this.elapsedText() },
+      { frame: "DiamondsIcon0000", h: 73, ok: got >= total, value: `${got}/${total}` },
     ];
+    if (this.silverTotal > 0) {
+      rows.push({ frame: "SilverIcon0000", h: 73, ok: data.silver > 0, value: `${data.silver}/${this.silverTotal}` });
+    }
+    rows.push({ frame: "TimeIcon0000", h: 73, ok: limit == null || timeS <= limit, value: mmss(timeS) });
+
+    const top = cy - (board.height * board.scaleY) / 2;
     let ry = top + 30;
     for (const r of rows) {
       layer.add(this.add.image(cx - 200, ry + r.h / 2, ATLAS_POPUP, r.frame));
@@ -676,8 +1064,8 @@ export class GameScene extends Phaser.Scene {
       ry += r.h + 46;
     }
 
-    // 星级石碑 + 箭头（星级=钻石全收 3 / 过半 2 / 其余 1）
-    const stars = this.collectedAll() ? 3 : this.countGot() > this.d.level.diamonds.length / 2 ? 2 : 1;
+    // 星级石碑（原版公式 @2205243：1 + 钻石全收 + 限时内）+ 箭头
+    const stars = (1 + (got >= total ? 1 : 0) + (limit != null && timeS <= limit ? 1 : 0)) as 1 | 2 | 3;
     const stone = this.add.sprite(cx + 180, cy - 60, ATLAS_POPUP, "FinishStone0000");
     layer.add(stone);
     stone.play(`finish_stone_${stars}`);
@@ -685,7 +1073,7 @@ export class GameScene extends Phaser.Scene {
     layer.add(arrow);
     this.tweens.add({ targets: arrow, x: "+=10", duration: 700, yoyo: true, repeat: -1, ease: "Sine.inOut" });
 
-    // 继续按钮（原版石按钮；点击=再来一局）
+    // 继续按钮（原版石按钮；点击=整关重开）
     const btnY = top + board.height * board.scaleY - 60;
     const btn = this.add.image(cx, btnY, ATLAS_MENU, "StoneButton0000").setInteractive({ useHandCursor: true });
     const btnText = this.add
@@ -702,41 +1090,8 @@ export class GameScene extends Phaser.Scene {
     btn.on("pointerdown", () => this.restartLevel());
   }
 
-  private collectedAll(): boolean {
-    return this.countGot() >= this.d.level.diamonds.length;
-  }
-
-  private countGot(): number {
-    const st = this.d.net.room?.state;
-    if (!st) return 0;
-    let got = 0;
-    st.diamonds.forEach((ds: { collected: boolean }) => {
-      if (ds.collected) got++;
-    });
-    return got;
-  }
-
-  private elapsedText(): string {
-    const st = this.d.net.room?.state;
-    const ms = st?.timerMs ?? 0;
-    const s = Math.floor(ms / 1000);
-    return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-  }
-
   private restartLevel(): void {
     this.d.net.restart();
     this.scene.restart();
   }
-}
-
-function countCollected(d: GameInit, kind: "red" | "blue", cap: number): number {
-  const st = d.net.room?.state;
-  if (!st) return 0;
-  let n = 0;
-  st.diamonds.forEach((ds: { collected: boolean }, id: string) => {
-    if (!ds.collected || n >= cap) return;
-    const def = d.level.diamonds.find((x) => x.id === id);
-    if (def && (def.kind === kind || def.kind === "fbwg")) n++;
-  });
-  return n;
 }

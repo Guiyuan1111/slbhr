@@ -1,0 +1,51 @@
+@1864400| 			this.game.level.sounds.death.play();
+@1864441| 								(b = this.game.make.sprite(0, -0.7 * this.game.physics.box2d.mpx(1), "CharAssets")),
+@1864535| 								(a = b.animations.add("play", Phaser.Animation.generateFrameNames("death_smoke", 0, 45, "", 4), 30, !1)),
+@1864650| 								this.body.data.GetLinearVelocity().x < 0 && (b.scale.x = -1),
+@1864721| 								b.animations.play("play"),
+@1864757| 								b.anchor.set(0.5),
+@1864785| 								a.killOnComplete=true,
+@1864817| 								this.sprite.addChild(b);
+@1864851| 							}
+@1864861| 							return;
+@1864877| 						}
+@1864886| 						return this.kill();
+@1864913| 					}),
+@1864923| 					(e.prototype.kill = function () {
+@1864963| 						if (!this.dying) return (this.dying = !0), _.delay(this._doKill, 0);
+@1865039| 					}),
+@1865049| 					(e.prototype._doKill = function () {
+@1865092| 						var a, b;
+@1865109| 						return (
+@1865125| 							this.game.level.sounds.death.play(),
+@1865170| 							this.game.level.sounds.levelMusic.stop(),
+@1865220| 							this.game.level.sounds.levelMusicOver.play(),
+@1865274| 							(b = this.game.make.sprite(0, -0.7 * this.game.physics.box2d.mpx(1), "CharAssets")),
+@1865367| 							(a = b.animations.add("play", Phaser.Animation.generateFrameNames("death_smoke", 0, 45, "", 4), 30, !1)),
+@1865481| 							this.body.data.GetLinearVelocity().x < 0 && (b.scale.x = -1),
+@1865551| 							b.animations.play("play"),
+@1865586| 							b.anchor.set(0.5),
+@1865613| 							a.onComplete.add(
+@1865639| 								(function (a) {
+@1865664| 									return function () {
+@1865695| 										return (a.sprite.visible = !1), (a.isDead = !0), a.signal.dispatch();
+@1865776| 									};
+@1865789| 								})(this)
+@1865807| 							),
+@1865818| 							this.sprite.addChild(b),
+@1865851| 							(this.dead = !0)
+@1865876| 						);
+@1865886| 					}),
+@1865896| 					(e.prototype.destroy = function () {
+@1865939| 						return e.__super__.destroy.apply(this, arguments), this.cursors.destroy();
+@1866021| 					}),
+@1866031| 					(e.prototype.animateStairs = function (a) {
+@1866081| 						var b;
+@1866095| 						return (
+@1866111| 							(this.bodyParts.head.visible = !1),
+@1866155| 							(this.bodyParts.legs.visible = !1),
+@1866199| 							(b = this.game.make.sprite(0, 0, "CharAssets")),
+@1866256| 							b.animations.add("up", Phaser.Animation.generateFrameNames(this.prefix + "_stairs", 0, 30, "", 4), 25, !1),
+@1866372| 							b.anchor.set(0.5, 1),
+@1866402| 							this.game.add.tween(b.scale).to({ x: 0.8, y: 0.8 }, 360, Phaser.Easing.Linear.None, !0, 0),
+@1866502| 							this.sprite

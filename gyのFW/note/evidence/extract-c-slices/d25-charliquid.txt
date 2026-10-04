@@ -1,0 +1,54 @@
+@1862400| oop", Phaser.Animation.generateFrameNames(o + "_ice_legs", 0, 4, "", 4), 10, !0),
+@1862483| 						(k.visible = !1),
+@1862508| 						this.bodySprite.addChild(k),
+@1862544| 						(this.bodyParts = {}),
+@1862574| 						(this.bodyParts.legs = l),
+@1862608| 						(this.bodyParts.ice = k),
+@1862641| 						(this.bodyParts.head = j),
+@1862675| 						(this.bodySprite.hitArea = new PIXI.Circle(0, 0, 0.65 * l.height)),
+@1862750| 						this.body.setFixtureContactCallback(
+@1862794| 							this.feetSensor,
+@1862819| 							(function (a) {
+@1862843| 								return function (b, c, d, e, f, g) {
+@1862889| 									var h;
+@1862906| 									if (e.m_isSensor) {
+@1862936| 										if (null != e.m_userData && "liquid_death" === e.m_userData.type) return f ? (a.liquidTouched(e.m_userData.liquidType), (a.isOnLiquid = !0)) : (a.isOnLiquid = !1);
+@1863111| 									} else {
+@1863130| 										if (f && g.m_manifold.localNormal.Length() > 0) return a.feetSensor.contacts.push(g);
+@1863227| 										if ((h = a.feetSensor.contacts.indexOf(g)) >= 0) return a.feetSensor.contacts.splice(h, 1);
+@1863330| 									}
+@1863342| 								};
+@1863354| 							})(this),
+@1863372| 							this
+@1863385| 						),
+@1863395| 						(this.cursors = new c(this.game, g)),
+@1863440| 						(this.sprite.char = this.char = g),
+@1863483| 						this
+@1863495| 					);
+@1863504| 				}
+@1863511| 				return (
+@1863525| 					b(e, d),
+@1863540| 					(e.prototype.facing = "left"),
+@1863577| 					(e.prototype.feetFriction = 0.5),
+@1863617| 					(e.prototype.r1 = 0.48),
+@1863648| 					(e.prototype.r2 = 0.2),
+@1863678| 					(e.prototype.dr = 0.03),
+@1863709| 					(e.prototype.y1 = 0.2),
+@1863739| 					(e.prototype.y2 = -0.9),
+@1863770| 					(e.prototype.spriteScale = 0.95),
+@1863810| 					(e.prototype.jumpImpulse = 1),
+@1863847| 					(e.prototype.jumpVelocity = 15.5),
+@1863888| 					(e.prototype.jumpIceVelocity = 10),
+@1863930| 					(e.prototype.runForce = 50),
+@1863965| 					(e.prototype.floatForce = 30),
+@1864002| 					(e.prototype.defaultMaxSpeed = 8.5),
+@1864045| 					(e.prototype.waterIceMaxSpeed = 2),
+@1864087| 					(e.prototype.absoluteMaxSpeed = 40),
+@1864130| 					(e.prototype.liquidTouched = function (a) {
+@1864180| 						if(! (7 === a || ("wg" === this.char && 6 === a) || ("fb" === this.char && 5 === a)) ) {
+@1864276| 							return;
+@1864292| 						}
+@1864301| 						if(GameConfig.cheating.isInvulnerable) {
+@1864349| 							if (!this.dying) {
+@1864376| 								var a, b;
+@1864395| 					

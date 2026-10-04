@@ -35,7 +35,7 @@ export class BootScene extends Phaser.Scene {
     this.load.atlas(ATLAS_POPUP, "/assets/atlasses/PopupAssets.png", "/assets/atlasses/PopupAssets.json");
     this.load.atlas(ATLAS_MENU, "/assets/atlasses/MenuAssets.png", "/assets/atlasses/MenuAssets.json");
 
-    // 音频（仅本场景触发全集：跳跃/拾取/死亡/开门/拉杆/音乐）
+    // 音频（仅本场景触发全集：跳跃/拾取/死亡/开门/拉杆/踏板/平台/水声/音乐）
     // 统一走无扩展名流式路由（/s/ 前缀，服务器补 .mp3）：IDM 等下载接管工具
     // 按 URL 扩展名拦截媒体请求，浏览器侧只会拿到 204 空响应
     for (const [key, file] of [
@@ -45,6 +45,9 @@ export class BootScene extends Phaser.Scene {
       ["sfx_death", "Death.mp3"],
       ["sfx_door", "Door.mp3"],
       ["sfx_lever", "Lever.mp3"],
+      ["sfx_pusher", "Pusher.mp3"],
+      ["sfx_platform", "Platform.mp3"],
+      ["sfx_water_steps", "WaterSteps.mp3"],
       ["sfx_end_pass", "EndPass.mp3"],
       ["bgm_level", "LevelMusic.mp3"],
       ["bgm_finish", "LevelMusicFinish.mp3"],
@@ -68,17 +71,23 @@ export class BootScene extends Phaser.Scene {
       a.create({ key, frames, frameRate, repeat });
     };
 
-    // 帧率全部按原版实测 30fps（init.js：idle/run/jump/fall 均 30）
+    // 帧率全部按原版实测 30fps（init.js：idle/jumping/rising/falling 均 30）
     for (const role of ["fire", "water"] as const) {
       seq(`${role}_idle`, ATLAS_CHARS, `${role}_head_idle`, 0, role === "fire" ? 18 : 29, 30, -1);
       seq(`${role}_legs_idle`, ATLAS_CHARS, `${role}_legs_idle`, 0, 0, 1, -1);
       seq(`${role}_legs_run`, ATLAS_CHARS, `${role}_legs_running`, 0, 7, 30, -1);
       seq(`${role}_jump`, ATLAS_CHARS, `${role}_head_jumping`, 0, 10, 30, 0);
-      seq(`${role}_fall`, ATLAS_CHARS, `${role}_head_falling`, 0, role === "fire" ? 4 : 10, 30, -1);
+      // E19 字证（init.js@1861937）：falling 对双角色都只注册 0..4
+      // （water 图集虽有 11 帧表，原版注册子区间仍是 0..4）
+      seq(`${role}_fall`, ATLAS_CHARS, `${role}_head_falling`, 0, 4, 30, -1);
+      // E19 字证（init.js@1862115）：rising 0..4@30fps 循环（water 图集 11 帧同取子区间）
+      seq(`${role}_rising`, ATLAS_CHARS, `${role}_head_rising`, 0, 4, 30, -1);
       // 通关上楼梯（原版 25fps 一次性，31 帧收 0..29 同段）
       seq(`${role}_stairs`, ATLAS_CHARS, `${role}_stairs`, 0, 29, 25, 0);
     }
     seq("smoke", ATLAS_CHARS, "death_smoke", 0, 44, 30, 0);
+    // 风区机身（原版 Wind：generateFrameNames("wind_base",0,4)@30fps 循环；图集实有 0..3）
+    seq("wind_base", ATLAS_MECH, "wind_base", 0, 3, 30, -1);
     // 液体三段各 15 帧 30fps 循环（Left/中/Right）
     for (const [key, base] of [
       ["water", "WaterBox"],
@@ -89,10 +98,8 @@ export class BootScene extends Phaser.Scene {
       seq(`liquid_${key}_left`, ATLAS_GROUND, `${base}Left`, 0, 14, 30, -1);
       seq(`liquid_${key}_right`, ATLAS_GROUND, `${base}Right`, 0, 14, 30, -1);
     }
-    // 门的开启动画（原版 25fps 步进 0→21 帧开门，0000 为关闭态）
-    seq("door_fb_open", ATLAS_TEMPLE, "FinishBoy", 0, 21, 25, 0);
-    seq("door_wg_open", ATLAS_TEMPLE, "FinishGirl", 0, 21, 25, 0);
     // 结算星级石碑（to_1=1-7 / to_2=8-14 / to_3=15-21，30fps 一次性）
+    // 门动画键不再注册（E10：门改按快照 doorFrame 逐帧 setFrame，动画键会与帧驱动打架）
     seq("finish_stone_1", ATLAS_POPUP, "FinishStone", 1, 7, 30, 0);
     seq("finish_stone_2", ATLAS_POPUP, "FinishStone", 8, 14, 30, 0);
     seq("finish_stone_3", ATLAS_POPUP, "FinishStone", 15, 21, 30, 0);

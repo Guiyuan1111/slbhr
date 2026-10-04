@@ -1,0 +1,190 @@
+@1917769| define("States/Level/EndMenu", ["./IngameMenu", "./FinishCounter", "../Common/StoneButton", "Phaser"], function (c, d, e) {
+@1917894| 			"use strict";
+@1917912| 			var f;
+@1917923| 			return (f = f = (function (f) {
+@1917959| 				function g() {
+@1917979| 					return (this.gotoMenu = a(this.gotoMenu, this)), (this.renderContent = a(this.renderContent, this)), g.__super__.constructor.apply(this, arguments);
+@1918134| 				}
+@1918141| 				return (
+@1918155| 					b(g, f),
+@1918170| 					(g.prototype.renderContent = function () {
+@1918219| 						var a, b, f, g, h, i, j, k, l, m, n, o, p;
+@1918269| 						return (
+@1918285| 							(o = ("single" === this.game.settings.controls && this.options.data.mobileTime) || this.options.data.time),
+@1918401| 							(j = new d(this.game, "", "FinishIcon0000")),
+@1918455| 							(h = this.options.state.diamonds),
+@1918498| 							(i = this.options.data.totalDiamonds),
+@1918545| 							(g = new d(this.game, "", "DiamondsIcon0000")),
+@1918601| 							// (m = "puzzle" === this.options.data.type ? new d(this.game, "", "SilverIcon0000") : new d(this.game, "", "TimeIcon0000")),
+@1918735| 							"puzzle" === this.options.data.type
+@1918779|                                 ? (m = new d(this.game, "", "SilverIcon0000"))
+@1918859|                                 : ((m = new d(this.game, "", "TimeIcon0000")), true && ((p = this.game.make.bitmapText(0, 0, "font", this.game.secondsToString(o), 18)), (p.alpha = 0.7))),
+@1919048| 							(n = this.options.state.time),
+@1919087| 							console.log("Time current: " + n),
+@1919130| 							this.board.addChild(j),
+@1919162| 							this.board.addChild(g),
+@1919194| 							this.board.addChild(m),
+@1919226| 							p && this.board.addChild(p),
+@1919263| 							(this.layoutContent = (function (a) {
+@1919309| 								return function () {
+@1919339| 									if (
+@1919354| 										c.prototype.layoutContent.call(a),
+@1919400| 										(j.x = -200),
+@1919425| 										(g.x = -200),
+@1919450| 										(m.x = -200),
+@1919475| 										"puzzle" === a.options.data.type
+@1919519| 											? ((g.visible = !1), (j.y = 0.5 * -a.contentSize.halfHeight + 60), (m.y = 0.5 * -a.contentSize.halfHeight + 140))
+@1919645| 											: "dark" === a.options.data.type
+@1919690| 											? ((j.y = 0.5 * -a.contentSize.halfHeight + 60), (m.y = 0.5 * -a.contentSize.halfHeight + 140), (g.visible = !1))
+@1919816| 											: ((j.y = 0.5 * -a.contentSize.halfHeight + 20), (g.y = 0.5 * -a.contentSize.halfHeight + 100), (m.y = 0.5 * -a.contentSize.halfHeight + 180)),
+@1919972| 											p
+@1919986| 									)
+@1919998| 										return p.anchor.set(0.5), (p.x = m.x - p.textWidth / 2 - 10), (p.y = m.y + 35);
+@1920089| 								};
+@1920101| 							})(this)),
+@1920120| 							this.layoutContent(),
+@1920150| 							(b = new e(this.game, 0, this.contentSize.halfHeight - 140, this.game.lang.locale("Continue"), this.gotoMenu)),
+@1920270| 							b.disable(),
+@1920291| 							this.board.addChild(b),
+@1920323| 							(a = this.game.make.sprite(5, -60, "PopupAssets", "popupArrow0000")),
+@1920401| 							a.anchor.set(0.5),
+@1920428| 							this.board.addChild(a),
+@1920460| 							(l = "puzzle" === this.options.data.type ? "FinishStonePuzzle" : "speed" === this.options.data.type ? "FinishStoneSpeed" : "dark" === this.options.data.type ? "FinishStoneDark" : "FinishStone"),
+@1920663| 							(k = this.game.make.sprite(180, -60, "PopupAssets", l + "0000")),
+@1920737| 							k.animations.add("to_1", Phaser.Animation.generateFrameNames(l, 1, 7, "", 4), 30, !1),
+@1920832| 							k.animations.add("to_2", Phaser.Animation.generateFrameNames(l, 8, 14, "", 4), 30, !1),
+@1920928| 							k.animations.add("to_3", Phaser.Animation.generateFrameNames(l, 15, 21, "", 4), 30, !1),
+@1921025| 							k.anchor.set(0.5),
+@1921052| 							this.board.addChild(k),
+@1921084| 							(f = 700),
+@1921103| 							_.delay(
+@1921120| 								(function (c) {
+@1921145| 									return function () {
+@1921176| 										if ((j.setAchieved(!0), null != c.game && null != c.game.level))
+@1921252| 											return (
+@1921273| 												c.game.level.sounds.endPass.play(),
+@1921322| 												_.delay(function () {
+@1921357| 													if (null != c.game && null != c.game.level)
+@1921415| 														return (
+@1921439| 															c.game.level.sounds.endPass.play(),
+@1921491| 															g.setAchieved(h >= i),
+@1921530| 															_.delay(function () {
+@1921568| 																if (null != c.game && null != c.game.level)
+@1921629| 																	return (
+@1921656| 																		c.game.level.sounds.endPass.play(),
+@1921711| 																		"puzzle" === c.options.data.type ? m.setAchieved(c.options.state.silverDiamond > 0) : m.setAchieved(n <= o),
+@1921839| 																		_.delay(function () {
+@1921880| 																			if (null != c.game && null != c.game.level)
+@1921944| 																				return (
+@1921974| 																					c.game.level.sounds.endDiamond.play(),
+@1922035| 																					(a.frameName = "popupArrow0001"),
+@1922091| 																					k.animations.play("to_" + c.options.state.stars),
+@1922163| 																					(c.animationDone = !0),
+@1922209| 																					b.enable()
+@1922242| 																				);
+@1922266| 																		}, m.visible && f)
+@1922304| 																	);
+@1922325| 															}, g.visible && f)
+@1922360| 														);
+@1922378| 												}, j.visible && f)
+@1922410| 											);
+@1922425| 									};
+@1922438| 								})(this),
+@1922457| 								f
+@1922468| 							)
+@1922478| 						);
+@1922488| 					}),
+@1922498| 					(g.prototype.gotoMenu = function () {
+@1922542| 						if (this.animationDone) return this.game.state.fade("levelMenu", !0, !1, this.game.currentTemple);
+@1922648| 					}),
+@1922658| 					g
+@1922666| 				);
+@1922674| 			})(c));
+@1922686| 		});
+@1922693| 	}.call(this),
+@1922709| 	function () {
+@1922725| 		var a = function (a, b) {
+@1922754| 				return function () {
+@1922780| 					return a.apply(b, arguments);
+@1922816| 				};
+@1922824| 			},
+@1922831| 			b = function (a, b) {
+@1922857| 				function d() {
+@1922877| 					this.constructor = a;
+@1922905| 				}
+@1922912| 				for (var e in b) c.call(b, e) && (a[e] = b[e]);
+@1922965| 				return (d.prototype = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1923063| 			},
+@1923070| 			c = {}.hasOwnProperty;
+@1923097| 		define("States/Level/GameOverMenu", ["require", "Phaser", "./IngameMenu", "../Common/StoneButton"], function (c) {
+@1923215| 			var d, e, f;
+@1923232| 			return (
+@1923245| 				c("Phaser"),
+@1923263| 				(f = c("./IngameMenu")),
+@1923293| 				(d = c("../Common/StoneButton")),
+@1923332| 				(e = e = (function (c) {
+@1923362| 					function e() {
+@1923383| 						return (
+@1923399| 							(this.retry = a(this.retry, this)),
+@1923443| 							(this.gotoMenu = a(this.gotoMenu, this)),
+@1923493| 							(this.layoutContent = a(this.layoutContent, this)),
+@1923553| 							(this.renderContent = a(this.renderContent, this)),
+@1923613| 							e.__super__.constructor.apply(this, arguments)
+@1923668| 						);
+@1923678| 					}
+@1923686| 					return (
+@1923701| 						b(e, c),
+@1923717| 						(e.prototype.renderContent = function () {
+@1923767| 							var a, b;
+@1923785| 							return (
+@1923802| 								(this.label = b = this.game.make.bitmapText(0, 0, "fontStone_large", this.game.lang.locale("Game Over"), 36)),
+@1923922| 								b.anchor.set(0),
+@1923948| 								(b.x = -b.width / 2),
+@1923979| 								(b.y = 0.5 * -this.contentSize.halfHeight + b.textHeight / 2),
+@1924051| 								this.board.addChild(b),
+@1924084| 								(a = new d(this.game, 0.4 * -this.contentSize.halfWidth, 0.4 * this.contentSize.halfHeight, this.game.lang.locale("Menu"), this.gotoMenu)),
+@1924233| 								a.anchor.set(0.5),
+@1924261| 								this.board.addChild(a),
+@1924294| 								(a = new d(this.game, 0.4 * this.contentSize.halfWidth, 0.4 * this.contentSize.halfHeight, this.game.lang.locale("Retry"), this.retry)),
+@1924440| 								a.anchor.set(0.5),
+@1924468| 								this.board.addChild(a)
+@1924500| 							);
+@1924511| 						}),
+@1924522| 						(e.prototype.layoutContent = function () {
+@1924572| 							return (
+@1924589| 								e.__super__.layoutContent.call(this),
+@1924636| 								(this.label.x = -label.width / 2),
+@1924680| 								(this.label.y = 0.5 * -this.contentSize.halfHeight + label.textHeight / 2),
+@1924765| 								(this.button1.x = -this.contentSize.halfWidth / 3),
+@1924826| 								(this.button1.y = 0.4 * this.contentSize.halfHeight),
+@1924889| 								(this.button2.x = this.contentSize.halfWidth / 3),
+@1924949| 								(this.button2.y = 0.4 * this.contentSize.halfHeight)
+@1925011| 							);
+@1925022| 						}),
+@1925033| 						(e.prototype.gotoMenu = function () {
+@1925078| 							return this.game.state.fade("levelMenu", !0, !1, this.game.currentTemple);
+@1925161| 						}),
+@1925172| 						(e.prototype.retry = function () {
+@1925214| 							return this.game.level.retry();
+@1925254| 						}),
+@1925265| 						e
+@1925274| 					);
+@1925283| 				})(f))
+@1925295| 			);
+@1925302| 		});
+@1925309| 	}.call(this),
+@1925325| 	function () {
+@1925341| 		var a = function (a, b) {
+@1925370| 				return function () {
+@1925396| 					return a.apply(b, arguments);
+@1925432| 				};
+@1925440| 			},
+@1925447| 			b = function (a, b) {
+@1925473| 				function d() {
+@1925493| 					this.constructor = a;
+@1925521| 				}
+@1925528| 				for (var e in b) c.call(b, e) && (a[e] = b[e]);
+@1925581| 				return (d.prototype = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1925679| 			},
+@1925686| 			c = {}.hasOwnProperty;
+@1925713| 		

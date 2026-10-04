@@ -1,5 +1,9 @@
 # Handoff：需要真人完成的事与已知限制
 
+**更新**：2026-10-04（**执行期冻结完成**：第二轮三轮问答 12 项全冻结（0.3.0 闭环/48 关可进/对拍全绿自动发版/视觉授权抽查/对拍工具入库 scripts/baseline/URL 选关等），执行已开工，入口见 [handoff/2026-10-04-execution-freeze.md](handoff/2026-10-04-execution-freeze.md)；视觉能力已获用户授权，数值差分仍为唯一硬验收）
+
+**更新**：2026-10-04（**保真重写开工**：三轮提问完成、需求冻结，分支 `feat/fidelity-rewrite` 已建；Box2D 提取侦察完成——引擎实为 init.js @1,133,390–1,655,056 的 509KB Closure 编译 bundle（旧"多模块区间"假设作废）；本机原无任何 Node 运行时，便携版 v22.15.0 已装 `gyのFW/TEMP/node/`（gitignore 内，用前注入 PATH）。**接续执行者的唯一入口：[handoff/2026-10-04-fidelity-rewrite.md](handoff/2026-10-04-fidelity-rewrite.md)**，含冻结需求/提取步骤/todo 快照/坑清单）
+
 **更新**：2026-10-04（**使命调整 + 调研落档**：当前阶段目标改为"尽可能忠实复刻原版 HTML5 森林神庙"；五份只读调研报告归档于 [research/2026-10-fidelity/](research/2026-10-fidelity/)，接续工作先读其 `00-overview.md`；文末新增「2026-10-04 使命调整与调研纠偏」一节，本文正文旧表述以其为准）
 
 **更新**：2026-10-03（0.2.0 验收收尾：双浏览器真联机通关 ×3、视觉终审全项 pass、main 合并 + tag 0.2.0）

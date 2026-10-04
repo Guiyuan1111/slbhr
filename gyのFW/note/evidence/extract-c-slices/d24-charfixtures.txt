@@ -1,0 +1,88 @@
+@1857480| r__ = b.prototype), a;
+@1857504| 			},
+@1857511| 			c = {}.hasOwnProperty;
+@1857538| 		define("States/Level/character", ["./CharCursors", "Phaser"], function (c) {
+@1857618| 			"use strict";
+@1857636| 			var d;
+@1857647| 			return (d = d = (function (d) {
+@1857683| 				function e(b, d, f, g) {
+@1857713| 					(this.drawDarkMask = a(this.drawDarkMask, this)),
+@1857769| 						(this.update = a(this.update, this)),
+@1857814| 						(this.setFriction = a(this.setFriction, this)),
+@1857869| 						(this.setOnIce = a(this.setOnIce, this)),
+@1857918| 						(this.animateStairs = a(this.animateStairs, this)),
+@1857977| 						(this.destroy = a(this.destroy, this)),
+@1858024| 						(this._doKill = a(this._doKill, this)),
+@1858071| 						(this.kill = a(this.kill, this)),
+@1858112| 						(this.liquidTouched = a(this.liquidTouched, this));
+@1858171| 					var h, i, j, k, l, m, n, o, p, q, r, s;
+@1858217| 					return (
+@1858232| 						(this.maxSpeed = this.defaultMaxSpeed),
+@1858279| 						e.__super__.constructor.call(this, b),
+@1858325| 						(d += this.game.physics.box2d.mpx(1)),
+@1858371| 						(f -= this.game.physics.box2d.mpx(1)),
+@1858417| 						(this.data = { char: g, diamonds: 0, silverDiamond: 0 }),
+@1858482| 						(this.sprite = this.game.make.sprite(d, f, "CharAssets", "_default0000")),
+@1858564| 						(this.sprite.character = this),
+@1858603| 						(this.sprite.scale.x = this.spriteScale),
+@1858652| 						(this.sprite.scale.y = this.spriteScale),
+@1858701| 						this.game.layers.chars.addChild(this.sprite),
+@1858754| 						this.game.physics.box2d.enable(this.sprite),
+@1858806| 						(this.body = this.sprite.body),
+@1858845| 						this.body.clearFixtures(),
+@1858879| 						(this.body.fixedRotation = !0),
+@1858918| 						(this.body.data.m_userData = "pers"),
+@1858963| 						this.body.data.SetBullet(!0),
+@1859000| 						(this.signal = new Phaser.Signal()),
+@1859044| 						(m = (function (a) {
+@1859072| 							return function (b, c, d) {
+@1859108| 								var e, f, g;
+@1859130| 								return (
+@1859148| 									(e = new box2d.b2CircleShape(b)),
+@1859192| 									e.m_p.SetXY(c[0], c[1]),
+@1859227| 									(g = new box2d.b2FixtureDef()),
+@1859269| 									(g.shape = e),
+@1859294| 									(g.density = 0),
+@1859321| 									(g.filter.categoryBits = 16),
+@1859361| 									(g.filter.maskBits = 4353),
+@1859399| 									(g.friction = d),
+@1859427| 									(f = a.body.data.CreateFixture(g)),
+@1859473| 									(f.id = a.body.world.getNextFixtureId()),
+@1859525| 									f
+@1859537| 								);
+@1859549| 							};
+@1859560| 						})(this)),
+@1859578| 						(n = (function (a) {
+@1859606| 							return function (b, c, d, e) {
+@1859645| 								var f, g, h, i, j;
+@1859673| 								return (
+@1859691| 									(j = []),
+@1859711| 									(f = a.dr),
+@1859733| 									j.push(new box2d.b2Vec2(b - f, d)),
+@1859779| 									j.push(new box2d.b2Vec2(-b + f, d)),
+@1859826| 									j.push(new box2d.b2Vec2(c - f, e)),
+@1859872| 									j.push(new box2d.b2Vec2(-c + f, e)),
+@1859919| 									(i = new box2d.b2PolygonShape()),
+@1859963| 									i.Set(j),
+@1859983| 									(h = new box2d.b2FixtureDef()),
+@1860025| 									(h.shape = i),
+@1860050| 									(h.friction = 0),
+@1860078| 									(h.density = 1.4),
+@1860107| 									(h.filter.categoryBits = 16),
+@1860147| 									(h.filter.maskBits = 4353),
+@1860185| 									(g = a.body.data.CreateFixture(h)),
+@1860231| 									(g.id = a.body.world.getNextFixtureId()),
+@1860283| 									g
+@1860295| 								);
+@1860307| 							};
+@1860318| 						})(this)),
+@1860336| 						(p = this.r1),
+@1860358| 						(q = this.r2),
+@1860380| 						(r = this.y1),
+@1860402| 						(s = this.y2),
+@1860424| 						(h = new box2d.b2CircleShape(0.1)),
+@1860467| 						h.m_p.SetXY(0, 0),
+@1860493| 						(i = new box2d.b2FixtureDef()),
+@1860532| 						(i.shape = h),
+@1860554| 						(i.density = 0),
+@1860578| 						(i.filter.catego

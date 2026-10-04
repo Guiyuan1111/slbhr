@@ -11,6 +11,7 @@ export default defineConfig({
     proxy: {
       "/assets": "http://127.0.0.1:2567",
       "/data": "http://127.0.0.1:2567",
+      "/api": "http://127.0.0.1:2567",
       "/matchmake": { target: "http://127.0.0.1:2567", ws: true },
     },
   },

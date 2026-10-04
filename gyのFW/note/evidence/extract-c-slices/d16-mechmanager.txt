@@ -1,0 +1,118 @@
+@1876980| ototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1877048| 			},
+@1877055| 			c = {}.hasOwnProperty;
+@1877082| 		define("States/Level/MechManager", ["./Devices/Device", "./Devices/_define"], function () {
+@1877177| 			"use strict";
+@1877195| 			var c;
+@1877206| 			return (
+@1877219| 				(c = c = (function (c) {
+@1877249| 					function d(b) {
+@1877271| 						(this.deviceChanged = a(this.deviceChanged, this)),
+@1877330| 							(this.resetStates = a(this.resetStates, this)),
+@1877386| 							(this.connectToWall = a(this.connectToWall, this)),
+@1877446| 							(this.registerDevice = a(this.registerDevice, this)),
+@1877508| 							(this.game = b),
+@1877533| 							(this.deviceGroups = {});
+@1877567| 					}
+@1877575| 					return (
+@1877590| 						b(d, c),
+@1877606| 						(d.prototype.registerDevice = function (a) {
+@1877658| 							var b, c;
+@1877676| 							if (((c = a.options.properties.group), (b = this.deviceGroups)[c] || (b[c] = []), this.deviceGroups[c].push(a), null != a.signal)) return a.signal.add(this.deviceChanged);
+@1877856| 						}),
+@1877867| 						(d.prototype.connectPortals = function () {
+@1877918| 							var a, b, c, d, e, f, g, h, i, j, k, l;
+@1877966| 							(j = {}), (k = this.deviceGroups);
+@1878009| 							for (f in k) for (d = k[f], e = 0, g = d.length; e < g; e++) (c = d[e]), "portal" === c.options.type && (j[(h = c.options.properties.portalId)] || (j[h] = []), j[c.options.properties.portalId].push(c));
+@1878220| 							l = [];
+@1878236| 							for (f in j)
+@1878257| 								(i = j[f]),
+@1878278| 									(i[0].other = i[1]),
+@1878309| 									(i[1].other = i[0]),
+@1878340| 									(a = i[0].options.properties).inverted || (a.inverted = !1),
+@1878411| 									(b = i[1].options.properties).inverted || (b.inverted = !1),
+@1878482| 									this.connectToWall(i[0]),
+@1878518| 									l.push(this.connectToWall(i[1]));
+@1878562| 							return l;
+@1878580| 						}),
+@1878591| 						(d.prototype.connectToWall = function (a) {
+@1878642| 							var b, c, d, e, f, g, h;
+@1878675| 							if (
+@1878688| 								((g = this.game.physics.box2d.pxm(a.options.x)),
+@1878746| 								(h = this.game.physics.box2d.pxm(a.options.y)),
+@1878803| 								(d = new box2d.b2Vec2(g, h)),
+@1878842| 								(c = d.Clone().SelfAdd(new box2d.b2Vec2(0.5, 0).SelfRotateRadians(a.options.rotation))),
+@1878940| 								(f = d.Clone().SelfAdd(new box2d.b2Vec2(-0.5, 0).SelfRotateRadians(a.options.rotation))),
+@1879039| 								this.game.level.ground.getTileAt(Math.floor(c.x), Math.floor(c.y)).properties.type === -1 && (b = c),
+@1879150| 								this.game.level.ground.getTileAt(Math.floor(f.x), Math.floor(f.y)).properties.type === -1 && (b = f),
+@1879261| 								null != b)
+@1879281| 							)
+@1879291| 								return b.SelfAdd(new box2d.b2Vec2(0, -0.5).SelfRotateRadians(a.options.rotation)), (e = { center: { x: -b.x, y: -b.y }, rotation: a.options.rotation, width: 0.5, height: 1.5 }), a.createFakeBlock(e);
+@1879500| 						}),
+@1879511| 						(d.prototype.resetStates = function () {
+@1879559| 							var a, b, c, d, e;
+@1879586| 							(d = this.deviceGroups), (e = []);
+@1879629| 							for (c in d)
+@1879650| 								(b = d[c]),
+@1879671| 									e.push(
+@1879689| 										(function () {
+@1879715| 											var c, d, e;
+@1879740| 											for (e = [], c = 0, d = b.length; c < d; c++) (a = b[c]), e.push(a.updateState(!0));
+@1879837| 											return e;
+@1879859| 										})()
+@1879875| 									);
+@1879888| 							return e;
+@1879906| 						}),
+@1879917| 						(d.prototype.deviceChanged = function (a) {
+@1879968| 							var b, c, d, e, f, g, h, i, j;
+@1880007| 							for (console.log("--"), g = a.state, h = this.deviceGroups[a.options.properties.group], c = 0, e = h.length; c < e; c++) (b = h[c]), null != b.signal && (g = g || b.state);
+@1880188| 							for (i = this.deviceGroups[a.options.properties.group], j = [], d = 0, f = i.length; d < f; d++) (b = i[d]), null == b.signal && (b.state = g), j.push(b._updateState());
+@1880366| 							return j;
+@1880384| 						}),
+@1880395| 						d
+@1880404| 					);
+@1880413| 				})(Object)),
+@1880431| 				(c.classNames = {
+@1880454| 					pusher: Devices.Pusher,
+@1880484| 					lever: Devices.Lever,
+@1880512| 					box: Devices.Box,
+@1880536| 					platform: Devices.MovingPlatform,
+@1880576| 					beamer: Devices.Beamer,
+@1880606| 					rotmirror: Devices.RotMirror,
+@1880642| 					lightpusher: Devices.LightPusher,
+@1880682| 					portal: Devices.Portal,
+@1880712| 					ball: Devices.Ball,
+@1880738| 					pulley: Devices.Pulley,
+@1880768| 					hanging: Devices.Hanging,
+@1880800| 					boxmirror: Devices.BoxMirror,
+@1880836| 					boxheavy: Devices.BoxHeavy,
+@1880870| 					infinitemirror: Devices.InfiniteMirror,
+@1880916| 					slider: Devices.Slider,
+@1880946| 					timedpusher: Devices.TimedPusher,
+@1880986| 					wind: Devices.Wind,
+@1881012| 					cover: Devices.BackgroundCover,
+@1881050| 					window: Devices.Window,
+@1881080| 					roman: Devices.Roman,
+@1881108| 				}),
+@1881117| 				(c.className = function (a) {
+@1881152| 					return c.classNames[a];
+@1881182| 				}),
+@1881191| 				c
+@1881198| 			);
+@1881205| 		});
+@1881212| 	}.call(this),
+@1881228| 	function () {
+@1881244| 		var a = function (a, b) {
+@1881273| 				return function () {
+@1881299| 					return a.apply(b, arguments);
+@1881335| 				};
+@1881343| 			},
+@1881350| 			b = function (a, b) {
+@1881376| 				function d() {
+@1881396| 					this.constructor = a;
+@1881424| 				}
+@1881431| 				for (var e in b) c.call(b, e) && (a[e] = b[e]);
+@1881484| 				return (d.prototype = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1881582| 			},
+@1881589| 			c = {}.hasOwnProperty;
+@1881616| 		define("States/Level/CameraManager", [], function ()

@@ -122,20 +122,6 @@
         font-size: 14px;
       }
       #toast:empty { display: none; }
-
-      #win-panel {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(0, 0, 0, 0.55);
-        pointer-events: auto;
-      }
-      #win-panel .panel { text-align: center; }
-      #win-panel h2 { margin: 0 0 8px; color: var(--accent); }
-      #win-time { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
-      #win-panel .hint { margin-top: 2px; }
     </style>
   </head>
   <body>
@@ -162,8 +148,8 @@
         <button class="btn blue" id="btn-join">加入房间（水女孩）</button>
         <div id="menu-error"></div>
         <div class="hint">
-          火人用方向键，水女孩用 WASD。碰到自己克制的液体没事，碰到对方的液体会化成烟。<br />
-          两人各自站进自己的门即可通关。
+          每台电脑：方向键或 WASD 均可控制本机角色（双人各用一台电脑）。碰到自己克制的液体没事，碰到对方的液体会化成烟。<br />
+          两人各自站进自己的门即可通关。创建房间时可在 URL 加 ?level=forest_02 选择关卡（默认 forest_01）；R 键在通关/失败后立即重开。
         </div>
       </div>
     </div>
@@ -175,14 +161,6 @@
         <span id="hud-status"></span>
       </div>
       <div id="toast"></div>
-      <div id="win-panel" class="hidden">
-        <div class="panel">
-          <h2>通关！</h2>
-          <div id="win-time">00:00</div>
-          <div class="hint">两人都到门口即可通关</div>
-          <button class="btn" id="btn-restart">再来一局</button>
-        </div>
-      </div>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

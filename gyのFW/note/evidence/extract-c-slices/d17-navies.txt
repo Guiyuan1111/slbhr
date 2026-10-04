@@ -1,0 +1,74 @@
+@1836300|  64, this.options.height + 64)), b.alphaMask(f, n), (this.bmd = b), (this.maskBmd = n), (this.foregroundBmd = f), c;
+@1836418| 					}),
+@1836428| 					(g.prototype.getNaviesPoints = function () {
+@1836479| 						var a, b, c, d, f, g, h, i, j, k, l, m, n;
+@1836529| 						for (
+@1836542| 							i = this.map,
+@1836564| 								d = this.h,
+@1836585| 								n = this.w,
+@1836606| 								g = 0,
+@1836622| 								b = this.groundBody,
+@1836652| 								this.rng = e("ASDFA"),
+@1836684| 								m = (function (a) {
+@1836713| 									return function () {
+@1836744| 										return Math.round(3 * a.rng() + 3.5);
+@1836793| 									};
+@1836806| 								})(this),
+@1836825| 								j = (function (a) {
+@1836854| 									return function (a, b) {
+@1836889| 										return null != i.layers[g].data[a] && null != i.layers[g].data[a][b] ? i.layers[g].data[a][b] : null;
+@1837002| 									};
+@1837015| 								})(this),
+@1837034| 								l = [
+@1837049| 									{ x: Math.floor(d / 4), y: Math.floor(d / 4) },
+@1837107| 									{ x: Math.floor((3 * d) / 4), y: Math.floor(d / 4) },
+@1837171| 									{ x: Math.floor(d / 4), y: Math.floor((3 * d) / 4) },
+@1837235| 									{ x: Math.floor((3 * d) / 4), y: Math.floor(d / 4) },
+@1837299| 								],
+@1837311| 								a = (function (a) {
+@1837340| 									return function (a) {
+@1837372| 										return a > 0 ? 1 : a < 0 ? -1 : 0;
+@1837418| 									};
+@1837431| 								})(this),
+@1837450| 								f = 0,
+@1837466| 								h = l.length;
+@1837489| 							f < h;
+@1837504| 							f++
+@1837516| 						)
+@1837525| 							for (k = l[f], k.valid = !1, c = { x: a(Math.random() - 0.5), y: a(Math.random() - 0.5) }; k.x > 0 && k.x < n && k.y > 0 && k.y < d; ) {
+@1837670| 								if (null == j(k.y, k.x).properties.type) {
+@1837722| 									k.valid = !0;
+@1837746| 									break;
+@1837763| 								}
+@1837774| 								(k.x += c.x), (k.y += c.y);
+@1837811| 							}
+@1837821| 						return (
+@1837837| 							(l = l.filter(function (a) {
+@1837874| 								return a.valid;
+@1837899| 							})),
+@1837912| 							_.each(l, function (a) {
+@1837945| 								return (a.x *= b.world.mpx(1)), (a.y *= b.world.mpx(1));
+@1838011| 							}),
+@1838023| 							l
+@1838033| 						);
+@1838043| 					}),
+@1838053| 					(g.prototype.decorate = function (a) {
+@1838098| 						var b, c, d, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z, A, B, C, D, E, F, G, H, I, J, K;
+@1838214| 						for (
+@1838227| 							s = this.map,
+@1838249| 								k = this.h,
+@1838270| 								H = this.w,
+@1838291| 								o = 0,
+@1838307| 								c = this.groundBody,
+@1838337| 								this.rng = e("ASDFA"),
+@1838369| 								z = (function (a) {
+@1838398| 									return function () {
+@1838429| 										return Math.round(3 * a.rng() + 3.5);
+@1838478| 									};
+@1838491| 								})(this),
+@1838510| 								n = 0,
+@1838526| 								q = a.length;
+@1838549| 							n < q;
+@1838564| 							n++
+@1838576| 						)
+@1838585| 							(v = a[n

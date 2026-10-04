@@ -1,9 +1,12 @@
 {
   "name": "@fw/shared",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./level2": "./src/level2.ts",
+    "./box2d": "./src/box2d/load.ts",
+    "./kernel": "./src/kernel/world.ts"
   }
 }

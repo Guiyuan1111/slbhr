@@ -1,0 +1,59 @@
+@1780520| otype), (a.prototype = new d()), (a.__super__ = c.prototype), a;
+@1780586| 			},
+@1780593| 			b = {}.hasOwnProperty;
+@1780620| 		define("States/Level/Devices/Window", ["./Device"], function (b) {
+@1780690| 			"use strict";
+@1780708| 			var c;
+@1780719| 			return (c = c = (function (b) {
+@1780755| 				function c(a, b) {
+@1780779| 					var d, e, f, g, h, i, j, k;
+@1780813| 					b.width < b.height ? ((k = b.width), (b.width = b.height), (b.height = k), (b.x = b.x + b.height / 2), (b.y = b.y + b.width / 2), (b.rotation = -90)) : ((b.x = b.x + b.width / 2), (b.y = b.y + b.height / 2)),
+@1781028| 						c.__super__.constructor.call(this, a, b),
+@1781077| 						(this.sprite = this.game.make.sprite(this.options.x, this.options.y, "MechAssets", "_default0000")),
+@1781185| 						this.game.physics.box2d.enable(this.sprite),
+@1781237| 						this.game.layers.overGround.addChild(this.sprite),
+@1781295| 						(this.body = this.sprite.body),
+@1781334| 						this.body.clearFixtures(),
+@1781368| 						this.body.data.SetAngle(this.options.rotation),
+@1781423| 						(this.body.static = !0),
+@1781455| 						(i = new box2d.b2PolygonShape()),
+@1781496| 						i.SetAsOrientedBox(this.options.width / 2, this.options.height / 2, new box2d.b2Vec2(0, 0), 0),
+@1781599| 						(g = new box2d.b2FixtureDef()),
+@1781638| 						(g.shape = i),
+@1781660| 						(g.friction = 0.7),
+@1781687| 						(g.restitution = 0),
+@1781715| 						(g.density = 0),
+@1781739| 						(g.userData = g.userData = { lightProperties: { type: "transparent" } }),
+@1781820| 						(g.filter.categoryBits = 1),
+@1781856| 						(g.filter.maskBits = 61695),
+@1781892| 						(f = this.body.data.CreateFixture(g)),
+@1781938| 						(f.id = this.body.world.getNextFixtureId()),
+@1781990| 						(d = new box2d.b2Vec2(this.options.properties.dx, this.options.properties.dy)),
+@1782077| 						(this.state = 0),
+@1782102| 						this.registerDevice(),
+@1782132| 						(h = this.game.make.sprite(0, 0, "MechAssets", "WindowLeft0000")),
+@1782206| 						h.anchor.set(0.5),
+@1782232| 						this.sprite.addChild(h),
+@1782264| 						(h.x = this.mpx(this.options.width / 2 - 0.5)),
+@1782319| 						(h.y = this.mpx(this.options.height / 2 - 0.5)),
+@1782375| 						(j = this.game.make.sprite(0, 0, "MechAssets", "WindowRight0000")),
+@1782450| 						j.anchor.set(0.5),
+@1782476| 						this.sprite.addChild(j),
+@1782508| 						(j.x = -this.mpx(this.options.width / 2 - 0.5)),
+@1782564| 						(j.y = this.mpx(this.options.height / 2 - 0.5)),
+@1782620| 						(e = this.game.make.sprite(0, 0, "MechAssets", "WindowCenter0000")),
+@1782696| 						e.anchor.set(0.5),
+@1782722| 						this.sprite.addChild(e),
+@1782754| 						(e.x = 0),
+@1782772| 						(e.y = 0),
+@1782790| 						(e.scale.x = (this.options.width - 2) / 3),
+@1782841| 						(this.sprite.scale.x = 1.05),
+@1782878| 						(this.sprite.scale.y = 1.05);
+@1782915| 				}
+@1782922| 				return a(c, b), (c.prototype.options = { atlasName: null, frameName: null, lightAtlas: "MechAssets", properties: { group: 0, dx: 4, dy: 0 } }), c;
+@1783074| 			})(b));
+@1783086| 		});
+@1783093| 	}.call(this),
+@1783109| 	function () {
+@1783125| 		define("States/Level/Devices/_define", [
+@1783169| 			"require

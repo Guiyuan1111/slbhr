@@ -1,0 +1,111 @@
+@1691650| otype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1691716| 			},
+@1691723| 			c = {}.hasOwnProperty;
+@1691750| 		define("States/Level/Devices/Lever", ["./BoxedDevice"], function (c) {
+@1691824| 			"use strict";
+@1691842| 			var d;
+@1691853| 			return (d = d = (function (c) {
+@1691889| 				function d(b, c) {
+@1691913| 					(this.drawDarkMask = a(this.drawDarkMask, this)), (this.checkState = a(this.checkState, this)), (this.sounds = a(this.sounds, this));
+@1692053| 					var e, f, g, h, i, j, k, l, m, n;
+@1692093| 					return (
+@1692108| 						d.__super__.constructor.call(this, b, c),
+@1692157| 						(m = this.game.make.resSprite(this.options.x, this.options.y, "MechAssets", "lever_stick0000")),
+@1692261| 						m.anchor.set(0.5),
+@1692287| 						this.game.physics.box2d.enable(m),
+@1692329| 						(this.body = m.body),
+@1692358| 						(n = this.game.make.resSprite(0, 0, "MechAssets", "lever_stick_light_off0000")),
+@1692446| 						n.anchor.set(0.5),
+@1692472| 						m.addChild(n),
+@1692494| 						(n.offFrameName = "lever_stick_light_off0000"),
+@1692549| 						(n.onFrameName = "lever_stick_light_on0000"),
+@1692602| 						this.lights.push(n),
+@1692630| 						this.game.layers.overGround.addChild(m),
+@1692678| 						(this.base = e = this.game.make.resSprite(this.options.x, this.options.y, "MechAssets", "lever_base0000")),
+@1692793| 						e.anchor.set(0.5),
+@1692819| 						(f = this.game.make.resSprite(0, 0, "MechAssets", "lever_base_light_off0000")),
+@1692906| 						f.anchor.set(0.5),
+@1692932| 						e.addChild(f),
+@1692954| 						(f.offFrameName = "lever_base_light_off0000"),
+@1693008| 						(f.onFrameName = "lever_base_light_on0000"),
+@1693060| 						this.lights.push(f),
+@1693088| 						this.game.layers.overGround.addChild(e),
+@1693136| 						this.body.clearFixtures(),
+@1693170| 						(l = new box2d.b2PolygonShape()),
+@1693211| 						l.SetAsOrientedBox(0.15, 0.7, new box2d.b2Vec2(0, 0.55), 0),
+@1693279| 						(i = new box2d.b2FixtureDef()),
+@1693318| 						(i.shape = l),
+@1693340| 						(i.friction = 0.7),
+@1693367| 						(i.restitution = 0),
+@1693395| 						(i.density = 1.6),
+@1693421| 						(i.filter.categoryBits = 1),
+@1693457| 						(i.filter.maskBits = 61695),
+@1693493| 						(h = m.body.data.CreateFixture(i)),
+@1693536| 						(h.id = m.body.world.getNextFixtureId()),
+@1693585| 						(j = new box2d.b2RevoluteJointDef()),
+@1693630| 						(k = this.body.data.GetWorldCenter()),
+@1693676| 						(g = new box2d.b2Vec2(k.x, k.y - 0.7)),
+@1693723| 						j.Initialize(this.body.data, this.game.level.groundBody, g),
+@1693791| 						(j.lowerAngle = -0.2 * Math.PI),
+@1693831| 						(j.upperAngle = 0.2 * Math.PI),
+@1693870| 						(j.enableLimit = !0),
+@1693899| 						(j.maxMotorTorque = 10),
+@1693931| 						(j.motorSpeed = 0),
+@1693958| 						(j.enableMotor = !0),
+@1693987| 						(this.joint = this.game.physics.box2d.world.CreateJoint(j)),
+@1694055| 						this.options.properties.startPos === -1 ? this.body.data.SetAngle(this.joint.GetLowerLimit()) : this.body.data.SetAngle(this.joint.GetUpperLimit()),
+@1694211| 						(this.signal = new Phaser.Signal()),
+@1694255| 						this.registerDevice(),
+@1694285| 						this
+@1694297| 					);
+@1694306| 				}
+@1694313| 				return (
+@1694327| 					b(d, c),
+@1694342| 					(d.prototype.options = { atlasName: null, frameName: null }),
+@1694410| 					(d.prototype.sounds = function () {
+@1694452| 						return "lever";
+@1694475| 					}),
+@1694485| 					(d.prototype.checkState = function () {
+@1694531| 						return 0 === this.state && this.joint.GetJointAngleRadians() * this.options.properties.onis < 0
+@1694634| 							? ((this.state = 1), this.joint.SetMotorSpeed(-4 * this.options.properties.onis), this.game.level.sounds.lever.play(), this.signal.dispatch(this))
+@1694789| 							: 1 === this.state && this.joint.GetJointAngleRadians() * this.options.properties.onis > 0
+@1694888| 							? ((this.state = 0), this.joint.SetMotorSpeed(4 * this.options.properties.onis), this.game.level.sounds.lever.play(), this.signal.dispatch(this))
+@1695042| 							: void 0;
+@1695060| 					}),
+@1695070| 					(d.prototype.drawDarkMask = function (a) {
+@1695119| 						var b, c, d;
+@1695139| 						if (1 === this.state)
+@1695168| 							return (
+@1695185| 								(a.ctx.globalCompositeOperation = "lighter"),
+@1695240| 								(d = { x: this.base.x + a.offset.x, y: this.base.y + a.offset.y }),
+@1695317| 								(b = new box2d.b2Vec2(0, this.mpx(-1.1))),
+@1695369| 								b.SelfRotateRadians(this.joint.GetJointAngleRadians()),
+@1695434| 								b.SelfAdd(new box2d.b2Vec2(0, this.mpx(1.8))),
+@1695490| 								(c = a.ctx.createRadialGradient(d.x + b.x, d.y + b.y, 10, d.x + b.x, d.y + b.y, 50)),
+@1695585| 								c.addColorStop(0, "rgba(255,255,255,1)"),
+@1695636| 								c.addColorStop(0.7, "rgba(255,255,255,0.1)"),
+@1695691| 								c.addColorStop(1, "rgba(255,255,255,0)"),
+@1695742| 								a.circle(d.x + b.x, d.y + b.y, 60, c)
+@1695789| 							);
+@1695800| 					}),
+@1695810| 					d
+@1695818| 				);
+@1695826| 			})(c));
+@1695838| 		});
+@1695845| 	}.call(this),
+@1695861| 	function () {
+@1695877| 		var a = function (a, b) {
+@1695906| 				return function () {
+@1695932| 					return a.apply(b, arguments);
+@1695968| 				};
+@1695976| 			},
+@1695983| 			b = function (a, b) {
+@1696009| 				function d() {
+@1696029| 					this.constructor = a;
+@1696057| 				}
+@1696064| 				for (var e in b) c.call(b, e) && (a[e] = b[e]);
+@1696117| 				return (d.prototype = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1696215| 			},
+@1696222| 			c = {}.hasOwnProperty;
+@1696249| 		define("States/Level/Devices/LightPusher", ["./BoxedDevice"], function (c) {
+@1696329| 			"use str

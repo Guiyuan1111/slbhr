@@ -1,0 +1,159 @@
+@1654950| prototype), (a.prototype = new d()), (a.__super__ = c.prototype), a;
+@1655020| 			},
+@1655027| 			b = {}.hasOwnProperty;
+@1655054| 		define("States/Level/Devices/BackgroundCover", ["Phaser"], function (b) {
+@1655131| 			var c;
+@1655142| 			return (c = c = (function (b) {
+@1655178| 				function c(a, b) {
+@1655202| 					c.__super__.constructor.call(this, a, b.x, b.y, "MechAssets", "BackgroundCover0000"), (this.options = b), (this.width = b.width), (this.height = b.height), a.layers.background.addChild(this);
+@1655400| 				}
+@1655407| 				return a(c, b), c;
+@1655431| 			})(b.Sprite));
+@1655450| 		});
+@1655457| 	}.call(this),
+@1655473| 	function () {
+@1655489| 		var a = function (a, b) {
+@1655518| 				return function () {
+@1655544| 					return a.apply(b, arguments);
+@1655580| 				};
+@1655588| 			},
+@1655595| 			b = function (a, b) {
+@1655621| 				function d() {
+@1655641| 					this.constructor = a;
+@1655669| 				}
+@1655676| 				for (var e in b) c.call(b, e) && (a[e] = b[e]);
+@1655729| 				return (d.prototype = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1655827| 			},
+@1655834| 			c = {}.hasOwnProperty;
+@1655861| 		define("States/Level/Devices/Device", ["Phaser"], function () {
+@1655928| 			"use strict";
+@1655946| 			var c;
+@1655957| 			return (
+@1655970| 				(c = c = (function (c) {
+@1656000| 					function d(b, c) {
+@1656025| 						(this.sounds = a(this.sounds, this)),
+@1656070| 							(this.ocupy = a(this.ocupy, this)),
+@1656114| 							(this.ocupyTile = a(this.ocupyTile, this)),
+@1656166| 							(this.checkState = a(this.checkState, this)),
+@1656220| 							(this.updateState = a(this.updateState, this)),
+@1656276| 							(this._updateState = a(this._updateState, this)),
+@1656334| 							(this.updateLight = a(this.updateLight, this)),
+@1656390| 							(this.setupLight = a(this.setupLight, this)),
+@1656444| 							(this.getColor = a(this.getColor, this)),
+@1656494| 							(this.registerDevice = a(this.registerDevice, this)),
+@1656556| 							(this.pxm = a(this.pxm, this)),
+@1656596| 							(this.mpx = a(this.mpx, this));
+@1656636| 						var e, f, g, h, i;
+@1656662| 						(this.lights = []),
+@1656689| 							(g = {}),
+@1656707| 							_.deepObjectExtend(g, this._defaults),
+@1656754| 							c.properties || (c.properties = {}),
+@1656799| 							_.deepObjectExtend(g, c),
+@1656833| 							_.deepObjectExtend(g, this.options),
+@1656878| 							(this.options = g),
+@1656906| 							null == this.options.layer && (this.options.layer = "overGround"),
+@1656981| 							(e = this.options).rotation || (e.rotation = 0),
+@1657038| 							(this.options.rotation = (Math.PI * this.options.rotation) / 180),
+@1657113| 							(this.options.width = b.physics.box2d.pxm(this.options.width)),
+@1657185| 							(this.options.height = b.physics.box2d.pxm(this.options.height)),
+@1657259| 							(h = this.options.x),
+@1657289| 							(i = this.options.y),
+@1657319| 							(this.state = null != this.options.properties ? +this.options.properties.initialState || 0 : 0),
+@1657424| 							d.__super__.constructor.call(this, b),
+@1657471| 							null != this.options.atlasName &&
+@1657513| 								null != this.options.frameName &&
+@1657556| 								((this.sprite = this.game.make.resSprite(h, i, this.options.atlasName, this.options.frameName)), this.game.layers[this.options.layer].addChild(this.sprite), this.sprite.anchor.set(0.5)),
+@1657752| 							null != this.sprite && (this.sprite.autoCull = !0),
+@1657812| 							this.sprite &&
+@1657835| 								this.options.enableBody === !0 &&
+@1657878| 								(this.game.physics.box2d.enable(this.sprite), this.sprite.body.clearFixtures(), this.sprite.body.data.SetAngle((Math.PI * c.rotation) / 180 || 0), (this.body = this.sprite.body)),
+@1658067| 							null != this.options.lightAtlas &&
+@1658110| 								null != this.options.lightFrame &&
+@1658154| 								((f = this.create(0, 0, this.options.lightAtlas, this.options.lightFrame + "_on0000")),
+@1658251| 								null != this.sprite && this.sprite.addChild(f),
+@1658308| 								f.anchor.set(0.5),
+@1658336| 								(f.offFrameName = this.options.lightFrame + "_off0000"),
+@1658402| 								(f.onFrameName = this.options.lightFrame + "_on0000"),
+@1658466| 								(f.frameName = f.offFrameName),
+@1658507| 								this.lights.push(f)),
+@1658538| 							_.defer(
+@1658555| 								(function (a) {
+@1658580| 									return function () {
+@1658611| 										return a.updateLight(a.state);
+@1658653| 									};
+@1658666| 								})(this)
+@1658684| 							);
+@1658695| 					}
+@1658703| 					return (
+@1658718| 						b(d, c),
+@1658734| 						(d.prototype._defaults = { atlasName: null, frameName: null, lightAtlas: null, lightFrame: null }),
+@1658841| 						(d.prototype.mpx = function (a) {
+@1658882| 							return this.game.physics.box2d.mpx(-1 * a);
+@1658934| 						}),
+@1658945| 						(d.prototype.pxm = function (a) {
+@1658986| 							return this.game.physics.box2d.pxm(-1 * a);
+@1659038| 						}),
+@1659049| 						(d.prototype.registerDevice = function () {
+@1659100| 							if ((this.game.MechManager.registerDevice(this), this.lights.length > 0)) return this.setupLight();
+@1659208| 						}),
+@1659219| 						(d.prototype.getColor = function () {
+@1659264| 							var a;
+@1659279| 							return (a = Number(String(this.options.properties.group)[0])), d.groupColors[a] || "#ffffff";
+@1659381| 						}),
+@1659392| 						(d.prototype.setupLight = function () {
+@1659439| 							var a, b, c, d, e;
+@1659466| 							for (e = this.lights, b = 0, d = e.length; b < d; b++) (c = e[b]), (a = this.getColor()), (c.offTint = Phaser.Color.hexToColor(a).color), (c.onTint = Phaser.Color.hexToColor(a).color), (c.tint = c.offTint);
+@1659681| 						}),
+@1659692| 						(d.prototype.updateLight = function (a) {
+@1659741| 							var b, c, d, e, f;
+@1659768| 							if (0 !== this.lights.length) {
+@1659808| 								for (e = this.lights, f = [], b = 0, d = e.length; b < d; b++)
+@1659880| 									(c = e[b]),
+@1659902| 										null != c.onFrameName && a
+@1659940| 											? ((c.frameName = c.onFrameName), f.push((c.tint = c.onTint)))
+@1660015| 											: null == c.offFrameName || a
+@1660057| 											? f.push(void 0)
+@1660086| 											: ((c.frameName = c.offFrameName), f.push((c.tint = c.offTint)));
+@1660164| 								return f;
+@1660183| 							}
+@1660193| 						}),
+@1660204| 						(d.prototype.update = function () {
+@1660247| 							return this.checkState();
+@1660281| 						}),
+@1660292| 						(d.prototype._updateState = function () {
+@1660341| 							return this.updateLight(this.state), this.updateState();
+@1660406| 						}),
+@1660417| 						(d.prototype.updateState = function () {}),
+@1660468| 						(d.prototype.checkState = function () {}),
+@1660518| 						(d.prototype.ocupyTile = function (a, b, c) {
+@1660571| 							if (null != a[Math.floor(c)] && null != a[Math.floor(c)][Math.floor(b)]) return (a[Math.floor(c)][Math.floor(b)].ocupied = !0);
+@1660707| 						}),
+@1660718| 						(d.prototype.ocupy = function (a, b) {
+@1660764| 							return !1;
+@1660783| 						}),
+@1660794| 						(d.prototype.sounds = function () {
+@1660837| 							return [];
+@1660856| 						}),
+@1660867| 						d
+@1660876| 					);
+@1660885| 				})(Phaser.Group)),
+@1660909| 				(c.groupColors = { 1: "#ff0000", 2: "#00cc00", 3: "#0D3EFF", 4: "#ffff00", 5: "#EC0EF1", 6: "#57beff", 7: "#9933FF" }),
+@1661034| 				c
+@1661041| 			);
+@1661048| 		});
+@1661055| 	}.call(this),
+@1661071| 	function () {
+@1661087| 		var a = function (a, b) {
+@1661116| 				return function () {
+@1661142| 					return a.apply(b, arguments);
+@1661178| 				};
+@1661186| 			},
+@1661193| 			b = function (a, b) {
+@1661219| 				function d() {
+@1661239| 					this.constructor = a;
+@1661267| 				}
+@1661274| 				for (var e in b) c.call(b, e) && (a[e] = b[e]);
+@1661327| 				return (d.prototype = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1661425| 			},
+@1661432| 			c = {}.hasOwnProperty;
+@1661459| 		define("S

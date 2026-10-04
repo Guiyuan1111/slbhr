@@ -1,0 +1,60 @@
+@1116830|  b.prototype), a;
+@1116849| 			},
+@1116856| 			c = {}.hasOwnProperty;
+@1116883| 		define("States/Common/Navies", ["./Button", "Phaser"], function (c) {
+@1116956| 			"use strict";
+@1116974| 			var d;
+@1116985| 			return (d = d = (function (c) {
+@1117021| 				function d(b, c, e, f) {
+@1117051| 					var g, h, i, j;
+@1117073| 					for (
+@1117085| 						null == f && (f = 3), this.update = a(this.update, this), d.__super__.constructor.call(this, b, c, e, "MenuAssets", "_default0000"), this.anchor.set(0.5), g = h = 0, j = f;
+@1117265| 						0 <= j ? h <= j : h >= j;
+@1117298| 						g = 0 <= j ? ++h : --h
+@1117328| 					)
+@1117336| 						(i = new Phaser.Sprite(b, 0, 0, "MenuAssets", "Navy0000")),
+@1117403| 							i.anchor.set(0.5),
+@1117430| 							i.scale.set(0.3 + 0.7 * Math.random()),
+@1117478| 							(i.offsetCart = { x: 200 * (Math.random() - 0.5), y: 50 * (Math.random() - 0.5) }),
+@1117570| 							(i.offset = { r: 400 * Math.random(), theta: Math.random() }),
+@1117641| 							(i.rprime = 0),
+@1117665| 							(i.speed = { r: 7e-4 + 5e-4 * Math.random(), theta: 3e-4 + 5e-4 * (Math.random() - 0.5) }),
+@1117765| 							(i.pos = { r: Math.random(), theta: Math.random() * Math.PI * 2 }),
+@1117841| 							(i.update = function () {
+@1117875| 								return (
+@1117893| 									(this.rprime += this.speed.r),
+@1117934| 									(this.pos.r = this.offset.r * Math.sin(this.rprime)),
+@1117998| 									(this.pos.theta += this.speed.theta),
+@1118046| 									(this.x = this.offsetCart.x + this.pos.r * Math.cos(this.pos.theta)),
+@1118126| 									(this.y = this.offsetCart.y + this.pos.r * Math.sin(this.pos.theta))
+@1118205| 								);
+@1118217| 							}),
+@1118229| 							this.addChild(i);
+@1118255| 				}
+@1118262| 				return (
+@1118276| 					b(d, c),
+@1118291| 					(d.prototype.update = function () {
+@1118333| 						var a, b, c, d, e;
+@1118359| 						for (d = this.children, e = [], b = 0, c = d.length; b < c; b++) (a = d[b]), e.push(a.update.call(a));
+@1118469| 						return e;
+@1118486| 					}),
+@1118496| 					d
+@1118504| 				);
+@1118512| 			})(Phaser.Sprite));
+@1118536| 		});
+@1118543| 	}.call(this),
+@1118559| 	function () {
+@1118575| 		var a = function (a, b) {
+@1118604| 				return function () {
+@1118630| 					return a.apply(b, arguments);
+@1118666| 				};
+@1118674| 			},
+@1118681| 			b = function (a, b) {
+@1118707| 				function d() {
+@1118727| 					this.constructor = a;
+@1118755| 				}
+@1118762| 				for (var e in b) c.call(b, e) && (a[e] = b[e]);
+@1118815| 				return (d.prototype = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1118913| 			},
+@1118920| 			c = {}.hasOwnProperty;
+@1118947| 		define("States/Menu/TempleHall", ["require", "Phase

@@ -1,0 +1,95 @@
+@1748110| prototype), (a.prototype = new d()), (a.__super__ = c.prototype), a;
+@1748180| 			},
+@1748187| 			b = {}.hasOwnProperty;
+@1748214| 		define("States/Level/Devices/Roman", ["./BoxedDevice"], function (b) {
+@1748288| 			"use strict";
+@1748306| 			var c;
+@1748317| 			return (c = c = (function (b) {
+@1748353| 				function c(a, b) {
+@1748377| 					var d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s;
+@1748435| 					return (
+@1748450| 						c.__super__.constructor.call(this, a, b),
+@1748499| 						this.options.polygon[0][0] === this.options.polygon[1][0]
+@1748564| 							? ((m = 2 * this.pxm(this.options.polygon[2][0] - this.options.polygon[1][0])), (k = this.pxm(this.options.polygon[1][1] - this.options.polygon[0][1])), (f = 0.6), (d = -Math.atan(k / (m / 2))))
+@1748767| 							: ((m = 2 * this.pxm(this.options.polygon[1][0] - this.options.polygon[0][0])), (k = this.pxm(this.options.polygon[1][1] - this.options.polygon[0][1])), (f = 0.6), (d = Math.atan(k / (m / 2)))),
+@1748970| 						(h = { x: this.options.polygon[1][0] + this.options.x + this.mpx(1), y: this.options.polygon[1][1] + this.options.y - this.mpx(1) }),
+@1749111| 						(e = this.game.make.tileSprite(h.x, h.y, this.mpx(m), 30, "MechAssets", "roman_bar0000")),
+@1749209| 						this.game.physics.box2d.enable(e),
+@1749251| 						(i = this.game.make.sprite(this.mpx(m / 2), 0, "MechAssets", "roman_end0000")),
+@1749338| 						i.anchor.set(0.05, 0.5),
+@1749370| 						e.addChild(i),
+@1749392| 						(i = this.game.make.sprite(-this.mpx(m / 2), 0, "MechAssets", "roman_end0000")),
+@1749480| 						(i.scale.x = -1),
+@1749505| 						i.anchor.set(0.05, 0.5),
+@1749537| 						e.addChild(i),
+@1749559| 						(o = this.game.make.sprite(h.x, h.y, "MechAssets", "roman_center0000")),
+@1749639| 						o.anchor.set(0.5, 0.5),
+@1749670| 						e.body.clearFixtures(),
+@1749701| 						(s = []),
+@1749718| 						s.push(new box2d.b2Vec2(-m / 2, -f / 2)),
+@1749767| 						s.push(new box2d.b2Vec2(m / 2, -f / 2)),
+@1749815| 						s.push(new box2d.b2Vec2(m / 2 - 2, f / 2)),
+@1749866| 						s.push(new box2d.b2Vec2(-m / 2 + 2, f / 2)),
+@1749918| 						(r = new box2d.b2PolygonShape()),
+@1749959| 						r.Set(s),
+@1749976| 						(j = new box2d.b2FixtureDef()),
+@1750015| 						(j.shape = r),
+@1750037| 						(j.friction = 0.7),
+@1750064| 						(j.restitution = 0),
+@1750092| 						(j.density = 0.1),
+@1750118| 						(j.filter.categoryBits = 1),
+@1750154| 						(j.filter.maskBits = 65535),
+@1750190| 						e.body.data.CreateFixture(j),
+@1750227| 						e.body.data.SetAngle(d || 0),
+@1750264| 						(g = this.game.make.sprite(h.x, h.y - this.mpx(k), "MechAssets", "roman_base0000")),
+@1750356| 						this.game.physics.box2d.enable(g),
+@1750398| 						(p = g.height / (2 * this.mpx(k))),
+@1750441| 						(g.height = -2 * this.mpx(k)),
+@1750479| 						this.game.layers.overGround.addChild(g),
+@1750527| 						this.game.layers.overGround.addChild(e),
+@1750575| 						this.game.layers.overChars.addChild(o),
+@1750622| 						g.body.clearFixtures(),
+@1750653| 						g.body.data.SetAngle((Math.PI * b.rotation) / 180 || 0),
+@1750717| 						(g.body.mass = 0),
+@1750743| 						(q = g.body),
+@1750764| 						(s = []),
+@1750781| 						s.push(new box2d.b2Vec2(-1, 0)),
+@1750821| 						s.push(new box2d.b2Vec2(0, k)),
+@1750860| 						s.push(new box2d.b2Vec2(1, 0)),
+@1750899| 						(r = new box2d.b2PolygonShape()),
+@1750940| 						r.Set(s),
+@1750957| 						(j = new box2d.b2FixtureDef()),
+@1750996| 						(j.shape = r),
+@1751018| 						(j.friction = 0.7),
+@1751045| 						(j.restitution = 0),
+@1751073| 						(j.density = 0.1),
+@1751099| 						(j.filter.categoryBits = 1),
+@1751135| 						(j.filter.maskBits = 65535),
+@1751171| 						g.body.data.CreateFixture(j),
+@1751208| 						(l = new box2d.b2RevoluteJointDef()),
+@1751253| 						(n = e.body.data.GetWorldCenter()),
+@1751296| 						(h = new box2d.b2Vec2(n.x, n.y)),
+@1751337| 						l.Initialize(e.body.data, g.body.data, h),
+@1751387| 						(this.joint = this.game.physics.box2d.world.CreateJoint(l)),
+@1751455| 						this
+@1751467| 					);
+@1751476| 				}
+@1751483| 				return a(c, b), (c.prototype.options = { atlasName: null, frameName: null }), c;
+@1751569| 			})(b));
+@1751581| 		});
+@1751588| 	}.call(this),
+@1751604| 	function () {
+@1751620| 		var a = function (a, b) {
+@1751649| 				return function () {
+@1751675| 					return a.apply(b, arguments);
+@1751711| 				};
+@1751719| 			},
+@1751726| 			b = function (a, b) {
+@1751752| 				function d() {
+@1751772| 					this.constructor = a;
+@1751800| 				}
+@1751807| 				for (var e in b) c.call(b, e) && (a[e] = b[e]);
+@1751860| 				return (d.prototype = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1751958| 			},
+@1751965| 			c = {}.hasOwnProperty;
+@1751992| 		define("States/Level/Devices/RotMirror", ["./BoxedDevice

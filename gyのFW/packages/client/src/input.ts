@@ -1,6 +1,11 @@
 /**
  * 键盘输入：方向键 / WASD → InputState 快照。
- * 只有按键状态变化时才发消息（按钮事件频率天然很低）。
+ *
+ * 发送策略（PLAN §5.2）：
+ * - 按键状态变化即发（按钮事件频率天然很低）；
+ * - 另有 66ms（≈15Hz）定时强制重发最后状态，防单次消息丢失后角色卡键；
+ * - 每条消息带单调递增 seq（服务器按全量快照语义消费，seq 仅用于排查乱序/重放）。
+ * 联机每机单角色：两组键（方向键/WASD）通吃本机角色（E16，冻结偏离，见 wiring §13）。
  */
 import { sameInput, type InputState } from "@fw/shared";
 
@@ -9,11 +14,19 @@ const RIGHT = ["ArrowRight", "KeyD"];
 const UP = ["ArrowUp", "KeyW"];
 const ALL = [...LEFT, ...RIGHT, ...UP];
 
+/** 上行消息 = 输入快照 + 序列号（服务器只读 up/left/right） */
+export type InputMessage = InputState & { seq: number };
+
+/** 强制重发周期（≈15Hz，PLAN §5.2） */
+const RESEND_MS = 66;
+
 export class KeyboardInput {
   private last: InputState = { up: false, left: false, right: false };
   private paused = false;
+  private seq = 0;
+  private resendTimer: number;
 
-  constructor(target: Window, private onInput: (input: InputState) => void) {
+  constructor(target: Window, private onInput: (input: InputMessage) => void) {
     const handle = (e: KeyboardEvent, pressed: boolean) => {
       if (!ALL.includes(e.code)) return;
       e.preventDefault();
@@ -30,9 +43,16 @@ export class KeyboardInput {
         this.emit();
       }
     });
+    // ≥15Hz 重发最后状态（emit 内部被 paused 挡住时静默跳过）
+    this.resendTimer = window.setInterval(() => this.emit(true), RESEND_MS);
   }
 
   private pressed = new Set<string>();
+
+  /** 本机左右移动键是否按住（水声 waterSteps 的原版触发条件之一） */
+  isMoveDown(): boolean {
+    return [...this.pressed].some((c) => LEFT.includes(c) || RIGHT.includes(c));
+  }
 
   /** 暂停期间丢弃上报（菜单/结算时防止误触发） */
   setPaused(paused: boolean): void {
@@ -43,16 +63,19 @@ export class KeyboardInput {
     }
   }
 
-  private emit(): void {
+  destroy(): void {
+    window.clearInterval(this.resendTimer);
+  }
+
+  private emit(force = false): void {
     if (this.paused) return;
     const next: InputState = {
       up: UP.some((c) => this.pressed.has(c)),
       left: LEFT.some((c) => this.pressed.has(c)),
       right: RIGHT.some((c) => this.pressed.has(c)),
     };
-    if (!sameInput(next, this.last)) {
-      this.last = next;
-      this.onInput(next);
-    }
+    if (!force && sameInput(next, this.last)) return;
+    this.last = next;
+    this.onInput({ ...next, seq: ++this.seq });
   }
 }

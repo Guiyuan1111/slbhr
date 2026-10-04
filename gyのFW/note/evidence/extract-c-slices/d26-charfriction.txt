@@ -1,0 +1,41 @@
+@1866500| 
+@1866502| 							this.sprite.addChild(b),
+@1866535| 							(this.body.x = a.pos.x),
+@1866568| 							(this.body.y = a.pos.y + 4),
+@1866605| 							b.animations.play("up")
+@1866637| 						);
+@1866647| 					}),
+@1866657| 					(e.prototype.setOnIce = function (a) {
+@1866702| 						return a && !this.isOnIce ? ((this.isOnIce = !0), this.setFriction()) : !a && this.isOnIce ? ((this.isOnIce = !1), this.setFriction()) : void 0;
+@1866854| 					}),
+@1866864| 					(e.prototype.setFriction = function () {
+@1866911| 						var a, b;
+@1866928| 						for (
+@1866941| 							"fb" === this.data.char && (this.isOnIce ? ((this.feetSensor.m_friction = 0), (this.maxSpeed = this.defaultMaxSpeed)) : ((this.feetSensor.m_friction = this.feetFriction), (this.maxSpeed = this.defaultMaxSpeed))),
+@1867162| 								"wg" === this.data.char &&
+@1867198| 									(this.isOnIce ? ((this.feetSensor.m_friction = 0.7), (this.maxSpeed = this.waterIceMaxSpeed)) : ((this.feetSensor.m_friction = this.feetFriction), (this.maxSpeed = this.defaultMaxSpeed))),
+@1867397| 								this.feetSensor.Refilter(),
+@1867434| 								a = this.feetSensor.m_body.m_contactList,
+@1867485| 								b = [];
+@1867502| 							null != a;
+@1867521| 
+@1867523| 						)
+@1867532| 							a.contact.ResetFriction(), b.push((a = a.next));
+@1867589| 						return b;
+@1867606| 					}),
+@1867616| 					(e.prototype.update = function () {
+@1867658| 						var a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w;
+@1867738| 						if (!((null != this.game.level && this.game.level.ended) || this.game.physics.box2d.paused)) {
+@1867840| 							if (this.dying) return (this.bodySprite.visible = !1), (this.bodyParts.legs.visible = !1), (this.bodyParts.head.visible = !1), void (this.dead && this.body.data.SetLinearVelocity(new box2d.b2Vec2(0, 0)));
+@1868053| 							if (
+@1868066| 								((k = this.jumpImpulse),
+@1868100| 								(l = this.jumpVelocity),
+@1868134| 								(s = this.runForce),
+@1868164| 								(h = this.floatForce),
+@1868196| 								(m = this.defaultMaxSpeed),
+@1868233| 								(this.cursors.right.isDown || this.cursors.left.isDown) && this.isOnLiquid
+@1868317| 									? this.waterplaying || ((this.waterplaying = !0), (this.game.level.sounds.waterSteps.loop = !0), (this.game.level.sounds.waterSteps.volume = 0.5), this.game.level.sounds.waterSteps.play())
+@1868516| 									: this.waterplaying === !0 && ((this.waterplaying = !1), this.game.level.sounds.waterSteps.stop()),
+@1868626| 								(this.cursors.right.isDown || this.cursors.left.isDown) && this.isOnIce
+@1868707| 									? this.iceplaying || ((this.iceplaying = !0), (this.game.level.sounds["iceSteps_" + this.data.char].loop = !0), this.game.level.sounds["iceSteps_" + this.data.char].play())
+@1868890| 									: this.iceplaying === !0 && ((this.iceplaying = !1), this.game.level.sounds["iceSteps_" + this.data.c

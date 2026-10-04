@@ -1,0 +1,90 @@
+@1680610| ototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1680678| 			},
+@1680685| 			c = {}.hasOwnProperty;
+@1680712| 		define("States/Level/Devices/Door", ["Phaser"], function () {
+@1680777| 			"use strict";
+@1680795| 			var c;
+@1680806| 			return (c = c = (function (c) {
+@1680842| 				function d(b, c, e, f) {
+@1680872| 					this.update = a(this.update, this);
+@1680914| 					var g, h, i, j;
+@1680936| 					return (
+@1680951| 						d.__super__.constructor.call(this, b),
+@1680997| 						(c += this.game.physics.box2d.mpx(1)),
+@1681043| 						(this.pos = { x: c, y: e }),
+@1681079| 						(i = "fb" === f ? "FinishBoy" : "FinishGirl"),
+@1681133| 						(this.sprite = this.game.make.sprite(c, e + 4, "TempleAssets", i + "0000")),
+@1681217| 						this.sprite.scale.set(0.8),
+@1681252| 						this.sprite.animations.add("open", Phaser.Animation.generateFrameNames(i, 0, 21, "", 4), 10, !1),
+@1681357| 						this.game.physics.box2d.enable(this.sprite),
+@1681409| 						(this.body = this.sprite.body),
+@1681448| 						(this.sprite.anchor.y = 0.99),
+@1681486| 						this.game.layers.background.addChild(this.sprite),
+@1681544| 						(this.signal = new Phaser.Signal()),
+@1681588| 						this.body.clearFixtures(),
+@1681622| 						this.body.data.SetType(box2d.b2BodyType.b2_staticBody),
+@1681685| 						(j = new box2d.b2PolygonShape()),
+@1681726| 						j.SetAsOrientedBox(this.game.physics.box2d.pxm(this.options.width / 2), this.game.physics.box2d.pxm(this.options.height / 2), new box2d.b2Vec2(0, 0), 0),
+@1681887| 						(h = new box2d.b2FixtureDef()),
+@1681926| 						(h.shape = j),
+@1681948| 						(h.friction = 0.7),
+@1681975| 						(h.restitution = 0),
+@1682003| 						(h.density = 0),
+@1682027| 						(h.userData = "door-" + f),
+@1682062| 						(h.isSensor = !0),
+@1682088| 						(this.data = { char: f }),
+@1682122| 						(g = this.body.data.CreateFixture(h)),
+@1682168| 						(g.id = this.body.world.getNextFixtureId()),
+@1682220| 						this.body.setFixtureContactCallback(
+@1682264| 							g,
+@1682275| 							(function (a) {
+@1682299| 								return function (b, c, d, e, f, g) {
+@1682345| 									if (null != c.sprite.character && c.sprite.character.data.char === a.data.char) return f ? (a.isOpen = !0) : (a.isOpen = !1);
+@1682481| 								};
+@1682493| 							})(this),
+@1682511| 							this
+@1682524| 						),
+@1682534| 						(this.currentFrac = this.sprite.animations.currentFrame.index),
+@1682605| 						this
+@1682617| 					);
+@1682626| 				}
+@1682633| 				return (
+@1682647| 					b(d, c),
+@1682662| 					(d.prototype.options = { width: 64, height: 8 }),
+@1682718| 					(d.prototype.update = function () {
+@1682760| 						var a, b, c;
+@1682780| 						return (
+@1682796| 							(a = this.sprite.animations._outputFrames.indexOf(this.sprite.animations.currentFrame.index)),
+@1682899| 							21 === a ? (this.isUp = !0) : (this.isUp = !1),
+@1682955| 							(b = Math.min(0.04, this.game.time.elapsed / 1e3)),
+@1683015| 							(c = 25 * b),
+@1683037| 							this.isOpen
+@1683057| 								? (a < 21 &&
+@1683079| 									  ((this.currentFrac += c), (this.sprite.animations.frame = Math.round(this.currentFrac)), (null != this.sound && this.sound.isPlaying) || (this.sound = this.game.level.sounds.door.playInstance())),
+@1683288| 								  21 === a && (this.signal.dispatch(), null != this.sound && (this.sound.stopInstance(), (this.sound = null))))
+@1683409| 								: this.isOpen ||
+@1683435| 								  (a > 0 && ((this.currentFrac -= c), (this.sprite.animations.frame = Math.round(this.currentFrac)), (null != this.sound && this.sound.isPlaying) || (this.sound = this.game.level.sounds.door.playInstance())),
+@1683653| 								  0 === a && (null != this.sound && (this.sound.stopInstance(), (this.sound = null)), this.signal.dispatch())),
+@1683774| 							this.isUp
+@1683792| 						);
+@1683802| 					}),
+@1683812| 					d
+@1683820| 				);
+@1683828| 			})(Phaser.Group));
+@1683851| 		});
+@1683858| 	}.call(this),
+@1683874| 	function () {
+@1683890| 		var a = function (a, b) {
+@1683919| 				return function () {
+@1683945| 					return a.apply(b, arguments);
+@1683981| 				};
+@1683989| 			},
+@1683996| 			b = function (a, b) {
+@1684022| 				function d() {
+@1684042| 					this.constructor = a;
+@1684070| 				}
+@1684077| 				for (var e in b) c.call(b, e) && (a[e] = b[e]);
+@1684130| 				return (d.prototype = b.prototype), (a.prototype = new d()), (a.__super__ = b.prototype), a;
+@1684228| 			},
+@1684235| 			c = {}.hasOwnProperty;
+@1684262| 		define("States/Level/Devices/Hanging", ["./Dev
