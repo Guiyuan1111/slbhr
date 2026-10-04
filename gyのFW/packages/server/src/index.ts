@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import { Server, WebSocketTransport } from "./colyseus.cjs.js";
 import { ForestRoom } from "./rooms/ForestRoom.js";
+import { levelExists, listLevelIds, loadLevel } from "./levels.js";
 
 const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 const PORT = Number(process.env.PORT ?? 2567);
@@ -41,6 +42,25 @@ app.get("/assets/audio/s/:name", (req, res) => {
       if (err && !res.headersSent) res.sendStatus((err as { statusCode?: number }).statusCode ?? 404);
     },
   );
+});
+
+// 关卡数据 API（E14/E16：两端取关路径统一——客户端不再自行拼 tutorials/forest 目录，
+// 统一走本接口按 id 取关；服务端 LEVEL_DIRS 顺序为唯一权威）
+app.get("/api/levels", (_req, res) => {
+  res.json({ ids: listLevelIds() });
+});
+app.get("/api/level/:id", (req, res) => {
+  const id = String(req.params.id ?? "");
+  if (!levelExists(id)) {
+    res.status(404).json({ error: `关卡不存在: ${id}` });
+    return;
+  }
+  try {
+    const bundle = loadLevel(id);
+    res.json({ id: bundle.id, json: bundle.json });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
 });
 
 const httpServer = http.createServer(app);

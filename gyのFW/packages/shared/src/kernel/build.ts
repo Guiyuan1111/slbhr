@@ -27,6 +27,7 @@ export interface LiquidInfo {
 }
 
 export interface DiamondInfo {
+  id: string;
   body: any;
   kind: "red" | "blue" | "silver" | "fbwg";
   /** 原版 userData "diamond-{fb|wg|silver|fbwg}" */
@@ -276,7 +277,7 @@ export function buildLevelWorld(level: LevelData): BuiltWorld {
       isSensor: true,
       userData: { type: "diamond", char: diamondChar(d.kind) },
     });
-    return { body, kind: d.kind, char: diamondChar(d.kind), collected: false, x: d.x, y: d.y };
+    return { id: d.id, body, kind: d.kind, char: diamondChar(d.kind), collected: false, x: d.x, y: d.y };
   });
 
   // ---- 门（Door 构造体：pos=(x+32, y底边)，sprite y+4；sensor 1×0.125m 于门底条带）----
