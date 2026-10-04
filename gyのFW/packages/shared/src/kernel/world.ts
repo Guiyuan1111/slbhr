@@ -16,6 +16,7 @@ import type { B2 } from "./b2.js";
 import { b2, m2px } from "./b2.js";
 import { buildLevelWorld, type BuiltWorld, type DoorInfo } from "./build.js";
 import { Character, type AnimState, type InputState } from "./character.js";
+import { buildMechanisms, type MechEvent, type Mechanisms } from "./mechanisms.js";
 
 export type WorldPhase = "playing" | "won" | "gameover";
 
@@ -24,6 +25,7 @@ export type WorldEvent =
   | { type: "gameover" }
   | { type: "diamond"; role: Role; kind: "red" | "blue" | "silver" | "fbwg" }
   | { type: "door-open"; role: Role }
+  | { type: "mech"; event: MechEvent }
   | { type: "win"; data: WinData };
 
 export interface WinData {
@@ -65,9 +67,11 @@ interface ContactEvent {
 export class World {
   readonly level: LevelData;
   private built: BuiltWorld;
+  private mechs: Mechanisms;
   private B: B2;
   private chars: Record<Role, Character>;
   /** 原版 data.diamonds 等价物从 Character 取 */
+  private simTimeS = 0;
 
   phase: WorldPhase = "playing";
   timerMs = 0;
@@ -80,10 +84,17 @@ export class World {
     this.level = level;
     this.B = b2();
     this.built = buildLevelWorld(level);
+    this.mechs = buildMechanisms(this.B, this.built.world, this.built.groundBody, level);
     this.chars = {
       fireboy: new Character(this.B, this.built.world, "fireboy", level.spawn.fireboy),
       watergirl: new Character(this.B, this.built.world, "watergirl", level.spawn.watergirl),
     };
+    for (const wind of this.mechs.winds) {
+      wind.registerCharBodies([
+        ["fireboy", this.chars.fireboy.body],
+        ["watergirl", this.chars.watergirl.body],
+      ]);
+    }
     this.installContactListener();
   }
 
@@ -117,6 +128,33 @@ export class World {
 
   get doors(): Record<Role, DoorInfo> {
     return this.built.doors;
+  }
+
+  get mechanisms(): Mechanisms {
+    return this.mechs;
+  }
+
+  /** 机关快照（server 每 tick 写入 schema；坐标屏幕 px、角度屏幕弧度） */
+  mechSnapshot(): {
+    levers: Array<{ id: number; group: number; state: number; angle: number }>;
+    pushers: Array<{ id: number; group: number; state: number }>;
+    platforms: Array<{ id: number; x: number; y: number; angle: number }>;
+    props: Array<{ id: number; kind: string; x: number; y: number; angle: number }>;
+    winds: Array<{ id: number; group: number; state: number }>;
+  } {
+    return {
+      levers: this.mechs.levers.map((l, id) => ({ id, group: l.group, state: l.state, angle: -l.angleDeg() * (Math.PI / 180) })),
+      pushers: this.mechs.pushers.map((p, id) => ({ id, group: p.group, state: p.state })),
+      platforms: this.mechs.platforms.map((p, id) => {
+        const pos = p.body.GetPosition();
+        return { id, x: m2px(pos.x), y: m2px(pos.y), angle: -p.body.GetAngle() };
+      }),
+      props: this.mechs.props.map((p, id) => {
+        const pos = p.body.GetPosition();
+        return { id, kind: p.kind, x: m2px(pos.x), y: m2px(pos.y), angle: -p.body.GetAngle() };
+      }),
+      winds: this.mechs.winds.map((wd, id) => ({ id, group: wd.group, state: wd.state })),
+    };
   }
 
   /** 客户端/快照用角色状态（屏幕系） */
@@ -154,13 +192,24 @@ export class World {
     const jumpSound = () => {
       /* 音效属客户端，内核只留钩子 */
     };
+    // 风力（原版在 update 链中施力，先于物理步进）
+    for (const wind of this.mechs.winds) wind.applyForce(this.simTimeS);
     this.chars.fireboy.update(this.B, dt, inputs.fireboy, jumpSound);
     this.chars.watergirl.update(this.B, dt, inputs.watergirl, jumpSound);
 
     this.built.world.Step(dt, 8, 3);
+    this.simTimeS += dt;
     this.processContactEvents(events);
 
     if (this.phase === "playing") {
+      // 机关逐帧检查（原版 update 链：拉杆过零/按钮阈值 → 组同步 → 平台 updateState）
+      const mechEvents: MechEvent[] = [];
+      for (const l of this.mechs.levers) l.checkState(mechEvents);
+      for (const p of this.mechs.pushers) p.checkState(mechEvents);
+      for (const ev of mechEvents) {
+        events.push({ type: "mech", event: ev });
+        this.mechs.manager.deviceChanged();
+      }
       this.updateDoors(dt, events);
       this.checkEnd(events);
       this.timerMs += dt * 1000;
@@ -228,6 +277,15 @@ export class World {
       if (this.roleOfBody(otherBody) !== role) return;
       // 原版：f ? isOpen=true : isOpen=false（begin/end 直设，无计数）
       this.built.doors[role].isOpen = begin;
+      return;
+    }
+
+    // ---- 风柱（World 分发：机柱 sensor 进出 → Wind.activeRoles）----
+    if (ud && typeof ud === "object" && ud.type === "wind") {
+      const role = this.roleOfBody(otherBody);
+      if (!role) return;
+      const wind = this.mechs.winds.find((wd) => this.hasFixture(wd.body, fix));
+      wind?.setActive(role, begin);
       return;
     }
 
@@ -315,12 +373,20 @@ export class World {
   /** 整关重开（原版 retry 语义 = 重建世界；房间层调这个而不是复用实例） */
   reset(): void {
     this.built = buildLevelWorld(this.level);
+    this.mechs = buildMechanisms(this.B, this.built.world, this.built.groundBody, this.level);
     this.chars = {
       fireboy: new Character(this.B, this.built.world, "fireboy", this.level.spawn.fireboy),
       watergirl: new Character(this.B, this.built.world, "watergirl", this.level.spawn.watergirl),
     };
+    for (const wind of this.mechs.winds) {
+      wind.registerCharBodies([
+        ["fireboy", this.chars.fireboy.body],
+        ["watergirl", this.chars.watergirl.body],
+      ]);
+    }
     this.phase = "playing";
     this.timerMs = 0;
+    this.simTimeS = 0;
     this.contactEvents.length = 0;
     this.pendingRemove.length = 0;
     this.installContactListener();

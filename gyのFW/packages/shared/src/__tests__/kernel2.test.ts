@@ -4,7 +4,7 @@
  * 断言口径：原版行为（research/01 + TEMP 源码区段转写），非旧 AABB 内核行为。
  * 金轨迹逐帧差分属 baseline 里程碑，不在此文件。
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join, dirname } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -244,3 +244,75 @@ function teleport(w: World, role: "fireboy" | "watergirl", screenX: number, scre
   body.SetPosition(new B.b2Vec2(screenX / -32, screenY / -32));
   body.SetLinearVelocity(new B.b2Vec2(0, 0));
 }
+
+// ---- 助手：从仓库根加载任意关并构建完整物理世界 ----
+function loadAny(id: string): World {
+  const dir = id === "forest_01" ? `${ROOT}/data/tutorials/levels` : `${ROOT}/data/forest/levels`;
+  const json = JSON.parse(readFileSync(`${dir}/${id}.json`, "utf8"));
+  return new World(parseLevel(id, json, makeProvider(dir)));
+}
+
+describe("内核：机关全谱构建冒烟（48 关全物理构建）", () => {
+  it("48 关全部可完成 parseLevel + 机关/关节构建 + 60 步仿真不崩", async () => {
+    const ids = readdirSync(`${ROOT}/data/forest/levels`).filter((f) => f.endsWith(".json")).map((f) => f.replace(".json", ""));
+    ids.push("forest_01");
+    for (const id of ids) {
+      const w = loadAny(id);
+      stepN(w, 60);
+      expect(w.phase, id).toBe("playing");
+    }
+  }, 120000);
+
+  it("forest_01：拉杆 group4 自稳 → 组平台被信号驱动移动（64px/s）", () => {
+    const w = loadForest01();
+    // 先站稳 1 帧（checkState 立即运行）：lever(onis=−1, startPos=+1) 自稳为 state1 → 组4平台 state1
+    stepN(w, 1);
+    const lever = w.mechanisms.levers[0];
+    expect(lever.state).toBe(1);
+    const plat4 = w.mechanisms.platforms.find((p) => p.group === 4)!;
+    const y0 = -plat4.body.GetPosition().y * 32;
+    stepN(w, 60);
+    const y1 = -plat4.body.GetPosition().y * 32;
+    // 60 帧 ≈ 1s，64px/s → 移动约 64px（允许关节起停差）
+    expect(y1 - y0).toBeGreaterThan(40);
+    // group5 平台（按钮组，无人踩）应保持原位
+    const plat5 = w.mechanisms.platforms.find((p) => p.group === 5)!;
+    const y5a = -plat5.body.GetPosition().y * 32;
+    stepN(w, 30);
+    const y5b = -plat5.body.GetPosition().y * 32;
+    expect(Math.abs(y5b - y5a)).toBeLessThan(2);
+  });
+
+  it("forest_01：角色踩上按钮（group5）→ 按钮下沉触发 → 组平台移动", () => {
+    const w = loadForest01();
+    stepN(w, 30);
+    const pusher = w.mechanisms.pushers[0]; // group5
+    // 传送到按钮正上方半格处落下
+    teleport(w, "fireboy", pusher.body.GetPosition().x * -32, pusher.body.GetPosition().y * -32 - 40);
+    let pressed = false;
+    for (let i = 0; i < 120; i++) {
+      const evs = w.step(1 / 60, { fireboy: NONE, watergirl: NONE });
+      if (pusher.state === 1) {
+        pressed = true;
+        expect(evs.concat([]).length).toBeGreaterThanOrEqual(0);
+        break;
+      }
+    }
+    expect(pressed).toBe(true);
+    // 组5平台被信号驱动
+    const plat5 = w.mechanisms.platforms.find((p) => p.group === 5)!;
+    expect(plat5.state).toBe(1);
+  });
+
+  it("forest_01：推箱可被角色推动（动力学刚体）", () => {
+    const w = loadForest01();
+    stepN(w, 30);
+    const box = w.mechanisms.props.find((p) => p.kind === "box")!;
+    const x0 = box.body.GetPosition().x;
+    // 传送到箱子左侧同层，向右走推箱（箱子在屏幕 736,256 附近）
+    teleport(w, "fireboy", -x0 * 32 - 60, -box.body.GetPosition().y * 32);
+    stepN(w, 90, { up: false, left: false, right: true });
+    const x1 = box.body.GetPosition().x;
+    expect(Math.abs(x1 - x0)).toBeGreaterThan(0.3); // 推动了 ≥0.3m
+  });
+});

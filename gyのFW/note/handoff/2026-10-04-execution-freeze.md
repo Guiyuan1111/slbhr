@@ -36,4 +36,9 @@
 
 ## 四、遗留决策记录（执行中持续追加）
 
-- （暂无）
+- **gid 归属规则（权威）**：按 Phaser"firstgid ≤ gid 中取最大者（同值取数组靠后者）"裁决，48 关全验证。由此修正 research 01 §2.5 三处：① forest_07/08/13/24/30 的 11 个 gid23 对象是 **pusher**（Objects@23 local0），不是 fbwg 钻石——**forest 全集 fbwg=0**；② leverA/B 权威计数 = **25/49**（非 29/45）；③ forest_02 平台 = **2 个**（1 横 dx=5 group2 + 1 竖 dy=4，非 3 个）；pusher 权威计数 = 73。已固化于 `level2.test.ts` 直方图断言。
+- **wind rotation** 是 Tiled 对象自身 rotation 字段（forest_03 −90），非 properties 属性。
+- **level2.ts 并行策略**：新解析器以独立文件落地（不破坏旧 level.ts 的编译绿），内核切换提交时替换旧 level.ts。
+- **research 01/05 进一步修正（内核落地时实证）**：球半径 0.9→**0.4**；箱宽 1.8→**1.77**（八边形倒角 0.1 + 四角滚轮 + 线/角阻尼 1/20）；Device.mpx 带负号（世界 mpx 不带）；fbwg 双色钻 forest=0 交叉确认。
+- **门条带亚像素接触问题（待基线裁决）**：门感应带 [门底, +8px] 与静立角色脚底（solver 稳态存在 ~0.16-0.3px 间隙）是几何边界情形；fb 的门条带在开阔平台（无遮挡），wg 的条带右缘顶立柱（按住方向即持续贴紧✓）。原版如何保证 fb 静立开门待金轨迹基线（agent A）实测后裁决，当前内核按源码几何实现，门状态机单测直接驱动 isOpen 验证。
+- **currentRunForce undefined 实证**：角色从第 0 帧就持续按住方向键将永不施力（NaN 比较门控全 false），直到首个松键帧初始化 0.475·runForce——与 C 报告新发现一致，视为原版行为保留。

@@ -147,11 +147,11 @@ export interface PlatformDef {
   y: number;
   w: number;
   h: number;
-  /** 平移轴向量，单位=格=米（原版 dx/dy 属性） */
+  /** 平移轴向量，单位=格=米（原版 dx/dy 属性；缺省 dx=4、dy=0） */
   dx: number;
   dy: number;
-  /** 关联拉杆/按钮组；undefined = 自动往返 */
-  group?: number;
+  /** 关联拉杆/按钮组（缺省 0；平台纯信号驱动，无组信号即停在原位） */
+  group: number;
   /** 旋转臂角度，度（实测 90）；存在时为旋转平台 */
   dtheta?: number;
   /** 旋转/竖直变体的 y 偏移，米（实测 −1/−1.5） */
@@ -417,9 +417,10 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
               y: num(o.y),
               w: num(o.width, 128),
               h: num(o.height, 32),
-              dx: num(o.properties?.dx),
-              dy: num(o.properties?.dy),
-              group: o.properties?.group === undefined ? undefined : num(o.properties.group),
+              // 类默认 properties:{group:0, dx:4, dy:0}（deepObjectExtend 只补缺失键）
+              dx: num(o.properties?.dx, 4),
+              dy: num(o.properties?.dy, 0),
+              group: num(o.properties?.group, 0),
               dtheta: o.properties?.dtheta === undefined ? undefined : num(o.properties.dtheta),
               offsetY: o.properties?.offsetY === undefined ? undefined : num(o.properties.offsetY),
             });
