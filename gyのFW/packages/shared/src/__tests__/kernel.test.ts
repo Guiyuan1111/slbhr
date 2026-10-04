@@ -1,8 +1,11 @@
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { join, dirname } from "node:path";
 import { describe, expect, it } from "vitest";
 import { LIQUID_TILE, parseLevel, World } from "../index.js";
 
-const ROOT = "D:/Guiyuan1111/GitHub/slbhr/gyのFW";
+// packages/shared/src/__tests__ → 仓库根（相对定位，环境迁移不再破功）
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 
 function tilesetProvider(baseDir: string) {
   const cache = new Map<string, any>();
