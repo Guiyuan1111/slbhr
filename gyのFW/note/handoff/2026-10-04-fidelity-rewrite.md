@@ -125,3 +125,10 @@
   forest_07 球级联、forest_01 fb 0.17m、风 sin 相位）定性为接触序敏感亚像素混沌。
 - 报告：`note/report/perf/2026-10-06-fidelity-benchmark.md`；快照：benchmark/results/。
 - 综合复刻度：82.55（v0.3.4）→ 84.57（0.3.5）。
+
+## 10. 2026-10-06 追加二：机关参数审计轮（0.3.6）
+
+- R5：buildBall 逐字节审计通过；R6：pusher 三处失配修复（密度 0.03/电机力 7/T 形底唇）。
+- **方法论存档**：lever 的 bundle 静态解读方案实测偏 2.54px、金轨迹验证旧形制 0.0000 全对——
+  金轨迹实证 > bundle 静态解读（resSprite/enable 装载链有未建模等效性），已回退并存档。
+- 快照 r6-final=84.53（bonus_2 级联重掷噪声级）；报告 §七/§八。
