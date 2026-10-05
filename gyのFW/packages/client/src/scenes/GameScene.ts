@@ -194,9 +194,9 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     const { level } = this.d;
-    const worldW = level.widthPx + PAD * 2;
-    const worldH = level.heightPx + PAD * 2;
-    this.cameras.main.setBounds(0, 0, worldW, worldH);
+    // 相机视口锁定关卡矩形（全出血）；PAD 仍保留在内部坐标，仅不可见
+    this.cameras.main.setBounds(PAD, PAD, level.widthPx, level.heightPx);
+    this.cameras.main.centerOn(level.widthPx / 2 + PAD, level.heightPx / 2 + PAD);
 
     for (const d of level.diamonds) {
       this.diamondKinds.set(d.id, d.kind);
@@ -725,16 +725,18 @@ export class GameScene extends Phaser.Scene {
 
   /** ui 层：顶部藤蔓时钟（正计时 MM:SS 真实秒，G14 去占位）+ 左上角红/蓝/银钻石计数 */
   private buildHud(): void {
-    const clockX = this.d.level.widthPx / 2 + PAD;
-    this.add.image(clockX, 0, ATLAS_TEMPLE, "Clock0000").setOrigin(0.5, 0).setDepth(9);
+    // HUD 挂相机（scrollFactor 0），坐标 = 视口系（关卡矩形内）
+    const clockX = 640; // 画布 1280 的水平中心（原版 LevelUI 时钟位）
+    this.add.image(clockX, 0, ATLAS_TEMPLE, "Clock0000").setOrigin(0.5, 0).setDepth(9).setScrollFactor(0);
     // 原版 LevelUI/Clock：TempleAssets Clock0000 + font 位图字 24 号（bitmapText 基准 48 半缩放）
     this.clockText = this.add
       .bitmapText(clockX, 30, FONT_MAIN, "00:00", 24)
       .setOrigin(0.5, 0)
-      .setDepth(9);
+      .setDepth(9)
+      .setScrollFactor(0);
 
     const counter = (x: number, frame: string, total: number): Phaser.GameObjects.Text => {
-      this.add.image(x, 28, ATLAS_CHARS, frame).setOrigin(0.5).setScale(0.34).setDepth(9);
+      this.add.image(x, 28, ATLAS_CHARS, frame).setOrigin(0.5).setScale(0.34).setDepth(9).setScrollFactor(0);
       return this.add
         .text(x + 26, 28, `0/${total}`, {
           fontFamily: 'Georgia, "Times New Roman", serif',
@@ -745,7 +747,8 @@ export class GameScene extends Phaser.Scene {
           fontStyle: "bold",
         })
         .setOrigin(0, 0.5)
-        .setDepth(9);
+        .setDepth(9)
+        .setScrollFactor(0);
     };
     this.redHudText = counter(34, DIAMOND_FRAME.red, this.redTotal);
     this.blueHudText = counter(150, DIAMOND_FRAME.blue, this.blueTotal);

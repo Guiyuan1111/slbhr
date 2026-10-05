@@ -24,7 +24,6 @@ const DEFAULT_LEVEL_ID = "forest_01";
 /** URL ?level= 选关（冻结需求 #12；合法性由服务端校验，非法 id 返回 4404 文案） */
 const urlLevel = new URLSearchParams(location.search).get("level") ?? "";
 /** 关卡四周的岩壁边距（原版 groundTexture 1312×992 = 关卡 +32 边距） */
-const LEVEL_PAD = 32;
 
 let phaser: Phaser.Game | null = null;
 let net: Net | null = null;
@@ -109,8 +108,10 @@ async function enterGame(): Promise<void> {
   phaser = new Phaser.Game({
     type: Phaser.AUTO,
     parent: "game-root",
-    width: level.widthPx + LEVEL_PAD * 2,
-    height: level.heightPx + LEVEL_PAD * 2,
+    // 画布固定 1280×960（原版设计尺寸）：forest 关卡 1248×928 居中后恰为 16px 边距，
+    // 与原版逐像素同几何；此前 64px PAD 字边/全出血两案均劣于该案（视觉差分实测，报告 §十一）
+    width: 1280,
+    height: 960,
     backgroundColor: "#000000",
     // setTimeout 驱动：窗口被遮挡/后台时 rAF 会被浏览器完全冻结（场景队列停摆），此模式保活
     fps: { forceSetTimeOut: true, target: 60 },

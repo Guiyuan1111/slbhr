@@ -70,9 +70,10 @@ async function enterAs(page, mode, roomCode) {
   if (mode === "join") await page.fill("#roomcode", roomCode);
   await page.click(mode === "create" ? "#btn-create" : "#btn-join");
   await page.waitForSelector("#menu", { state: "hidden", timeout: 15000 });
-  await page.waitForFunction(() => /房间码 [A-Za-z0-9]+/.test(document.querySelector("#hud-room")?.textContent ?? ""), null, { timeout: 20000 });
+  await page.waitForFunction(() => /房间码 [^（\s]{4,}/.test(document.querySelector("#hud-room")?.textContent ?? ""), null, { timeout: 20000 });
   const roomText = await page.textContent("#hud-room");
-  const code = (roomText.match(/房间码 ([A-Za-z0-9]+)/) || [])[1] ?? "";
+  // Colyseus roomId 字符集不止 alnum：取 房间码 与（密码已校验）之间的完整串
+  const code = (roomText.match(/房间码 ([^（\s]+)/) || [])[1] ?? "";
   return code;
 }
 

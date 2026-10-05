@@ -146,32 +146,52 @@ async function enterAs(page, mode, roomCode) {
   try { await page.waitForSelector("#menu", { state: "hidden", timeout: 12000 }); }
   catch {
     console.log("[visual][ours] 第一次入房失败，menu-error:", await page.textContent("#menu-error").catch(() => "?"));
+    console.log("[visual][ours] hud-room 全文:", JSON.stringify(await page.textContent("#hud-room").catch(() => "?")));
+    console.log("[visual][ours] net.room.id:", await page.evaluate('(() => { try { return window.__fwInit.net.room.id } catch { return "?" } })()').catch(() => "eval?"));
     await page.click(mode === "create" ? "#btn-create" : "#btn-join");
     try { await page.waitForSelector("#menu", { state: "hidden", timeout: 12000 }); }
     catch { console.log("[visual][ours] 第二次仍失败，menu-error:", await page.textContent("#menu-error").catch(() => "?")); throw new Error("入房失败"); }
   }
-  await page.waitForFunction(() => /房间码 [A-Za-z0-9]+/.test(document.querySelector("#hud-room")?.textContent ?? ""), null, { timeout: 20000 });
+  await page.waitForFunction(() => /房间码 [^（\s]{4}/.test(document.querySelector("#hud-room")?.textContent ?? ""), null, { timeout: 20000 });
   const t = await page.textContent("#hud-room");
-  return (t.match(/房间码 ([A-Za-z0-9]+)/) || [])[1] ?? "";
+  // Colyseus roomId 字符集不止 alnum（含 -/_ 等）：取 房间码 与（密码已校验）之间的完整串
+  return (t.match(/房间码 ([^（\s]+)/) || [])[1] ?? "";
 }
 
 async function shootOurs(browser) {
   const ctxA = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   const ctxB = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
-  const a = await ctxA.newPage();
-  const b = await ctxB.newPage();
-  let code = await enterAs(a, "create");
-  // hud-room 文本偶发被提早读到部分内容（观察到单字符码）——守卫重读
-  for (let i = 0; i < 10 && code.length < 6; i++) {
-    await a.waitForTimeout(400);
-    const t = await a.textContent("#hud-room").catch(() => "");
-    const m = (t || "").match(/房间码 ([A-Za-z0-9]+)/);
-    if (m) code = m[1];
+  let a = await ctxA.newPage();
+  let b = await ctxB.newPage();
+  a.on("pageerror", (e) => console.log("[visual][ours][A-error]", String(e).slice(0, 200)));
+  b.on("pageerror", (e) => console.log("[visual][ours][B-error]", String(e).slice(0, 200)));
+  a.on("close", () => console.log("[visual][ours][A] 页面关闭"));
+  b.on("close", () => console.log("[visual][ours][B] 页面关闭"));
+  // 入房整轮重试（偶发房间竞态：joinById 找不到刚建的房间——全 create+join 重来）
+  let code = "";
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      code = await enterAs(a, "create");
+      // hud-room 文本偶发被提早读到部分内容——守卫重读
+      for (let i = 0; i < 10 && code.length < 4; i++) {
+        await a.waitForTimeout(400);
+        const t = await a.textContent("#hud-room").catch(() => "");
+        const m = (t || "").match(/房间码 ([^（\s]+)/);
+        if (m) code = m[1];
+      }
+      console.log("[visual][ours] 房间码:", JSON.stringify(code), "len=", code.length);
+      await new Promise((r) => setTimeout(r, 500));
+      await enterAs(b, "join", code);
+      break;
+    } catch (e) {
+      console.log("[visual][ours] 入房尝试 " + attempt + " 失败:", String(e).slice(0, 120));
+      if (attempt === 2) throw e;
+      await ctxA.close(); await ctxB.close();
+      const na = await ctxA.newPage(); const nb = await ctxB.newPage();
+      attachLog(na, "A"); attachLog(nb, "B");
+      a = na; b = nb;
+    }
   }
-  console.log("[visual][ours] 房间码:", JSON.stringify(code), "len=", code.length);
-  console.log("[visual][ours] 房间码:", JSON.stringify(code), "len=", code.length);
-  await new Promise((r) => setTimeout(r, 500));
-  await enterAs(b, "join", code);
   await a.waitForFunction(() => document.querySelector("#hud-status")?.textContent === "", null, { timeout: 25000 });
   await a.waitForTimeout(OURS_WAIT_MS);
   const canvas = a.locator("#game-root canvas").first();
@@ -255,9 +275,12 @@ const DIFF_PROG = async (bufA, bufB) => {
 };
 
 // ---------- 主流程 ----------
+let globalScope = { ours: null, srv: null };
 (async () => {
   const srv8787 = await serveStatic(OUT_A_DIR, 8787);
+  globalScope.srv = srv8787;
   const ours = await spawnOurs();
+  globalScope.ours = ours;
   await new Promise((r) => setTimeout(r, 2000));
   const browser = await launchBrowser();
   globalThis.__diffBrowser = browser;
@@ -297,4 +320,10 @@ const DIFF_PROG = async (bufA, bufB) => {
     ours.kill();
     srv8787.close();
   }
-})().catch((e) => { console.error("[visual] 失败:", e.message); process.exit(1); });
+})().catch(async (e) => {
+    console.error('[visual] 失败:', e.message);
+    // process.exit 会跳过 finally —— 孤儿 2567 服务器会让后续运行连错进程，必须先清理
+    try { globalScope.ours?.kill(); } catch {}
+    try { globalScope.srv?.close(); } catch {}
+    process.exit(1);
+  });
