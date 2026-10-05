@@ -159,8 +159,9 @@ async function enterAs(page, mode, roomCode) {
 }
 
 async function shootOurs(browser) {
-  const ctxA = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
-  const ctxB = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+  // 视口 = 画布原生尺寸（1280×960）：FIT 1:1 无浏览器上采样，元素截图为原生像素
+  const ctxA = await browser.newContext({ viewport: { width: 1280, height: 960 } });
+  const ctxB = await browser.newContext({ viewport: { width: 1280, height: 960 } });
   let a = await ctxA.newPage();
   let b = await ctxB.newPage();
   a.on("pageerror", (e) => console.log("[visual][ours][A-error]", String(e).slice(0, 200)));
