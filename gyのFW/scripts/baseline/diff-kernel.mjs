@@ -47,7 +47,7 @@ const world = new World(level);
 const mechs = world.mechanisms;
 
 /** 输入脚本 → 按帧查表（原版键名：方向键=火人、WASD=水女孩；INPUT_SHIFT 见文件头） */
-const INPUT_SHIFT = 1;
+const INPUT_SHIFT = Number(process.env.DIFF_SHIFT ?? 1);
 const KEYMAP = {
   left: { role: "fireboy", key: "left" },
   right: { role: "fireboy", key: "right" },
