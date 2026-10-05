@@ -86,7 +86,6 @@ export class Lever extends Device {
   private joint: any;
   private readonly onis: number;
   /** 过零边沿检测：上一帧的 angle·onis 符号（null=未初始化） */
-  private prevSide: number | null = null;
   /** 事件监听：翻转时通知（音效/快照） */
   onFlip: (() => void) | undefined;
 
@@ -112,10 +111,13 @@ export class Lever extends Device {
     fd.filter.maskBits = FILTER.LIQUID_SENSOR_MASK;
     this.body.CreateFixture(fd);
 
-    // revolute：支点 = 杆中心 + (0, −0.7m)（物理，即屏幕下方 0.7m）
-    const pivot = new B.b2Vec2(center.x, center.y - 0.7);
+    // revolute：支点 = 质心(GetWorldCenter) − 0.7m（原版 @1693630 用 GetWorldCenter；质心=fixture 中心，
+    // 在 origin 上方 0.55m，故支点在 origin 下方仅 0.15m/4.8px——此前误用 origin−0.7m 致支点低 17.6px）；
+    // Initialize 参数顺序与原版一致（bodyA=杆）：关节角 = −杆角，翻转/马达符号语义随之正确
+    const wc = this.body.GetWorldCenter();
+    const pivot = new B.b2Vec2(wc.x, wc.y - 0.7);
     const jd = new B.b2RevoluteJointDef();
-    jd.Initialize(groundBody, this.body, pivot);
+    jd.Initialize(this.body, groundBody, pivot);
     jd.lowerAngle = -0.2 * Math.PI;
     jd.upperAngle = 0.2 * Math.PI;
     jd.enableLimit = true;
@@ -134,26 +136,23 @@ export class Lever extends Device {
   }
 
   checkState(events: MechEvent[]): void {
-    // 过零边沿检测（金轨迹实证：原版拉杆静止时永不自翻——恒真的源码条件在原版中并未生效，
-    // 真实翻转只发生在杆体被玩家推过零点的瞬间）。以 angle·onis 符号变化的边沿为判据；
-    // 进入负侧（source 的 state→1 语义）：马达 −4·onis；进入正侧（state→0 语义）：马达 +4·onis。
-    const side = Math.sign(this.joint.GetJointAngleRadians() * this.onis);
-    if (this.prevSide === null) {
-      this.prevSide = side;
-      return;
-    }
-    if (side === 0 || side === this.prevSide) return;
-    this.prevSide = side;
-    if (side < 0) {
+    // 原版 checkState @1694485 逐条直译（关节角 = −杆角，随 Initialize 顺序自动正确）：
+    // state==0 && 关节角×onis<0 → state=1，马达 −4·onis；state==1 && 关节角×onis>0 → state=0，马达 +4·onis。
+    // 杆停所在侧（正侧=0/负侧=1），马达把杆压向所在侧限位；玩家对抗 10 N·m 扳过零即翻转。
+    const ja = this.joint.GetJointAngleRadians();
+    if (this.state === 0 && ja * this.onis < 0) {
       this.state = 1;
       this.joint.SetMotorSpeed(-4 * this.onis);
-    } else {
+      this.onFlip?.();
+      events.push({ kind: "lever", group: this.group, state: this.state });
+    } else if (this.state === 1 && ja * this.onis > 0) {
       this.state = 0;
       this.joint.SetMotorSpeed(4 * this.onis);
+      this.onFlip?.();
+      events.push({ kind: "lever", group: this.group, state: this.state });
     }
-    this.onFlip?.();
-    events.push({ kind: "lever", group: this.group, state: this.state });
   }
+
 
   /** 快照：杆角（度，屏幕系） */
   angleDeg(): number {
@@ -177,9 +176,10 @@ export class Pusher extends Device {
     this.body = world.CreateBody(bd);
     this.body.SetUserData("pusher");
     // 梯形：底 2m、顶 1m、高 0.6m（局部 y 0→0.6，物理向上）
+    // 原版顶点（Pusher @1745895，w=1,h=0.6）：底 ±1、顶 ±0.5——此前误写 ±1.5 致碰撞面宽 1m
     polygonFixture(this.body, B, [
-      { x: -1.5, y: 0 },
-      { x: 1.5, y: 0 },
+      { x: -1, y: 0 },
+      { x: 1, y: 0 },
       { x: 0.5, y: 0.6 },
       { x: -0.5, y: 0.6 },
     ], {
@@ -249,8 +249,8 @@ export class MovingPlatform {
       const t = wM;
       wM = hM;
       hM = t;
-      cx += def.h / 2;
-      cy += def.w / 2;
+      cx += def.w / 2; // 原版 swap 后 x += 原 w/2（此前写反，竖直平台碰撞体偏 48px）
+      cy += def.h / 2; // y += 原 h/2
       shapeRotation = -Math.PI / 2;
     } else {
       cx += def.w / 2;
