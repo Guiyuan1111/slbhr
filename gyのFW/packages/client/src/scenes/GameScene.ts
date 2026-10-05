@@ -729,6 +729,8 @@ export class GameScene extends Phaser.Scene {
     const clockX = 640; // 画布 1280 的水平中心（原版 LevelUI 时钟位）
     // 原版 Clock 锚点 (0.5, 0.05)：盘面上探 5px；文字区在 y≈55-83（像素差分热图实证）
     this.add.image(clockX, 0, ATLAS_TEMPLE, "Clock0000").setOrigin(0.5, 0.05).setDepth(9).setScrollFactor(0);
+    // 原版 LevelUI 右上暂停钮（渲染保真；联机暂停语义属服务端功能，此处仅视觉）
+    this.add.image(1265, 15, ATLAS_POPUP, "PauseButton0000").setOrigin(1, 0).setDepth(9).setScrollFactor(0);
     // 原版 LevelUI/Clock：TempleAssets Clock0000 + font 位图字 24 号（bitmapText 基准 48 半缩放）
     this.clockText = this.add
       .bitmapText(clockX, 56, FONT_MAIN, "00:00", 24)
