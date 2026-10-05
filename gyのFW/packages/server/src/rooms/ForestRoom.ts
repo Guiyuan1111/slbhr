@@ -36,6 +36,7 @@ export class ForestRoom extends Room<RoomState> {
   private bundle!: LevelBundle;
   private roles = new Map<string, Role>();
   private acc = 0;
+  private pingAcc = 0;
   private roomPassword = "";
   private readyTimer: NodeJS.Timeout | undefined;
   private restartTimer: NodeJS.Timeout | undefined;
@@ -157,6 +158,13 @@ export class ForestRoom extends Room<RoomState> {
   private tick(dtMs: number) {
     if (this.state.phase !== "started") {
       this.acc = 0;
+      // 大厅/暂停期心跳：每秒一跳，死 TCP（对端消失/服务重启）会在 1-2s 内触发
+      // ws close，让双方页面及时显示断线，而不是挂着假活的等待页（实玩反馈 2026-10-05）
+      this.pingAcc += dtMs;
+      if (this.pingAcc >= 1000) {
+        this.pingAcc = 0;
+        this.broadcast("ping");
+      }
       return;
     }
     this.acc += Math.min(dtMs, 100);
