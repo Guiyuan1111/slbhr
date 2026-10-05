@@ -98,13 +98,17 @@ for (let f = 0; f < frames.length; f++) {
 
 console.log(`\n=== 金轨迹对拍（${golden.meta.level}，${frames.length} 帧，dt=${dt}）===`);
 let worst = 0;
+let sumSq = 0, nBodies = 0;
 for (const [tag, d] of Object.entries(drift)) {
   const maxPos = Math.max(d.maxDx, d.maxDy);
   worst = Math.max(worst, maxPos);
+  sumSq += maxPos * maxPos;
+  nBodies++;
   const grade = maxPos < 0.05 ? "积分细节级" : maxPos < 0.15 ? "一致" : maxPos < 0.5 ? "行为一致(常数待查)" : "FAIL";
   console.log(`${tag.padEnd(12)} maxDx=${d.maxDx.toFixed(4)}m maxDy=${d.maxDy.toFixed(4)}m maxΔv=${d.maxDv.toFixed(3)}m/s @f${d.atFrame} → ${grade}`);
 }
 console.log(`\n首超 ${DIVERGE_M}m：${divergedAt < 0 ? "无（全程运动模式一致）" : `帧 ${divergedAt}`}`);
+console.log(`全刚体 max-位移 RMS：${nBodies ? Math.sqrt(sumSq / nBodies).toFixed(4) : "n/a"} m（${nBodies} 体）`);
 console.log(`力事件数：${worldEvents.length}（死亡/钻石/机关等）`);
 
 const report = { golden: goldenPath, frames: frames.length, dt, drift, divergedAt, worstMeters: worst, events: worldEvents.length };
