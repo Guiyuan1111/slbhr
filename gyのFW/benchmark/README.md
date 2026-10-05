@@ -30,7 +30,11 @@ node benchmark/fidelity-score.mjs --compare v0.3.4   # 与快照对比（优化�
 
 | 快照 | git | 综合指数 | 说明 |
 |---|---|---|---|
-| v0.3.4 | 8a49d81 | （见 results/v0.3.4.json） | 优化前基线 |
+| v0.3.4 | 8a49d81 | 82.55 | 优化前基线 |
+| r1-settle5 | 82f3dd6 前 | 82.51 | settle 相位证据修正 |
+| r2-wind | 1f22a99 | 84.57 | 风场阻尼/限速 |
+| r4-final | 82f3dd6 | 84.57 | 第二轮起点 |
+| r6-final | （最新） | 84.53 | pusher 保真修复 + lever 判定存档 |
 
 ## 注意
 

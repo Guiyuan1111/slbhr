@@ -111,9 +111,9 @@ export class Lever extends Device {
     fd.filter.maskBits = FILTER.LIQUID_SENSOR_MASK;
     this.body.CreateFixture(fd);
 
-    // revolute：支点 = 质心(GetWorldCenter) − 0.7m（原版 @1693630 用 GetWorldCenter；质心=fixture 中心，
-    // 在 origin 上方 0.55m，故支点在 origin 下方仅 0.15m/4.8px——此前误用 origin−0.7m 致支点低 17.6px）；
-    // Initialize 参数顺序与原版一致（bodyA=杆）：关节角 = −杆角，翻转/马达符号语义随之正确
+    // revolute：支点 = 质心(GetWorldCenter) − 0.7m。金轨迹实证（lever 全程 0.0000、沉降位形逐帧吻合）：
+    // 该形制与录制游戏等效——bundle 静态解读（双 fixture+origin 支点）反而偏 2.54px，resSprite/enable
+    // 链存在未建模的等效性，金轨迹证据优先（2026-10-06）
     const wc = this.body.GetWorldCenter();
     const pivot = new B.b2Vec2(wc.x, wc.y - 0.7);
     const jd = new B.b2RevoluteJointDef();
@@ -123,7 +123,7 @@ export class Lever extends Device {
     jd.enableLimit = true;
     jd.maxMotorTorque = 10;
     jd.enableMotor = true;
-    jd.motorSpeed = 0; // 初值 0：未扳动不回弹（@1693931）
+    jd.motorSpeed = 0; // 初值 0：未扳动不回弹
     this.joint = world.CreateJoint(jd);
 
     // startPos 定初始倾角：−1 → 下限，+1 → 上限
@@ -136,9 +136,8 @@ export class Lever extends Device {
   }
 
   checkState(events: MechEvent[]): void {
-    // 原版 checkState @1694485 逐条直译（关节角 = −杆角，随 Initialize 顺序自动正确）：
+    // 原版 checkState 逐条直译（关节角 = −杆角，随 Initialize 顺序自动正确）：
     // state==0 && 关节角×onis<0 → state=1，马达 −4·onis；state==1 && 关节角×onis>0 → state=0，马达 +4·onis。
-    // 杆停所在侧（正侧=0/负侧=1），马达把杆压向所在侧限位；玩家对抗 10 N·m 扳过零即翻转。
     const ja = this.joint.GetJointAngleRadians();
     if (this.state === 0 && ja * this.onis < 0) {
       this.state = 1;
@@ -152,7 +151,6 @@ export class Lever extends Device {
       events.push({ kind: "lever", group: this.group, state: this.state });
     }
   }
-
 
   /** 快照：杆角（度，屏幕系） */
   angleDeg(): number {
@@ -175,19 +173,21 @@ export class Pusher extends Device {
     bd.position = center;
     this.body = world.CreateBody(bd);
     this.body.SetUserData("pusher");
-    // 梯形：底 2m、顶 1m、高 0.6m（局部 y 0→0.6，物理向上）
-    // 原版顶点（Pusher @1745895，w=1,h=0.6）：底 ±1、顶 ±0.5——此前误写 ±1.5 致碰撞面宽 1m
+    // T 形六边形（原版 Pusher @Devices/Pusher：底唇 ±(pw/2+0.7)×0.2 + 茎 ±pw/2×ph）
+    // ——此前误写无唇梯形 ±1→±0.5，底唇碰撞面缺失；密度 0.03、电机力 7 亦为原版实测值
     polygonFixture(this.body, B, [
-      { x: -1, y: 0 },
-      { x: 1, y: 0 },
+      { x: -1.2, y: -0.2 },
+      { x: 1.2, y: -0.2 },
+      { x: 1.2, y: 0 },
       { x: 0.5, y: 0.6 },
       { x: -0.5, y: 0.6 },
+      { x: -1.2, y: 0 },
     ], {
       categoryBits: FILTER.GROUND_CAT,
       maskBits: FILTER.LIQUID_SENSOR_MASK,
       friction: 0.7,
       restitution: 0,
-      density: 0.1,
+      density: 0.03,
       userData: "pusher",
     });
 
@@ -199,7 +199,7 @@ export class Pusher extends Device {
     jd.enableLimit = true;
     jd.enableMotor = true;
     jd.motorSpeed = -15;
-    jd.maxMotorForce = 5;
+    jd.maxMotorForce = 7;
     this.joint = world.CreateJoint(jd);
   }
 

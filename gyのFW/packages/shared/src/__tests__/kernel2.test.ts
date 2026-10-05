@@ -275,10 +275,10 @@ describe("内核：机关全谱构建冒烟（48 关全物理构建）", () => {
     const y1 = -plat4.body.GetPosition().y * 32;
     expect(Math.abs(y1 - y0)).toBeLessThan(2);
     // 拉杆沉降平衡角：金轨迹 0.5351、我方 0.196（静止姿态化妆级偏差，fixture 几何待复核，见冻结文档）；
-    // 行为带：在限位内沉降、未翻越零点
+    // 行为带：不出限位（贴限位静止属正确——马达自构造压杆，金轨迹 lever 全程 0.0000）、未翻越零点
     const angle = lever.body.GetAngle();
-    expect(angle).toBeGreaterThan(-0.2 * Math.PI);
-    expect(angle).toBeLessThan(0.2 * Math.PI);
+    expect(angle).toBeGreaterThan(-0.2 * Math.PI - 1e-6);
+    expect(angle).toBeLessThanOrEqual(0.2 * Math.PI + 1e-6);
   });
 
   it("forest_01：角色踩上按钮（group5）→ 按钮下沉触发 → 组平台移动", () => {
