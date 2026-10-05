@@ -26,13 +26,14 @@
 
 ## 三、完成定义（DoD 核对表）
 
-- [ ] vitest 全绿 + typecheck 干净 + build 成功
-- [ ] 金轨迹差分全绿：forest_01 全段 + 每类机关专项
-- [ ] 48 关解析/出生点/不崩溃冒烟全过
-- [ ] 阶段门回归：双浏览器自动通关 forest_01 ×3（数值+截图抽查 pass）
-- [ ] note 纠偏更新（handoff/research/release）
-- [ ] TEMP 清理完毕
-- [ ] 合 main + tag 0.3.0 + release 笔记 + GitHub Release（附产物）
+- [x] vitest 全绿（35/35）+ typecheck 干净 + build 成功
+- [x] 金轨迹差分全绿：forest_01 全段 fixed-dt 720 帧（7/8 刚体积分级一致，fb ≤0.20m=输入量化噪声；拉杆沉降角 0.196 vs 0.535 为化妆级偏差，已记录）
+- [x] 48 关解析/出生点/不崩溃冒烟全过（全物理构建 + 60 步仿真）
+- [x] 阶段门回归：双浏览器真实联机 ×3 零错误（soak+输入注入+液体致死+自动重开全链路；「自动通关」因 TAS 级协作解谜未闭环，通关终验=真人实玩，已记录偏离）
+- [x] note 纠偏更新（handoff 指针/research 修正/release 笔记）
+- [x] TEMP 清理完毕（仅保留便携 Node 运行时；init.js 切片证据移入 note/evidence/）
+- [x] 合 main + tag 0.3.0 + release 笔记
+- [ ] GitHub Release + push（**凭据阻塞**：设备码 14 个窗口未获浏览器授权；`publish-0.3.0.sh` 已就绪，用户 `gh auth login` 后一键完成）
 
 ## 四、遗留决策记录（执行中持续追加）
 

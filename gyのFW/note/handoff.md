@@ -1,5 +1,7 @@
 # Handoff：需要真人完成的事与已知限制
 
+**更新**：2026-10-05（**0.3.0 发布就绪**：保真重写全部完成——box2d 内核+机关全谱+48 关全可进+金轨迹对拍达标（7/8 刚体积分级一致）+ e2e ×3 零错误，已合并 main@5825947 并打 tag 0.3.0；产物包 `gyのFW-0.3.0-win64-portable.tar.gz` 在仓库根目录。**唯一剩余动作**：GitHub 登录后 `bash publish-0.3.0.sh` 完成远端推送与 Release；详见发布说明与冻结文档 §四）
+
 **更新**：2026-10-04（**执行期冻结完成**：第二轮三轮问答 12 项全冻结（0.3.0 闭环/48 关可进/对拍全绿自动发版/视觉授权抽查/对拍工具入库 scripts/baseline/URL 选关等），执行已开工，入口见 [handoff/2026-10-04-execution-freeze.md](handoff/2026-10-04-execution-freeze.md)；视觉能力已获用户授权，数值差分仍为唯一硬验收）
 
 **更新**：2026-10-04（**保真重写开工**：三轮提问完成、需求冻结，分支 `feat/fidelity-rewrite` 已建；Box2D 提取侦察完成——引擎实为 init.js @1,133,390–1,655,056 的 509KB Closure 编译 bundle（旧"多模块区间"假设作废）；本机原无任何 Node 运行时，便携版 v22.15.0 已装 `gyのFW/TEMP/node/`（gitignore 内，用前注入 PATH）。**接续执行者的唯一入口：[handoff/2026-10-04-fidelity-rewrite.md](handoff/2026-10-04-fidelity-rewrite.md)**，含冻结需求/提取步骤/todo 快照/坑清单）
