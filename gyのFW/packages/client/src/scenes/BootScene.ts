@@ -15,6 +15,7 @@ export const ATLAS_MECH = "mech";
 export const ATLAS_TEMPLE = "temple";
 export const ATLAS_POPUP = "popup";
 export const ATLAS_MENU = "menu";
+export const FONT_MAIN = "font";
 
 /**
  * 官方素材以高分辨率绘制。原版运行时角色帧缩放 0.95（帧含大量透明边距，
@@ -34,6 +35,8 @@ export class BootScene extends Phaser.Scene {
     this.load.atlas(ATLAS_TEMPLE, "/assets/atlasses/Temples/forest/TempleAssets.png", "/assets/atlasses/Temples/forest/TempleAssets.json");
     this.load.atlas(ATLAS_POPUP, "/assets/atlasses/PopupAssets.png", "/assets/atlasses/PopupAssets.json");
     this.load.atlas(ATLAS_MENU, "/assets/atlasses/MenuAssets.png", "/assets/atlasses/MenuAssets.json");
+    // 原版画布内时钟的位图字（font 48 基准，LevelUI Clock 用 24 号 = 半缩放）
+    this.load.bitmapFont(FONT_MAIN, "/assets/fonts/chinese/font.png", "/assets/fonts/chinese/font.fnt");
 
     // 音频（仅本场景触发全集：跳跃/拾取/死亡/开门/拉杆/踏板/平台/水声/音乐）
     // 统一走无扩展名流式路由（/s/ 前缀，服务器补 .mp3）：IDM 等下载接管工具

@@ -21,7 +21,7 @@ import type { LevelData, Rect } from "@fw/shared/level2";
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
-import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, PLAYER_SCALE } from "./BootScene";
+import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_MAIN, PLAYER_SCALE } from "./BootScene";
 
 export interface GameInit {
   net: Net;
@@ -132,7 +132,7 @@ export class GameScene extends Phaser.Scene {
   private windViews = new Map<string, WindView>();
   private doorSprites = new Map<Role, Phaser.GameObjects.Sprite>();
   private doorFrames = new Map<Role, number>();
-  private clockText!: Phaser.GameObjects.Text;
+  private clockText!: Phaser.GameObjects.BitmapText;
   private redHudText!: Phaser.GameObjects.Text;
   private blueHudText!: Phaser.GameObjects.Text;
   private silverHudText: Phaser.GameObjects.Text | null = null;
@@ -727,16 +727,10 @@ export class GameScene extends Phaser.Scene {
   private buildHud(): void {
     const clockX = this.d.level.widthPx / 2 + PAD;
     this.add.image(clockX, 0, ATLAS_TEMPLE, "Clock0000").setOrigin(0.5, 0).setDepth(9);
+    // 原版 LevelUI/Clock：TempleAssets Clock0000 + font 位图字 24 号（bitmapText 基准 48 半缩放）
     this.clockText = this.add
-      .text(clockX, 62, "00:00", {
-        fontFamily: 'Georgia, "Times New Roman", serif',
-        fontSize: "24px",
-        color: "#f3e6a8",
-        stroke: "#1a140a",
-        strokeThickness: 4,
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5)
+      .bitmapText(clockX, 30, FONT_MAIN, "00:00", 24)
+      .setOrigin(0.5, 0)
       .setDepth(9);
 
     const counter = (x: number, frame: string, total: number): Phaser.GameObjects.Text => {

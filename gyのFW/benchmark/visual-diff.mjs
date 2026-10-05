@@ -160,7 +160,17 @@ async function shootOurs(browser) {
   const ctxB = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   const a = await ctxA.newPage();
   const b = await ctxB.newPage();
-  const code = await enterAs(a, "create");
+  let code = await enterAs(a, "create");
+  // hud-room 文本偶发被提早读到部分内容（观察到单字符码）——守卫重读
+  for (let i = 0; i < 10 && code.length < 6; i++) {
+    await a.waitForTimeout(400);
+    const t = await a.textContent("#hud-room").catch(() => "");
+    const m = (t || "").match(/房间码 ([A-Za-z0-9]+)/);
+    if (m) code = m[1];
+  }
+  console.log("[visual][ours] 房间码:", JSON.stringify(code), "len=", code.length);
+  console.log("[visual][ours] 房间码:", JSON.stringify(code), "len=", code.length);
+  await new Promise((r) => setTimeout(r, 500));
   await enterAs(b, "join", code);
   await a.waitForFunction(() => document.querySelector("#hud-status")?.textContent === "", null, { timeout: 25000 });
   await a.waitForTimeout(OURS_WAIT_MS);
@@ -217,11 +227,27 @@ const DIFF_PROG = async (bufA, bufB) => {
       }
     const top = score(0, 0, "top");
     const zero = score(0, 0, "full");
+    // 12×9 区域网格热图（在最优偏移下），定位最大失配区块
+    const GX = 12, GY = 9, CW = W / GX, CH = H / GY;
+    const grid = [];
+    for (let gy = 0; gy < GY; gy++) for (let gx = 0; gx < GX; gx++) {
+      let n = 0, bad48 = 0, sum = 0;
+      for (let y = Math.floor(gy * CH); y < Math.floor((gy + 1) * CH); y++)
+        for (let x = Math.floor(gx * CW); x < Math.floor((gx + 1) * CW); x++) {
+          const xs = x + best.ox, ys = y + best.oy;
+          if (xs < 0 || xs >= W || ys < 0 || ys >= H) continue;
+          const d = Math.abs(ga[y * W + x] - gb[ys * W + xs]);
+          n++; sum += d; if (d > 48) bad48++;
+        }
+      grid.push({ gx, gy, rate48: +(1 - bad48 / n).toFixed(3), mad: +(sum / n).toFixed(1) });
+    }
+    grid.sort((a, b) => a.rate48 - b.rate48);
     return {
       bestOffset: { x: best.ox, y: best.oy },
       full: { rate24: +best.s.rate24.toFixed(4), rate48: +best.s.rate48.toFixed(4), mad: +best.s.mad.toFixed(2) },
       zeroOffset: { rate24: +zero.rate24.toFixed(4), rate48: +zero.rate48.toFixed(4), mad: +zero.mad.toFixed(2) },
       topBand: { rate24: +top.rate24.toFixed(4), rate48: +top.rate48.toFixed(4), mad: +top.mad.toFixed(2) },
+      worstGrid: grid.slice(0, 8),
     };
   }, { a64, b64 });
   await ctx.close();
@@ -259,6 +285,7 @@ const DIFF_PROG = async (bufA, bufB) => {
     console.log("全帧  容差48匹配率:", (diff.full.rate48 * 100).toFixed(2) + "%", " 容差24:", (diff.full.rate24 * 100).toFixed(2) + "%", " 平均|Δ|:", diff.full.mad);
     console.log("零偏移 容差48:", (diff.zeroOffset.rate48 * 100).toFixed(2) + "%");
     console.log("顶部HUD带 容差48:", (diff.topBand.rate48 * 100).toFixed(2) + "%");
+    console.log("最差区块(格x,格y 匹配率):", diff.worstGrid.map((g) => `(${g.gx},${g.gy})${(g.rate48 * 100).toFixed(0)}%`).join(" "));
     console.log("████ 视觉复刻度指数（容差48匹配率）:", visualScore, "/ 100 ████");
     if (saveIdx >= 0) {
       const label = argv[saveIdx + 1];
