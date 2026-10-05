@@ -52,7 +52,10 @@ export class BootScene extends Phaser.Scene {
       ["bgm_level", "LevelMusic.mp3"],
       ["bgm_finish", "LevelMusicFinish.mp3"],
     ] as const) {
-      this.load.audio(key, `/assets/audio/s/${file.replace(/\.mp3$/, "")}`);
+      // 无扩展名路由防 IDM 劫持；Phaser 靠 URL 扩展名推断音频类型，缺失会静默跳过加载——
+      // 第 4 参显式声明 audioType（0.2.0 起无声的根因）
+      // 对象形式显式 type=mp3（0.2.0 起无声的根因：无扩展名时 Phaser 跳过入队）
+      this.load.audio(key, [{ url: `/assets/audio/s/${file.replace(/.mp3$/, "")}`, type: "mp3" }]);
     }
   }
 
@@ -76,7 +79,7 @@ export class BootScene extends Phaser.Scene {
       seq(`${role}_idle`, ATLAS_CHARS, `${role}_head_idle`, 0, role === "fire" ? 18 : 29, 30, -1);
       seq(`${role}_legs_idle`, ATLAS_CHARS, `${role}_legs_idle`, 0, 0, 1, -1);
       seq(`${role}_legs_run`, ATLAS_CHARS, `${role}_legs_running`, 0, 7, 30, -1);
-      seq(`${role}_jump`, ATLAS_CHARS, `${role}_head_jumping`, 0, 10, 30, 0);
+      seq(`${role}_jump`, ATLAS_CHARS, `${role}_head_jumping`, 0, 10, 30, -1); // 原版 jumping 30,!0 循环——起跑后头部定格即此处漏循环
       // E19 字证（init.js@1861937）：falling 对双角色都只注册 0..4
       // （water 图集虽有 11 帧表，原版注册子区间仍是 0..4）
       seq(`${role}_fall`, ATLAS_CHARS, `${role}_head_falling`, 0, 4, 30, -1);

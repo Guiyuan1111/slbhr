@@ -61,7 +61,11 @@ interface PlayerView {
 
 interface LeverView {
   stick: Phaser.GameObjects.Image;
+  stickLight: Phaser.GameObjects.Image;
   light: Phaser.GameObjects.Image;
+  /** 支点（屏幕 px：质心−0.7m = 图块中心下方 4.8px） */
+  pivotX: number;
+  pivotY: number;
   /** 当前贴图角（Phaser 度） */
   angle: number;
   lightOn: boolean;
@@ -70,7 +74,6 @@ interface LeverView {
 interface PusherView {
   block: Phaser.GameObjects.Image;
   light: Phaser.GameObjects.Image;
-  baseY: number;
   state: number;
 }
 
@@ -384,21 +387,36 @@ export class GameScene extends Phaser.Scene {
         .setOrigin(0.5)
         .setTint(GROUP_COLORS[m.group] ?? 0xffffff)
         .setDepth(1.2);
-      this.pusherViews.set(m.id, { block, light, baseY: m.y + PAD, state: 0 });
+      this.pusherViews.set(m.id, { block, light, state: 0 });
     }
 
     // 拉杆（overGround）：先杆后底座（底座盖住杆根）+ 亮灯层（lever_base_light_on/off）。
     // 初始角按 startPos（-1 → 左倾 -31°），运行时吃快照连续角
+    // 拉杆（overGround）：原版杆/杆灯贴图中心 = body origin（图块中心），随杆角绕支点公转。
+    // 支点 = 质心−0.7m = 图块中心下方 4.8px（质心=fixture 中心，在中心上 17.6px）。
+    // 初始角按 startPos（±0.2π = ±36°），运行时吃快照连续角
     for (const m of level.levers) {
-      const dir = m.startPos >= 0 ? 1 : -1;
-      const stick = this.add.image(m.x + 2 + PAD, m.y + 1 + PAD, ATLAS_MECH, "lever_stick0000").setOrigin(0.5).setAngle(31 * dir).setDepth(3);
-      this.add.image(m.x + PAD, m.y + PAD, ATLAS_MECH, "lever_base0000").setOrigin(0.5).setDepth(3);
-      const light = this.add
-        .image(m.x + PAD, m.y + PAD, ATLAS_MECH, "lever_base_light_off0000")
+      const phi0 = (m.startPos >= 0 ? 1 : -1) * 36;
+      const pivotX = m.x + PAD;
+      const pivotY = m.y + 4.8 + PAD;
+      const rad = (phi0 * Math.PI) / 180;
+      const sx = pivotX + 4.8 * Math.sin(rad);
+      const sy = pivotY - 4.8 * Math.cos(rad);
+      const tint = GROUP_COLORS[m.group] ?? 0xffffff;
+      const stick = this.add.image(sx, sy, ATLAS_MECH, "lever_stick0000").setOrigin(0.5).setAngle(phi0).setDepth(3);
+      const stickLight = this.add
+        .image(sx, sy, ATLAS_MECH, "lever_stick_light_off0000")
         .setOrigin(0.5)
-        .setTint(GROUP_COLORS[m.group] ?? 0xffffff)
+        .setAngle(phi0)
+        .setTint(tint)
+        .setDepth(3.02);
+      this.add.image(pivotX, m.y + PAD, ATLAS_MECH, "lever_base0000").setOrigin(0.5).setDepth(3);
+      const light = this.add
+        .image(pivotX, m.y + PAD, ATLAS_MECH, "lever_base_light_off0000")
+        .setOrigin(0.5)
+        .setTint(tint)
         .setDepth(3.05);
-      this.leverViews.set(m.id, { stick, light, angle: 31 * dir, lightOn: false });
+      this.leverViews.set(m.id, { stick, stickLight, light, pivotX, pivotY, angle: phi0, lightOn: false });
     }
 
     // 箱/球（overGround，原版 BoxedDevice/Ball）：movingbox0000 / boxheavy=movingbox20000（d07 字证）/ ball0000
@@ -870,11 +888,16 @@ export class GameScene extends Phaser.Scene {
         view.cx = tx;
         view.cy = ty;
       } else {
-        // 帧率无关指数平滑：自己跟手（更快），对方稍缓
-        const rate = role === this.myRole ? 22 : 12;
+        // 速度外推（dead reckoning）+ 高收敛率：服务端 20Hz 快照阶梯位 + 纯指数平滑会产生
+        // 持续滞后的"阻尼感"（实玩反馈）。先按快照速度前推半个快照周期，再向目标强收敛——
+        // 本机角色近乎贴手，对方也明显跟脚。
+        const lead = role === this.myRole ? 50 : 25; // ms 外推（≈半个快照周期）
+        const ex = tx + ((Number(ps.vx) || 0) * lead) / 1000;
+        const ey = ty + ((Number(ps.vy) || 0) * lead) / 1000;
+        const rate = role === this.myRole ? 40 : 20;
         const k = 1 - Math.exp((-rate * delta) / 1000);
-        view.cx += (tx - view.cx) * k;
-        view.cy += (ty - view.cy) * k;
+        view.cx += (ex - view.cx) * k;
+        view.cy += (ey - view.cy) * k;
       }
       view.glow.setPosition(view.cx, view.cy);
       view.legs.setPosition(view.cx, view.cy);
@@ -886,6 +909,8 @@ export class GameScene extends Phaser.Scene {
       const flip = Number(ps.facing) < 0;
       view.legs.setFlipX(flip);
       view.head.setFlipX(flip);
+      // 头部倾角（原版 head.rotation = a：坡面接触法线/空中速度方向，内核逐帧算好）
+      view.head.setRotation(Number(ps.headTilt) || 0);
 
       // 死亡烟雾（dying 触发，45 帧@30fps 一次性；原版 _doKill：death 音 + 烟随初速镜像）
       if (!view.dying && ps.dying === true) {
@@ -1004,15 +1029,13 @@ export class GameScene extends Phaser.Scene {
         v.light.setFrame(`lever_base_light_${on ? "on" : "off"}0000`);
       }
     });
-    st.pushers?.forEach?.((s: { state: number }, id: string) => {
+    st.pushers?.forEach?.((s: { state: number; x: number; y: number }, id: string) => {
       const v = this.pusherViews.get(`b${id}`);
       if (!v) return;
-      const state = Number(s.state) === 1 ? 1 : 0;
-      if (state === v.state) return;
-      v.state = state;
-      const y = v.baseY + (state === 1 ? 6 : 0);
-      v.block.y = y;
-      v.light.y = y;
+      // 块体随 prismatic 连续下沉，贴图跟体（快照 x/y），state 仅用于灯光语义
+      v.block.setPosition((Number(s.x) || 0) + PAD, (Number(s.y) || 0) + PAD);
+      v.light.setPosition(v.block.x, v.block.y);
+      v.state = Number(s.state) === 1 ? 1 : 0;
     });
     st.platforms?.forEach?.((b: { x: number; y: number; angle: number }, id: string) => {
       const v = this.platformViews.get(`p${id}`);
