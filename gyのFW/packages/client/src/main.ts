@@ -94,6 +94,15 @@ function updateHud(): void {
   $("#hud-status").textContent = text[phase] ?? "";
   $("#hud-status").classList.toggle("warn", phase === "paused" || phase === "gameover");
   keyboard?.setPaused(phase !== "started");
+  // 钻石计数（GameScene 写 __fwHudCounts；原版游戏内无计数，DOM 承载以免画布偏离）
+  const hudCounts = (globalThis as unknown as Record<string, { red: number; blue: number; silver: number }>).__fwHudCounts;
+  const hudTotals = (globalThis as unknown as Record<string, { red: number; blue: number; silver: number }>).__fwHudTotals;
+  const diaEl = document.querySelector("#hud-diamonds");
+  if (diaEl && hudCounts && hudTotals) {
+    const parts = ["红 " + hudCounts.red + "/" + hudTotals.red, "蓝 " + hudCounts.blue + "/" + hudTotals.blue];
+    if (hudTotals.silver > 0) parts.push("银 " + hudCounts.silver + "/" + hudTotals.silver);
+    diaEl.textContent = parts.join(" · ");
+  }
 }
 
 async function enterGame(): Promise<void> {

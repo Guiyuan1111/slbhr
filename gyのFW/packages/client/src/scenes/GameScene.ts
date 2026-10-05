@@ -123,7 +123,6 @@ export class GameScene extends Phaser.Scene {
   private diamondSprites = new Map<string, Phaser.GameObjects.Image>();
   /** HUD/时钟缓存（Text.setText 无条件重绘 canvas 纹理，仅变化时写入防掉帧） */
   private lastClock = "";
-  private lastHud = { red: "", blue: "", silver: "" };
   private diamondKinds = new Map<string, string>();
   private platformViews = new Map<string, Phaser.GameObjects.Container>();
   private leverViews = new Map<string, LeverView>();
@@ -133,9 +132,6 @@ export class GameScene extends Phaser.Scene {
   private doorSprites = new Map<Role, Phaser.GameObjects.Sprite>();
   private doorFrames = new Map<Role, number>();
   private clockText!: Phaser.GameObjects.BitmapText;
-  private redHudText!: Phaser.GameObjects.Text;
-  private blueHudText!: Phaser.GameObjects.Text;
-  private silverHudText: Phaser.GameObjects.Text | null = null;
   private redTotal = 0;
   private blueTotal = 0;
   private silverTotal = 0;
@@ -738,25 +734,8 @@ export class GameScene extends Phaser.Scene {
       .setDepth(9)
       .setScrollFactor(0);
 
-    const counter = (x: number, frame: string, total: number): Phaser.GameObjects.Text => {
-      this.add.image(x, 28, ATLAS_CHARS, frame).setOrigin(0.5).setScale(0.34).setDepth(9).setScrollFactor(0);
-      return this.add
-        .text(x + 26, 28, `0/${total}`, {
-          fontFamily: 'Georgia, "Times New Roman", serif',
-          fontSize: "20px",
-          color: "#f5efd5",
-          stroke: "#1a140a",
-          strokeThickness: 4,
-          fontStyle: "bold",
-        })
-        .setOrigin(0, 0.5)
-        .setDepth(9)
-        .setScrollFactor(0);
-    };
-    this.redHudText = counter(34, DIAMOND_FRAME.red, this.redTotal);
-    this.blueHudText = counter(150, DIAMOND_FRAME.blue, this.blueTotal);
-    // 银钻单列（E17：银钻不进红蓝栏、不计入 total）
-    if (this.silverTotal > 0) this.silverHudText = counter(266, DIAMOND_FRAME.silver, this.silverTotal);
+    // 钻石计数迁出画布（原版游戏内无计数，仅通关结算面板有）→ DOM #hud-diamonds
+    (globalThis as unknown as Record<string, unknown>).__fwHudTotals = { red: this.redTotal, blue: this.blueTotal, silver: this.silverTotal };
   }
 
   setMyRole(role: Role): void {
@@ -1008,9 +987,7 @@ export class GameScene extends Phaser.Scene {
     const redStr = `${redGot}/${this.redTotal}`;
     const blueStr = `${blueGot}/${this.blueTotal}`;
     const silverStr = `${silverGot}/${this.silverTotal}`;
-    if (redStr !== this.lastHud.red) this.redHudText.setText(redStr);
-    if (blueStr !== this.lastHud.blue) this.blueHudText.setText(blueStr);
-    if (silverStr !== this.lastHud.silver) this.silverHudText?.setText(silverStr);
+    (globalThis as unknown as Record<string, unknown>).__fwHudCounts = { red: redGot, blue: blueGot, silver: silverGot };
   }
 
   /** 机关快照消费（E13）：lever 角度+灯、pusher 压下、平台/箱/球位姿、风区显隐 */
