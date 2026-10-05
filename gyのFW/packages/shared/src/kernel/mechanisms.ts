@@ -576,9 +576,15 @@ export class Wind {
     this.group = def.group;
     this.state = def.initialState;
     this.lengthM = def.lengthM;
-    // 机身中心 = 图块中心（o.x+w/2, o.y−h/2）；SetAngle(π(rotation+90)/180)
-    const cx = def.rect.x + def.rect.w / 2;
-    const cy = def.rect.y + def.rect.h / 2;
+    // 机身中心（原版 BoxedDevice 矫正，金轨迹实证）：boxSize={x:−3,y:2} 经插件 mpx(正)→
+    // e=(−48,+32)px，按 −(rotation+90)° 旋转；center = (原始x + e.x, 原始底边y − e.y)。
+    // level2 的 rect.y 已换算顶边 → 底边 = rect.y + rect.h
+    const rotDeg = def.rotation + 90;
+    const eAng = (-rotDeg * Math.PI) / 180;
+    const ex = -48 * Math.cos(eAng) - 32 * Math.sin(eAng);
+    const ey = -48 * Math.sin(eAng) + 32 * Math.cos(eAng);
+    const cx = def.rect.x + ex;
+    const cy = def.rect.y + def.rect.h - ey;
     const bd = new B.b2BodyDef();
     bd.type = B.b2BodyType.b2_staticBody;
     bd.position = phys(B, cx, cy);

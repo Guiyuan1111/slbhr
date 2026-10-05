@@ -154,6 +154,9 @@ const INSTALL_HOOK = (script, maxFrames, settle, maxRestarts, fixedDt) => `(func
       var c = clsOf(d);
       if (c === 'Lever') return d.body ? d.body.data : null;                  // 拉杆：杆体（含角度）
       if (c === 'Pusher') return d.button && d.button.body ? d.button.body.data : null; // 按钮：踏板体
+      if (c === 'Pulley') return d.platform1 && d.platform1.body ? d.platform1.body.data : null; // 滑轮：左侧动滑轮板
+      if (c === 'Hanging') return d.platform && d.platform.body ? d.platform.body.data : null;   // 摆绳：吊板体
+      if (c === 'Roman') return d.joint && d.joint.GetBodyA ? d.joint.GetBodyA() : null;         // 罗马杠：杠体 = revolute joint bodyA
       if (d.sprite && d.sprite.body) return d.sprite.body.data;               // 平台/箱子等
       if (d.body) return d.body.data;
     } catch (e) {}
@@ -206,6 +209,10 @@ const INSTALL_HOOK = (script, maxFrames, settle, maxRestarts, fixedDt) => `(func
         d1up: !!(L.door1 && L.door1.isUp), d2up: !!(L.door2 && L.door2.isUp),
         d1open: !!(L.door1 && L.door1.isOpen), d2open: !!(L.door2 && L.door2.isOpen),
         dead1: !!L.pers1.isDead, dead2: !!L.pers2.isDead,
+        d1d: L.pers1.data ? (L.pers1.data.diamonds || 0) : 0,   // 火人黄钻计数
+        d1s: L.pers1.data ? (L.pers1.data.silverDiamond || 0) : 0, // 火人银钻计数
+        d2d: L.pers2.data ? (L.pers2.data.diamonds || 0) : 0,
+        d2s: L.pers2.data ? (L.pers2.data.silverDiamond || 0) : 0,
         paused: !!plugin.paused,
       },
     });

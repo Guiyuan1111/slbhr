@@ -58,13 +58,15 @@ const KEYMAP = {
 };
 const eventsByFrame = new Map();
 for (const ev of golden.meta.inputScript ?? []) {
-  for (const k of ev.down ?? []) {
+  // 同帧可同时有 up+down（TAS re-press：1 帧内松开再按下，清 prohibitJump 触发落地自动再跳）。
+  // 应用顺序=先松后按；Map 值为数组保留同帧多条。
+  for (const k of [...(ev.up ?? []), ...(ev.down ?? [])]) {
     const m = KEYMAP[k];
-    if (m) eventsByFrame.set(ev.f + INPUT_SHIFT, { role: m.role, key: m.key, down: true });
-  }
-  for (const k of ev.up ?? []) {
-    const m = KEYMAP[k];
-    if (m) eventsByFrame.set(ev.f + INPUT_SHIFT, { role: m.role, key: m.key, down: false });
+    if (!m) continue;
+    const isDown = (ev.down ?? []).includes(k);
+    const fk = ev.f + INPUT_SHIFT;
+    if (!eventsByFrame.has(fk)) eventsByFrame.set(fk, []);
+    eventsByFrame.get(fk).push({ role: m.role, key: m.key, down: isDown });
   }
 }
 const states = {
@@ -73,8 +75,8 @@ const states = {
 };
 
 /** tag → 内核体（同类下标一一对应：两侧都按对象层顺序创建） */
-const boxProps = mechs.props.filter((p) => !p.heavy);
-const heavyProps = mechs.props.filter((p) => p.heavy);
+const boxProps = mechs.props.filter((p) => p.kind === "box");
+const heavyProps = mechs.props.filter((p) => p.kind === "boxheavy");
 const ballProps = mechs.props.filter((p) => p.kind === "ball");
 function bodyForTag(tag) {
   if (tag === "fb") return world.players.fireboy.body;
@@ -122,8 +124,7 @@ const DIVERGE_M = 0.5;
 let worldEvents = [];
 
 for (let f = 0; f < frames.length; f++) {
-  const ev = eventsByFrame.get(f);
-  if (ev) states[ev.role][ev.key] = ev.down;
+  for (const ev of eventsByFrame.get(f) ?? []) states[ev.role][ev.key] = ev.down;
   worldEvents = worldEvents.concat(world.step(dt, { fireboy: { ...states.fireboy }, watergirl: { ...states.watergirl } }));
   const gf = frames[f].b;
   for (const [tag, body] of Object.entries(tagToBody)) {

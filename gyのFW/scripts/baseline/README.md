@@ -176,6 +176,10 @@ col 32.2，但容差 ~±0.5 tile，需 a 键中途释放控速。
 | `golden/forest_01_a1.json` | forest_01 前 720 帧（≈11.1s 引擎时间）：起步右跑 / 跑跳 / 高速急停 / 折返左跑 / 左跳 / 二次急停 / 静止段；9 个刚体全采样（fb/wg/2×pusher/lever/2×platform/box/ground） | 引擎真实可变 dt（avg 15.5ms） |
 | `golden/forest_01_a1_fixeddt.json` | 同一输入脚本的 fixed-dt 版（对拍用） | dt 钉 16.667ms |
 | `golden/*_input.json` | 对应输入脚本（与 meta.inputScript 一致） | — |
+| `golden/forest_03_wind_input.json` + `forest_03_wind_fixeddt.json` | **wind 专项**：fb 从出生层经岩浆池→金字塔→右岩浆池→右搁板→斜坡→走道 x≈1035 整跳右漂落风扇台，进风柱被抬升 350px+ 并在柱顶（y≈54-178）风致悬浮振荡 1200 帧；fb 沿途收 7 钻 | fixed-dt，双跑（f400 后重收敛，f273 搁板贴脸暂态漂移 0.21m） |
+| `golden/forest_07_ball_input.json` + `forest_07_ball_fixeddt.json` | **ball 专项**：fb 顶中台左行推 ball_1，球被击出滚动 450px（(624,243)→(691,691)）后静止 | fixed-dt，双跑（球滚碰撞链混沌，跑间漂移最大 0.64m，交互本身两跑均复现） |
+| `golden/forest_04_pulley_input.json` + `forest_04_pulley_fixeddt.json` | **pulley 专项**：wg 从出生台左缘跳 104px 缺口落到滑轮平台2，体重压其下降 404px（192→596），平台1（pulley_0）同步上升 441px（880→439） | fixed-dt，双跑（确定性 8mm，全机关最佳） |
+| `golden/forest_bonus_2_boxheavy_input.json` + `forest_bonus_2_boxheavy_fixeddt.json` | **boxheavy 专项**：fb 从出生台左行走入围坑落在 pusher 按钮（g11）上 320f，联动平台横移使 x=992 重箱塔倒塌：塔底 bh3 坠落 480px 落地，fb 离开后 bh0 相继坠落 | fixed-dt，双跑（本关载入沉降相位非确定，boxheavy_16 初始相位差 8m；塔塌交互两跑均复现） |
 
 帧格式：`{f, dt, b:{tag:{x,y,a,vx,vy}}, fl:{ended,d1up,d2up,d1open,d2open,dead1,dead2,paused}}`，
 坐标为 box2d 米（屏幕像素 = -32×坐标）。
@@ -202,3 +206,23 @@ col 32.2，但容差 ~±0.5 tile，需 a 键中途释放控速。
 - `--shot` 截图有节流扰动，仅调试用；金轨迹不加。
 - headless 无需 lockRender 也很快（~65 步/s）；`lockRender=true` 在纯数据模式下默认开启省 GPU。
 - Windows 下 `gyのFW` 目录名含日文字符，Git Bash 传路径一律用引号包裹。
+- capture.mjs 的 `--script` 与 `--out` 禁止指向同一路径：采集完成时输出会覆盖输入脚本
+  （实测踩坑：forest_03 首次正式采集吃到被覆盖的坏脚本，fb 全程站立）。
+- fixed-dt 每帧仿真时间比引擎实际（~15.5ms）多 ~7.5%，可变 dt 下调好的跑路脚本帧号
+  必须按 0.93 重排或按状态锚点重排，否则跳跃过冲（forest_03 fb 落水死亡实测）。
+
+## 机关专项采样结论（2026-10 金轨迹扩展轮）
+
+| 机关 | 代表关 | 交互 | 结果 |
+|---|---|---|---|
+| wind | forest_03 | fb 进风柱被抬升+悬浮振荡 | ✅ 金轨迹+差分 |
+| ball | forest_07 | fb 推 ball_1 滚动 450px | ✅ 金轨迹+差分 |
+| pulley | forest_04 | wg 压平台2 降 404px / 平台1 升 441px | ✅ 金轨迹+差分 |
+| boxheavy | forest_bonus_2 | 按钮→平台横移→重箱塔倒塌 | ✅ 金轨迹+差分 |
+| silver | forest_07 | 银钻 (792,720) | ❌ 未达：银钻位于 pusher_2(g1)+platform_2 协作区，单人键盘路线不可达 |
+| hanging | forest_12 | 三条摆绳吊板 | ❌ 未达：吊板悬于中菱形台两侧金字塔基座之间，上缘斜坡跑off 弹道过冲/下缘坡面松键回滑，17 轮探测不可达 |
+| roman | forest_14 | 罗马杠 (640,416)-(848,336) | ❌ 未达：出生坑被 1010px 致死绿泥封死（fb/wg 踩面均死），右侧台阶间距超跳距，风柱传感区起点恰在不可达的 row-20 台面 |
+
+capture.mjs 本轮增量扩展（不影响 forest_01 既有金轨迹）：deviceBody 增加 Pulley.platform1 /
+Hanging.platform / Roman(joint.GetBodyA=杠体) 跟踪；fl 增加 d1d/d1s/d2d/d2s 钻石计数
+（原版 Diamond 不在 L.objects，拾取证据用 pers.data 计数器）。
