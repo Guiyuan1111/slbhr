@@ -141,3 +141,10 @@
   必须等 menu load.isLoading===false 再跳关（menu 残留 loader 回调会在 level 加载完成时
   引爆 a.game null 并中断派发链——capture-era 靠跳关时机避开）。
 - 后续视觉保真优化点：画布内 HUD、装饰密度。
+
+## 12. 2026-10-06 追加四：时钟字形保真（0.3.7）
+
+- BootScene 加载 font.fnt 位图字，GameScene 时钟文字改 BitmapText（原版字形，48 基准半缩放）。
+- visual-diff 升级 12×9 网格热图；剩余视觉差异定位：顶行（canvas 64px PAD 字边、
+  我方钻石计数功能增项、原版画布内暂停钮）。
+- visual-diff 入房竞态守卫（房间码部分读取时重读）。
