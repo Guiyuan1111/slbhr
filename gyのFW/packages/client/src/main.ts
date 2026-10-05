@@ -174,7 +174,14 @@ async function start(mode: "create" | "join"): Promise<void> {
       net.leave();
       net = null;
     }
-    show(e?.message ?? String(e));
+    const raw = e?.message ?? String(e);
+    if (raw.includes("not found")) {
+      // Colyseus「room not found」最常见根因：两台设备连的不是同一服务进程
+      // （地址/端口不一致，或创建后服务重启过，旧房间已随旧进程消失）
+      show("房间不存在或已失效。请核对：两台设备浏览器地址栏完全一致（含端口）；创建者页面未显示断线；期间没有重启过服务器。确认后由创建者重新创建房间再试。");
+    } else {
+      show(raw);
+    }
   }
 }
 
