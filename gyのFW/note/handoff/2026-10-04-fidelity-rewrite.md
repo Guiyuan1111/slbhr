@@ -105,3 +105,13 @@
 
 - 分支 `feat/fidelity-rewrite`（未提交新内容前= main 的 6 个 docs commit：a8e2a15…3efbf42，均无 co-author）。
 - 本篇与 handoff.md 指针更新作为本分支第一个 commit。
+
+## 8. 2026-10-05 追加：机关金轨迹专项（0.3.4）
+
+- 三轮问答冻结（自检范围/修复边界/发版策略等 9 项）后执行机关专项：
+  wind 位置公式修复（bb71f0f）、滑轮锚点方向修复（5290ec4）、角色 fixture 序对齐（e4081fb）。
+- 取证全录：`note/research/2026-10-fidelity/08-pulley-forensics.md`（金轨迹解码纠偏、
+  终点三体吻合、亚像素混沌定性、已试方案裁决表）。
+- 发版：`note/release/0.3.4.md`；对拍全家桶口径见 research/08 表格。
+- 待办移交：forest_01 fb 0.17m 瞬态为 HEAD 既有回归（先于本次改动，疑与 diff-kernel
+  同帧多事件表或 bb71f0f 相关），行为一致级、不阻塞发布，留待下轮排查。
