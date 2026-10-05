@@ -615,7 +615,11 @@ export class Wind {
     else this.activeRoles.delete(role);
   }
 
-  /** 施力（每步 pre-Step；nowS=仿真时间秒）。原版阻尼/限速段为镜像注入，不复刻。 */
+  /** 施力（每步 pre-Step；nowS=仿真时间秒）。
+   * 原版 update()（vendor Wind 区间）：力 = d×(1.2+0.2·sin(t/1000))×100×(1−|a|/length)，
+   * 门 b·d>0；随后对柱内体全向阻尼 v×(1−0.025·elapsed/16.67)（fixed-dt 即 ×0.975）+ 15m/s 限速。
+   * 金轨迹实证（forest_03 f724-760）：金 fb 贴墙上升 4px/帧 vs 旧实现 2.1——阻尼/限速段在
+   * 录制游戏内真实生效（bundle 内英文注释为再分发者所加，代码在执行路径上）。 */
   applyForce(nowS: number): void {
     if (this.state !== 1) return;
     const dir = new this.B.b2Vec2(0, 1);
@@ -626,7 +630,17 @@ export class Wind {
       const cp = body.GetPosition();
       const dist = Math.hypot(cp.x - bp.x, cp.y - bp.y);
       const f = (1.2 + 0.2 * Math.sin(nowS)) * 100 * Math.max(0, 1 - dist / this.lengthM);
-      body.ApplyForce(new this.B.b2Vec2(dir.x * f, dir.y * f), new this.B.b2Vec2(0, 0));
+      if (f > 0) {
+        body.ApplyForce(new this.B.b2Vec2(dir.x * f, dir.y * f), new this.B.b2Vec2(0, 0));
+      }
+      // 全向阻尼（fixed-dt 16.67ms → ×0.975）+ 15 m/s 限速
+      const v = body.GetLinearVelocity();
+      v.SelfMul(0.975);
+      const speed = Math.hypot(v.x, v.y);
+      if (speed > 15) {
+        v.SelfMul(15 / speed);
+      }
+      body.SetLinearVelocity(v);
     }
   }
 
