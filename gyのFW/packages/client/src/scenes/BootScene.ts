@@ -88,6 +88,8 @@ export class BootScene extends Phaser.Scene {
     seq("smoke", ATLAS_CHARS, "death_smoke", 0, 44, 30, 0);
     // 风区机身（原版 Wind：generateFrameNames("wind_base",0,4)@30fps 循环；图集实有 0..3）
     seq("wind_base", ATLAS_MECH, "wind_base", 0, 3, 30, -1);
+    // 风区尾迹（原版 Wind：wind_effect 0..30@30fps 循环，图集实有 0..29；随机起始帧由场景侧 setProgress）
+    seq("wind_effect", ATLAS_MECH, "wind_effect", 0, 29, 30, -1);
     // 液体三段各 15 帧 30fps 循环（Left/中/Right）
     for (const [key, base] of [
       ["water", "WaterBox"],

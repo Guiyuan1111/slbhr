@@ -76,6 +76,7 @@ interface PusherView {
 interface WindView {
   base: Phaser.GameObjects.Sprite;
   on: boolean;
+  effect: Phaser.GameObjects.Sprite;
 }
 
 /** Navies 单只光点（原版 States/Common/Navies @1116883：极坐标正弦漂移） */
@@ -430,7 +431,17 @@ export class GameScene extends Phaser.Scene {
         .setOrigin(0.5)
         .setDepth(7)
         .setAngle(w.rotation + 90); // 内核 bd.angle=π(rotation+90)/180，物理角=Phaser 角
-      this.windViews.set(w.id, { base, on: false });
+      const effect = this.add
+        .sprite(base.x, base.y + 8, ATLAS_MECH, "wind_effect0000")
+        .setOrigin(0.5, 1)
+        .setDepth(7.5)
+        .setAngle(base.angle)
+        .setVisible(false);
+      effect.displayHeight = w.lengthM * 32;
+      effect.play("wind_effect");
+      effect.anims.setProgress(Math.random());
+      effect.setVisible(false);
+      this.windViews.set(w.id, { base, effect, on: false });
     }
   }
 
@@ -478,7 +489,7 @@ export class GameScene extends Phaser.Scene {
   /**
    * 角色（chars 层）：原版 legs+head+glow 同心叠加（anchor 0.5 同点）。
    * 内核出生偏移 (+32,−32)px（character.ts 构造体），快照坐标即贴图中心。
-   * 死亡烟：原版 _doKill 挂在角色容器 (0,−0.7·mpx(1)) ≈ 足部上方 21px（0.95 比例）。
+   * 死亡烟：原版 _doKill 挂在角色容器 (0,−0.7m) = 中心上方 ≈21px（0.95 比例）；vx<0 时 scale.x=−1。
    */
   private buildPlayers(level: LevelData): void {
     for (const role of ROLES) {
@@ -827,7 +838,7 @@ export class GameScene extends Phaser.Scene {
       view.glow.setPosition(view.cx, view.cy);
       view.legs.setPosition(view.cx, view.cy);
       view.head.setPosition(view.cx, view.cy);
-      view.smoke.setPosition(view.cx, view.cy + 21);
+      view.smoke.setPosition(view.cx, view.cy - 21);
       // isDead（烟雾 onComplete）后原版 sprite.visible=false；dying 期间仍可见
       const visible = ps.isDead !== true;
       view.glow.visible = view.legs.visible = view.head.visible = visible;
@@ -837,7 +848,7 @@ export class GameScene extends Phaser.Scene {
 
       // 死亡烟雾（dying 触发，45 帧@30fps 一次性；原版 _doKill：death 音 + 烟随初速镜像）
       if (!view.dying && ps.dying === true) {
-        view.smoke.setVisible(true).setPosition(view.cx, view.cy + 21).setFlipX(Number(ps.vx) > 0).play("smoke");
+        view.smoke.setVisible(true).setPosition(view.cx, view.cy - 21).setFlipX(Number(ps.vx) < 0).play("smoke");
         this.sfx("sfx_death", { volume: 0.55 });
       } else if (view.dying && ps.dying !== true) {
         view.smoke.setVisible(false).stop();
@@ -977,8 +988,14 @@ export class GameScene extends Phaser.Scene {
       const on = Number(wd.state) !== 0;
       if (on === v.on) return;
       v.on = on;
-      if (on) v.base.play("wind_base");
-      else v.base.stop().setFrame("wind_base0000");
+      v.effect.setVisible(on);
+      if (on) {
+        v.base.play("wind_base");
+        v.effect.play("wind_effect");
+      } else {
+        v.base.stop().setFrame("wind_base0000");
+        v.effect.stop().setFrame("wind_effect0000");
+      }
     });
   }
 
