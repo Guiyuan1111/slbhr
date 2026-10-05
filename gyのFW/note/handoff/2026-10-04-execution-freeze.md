@@ -33,7 +33,7 @@
 - [x] note 纠偏更新（handoff 指针/research 修正/release 笔记）
 - [x] TEMP 清理完毕（仅保留便携 Node 运行时；init.js 切片证据移入 note/evidence/）
 - [x] 合 main + tag 0.3.0 + release 笔记
-- [ ] GitHub Release + push（**凭据阻塞**：设备码 14 个窗口未获浏览器授权；`publish-0.3.0.sh` 已就绪，用户 `gh auth login` 后一键完成）
+- [ ] GitHub Release + push（**凭据阻塞**：设备码 17 个窗口（手动 9 + 守望器 8）未获浏览器授权；`publish-0.3.0.sh` 已就绪，用户 `gh auth login` 后一键完成）
 
 ## 四、遗留决策记录（执行中持续追加）
 
@@ -44,6 +44,6 @@
 - **门条带亚像素接触问题（待基线裁决）**：门感应带 [门底, +8px] 与静立角色脚底（solver 稳态存在 ~0.16-0.3px 间隙）是几何边界情形；fb 的门条带在开阔平台（无遮挡），wg 的条带右缘顶立柱（按住方向即持续贴紧✓）。原版如何保证 fb 静立开门待金轨迹基线（agent A）实测后裁决，当前内核按源码几何实现，门状态机单测直接驱动 isOpen 验证。
 - **currentRunForce undefined 实证**：角色从第 0 帧就持续按住方向键将永不施力（NaN 比较门控全 false），直到首个松键帧初始化 0.475·runForce——与 C 报告新发现一致，视为原版行为保留。
 - **git push 受阻（执行期）**：本会话无交互凭据（GCM 无法弹窗、gh 未登录、无本地代理），里程碑 push 全部deferred；本地 commit 链完整（feat/fidelity-rewrite），发版前需用户完成一次 `gh auth login` 或手动 `git push`。
-- **远端发布待用户登录（最终状态 2026-10-05）**：曾连续五次发起 `gh auth login --web` 设备码授权（9226-B05A / B6B4-16DD / 65E4-7317 / 75BA-FD2A / E005-C2C2，每窗口 15 分钟）均未等到浏览器确认，自动重发已停止。本地一切就绪：main@52bc4e6、tag 0.3.0、产物包 `gyのFW-0.3.0-win64-portable.tar.gz`（15.3MB）、一键脚本 `publish-0.3.0.sh`。**用户登录后执行 `bash publish-0.3.0.sh` 即完成远端发布**（push main+tag → 创建带产物包的 Release）。
+- **远端发布待用户登录（最终状态 2026-10-05）**：累计 17 次发起 `gh auth login --web` 设备码授权（手动 9 次 + 守望器 8 轮，首码 9226-B05A、末码 4EE9-DAE5，每窗口 15 分钟）均未等到浏览器确认，自动重发已停止。本地一切就绪：main@91ac36b、tag 0.3.0、产物包 `gyのFW-0.3.0-win64-portable.tar.gz`（15.3MB）、一键脚本 `publish-0.3.0.sh`。**用户登录后执行 `bash publish-0.3.0.sh` 即完成远端发布**（push main+tag → 创建带产物包的 Release）。
 - **风区镜像注入段不复刻**：原版 wind 的 0.975^帧 阻尼与 15m/s 限速被镜像作者重写（05 §16 未解），内核只实现可信的施力公式 (1.2+0.2sin)·100·(1−dist/length)；就近决策，待有纯净原版证据时再议。
 - **视觉抽查（e2e soak 实拍 vs 原版 0.2.0 实拍对照）**：整体 pass——地形/斜坡/机关/三色液体/门/角色/HUD/正计时/Navies 全对齐；两处小差距留 0.3.x 打磨：① 原版开局同时显示两条教学文本（各角色触发矩形覆盖出生点），我方仅显 texts[0]；② 墙面绿植装饰密度低于原版（G12 的 decorate 旧近似分布未换 seedrandom("ASDFA")+7×7 窗口算法）。
