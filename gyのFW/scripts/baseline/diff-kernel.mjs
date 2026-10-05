@@ -102,9 +102,10 @@ function bodyForTag(tag) {
   }
 }
 
-// 预沉降：原版 f0 前有未采样的开局帧（角色已落稳、机关就位）
+// 预滚动：金轨迹 f0 = 世界起跑后第 5 帧（双角色 dy=3.45px = g31.25 下自由落体 5 帧实证，
+// bonus_2 箱堆 f0=出生网格位形亦证）——此前误设 60 帧沉降致长落程体（box_16）位形错 3.5m
 const NONE = { up: false, left: false, right: false };
-for (let i = 0; i < 60; i++) {
+for (let i = 0; i < 5; i++) {
   world.step(1 / 60, { fireboy: { ...NONE }, watergirl: { ...NONE } });
 }
 

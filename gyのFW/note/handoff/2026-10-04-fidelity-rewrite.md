@@ -115,3 +115,13 @@
 - 发版：`note/release/0.3.4.md`；对拍全家桶口径见 research/08 表格。
 - 待办移交：forest_01 fb 0.17m 瞬态为 HEAD 既有回归（先于本次改动，疑与 diff-kernel
   同帧多事件表或 bb71f0f 相关），行为一致级、不阻塞发布，留待下轮排查。
+
+## 9. 2026-10-06 追加：复刻度量化基准 + 保真四轮（0.3.5）
+
+- 新增 `benchmark/`（fidelity-score.mjs：综合复刻度指数 0-100、--save/--compare 快照对比）。
+- R1：金轨迹 f0 相位破译（=起跑后第 5 帧，双角色 dy=3.45px 实证），diff-kernel/benchmark settle 60→5。
+- R2：Wind 阻尼×0.975/帧 + 15m/s 限速补齐（1f22a99），forest_03 综合 76.4→85.9。
+- R3/R4：行走/限速模型逐行核验忠实；残余偏差（bonus_2 坍缩链、forest_04 滑轮瞬态、
+  forest_07 球级联、forest_01 fb 0.17m、风 sin 相位）定性为接触序敏感亚像素混沌。
+- 报告：`note/report/perf/2026-10-06-fidelity-benchmark.md`；快照：benchmark/results/。
+- 综合复刻度：82.55（v0.3.4）→ 84.57（0.3.5）。
