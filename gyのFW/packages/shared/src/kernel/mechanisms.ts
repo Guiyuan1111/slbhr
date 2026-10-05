@@ -413,7 +413,7 @@ export function buildBall(B: B2, world: any, def: { x: number; y: number }): Pro
 
 // ---------------------------------------------------------------- Hanging / Pulley
 
-export function buildHanging(B: B2, world: any, groundBody: any, def: { pts: Array<{ x: number; y: number }>; fullRotation?: boolean; barWidth?: number }): void {
+export function buildHanging(B: B2, world: any, groundBody: any, def: { pts: Array<{ x: number; y: number }>; fullRotation?: boolean; barWidth?: number }): { anchor: any; platform: any } {
   const barWidth = def.barWidth ?? 3.2;
   const anchorPx = def.pts[0];
   const posPx = def.pts[1];
@@ -459,9 +459,10 @@ export function buildHanging(B: B2, world: any, groundBody: any, def: { pts: Arr
   const rd2 = new B.b2RevoluteJointDef();
   rd2.Initialize(groundBody, anchorBody, phys(B, anchorPx.x, anchorPx.y));
   world.CreateJoint(rd2);
+  return { anchor: anchorBody, platform };
 }
 
-export function buildPulley(B: B2, world: any, def: { pts: Array<{ x: number; y: number }>; barWidth?: number }): void {
+export function buildPulley(B: B2, world: any, def: { pts: Array<{ x: number; y: number }>; barWidth?: number }): { plat1: any; plat2: any } {
   const barWidth = def.barWidth ?? 2.7;
   const [b1, w1, w2, b2] = def.pts;
   // 轮锚点 = polyline 点上移 2m（y −64px）
@@ -492,11 +493,12 @@ export function buildPulley(B: B2, world: any, def: { pts: Array<{ x: number; y:
   const jd = new B.b2PulleyJointDef();
   jd.Initialize(plat1, plat2, phys(B, anchor1.x, anchor1.y), phys(B, anchor2.x, anchor2.y), plat1.GetPosition(), plat2.GetPosition(), 1);
   world.CreateJoint(jd);
+  return { plat1, plat2 };
 }
 
 // ---------------------------------------------------------------- Roman
 
-export function buildRoman(B: B2, world: any, groundBody: any, def: { pts: Array<{ x: number; y: number }> }): void {
+export function buildRoman(B: B2, world: any, groundBody: any, def: { pts: Array<{ x: number; y: number }> }): { bar: any; base: any } {
   // 点序分支（@1748499–1748767）：首段竖直 → m=2·pxm(p2x−p1x)、d=−atan(k/(m/2))；否则 m=2·pxm(p1x−p0x)、d=+atan(k/(m/2))
   // Device.pxm 带负号：pxm(a) = −a/32
   const rel = def.pts.map((p) => p); // 绝对坐标
@@ -555,6 +557,7 @@ export function buildRoman(B: B2, world: any, groundBody: any, def: { pts: Array
   const rd = new B.b2RevoluteJointDef();
   rd.Initialize(base, bar, bar.GetPosition());
   world.CreateJoint(rd);
+  return { bar, base };
   void groundBody;
 }
 
@@ -665,6 +668,9 @@ export interface Mechanisms {
   platforms: MovingPlatform[];
   props: PropBody[];
   winds: Wind[];
+  hangings: Array<{ anchor: any; platform: any }>;
+  pulleys: Array<{ plat1: any; plat2: any }>;
+  romans: Array<{ bar: any; base: any }>;
 }
 
 export function buildMechanisms(B: B2, world: any, groundBody: any, level: LevelData): Mechanisms {
@@ -674,6 +680,9 @@ export function buildMechanisms(B: B2, world: any, groundBody: any, level: Level
   const platforms: MovingPlatform[] = [];
   const props: PropBody[] = [];
   const winds: Wind[] = [];
+  const hangings: Array<{ anchor: any; platform: any }> = [];
+  const pulleys: Array<{ plat1: any; plat2: any }> = [];
+  const romans: Array<{ bar: any; base: any }> = [];
 
   for (const d of level.levers) {
     const l = new Lever(B, world, groundBody, d);
@@ -692,11 +701,11 @@ export function buildMechanisms(B: B2, world: any, groundBody: any, level: Level
   }
   for (const d of level.boxes) props.push(buildBox(B, world, d, d.heavy));
   for (const d of level.balls) props.push(buildBall(B, world, d));
-  for (const d of level.hangings) buildHanging(B, world, groundBody, d);
-  for (const d of level.pulleys) buildPulley(B, world, d);
-  for (const d of level.romans) buildRoman(B, world, groundBody, d);
+  for (const d of level.hangings) hangings.push(buildHanging(B, world, groundBody, d));
+  for (const d of level.pulleys) pulleys.push(buildPulley(B, world, d));
+  for (const d of level.romans) romans.push(buildRoman(B, world, groundBody, d));
   for (const d of level.winds) winds.push(new Wind(B, world, d));
   for (const d of level.windows) buildWindow(B, world, d);
 
-  return { manager, levers, pushers, platforms, props, winds };
+  return { manager, levers, pushers, platforms, props, winds, hangings, pulleys, romans };
 }
