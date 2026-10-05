@@ -156,3 +156,8 @@
 - 房间码解析 bug：Colyseus roomId 含非 alnum 字符，`[A-Za-z0-9]+` 正则截断 id 致
   joinById 偶发失败——visual-diff 与 e2e regression 同款隐患一并修复（[^（\s]+ 取全串）。
 - visual-diff 退出路径修复（process.exit 跳过 finally 致孤儿 2567 服务器）+ 入房整轮重试。
+
+## 14. 2026-10-06 追加六：时钟微校正（0.3.9）
+
+- 像素差分热图实证：Clock 锚点 (0.5,0.05)（盘面上探 5px）、文字区 y55-83——已校正。
+- visual-diff 视口 1:1 采样核验。视觉复刻度 95.00；双维度累计：物理 84.53 + 视觉 95.00。
