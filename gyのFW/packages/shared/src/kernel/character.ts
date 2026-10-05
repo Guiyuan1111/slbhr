@@ -82,20 +82,23 @@ export class Character {
     body.SetBullet(true);
     this.body = body;
 
+    // fixture 创建顺序对齐原版 createShapes：portal → 头圆 → 躯干梯形 → 脚底圆。
+    // box2d 求解器按 fixture 顺序遍历接触，落地冲量分配依赖该顺序（forest_04 滑轮板漂移亚像素敏感）。
+    // portal 感应圆 0.1（cat 4096 / mask 4096 / groupIndex −1）
+    circleFixture(body, B, 0.1, { x: 0, y: 0 }, {
+      categoryBits: FILTER.PORTAL_CAT,
+      maskBits: FILTER.PORTAL_MASK,
+      groupIndex: -1,
+      friction: 0,
+      density: 0,
+      userData: { "portal-sensor": true },
+    });
     // 躯干圆（friction 0）
     circleFixture(body, B, CHAR.r1, { x: 0, y: CHAR.y1 }, {
       categoryBits: FILTER.CHAR_CAT,
       maskBits: FILTER.CHAR_MASK,
       friction: 0,
       density: 0,
-    });
-    // 脚底圆（feetSensor，friction 0.5）
-    this.feetSensor = circleFixture(body, B, CHAR.r2, { x: 0, y: CHAR.y2 }, {
-      categoryBits: FILTER.CHAR_CAT,
-      maskBits: FILTER.CHAR_MASK,
-      friction: CHAR.feetFriction,
-      density: 0,
-      userData: "feet",
     });
     // 躯干梯形（唯一质量源：density 1.4，friction 0）
     const dr = CHAR.dr;
@@ -110,14 +113,13 @@ export class Character {
       friction: 0,
       density: 1.4,
     });
-    // portal 感应圆 0.1（cat 4096 / mask 4096 / groupIndex −1）
-    circleFixture(body, B, 0.1, { x: 0, y: 0 }, {
-      categoryBits: FILTER.PORTAL_CAT,
-      maskBits: FILTER.PORTAL_MASK,
-      groupIndex: -1,
-      friction: 0,
+    // 脚底圆（feetSensor，friction 0.5；原版 filter cat 4112=16|4096 / mask 257=1|256）
+    this.feetSensor = circleFixture(body, B, CHAR.r2, { x: 0, y: CHAR.y2 }, {
+      categoryBits: 4112,
+      maskBits: 257,
+      friction: CHAR.feetFriction,
       density: 0,
-      userData: { "portal-sensor": true },
+      userData: "feet",
     });
   }
 
