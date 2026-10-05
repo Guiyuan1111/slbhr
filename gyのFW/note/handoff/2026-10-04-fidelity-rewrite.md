@@ -132,3 +132,12 @@
 - **方法论存档**：lever 的 bundle 静态解读方案实测偏 2.54px、金轨迹验证旧形制 0.0000 全对——
   金轨迹实证 > bundle 静态解读（resSprite/enable 装载链有未建模等效性），已回退并存档。
 - 快照 r6-final=84.53（bonus_2 级联重掷噪声级）；报告 §七/§八。
+
+## 11. 2026-10-06 追加三：视觉像素差分基准（R7）
+
+- 新增 benchmark/visual-diff.mjs：原版/我方 canvas 像素差分（forest_01 idle@60物理帧），
+  视觉复刻度指数 = 容差48匹配率 = 86.63（0.3.6 基线），复跑稳定。
+- 原版侧基建坑（已写入 benchmark/README）：/multiplayer.js 在 output/ 父目录需父目录回退；
+  必须等 menu load.isLoading===false 再跳关（menu 残留 loader 回调会在 level 加载完成时
+  引爆 a.game null 并中断派发链——capture-era 靠跳关时机避开）。
+- 后续视觉保真优化点：画布内 HUD、装饰密度。
