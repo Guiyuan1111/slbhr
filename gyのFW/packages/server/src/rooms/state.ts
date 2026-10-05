@@ -75,11 +75,16 @@ export class LeverState extends Schema {
 export class PusherState extends Schema {
   group!: number;
   state!: number;
+  /** 块体中心（屏幕 px，随 prismatic 下沉连续变化） */
+  x!: number;
+  y!: number;
 
   constructor() {
     super();
     this.group = 0;
     this.state = 0;
+    this.x = 0;
+    this.y = 0;
   }
 }
 
@@ -186,6 +191,8 @@ defineTypes(LeverState, {
 defineTypes(PusherState, {
   group: "number",
   state: "number",
+  x: "number",
+  y: "number",
 });
 
 defineTypes(BodyState, {

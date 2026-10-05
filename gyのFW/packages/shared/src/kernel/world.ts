@@ -137,14 +137,17 @@ export class World {
   /** 机关快照（server 每 tick 写入 schema；坐标屏幕 px、角度屏幕弧度） */
   mechSnapshot(): {
     levers: Array<{ id: number; group: number; state: number; angle: number }>;
-    pushers: Array<{ id: number; group: number; state: number }>;
+    pushers: Array<{ id: number; group: number; state: number; x: number; y: number }>;
     platforms: Array<{ id: number; x: number; y: number; angle: number }>;
     props: Array<{ id: number; kind: string; x: number; y: number; angle: number }>;
     winds: Array<{ id: number; group: number; state: number }>;
   } {
     return {
-      levers: this.mechs.levers.map((l, id) => ({ id, group: l.group, state: l.state, angle: -l.angleDeg() * (Math.PI / 180) })),
-      pushers: this.mechs.pushers.map((p, id) => ({ id, group: p.group, state: p.state })),
+      levers: this.mechs.levers.map((l, id) => ({ id, group: l.group, state: l.state, angle: (l.angleDeg() * Math.PI) / 180 })),
+      pushers: this.mechs.pushers.map((p, id) => {
+        const pos = p.body.GetPosition();
+        return { id, group: p.group, state: p.state, x: m2px(pos.x), y: m2px(pos.y) };
+      }),
       platforms: this.mechs.platforms.map((p, id) => {
         const pos = p.body.GetPosition();
         return { id, x: m2px(pos.x), y: m2px(pos.y), angle: -p.body.GetAngle() };

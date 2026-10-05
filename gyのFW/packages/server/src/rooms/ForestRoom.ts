@@ -249,6 +249,8 @@ export class ForestRoom extends Room<RoomState> {
       }
       ps.group = p.group;
       ps.state = p.state;
+    ps.x = Math.round(p.x * 10) / 10;
+    ps.y = Math.round(p.y * 10) / 10;
     }
     for (const p of snap.platforms) {
       let bs = this.state.platforms.get(String(p.id));
