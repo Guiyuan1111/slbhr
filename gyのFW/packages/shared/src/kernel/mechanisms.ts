@@ -466,8 +466,10 @@ export function buildPulley(B: B2, world: any, def: { pts: Array<{ x: number; y:
   const barWidth = def.barWidth ?? 2.7;
   const [b1, w1, w2, b2] = def.pts;
   // 轮锚点 = polyline 点上移 2m（y −64px）
-  const anchor1 = { x: w1.x, y: w1.y - 64 };
-  const anchor2 = { x: w2.x, y: w2.y - 64 };
+  // 轮锚点：原版 polyline[1]/[2] + (x, y − mpx(2))，Device.mpx 带负号（=−64px）→
+  // 实际 = y + 64px（polyline 点下方 2m）——此前误放上方，力学几何错致平衡位差 4.6m
+  const anchor1 = { x: w1.x, y: w1.y + 64 };
+  const anchor2 = { x: w2.x, y: w2.y + 64 };
   const mkBoard = (posPx: { x: number; y: number }) => {
     const bd = new B.b2BodyDef();
     bd.type = B.b2BodyType.b2_dynamicBody;
