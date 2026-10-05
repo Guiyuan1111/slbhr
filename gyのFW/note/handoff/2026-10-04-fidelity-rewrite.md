@@ -148,3 +148,11 @@
 - visual-diff 升级 12×9 网格热图；剩余视觉差异定位：顶行（canvas 64px PAD 字边、
   我方钻石计数功能增项、原版画布内暂停钮）。
 - visual-diff 入房竞态守卫（房间码部分读取时重读）。
+
+## 13. 2026-10-06 追加五：画布几何对齐（0.3.8，视觉 +8.3）
+
+- 画布固定 1280×960（原版设计尺寸，forest 关卡居中 16px 边距逐像素同几何）；
+  相机视口锁定关卡矩形、HUD scrollFactor(0)。视觉复刻度 86.63 → **94.91**。
+- 房间码解析 bug：Colyseus roomId 含非 alnum 字符，`[A-Za-z0-9]+` 正则截断 id 致
+  joinById 偶发失败——visual-diff 与 e2e regression 同款隐患一并修复（[^（\s]+ 取全串）。
+- visual-diff 退出路径修复（process.exit 跳过 finally 致孤儿 2567 服务器）+ 入房整轮重试。
