@@ -1,0 +1,20 @@
+/**
+ * seedrandom（David Bau ARC4 实现）——从官方 init.js 字节级提取。
+ * 来源：init.js @1826037 起 2717 字节（IIFE 含 define 注册，latin1 切片）；
+ * 只改包装（new Function 注入 AMD define shim），实现体零改动。
+ * 用途：decorate() 的 z() 步进序列必须与原版一致（G12 装饰复刻）。
+ * 合规：官方代码仅限私人联机使用，禁止分发（同 vendor/box2d.js）。
+ */
+/* eslint-disable */
+// prettier-ignore
+const SEEDRANDOM_MODULE_SRC = "!(function (a, b) {\r\n\t\tfunction c(c, j, k) {\r\n\t\t\tvar n = [];\r\n\t\t\tj = 1 == j ? { entropy: !0 } : j || {};\r\n\t\t\tvar s = g(f(j.entropy ? [c, i(a)] : null == c ? h() : c, 3), n),\r\n\t\t\t\tt = new d(n),\r\n\t\t\t\tu = function () {\r\n\t\t\t\t\tfor (var a = t.g(m), b = p, c = 0; a < q; ) (a = (a + c) * l), (b *= l), (c = t.g(1));\r\n\t\t\t\t\tfor (; a >= r; ) (a /= 2), (b /= 2), (c >>>= 1);\r\n\t\t\t\t\treturn (a + c) / b;\r\n\t\t\t\t};\r\n\t\t\treturn (\r\n\t\t\t\t(u.int32 = function () {\r\n\t\t\t\t\treturn 0 | t.g(4);\r\n\t\t\t\t}),\r\n\t\t\t\t(u.quick = function () {\r\n\t\t\t\t\treturn t.g(4) / 4294967296;\r\n\t\t\t\t}),\r\n\t\t\t\t(u.double = u),\r\n\t\t\t\tg(i(t.S), a),\r\n\t\t\t\t(\r\n\t\t\t\t\tj.pass ||\r\n\t\t\t\t\tk ||\r\n\t\t\t\t\tfunction (a, c, d, f) {\r\n\t\t\t\t\t\treturn (\r\n\t\t\t\t\t\t\tf &&\r\n\t\t\t\t\t\t\t\t(f.S && e(f, t),\r\n\t\t\t\t\t\t\t\t(a.state = function () {\r\n\t\t\t\t\t\t\t\t\treturn e(t, {});\r\n\t\t\t\t\t\t\t\t})),\r\n\t\t\t\t\t\t\td ? ((b[o] = a), c) : a\r\n\t\t\t\t\t\t);\r\n\t\t\t\t\t}\r\n\t\t\t\t)(u, s, \"global\" in j ? j.global : this == b, j.state)\r\n\t\t\t);\r\n\t\t}\r\n\t\tfunction d(a) {\r\n\t\t\tvar b,\r\n\t\t\t\tc = a.length,\r\n\t\t\t\td = this,\r\n\t\t\t\te = 0,\r\n\t\t\t\tf = (d.i = d.j = 0),\r\n\t\t\t\tg = (d.S = []);\r\n\t\t\tfor (c || (a = [c++]); e < l; ) g[e] = e++;\r\n\t\t\tfor (e = 0; e < l; e++) (g[e] = g[(f = s & (f + a[e % c] + (b = g[e])))]), (g[f] = b);\r\n\t\t\t(d.g = function (a) {\r\n\t\t\t\tfor (var b, c = 0, e = d.i, f = d.j, g = d.S; a--; ) (b = g[(e = s & (e + 1))]), (c = c * l + g[s & ((g[e] = g[(f = s & (f + b))]) + (g[f] = b))]);\r\n\t\t\t\treturn (d.i = e), (d.j = f), c;\r\n\t\t\t})(l);\r\n\t\t}\r\n\t\tfunction e(a, b) {\r\n\t\t\treturn (b.i = a.i), (b.j = a.j), (b.S = a.S.slice()), b;\r\n\t\t}\r\n\t\tfunction f(a, b) {\r\n\t\t\tvar c,\r\n\t\t\t\td = [],\r\n\t\t\t\te = typeof a;\r\n\t\t\tif (b && \"object\" == e)\r\n\t\t\t\tfor (c in a)\r\n\t\t\t\t\ttry {\r\n\t\t\t\t\t\td.push(f(a[c], b - 1));\r\n\t\t\t\t\t} catch (a) {}\r\n\t\t\treturn d.length ? d : \"string\" == e ? a : a + \"\\0\";\r\n\t\t}\r\n\t\tfunction g(a, b) {\r\n\t\t\tfor (var c, d = a + \"\", e = 0; e < d.length; ) b[s & e] = s & ((c ^= 19 * b[s & e]) + d.charCodeAt(e++));\r\n\t\t\treturn i(b);\r\n\t\t}\r\n\t\tfunction h() {\r\n\t\t\ttry {\r\n\t\t\t\tvar b;\r\n\t\t\t\treturn j && (b = j.randomBytes) ? (b = b(l)) : ((b = new Uint8Array(l)), (k.crypto || k.msCrypto).getRandomValues(b)), i(b);\r\n\t\t\t} catch (b) {\r\n\t\t\t\tvar c = k.navigator,\r\n\t\t\t\t\td = c && c.plugins;\r\n\t\t\t\treturn [+new Date(), k, d, k.screen, i(a)];\r\n\t\t\t}\r\n\t\t}\r\n\t\tfunction i(a) {\r\n\t\t\treturn String.fromCharCode.apply(0, a);\r\n\t\t}\r\n\t\tvar j,\r\n\t\t\tk = this,\r\n\t\t\tl = 256,\r\n\t\t\tm = 6,\r\n\t\t\tn = 52,\r\n\t\t\to = \"random\",\r\n\t\t\tp = b.pow(l, m),\r\n\t\t\tq = b.pow(2, n),\r\n\t\t\tr = 2 * q,\r\n\t\t\ts = l - 1;\r\n\t\tif (((b[\"seed\" + o] = c), g(b.random(), a), \"object\" == typeof module && module.exports)) {\r\n\t\t\tmodule.exports = c;\r\n\t\t\ttry {\r\n\t\t\t\tj = require(\"crypto\");\r\n\t\t\t} catch (a) {}\r\n\t\t} else\r\n\t\t\t\"function\" == typeof define &&\r\n\t\t\t\tdefine.amd &&\r\n\t\t\t\tdefine(\"seedrandom\", [], function () {\r\n\t\t\t\t\treturn c;\r\n\t\t\t\t});\r\n\t})([], Math)";
+
+export function createSeedrandomFactory(): (seed: string) => () => number {
+  let exported: unknown;
+  function define(_name: string, _deps: unknown[], factory: () => unknown) {
+    exported = factory();
+  }
+  (define as unknown as { amd: object }).amd = {};
+  new Function("define", SEEDRANDOM_MODULE_SRC + "\n").call(null, define);
+  return exported as (seed: string) => () => number;
+}

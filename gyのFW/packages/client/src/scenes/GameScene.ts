@@ -20,6 +20,7 @@ import { DOOR, ROLES, type Role } from "@fw/shared";
 import type { LevelData, Rect } from "@fw/shared/level2";
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
+import { createSeedrandomFactory } from "../vendor/seedrandom.js";
 import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, PLAYER_SCALE } from "./BootScene";
 
 export interface GameInit {
@@ -117,6 +118,9 @@ export class GameScene extends Phaser.Scene {
   private myRole: Role | null = null;
   private views = new Map<Role, PlayerView>();
   private diamondSprites = new Map<string, Phaser.GameObjects.Image>();
+  /** HUD/时钟缓存（Text.setText 无条件重绘 canvas 纹理，仅变化时写入防掉帧） */
+  private lastClock = "";
+  private lastHud = { red: "", blue: "", silver: "" };
   private diamondKinds = new Map<string, string>();
   private platformViews = new Map<string, Phaser.GameObjects.Container>();
   private leverViews = new Map<string, LeverView>();
@@ -508,79 +512,115 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** 前景装饰（decorations 层，在角色之上）：固定种子撒点 + 原版分派规则 */
+  /**
+   * 前景装饰（decorations 层）——原版 Ground.decorate 忠实移植（G12）。
+   * 算法：seedrandom("ASDFA") 的 z()=round(3r+3.5) 行列步进 → 7×7 窗口搜索未占用/未选 tile →
+   * 分派 decor_O(墙内)/X(苔藓)/A(藤蔓)/V(倒藤)/T(地表)（变体与旋转用 Math.random，原版亦然）。
+   * 占位：BoxedDevice 家族（lever/pusher/box/ball）按中心 tile 标记 2×2 occupied。
+   * 依据：note/evidence/init-js-regions/ground-region.js decorate 段。
+   */
   private buildDecorations(level: LevelData): void {
-    const rnd = mulberry32(0x5eedfa); // ASDFA 的哈希种子（分布复刻，逐点位置无感知差异；G12 待 0.3.1）
-    const z = () => Math.round(3 * rnd() + 3.5); // 行列步进 4~6 格
-    const { tile, cols, rows } = level;
-    const typeAt = (cx: number, cy: number): number =>
-      cx < 0 || cy < 0 || cx >= cols || cy >= rows ? EMPTY_TYPE : level.groundType[cy * cols + cx];
-    const hasGid = (cx: number, cy: number): boolean => typeAt(cx, cy) !== EMPTY_TYPE;
-    // 机关占位矩形（图块对象 64×64 中心 ±32；矩形对象用自身矩形）——语义同旧 mechProps 检查
-    const deviceRects: Rect[] = [];
-    for (const m of [...level.levers, ...level.pushers, ...level.boxes, ...level.balls]) {
-      deviceRects.push({ x: m.x - 32, y: m.y - 32, w: 64, h: 64 });
-    }
-    for (const m of level.platforms) deviceRects.push({ x: m.x, y: m.y, w: m.w, h: m.h });
-    for (const m of level.winds) deviceRects.push(m.rect);
-    const deviceAt = (px: number, py: number): boolean =>
-      deviceRects.some((r) => px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h);
-
-    let py = Math.floor(rnd() * 4);
-    while (py < rows) {
-      let px = Math.floor(rnd() * 4);
-      while (px < cols) {
-        // 在 +0..6 窗口内找第一个可撒点格子
-        for (let k = 0; k <= 6; k++) {
-          const cx = px + k;
-          if (cx >= cols) break;
-          const t = typeAt(cx, py);
-          if (t === EMPTY_TYPE || deviceAt(cx * tile, py * tile)) continue;
-          const left = hasGid(cx - 1, py);
-          const right = hasGid(cx + 1, py);
-          const top = hasGid(cx, py - 1);
-          let frame: string | null = null;
-          let flip = false;
-          let rot = 0;
-          if (t === 0) {
-            if (left || right) {
-              frame = `decor_O_${Math.floor(rnd() * 2) + 1}0000`; // 墙内裂纹
-              if (rnd() < 0.5) rot = 90;
-            } else if (top) {
-              frame = "decor_X0000"; // 墙面苔藓，随机 90° 旋转
-              rot = 90 * Math.floor(rnd() * 4);
-            } else {
-              frame = `decor_T_${Math.floor(rnd() * 3) + 1}0000`; // 地表植物
-              flip = rnd() < 0.5;
-            }
-          } else if (t === 1 || t === 2) {
-            frame = "decor_A0000"; // 藤蔓
-            flip = t === 2;
-          } else if (t === 3 || t === 4) {
-            frame = "decor_V0000";
-            flip = t === 4;
-          }
-          if (frame && this.textures.get(ATLAS_TEMPLE).has(frame)) {
-            this.add
-              .image(cx * tile + tile / 2 + PAD, py * tile + tile / 2 + PAD, ATLAS_TEMPLE, frame)
-              .setOrigin(0.5)
-              .setFlipX(flip)
-              .setAngle(rot)
-              .setDepth(6);
-          }
-          break; // 原版取窗口内第一个命中格
-        }
-        px += z();
+    const { cols, rows, tile } = level;
+    const rng = createSeedrandomFactory()("ASDFA");
+    const z = () => Math.round(3 * rng() + 3.5);
+    // 原版 ocupy：BoxedDevice 家族标记中心 tile 与上/左邻共 2×2
+    const occupied = new Set<string>();
+    const mark = (px: number, py: number): void => {
+      const bx = Math.floor(px / 32);
+      const by = Math.floor(py / 32);
+      for (const [dx, dy] of [[0, 0], [-1, -1], [-1, 0], [0, -1]]) {
+        const row = by + dy;
+        const col = bx + dx;
+        if (row >= 0 && row < rows && col >= 0 && col < cols) occupied.add(row + "," + col);
       }
-      py += z();
+    };
+    for (const m of level.levers) mark(m.x, m.y);
+    for (const m of level.pushers) mark(m.x, m.y);
+    for (const b of level.boxes) mark(b.x, b.y);
+    for (const b of level.balls) mark(b.x, b.y);
+    const typeOf = (row: number, col: number): number | null => {
+      if (row < 0 || col < 0 || row >= rows || col >= cols) return null;
+      const t = level.groundType[row * cols + col];
+      return t === EMPTY_TYPE ? null : t;
+    };
+    const key = (row: number, col: number): string => row + "," + col;
+    const picked: Array<{ row: number; col: number }> = [];
+    const pickedSet = new Set<string>();
+    let K = 1;
+    while (K < rows) {
+      let J = 1;
+      while (J < cols - 1) {
+        let got = false;
+        for (let l = 0; l <= 6 && !got; l++) {
+          for (let m = 0; m <= 6; m++) {
+            const h = Math.min(Math.max(J + l, 0), cols - 2);
+            const i = Math.min(Math.max(K + m, 0), rows - 1);
+            if (typeOf(i, h) === null) continue;
+            if (occupied.has(key(i, h))) continue;
+            if (
+              pickedSet.has(key(i, h)) ||
+              pickedSet.has(key(i - 1, h)) ||
+              pickedSet.has(key(i, h + 1)) ||
+              pickedSet.has(key(i - 1, h + 1)) ||
+              pickedSet.has(key(i, h - 1)) ||
+              pickedSet.has(key(i - 1, h - 1))
+            ) {
+              continue;
+            }
+            picked.push({ row: i, col: h });
+            pickedSet.add(key(i, h));
+            got = true;
+            break;
+          }
+        }
+        J += z();
+      }
+      K += z();
+    }
+    // 渲染分派（Math.random 仅用于变体/旋转——原版亦然）
+    let w = 0;
+    for (const d of picked) {
+      const F = typeOf(d.row, d.col);
+      const up = typeOf(d.row - 1, d.col);
+      const right = typeOf(d.row, d.col + 1);
+      const left = typeOf(d.row, d.col - 1);
+      let G: string | null = null;
+      let rot = 0;
+      let flip = 1;
+      let u = 1;
+      if (F === 0 && up !== null && right !== null && left !== null) {
+        G = `decor_O_${(w % 2) + 1}0000`;
+      } else if (F !== 0 || up !== null) {
+        if (F === 0) {
+          G = "decor_X0000";
+          rot = (Math.floor(Math.random() * 3) * Math.PI) / 2;
+        } else if (F === 1) {
+          G = "decor_A0000";
+        } else if (F === 2) {
+          G = "decor_A0000";
+          flip = -1;
+        } else if (F === 3) {
+          G = "decor_V0000";
+        } else if (F === 4) {
+          G = "decor_V0000";
+          flip = -1;
+        }
+      } else {
+        G = `decor_T_${(w % 3) + 1}0000`;
+        u = Math.random() < 0.5 ? -1 : 1;
+      }
+      w++;
+      if (G && this.textures.get(ATLAS_TEMPLE).has(G)) {
+        this.add
+          .image((d.col + 0.5) * tile + PAD, (d.row + 0.5) * tile + PAD, ATLAS_TEMPLE, G)
+          .setOrigin(0.5)
+          .setFlipX(u * flip < 0)
+          .setAngle(rot)
+          .setDepth(6);
+      }
     }
   }
 
-  /**
-   * 教学文字（tutorial 层：背景之上、钻石之下；淡金衬线 + 细描边）。
-   * E20 触发式渐显：原版 setupTutorial 按 properties.id 分组，角色进触发矩形
-   * 400ms Linear 淡入、离开淡出（updateTutorial @1952695）。
-   */
   private buildTutorial(level: LevelData): void {
     for (const step of level.tutorials) {
       if (!step.text || !step.textRect) continue;
@@ -711,7 +751,8 @@ export class GameScene extends Phaser.Scene {
     if (!st) return;
 
     // 时钟：真实正计时秒（服务端只在 started 步进内累计，won/gameover 天然冻结）
-    this.clockText.setText(mmss((Number(st.timerMs) || 0) / 1000));
+    const clockStr = mmss((Number(st.timerMs) || 0) / 1000);
+    if (clockStr !== this.lastClock) { this.clockText.setText(clockStr); this.lastClock = clockStr; }
 
     // phase 差分（won 演出、ready 瞬移与整轮复位都挂在这里）
     const phase = String(st.phase ?? "");
@@ -939,9 +980,12 @@ export class GameScene extends Phaser.Scene {
       }
     });
     // E17：红栏只数红、蓝栏只数蓝（fbwg/银钻不进红蓝栏），银钻单列
-    this.redHudText.setText(`${redGot}/${this.redTotal}`);
-    this.blueHudText.setText(`${blueGot}/${this.blueTotal}`);
-    this.silverHudText?.setText(`${silverGot}/${this.silverTotal}`);
+    const redStr = `${redGot}/${this.redTotal}`;
+    const blueStr = `${blueGot}/${this.blueTotal}`;
+    const silverStr = `${silverGot}/${this.silverTotal}`;
+    if (redStr !== this.lastHud.red) this.redHudText.setText(redStr);
+    if (blueStr !== this.lastHud.blue) this.blueHudText.setText(blueStr);
+    if (silverStr !== this.lastHud.silver) this.silverHudText?.setText(silverStr);
   }
 
   /** 机关快照消费（E13）：lever 角度+灯、pusher 压下、平台/箱/球位姿、风区显隐 */
