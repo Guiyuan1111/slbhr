@@ -195,3 +195,18 @@ R1 遗留的「forest_01 fb 0.17m 瞬态待查」本轮结案。机制链：
 
 **结论**：contact-position 混沌族的又一实例（与滑轮/坍缩链同族），公式层无偏差可修。
 R1 遗留线索至此全部结案。
+
+## 十七、界面复刻轮（R14-R15：开始界面 + 选关界面落地）
+
+- **新增 MenuScene**（开始界面）：神庙大厅背景 + 8 石柱 + 标题 GameNameForest + 火/水角色 idle +
+  「开始游戏」（72px 位图字，实测 251×76 无底板）+ Navy 装饰；坐标全按实机显示树校准。
+- **新增 TempleScene**（选关界面）：MenuBackground0000 平铺 + temple.json 图结构渲染
+  （48 节点 Diamond/Speed/Puzzle 星级帧 + Lock + 连线 #5B4610 + 「显示关卡数」切换 + 返回钮），
+  节点坐标公式与原版逐像素吻合（实测节点 1 (640,826)=我方 (640,825.6)）。
+- **流程重构**：Phaser 随页面启动（Boot→Menu→Temple→Game）；点可玩关卡弹出联机面板
+  （?level= 深链直通面板，e2e/视觉基准兼容）；进度 localStorage（星级=1+钻石+限时，tree 邻接解锁）。
+- **其他可复刻界面盘点**（规格已备 research/09）：EndMenu（三行 FinishCounter+星动画+Continue）、
+  GameOverMenu、PauseMenu、SettingsMenu/CreditsMenu/SoftLockMenu、gameComplete 彩带——
+  本轮 DOM 文案承载，后续按需逐个画布内复刻。
+- **验证**：83/83 单测、typecheck、build、e2e 联机 PASS、视觉回归 94.97（游戏画布零扰动）、
+  画布菜单全链路探针（Menu→Temple→选关→建房→Game 四步全过）。

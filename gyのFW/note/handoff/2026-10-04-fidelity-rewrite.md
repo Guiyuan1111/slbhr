@@ -176,3 +176,10 @@
 
 - 机制定案：助跑踩箱角接触（n.y 0.40 vs 0.374）→ 助跑末速差 13px/s → 跳跃弧保持。
   公式层忠实，接触点报告亚像素差（混沌族），无码改。遗留线索全部结案。
+
+## 18. 2026-10-06 追加十：开始界面/选关界面复刻（0.3.12）
+
+- MenuScene/TempleScene 落地（规格 research/09-ui-states.md，实机显示树校准）；
+  main.ts 重构为页面加载即启动 Phaser（Boot→Menu→Temple→Game），入房后切入 Game。
+- 进度 localStorage（fw-temple-progress-v1）；房间码正则修复的 e2e 兼容流程保持。
+- 待办：EndMenu/GameOverMenu/PauseMenu 画布内复刻（规格已备）。

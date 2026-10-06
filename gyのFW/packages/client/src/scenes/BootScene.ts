@@ -64,8 +64,8 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
     this.buildAnims();
-    // 场景数据统一走全局句柄（settings.data 会被 Phaser 填成 {}，不可靠）
-    this.scene.start("Game");
+    // 先进开始界面（原版 load → menu 流）；GameScene 由入房后 scene.start 切入
+    this.scene.start("Menu");
   }
 
   private buildAnims(): void {

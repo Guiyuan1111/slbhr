@@ -12,6 +12,8 @@ import { parseLevel, type LevelData } from "@fw/shared/level2";
 import { Net } from "./net";
 import { KeyboardInput } from "./input";
 import { BootScene } from "./scenes/BootScene";
+import { MenuScene } from "./scenes/MenuScene";
+import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => {
@@ -26,8 +28,11 @@ const urlLevel = new URLSearchParams(location.search).get("level") ?? "";
 /** 关卡四周的岩壁边距（原版 groundTexture 1312×992 = 关卡 +32 边距） */
 
 let phaser: Phaser.Game | null = null;
+/** 选关界面所选关卡（filename 去扩展名）；?level= 深链直通 */
+let selectedLevel = urlLevel;
 let net: Net | null = null;
 let keyboard: KeyboardInput | null = null;
+let gameStarted = false;
 
 /**
  * 拉关卡原始 JSON（/api/level/:id → {id, json}）并预取外部图块集。
@@ -108,34 +113,27 @@ function updateHud(): void {
 async function enterGame(): Promise<void> {
   if (!net) throw new Error("未连接房间");
   // join 方以房间的真实关卡为准（修 E14 双端路径分裂的最后一环）；拿不到回退 URL/默认
-  const levelId = (await net.waitForLevelId()) || urlLevel || DEFAULT_LEVEL_ID;
+  const levelId = (await net.waitForLevelId()) || selectedLevel || urlLevel || DEFAULT_LEVEL_ID;
   const level = await fetchLevel(levelId);
   show();
 
   keyboard = new KeyboardInput(window, (input) => net?.sendInput(input));
 
-  phaser = new Phaser.Game({
-    type: Phaser.AUTO,
-    parent: "game-root",
-    // 画布固定 1280×960（原版设计尺寸）：forest 关卡 1248×928 居中后恰为 16px 边距，
-    // 与原版逐像素同几何；此前 64px PAD 字边/全出血两案均劣于该案（视觉差分实测，报告 §十一）
-    width: 1280,
-    height: 960,
-    backgroundColor: "#000000",
-    // setTimeout 驱动：窗口被遮挡/后台时 rAF 会被浏览器完全冻结（场景队列停摆），此模式保活
-    fps: { forceSetTimeOut: true, target: 60 },
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-    scene: [BootScene, GameScene],
-  });
-  // 场景数据走全局句柄：Phaser 会自动引导首场景，额外的 start 会造成双重启动竞态
+  // 场景数据走全局句柄：Phaser 已随页面启动（Menu/Temple 选关流），此处仅切入 Game
   (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level, keyboard };
-  (globalThis as unknown as Record<string, unknown>).__fw = phaser; // 调试句柄（验收自动化用）
 
   // HUD 轮询刷新（4Hz 足够，DOM 开销可忽略）
   setInterval(updateHud, 250);
 
+  gameStarted = true;
   $("#menu").classList.add("hidden");
   $("#hud").classList.remove("hidden");
+  // 切入游戏场景（Game 若已在跑则重启以载入关卡数据）
+  const sceneMgr = phaser!.scene;
+  sceneMgr.stop("Menu");
+  sceneMgr.stop("Temple");
+  sceneMgr.stop("Game");
+  sceneMgr.start("Game");
 }
 
 async function start(mode: "create" | "join"): Promise<void> {
@@ -152,7 +150,7 @@ async function start(mode: "create" | "join"): Promise<void> {
         code,
         password,
         // join 也带上（服务端 join 不读，房间以已加载关卡为准）
-        levelId: urlLevel || DEFAULT_LEVEL_ID,
+        levelId: selectedLevel || urlLevel || DEFAULT_LEVEL_ID,
       },
       {
         onRole: (role: Role) => {
@@ -180,7 +178,7 @@ async function start(mode: "create" | "join"): Promise<void> {
     await enterGame();
   } catch (e: any) {
     // 进房成功但进游戏失败（关卡缺失等）→ 退回菜单并释放房间
-    if (net && !phaser) {
+    if (net && !gameStarted) {
       net.leave();
       net = null;
     }
@@ -195,9 +193,42 @@ async function start(mode: "create" | "join"): Promise<void> {
   }
 }
 
+
+/** 页面加载即启动 Phaser：BootScene → MenuScene（开始界面）→ TempleScene（选关）→ GameScene */
+function bootPhaser(): void {
+  phaser = new Phaser.Game({
+    type: Phaser.AUTO,
+    parent: "game-root",
+    // 画布固定 1280×960（原版设计尺寸）：forest 关卡 1248×928 居中后恰为 16px 边距，
+    // 与原版逐像素同几何；此前 64px PAD 字边/全出血两案均劣于该案（视觉差分实测，报告 §十一）
+    width: 1280,
+    height: 960,
+    backgroundColor: "#000000",
+    // setTimeout 驱动：窗口被遮挡/后台时 rAF 会被浏览器完全冻结（场景队列停摆），此模式保活
+    fps: { forceSetTimeOut: true, target: 60 },
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scene: [BootScene, MenuScene, TempleScene, GameScene],
+  });
+  (globalThis as unknown as Record<string, unknown>).__fw = phaser; // 调试句柄（验收自动化用）
+  // 选关 → 弹出联机面板（?level= 深链时面板直接可见，跳过画布选关）
+  phaser.registry.set("onLevelPicked", (levelId: string) => {
+    selectedLevel = levelId;
+    const el = document.querySelector("#menu-level");
+    if (el) el.textContent = `已选关卡：${levelId}`;
+    $("#menu").classList.remove("hidden");
+  });
+  if (selectedLevel) {
+    const el = document.querySelector("#menu-level");
+    if (el) el.textContent = `已选关卡：${selectedLevel}`;
+  } else {
+    $("#menu").classList.add("hidden");
+  }
+}
+
 function bindUi(): void {
   $("#btn-create").addEventListener("click", () => start("create"));
   $("#btn-join").addEventListener("click", () => start("join"));
+  bootPhaser();
   // R 键请求整关重开（E1；服务端按 phase 把关：won/gameover 才受理）
   window.addEventListener("keydown", (e) => {
     if (e.code === "KeyR" && net) net.restart();
