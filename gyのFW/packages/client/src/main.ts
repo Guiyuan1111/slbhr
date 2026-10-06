@@ -240,6 +240,10 @@ async function start(mode: "create" | "join"): Promise<void> {
               type,
               stars,
             });
+          } else if (phase === "ready") {
+            // 重开（自动/对方 R）时关闭残留结算/失败面板，否则盖住新一轮
+            phaser?.scene.stop("EndMenu");
+            phaser?.scene.stop("GameOverMenu");
           } else if (phase === "gameover") {
             if (!pausedByUser) phaser?.scene.start("GameOverMenu");
           }

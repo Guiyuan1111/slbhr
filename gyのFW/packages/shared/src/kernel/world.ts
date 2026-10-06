@@ -358,6 +358,7 @@ export class World {
     }
     // 双门到位 → win（原版 animateFinish）
     if (this.built.doors.fireboy.isUp && this.built.doors.watergirl.isUp) {
+    // 原版口径（45097）：gameFinish 在 1600ms 楼梯动画后取钟值——通关计时含楼梯演出
       this.phase = "won";
       const fb = this.chars.fireboy;
       const wg = this.chars.watergirl;
@@ -367,7 +368,7 @@ export class World {
           fbDiamonds: fb.diamonds,
           wgDiamonds: wg.diamonds,
           silver: fb.silverDiamond + wg.silverDiamond,
-          timeMs: this.timerMs,
+          timeMs: this.timerMs + 1600,
         },
       });
     }

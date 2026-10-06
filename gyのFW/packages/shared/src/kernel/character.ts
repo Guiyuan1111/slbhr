@@ -82,8 +82,9 @@ export class Character {
     body.SetBullet(true);
     this.body = body;
 
-    // fixture 创建顺序对齐原版 createShapes：portal → 头圆 → 躯干梯形 → 脚底圆。
-    // box2d 求解器按 fixture 顺序遍历接触，落地冲量分配依赖该顺序（forest_04 滑轮板漂移亚像素敏感）。
+    // fixture 创建顺序对齐原版 createShapes（bundle 42897-42911）：portal → 躯干圆 → 脚底圆 → 躯干梯形。
+    // box2d 求解器按 fixture 顺序遍历接触，落地冲量分配依赖该顺序（forest_04 滑轮板漂移亚像素敏感，
+    // 2026-10-06 二轮校准：前版「portal→头→梯形→脚」顺序系误读，原版脚圆在梯形之前 42910 行）。
     // portal 感应圆 0.1（cat 4096 / mask 4096 / groupIndex −1）
     circleFixture(body, B, 0.1, { x: 0, y: 0 }, {
       categoryBits: FILTER.PORTAL_CAT,
@@ -100,7 +101,15 @@ export class Character {
       friction: 0,
       density: 0,
     });
-    // 躯干梯形（唯一质量源：density 1.4，friction 0）
+    // 脚底圆（feetSensor，friction 0.5；原版 filter cat16/mask4353 经 m 助手统一设置，42860-42861 + 42910）
+    this.feetSensor = circleFixture(body, B, CHAR.r2, { x: 0, y: CHAR.y2 }, {
+      categoryBits: FILTER.CHAR_CAT,
+      maskBits: FILTER.CHAR_MASK,
+      friction: CHAR.feetFriction,
+      density: 0,
+      userData: "feet",
+    });
+    // 躯干梯形（唯一质量源：density 1.4，friction 0）——原版在脚圆之后创建
     const dr = CHAR.dr;
     polygonFixture(body, B, [
       { x: CHAR.r1 - dr, y: CHAR.y1 },
@@ -112,14 +121,6 @@ export class Character {
       maskBits: FILTER.CHAR_MASK,
       friction: 0,
       density: 1.4,
-    });
-    // 脚底圆（feetSensor，friction 0.5；原版 filter cat 4112=16|4096 / mask 257=1|256）
-    this.feetSensor = circleFixture(body, B, CHAR.r2, { x: 0, y: CHAR.y2 }, {
-      categoryBits: 4112,
-      maskBits: 257,
-      friction: CHAR.feetFriction,
-      density: 0,
-      userData: "feet",
     });
   }
 

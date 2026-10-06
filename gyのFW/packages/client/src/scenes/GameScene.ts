@@ -991,7 +991,9 @@ export class GameScene extends Phaser.Scene {
       const prev = this.doorFrames.get(role) ?? 0;
       if (frame !== prev) {
         this.doorSprites.get(role)?.setFrame(`${role === "fireboy" ? "FinishBoy" : "FinishGirl"}${String(frame).padStart(4, "0")}`);
-        if (prev === 0 && frame > 0) this.sfx("sfx_door", { volume: 0.45 });
+        // 原版 Door.update（38465-38485）：开/关移动全程维持门音实例，到 0/21 帧停
+        if (frame > 0 && frame < 21 && !this.sound.isPlaying("sfx_door")) this.sfx("sfx_door", { volume: 0.45 });
+        if ((frame === 0 || frame === 21) && this.sound.isPlaying("sfx_door")) this.sound.stopByKey("sfx_door");
         this.doorFrames.set(role, frame);
       }
     }
