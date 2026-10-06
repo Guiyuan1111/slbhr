@@ -502,19 +502,27 @@ export class GameScene extends Phaser.Scene {
     return `x${idx}`; // box / boxheavy 同数组（level.boxes 顺序）
   }
 
-  /** 液体：LiquidRun 行段 Left/中/Right 三类精灵 30fps，随机相位；整体下移 2px */
+  /** 液体：LiquidRun 行段 Left/中/Right 三类精灵 30fps 同相位；整体下移 2px */
   private buildLiquids(level: LevelData): void {
     const { tile } = level;
     for (const run of level.liquidRuns) {
       const fam = LIQUID_ATLAS[run.kind] ?? "WaterBox";
+      const single = run.col0 === run.col1;
       for (let k = run.col0; k <= run.col1; k++) {
-        const pos = k === run.col0 ? "Left" : k === run.col1 && run.col1 > run.col0 ? "Right" : "";
+        const pos = k === run.col0 ? (single ? "Left" : "Left") : k === run.col1 ? "Right" : "";
         const s = this.add
           .sprite(k * tile + tile / 2 + PAD, run.row * tile + tile / 2 + 2 + PAD, ATLAS_GROUND, `${fam}${pos}0000`)
           .setOrigin(0.5)
           .setDepth(7);
-        // 原版三段液体同相位播放（bundle:38988-39006 无随机延迟）
+        // 原版三段液体同相位播放（bundle:38988-39006 无随机延迟）；width=1 时 Left/Right 同格叠放
         s.play(`liquid_${run.kind}${pos ? `_${pos.toLowerCase()}` : ""}`);
+        if (single) {
+          const cap = this.add
+            .sprite(k * tile + tile / 2 + PAD, run.row * tile + tile / 2 + 2 + PAD, ATLAS_GROUND, `${fam}Right0000`)
+            .setOrigin(0.5)
+            .setDepth(7);
+          cap.play(`liquid_${run.kind}_right`);
+        }
       }
     }
   }
@@ -542,7 +550,7 @@ export class GameScene extends Phaser.Scene {
   private buildPlayers(level: LevelData): void {
     for (const role of ROLES) {
       const s = level.spawn[role];
-      const cx = s.x + 32 + PAD;
+      const cx = s.x + PAD; // level2 spawn 已是图块中心（kernel 体中心同位）；此前 +32 为双重偏移
       const cy = s.y - 32 + PAD;
       const p = PREFIX[role];
       const glow = this.add.image(cx, cy, ATLAS_CHARS, `${p}_glow0000`).setOrigin(0.5).setScale(PLAYER_SCALE).setAlpha(0.9).setDepth(4);
@@ -876,7 +884,7 @@ export class GameScene extends Phaser.Scene {
         .setOrigin(0.5, 1)
         .setScale(PLAYER_SCALE)
         .setDepth(5);
-      this.tweens.add({ targets: s, scale: 0.8, duration: 360 }); // 原版 0.95→0.8 / 360ms Linear
+      this.tweens.add({ targets: s, scale: 0.76, duration: 360 }); // 原版组 0.95×0.8=0.76 / 360ms Linear
       s.play(`${p}_stairs`);
       this.stairsSprites.set(role, s);
     }
@@ -932,6 +940,8 @@ export class GameScene extends Phaser.Scene {
       const flip = Number(ps.facing) < 0;
       view.legs.setFlipX(flip);
       view.head.setFlipX(flip);
+      // 原版面向左时把 legs 提到 head 之上（43187-43189 removeChild+addChild）
+      view.legs.setDepth(flip ? 5.1 : 5);
       // 头部倾角（原版 head.rotation = a：坡面接触法线/空中速度方向，内核逐帧算好）
       view.head.setRotation(Number(ps.headTilt) || 0);
 
