@@ -76,6 +76,14 @@ export class ForestRoom extends Room<RoomState> {
       }
     });
 
+    // 调试钩子（FW_DEBUG_AUTO_WIN=1）：started 5s 后注入真实 win 事件，验证 win 下流全链
+    if (process.env.FW_DEBUG_AUTO_WIN === "1") {
+      setTimeout(() => {
+        if (this.state.phase === "started") {
+          this.handleEvents([{ type: "win", data: { fbDiamonds: 3, wgDiamonds: 4, silver: 0, timeMs: 5000 } }]);
+        }
+      }, 5000);
+    }
     this.setSimulationInterval((dtMs) => this.tick(dtMs));
   }
 

@@ -41,6 +41,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image("TempleHall", "/assets/images/TempleHallForest.jpg");
     this.load.image("Beam", "/assets/images/Beam.png");
     this.load.image("GameName", "/assets/images/GameNameForest.png");
+    this.load.image("KiziLogo", "/assets/images/branding/branding_logo_kizi.png");
 
     // 音频（仅本场景触发全集：跳跃/拾取/死亡/开门/拉杆/踏板/平台/水声/音乐）
     // 统一走无扩展名流式路由（/s/ 前缀，服务器补 .mp3）：IDM 等下载接管工具
