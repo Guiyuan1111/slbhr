@@ -216,3 +216,16 @@
 - menu 像素差分 31.9%（图未载时）→ 59.9% → 85.6%（cover 缩放/光柱/KiziLogo/角色校准）。
 - win 链取证：内核+下流全通；「不进下一关」=0.3.13 saveBest 断链（已修），FW_DEBUG_AUTO_WIN 钩子留存。
 - 方法学：显示树 dump 的尺寸可能是缩放后值，素材本体尺寸须单独核验。
+
+## 25. 2026-10-06 追加十七：实玩反馈「开门不进下一关」深度取证（进行中）
+
+- 用户实机（0.3.13→0.3.16）：双门开、双角色站门内、无 win。三路取证：
+  1. 内核（forest_01 门前落位+唤醒）：WIN @f50 ✓
+  2. 强制 isOpen 驱动（FW_DEBUG_FORCE_DOORS）：frac→isUp→win→EndMenu 全链 PASS ✓
+  3. 下流（AUTO_WIN）：EndMenu→Continue→存档→解锁 ✓
+- **剩余唯一变量**：真实走位下「双门 isUp 同时成立」——原版机制=两人须同时站门内
+  （任一人离开感应带该门倒退关闭）。怀疑用户实机为「先后进门、先入者离开」时序。
+- 已交付取证工具：FW_DEBUG_DOORS=1（门状态 2s 日志）、FW_DEBUG_FORCE_DOORS=1（强制开门驱动）、
+  win 事件日志。**待用户实测**：`FW_DEBUG_DOORS=1 npm run start` → 玩一局 → 贴 [doors] 日志。
+- 修复批次已合入：菜单三图加载、结算链贯通（saveBest+temple.json）、puzzle 口径、
+  BGM 四件套、gzip、地面缓存、房间码正则、缺口三弹窗（设置/制作/彩带）。
