@@ -210,3 +210,9 @@
 
 - SettingsScene/CreditsScene/CompleteScene 落地（scenes/menus.ts，settings.ts 持久化）。
 - 剩余缺口仅剩：移动端触控、单机同屏（均待产品决定）+ bonus_2 重关物理（wasm 级）。
+
+## 24. 2026-10-06 追加十六：封面校正 + win 链取证（0.3.16）
+
+- menu 像素差分 31.9%（图未载时）→ 59.9% → 85.6%（cover 缩放/光柱/KiziLogo/角色校准）。
+- win 链取证：内核+下流全通；「不进下一关」=0.3.13 saveBest 断链（已修），FW_DEBUG_AUTO_WIN 钩子留存。
+- 方法学：显示树 dump 的尺寸可能是缩放后值，素材本体尺寸须单独核验。
