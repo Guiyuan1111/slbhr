@@ -205,3 +205,8 @@
 - 三路子代理并行：文档一致性（24 核验+4P1+8P2 全修，r6-final/visual-r14 快照补档）、
   性能基准（60fps/3.2%单核；gzip −76% 落地；bonus_2 24.2ms 记录待办）、
   原版差距（3 个 P0 断链全修；剩余缺口 SettingsMenu/彩带/Credits/触控/单机，见 research/10）。
+
+## 23. 2026-10-06 追加十五：缺口收口（0.3.15）
+
+- SettingsScene/CreditsScene/CompleteScene 落地（scenes/menus.ts，settings.ts 持久化）。
+- 剩余缺口仅剩：移动端触控、单机同屏（均待产品决定）+ bonus_2 重关物理（wasm 级）。
