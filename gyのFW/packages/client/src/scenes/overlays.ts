@@ -57,8 +57,8 @@ export class PauseMenu extends Phaser.Scene {
   }
   create(): void {
     const board = buildBoard(this);
-    board.add(this.add.bitmapText(CX, 40, FONT_MAIN, "已暂停", 36).setOrigin(0.5, 0.5));
-    stoneButton(this, board, CX + HALF_W / 3, 108, "重玩", () => {
+    board.add(this.add.bitmapText(CX, 40, FONT_MAIN, "暫停", 36).setOrigin(0.5, 0.5));
+    stoneButton(this, board, CX + HALF_W / 3, 108, "再试一次", () => {
       this.scene.stop();
       handle().__fwRestart?.();
     });
@@ -66,7 +66,7 @@ export class PauseMenu extends Phaser.Scene {
       this.scene.stop();
       handle().__fwLeaveToMenu?.();
     });
-    stoneButton(this, board, CX, 241, "继续游戏", () => {
+    stoneButton(this, board, CX, 241, "继续", () => {
       handle().__fwPauseKeyboard?.(false);
       this.scene.stop();
     });
@@ -99,7 +99,7 @@ export class EndMenu extends Phaser.Scene {
         : [
             { icon: "FinishIcon0000", ok: true },
             { icon: "DiamondsIcon0000", ok: d.diamonds >= d.diamondsTotal },
-            { icon: "TimeIcon0000", ok: d.timeLimitSec > 0 && d.timeSec <= d.timeLimitSec, limit: `限时 ${d.timeLimitSec}s` },
+            { icon: "TimeIcon0000", ok: d.timeLimitSec > 0 && d.timeSec <= d.timeLimitSec, limit: `${String(Math.floor(d.timeSec / 60)).padStart(2, "0")}:${String(d.timeSec % 60).padStart(2, "0")}` },
           ];
     rows.forEach((row, i) => {
       const y = 60 + i * 80;
@@ -117,19 +117,21 @@ export class EndMenu extends Phaser.Scene {
       // 原版时序：每 700ms 逐行达成
       this.time.delayedCall(500 + i * 700, () => {
         tick.setVisible(true);
-        if (row.ok) handle().__fwSfx?.("sfx_end_pass");
+        handle().__fwSfx?.("sfx_end_pass");
       });
     });
     // 星数由 main 按关卡类型算好传入（puzzle=银钻口径；general=1+钻石+限时）；帧段 1-7/8-14/15-21
     const stars = Math.max(1, Math.min(3, d.stars || 1));
-    const stone = this.add.sprite(721, 161, ATLAS_POPUP, "FinishStone0000").setOrigin(0.5);
+    // 星碑贴图按关卡类型选变体（原版 44320-22：general/speed/puzzle/dark）
+    const stonePrefix = d.type === "puzzle" ? "FinishStonePuzzle" : d.type === "speed" ? "FinishStoneSpeed" : d.type === "dark" ? "FinishStoneDark" : "FinishStone";
+    const stone = this.add.sprite(721, 161, ATLAS_POPUP, stonePrefix + "0000").setOrigin(0.5);
     board.add(stone);
     const endF = stars === 3 ? 21 : stars === 2 ? 14 : 7;
     this.anims.create({
       key: `finish-stars-${stars}`,
       frames: Array.from({ length: endF }, (_, n) => ({
         key: ATLAS_POPUP,
-        frame: `FinishStone${String(n + 1).padStart(4, "0")}`,
+        frame: `${stonePrefix}${String(n + 1).padStart(4, "0")}`,
       })),
       frameRate: 30,
     });
@@ -157,12 +159,12 @@ export class GameOverMenu extends Phaser.Scene {
   }
   create(): void {
     const board = buildBoard(this);
-    board.add(this.add.bitmapText(CX, 40, FONT_MAIN, "Game Over", 36).setOrigin(0.5, 0.5));
+    board.add(this.add.bitmapText(CX, 40, FONT_MAIN, "游戏结束", 36).setOrigin(0.5, 0.5));
     stoneButton(this, board, CX - 0.4 * HALF_W, 254, "返回菜单", () => {
       this.scene.stop();
       handle().__fwLeaveToMenu?.();
     });
-    stoneButton(this, board, CX + 0.4 * HALF_W, 254, "重玩本关", () => {
+    stoneButton(this, board, CX + 0.4 * HALF_W, 254, "再试一次", () => {
       this.scene.stop();
       handle().__fwRestart?.();
     });

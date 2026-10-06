@@ -225,6 +225,7 @@ export class GameScene extends Phaser.Scene {
     this.sound.stopByKey("bgm_level");
     this.sound.stopByKey("bgm_level_speed");
     this.sound.stopByKey("bgm_menu");
+    this.sound.stopByKey("bgm_over");
     this.sfx(this.bgmKey(), { loop: true, volume: 0.35 });
 
     // 场景晚于 phase 启动（如重连进 won 房）：补一次演出
@@ -511,7 +512,8 @@ export class GameScene extends Phaser.Scene {
           .sprite(k * tile + tile / 2 + PAD, run.row * tile + tile / 2 + 2 + PAD, ATLAS_GROUND, `${fam}${pos}0000`)
           .setOrigin(0.5)
           .setDepth(7);
-        s.playAfterDelay(`liquid_${run.kind}${pos ? `_${pos.toLowerCase()}` : ""}`, Math.random() * 900);
+        // 原版三段液体同相位播放（bundle:38988-39006 无随机延迟）
+        s.play(`liquid_${run.kind}${pos ? `_${pos.toLowerCase()}` : ""}`);
       }
     }
   }
@@ -843,6 +845,7 @@ export class GameScene extends Phaser.Scene {
       // 原版 retry=整状态重载：BGM 重新起（首次开局 prev=lobby/"" 不重播）
       this.sound.stopByKey("bgm_level");
       this.sound.stopByKey("bgm_level_speed");
+      this.sound.stopByKey("bgm_over");
       this.sfx(this.bgmKey(), { loop: true, volume: 0.35 });
     }
   }
