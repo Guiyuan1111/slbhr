@@ -380,9 +380,10 @@ export class GameScene extends Phaser.Scene {
         .image(d.x + PAD, d.y + PAD - 5, ATLAS_CHARS, DIAMOND_FRAME[d.kind])
         .setOrigin(0.5)
         .setDepth(1);
+      // 原版浮动带 = 中心 ±5px（38380-38393：sprite.y=-5 → tween y:+5）
       this.tweens.add({
         targets: img,
-        y: img.y - 10,
+        y: img.y + 10,
         duration: 2000,
         yoyo: true,
         repeat: -1,
@@ -523,9 +524,10 @@ export class GameScene extends Phaser.Scene {
     const frameOf: Record<Role, string> = { fireboy: "FinishBoy0000", watergirl: "FinishGirl0000" };
     for (const role of ROLES) {
       const r = level.doors[role];
+      // 原版 Door（38427-38440）：sprite 定位图块左上、底边+4，仅设 anchor.y=0.99（x 默认 0=左缘对齐）
       const s = this.add
-        .sprite(r.x + r.w / 2 + PAD, r.y + r.h + 4 + PAD, ATLAS_TEMPLE, frameOf[role])
-        .setOrigin(0.5, 0.99)
+        .sprite(r.x + PAD, r.y + r.h + 4 + PAD, ATLAS_TEMPLE, frameOf[role])
+        .setOrigin(0, 0.99)
         .setScale(0.8)
         .setDepth(0.5);
       this.doorSprites.set(role, s);
@@ -667,15 +669,17 @@ export class GameScene extends Phaser.Scene {
     for (const step of level.tutorials) {
       if (!step.text || !step.textRect) continue;
       const text = this.add
-        .text(step.textRect.x + PAD, step.textRect.y + PAD, step.text, {
+        .text(step.textRect.x + PAD + step.textRect.w / 2, step.textRect.y + PAD, step.text, {
           fontFamily: 'Georgia, "KaiTi", "STKaiti", "SimSun", serif',
-          fontSize: "21px",
+          fontSize: "19px",
           color: "#efe6b0",
           stroke: "#241d0e",
           strokeThickness: 2,
           fontStyle: "bold",
+          wordWrap: { width: step.textRect.w, useAdvancedWrap: true },
+          align: "center",
         })
-        .setOrigin(0, 0)
+        .setOrigin(0.5, 0)
         .setDepth(0.8)
         .setVisible(false)
         .setAlpha(0);
@@ -684,11 +688,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** 教学渐显判定（冻结偏离 #4：按本机角色；原版=任一角色进矩形，结构上可直接扩展） */
-  private updateTutorial(x: number, y: number): void {
+  private updateTutorial(...points: Array<{ x: number; y: number }>): void {
     for (const item of this.tutorialItems) {
+      const hit = points.some((p) => p.x >= item.trigger!.x && p.x <= item.trigger!.x + item.trigger!.w && p.y >= item.trigger!.y && p.y <= item.trigger!.y + item.trigger!.h);
       const r = item.trigger;
       if (!r) continue;
-      const inside = x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+      const inside = points.some((p) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h);
       if (inside && !item.shown) {
         item.shown = true;
         item.text.setVisible(true).setAlpha(0);
@@ -802,10 +807,12 @@ export class GameScene extends Phaser.Scene {
     this.updatePlatformSound(st);
 
     // 教学渐显按本机角色（传世界坐标=快照中心+PAD，与触发矩形同域）
-    const myPs = this.myRole ? st.players?.get?.(this.myRole) : null;
-    if (myPs && myPs.dying !== true) {
-      this.updateTutorial((Number(myPs.x) || 0) + PAD, (Number(myPs.y) || 0) + PAD);
+    const pts: Array<{ x: number; y: number }> = [];
+    for (const role of ["fireboy", "watergirl"] as const) {
+      const ps = st.players?.get?.(role);
+      if (ps && ps.dying !== true) pts.push({ x: (Number(ps.x) || 0) + PAD, y: (Number(ps.y) || 0) + PAD });
     }
+    if (pts.length > 0) this.updateTutorial(...pts);
 
     this.updateNavies();
     this.snapPending = false;
