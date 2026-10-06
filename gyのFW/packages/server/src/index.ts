@@ -4,6 +4,8 @@
  * - Colyseus 同端口接管 WebSocket（upgrade）与 /matchmake 路由
  * - 只绑定 127.0.0.1，公网访问一律走樱花穿透隧道
  */
+import fs from "node:fs";
+import zlib from "node:zlib";
 import http from "node:http";
 import os from "node:os";
 import { join } from "node:path";
@@ -21,10 +23,74 @@ const HOST = process.env.FW_HOST ?? "127.0.0.1";
 const app = express();
 app.disable("x-powered-by");
 
+// 静态资源 gzip（性能基准 TOP2：主 bundle 1.62MB 零压缩传输；node:zlib 内建零新依赖）。
+// 文本类扩展名 + ≥1KB ≤8MB 才压；gzip 产物按 路径+mtime 内存缓存；异常回退 express.static。
+const GZ_EXT = /.(js|mjs|json|html|css|svg|fnt|txt|xml)$/;
+const gzCache = new Map<string, { mtimeMs: number; body: Buffer }>();
+function staticGz(root: string, maxAge: string) {
+  const fallback = express.static(root, { maxAge });
+  return (req: express.Request, res: express.Response, next: express.NextFunction): void => {
+    const enc = String(req.headers["accept-encoding"] ?? "");
+    let urlPath = "";
+    try {
+      urlPath = decodeURIComponent((req.url ?? "").split("?")[0]);
+    } catch {
+      urlPath = req.url ?? "";
+    }
+    if (!enc.includes("gzip") || !GZ_EXT.test(urlPath)) {
+      fallback(req, res, next);
+      return;
+    }
+    const fp = join(root, urlPath);
+    let st: fs.Stats;
+    try {
+      st = fs.statSync(fp);
+      if (!st.isFile() || st.size < 1024 || st.size > 8 << 20) {
+        fallback(req, res, next);
+        return;
+      }
+    } catch {
+      fallback(req, res, next);
+      return;
+    }
+    const cached = gzCache.get(fp);
+    let body: Buffer;
+    if (cached && cached.mtimeMs === st.mtimeMs) {
+      body = cached.body;
+    } else {
+      try {
+        body = zlib.gzipSync(fs.readFileSync(fp), { level: 6 });
+      } catch {
+        fallback(req, res, next);
+        return;
+      }
+      gzCache.set(fp, { mtimeMs: st.mtimeMs, body });
+    }
+    const ctype = urlPath.endsWith(".html")
+      ? "text/html"
+      : urlPath.endsWith(".js") || urlPath.endsWith(".mjs")
+        ? "application/javascript"
+        : urlPath.endsWith(".json")
+          ? "application/json"
+          : urlPath.endsWith(".css")
+            ? "text/css"
+            : urlPath.endsWith(".svg")
+              ? "image/svg+xml"
+              : urlPath.endsWith(".fnt")
+                ? "text/plain"
+                : "application/octet-stream";
+    res.setHeader("Content-Encoding", "gzip");
+    res.setHeader("Content-Length", String(body.length));
+    res.setHeader("Cache-Control", `public, ${maxAge}`);
+    res.setHeader("Content-Type", ctype);
+    res.status(200).end(body);
+  };
+}
+
 // 静态资源：构建产物 + 官方素材/关卡数据（与开发时 Vite public 同布局）
-app.use(express.static(join(ROOT, "packages/client/dist"), { maxAge: "1h" }));
-app.use("/assets", express.static(join(ROOT, "assets"), { maxAge: "1d" }));
-app.use("/data", express.static(join(ROOT, "data"), { maxAge: "1d" }));
+app.use(staticGz(join(ROOT, "packages/client/dist"), "1h"));
+app.use("/assets", staticGz(join(ROOT, "assets"), "1d"));
+app.use("/data", staticGz(join(ROOT, "data"), "1d"));
 
 // 音频流式路由（无扩展名 URL，服务器补 .mp3）：IDM 等下载接管工具按 URL
 // 扩展名拦截媒体请求，浏览器侧只会拿到 204 空响应导致音频永远缺键；

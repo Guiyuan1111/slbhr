@@ -1,5 +1,7 @@
 # Handoff：需要真人完成的事与已知限制
 
+**更新**：2026-10-06（**0.3.13 已发布**：UI 复刻收官——画布内开始界面/选关大树/暂停/通关结算/失败面板五类全部落地（0.3.12+0.3.13），流程改为画布选关→联机面板；进度 localStorage 星级解锁；规格 research/09-ui-states.md。已推送 main + tag 0.3.12/0.3.13 + GitHub Release）
+
 **更新**：2026-10-06（**0.3.11 已发布**：复刻度量化与保真优化十轮——新增 benchmark/ 双基准（物理 fidelity-score 84.53 / 视觉 visual-diff 94.95，复跑稳定可作回归门）；物理修复：风场阻尼与限速、推杆密度/电机力/T 形底唇、滑轮锚点方向、金轨迹 f0 相位（settle 60→5）；视觉修复：画布几何对齐原版 1280×960、时钟位图字与锚点/文字位、补渲染暂停钮、钻石计数迁出画布；房间码解析截断修复（Colyseus id 含非 alnum）。对比报告 note/report/perf/2026-10-06-fidelity-benchmark.md（§一-§十六），过程 handoff/2026-10-04-fidelity-rewrite.md §9-§17。已推送 main + tag 0.3.4…0.3.11 + 各 GitHub Release 附产物包）
 
 
@@ -41,7 +43,7 @@
   - `colyseus` 必须钉 `0.16.0` 整版——0.16.1+ 硬依赖 git 仓库的 uWebSockets transport，npm 12 默认拒绝装 git 依赖（EALLOWGIT）。
   - 所有 colyseus 运行时导入统一从 `packages/server/src/colyseus.cjs.ts` 走 require 链；直接 `import "@colyseus/ws-transport"` 会加载它的 ESM 入口，与主包分裂成两个 core 实例（症状：seat reservation expired）。
   - Schema 子类字段一律在 `constructor` 里赋值；tsconfig 已设 `useDefineForClassFields: false`。
-- **渲染**：0.2.0 起为像素级复刻（配方逆向自原版 init.js，见下「视觉复刻坑」）。角色 `PLAYER_SCALE=0.95`（原版实测），legs/head/glow 同锚点同心叠加，组锚点在脚底上方 `FEET_TO_CENTER=29px`。
+- **渲染**：0.2.0 起为像素级复刻（配方逆向自原版 init.js，见下「视觉复刻坑」）。角色 `PLAYER_SCALE=0.95`（原版实测），legs/head/glow 同锚点同心叠加，（0.3.0 重写后无独立脚底偏移常量，锚点即体心）。
 - **联机架构决策**（为什么重写而非改造原版 HTML，含 Steam 官方版对比实证）：见 [multiplayer-architecture.md](multiplayer-architecture.md)。核心：原版是 2.27MB 混淆黑盒、按键转发必然漂移、联机必须有权威状态源——官方 Steam 版也只有本地双人 + 串流，无原生在线联机。
 - **IDM 防护（开浏览器自动化前必须先部署）**：IDM 按 URL 媒体扩展名在网络层劫持（204/0 字节，`--disable-extensions` 无效）。正片音频已走无扩展名路由 `/assets/audio/s/:name`（`BootScene.ts` 加载、服务器 `index.ts` 补 `.mp3`）；自动化访问原版参考页须浏览器内 `page.route` 拦截媒体 + 代理 204 + 屏蔽外联，详见 ADR 附录。
 - **视觉复刻坑**（改 GameScene/BootScene 前必读）：
@@ -53,7 +55,7 @@
   - **场景数据传递**：Phaser `settings.data` 未传数据时是 `{}` 不是 undefined，`??` 兜底永远不触发——统一走 `globalThis.__fwInit`（main.ts 注入）。
   - 原版层序/坐标公式/动画帧率全部记录在 GameScene.ts 头注释与各 build* 注释内；验收对照样张在 `note/report/visual-0.2.0/`。
   - **顶部藤蔓时钟是正计时**（00:00 起已用时间 MM:SS，原版实拍 f3/f4 实证，a26308c 纠偏）——别改回倒计时。
-  - **已知行为差异**：原版参考页（8099 魔改版）教学文字渐进显示，我们按真实原版静态全显；原版有动态变焦相机（minScale≈全景），我们固定 1312×992 全景。
+  - **已知行为差异**：原版参考页（8099 魔改版）教学文字渐进显示，我们按真实原版静态全显；原版有动态变焦相机（minScale≈全景），我们固定 1280×960（0.3.8 起对齐原版几何）。
 - 服务器只绑定 `127.0.0.1`，公网访问必须走穿透隧道（wss 由隧道 HTTPS 自动升级，客户端 `net.ts` 按页面协议自适应）。
 
 ## 里程碑进度
@@ -61,9 +63,9 @@
 - [x] M0 环境/侦察/骨架
 - [x] M1 联机最小闭环（本版）
 - [ ] M2 樱花穿透联调 + 手机浏览器适配（触屏虚拟按键）
-- [ ] M3 全机关数据驱动（梯子/推箱/球/激光等按 gid 枚举）+ 快照缓冲插值 + 存档/计时最优记录
-- [ ] M4 多关卡选择与结算画面打磨
-- [ ] M5 联调收尾与体验调参
+- [x] M3 全机关数据驱动（梯子/推箱/球/激光等按 gid 枚举）+ 快照缓冲插值 + 存档/计时最优记录
+- [x] M4 多关卡选择与结算画面打磨
+- [x] M5（选关/结算已落地；快照缓冲插值与触屏保留待办） 联调收尾与体验调参
 
 ## 2026-10-04 使命调整与调研纠偏（新增，只增不改正文）
 

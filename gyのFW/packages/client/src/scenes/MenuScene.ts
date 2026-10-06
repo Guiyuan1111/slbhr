@@ -2,7 +2,7 @@
  * 开始界面（原版 States/Menu/TempleHall + Menu 复刻；坐标经实机显示树实测校正）。
  * 实测（1280×960）：背景 TempleHallForest.jpg 1708×960；石柱 8 根（Beam.png ~107-154×1058）；
  * 标题 GameNameForest.png 860×270 @ 中心系 (0,−192)；Play 文字 ~251×76 @ (0,33)（无底板，
- * 周围 Navy0000 蜡烛×5）；火/水角色 @ (±320, 395)（glow+legs+head，约 330 高）。
+ * 周围 Navy0000 蜡烛×5）；火/水角色 @ (320,875)/(960,875)（glow+legs+head）。
  */
 import Phaser from "phaser";
 import { ATLAS_CHARS, ATLAS_MENU, FONT_MAIN } from "./BootScene";
@@ -18,6 +18,8 @@ export class MenuScene extends Phaser.Scene {
   create(): void {
     const W = this.scale.width;
     const H = this.scale.height;
+    // 菜单 BGM（原版 Menu 状态 menuMusic 循环；进关时由 GameScene 停掉）
+    if (!this.sound.isPlaying("bgm_menu")) this.sound.play("bgm_menu", { loop: true, volume: 0.3 });
 
     // 背景：TempleHallForest.jpg 1708×960，居中（左右各裁 214px）
     this.add.image(W / 2, H / 2, "TempleHall");

@@ -2,7 +2,7 @@
 
 服务端权威的《森林冰火人 1：森林神庙》双人对战合作网页游戏。完整开发计划见 [note/PLAN.md](note/PLAN.md)。
 
-> **当前版本**：0.3.11（box2d 保真重写：48 关全可进、机关全谱、双浏览器真联机；物理复刻度 84.53 + 视觉复刻度 94.95——量化基准见 [benchmark/](benchmark/README.md)，对比报告见 [note/report/perf/](note/report/perf/2026-10-06-fidelity-benchmark.md)）
+> **当前版本**：0.3.13（box2d 保真重写 + 全 UI 复刻：48 关、机关全谱、双浏览器真联机、画布内开始/选关/暂停/结算；物理复刻度 84.53 + 视觉复刻度 94.97——量化基准见 [benchmark/](benchmark/README.md)，对比报告见 [note/report/perf/](note/report/perf/2026-10-06-fidelity-benchmark.md)）
 >
 > **使用边界**：本项目使用官方游戏素材与关卡数据，仅供两名开发者私下联机游玩。禁止公开分发、上线或商用。
 

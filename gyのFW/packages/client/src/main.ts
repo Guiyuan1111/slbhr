@@ -16,6 +16,7 @@ import { MenuScene } from "./scenes/MenuScene";
 import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
 import { PauseMenu, EndMenu, GameOverMenu } from "./scenes/overlays";
+import { saveBest } from "./progress";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => {
   const el = document.querySelector(sel);
@@ -36,6 +37,10 @@ let keyboard: KeyboardInput | null = null;
 let gameStarted = false;
 let pausedByUser = false;
 let currentLevel: LevelData | null = null;
+/** temple.json 中当前关卡的条目（filename/time/type），结算星级与存档键用 */
+let currentTempleEntry: { filename: string; time: number; type: string } | null = null;
+/** 已选关卡的星级/通过判定（EndMenu 与 saveBest 共用） */
+let lastResult: { stars: number; passed: boolean } | null = null;
 
 /**
  * 拉关卡原始 JSON（/api/level/:id → {id, json}）并预取外部图块集。
@@ -124,6 +129,13 @@ async function enterGame(): Promise<void> {
 
   // 场景数据走全局句柄：Phaser 已随页面启动（Menu/Temple 选关流），此处仅切入 Game
   currentLevel = level;
+  // temple.json 条目（time/type/filename）：EndMenu 限时、星级口径、进度存档键都出自这里
+  currentTempleEntry = null;
+  try {
+    const tj = await (await fetch("/data/forest/temple.json")).json();
+    const entry = (tj.levels ?? []).find((lv: { filename?: string }) => String(lv.filename ?? "").endsWith(`/${levelId}.json`));
+    if (entry) currentTempleEntry = { filename: String(entry.filename), time: Number(entry.time) || 0, type: String(entry.type ?? "general") };
+  } catch { /* 缺省 general/无限时，结算仍可用 */ }
   (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level, keyboard };
   (globalThis as unknown as Record<string, unknown>).__fwRestart = () => net?.restart();
   (globalThis as unknown as Record<string, unknown>).__fwPauseKeyboard = (b: boolean) => keyboard?.setPaused(b);
@@ -151,8 +163,7 @@ async function enterGame(): Promise<void> {
     updateHud();
   };
 
-  // HUD 轮询刷新（4Hz 足够，DOM 开销可忽略）
-  setInterval(updateHud, 250);
+  // HUD 轮询由 bindUi 注册一次（性能审计 #3：曾按入房次数叠加永不清理）
 
   gameStarted = true;
   $("#menu").classList.add("hidden");
@@ -199,11 +210,32 @@ async function start(mode: "create" | "join"): Promise<void> {
             keyboard?.setPaused(true);
             const f = net?.lastFinish;
             const diaTotal = currentLevel ? currentLevel.diamonds.filter((d) => d.kind !== "silver").length : 0;
+            const diaGot = (f?.fbDiamonds ?? 0) + (f?.wgDiamonds ?? 0);
+            const timeSec = Math.round((f?.timeMs ?? 0) / 1000);
+            const limit = currentTempleEntry?.time ?? 0;
+            const type = currentTempleEntry?.type ?? "general";
+            // 原版 ProgressModel.update 星级口径：puzzle=银钻>0?3:0（不收=未通过）；general=1+钻石+限时
+            let stars: number;
+            let passed: boolean;
+            if (type === "puzzle") {
+              passed = (f?.silver ?? 0) > 0;
+              stars = passed ? 3 : 0;
+            } else {
+              const diaFull = diaTotal > 0 && diaGot >= diaTotal;
+              const timeOk = limit > 0 && timeSec <= limit;
+              stars = 1 + (diaFull ? 1 : 0) + (timeOk ? 1 : 0);
+              passed = true;
+            }
+            lastResult = { stars, passed };
+            if (passed && currentTempleEntry) saveBest(currentTempleEntry.filename, stars, timeSec);
             phaser?.scene.start("EndMenu", {
-              diamonds: (f?.fbDiamonds ?? 0) + (f?.wgDiamonds ?? 0),
+              diamonds: diaGot,
               diamondsTotal: diaTotal,
-              timeSec: Math.round((f?.timeMs ?? 0) / 1000),
-              timeLimitSec: currentLevel ? (currentLevel as unknown as { time?: number }).time ?? 0 : 0,
+              silver: f?.silver ?? 0,
+              timeSec,
+              timeLimitSec: limit,
+              type,
+              stars,
             });
           } else if (phase === "gameover") {
             if (!pausedByUser) phaser?.scene.start("GameOverMenu");
@@ -281,6 +313,8 @@ function togglePause(): void {
 function bindUi(): void {
   $("#btn-create").addEventListener("click", () => start("create"));
   $("#btn-join").addEventListener("click", () => start("join"));
+  // HUD 轮询刷新（4Hz 足够，DOM 开销可忽略；模块级单例，重入不叠加）
+  setInterval(updateHud, 250);
   bootPhaser();
   // R 键请求整关重开（E1；服务端按 phase 把关：won/gameover 才受理）
   window.addEventListener("keydown", (e) => {

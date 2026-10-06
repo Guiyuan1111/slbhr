@@ -37,6 +37,10 @@ export class BootScene extends Phaser.Scene {
     this.load.atlas(ATLAS_MENU, "/assets/atlasses/MenuAssets.png", "/assets/atlasses/MenuAssets.json");
     // 原版画布内时钟的位图字（font 48 基准，LevelUI Clock 用 24 号 = 半缩放）
     this.load.bitmapFont(FONT_MAIN, "/assets/fonts/chinese/font.png", "/assets/fonts/chinese/font.fnt");
+    // 独立图片（0.3.12 起开始界面引用，此前漏载致缺纹理静默空白——差距审计 P0）
+    this.load.image("TempleHall", "/assets/images/TempleHallForest.jpg");
+    this.load.image("Beam", "/assets/images/Beam.png");
+    this.load.image("GameName", "/assets/images/GameNameForest.png");
 
     // 音频（仅本场景触发全集：跳跃/拾取/死亡/开门/拉杆/踏板/平台/水声/音乐）
     // 统一走无扩展名流式路由（/s/ 前缀，服务器补 .mp3）：IDM 等下载接管工具
@@ -53,6 +57,12 @@ export class BootScene extends Phaser.Scene {
       ["sfx_water_steps", "WaterSteps.mp3"],
       ["sfx_end_pass", "EndPass.mp3"],
       ["sfx_end_fail", "EndFail.mp3"],
+      ["sfx_end_diamond", "EndDiamond.mp3"],
+      ["sfx_wind", "Wind.mp3"],
+      ["bgm_menu", "MenuMusic.mp3"],
+      ["bgm_over", "LevelMusicOver.mp3"],
+      ["bgm_level_speed", "LevelMusic_speed.mp3"],
+      ["bgm_finish_speed", "LevelMusicFinish_speed.mp3"],
       ["bgm_level", "LevelMusic.mp3"],
       ["bgm_finish", "LevelMusicFinish.mp3"],
     ] as const) {

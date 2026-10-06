@@ -547,9 +547,11 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
     // 其余层忽略
   }
 
+  // 原版按 settings.controls 取层（桌面默认 keyboard，bundle:44756）；keyboard 文案
+  // =「请用A,W,D键移动冰女孩/请用方向键移动火男孩」——我方双机双控正是键盘并用，键盘层优先
   const tutorials =
-    tutorialVariants["Tutorial_dual"] ??
     tutorialVariants["Tutorial_keyboard"] ??
+    tutorialVariants["Tutorial_dual"] ??
     tutorialVariants["Tutorial_single"] ??
     Object.values(tutorialVariants)[0] ??
     [];

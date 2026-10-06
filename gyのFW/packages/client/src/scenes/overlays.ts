@@ -82,15 +82,25 @@ export class EndMenu extends Phaser.Scene {
     const d = (this.scene.settings.data ?? {}) as {
       diamonds: number;
       diamondsTotal: number;
+      silver: number;
       timeSec: number;
       timeLimitSec: number;
+      type: string;
+      stars: number;
     };
     const board = buildBoard(this);
-    const rows: Array<{ icon: string; ok: boolean; limit?: string }> = [
-      { icon: "FinishIcon0000", ok: true },
-      { icon: "DiamondsIcon0000", ok: d.diamonds >= d.diamondsTotal },
-      { icon: "TimeIcon0000", ok: d.timeLimitSec > 0 && d.timeSec <= d.timeLimitSec, limit: `限时 ${d.timeLimitSec}s` },
-    ];
+    // 原版 EndMenu：general 三行（Finish/Diamonds/Time）；puzzle 两行（Finish/Silver，钻石行隐藏）
+    const rows: Array<{ icon: string; ok: boolean; limit?: string }> =
+      d.type === "puzzle"
+        ? [
+            { icon: "FinishIcon0000", ok: true },
+            { icon: "SilverIcon0000", ok: d.silver > 0 },
+          ]
+        : [
+            { icon: "FinishIcon0000", ok: true },
+            { icon: "DiamondsIcon0000", ok: d.diamonds >= d.diamondsTotal },
+            { icon: "TimeIcon0000", ok: d.timeLimitSec > 0 && d.timeSec <= d.timeLimitSec, limit: `限时 ${d.timeLimitSec}s` },
+          ];
     rows.forEach((row, i) => {
       const y = 60 + i * 80;
       board.add(this.add.image(341, y, ATLAS_POPUP, row.icon).setOrigin(0.5));
@@ -110,8 +120,8 @@ export class EndMenu extends Phaser.Scene {
         if (row.ok) handle().__fwSfx?.("sfx_end_pass");
       });
     });
-    // 星数 = 1 基础 + 钻石收满 + 限时（原版 general 公式）；FinishStone 帧段 1-7/8-14/15-21
-    const stars = 1 + (d.diamonds >= d.diamondsTotal ? 1 : 0) + (d.timeLimitSec > 0 && d.timeSec <= d.timeLimitSec ? 1 : 0);
+    // 星数由 main 按关卡类型算好传入（puzzle=银钻口径；general=1+钻石+限时）；帧段 1-7/8-14/15-21
+    const stars = Math.max(1, Math.min(3, d.stars || 1));
     const stone = this.add.sprite(721, 161, ATLAS_POPUP, "FinishStone0000").setOrigin(0.5);
     board.add(stone);
     const endF = stars === 3 ? 21 : stars === 2 ? 14 : 7;
@@ -125,7 +135,7 @@ export class EndMenu extends Phaser.Scene {
     });
     this.time.delayedCall(500 + 3 * 700, () => {
       stone.play(`finish-stars-${stars}`);
-      handle().__fwSfx?.("sfx_end_pass");
+      handle().__fwSfx?.("sfx_end_diamond");
     });
     // Continue（星动画后启用）
     let enabled = false;

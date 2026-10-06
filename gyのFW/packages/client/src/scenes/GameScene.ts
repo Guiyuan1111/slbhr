@@ -149,6 +149,8 @@ export class GameScene extends Phaser.Scene {
   private snapPending = false;
   /** 原版限时（data/forest/temple.json 的 time 字段；取不到=不限时） */
   private templeTimeSec: number | null = null;
+  /** temple.json 的关卡类型（general/speed/puzzle），bgm 选曲与星级口径用 */
+  private templeType: string = "general";
   private waterPlaying = false;
   private platformPrev = new Map<string, { x: number; y: number }>();
   private platformMoving = new Set<string>();
@@ -220,11 +222,18 @@ export class GameScene extends Phaser.Scene {
     this.fetchTempleTime(level.id);
 
     this.sound.stopByKey("bgm_level");
-    this.sfx("bgm_level", { loop: true, volume: 0.35 });
+    this.sound.stopByKey("bgm_level_speed");
+    this.sound.stopByKey("bgm_menu");
+    this.sfx(this.bgmKey(), { loop: true, volume: 0.35 });
 
     // 场景晚于 phase 启动（如重连进 won 房）：补一次演出
     this.prevPhase = String(this.d.net.room?.state?.phase ?? "");
     if (this.prevPhase === "won") this.playStairsSequence();
+  }
+
+  /** 关卡 BGM 键：speed 关用专属曲（原版 preloadAudioFiles 按 levelData.type 换曲） */
+  private bgmKey(): string {
+    return this.templeType === "speed" ? "bgm_level_speed" : "bgm_level";
   }
 
   /** 播音频（键未入缓存时静默跳过：音频缺失不应炸掉整个场景更新循环） */
@@ -236,18 +245,28 @@ export class GameScene extends Phaser.Scene {
   private fetchTempleTime(levelId: string): void {
     fetch("/data/forest/temple.json")
       .then((r) => (r.ok ? r.json() : null))
-      .then((j: { levels?: Array<{ filename?: string; time?: number }> } | null) => {
+      .then((j: { levels?: Array<{ filename?: string; time?: number; type?: string }> } | null) => {
         const entry = (j?.levels ?? []).find((lv) => String(lv?.filename ?? "").endsWith(`/${levelId}.json`));
         const t = Number(entry?.time);
         this.templeTimeSec = Number.isFinite(t) && t > 0 ? t : null;
+        this.templeType = String(entry?.type ?? "general");
       })
       .catch(() => {
         this.templeTimeSec = null;
       });
   }
 
+  /** 地面合成缓存（性能审计 #5：重开重进整段重付 ≈20.8MB 像素缓冲；键=levelId，单槽够用） */
+  private static groundCache: { levelId: string; canvas: HTMLCanvasElement } | null = null;
+
   /** 地面：岩壁纹理 × 蒙版合成 + 黑外描边 + 右下软投影（canvas 一次性合成） */
   private buildGround(level: LevelData): void {
+    if (GameScene.groundCache && GameScene.groundCache.levelId === this.d.level.id) {
+      if (this.textures.exists("groundTex")) this.textures.remove("groundTex");
+      this.textures.addCanvas("groundTex", GameScene.groundCache.canvas);
+      this.add.image(0, 0, "groundTex").setOrigin(0).setDepth(2);
+      return;
+    }
     const W = level.widthPx + PAD * 2;
     const H = level.heightPx + PAD * 2;
     const { tile, cols, rows } = level;
@@ -343,6 +362,7 @@ export class GameScene extends Phaser.Scene {
 
     if (this.textures.exists("groundTex")) this.textures.remove("groundTex");
     this.textures.addCanvas("groundTex", final);
+    GameScene.groundCache = { levelId: this.d.level.id, canvas: final };
     this.add.image(0, 0, "groundTex").setOrigin(0).setDepth(2);
   }
 
@@ -726,7 +746,7 @@ export class GameScene extends Phaser.Scene {
     // 原版 Clock 锚点 (0.5, 0.05)：盘面上探 5px；文字区在 y≈55-83（像素差分热图实证）
     this.add.image(clockX, 0, ATLAS_TEMPLE, "Clock0000").setOrigin(0.5, 0.05).setDepth(9).setScrollFactor(0);
     // 原版 LevelUI 右上暂停钮（渲染保真；联机暂停语义属服务端功能，此处仅视觉）
-    // 原版 LevelUI 右上暂停钮（0.3.12 起接本机暂停：P 键/点击 → PauseMenu，本地停手语义）
+    // 原版 LevelUI 右上暂停钮（0.3.13 起接本机暂停：P 键/点击 → PauseMenu，本地停手语义）
     this.add
       .image(1265, 15, ATLAS_POPUP, "PauseButton0000")
       .setOrigin(1, 0)
@@ -816,7 +836,8 @@ export class GameScene extends Phaser.Scene {
     if (prev === "won" || prev === "gameover") {
       // 原版 retry=整状态重载：BGM 重新起（首次开局 prev=lobby/"" 不重播）
       this.sound.stopByKey("bgm_level");
-      this.sfx("bgm_level", { loop: true, volume: 0.35 });
+      this.sound.stopByKey("bgm_level_speed");
+      this.sfx(this.bgmKey(), { loop: true, volume: 0.35 });
     }
   }
 
@@ -902,6 +923,10 @@ export class GameScene extends Phaser.Scene {
       if (!view.dying && ps.dying === true) {
         view.smoke.setVisible(true).setPosition(view.cx, view.cy - 21).setFlipX(Number(ps.vx) < 0).play("smoke");
         this.sfx("sfx_death", { volume: 0.55 });
+        // 原版 _doKill：死亡即停关卡 BGM 切失败曲（LevelMusicOver）
+        this.sound.stopByKey("bgm_level");
+        this.sound.stopByKey("bgm_level_speed");
+        this.sfx("bgm_over", { volume: 0.4 });
       } else if (view.dying && ps.dying !== true) {
         view.smoke.setVisible(false).stop();
       }
@@ -1017,21 +1042,35 @@ export class GameScene extends Phaser.Scene {
       const v = this.pusherViews.get(`b${id}`);
       if (!v) return;
       // 块体随 prismatic 连续下沉，贴图跟体（快照 x/y），state 仅用于灯光语义
-      v.block.setPosition((Number(s.x) || 0) + PAD, (Number(s.y) || 0) + PAD);
-      v.light.setPosition(v.block.x, v.block.y);
+      const bx = (Number(s.x) || 0) + PAD;
+      const by = (Number(s.y) || 0) + PAD;
+      if (bx !== v.block.x || by !== v.block.y) {
+        v.block.setPosition(bx, by);
+        v.light.setPosition(bx, by);
+      }
       v.state = Number(s.state) === 1 ? 1 : 0;
     });
     st.platforms?.forEach?.((b: { x: number; y: number; angle: number }, id: string) => {
       const v = this.platformViews.get(`p${id}`);
       if (!v) return;
-      v.setPosition((Number(b.x) || 0) + PAD, (Number(b.y) || 0) + PAD);
-      v.setAngle(-(Number(b.angle) || 0) * (180 / Math.PI));
+      const px2 = (Number(b.x) || 0) + PAD;
+      const py2 = (Number(b.y) || 0) + PAD;
+      const pa = -(Number(b.angle) || 0) * (180 / Math.PI);
+      if (px2 !== v.x || py2 !== v.y || pa !== v.angle) {
+        v.setPosition(px2, py2);
+        v.setAngle(pa);
+      }
     });
     st.props?.forEach?.((b: { x: number; y: number; angle: number }, key: string) => {
       const v = this.bodyViews.get(this.propViewKey(key) ?? "");
       if (!v) return;
-      v.setPosition((Number(b.x) || 0) + PAD, (Number(b.y) || 0) + PAD);
-      v.setAngle(-(Number(b.angle) || 0) * (180 / Math.PI)); // 球必转，angle 必吃
+      const qx = (Number(b.x) || 0) + PAD;
+      const qy = (Number(b.y) || 0) + PAD;
+      const qa = -(Number(b.angle) || 0) * (180 / Math.PI);
+      if (qx !== v.x || qy !== v.y || qa !== v.angle) {
+        v.setPosition(qx, qy);
+        v.setAngle(qa); // 球必转，angle 必吃
+      }
     });
     st.winds?.forEach?.((wd: { state: number }, id: string) => {
       const v = this.windViews.get(`f${id}`);
@@ -1047,6 +1086,10 @@ export class GameScene extends Phaser.Scene {
         v.base.stop().setFrame("wind_base0000");
         v.effect.stop().setFrame("wind_effect0000");
       }
+      // 原版 Wind.updateState：激活 playInstance 循环、失活停止（森林 14 关有风区）
+      const anyOn = [...this.windViews.values()].some((w) => w.on);
+      if (anyOn && !this.sound.isPlaying("sfx_wind")) this.sfx("sfx_wind", { loop: true, volume: 0.3 });
+      if (!anyOn) this.sound.stopByKey("sfx_wind");
     });
   }
 
@@ -1079,83 +1122,8 @@ export class GameScene extends Phaser.Scene {
 
   /** 结算板（PopupAssets）：黑罩 → 板滑入 → 徽章行 + 星级石碑 + 继续按钮（数据全由 finish 消息提供） */
   private showFinishBoard(data: FinishData): void {
-    if (this.finishLayer) return;
-    this.finishData = data;
-    const { level } = this.d;
-    const W = level.widthPx + PAD * 2;
-    const H = level.heightPx + PAD * 2;
-    const cx = W / 2;
-    const cy = H / 2;
-    const layer = this.add.container(0, 0).setDepth(20);
-    this.finishLayer = layer;
-
-    const shade = this.add.rectangle(cx, cy, W, H, 0x000000, 0);
-    layer.add(shade);
-    this.tweens.add({ targets: shade, fillAlpha: 0.7, duration: 500 });
-
-    const board = this.add.image(cx, cy + 800, ATLAS_POPUP, "PopupBackground0000");
-    board.setScale(Math.min(1, Math.min(W / board.width, H / board.height)));
-    layer.add(board);
-    this.tweens.add({ targets: board, y: cy, duration: 650, ease: "Cubic.Out" });
-
-    // 数据（原版 gameFinish/EndMenu @1918401-1921711）：
-    // 恒 ✓ / got>=total（total 不含银钻 @1948500）/ 有银钻加一行（silver>0 ✓）/ 限时内 ✓
-    const total = level.diamonds.filter((d) => d.kind !== "silver").length;
-    const got = data.fbDiamonds + data.wgDiamonds;
-    const limit = this.templeTimeSec;
-    const timeS = Math.round(data.timeMs / 1000);
-    const rows: Array<{ frame: string; h: number; ok: boolean; value: string }> = [
-      { frame: "FinishIcon0000", h: 107, ok: true, value: "" },
-      { frame: "DiamondsIcon0000", h: 73, ok: got >= total, value: `${got}/${total}` },
-    ];
-    if (this.silverTotal > 0) {
-      rows.push({ frame: "SilverIcon0000", h: 73, ok: data.silver > 0, value: `${data.silver}/${this.silverTotal}` });
-    }
-    rows.push({ frame: "TimeIcon0000", h: 73, ok: limit == null || timeS <= limit, value: mmss(timeS) });
-
-    const top = cy - (board.height * board.scaleY) / 2;
-    let ry = top + 30;
-    for (const r of rows) {
-      layer.add(this.add.image(cx - 200, ry + r.h / 2, ATLAS_POPUP, r.frame));
-      if (r.value) {
-        layer.add(
-          this.add
-            .text(cx - 130, ry + r.h / 2, r.value, {
-              fontFamily: 'Georgia, "Times New Roman", serif',
-              fontSize: "26px",
-              color: "#ffffff",
-            })
-            .setOrigin(0, 0.5),
-        );
-      }
-      layer.add(this.add.image(cx + 120, ry + r.h / 2, ATLAS_POPUP, r.ok ? "TickIcon0000" : "CrossIcon0000"));
-      ry += r.h + 46;
-    }
-
-    // 星级石碑（原版公式 @2205243：1 + 钻石全收 + 限时内）+ 箭头
-    const stars = (1 + (got >= total ? 1 : 0) + (limit != null && timeS <= limit ? 1 : 0)) as 1 | 2 | 3;
-    const stone = this.add.sprite(cx + 180, cy - 60, ATLAS_POPUP, "FinishStone0000");
-    layer.add(stone);
-    stone.play(`finish_stone_${stars}`);
-    const arrow = this.add.image(cx + 5, cy - 60, ATLAS_POPUP, "popupArrow0000");
-    layer.add(arrow);
-    this.tweens.add({ targets: arrow, x: "+=10", duration: 700, yoyo: true, repeat: -1, ease: "Sine.inOut" });
-
-    // 继续按钮（原版石按钮；点击=整关重开）
-    const btnY = top + board.height * board.scaleY - 60;
-    const btn = this.add.image(cx, btnY, ATLAS_MENU, "StoneButton0000").setInteractive({ useHandCursor: true });
-    const btnText = this.add
-      .text(cx, btnY, "继续", {
-        fontFamily: 'Georgia, "KaiTi", serif',
-        fontSize: "24px",
-        color: "#ffe9b0",
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5);
-    layer.add([btn, btnText]);
-    btn.on("pointerover", () => btn.setFrame("StoneButton0001"));
-    btn.on("pointerout", () => btn.setFrame("StoneButton0000"));
-    btn.on("pointerdown", () => this.restartLevel());
+    void data;
+    // 0.3.14 起退役：结算统一由 EndMenu 场景承载（原版亦仅一块结算板，两套口径曾并存）
   }
 
   private restartLevel(): void {
