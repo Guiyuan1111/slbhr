@@ -65,3 +65,9 @@
 ## 已核验"与原版一致"的关键项（勿再误伤，来源 01/02）
 
 gravity=1000px/s²、ptmRatio=32、LIQUID_TILE 映射、液体下半格实体+围壁、世界四壁、时钟正计时、绿泥双杀、jump 496/move 272 的 px 换算、Chars local 0-7 语义、MaskBox/液体帧名与段序、地面"纹理×蒙版"管线原理、角色 scale 0.95 同心锚点思路。
+
+
+## 后续研究文档
+
+- [08-pulley-forensics.md](08-pulley-forensics.md)：forest_04 滑轮金轨迹取证全录（金轨迹解码纠偏、终点三体吻合、锚点符号终审、亚像素混沌定性）
+- 量化基准与对比报告：benchmark/（fidelity-score + visual-diff）与 note/report/perf/2026-10-06-fidelity-benchmark.md
