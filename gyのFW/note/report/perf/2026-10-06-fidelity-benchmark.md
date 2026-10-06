@@ -210,3 +210,15 @@ R1 遗留线索至此全部结案。
   本轮 DOM 文案承载，后续按需逐个画布内复刻。
 - **验证**：83/83 单测、typecheck、build、e2e 联机 PASS、视觉回归 94.97（游戏画布零扰动）、
   画布菜单全链路探针（Menu→Temple→选关→建房→Game 四步全过）。
+
+## 十八、第九轮追加（R15 游戏内弹窗三件套）
+
+- **PauseMenu**（P 键/画布暂停钮触发）：板 + 「已暂停」+ 重玩/返回菜单/继续游戏；本地停手
+  语义（keyboard.setPaused，服务端继续——联机对齐 AFK）。
+- **EndMenu**（phase=won 自动弹出）：三行 FinishCounter（Finish/Diamonds/Time + Tick/Cross）
+  逐行 700ms 达成 + FinishStone 星动画（帧 1-7/8-14/15-21 按星级）+ Continue 回选关；
+  星级 = 1 基础 + 钻石收满 + 限时（原版 general 公式）。
+- **GameOverMenu**（phase=gameover 自动弹出）：Game Over + 返回菜单/重玩本关。
+- 坐标系教训：弹窗子元素一律板内局部坐标（容器 (64,159) + 板 1082×642），screen = local+偏移。
+- 验证：83/83、typecheck、build、视觉回归 94.97 全绿；探针五步全过
+  （P→PauseMenu→继续→重玩→EndMenu→Continue 回选关）。截图 uiref-ours/pause.png、endmenu.png。

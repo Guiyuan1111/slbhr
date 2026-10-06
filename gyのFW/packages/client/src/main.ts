@@ -15,6 +15,7 @@ import { BootScene } from "./scenes/BootScene";
 import { MenuScene } from "./scenes/MenuScene";
 import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
+import { PauseMenu, EndMenu, GameOverMenu } from "./scenes/overlays";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => {
   const el = document.querySelector(sel);
@@ -33,6 +34,8 @@ let selectedLevel = urlLevel;
 let net: Net | null = null;
 let keyboard: KeyboardInput | null = null;
 let gameStarted = false;
+let pausedByUser = false;
+let currentLevel: LevelData | null = null;
 
 /**
  * 拉关卡原始 JSON（/api/level/:id → {id, json}）并预取外部图块集。
@@ -120,7 +123,33 @@ async function enterGame(): Promise<void> {
   keyboard = new KeyboardInput(window, (input) => net?.sendInput(input));
 
   // 场景数据走全局句柄：Phaser 已随页面启动（Menu/Temple 选关流），此处仅切入 Game
+  currentLevel = level;
   (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level, keyboard };
+  (globalThis as unknown as Record<string, unknown>).__fwRestart = () => net?.restart();
+  (globalThis as unknown as Record<string, unknown>).__fwPauseKeyboard = (b: boolean) => keyboard?.setPaused(b);
+  (globalThis as unknown as Record<string, unknown>).__fwTogglePause = () => togglePause();
+  (globalThis as unknown as Record<string, unknown>).__fwSfx = (name: string) => {
+    const gs = phaser?.scene.getScene("Game") as unknown as { sfx?: (k: string) => void } | null;
+    gs?.sfx?.(name);
+  };
+  (globalThis as unknown as Record<string, unknown>).__fwLeaveToMenu = () => {
+    net?.leave();
+    net = null;
+    gameStarted = false;
+    pausedByUser = false;
+    keyboard?.setPaused(true);
+    const sm = phaser!.scene;
+    sm.stop("Game");
+    sm.stop("EndMenu");
+    sm.stop("GameOverMenu");
+    sm.stop("PauseMenu");
+    sm.start("Temple");
+    const dia = document.querySelector("#hud-diamonds");
+    if (dia) dia.textContent = "";
+    const hud = document.querySelector("#hud");
+    if (hud) hud.classList.add("hidden");
+    updateHud();
+  };
 
   // HUD 轮询刷新（4Hz 足够，DOM 开销可忽略）
   setInterval(updateHud, 250);
@@ -164,7 +193,22 @@ async function start(mode: "create" | "join"): Promise<void> {
           $("#toast").textContent = `${name}化烟了！整关即将重开`;
           setTimeout(() => ($("#toast").textContent = ""), 2000);
         },
-        onPhase: () => updateHud(),
+        onPhase: (phase) => {
+          updateHud();
+          if (phase === "won") {
+            keyboard?.setPaused(true);
+            const f = net?.lastFinish;
+            const diaTotal = currentLevel ? currentLevel.diamonds.filter((d) => d.kind !== "silver").length : 0;
+            phaser?.scene.start("EndMenu", {
+              diamonds: (f?.fbDiamonds ?? 0) + (f?.wgDiamonds ?? 0),
+              diamondsTotal: diaTotal,
+              timeSec: Math.round((f?.timeMs ?? 0) / 1000),
+              timeLimitSec: currentLevel ? (currentLevel as unknown as { time?: number }).time ?? 0 : 0,
+            });
+          } else if (phase === "gameover") {
+            if (!pausedByUser) phaser?.scene.start("GameOverMenu");
+          }
+        },
         onDisconnect: (recovered) => {
           if (!recovered) {
             show("连接已断开，请刷新页面重新加入");
@@ -207,7 +251,7 @@ function bootPhaser(): void {
     // setTimeout 驱动：窗口被遮挡/后台时 rAF 会被浏览器完全冻结（场景队列停摆），此模式保活
     fps: { forceSetTimeOut: true, target: 60 },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-    scene: [BootScene, MenuScene, TempleScene, GameScene],
+    scene: [BootScene, MenuScene, TempleScene, GameScene, PauseMenu, EndMenu, GameOverMenu],
   });
   (globalThis as unknown as Record<string, unknown>).__fw = phaser; // 调试句柄（验收自动化用）
   // 选关 → 弹出联机面板（?level= 深链时面板直接可见，跳过画布选关）
@@ -225,12 +269,22 @@ function bootPhaser(): void {
   }
 }
 
+/** 本地暂停（联机对齐 AFK 语义：本地停手，服务端继续） */
+function togglePause(): void {
+  if (!gameStarted) return;
+  pausedByUser = !pausedByUser;
+  keyboard?.setPaused(pausedByUser);
+  if (pausedByUser) phaser?.scene.start("PauseMenu");
+  else phaser?.scene.stop("PauseMenu");
+}
+
 function bindUi(): void {
   $("#btn-create").addEventListener("click", () => start("create"));
   $("#btn-join").addEventListener("click", () => start("join"));
   bootPhaser();
   // R 键请求整关重开（E1；服务端按 phase 把关：won/gameover 才受理）
   window.addEventListener("keydown", (e) => {
+    if (e.code === "KeyP" && gameStarted) togglePause();
     if (e.code === "KeyR" && net) net.restart();
   });
 }

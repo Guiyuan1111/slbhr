@@ -52,6 +52,7 @@ export class BootScene extends Phaser.Scene {
       ["sfx_platform", "Platform.mp3"],
       ["sfx_water_steps", "WaterSteps.mp3"],
       ["sfx_end_pass", "EndPass.mp3"],
+      ["sfx_end_fail", "EndFail.mp3"],
       ["bgm_level", "LevelMusic.mp3"],
       ["bgm_finish", "LevelMusicFinish.mp3"],
     ] as const) {

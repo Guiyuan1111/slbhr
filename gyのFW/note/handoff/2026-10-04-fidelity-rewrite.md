@@ -189,3 +189,10 @@
 - 双 agent 并行侦察（bundle 规格提取 + 实机截图显示树实测）→ MenuScene/TempleScene 落地。
 - 流程重构：Phaser 随页面启动；?level= 深链兼容（e2e/基准不受扰）。
 - 规格：research/09-ui-states.md；待办：EndMenu/GameOverMenu/PauseMenu 画布内复刻。
+
+## 20. 2026-10-06 追加十二：游戏内弹窗三件套（0.3.13）
+
+- PauseMenu/EndMenu/GameOverMenu 画布内复刻（scenes/overlays.ts，板内局部坐标系）。
+- 触发接线：P 键/暂停钮 → 本机暂停（本地停手语义）；phase won/gameover 自动弹对应面板。
+- 交互闭环：重玩（房间重启）、继续（本地恢复）、返回菜单/Continue（退房回选关）。
+- 至此 UI 复刻清单完成：开始界面/选关界面/暂停/通关/失败五类全部画布内落地。

@@ -50,4 +50,4 @@ Play → levelMenu（传 temple 对象）。
 - MenuScene/TempleScene 落地（上表实测坐标直用）；流程 = 画布 Menu → Temple → 点关卡 → DOM 联机面板（?level= 深链直通面板，e2e 兼容）。
 - 进度 localStorage（fw-temple-progress-v1），解锁 = initial 或相邻已通关（tree 传播）。
 - 省略项（功能性/品牌）：kizi logo、设置/Credits 弹窗、buy、SoftLockMenu（我方 48 关全开放）、联机暂停。
-- 待后续：EndMenu/GameOverMenu 画布内复刻（规格已备，本轮 DOM 文案承载）。
+- ✅ 已复刻（0.3.13）：EndMenu/GameOverMenu/PauseMenu → scenes/overlays.ts（板内局部坐标系）。
