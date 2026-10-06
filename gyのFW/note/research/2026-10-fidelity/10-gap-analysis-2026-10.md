@@ -17,12 +17,12 @@
 
 ## 剩余缺口（按优先级，成本 S/M/L）
 
-### 高感知（下轮候选）
-1. **SettingsMenu**（音乐/音效开关持久化，bundle:43824-43920；入口=大厅左下齿轮）——M，与 MenuMusic 联动。
-2. **gameComplete 彩带**（全 48 关 3 星 → Confetti 雨 + 恭喜弹窗，bundle:45679）——S-M。
+### 高感知
+1. ~~**SettingsMenu**~~ ✅ 0.3.15（scenes/menus.ts：Music/Fx 双开关即时生效 + localStorage 持久化，入口=大厅左下齿轮）。
+2. ~~**gameComplete 彩带**~~ ✅ 0.3.15（全 48 关 3 星首通 → CompleteScene 彩带雨 + 恭喜，Temple 入场检查）。
+3. ~~**CreditsMenu**~~ ✅ 0.3.15（右上"?" → 制作名单，原版 ch 字典）。
 
 ### 中感知
-3. **CreditsMenu**（右上"?"，bundle:45885）——S。
 4. **移动端触控**（TouchButton 三键 + mobileTime 时限，bundle:42566）——M，视用户群。
 5. **单机同屏模式**（CursorToggle 切换 + CharCursors，bundle:45035）——M-L，先做产品决定。
 

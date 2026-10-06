@@ -22,6 +22,7 @@ import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
 import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_MAIN, PLAYER_SCALE } from "./BootScene";
+import { getSettings } from "../settings";
 
 export interface GameInit {
   net: Net;
@@ -238,7 +239,12 @@ export class GameScene extends Phaser.Scene {
 
   /** 播音频（键未入缓存时静默跳过：音频缺失不应炸掉整个场景更新循环） */
   private sfx(key: string, opts?: Phaser.Types.Sound.SoundConfig): void {
-    if (this.cache.audio.exists(key)) this.sound.play(key, opts);
+    if (!this.cache.audio.exists(key)) return;
+    // 原版 settings.fx/music 分轨：BGM 受音乐开关、其余音效受音效开关
+    if (key.startsWith("bgm")) {
+      if (!getSettings().music) return;
+    } else if (!getSettings().fx) return;
+    this.sound.play(key, opts);
   }
 
   /** 原版限时（E17：EndMenu TimeIcon 的 limit 来自 temple.json 的 time 字段） */

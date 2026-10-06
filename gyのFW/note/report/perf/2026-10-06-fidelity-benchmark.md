@@ -253,3 +253,15 @@ BGM 四件套（MenuMusic/Over/speed×2）+ EndDiamond + Wind 循环声、教学
 ### 验证
 83/83 单测 · typecheck · build 全绿；e2e 联机 PASS；菜单纹理实测三图全载、页面零错误；
 gzip 实测 −76%；物理指数 84.53（复跑确认）+ 视觉 94.97（visual-r14 归档）。
+
+## 二十、缺口收口轮（R17：设置/制作人员/全通关彩带）
+
+- **SettingsScene**：大厅左下齿轮进入，Music/Fx 双开关（MenuAssets 双态帧）即时生效
+  （音乐关→BGM 即停；开→菜单态即恢复）+ localStorage 持久化；GameScene.sfx 按
+  bgm→music / 其余→fx 分轨门控（原版 settings.fx/music 语义）。
+- **CreditsScene**：右上"?"进入，制作名单（原版 ch 字典：Oslo Albet / Anna Tamarit /
+  Jan Villanueva / septimania 2018，复刻署名保留）。
+- **CompleteScene**：48 关全 3 星首通一次性彩带雨（Confetti×4 两波 60 粒）+ 恭喜面板，
+  Temple 入场检查触发（原版 firstComplete 语义）。
+- 探针五步全过（齿轮→开关→恢复→?→彩带）；e2e PASS；视觉 95.06（+0.09，游戏画布零扰动）。
+- 剩余缺口：移动端触控（M）与单机同屏（M-L）待产品决定；bonus_2 重关物理待 wasm 级工程。

@@ -16,7 +16,9 @@ import { MenuScene } from "./scenes/MenuScene";
 import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
 import { PauseMenu, EndMenu, GameOverMenu } from "./scenes/overlays";
+import { SettingsScene, CreditsScene, CompleteScene } from "./scenes/menus";
 import { saveBest } from "./progress";
+import { getSettings } from "./settings";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => {
   const el = document.querySelector(sel);
@@ -141,6 +143,7 @@ async function enterGame(): Promise<void> {
   (globalThis as unknown as Record<string, unknown>).__fwPauseKeyboard = (b: boolean) => keyboard?.setPaused(b);
   (globalThis as unknown as Record<string, unknown>).__fwTogglePause = () => togglePause();
   (globalThis as unknown as Record<string, unknown>).__fwSfx = (name: string) => {
+    if (!getSettings().fx) return;
     const gs = phaser?.scene.getScene("Game") as unknown as { sfx?: (k: string) => void } | null;
     gs?.sfx?.(name);
   };
@@ -283,7 +286,7 @@ function bootPhaser(): void {
     // setTimeout 驱动：窗口被遮挡/后台时 rAF 会被浏览器完全冻结（场景队列停摆），此模式保活
     fps: { forceSetTimeOut: true, target: 60 },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-    scene: [BootScene, MenuScene, TempleScene, GameScene, PauseMenu, EndMenu, GameOverMenu],
+    scene: [BootScene, MenuScene, TempleScene, GameScene, PauseMenu, EndMenu, GameOverMenu, SettingsScene, CreditsScene, CompleteScene],
   });
   (globalThis as unknown as Record<string, unknown>).__fw = phaser; // 调试句柄（验收自动化用）
   // 选关 → 弹出联机面板（?level= 深链时面板直接可见，跳过画布选关）

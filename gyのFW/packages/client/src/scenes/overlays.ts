@@ -21,7 +21,7 @@ type Handle = Record<string, any>;
 const handle = (): Handle => (globalThis as unknown as Handle) ?? {};
 
 /** 板 + 黑幕 + 弹簧滑入（IngameMenu 基类复刻） */
-function buildBoard(scene: Phaser.Scene): Phaser.GameObjects.Container {
+export function buildBoard(scene: Phaser.Scene): Phaser.GameObjects.Container {
   const shade = scene.add.rectangle(640, 480, 1280, 960, 0x000000, 0.7).setDepth(0).setInteractive();
   const board = scene.add.container(BOARD_X, 960).setDepth(1);
   board.add(scene.add.image(0, 0, ATLAS_POPUP, "PopupBackground0000").setOrigin(0, 0));
@@ -31,7 +31,7 @@ function buildBoard(scene: Phaser.Scene): Phaser.GameObjects.Container {
 
 
 /** StoneButton（底图 + fontStone 文字，hover 换帧）；x/y = 板内局部坐标 */
-function stoneButton(
+export function stoneButton(
   scene: Phaser.Scene,
   board: Phaser.GameObjects.Container,
   x: number,

@@ -6,6 +6,7 @@
  */
 import Phaser from "phaser";
 import { ATLAS_CHARS, ATLAS_MENU, FONT_MAIN } from "./BootScene";
+import { getSettings } from "../settings";
 
 export class MenuScene extends Phaser.Scene {
   private pillars: Phaser.GameObjects.Image[] = [];
@@ -19,7 +20,7 @@ export class MenuScene extends Phaser.Scene {
     const W = this.scale.width;
     const H = this.scale.height;
     // 菜单 BGM（原版 Menu 状态 menuMusic 循环；进关时由 GameScene 停掉）
-    if (!this.sound.isPlaying("bgm_menu")) this.sound.play("bgm_menu", { loop: true, volume: 0.3 });
+    if (getSettings().music && !this.sound.isPlaying("bgm_menu")) this.sound.play("bgm_menu", { loop: true, volume: 0.3 });
 
     // 背景：TempleHallForest.jpg 1708×960，居中（左右各裁 214px）
     this.add.image(W / 2, H / 2, "TempleHall");
@@ -50,6 +51,21 @@ export class MenuScene extends Phaser.Scene {
         .setDepth(4);
       head.play(`${role}_idle`);
     }
+
+    // 左下设置齿轮（原版 SettingsButton0002/0003 @ 中心系 (-540,380)）+ 右上"?"（Credits）
+    const gear = this.add
+      .image(100, 860, ATLAS_MENU, "SettingsButton0002")
+      .setInteractive({ useHandCursor: true })
+      .setDepth(5);
+    gear.on("pointerup", () => this.scene.launch("SettingsScene"));
+    gear.on("pointerover", () => gear.setFrame("SettingsButton0003"));
+    gear.on("pointerout", () => gear.setFrame("SettingsButton0002"));
+    const q = this.add
+      .bitmapText(1240, 40, FONT_MAIN, "?", 30)
+      .setOrigin(0.5)
+      .setDepth(5)
+      .setInteractive({ useHandCursor: true });
+    q.on("pointerup", () => this.scene.launch("CreditsScene"));
 
     // Play：bitmapText「开始游戏」@ (640, 513)，~72px（原版逐字 sprite 合成 251×76），无底板
     this.add

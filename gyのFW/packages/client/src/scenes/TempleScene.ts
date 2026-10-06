@@ -8,6 +8,7 @@
 import Phaser from "phaser";
 import { ATLAS_MENU, ATLAS_TEMPLE, FONT_MAIN } from "./BootScene";
 import { loadProgress, starsOf } from "../progress";
+import { getSettings } from "../settings";
 
 interface TempleLevel {
   id: number;
@@ -44,7 +45,7 @@ export class TempleScene extends Phaser.Scene {
     const W = this.scale.width;
     const H = this.scale.height;
     // 选关界面延续菜单 BGM（Menu→Temple 不断；原版 45853 进关才 fadeOut）
-    if (!this.sound.isPlaying("bgm_menu")) this.sound.play("bgm_menu", { loop: true, volume: 0.3 });
+    if (getSettings().music && !this.sound.isPlaying("bgm_menu")) this.sound.play("bgm_menu", { loop: true, volume: 0.3 });
     this.data_ = this.cache.json.get("templeData") as TempleData;
 
     // 背景：MenuBackground0000 平铺
@@ -121,6 +122,14 @@ export class TempleScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     back.on("pointerup", () => this.scene.start("Menu"));
     this.add.bitmapText(70, H - 12, FONT_MAIN, "返回", 20).setOrigin(0.5);
+
+    // 全 3 星首通 → 彩带（原版 firstComplete：LevelMenu.afterAddContent 检查，bundle:45805）
+    if (this.data_.levels.length > 0 && this.data_.levels.every((lv) => starsOf(lv.filename) === 3)) {
+      if (!localStorage.getItem("fw-complete-shown")) {
+        localStorage.setItem("fw-complete-shown", "1");
+        this.scene.launch("CompleteScene");
+      }
+    }
 
     // 显示关卡数切换（右下，fontStone 20）
     const toggle = this.add
