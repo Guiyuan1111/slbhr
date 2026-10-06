@@ -84,6 +84,14 @@ export class ForestRoom extends Room<RoomState> {
         }
       }, 5000);
     }
+    // 调试钩子（FW_DEBUG_DOORS=1）：每 2s 打印内核门状态推进（isOpen/frac/isUp）
+    if (process.env.FW_DEBUG_DOORS === "1") {
+      setInterval(() => {
+        if (this.state.phase !== "started") return;
+        const d = this.world.doors;
+        console.log("[doors] fb open=" + d.fireboy.isOpen + " frac=" + d.fireboy.frac.toFixed(1) + " up=" + d.fireboy.isUp + " | wg open=" + d.watergirl.isOpen + " frac=" + d.watergirl.frac.toFixed(1) + " up=" + d.watergirl.isUp);
+      }, 2000);
+    }
     this.setSimulationInterval((dtMs) => this.tick(dtMs));
   }
 
