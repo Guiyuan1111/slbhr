@@ -92,6 +92,15 @@ export class ForestRoom extends Room<RoomState> {
         console.log("[doors] fb open=" + d.fireboy.isOpen + " frac=" + d.fireboy.frac.toFixed(1) + " up=" + d.fireboy.isUp + " | wg open=" + d.watergirl.isOpen + " frac=" + d.watergirl.frac.toFixed(1) + " up=" + d.watergirl.isUp);
       }, 2000);
     }
+    // 调试钩子（FW_DEBUG_FORCE_DOORS=1）：每 500ms 置双门 isOpen=true（模拟双角色站门内），
+    // 驱动真实的 25fps 扫帧 → isUp → win 判定路径（区别于 AUTO_WIN 直接注入 win 事件）
+    if (process.env.FW_DEBUG_FORCE_DOORS === "1") {
+      setInterval(() => {
+        if (this.state.phase !== "started") return;
+        this.world.doors.fireboy.isOpen = true;
+        this.world.doors.watergirl.isOpen = true;
+      }, 500);
+    }
     this.setSimulationInterval((dtMs) => this.tick(dtMs));
   }
 
@@ -196,6 +205,7 @@ export class ForestRoom extends Room<RoomState> {
   private handleEvents(events: WorldEvent[]) {
     for (const ev of events) {
       if (ev.type === "win") {
+        if (process.env.FW_DEBUG_DOORS === "1") console.log("[win] 事件触发，切 phase=won");
         this.state.phase = "won";
         // 结算数据全量随消息下发（星级/用时由客户端按原版公式呈现）
         this.broadcast("finish", {
