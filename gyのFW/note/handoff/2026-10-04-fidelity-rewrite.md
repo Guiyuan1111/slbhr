@@ -183,3 +183,9 @@
   main.ts 重构为页面加载即启动 Phaser（Boot→Menu→Temple→Game），入房后切入 Game。
 - 进度 localStorage（fw-temple-progress-v1）；房间码正则修复的 e2e 兼容流程保持。
 - 待办：EndMenu/GameOverMenu/PauseMenu 画布内复刻（规格已备）。
+
+## 19. 2026-10-06 追加十一：UI 界面复刻（0.3.12）
+
+- 双 agent 并行侦察（bundle 规格提取 + 实机截图显示树实测）→ MenuScene/TempleScene 落地。
+- 流程重构：Phaser 随页面启动；?level= 深链兼容（e2e/基准不受扰）。
+- 规格：research/09-ui-states.md；待办：EndMenu/GameOverMenu/PauseMenu 画布内复刻。
