@@ -8,6 +8,7 @@
  *   元数据 JSON），地面改为程序化绘制（见 GameScene.buildGround）。
  */
 import Phaser from "phaser";
+import { AUDIO_MENU, loadAudioPack } from "../audio.js";
 
 export const ATLAS_CHARS = "chars";
 export const ATLAS_GROUND = "ground";
@@ -43,35 +44,10 @@ export class BootScene extends Phaser.Scene {
     this.load.image("GameName", "/assets/images/GameNameForest.png");
     this.load.image("KiziLogo", "/assets/images/branding/branding_logo_kizi.png");
 
-    // 音频（仅本场景触发全集：跳跃/拾取/死亡/开门/拉杆/踏板/平台/水声/音乐）
-    // 统一走无扩展名流式路由（/s/ 前缀，服务器补 .mp3）：IDM 等下载接管工具
-    // 按 URL 扩展名拦截媒体请求，浏览器侧只会拿到 204 空响应
-    for (const [key, file] of [
-      ["sfx_jump_fb", "Jump_fb.mp3"],
-      ["sfx_jump_wg", "Jump_wg.mp3"],
-      ["sfx_diamond", "Diamond.mp3"],
-      ["sfx_death", "Death.mp3"],
-      ["sfx_door", "Door.mp3"],
-      ["sfx_lever", "Lever.mp3"],
-      ["sfx_pusher", "Pusher.mp3"],
-      ["sfx_platform", "Platform.mp3"],
-      ["sfx_water_steps", "WaterSteps.mp3"],
-      ["sfx_end_pass", "EndPass.mp3"],
-      ["sfx_end_fail", "EndFail.mp3"],
-      ["sfx_end_diamond", "EndDiamond.mp3"],
-      ["sfx_wind", "Wind.mp3"],
-      ["bgm_menu", "MenuMusic.mp3"],
-      ["bgm_over", "LevelMusicOver.mp3"],
-      ["bgm_level_speed", "LevelMusic_speed.mp3"],
-      ["bgm_finish_speed", "LevelMusicFinish_speed.mp3"],
-      ["bgm_level", "LevelMusic.mp3"],
-      ["bgm_finish", "LevelMusicFinish.mp3"],
-    ] as const) {
-      // 无扩展名路由防 IDM 劫持；Phaser 靠 URL 扩展名推断音频类型，缺失会静默跳过加载——
-      // 第 4 参显式声明 audioType（0.2.0 起无声的根因）
-      // 对象形式显式 type=mp3（0.2.0 起无声的根因：无扩展名时 Phaser 跳过入队）
-      this.load.audio(key, [{ url: `/assets/audio/s/${file.replace(/.mp3$/, "")}`, type: "mp3" }]);
-    }
+    // 音频仅装 menu 批（bgm_menu）；游戏内 18 键 ≈2.8MB 由 GameScene.preload 懒装载
+    // （0.3.21 加载性能优化：Menu 冷启动传输 -40%）。装载方式沿用无扩展名流式路由 +
+    // 显式 type=mp3 的 IDM 防劫持约定，见 audio.ts。
+    loadAudioPack(this, AUDIO_MENU);
   }
 
   create(): void {

@@ -18,6 +18,7 @@
 import Phaser from "phaser";
 import { DOOR, ROLES, type Role } from "@fw/shared";
 import type { LevelData, Rect } from "@fw/shared/level2";
+import { AUDIO_GAME, loadAudioPack } from "../audio.js";
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
@@ -158,6 +159,13 @@ export class GameScene extends Phaser.Scene {
 
   constructor() {
     super("Game");
+  }
+
+  preload(): void {
+    // 游戏内音频懒装载（0.3.21 加载性能优化）：18 键 ≈2.8MB 从 Boot 挪到此处，
+    // Menu/选关冷启动不再为其付出传输；建房（网络握手）期间并行下载。
+    // 场景重启时 Loader 对已入缓存的键自动跳过，不会重复下载。
+    loadAudioPack(this, AUDIO_GAME);
   }
 
   init(): void {

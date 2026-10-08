@@ -21,5 +21,15 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    // 长缓存分包（0.3.21 加载性能优化）：phaser/colyseus 拆独立内容哈希块，
+    // 业务代码更新时这两个大块命中浏览器缓存，仅重传小块 index。
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          phaser: ["phaser"],
+          colyseus: ["colyseus.js"],
+        },
+      },
+    },
   },
 });

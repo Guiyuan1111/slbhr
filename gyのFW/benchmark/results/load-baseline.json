@@ -1,0 +1,188 @@
+{
+  "meta": {
+    "label": "baseline",
+    "git": "9f0155c",
+    "date": "2026-10-08T15:48:31.506Z",
+    "node": "v22.15.0"
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "cold": {
+        "domContentLoadedMs": 308,
+        "phaserReadyMs": 750,
+        "menuActiveMs": 1093,
+        "resources": {
+          "count": 39,
+          "totalTransferKB": 6910,
+          "totalDecodedKB": 8355,
+          "byType": {
+            "script": {
+              "n": 1,
+              "transferKB": 391.35546875,
+              "decodedKB": 1628.37109375
+            },
+            "xmlhttprequest": {
+              "n": 37,
+              "transferKB": 6517.869140625,
+              "decodedKB": 6726.2353515625
+            },
+            "other": {
+              "n": 1,
+              "transferKB": 0.439453125,
+              "decodedKB": 0.146484375
+            }
+          },
+          "domContentLoadedMs": 286
+        },
+        "gameActiveAfterClickMs": 282,
+        "resourcesAfterGame": {
+          "count": 48,
+          "totalTransferKB": 6935,
+          "totalDecodedKB": 8407,
+          "byType": {
+            "script": {
+              "n": 1,
+              "transferKB": 391.35546875,
+              "decodedKB": 1628.37109375
+            },
+            "xmlhttprequest": {
+              "n": 39,
+              "transferKB": 6520.193359375,
+              "decodedKB": 6735.9287109375
+            },
+            "other": {
+              "n": 2,
+              "transferKB": 0.87890625,
+              "decodedKB": 0.29296875
+            },
+            "fetch": {
+              "n": 6,
+              "transferKB": 22.5185546875,
+              "decodedKB": 42.478515625
+            }
+          },
+          "domContentLoadedMs": 286
+        },
+        "pageErrors": []
+      },
+      "warm": {
+        "menuActiveMs": 744,
+        "resources": {
+          "count": 39,
+          "totalTransferKB": 408,
+          "totalDecodedKB": 8355,
+          "byType": {
+            "script": {
+              "n": 1,
+              "transferKB": 391.35546875,
+              "decodedKB": 1628.37109375
+            },
+            "xmlhttprequest": {
+              "n": 37,
+              "transferKB": 16.40625,
+              "decodedKB": 6726.2353515625
+            },
+            "other": {
+              "n": 1,
+              "transferKB": 0.439453125,
+              "decodedKB": 0.146484375
+            }
+          },
+          "domContentLoadedMs": 250
+        }
+      }
+    },
+    {
+      "round": 2,
+      "cold": {
+        "domContentLoadedMs": 193,
+        "phaserReadyMs": 341,
+        "menuActiveMs": 695,
+        "resources": {
+          "count": 38,
+          "totalTransferKB": 6909,
+          "totalDecodedKB": 8355,
+          "byType": {
+            "script": {
+              "n": 1,
+              "transferKB": 391.35546875,
+              "decodedKB": 1628.37109375
+            },
+            "xmlhttprequest": {
+              "n": 37,
+              "transferKB": 6517.869140625,
+              "decodedKB": 6726.2353515625
+            }
+          },
+          "domContentLoadedMs": 175
+        },
+        "gameActiveAfterClickMs": 262,
+        "resourcesAfterGame": {
+          "count": 47,
+          "totalTransferKB": 6935,
+          "totalDecodedKB": 8407,
+          "byType": {
+            "script": {
+              "n": 1,
+              "transferKB": 391.35546875,
+              "decodedKB": 1628.37109375
+            },
+            "xmlhttprequest": {
+              "n": 39,
+              "transferKB": 6520.193359375,
+              "decodedKB": 6735.9287109375
+            },
+            "other": {
+              "n": 1,
+              "transferKB": 0.439453125,
+              "decodedKB": 0.146484375
+            },
+            "fetch": {
+              "n": 6,
+              "transferKB": 22.5185546875,
+              "decodedKB": 42.478515625
+            }
+          },
+          "domContentLoadedMs": 175
+        },
+        "pageErrors": []
+      },
+      "warm": {
+        "menuActiveMs": 871,
+        "resources": {
+          "count": 38,
+          "totalTransferKB": 408,
+          "totalDecodedKB": 8355,
+          "byType": {
+            "script": {
+              "n": 1,
+              "transferKB": 391.35546875,
+              "decodedKB": 1628.37109375
+            },
+            "xmlhttprequest": {
+              "n": 37,
+              "transferKB": 16.40625,
+              "decodedKB": 6726.2353515625
+            }
+          },
+          "domContentLoadedMs": 313
+        }
+      }
+    }
+  ],
+  "summary": {
+    "cold": {
+      "menuActiveMs": 894,
+      "transferKB": 6909.5,
+      "requests": 39,
+      "gameActiveAfterClickMs": 272,
+      "transferKBAfterGame": 6935
+    },
+    "warmReload": {
+      "menuActiveMs": 807.5,
+      "transferKB": 408
+    },
+    "pageErrors": []
+  }
+}
