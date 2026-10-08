@@ -1,6 +1,6 @@
 # slbhr
 
-- `gyのFW/` — 森林冰火人联机版（0.3.13，服务端权威在线双人），文档见 `gyのFW/note/`
+- `gyのFW/` — 森林冰火人联机版（0.3.20，服务端权威在线双人），文档见 `gyのFW/note/`
 - `Fireboy-and-Watergirl/` — 官方网页版参考库（只读，禁止改动）
 - `报告/`、`codebase-analyzer/` — 技术分析产出
 
