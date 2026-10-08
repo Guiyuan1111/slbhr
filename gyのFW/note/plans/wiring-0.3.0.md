@@ -1,5 +1,8 @@
 # 0.3.0 server+client 接线改造精确清单
 
+> **✅ 状态：本施工单已于 0.3.0 执行完毕**（2026-10-05 合并发版）。文中行号/结构对应当时分支现状，
+> 仅作决策与依据追溯用；现行代码以后续提交为准。
+
 > 产出日期：2026-10-04。性质：**只读盘点后的施工单**——本文档不给实现代码，只给"改哪个文件、哪个锚点、改成什么形状、为什么"。
 > 依据：`note/handoff/2026-10-04-execution-freeze.md`（冻结 12 项）、`note/handoff/2026-10-04-fidelity-rewrite.md`（提取冻结）、`note/research/2026-10-fidelity/02-gap-audit-logic.md`（E1-E20/G/M 缺陷）、`01-original-engine-spec.md`、`03-asset-data-fidelity.md`，以及本轮对参考库 `init.js` 的补充字节级复核（下列"字证"均给出字节偏移，可复验）。
 > 行号基准：本轮实读的工作区文件（分支 `feat/fidelity-rewrite` 现状）。行号会随后续提交漂移，**函数名+代码片段为第一锚点，行号仅辅助定位**。
