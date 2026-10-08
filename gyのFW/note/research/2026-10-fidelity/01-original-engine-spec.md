@@ -1,5 +1,10 @@
 # 01 · 原版构建包行为规格（子代理 A 完整报告）
 
+> **⚠ 勘误指针（2026-10-08）**：本文个别常数/计数已被后续内核落地实证修正——球半径 0.9→0.4、
+> 箱宽 1.8→1.77、§2.5 gid 归属三处（pusher 权威计数 73、leverA/B 权威计数 25/49、forest_02 平台 2 个）、
+> Wind 阻尼/限速已结案。权威勘误全文见 [../handoff/2026-10-04-execution-freeze.md](../handoff/2026-10-04-execution-freeze.md) §四
+> 与 [05-mechanism-constants.md](05-mechanism-constants.md) 结案注；工程最终事实以 `packages/shared/src/kernel/` 代码与单测断言为准。
+
 > 对象：`D:\01_Guiyuan1111\GitHub\slbhr\Fireboy-and-Watergirl\output\A\`（只读参考，禁改）。
 > 引用约定：`init.js` = `js\init.eb02fbdab2aa1d24.js`（2,273,196 字节），`@N` = 字节偏移。
 > 产出日期：2026-10-04，只读调研，未修改任何文件。
