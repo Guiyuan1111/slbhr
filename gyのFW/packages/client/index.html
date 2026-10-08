@@ -23,6 +23,46 @@
         overflow: hidden;
       }
       #game-root { height: 100%; }
+      /* iOS Safari 地址栏收缩时 100% 会露底——100dvh 假全屏（PLAN §9 M2 检查点） */
+      @supports (height: 100dvh) {
+        html, body, #game-root { height: 100dvh; }
+      }
+
+      /* ---- 触屏虚拟按键（M2，touch.ts 创建；仅粗指针设备或 ?touch=1 显示） ---- */
+      #touch-controls {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 6; /* hud(5) 之上、menu(10) 之下 */
+      }
+      .touch-btn {
+        pointer-events: auto;
+        position: absolute;
+        bottom: max(20px, env(safe-area-inset-bottom));
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        background: rgba(10, 18, 6, 0.35);
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 24px;
+        line-height: 1;
+        padding: 0;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .touch-btn.on { background: rgba(255, 182, 76, 0.5); color: #fff; }
+      .touch-btn.left { left: max(20px, env(safe-area-inset-left)); }
+      .touch-btn.right { left: calc(max(20px, env(safe-area-inset-left)) + 86px); }
+      .touch-btn.jump {
+        right: max(20px, env(safe-area-inset-right));
+        width: 86px;
+        height: 86px;
+        font-size: 30px;
+        bottom: max(24px, env(safe-area-inset-bottom));
+      }
       #game-root canvas { image-rendering: auto; }
       .hidden { display: none !important; }
 

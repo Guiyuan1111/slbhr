@@ -9,9 +9,9 @@
  */
 import { sameInput, type InputState } from "@fw/shared";
 
-const LEFT = ["ArrowLeft", "KeyA"];
-const RIGHT = ["ArrowRight", "KeyD"];
-const UP = ["ArrowUp", "KeyW"];
+const LEFT = ["ArrowLeft", "KeyA", "TouchLeft"];
+const RIGHT = ["ArrowRight", "KeyD", "TouchRight"];
+const UP = ["ArrowUp", "KeyW", "TouchUp"];
 const ALL = [...LEFT, ...RIGHT, ...UP];
 
 /** 上行消息 = 输入快照 + 序列号（服务器只读 up/left/right） */
@@ -61,6 +61,16 @@ export class KeyboardInput {
       this.pressed.clear();
       this.emit();
     }
+  }
+
+  /**
+   * 触屏虚拟按键注入（M2）：与键盘同源合并进同一 pressed 集，
+   * 变化即发/重发/seq/暂停清键语义全部继承（见 touch.ts 头注释）。
+   */
+  setVirtual(code: "TouchLeft" | "TouchRight" | "TouchUp", pressed: boolean): void {
+    if (pressed) this.pressed.add(code);
+    else this.pressed.delete(code);
+    this.emit();
   }
 
   destroy(): void {

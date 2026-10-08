@@ -11,6 +11,7 @@ import { type Role } from "@fw/shared";
 import { parseLevel, type LevelData } from "@fw/shared/level2";
 import { Net } from "./net";
 import { KeyboardInput } from "./input";
+import { TouchControls } from "./touch";
 import { BootScene } from "./scenes/BootScene";
 import { MenuScene } from "./scenes/MenuScene";
 import { TempleScene } from "./scenes/TempleScene";
@@ -36,6 +37,8 @@ let phaser: Phaser.Game | null = null;
 let selectedLevel = urlLevel;
 let net: Net | null = null;
 let keyboard: KeyboardInput | null = null;
+/** 触屏虚拟按键（M2；粗指针设备或 ?touch=1 时生效，与键盘同源合并） */
+let touch: TouchControls | null = null;
 let gameStarted = false;
 let pausedByUser = false;
 let currentLevel: LevelData | null = null;
@@ -109,6 +112,8 @@ function updateHud(): void {
   $("#hud-status").textContent = text[phase] ?? "";
   $("#hud-status").classList.toggle("warn", phase === "paused" || phase === "gameover");
   keyboard?.setPaused(phase !== "started");
+  // 触屏按钮：ready 起显示（预备手指），非进行阶段隐藏；输入仍走 keyboard 的暂停闸门
+  touch?.setActive(phase === "ready" || phase === "started");
   // 钻石计数（GameScene 写 __fwHudCounts；原版游戏内无计数，DOM 承载以免画布偏离）
   const hudCounts = (globalThis as unknown as Record<string, { red: number; blue: number; silver: number }>).__fwHudCounts;
   const hudTotals = (globalThis as unknown as Record<string, { red: number; blue: number; silver: number }>).__fwHudTotals;
@@ -127,7 +132,10 @@ async function enterGame(): Promise<void> {
   const level = await fetchLevel(levelId);
   show();
 
+  // 返场重进时旧实例的监听与 15Hz 重发定时器会残留——先销毁（曾随房间叠加）
+  keyboard?.destroy();
   keyboard = new KeyboardInput(window, (input) => net?.sendInput(input));
+  touch = new TouchControls((code, pressed) => keyboard?.setVirtual(code, pressed));
 
   // 场景数据走全局句柄：Phaser 已随页面启动（Menu/Temple 选关流），此处仅切入 Game
   currentLevel = level;
@@ -153,6 +161,7 @@ async function enterGame(): Promise<void> {
     gameStarted = false;
     pausedByUser = false;
     keyboard?.setPaused(true);
+    touch?.setActive(false);
     const sm = phaser!.scene;
     sm.stop("Game");
     sm.stop("EndMenu");
