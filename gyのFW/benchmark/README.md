@@ -8,9 +8,9 @@
 ```bash
 export PATH="$PWD/TEMP/node:$PATH"
 
-node benchmark/fidelity-score.mjs                    # 跑分打印
-node benchmark/fidelity-score.mjs --save v0.3.4      # 存快照 benchmark/results/<label>.json
-node benchmark/fidelity-score.mjs --compare v0.3.4   # 与快照对比（优化前后表）
+node --import tsx benchmark/fidelity-score.mjs                    # 跑分打印
+node --import tsx benchmark/fidelity-score.mjs --save v0.3.4      # 存快照 benchmark/results/<label>.json
+node --import tsx benchmark/fidelity-score.mjs --compare v0.3.4   # 与快照对比（优化前后表）
 ```
 
 ## 指标口径
@@ -46,28 +46,30 @@ forest_01 就绪后第 60 物理帧（无输入 idle）对 canvas 元素截图�
 
 ## 快照索引
 
-| 快照 | git | 综合指数 | 说明 |
+git 列以快照 JSON `meta.git`（存档时脚本记录）为准；visual 系快照未记录 git，以版本号标注。
+「—」= 该轮未另存快照（口径沿用上一归档值）。
+
+| 快照 | git / 版本 | 综合指数 | 说明 |
 |---|---|---|---|
-| v0.3.4 | 8a49d81 | 82.55 | 优化前基线 |
-| r1-settle5 | 82f3dd6 前 | 82.51 | settle 相位证据修正 |
+| v0.3.4 | 8a49d81 | 82.55 | 物理优化前基线 |
+| r1-settle5 | 8a49d81 | 82.51 | settle 相位证据修正（脚本参数，非增益项） |
 | r2-wind | 1f22a99 | 84.57 | 风场阻尼/限速 |
-| r4-final | 1f22a99 | 84.57 | 第二轮起点 |
-| r6-final | 3c55a20 | 84.53 | pusher 保真修复 + lever 判定存档 |
-| visual-r7 | 3c55a20 | 86.63 | 视觉差分基线（容差48匹配率，独立维度） |
-| visual-r8 | 3fe1da9 | 86.55 | 时钟位图字保真 + 网格热图诊断 |
+| r4-final | 1f22a99 | 84.57 | 第二轮起点复跑 |
+| r6-final | ebaebe1 | 84.53 | 推杆保真修复 + lever 判定存档（物理维度收敛值） |
+| visual-r7 | 0.3.6 | 86.63 | 视觉差分基线（容差48匹配率，独立维度） |
+| visual-r8 | 0.3.7 | 86.55 | 时钟位图字保真 + 网格热图诊断 |
 | visual-r9 | 0.3.8 | 94.84 | 1280×960 原版几何画布（+8.3） |
 | visual-r9b | 0.3.8 | 94.91 | r9 复跑确认（正式归档值） |
 | visual-r10 | 0.3.9 | 95.00 | 时钟锚点/文字位校正 + 1:1 采样 |
 | visual-r11 | 0.3.10 | 94.96 | 画布内暂停钮渲染保真 |
 | visual-r12 | 0.3.11 | 94.95 | 钻石计数迁出画布（原版形态） |
-| r6-final | 3c55a20 | 84.53 | 推杆保真轮物理指数归档（补档） |
-| visual-r14 | 0.3.14 | 94.97 | 界面复刻轮视觉指数归档（正式） |
-| （四线审计轮） | 0.3.17 | 94.97 | 帧/音/动画/文案四线审计，游戏画布零扰动 |
-| （渲染收尾批） | 0.3.20 | 94.9±0.5 | 渲染审计 11 项清零 |
+| visual-r14 | 0.3.14 | 94.97 | 界面复刻轮视觉指数（正式归档） |
 | visual-r15 | 0.3.15 | 95.06 | 缺口收口轮（设置/制作/彩带） |
-| visual-r16+ | 0.3.19 | 94.4-95.0 波动带 | 渲染细节批（门定位/浮动带/glow/教学）+ 四线审计 |
+| （四线审计轮） | 0.3.17 | — | 帧/音/动画/文案审计，游戏画布零扰动（沿用 94.97 口径） |
 | （menu 像素差分） | 0.3.16 | 85.6% | 开始界面像素差分（原版对照，TEMP/uidiff） |
-| visual-r14 | （最新） | 94.97 | 界面复刻轮（游戏画布零扰动回归） |
+| （渲染细节批） | 0.3.19 | 94.36-94.97 | 门定位/钻石浮动带等 6 项（idle 相位噪声波动带，报告 §二十四） |
+| （渲染收尾批） | 0.3.20 | — | 渲染审计 11 项清零（视觉沿用 94.97 口径） |
+| r24-docaudit | 19b990e | 84.31 | fixture 顺序定案后的物理指数归档（0.3.18 起口径，2026-10-08 复现存档） |
 
 ## 注意
 
