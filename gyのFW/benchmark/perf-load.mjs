@@ -192,7 +192,7 @@ if (argCompare) {
   console.log(`\n===== 对比：${argCompare}（${base.meta.git}）→ 当前（${results.meta.git}）=====`);
   console.log(`冷启动 Menu active : ${b.cold.menuActiveMs}ms → ${c.cold.menuActiveMs}ms`);
   console.log(`冷启动传输（Menu） : ${b.cold.transferKB}KB → ${c.cold.transferKB}KB`);
-  console.log(`冷启动请求数       : ${b.cold.requests} → ${c.requests}`);
+  console.log(`冷启动请求数       : ${b.cold.requests} → ${c.cold.requests}`);
   console.log(`点击建房→Game     : ${b.cold.gameActiveAfterClickMs}ms → ${c.cold.gameActiveAfterClickMs}ms`);
   console.log(`进 Game 累计传输   : ${b.cold.transferKBAfterGame}KB → ${c.cold.transferKBAfterGame}KB`);
   console.log(`reload Menu active : ${b.warmReload.menuActiveMs}ms → ${c.warmReload.menuActiveMs}ms`);

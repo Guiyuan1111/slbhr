@@ -25,6 +25,8 @@
 
 > **⚠ 仓库迁移（2026-10-03）**：整个 `slbhr` 已合并为单一 monorepo 并推送 GitHub 私有仓库 `Guiyuan1111/slbhr`。`gyのFW` 的完整历史以双亲合并并入（原 tag 0.2.0 一并保留）。**此后所有提交在 `slbhr` 根目录进行**；`gyのFW/.git` 已改名 `.git.migrated` 停用（防双仓库分叉，需要找回旧镜像时改回即可）。
 
+**更新**：2026-10-08（**0.3.21 已发布：性能专项四轮**——R1 服务端物理 step −90.4%（根因：vendor 引擎在 node:vm 沙箱求值慢 ~7 倍，改主上下文 new Function 求值；bonus_2 单步 28.8→2.4ms，重关慢动作消失，物理**位级一致**：48 关全刚体 f64 哈希链门禁 + fidelity 84.31 零漂移）；R2 快照路径量化后确认已最优（Colyseus setter 相同值短路，sync+encode 占 tick ≤2%）；R3 客户端加载四件套（音频懒装载/brotli/immutable 分级缓存/vendor 分包：冷启动传输 6909→4858KB，reload 408KB→3KB）；R4 装载/内存验证收口（建房 8-21ms、GC 摊销 0.02ms/步、60s 浸泡 60fps 堆稳定）。新增基准 perf-step/perf-determinism/perf-load（benchmark/README）。对比报告 note/report/perf/2026-10-08-perf-optimization.md。e2e PASS 0 错误、83/83、视觉 94.61（噪声带内）。剩余待办不变：移动端触控（M）、单机同屏（M-L 待产品决定））
+
 ## 你要做的事
 
 1. **GitHub 私有仓库**（PLAN §11）：`gh repo create <名字> --private` 后推送本目录。官方素材仅供两人私用，仓库保持 private。
