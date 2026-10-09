@@ -44,6 +44,8 @@ let pausedByUser = false;
 let currentLevel: LevelData | null = null;
 /** temple.json 中当前关卡的条目（filename/time/type），结算星级与存档键用 */
 let currentTempleEntry: { filename: string; time: number; type: string } | null = null;
+/** temple.json 关卡序（结算「继续」推算下一关用；enterGame 拉取时填充） */
+let templeLevels: Array<{ id: number; filename: string }> = [];
 /** 已选关卡的星级/通过判定（EndMenu 与 saveBest 共用） */
 let lastResult: { stars: number; passed: boolean } | null = null;
 
@@ -143,6 +145,7 @@ async function enterGame(): Promise<void> {
   currentTempleEntry = null;
   try {
     const tj = await (await fetch("/data/forest/temple.json")).json();
+    templeLevels = (tj.levels ?? []).map((lv: { id?: number; filename?: string }) => ({ id: Number(lv.id ?? 0), filename: String(lv.filename ?? "") }));
     const entry = (tj.levels ?? []).find((lv: { filename?: string }) => String(lv.filename ?? "").endsWith(`/${levelId}.json`));
     if (entry) currentTempleEntry = { filename: String(entry.filename), time: Number(entry.time) || 0, type: String(entry.type ?? "general") };
   } catch { /* 缺省 general/无限时，结算仍可用 */ }
@@ -155,7 +158,8 @@ async function enterGame(): Promise<void> {
     const gs = phaser?.scene.getScene("Game") as unknown as { sfx?: (k: string) => void } | null;
     gs?.sfx?.(name);
   };
-  (globalThis as unknown as Record<string, unknown>).__fwLeaveToMenu = () => {
+  /** 离房回选关树（EndMenu「继续」/各菜单「返回菜单」共用） */
+  const leaveToMenu = (): void => {
     net?.leave();
     net = null;
     gameStarted = false;
@@ -173,6 +177,19 @@ async function enterGame(): Promise<void> {
     const hud = document.querySelector("#hud");
     if (hud) hud.classList.add("hidden");
     updateHud();
+  };
+  (globalThis as unknown as Record<string, unknown>).__fwLeaveToMenu = leaveToMenu;
+  // 结算「继续」：原版 Continue 直进下一关（bundle EndMenu 44360 区段）；联机形态适配为
+  // 预选下一关 + 弹联机面板（房主创建即下一关，加入方以房间为准）。最后一关无后继 → 停选关树。
+  (globalThis as unknown as Record<string, unknown>).__fwNextLevel = () => {
+    leaveToMenu();
+    const idx = templeLevels.findIndex((lv) => lv.filename === currentTempleEntry?.filename);
+    const next = idx >= 0 ? templeLevels[idx + 1] : undefined;
+    if (!next || !next.filename) return;
+    selectedLevel = next.filename.split("/").pop()!.replace(".json", "");
+    const el = document.querySelector("#menu-level");
+    if (el) el.textContent = `已选关卡：${selectedLevel}`;
+    $("#menu").classList.remove("hidden");
   };
 
   // HUD 轮询由 bindUi 注册一次（性能审计 #3：曾按入房次数叠加永不清理）

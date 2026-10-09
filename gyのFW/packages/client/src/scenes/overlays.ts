@@ -139,12 +139,14 @@ export class EndMenu extends Phaser.Scene {
       stone.play(`finish-stars-${stars}`);
       handle().__fwSfx?.("sfx_end_diamond");
     });
-    // Continue（星动画后启用）
+    // Continue（星动画后启用）：原版直进下一关；联机形态=预选下一关+弹联机面板（main.ts __fwNextLevel）
     let enabled = false;
     stoneButton(this, board, CX, 502, "继续", () => {
       if (!enabled) return;
       this.scene.stop();
-      handle().__fwLeaveToMenu?.();
+      const h = handle() as unknown as { __fwNextLevel?: () => void; __fwLeaveToMenu?: () => void };
+      if (h.__fwNextLevel) h.__fwNextLevel();
+      else h.__fwLeaveToMenu?.();
     });
     this.time.delayedCall(500 + 3 * 700 + 300, () => {
       enabled = true;
