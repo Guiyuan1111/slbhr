@@ -643,6 +643,10 @@ export class GameScene extends Phaser.Scene {
       effect.setVisible(false);
       this.windViews.set(w.id, { base, effect, on: false });
     }
+
+    // 窗框（仅 forest_bonus_1 两处）：**刻意不渲染**——原版 Window 设备引用的
+    // WindowLeft/Right/Center0000 帧在原版全部已发行图集（A/B 变体）中均不存在，
+    // 运行时缺帧渲染空白，即原版玩家看到的窗框本就是隐形墙；内核静态体已复刻物理。
   }
 
   /** props 快照 key（"box:0"/"boxheavy:2"/"ball:3"）→ 视图 key（x 下标 / a 下标-boxes 数） */

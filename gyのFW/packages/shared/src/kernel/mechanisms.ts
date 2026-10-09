@@ -644,6 +644,10 @@ export class Wind {
 
 // ---------------------------------------------------------------- Window
 
+// 注意：原版 Window 设备引用的 WindowLeft/Right/Center0000 帧在其全部已发行图集（A/B）
+// 中均不存在——原版运行时缺帧渲染空白，窗框对玩家本就是隐形墙。此处仅复刻静态碰撞体
+// （friction 0.7 / cat 1 / mask 61695），客户端刻意不渲染（仅 forest_bonus_1 两处）。
+
 export function buildWindow(B: B2, world: any, def: { rect: { x: number; y: number; w: number; h: number } }): void {
   // 静态盒（宽<高 交换逻辑同平台，森林数据 w=64 h=32 不触发）
   let w = def.rect.w / 32;
