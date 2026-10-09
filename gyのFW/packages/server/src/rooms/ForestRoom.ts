@@ -315,6 +315,41 @@ export class ForestRoom extends Room<RoomState> {
       ws.group = wd.group;
       ws.state = wd.state;
     }
+    // 吊挂/滑轮/罗马杆位姿（0.3.25：此前内核有体、快照不下发，客户端板子全隐形）
+    for (const h of snap.hangings) {
+      let bs = this.state.hangings.get(String(h.id));
+      if (!bs) {
+        bs = new BodyState();
+        this.state.hangings.set(String(h.id), bs);
+      }
+      bs.x = Math.round(h.x * 10) / 10;
+      bs.y = Math.round(h.y * 10) / 10;
+      bs.angle = Math.round(h.angle * 1000) / 1000;
+    }
+    for (const p of snap.pulleys) {
+      const halves = [["a", p.a], ["b", p.b]] as const;
+      for (const [suffix, pose] of halves) {
+        const key = `u${p.id}${suffix}`;
+        let bs = this.state.pulleys.get(key);
+        if (!bs) {
+          bs = new BodyState();
+          this.state.pulleys.set(key, bs);
+        }
+        bs.x = Math.round(pose.x * 10) / 10;
+        bs.y = Math.round(pose.y * 10) / 10;
+        bs.angle = Math.round(pose.angle * 1000) / 1000;
+      }
+    }
+    for (const r of snap.romans) {
+      let bs = this.state.romans.get(String(r.id));
+      if (!bs) {
+        bs = new BodyState();
+        this.state.romans.set(String(r.id), bs);
+      }
+      bs.x = Math.round(r.x * 10) / 10;
+      bs.y = Math.round(r.y * 10) / 10;
+      bs.angle = Math.round(r.angle * 1000) / 1000;
+    }
     const doors = this.world.doors;
     this.state.doors.fbAtDoor = doors.fireboy.isOpen;
     this.state.doors.wgAtDoor = doors.watergirl.isOpen;

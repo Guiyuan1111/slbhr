@@ -79,6 +79,28 @@ interface PusherView {
   state: number;
 }
 
+/** 吊挂（原版 §8）：绳 tileSprite 从锚点指向板，板随快照位姿 */
+interface HangingView {
+  rope: Phaser.GameObjects.TileSprite;
+  plank: Phaser.GameObjects.Image;
+  anchorX: number;
+  anchorY: number;
+}
+
+/** 滑轮（原版 §9）：两板 + 三段绳 + 两轮（轮转角=绳长/π/10 装饰） */
+interface PulleyView {
+  planks: [Phaser.GameObjects.Image, Phaser.GameObjects.Image];
+  ropes: [Phaser.GameObjects.TileSprite, Phaser.GameObjects.TileSprite, Phaser.GameObjects.TileSprite];
+  wheels: [Phaser.GameObjects.Image, Phaser.GameObjects.Image];
+  anchor1: { x: number; y: number };
+  anchor2: { x: number; y: number };
+}
+
+/** 罗马杠（原版 §10）：杠容器（杠面+两端）随 bar 体位姿，中轴/底座静态 */
+interface RomanView {
+  bar: Phaser.GameObjects.Container;
+}
+
 interface WindView {
   base: Phaser.GameObjects.Sprite;
   on: boolean;
@@ -131,6 +153,9 @@ export class GameScene extends Phaser.Scene {
   private pusherViews = new Map<string, PusherView>();
   private bodyViews = new Map<string, Phaser.GameObjects.Image>();
   private windViews = new Map<string, WindView>();
+  private hangingViews = new Map<string, HangingView>();
+  private pulleyViews = new Map<string, PulleyView>();
+  private romanViews = new Map<string, RomanView>();
   private doorSprites = new Map<Role, Phaser.GameObjects.Sprite>();
   private doorFrames = new Map<Role, number>();
   private clockText!: Phaser.GameObjects.BitmapText;
@@ -181,6 +206,9 @@ export class GameScene extends Phaser.Scene {
     this.pusherViews.clear();
     this.bodyViews.clear();
     this.windViews.clear();
+    this.hangingViews.clear();
+    this.pulleyViews.clear();
+    this.romanViews.clear();
     this.doorSprites.clear();
     this.doorFrames.clear();
     this.navyItems = [];
@@ -493,6 +521,97 @@ export class GameScene extends Phaser.Scene {
         .setDepth(1.2)
         .setScale(1.05, 0.95);
       this.platformViews.set(p.id, c);
+    }
+
+    // 吊挂（原版 §8 Hanging @1684262）：锚轮 hanging_anchor0000 + 绳 tileSprite(pulley_rope0000,高20)
+    // + 板 hanging_platform0000 宽 1.15·barWidth。绳原版用"负宽+atan2(−Δy,−Δx)"翻转技巧，
+    // 这里取等效正宽形式（dist + atan2(Δy,Δx)，贴图水平纹理等价）。
+    for (const h of level.hangings) {
+      const ax = h.pts[0].x + PAD;
+      const ay = h.pts[0].y + PAD;
+      const bw = (h.barWidth ?? 3.2) * 32;
+      this.add.image(ax, ay, ATLAS_MECH, "hanging_anchor0000").setOrigin(0.5).setDepth(1.28);
+      const bx = h.pts[1].x + PAD;
+      const by = h.pts[1].y + PAD;
+      const rope = this.add
+        .tileSprite(ax, ay, Math.max(1, Math.hypot(bx - ax, by - ay)), 20, ATLAS_MECH, "pulley_rope0000")
+        .setOrigin(0, 0.5)
+        .setDepth(1.26);
+      rope.setRotation(Math.atan2(by - ay, bx - ax));
+      const plank = this.add.image(bx, by, ATLAS_MECH, "hanging_platform0000").setOrigin(0.5).setDepth(1.3);
+      plank.displayWidth = 1.15 * bw;
+      this.hangingViews.set(h.id, { rope, plank, anchorX: ax, anchorY: ay });
+    }
+
+    // 滑轮（原版 §9 Pulley @1737345）：座/轮静态（轮锚点=轮点下方 2m，kernel 同式），
+    // 两板 pulley_platform0000 宽 1.3·barWidth 随快照，三段绳（锚1↔板1、板1↔板2、板2↔锚2）
+    for (const p of level.pulleys) {
+      const bw = (p.barWidth ?? 2.7) * 32;
+      const a1 = { x: p.pts[1].x + PAD, y: p.pts[1].y + 64 + PAD };
+      const a2 = { x: p.pts[2].x + PAD, y: p.pts[2].y + 64 + PAD };
+      this.add.image(a1.x, a1.y, ATLAS_MECH, "pulley_base0000").setOrigin(0.5).setDepth(1.24);
+      this.add.image(a2.x, a2.y, ATLAS_MECH, "pulley_base0000").setOrigin(0.5).setDepth(1.24);
+      const wheels: [Phaser.GameObjects.Image, Phaser.GameObjects.Image] = [
+        this.add.image(a1.x - 10, a1.y - 50, ATLAS_MECH, "pulley_anchor0000").setOrigin(0.5).setDepth(1.26),
+        this.add.image(a2.x + 10, a2.y - 50, ATLAS_MECH, "pulley_anchor0000").setOrigin(0.5).setDepth(1.26),
+      ];
+      const mkRope = (fx: number, fy: number, tx: number, ty: number): Phaser.GameObjects.TileSprite => {
+        const r = this.add
+          .tileSprite(fx, fy, Math.max(1, Math.hypot(tx - fx, ty - fy)), 19, ATLAS_MECH, "pulley_rope0000")
+          .setOrigin(0, 0.5)
+          .setDepth(1.22);
+        r.setRotation(Math.atan2(ty - fy, tx - fx));
+        return r;
+      };
+      const ropes: [Phaser.GameObjects.TileSprite, Phaser.GameObjects.TileSprite, Phaser.GameObjects.TileSprite] = [
+        mkRope(a1.x, a1.y, p.pts[0].x + PAD, p.pts[0].y + PAD),
+        mkRope(p.pts[0].x + PAD, p.pts[0].y + PAD, p.pts[3].x + PAD, p.pts[3].y + PAD),
+        mkRope(p.pts[3].x + PAD, p.pts[3].y + PAD, a2.x, a2.y),
+      ];
+      const planks: [Phaser.GameObjects.Image, Phaser.GameObjects.Image] = [
+        this.add.image(p.pts[0].x + PAD, p.pts[0].y + PAD, ATLAS_MECH, "pulley_platform0000").setOrigin(0.5).setDepth(1.3),
+        this.add.image(p.pts[3].x + PAD, p.pts[3].y + PAD, ATLAS_MECH, "pulley_platform0000").setOrigin(0.5).setDepth(1.3),
+      ];
+      planks[0].displayWidth = 1.3 * bw;
+      planks[1].displayWidth = 1.3 * bw;
+      this.pulleyViews.set(p.id, { planks, ropes, wheels, anchor1: a1, anchor2: a2 });
+    }
+
+    // 罗马杠（原版 §10 Roman @1748214）：杠容器（roman_bar0000 宽 2·|Δx| + 两端 roman_end0000
+    // anchor(0.05,0.5)、右端镜像）随 bar 体位姿；中轴 roman_center0000@h=p1+(−32,+32)、
+    // 底座 roman_base0000 自基边向上（高 64|k|）静态。
+    for (const r of level.romans) {
+      const pts = r.pts;
+      let mPx: number;
+      let kPx: number;
+      if (pts.length >= 3 && pts[0].x === pts[1].x) {
+        mPx = -(pts[2].x - pts[1].x) * 2;
+        kPx = -(pts[1].y - pts[0].y);
+      } else {
+        mPx = -(pts[1].x - pts[0].x) * 2;
+        kPx = -(pts[1].y - pts[0].y);
+      }
+      const hx = pts[1].x - 32 + PAD;
+      const hy = pts[1].y + 32 + PAD;
+      this.add.image(hx, hy, ATLAS_MECH, "roman_center0000").setOrigin(0.5).setDepth(1.29);
+      const baseH = Math.abs(2 * kPx);
+      if (baseH > 1) {
+        this.add
+          .tileSprite(hx, hy + kPx, 138, baseH, ATLAS_MECH, "roman_base0000")
+          .setOrigin(0.5, kPx >= 0 ? 1 : 0)
+          .setDepth(1.2);
+      }
+      const w = Math.abs(mPx);
+      const bar = this.add.container(
+        hx,
+        hy,
+        [
+          this.add.tileSprite(0, 0, w, 30, ATLAS_MECH, "roman_bar0000").setOrigin(0.5),
+          this.add.image(-w / 2, 0, ATLAS_MECH, "roman_end0000").setOrigin(0.05, 0.5),
+          this.add.image(w / 2, 0, ATLAS_MECH, "roman_end0000").setOrigin(0.05, 0.5).setScale(-1, 1),
+        ],
+      ).setDepth(1.3);
+      this.romanViews.set(r.id, { bar });
     }
 
     // 风区机身（liquids 层，depth 7）：wind_base 0000..0003@30fps；state≠0 时播循环
@@ -1157,6 +1276,54 @@ export class GameScene extends Phaser.Scene {
       const anyOn = [...this.windViews.values()].some((w) => w.on);
       if (anyOn && !this.sound.isPlaying("sfx_wind")) this.sfx("sfx_wind", { loop: true, volume: 0.2 }); // 原版显式 0.2（bundle:1968490 附近）
       if (!anyOn) this.sound.stopByKey("sfx_wind");
+    });
+    // 吊挂/滑轮/罗马杆位姿消费（+体角口径，同 lever）：板/杠跟体，绳逐 tick 重指
+    st.hangings?.forEach?.((s: { x: number; y: number; angle: number }, id: string) => {
+      const v = this.hangingViews.get(`h${id}`);
+      if (!v) return;
+      const x = (Number(s.x) || 0) + PAD;
+      const y = (Number(s.y) || 0) + PAD;
+      v.plank.setPosition(x, y);
+      v.plank.setAngle((Number(s.angle) || 0) * (180 / Math.PI));
+      const dx = x - v.anchorX;
+      const dy = y - v.anchorY;
+      v.rope.setPosition(v.anchorX, v.anchorY);
+      v.rope.width = Math.max(1, Math.hypot(dx, dy));
+      v.rope.setRotation(Math.atan2(dy, dx));
+    });
+    st.pulleys?.forEach?.((s: { x: number; y: number; angle: number }, key: string) => {
+      const m = /^u(\d+)([ab])$/.exec(String(key));
+      if (!m) return;
+      const v = this.pulleyViews.get(`u${m[1]}`);
+      if (!v) return;
+      const idx = m[2] === "a" ? 0 : 1;
+      const x = (Number(s.x) || 0) + PAD;
+      const y = (Number(s.y) || 0) + PAD;
+      v.planks[idx].setPosition(x, y);
+      v.planks[idx].setAngle((Number(s.angle) || 0) * (180 / Math.PI));
+      const [b1, b2] = [v.planks[0], v.planks[1]];
+      const seg = (r: Phaser.GameObjects.TileSprite, fx: number, fy: number, tx: number, ty: number) => {
+        r.setPosition(fx, fy);
+        r.width = Math.max(1, Math.hypot(tx - fx, ty - fy));
+        r.setRotation(Math.atan2(ty - fy, tx - fx));
+      };
+      seg(v.ropes[0], v.anchor1.x, v.anchor1.y, b1.x, b1.y);
+      seg(v.ropes[1], b1.x, b1.y, b2.x, b2.y);
+      seg(v.ropes[2], b2.x, b2.y, v.anchor2.x, v.anchor2.y);
+      // 轮转角 = 绳总长/π/10（原版装饰语义）
+      const total =
+        Math.hypot(b1.x - v.anchor1.x, b1.y - v.anchor1.y) +
+        Math.hypot(b2.x - b1.x, b2.y - b1.y) +
+        Math.hypot(v.anchor2.x - b2.x, v.anchor2.y - b2.y);
+      const turn = total / (Math.PI * 10);
+      v.wheels[0].setRotation(turn);
+      v.wheels[1].setRotation(turn);
+    });
+    st.romans?.forEach?.((s: { x: number; y: number; angle: number }, id: string) => {
+      const v = this.romanViews.get(`r${id}`);
+      if (!v) return;
+      v.bar.setPosition((Number(s.x) || 0) + PAD, (Number(s.y) || 0) + PAD);
+      v.bar.setAngle((Number(s.angle) || 0) * (180 / Math.PI));
     });
   }
 

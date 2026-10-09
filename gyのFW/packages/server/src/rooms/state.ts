@@ -143,6 +143,10 @@ export class RoomState extends Schema {
   platforms!: MapSchemaType<BodyState>;
   props!: MapSchemaType<BodyState>;
   winds!: MapSchemaType<WindState>;
+  /** 吊挂板（hanging platform）位姿；pulley 两板键 u{id}a / u{id}b；roman bar 位姿 */
+  hangings!: MapSchemaType<BodyState>;
+  pulleys!: MapSchemaType<BodyState>;
+  romans!: MapSchemaType<BodyState>;
   doors!: DoorState;
 
   constructor() {
@@ -157,6 +161,9 @@ export class RoomState extends Schema {
     this.platforms = new MapSchema();
     this.props = new MapSchema();
     this.winds = new MapSchema();
+    this.hangings = new MapSchema();
+    this.pulleys = new MapSchema();
+    this.romans = new MapSchema();
     this.doors = new DoorState();
   }
 }
@@ -226,5 +233,8 @@ defineTypes(RoomState, {
   platforms: { map: BodyState },
   props: { map: BodyState },
   winds: { map: WindState },
+  hangings: { map: BodyState },
+  pulleys: { map: BodyState },
+  romans: { map: BodyState },
   doors: DoorState,
 });

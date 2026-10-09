@@ -141,6 +141,9 @@ export class World {
     platforms: Array<{ id: number; x: number; y: number; angle: number }>;
     props: Array<{ id: number; kind: string; x: number; y: number; angle: number }>;
     winds: Array<{ id: number; group: number; state: number }>;
+    hangings: Array<{ id: number; x: number; y: number; angle: number }>;
+    pulleys: Array<{ id: number; a: { x: number; y: number; angle: number }; b: { x: number; y: number; angle: number } }>;
+    romans: Array<{ id: number; x: number; y: number; angle: number }>;
   } {
     return {
       levers: this.mechs.levers.map((l, id) => ({ id, group: l.group, state: l.state, angle: (l.angleDeg() * Math.PI) / 180 })),
@@ -157,6 +160,23 @@ export class World {
         return { id, kind: p.kind, x: m2px(pos.x), y: m2px(pos.y), angle: -p.body.GetAngle() };
       }),
       winds: this.mechs.winds.map((wd, id) => ({ id, group: wd.group, state: wd.state })),
+      // 吊挂/滑轮/罗马杆：+体角（同 lever 约定，客户端 +angle×180/π 直用；platforms/props 的
+      // 负号是历史"双取负"口径——客户端有一层取负与之配对，勿混用）
+      hangings: this.mechs.hangings.map((h, id) => {
+        const pos = h.platform.GetPosition();
+        return { id, x: m2px(pos.x), y: m2px(pos.y), angle: h.platform.GetAngle() };
+      }),
+      pulleys: this.mechs.pulleys.map((p, id) => {
+        const pose = (b: any) => {
+          const pos = b.GetPosition();
+          return { x: m2px(pos.x), y: m2px(pos.y), angle: b.GetAngle() };
+        };
+        return { id, a: pose(p.plat1), b: pose(p.plat2) };
+      }),
+      romans: this.mechs.romans.map((r, id) => {
+        const pos = r.bar.GetPosition();
+        return { id, x: m2px(pos.x), y: m2px(pos.y), angle: r.bar.GetAngle() };
+      }),
     };
   }
 
