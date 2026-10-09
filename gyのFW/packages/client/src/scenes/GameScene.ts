@@ -1085,10 +1085,19 @@ export class GameScene extends Phaser.Scene {
     st.levers?.forEach?.((s: { state: number; angle: number }, id: string) => {
       const v = this.leverViews.get(`l${id}`);
       if (!v) return;
-      const deg = -(Number(s.angle) || 0) * (180 / Math.PI);
+      // 屏幕角 = +Box2D 体角（phys 两轴同负 = 180° 旋转保手性，原版实证 sprite.angle = +body.angle，
+      // forest_05 拉杆原版精灵 +30.66° 与内核沉降角同号同侧；旧版取负致贴图与碰撞体绕枢点镜像分离）
+      const deg = (Number(s.angle) || 0) * (180 / Math.PI);
       if (Math.abs(deg - v.angle) > 0.25) {
         v.angle = deg;
+        // 杆贴图中心 = body origin，绕支点半径 4.8px 公转（与 create 段初始公式同源）
+        const rad = (deg * Math.PI) / 180;
+        const sx = v.pivotX + 4.8 * Math.sin(rad);
+        const sy = v.pivotY - 4.8 * Math.cos(rad);
         v.stick.setAngle(deg);
+        v.stick.setPosition(sx, sy);
+        v.stickLight.setAngle(deg);
+        v.stickLight.setPosition(sx, sy);
       }
       const on = Number(s.state) === 1;
       if (on !== v.lightOn) {
