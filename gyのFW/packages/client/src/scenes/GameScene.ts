@@ -1122,7 +1122,8 @@ export class GameScene extends Phaser.Scene {
       if (!v) return;
       const px2 = (Number(b.x) || 0) + PAD;
       const py2 = (Number(b.y) || 0) + PAD;
-      const pa = -(Number(b.angle) || 0) * (180 / Math.PI);
+      // 屏幕角 = +Box2D 体角（同 lever，见 updateMechs lever 注；平移平台恒 0，符号修正为一致性）
+      const pa = (Number(b.angle) || 0) * (180 / Math.PI);
       if (px2 !== v.x || py2 !== v.y || pa !== v.angle) {
         v.setPosition(px2, py2);
         v.setAngle(pa);
@@ -1133,7 +1134,8 @@ export class GameScene extends Phaser.Scene {
       if (!v) return;
       const qx = (Number(b.x) || 0) + PAD;
       const qy = (Number(b.y) || 0) + PAD;
-      const qa = -(Number(b.angle) || 0) * (180 / Math.PI);
+      // 屏幕角 = +Box2D 体角（同 lever 注）：旧版取负致球滚动贴图反转（球持续受此 bug 影响）
+      const qa = (Number(b.angle) || 0) * (180 / Math.PI);
       if (qx !== v.x || qy !== v.y || qa !== v.angle) {
         v.setPosition(qx, qy);
         v.setAngle(qa); // 球必转，angle 必吃
