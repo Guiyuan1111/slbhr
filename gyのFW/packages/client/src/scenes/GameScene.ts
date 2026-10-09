@@ -201,8 +201,11 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     const { level } = this.d;
-    // 相机视口锁定关卡矩形（全出血）；PAD 仍保留在内部坐标，仅不可见
-    this.cameras.main.setBounds(PAD, PAD, level.widthPx, level.heightPx);
+    // 相机：可视域 = 画布 1280×960，scroll=(16,16) → 屏幕 = 世界−16 = 关卡+16（原版 settled
+    // 实测 stage=level+(16,16)，2026-10-09 帧探针）。此前 setBounds(32,32,1248,928) 小于视口，
+    // 边界钳制把 centerOn 的 scroll(16,16) 压成 (32,32)，全场景整体上移 16px（地形顶实测 192 vs 原版 208）。
+    // 边界改设画布全幅 (0,0,1312,992)：钳制区间 [0,32]，scroll 16 不再被吞。
+    this.cameras.main.setBounds(0, 0, level.widthPx + PAD * 2, level.heightPx + PAD * 2);
     this.cameras.main.centerOn(level.widthPx / 2 + PAD, level.heightPx / 2 + PAD);
 
     for (const d of level.diamonds) {
