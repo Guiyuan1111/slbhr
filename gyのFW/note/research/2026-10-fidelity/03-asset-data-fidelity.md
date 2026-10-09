@@ -77,6 +77,12 @@
 - **液体**：原版 5→WaterBox、6→FireBox、7→GreenBox，`generateFrameNames(prefix+"Left"+"|"+prefix+"Right", 0..14, "", 4)` 30fps（init.js@1704002）——复刻 `level.ts:119` LIQUID_TILE、`BootScene.ts:83-91`、`GameScene.ts:305-333` 帧名/族/段序全一致。
 - **浮尘/Navies**：原版实为两套。(1) **Navies 悬浮物**：`useDust` 默认开（init.js@1930471，fps<40 关闭 @1942749），按 `getNaviesPoints`（种子 "ASDFA"、步进 `Math.round(3*rng+3.5)` @1836440）撒 `States/Common/Navies` 精灵——本体是 **MenuAssets 的 `Navy0000`** +极坐标漂移动画（@1940283-1940506、@1116990 区段）；(2) **dust 层**：仅当关卡 objects 里 `find(type==="beamer")` 命中才 `fillDustLayer()`（@1940535），铺 `ceil(width/10)` 个 BeamDust0000 并用光束做 mask——森林 48 关 0 个 beamer，**原版森林关从不出现 BeamDust**。复刻：GameScene.ts:451-473 无条件 18 颗 `Dust0000/BeamDust0000` 静帧+透明度漂移；`Navy0000` 帧未用；且复刻把 "ASDFA" 步进公式用于 **decor 前景装饰**撒点（GameScene.ts:375-376）——该公式在原版属 getNaviesPoints（decorate 另有自身循环 @1829743-1829800，同种子同 z()，但 O 变体用计数器奇偶 `w%2+1`、复刻用纯随机 :402）。
 
+> **【2026-10-09 勘误】** 上段「复刻」描述已过时（写于装饰系统移植前）。当前实现与本节原版结论对齐：
+> decor 前景装饰走 seedrandom("ASDFA") 同种子同 z() 行列步进（GameScene buildDecorations，O 变体即计数器
+> 奇偶 `w%2+1`）；Navies 悬浮物已按 MenuAssets `Navy0000` + 极坐标漂移实现（child 数 2..4 含端点，参数
+> 逐项对照 @1116876）。F3 轮帧 60 运行时探针复核：双侧装饰/浮尘分布统计等价（原版自身 Math.random 漂移
+> 使像素级不可复现，属设计内）。
+
 ## §6 UI/流程素材盘点
 
 原版流程素材链（init.js 证据）：Preloader（PreloaderAssets 3 帧 + KiziLogo @2212635/2212773）→ 菜单/大厅（**MenuBackgrounds** + MenuAssets 按钮/设置/开关全家 @2219322 起、背景 `assets/images/TempleHallForest.jpg`、标题 `assets/images/GameNameForest.png`、Navy0000 装饰 @2220571-2220815；多庙分支引用包内不存在的 GameNameElements.png）→ 选关（`data/forest/temple.json` levels×48/edges×47 @2199840 + MenuAssets Diamond 系图标 + TempleAssets Icon0000-2/Diamond1_Bkg_Empty/MenuBackground0000）→ 局内 HUD（`TempleAssets.Clock0000` + 中文 bitmapFont "font"@1912643；原版确用中文字体 `fonts/chinese/font.fnt+png` 四别名 @2219650）→ 结算（PopupAssets：FinishStone 按模式 4 套、Confetti、SilverIcon、Pause/Mute、FingerRing 触屏提示 + Common/StoneButton 用 MenuAssets StoneButton）→ 传送/冰/黑暗等机关专属素材（portal/ice/BlackBox 族）。

@@ -2,7 +2,7 @@
 
 服务端权威的《森林冰火人 1：森林神庙》双人对战合作网页游戏。完整开发计划见 [note/PLAN.md](note/PLAN.md)。
 
-> **当前版本**：0.3.22（M2 触屏虚拟按键：移动端三键输入 + iOS 假全屏，自动化触摸 e2e 验证；穿透/真机联调待人工。上版 0.3.21 性能专项：服务端物理单步 −90%（bonus_2 28.8→2.4ms，重关慢动作消失）、客户端冷启动传输 −30%、reload 缓存近零——物理位级一致门禁验证零漂移；此前 0.3.0-0.3.20 完成 box2d 保真重写 + 全 UI 复刻：48 关、机关全谱、双浏览器真联机；物理复刻度 84.31 + 视觉复刻度 94.97。量化基准见 [benchmark/](benchmark/README.md)，性能对比报告见 [note/report/perf/2026-10-08-perf-optimization.md](note/report/perf/2026-10-08-perf-optimization.md)，复刻度报告见 [2026-10-06-fidelity-benchmark.md](note/report/perf/2026-10-06-fidelity-benchmark.md)，逐版改动见 [note/release/](note/release/)）
+> **当前版本**：0.3.23（保真优化四连轮：动画 composite 99.97、物理驱动序对齐原版帧序（金轨迹零漂移）、视觉零偏移 95.20（相机 16px 根因修复/门锚点/平台灯罩/软阴影）、响度对齐 master 0.1（12 键全对齐）；上版 0.3.22 触屏虚拟按键。此前 0.3.0-0.3.21 完成 box2d 保真重写 + 全 UI 复刻 + 性能专项：48 关、机关全谱、双浏览器真联机；物理复刻度 84.31。量化基准见 [benchmark/](benchmark/README.md)，性能对比报告见 [note/report/perf/2026-10-08-perf-optimization.md](note/report/perf/2026-10-08-perf-optimization.md)，复刻度报告见 [2026-10-06-fidelity-benchmark.md](note/report/perf/2026-10-06-fidelity-benchmark.md)，逐版改动见 [note/release/](note/release/)）
 >
 > **使用边界**：本项目使用官方游戏素材与关卡数据，仅供两名开发者私下联机游玩。禁止公开分发、上线或商用。
 

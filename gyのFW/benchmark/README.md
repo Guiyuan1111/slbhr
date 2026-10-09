@@ -103,3 +103,13 @@ git 列以快照 JSON `meta.git`（存档时脚本记录）为准；visual 系�
 - 输入对齐 INPUT_SHIFT 默认 +1（实测标定），可用 `DIFF_SHIFT` 环境变量覆盖。
 - fidelity-score settle=5 帧（金轨迹 f0=起跑后第 5 帧，实证见报告 §四 R1）；bonus_2 类重箱关的 settle 敏感性见对比报告。
 - 本基准只读（不改内核/金轨迹），稳定性红线无关项。
+
+### audio-loudness.mjs — F4 响度保真对拍（2026-10-09）
+
+```bash
+node benchmark/audio-loudness.mjs --runtime --save f4
+```
+
+静态解析客户端逐键音量对表原版（master 0.1 + waterSteps 0.5 / wind 0.2，余 1.0），
+--runtime 另起服读实机 `__fw.sound.volume`（WebAudio 挂起态需先派发手势解锁）。
+结果存 benchmark/results/audio-<tag>.json；exit 0 = 全对齐。

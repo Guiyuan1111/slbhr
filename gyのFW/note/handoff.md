@@ -25,6 +25,8 @@
 
 > **⚠ 仓库迁移（2026-10-03）**：整个 `slbhr` 已合并为单一 monorepo 并推送 GitHub 私有仓库 `Guiyuan1111/slbhr`。`gyのFW` 的完整历史以双亲合并并入（原 tag 0.2.0 一并保留）。**此后所有提交在 `slbhr` 根目录进行**；`gyのFW/.git` 已改名 `.git.migrated` 停用（防双仓库分叉，需要找回旧镜像时改回即可）。
 
+**更新**：2026-10-09（**0.3.23 已发布：保真优化四连轮 F1-F4**——F1 动画：新基准 fidelity-anim（原版实机轨迹采集），腿部/层序两处字证修正，composite 97.85→99.97；F2 物理驱动序：探针实证原版 step() 帧序（doors→wg→fb→设备逆序→Step），金轨迹 5 关位级零漂移、7/48 非金关相位对齐、det-f2 48/48；F3 视觉：相机 setBounds 小于视口致 scroll 被钳 (32,32) 的 16px 全局偏移根因修复（差分最优偏移归零）+ 门锚点 0.5（Box2D enable 副作用）+ 平台灯罩第 4 子节点 + 8px 软阴影，visual 94.31→95.20 零偏移；F4 响度：master 0.1 + 逐键对齐原版（新基准 audio-loudness，before 10 键失配→after 12/12 + runtime 0.1）；e2e started 门禁竞态修复（改读权威相位），movements.json 澄清为冒烟脚本、胜利链走 FW_DEBUG_FORCE_DOORS。报告 §二十六，release/0.3.23.md。已推送 main + tag 0.3.23 + GitHub Release）
+
 **更新**：2026-10-08（**0.3.21 已发布：性能专项四轮**——R1 服务端物理 step −90.4%（根因：vendor 引擎在 node:vm 沙箱求值慢 ~7 倍，改主上下文 new Function 求值；bonus_2 单步 28.8→2.4ms，重关慢动作消失，物理**位级一致**：48 关全刚体 f64 哈希链门禁 + fidelity 84.31 零漂移）；R2 快照路径量化后确认已最优（Colyseus setter 相同值短路，sync+encode 占 tick ≤2%）；R3 客户端加载四件套（音频懒装载/brotli/immutable 分级缓存/vendor 分包：冷启动传输 6909→4858KB，reload 408KB→3KB）；R4 装载/内存验证收口（建房 8-21ms、GC 摊销 0.02ms/步、60s 浸泡 60fps 堆稳定）。新增基准 perf-step/perf-determinism/perf-load（benchmark/README）。对比报告 note/report/perf/2026-10-08-perf-optimization.md。e2e PASS 0 错误、83/83、视觉 94.61（噪声带内）。剩余待办不变：移动端触控（M）、单机同屏（M-L 待产品决定））
 
 **更新**：2026-10-08（**0.3.22 已发布：M2 触屏虚拟按键**——左下左右/右下跳三键，Pointer Events+指针捕获多点同按，合成输入码与键盘同源合并（协议零变化）；粗指针或 ?touch=1 显示，DOM 覆盖层不进画布；iOS 100dvh 假全屏。自动化触摸 e2e 六项全过（iPhone 设备描述符：tap 跳跃 Δy=53.7px、按住右移 Δx=344.6px、桌面不创建、零错误）；83/83 + 标准 e2e + 视觉 94.61 持平。**M2 剩余 [人工] 项：樱花穿透注册/隧道联调 + 双手机真机验收（含 iOS Safari/Edge 实测）**。同日稍早发布 0.3.21 性能专项（见上条））

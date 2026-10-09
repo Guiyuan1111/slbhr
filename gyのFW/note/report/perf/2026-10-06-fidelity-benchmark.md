@@ -304,7 +304,7 @@ gzip 实测 −76%；物理指数 84.53（复跑确认）+ 视觉 94.97（visual
 4. **EndDiamond 时序**：星碑动画启动时触发（原版 44345）✓ 已接。
 改判：endPass 逐行**无条件**响（原版 44331/335/340 不控行达标）✓ 已对齐。
 远端角色跳跃/涉水有声（原版任一角色出声，bundle:43149/43072）✓ 已放开 myRole 限制。
-音量响度：原版 master=0.1、我方自主响度——记录不改（整体重标定收益低）。
+音量响度：原版 master=0.1、我方自主响度——记录不改（整体重标定收益低）。（**2026-10-09 更新**：F4 轮已按原版口径整体重标定，master 0.1 + 逐键归一，见 §二十六）
 
 ### C. 动画注册（原版 26 处逐条）
 - 我方 17 处覆盖 ✓；6 组未注册（onice/ice_legs/frost/vapor/portal/ToggleSingleScreen）
@@ -381,3 +381,54 @@ gzip 实测 −76%；物理指数 84.53（复跑确认）+ 视觉 94.97（visual
 ### 验证
 83/83 · typecheck · build · e2e 全绿。物理 84.31 / 视觉 94.97（visual-r14 归档；
 物理 84.31 于 2026-10-08 在 19b990e 复现存档为 r24-docaudit 快照）。
+
+## 二十六、保真优化四连轮（F1-F4，0.3.23）
+
+以「不影响安全/稳定/兼容」为红线、以基准量化为准入准出的保真专项：每轮一个优化点，做完做透，
+基准前后双采样。
+
+### F1 动画保真轮（commit 2e5a167）
+- 原版实机动画轨迹采集基准 `benchmark/fidelity-anim.mjs`（3 关 × 2 遍确定性复验 + 原版腿部规则
+  自检 0 违例）；
+- 两处字证修正：腿部 running 去 `|vx|>20` 近似阈值（原版 b===jumping 无条件播，含顶墙跑）；
+  层序由面向驱动改状态驱动（rising 时 legs 在上）；
+- **composite 97.85 → 99.97**（forest_07 fb 87.09 → 99.79），归档 anim-f1-baseline/final.json。
+
+### F2 物理驱动序轮（commit d06e1bc）
+- 运行时探针实证原版 step() 帧序：**doors → wg → fb → 设备（逆序）→ Step**——机关检查/门扫帧
+  移至 Step 前（packages/shared/src/kernel/world.ts）；
+- 金轨迹 5 关位级全等（fidelity 84.31 持平）；非金轨迹 7/48 关位级相位对齐（updateState 端点时序
+  回到原版相位）；det-f2 新基线 48/48 自洽。
+
+### F3 视觉收尾轮（四修复，零偏移 95.20）
+帧 60 运行时探针（TEMP 一次性脚本，已清理）逐项定位并修复：
+1. **相机 16px 全局偏移**（根因级）：`setBounds(32,32,1248,928)` 小于 1280×960 视口，Phaser 边界
+   钳制把 centerOn 的 scroll(16,16) 压成 (32,32)——全场景渲染于 level+0，原版 stage=level+16
+   （9 列顶缘扫描实测：原版 211 vs 我方 192，恒定 16px）。边界改设画布全幅 (0,0,1312,992)，
+   scroll=(16,16) 生效；**差分最优偏移由 (−6,−6) 归零**；
+2. **门锚点** (0,0.99)→(0.5,0.99)：原版 Box2D enable() 副作用实测 ax=0.5，修 33px 横向偏移
+   （94.63 → 95.23）；
+3. **移动平台第 4 子节点灯罩** moving_platform_light_off，scale.x=(格数−1)/3（94.31 → 94.63）；
+4. **地面投影** 8px 高斯软阴影 α.45 对齐原版 ShadowFilter(8,0) 管线，弃硬偏移 (6,6) α.1
+   （边界带实测差 14px 归零）。
+- **visual：基线 94.31 → 零偏移 95.20**（visual-f3 归档）；残余最差格 82-87% 为双侧随机
+  MaskBox 变体/装饰相位噪声，属设计内不可归约。
+
+### F4 音频响度轮（commit 7dc526e）
+- bundle 实测原版响度口径：**boot 处 game.sound.volume=0.1 全局主音量**，逐键默认 1.0，仅
+  waterSteps 0.5 / portalLoop 0.3 / wind 0.2 三处显式覆写；
+- 我方弃自主音量（0.3-0.6 散布）：master 0.1 + 逐键归一（waterSteps/wind 保留覆写；portalLoop
+  机关联机版未用）；
+- 新基准 `benchmark/audio-loudness.mjs`：静态逐键对表 + 运行时 master 探针（WebAudio 挂起态
+  gain.value 不反映 t=0 调度，须先手势解锁再读）；
+- **before 10 键失配 + master 缺失 → after 12 键全对齐 + runtime 0.1**（audio-f4-before/f4 归档）。
+
+### e2e 门禁纠偏（commit 88f3410）
+- started 门禁由 DOM 文本（初始空串 + 250ms 轮询假空窗）改读权威状态相位——旧门禁可致注入抢先
+  于 started 被键盘暂停闸整段丢弃（角色冻结、won 永假）；
+- 澄清 movements.json 为行为冒烟脚本（移动/液体致死/自动重开），胜利链验证走
+  FW_DEBUG_FORCE_DOORS=1 + --expect-win：两模式全过。
+
+### 验证
+83/83 · typecheck · build 全绿；e2e smoke + win 链双 PASS；物理 84.31（F2 复验零漂移）/
+视觉 95.20 零偏移 / 动画 99.97 / 响度表 12/12。
