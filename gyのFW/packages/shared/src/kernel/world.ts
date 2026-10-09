@@ -138,7 +138,7 @@ export class World {
   mechSnapshot(): {
     levers: Array<{ id: number; group: number; state: number; angle: number }>;
     pushers: Array<{ id: number; group: number; state: number; x: number; y: number }>;
-    platforms: Array<{ id: number; x: number; y: number; angle: number }>;
+    platforms: Array<{ id: number; x: number; y: number; angle: number; state: number }>;
     props: Array<{ id: number; kind: string; x: number; y: number; angle: number }>;
     winds: Array<{ id: number; group: number; state: number }>;
     hangings: Array<{ id: number; x: number; y: number; angle: number }>;
@@ -153,7 +153,7 @@ export class World {
       }),
       platforms: this.mechs.platforms.map((p, id) => {
         const pos = p.body.GetPosition();
-        return { id, x: m2px(pos.x), y: m2px(pos.y), angle: -p.body.GetAngle() };
+        return { id, x: m2px(pos.x), y: m2px(pos.y), angle: -p.body.GetAngle(), state: p.state };
       }),
       props: this.mechs.props.map((p, id) => {
         const pos = p.body.GetPosition();

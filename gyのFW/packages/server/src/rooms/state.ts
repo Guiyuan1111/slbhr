@@ -92,12 +92,15 @@ export class BodyState extends Schema {
   x!: number;
   y!: number;
   angle!: number;
+  /** 仅平台用：组信号 OR（原版灯罩 light_on/off 换帧依据），其余刚体恒 0 */
+  state!: number;
 
   constructor() {
     super();
     this.x = 0;
     this.y = 0;
     this.angle = 0;
+    this.state = 0;
   }
 }
 

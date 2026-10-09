@@ -295,6 +295,7 @@ export class ForestRoom extends Room<RoomState> {
       bs.x = Math.round(p.x * 10) / 10;
       bs.y = Math.round(p.y * 10) / 10;
       bs.angle = Math.round(p.angle * 1000) / 1000;
+      bs.state = p.state;
     }
     for (const p of snap.props) {
       let bs = this.state.props.get(`${p.kind}:${p.id}`);

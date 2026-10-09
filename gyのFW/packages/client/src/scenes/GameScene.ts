@@ -150,6 +150,8 @@ export class GameScene extends Phaser.Scene {
   private lastClock = "";
   private diamondKinds = new Map<string, string>();
   private platformViews = new Map<string, Phaser.GameObjects.Container>();
+  /** 平台灯罩视图（key 同 platformViews；快照 state 驱动 light_on/off 换帧） */
+  private platformLights = new Map<string, { img: Phaser.GameObjects.Image; state: number }>();
   private leverViews = new Map<string, LeverView>();
   private pusherViews = new Map<string, PusherView>();
   private bodyViews = new Map<string, Phaser.GameObjects.Image>();
@@ -203,6 +205,7 @@ export class GameScene extends Phaser.Scene {
     this.diamondSprites.clear();
     this.diamondKinds.clear();
     this.platformViews.clear();
+    this.platformLights.clear();
     this.leverViews.clear();
     this.pusherViews.clear();
     this.bodyViews.clear();
@@ -501,7 +504,11 @@ export class GameScene extends Phaser.Scene {
       this.bodyViews.set(b.id, img);
     }
     for (const ball of level.balls) {
-      const img = this.add.image(ball.x + PAD, ball.y + PAD, ATLAS_MECH, "ball0000").setOrigin(0.5).setDepth(3);
+      // 体心 = 图块中心 + (−16, +20.8)（内核 buildBall：原版 x−=mpx(0.5)、y+=mpx(0.65)），首帧即对位
+      const img = this.add
+        .image(ball.x - 16 + PAD, ball.y + 20.8 + PAD, ATLAS_MECH, "ball0000")
+        .setOrigin(0.5)
+        .setDepth(3);
       this.bodyViews.set(ball.id, img);
     }
 
@@ -527,6 +534,7 @@ export class GameScene extends Phaser.Scene {
         .setDepth(1.2)
         .setScale(vert ? 0.95 : 1.05, vert ? 1.05 : 0.95);
       this.platformViews.set(p.id, c);
+      this.platformLights.set(p.id, { img: light, state: 0 });
     }
 
     // 吊挂（原版 §8 Hanging @1684262）：锚轮 hanging_anchor0000 + 绳 tileSprite(pulley_rope0000,高20)
@@ -1249,7 +1257,7 @@ export class GameScene extends Phaser.Scene {
       }
       v.state = Number(s.state) === 1 ? 1 : 0;
     });
-    st.platforms?.forEach?.((b: { x: number; y: number; angle: number }, id: string) => {
+    st.platforms?.forEach?.((b: { x: number; y: number; angle: number; state?: number }, id: string) => {
       const v = this.platformViews.get(`p${id}`);
       if (!v) return;
       const px2 = (Number(b.x) || 0) + PAD;
@@ -1258,6 +1266,12 @@ export class GameScene extends Phaser.Scene {
       if (px2 !== v.x || py2 !== v.y || pa !== v.angle) {
         v.setPosition(px2, py2);
         v.setAngle(pa);
+      }
+      const lv = this.platformLights.get(`p${id}`);
+      const ns = Number(b.state) === 1 ? 1 : 0;
+      if (lv && ns !== lv.state) {
+        lv.state = ns;
+        lv.img.setTexture(ATLAS_MECH, ns === 1 ? "moving_platform_light_on0000" : "moving_platform_light_off0000");
       }
     });
     st.props?.forEach?.((b: { x: number; y: number; angle: number }, key: string) => {
