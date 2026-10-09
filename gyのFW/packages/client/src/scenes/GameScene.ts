@@ -557,10 +557,12 @@ export class GameScene extends Phaser.Scene {
     const frameOf: Record<Role, string> = { fireboy: "FinishBoy0000", watergirl: "FinishGirl0000" };
     for (const role of ROLES) {
       const r = level.doors[role];
-      // 原版 Door（38427-38440）：sprite 定位图块左上、底边+4，仅设 anchor.y=0.99（x 默认 0=左缘对齐）
+      // 原版 Door（38427-38440）：sprite 建于 (c=x+mpx(1)=中心, e+4)，anchor.y=0.99；Box2D
+      // enable() 会把 anchor.x 设 0.5（运行时探针 2026-10-09 实测 ax=0.5）——故 origin=(0.5,0.99)，
+      // x=中心。此前误转写为 x 锚 0（左缘对齐），门整体右移 33px（视觉门区 61-77% 差异簇根因）
       const s = this.add
-        .sprite(r.x + PAD, r.y + r.h + 4 + PAD, ATLAS_TEMPLE, frameOf[role])
-        .setOrigin(0, 0.99)
+        .sprite(r.x + r.w / 2 + PAD, r.y + r.h + 4 + PAD, ATLAS_TEMPLE, frameOf[role])
+        .setOrigin(0.5, 0.99)
         .setScale(0.8)
         .setDepth(0.5);
       this.doorSprites.set(role, s);
