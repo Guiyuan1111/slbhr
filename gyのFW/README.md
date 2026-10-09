@@ -2,7 +2,7 @@
 
 服务端权威的《森林冰火人 1：森林神庙》双人对战合作网页游戏。完整开发计划见 [note/PLAN.md](note/PLAN.md)。
 
-> **当前版本**：0.3.24（结算「继续」直进下一关（原版 Continue 语义，联机形态=预选+面板）；上版 0.3.23 保真四连轮：动画 99.97/视觉 95.20 零偏移/物理驱动序/响度 0.1。保真优化四连轮：动画 composite 99.97、物理驱动序对齐原版帧序（金轨迹零漂移）、视觉零偏移 95.20（相机 16px 根因修复/门锚点/平台灯罩/软阴影）、响度对齐 master 0.1（12 键全对齐）；上版 0.3.22 触屏虚拟按键。此前 0.3.0-0.3.21 完成 box2d 保真重写 + 全 UI 复刻 + 性能专项：48 关、机关全谱、双浏览器真联机；物理复刻度 84.31。量化基准见 [benchmark/](benchmark/README.md)，性能对比报告见 [note/report/perf/2026-10-08-perf-optimization.md](note/report/perf/2026-10-08-perf-optimization.md)，复刻度报告见 [2026-10-06-fidelity-benchmark.md](note/report/perf/2026-10-06-fidelity-benchmark.md)，逐版改动见 [note/release/](note/release/)）
+> **当前版本**：0.3.25（机关碰撞体/贴图一致性专项：拉杆审计引发九连修复——P0 平台体角双旋转（竖直平台/转臂碰撞体由横躺复位竖立+转臂摆位）、推杆原版梯形、拉杆镜像、吊挂/滑轮/罗马杆快照下发、竖直平台贴图、风机体心、window 结案、平台灯罩状态链、球首帧；成因分析与全族判决表见 note/research/2026-10-fidelity/12-mech-collider-audit.md；上版 0.3.24 结算「继续」直进下一关。此前 0.3.0-0.3.23 完成 box2d 保真重写 + 全 UI 复刻 + 性能专项 + 保真四连轮：48 关、机关全谱、双浏览器真联机、物理复刻度 84.31、动画 99.97、视觉 95.20。量化基准见 [benchmark/](benchmark/README.md)，性能对比报告见 [note/report/perf/2026-10-08-perf-optimization.md](note/report/perf/2026-10-08-perf-optimization.md)，复刻度报告见 [2026-10-06-fidelity-benchmark.md](note/report/perf/2026-10-06-fidelity-benchmark.md)，逐版改动见 [note/release/](note/release/)）
 >
 > **使用边界**：本项目使用官方游戏素材与关卡数据，仅供两名开发者私下联机游玩。禁止公开分发、上线或商用。
 
