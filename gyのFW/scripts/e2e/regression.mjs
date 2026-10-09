@@ -108,9 +108,13 @@ async function runOnce(browser, inputTimeline, expectWin, tag) {
   if (!code) throw new Error("创建房间未取到房间码");
   await enterAs(b, "join", code);
   log(`[${tag}] 房间 ${code} 双方入座，等待 ready→started`);
-  // 等 started（HUD 状态清空即 started；ready 文案"双人就绪，即将开始…"）
-  await a.waitForFunction(() => document.querySelector("#hud-status")?.textContent === "", null, { timeout: 20000 });
-  await b.waitForFunction(() => document.querySelector("#hud-status")?.textContent === "", null, { timeout: 20000 });
+  // 等 started：必须读权威状态相位，不能等 DOM 文本清空——hud-status 由 250ms 轮询刷写
+  // 且初始即为空串，轮询 tick 前存在假空窗，会让注入抢先于 started，输入被客户端键盘
+  // 暂停闸（setPaused(phase!=="started")）整段丢弃且 15Hz 重发重放"全松"快照，角色冻结、
+  // won 永假（2026-10-09 诊断：双方 30s 钉在出生点 vx=0 anim=idle）
+  const startedGate = `(() => { try { return window.__fwInit.net.room.state.phase === "started"; } catch { return false; } })()`;
+  await a.waitForFunction(startedGate, null, { timeout: 20000 });
+  await b.waitForFunction(startedGate, null, { timeout: 20000 });
   await a.waitForTimeout(300);
 
   if (inputTimeline.length > 0) {
