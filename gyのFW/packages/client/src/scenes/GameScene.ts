@@ -948,8 +948,6 @@ export class GameScene extends Phaser.Scene {
       const flip = Number(ps.facing) < 0;
       view.legs.setFlipX(flip);
       view.head.setFlipX(flip);
-      // 原版面向左时把 legs 提到 head 之上（43187-43189 removeChild+addChild）
-      view.legs.setDepth(flip ? 5.1 : 5);
       // 头部倾角（原版 head.rotation = a：坡面接触法线/空中速度方向，内核逐帧算好）
       view.head.setRotation(Number(ps.headTilt) || 0);
 
@@ -970,10 +968,13 @@ export class GameScene extends Phaser.Scene {
         continue;
       }
 
-      // 动画切换（内核 AnimState：idle/jumping/rising/falling → 头部四态；
-      // 腿部原版按地面移动播 running，快照无接地信息，用"jumping 且 |vx| 明显"近似）
+      // 动画切换（内核 AnimState = 原版状态机 b：idle/jumping/rising/falling → 头部四态；
+      // 腿部与层序都只由 b 决定，char-region.js:374-384 / init.js@1874819-1875042 字证）
       const anim = String(ps.anim ?? "idle");
       const p = PREFIX[role];
+      // 层序按状态："rising" 时 legs 提到 head 之上，其余 head 在上（removeChild+addChild 的
+      // Phaser3 等效 = setDepth；此前误实现为面向驱动，向左走/上升两层序全反）
+      view.legs.setDepth(anim === "rising" ? 5.1 : 5);
       if (view.anim !== anim) {
         view.anim = anim;
         switch (anim) {
@@ -994,7 +995,9 @@ export class GameScene extends Phaser.Scene {
             view.head.play(`${p}_idle`);
         }
       }
-      const wantLegs = anim === "jumping" && Math.abs(Number(ps.vx) || 0) > 20 ? `${p}_legs_run` : `${p}_legs_idle`;
+      // 腿部规则（原版逐字）：b==="jumping" 无条件播 running（含地面顶墙跑），否则停帧 idle0000；
+      // 此前的 |vx|>20 阈值是多余近似（空中低速带指令、地面顶墙两场景与原版不符）
+      const wantLegs = anim === "jumping" ? `${p}_legs_run` : `${p}_legs_idle`;
       if (view.legsKey !== wantLegs) {
         view.legsKey = wantLegs;
         view.legs.play(wantLegs);
