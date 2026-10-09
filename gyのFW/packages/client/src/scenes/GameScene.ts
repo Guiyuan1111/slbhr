@@ -504,22 +504,28 @@ export class GameScene extends Phaser.Scene {
       this.bodyViews.set(ball.id, img);
     }
 
-    // 移动平台（underGround：从岩缝里伸出）：黄帽+黄帽+中段+灯罩，整体 scale(1.05,0.95)。
-    // 子序照原版（运行时探针 2026-10-09 forest_01 帧 60）：capL(−w/2+16)→capR(+w/2−16)→
-    // center(0, scale.x=(格数−2)/3)→light(0,0, scale.x=(格数−1)/3, off 帧常显；on 态切帧属
-    // 服务端状态语义，快照无平台 state，暂不接)
+    // 移动平台（underGround：从岩缝里伸出）：黄帽+黄帽+中段+灯罩。子序照原版
+    // （MovingPlatform @1714490：capL→capR→center→light，帽无缩放、y=16−厚/2；
+    // 中段 scale.x=(长格−2)/3、灯 (长格−1)/3——长格=换轴后宽）。
+    // 竖直平台（宽<高）：原版换轴后内组 shapeSprite.rotation=n=−π/2、外层 scale 仍 (1.05,0.95)
+    // （体角 SetAngle(rotation)=0，快照端 −GetAngle 客户端再取负 → 容器角同为 −90，
+    // 旋转系里 scale(1.05,0.95) 与原版 scale∘rot 合成逐点等价）。
     for (const p of level.platforms) {
-      const capScale = p.h / 48;
-      const capL = this.add.image(-(p.w / 2 - 16), 0, ATLAS_MECH, "BarCapLeft0000").setOrigin(0.5).setScale(capScale);
-      const capR = this.add.image(p.w / 2 - 16, 0, ATLAS_MECH, "BarCapRight0000").setOrigin(0.5).setScale(capScale);
+      const vert = p.w < p.h;
+      const wSw = vert ? p.h : p.w; // 换轴后长边（原版 c.width↔c.height 互换）
+      const hSw = vert ? p.w : p.h;
+      const capY = 16 - hSw / 2; // mpx(h/2−0.5)=−(h_px/2−16)
+      const capL = this.add.image(-(wSw / 2 - 16), capY, ATLAS_MECH, "BarCapLeft0000").setOrigin(0.5);
+      const capR = this.add.image(wSw / 2 - 16, capY, ATLAS_MECH, "BarCapRight0000").setOrigin(0.5);
       const mid = this.add.image(0, 0, ATLAS_MECH, "BarCenter0000").setOrigin(0.5);
-      mid.scaleX = (p.w / 32 - 2) / 3; // 原版 scale.x=(宽格-2)/3
+      mid.scaleX = (wSw / 32 - 2) / 3; // 原版 scale.x=(宽格-2)/3
       const light = this.add.image(0, 0, ATLAS_MECH, "moving_platform_light_off0000").setOrigin(0.5);
-      light.scaleX = (p.w / 32 - 1) / 3; // 原版 scale.x=(宽格-1)/3
+      light.scaleX = (wSw / 32 - 1) / 3; // 原版 scale.x=(宽格-1)/3
       const c = this.add
         .container(p.x + p.w / 2 + PAD, p.y + p.h / 2 + PAD, [capL, capR, mid, light])
         .setDepth(1.2)
         .setScale(1.05, 0.95);
+      if (vert) c.setAngle(-90);
       this.platformViews.set(p.id, c);
     }
 
