@@ -301,6 +301,9 @@ function bootPhaser(): void {
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: [BootScene, MenuScene, TempleScene, GameScene, PauseMenu, EndMenu, GameOverMenu, SettingsScene, CreditsScene, CompleteScene],
   });
+  // 响度对齐原版：game.sound.volume=0.1 全局主音量（bundle 实测），逐键默认 1.0，
+  // 仅 waterSteps 0.5 / wind 0.2 / portalLoop 0.3（原版显式覆写）相对生效
+  phaser.sound.volume = 0.1;
   (globalThis as unknown as Record<string, unknown>).__fw = phaser; // 调试句柄（验收自动化用）
   // 选关 → 弹出联机面板（?level= 深链时面板直接可见，跳过画布选关）
   phaser.registry.set("onLevelPicked", (levelId: string) => {

@@ -117,7 +117,7 @@ export class MenuScene extends Phaser.Scene {
 
     // 菜单 BGM（settings.music 门控）
     if (getSettings().music && !this.sound.isPlaying("bgm_menu")) {
-      this.sound.play("bgm_menu", { loop: true, volume: 0.3 });
+      this.sound.play("bgm_menu", { loop: true });
     }
   }
 

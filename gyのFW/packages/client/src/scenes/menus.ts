@@ -33,7 +33,7 @@ export class SettingsScene extends Phaser.Scene {
         // 菜单态即时恢复 BGM（Game 态由下次 bgmKey 播放时自然生效）
         const act = this.game.scene.getScenes(true).map((s) => s.scene.key);
         if ((act.includes("Menu") || act.includes("Temple")) && !this.sound.isPlaying("bgm_menu")) {
-          this.sound.play("bgm_menu", { loop: true, volume: 0.3 });
+          this.sound.play("bgm_menu", { loop: true });
         }
       } else {
         this.sound.stopByKey("bgm_menu");

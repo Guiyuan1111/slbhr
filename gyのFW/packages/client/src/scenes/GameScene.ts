@@ -237,7 +237,7 @@ export class GameScene extends Phaser.Scene {
     this.sound.stopByKey("bgm_level_speed");
     this.sound.stopByKey("bgm_menu");
     this.sound.stopByKey("bgm_over");
-    this.sfx(this.bgmKey(), { loop: true, volume: 0.35 });
+    this.sfx(this.bgmKey(), { loop: true });
 
     // 场景晚于 phase 启动（如重连进 won 房）：补一次演出
     this.prevPhase = String(this.d.net.room?.state?.phase ?? "");
@@ -888,7 +888,7 @@ export class GameScene extends Phaser.Scene {
       this.sound.stopByKey("bgm_level");
       this.sound.stopByKey("bgm_level_speed");
       this.sound.stopByKey("bgm_over");
-      this.sfx(this.bgmKey(), { loop: true, volume: 0.35 });
+      this.sfx(this.bgmKey(), { loop: true });
     }
   }
 
@@ -896,7 +896,7 @@ export class GameScene extends Phaser.Scene {
   private playStairsSequence(): void {
     this.stairsPlayed = true;
     this.sound.stopByKey("bgm_level");
-    this.sfx("bgm_finish", { volume: 0.4 });
+    this.sfx("bgm_finish");
     for (const role of ROLES) {
       const view = this.views.get(role);
       const door = this.d.level.doors[role];
@@ -926,8 +926,8 @@ export class GameScene extends Phaser.Scene {
     const q = this.d.net.sfxQueue;
     while (q.length > 0) {
       const m = q.shift()!;
-      if (m.kind === "lever") this.sfx("sfx_lever", { volume: 0.6 });
-      else if (m.kind === "pusher") this.sfx("sfx_pusher", { volume: 0.6 });
+      if (m.kind === "lever") this.sfx("sfx_lever");
+      else if (m.kind === "pusher") this.sfx("sfx_pusher");
     }
   }
 
@@ -973,11 +973,11 @@ export class GameScene extends Phaser.Scene {
       // 死亡烟雾（dying 触发，45 帧@30fps 一次性；原版 _doKill：death 音 + 烟随初速镜像）
       if (!view.dying && ps.dying === true) {
         view.smoke.setVisible(true).setPosition(view.cx, view.cy - 21).setFlipX(Number(ps.vx) < 0).play("smoke");
-        this.sfx("sfx_death", { volume: 0.55 });
+        this.sfx("sfx_death");
         // 原版 _doKill：死亡即停关卡 BGM 切失败曲（LevelMusicOver）
         this.sound.stopByKey("bgm_level");
         this.sound.stopByKey("bgm_level_speed");
-        this.sfx("bgm_over", { volume: 0.4 });
+        this.sfx("bgm_over");
       } else if (view.dying && ps.dying !== true) {
         view.smoke.setVisible(false).stop();
       }
@@ -1001,7 +1001,7 @@ export class GameScene extends Phaser.Scene {
             view.head.play(`${p}_jump`);
             // 起跳帧向上速度显著；起跑也进 jumping（vy≈0）不播跳声
             if (role === this.myRole && Number(ps.vy) < -60) {
-              this.sfx(role === "fireboy" ? "sfx_jump_fb" : "sfx_jump_wg", { volume: 0.45 });
+              this.sfx(role === "fireboy" ? "sfx_jump_fb" : "sfx_jump_wg");
             }
             break;
           case "rising":
@@ -1027,7 +1027,7 @@ export class GameScene extends Phaser.Scene {
         const want = ps.inLiquid === true && this.d.keyboard.isMoveDown();
         if (want && !this.waterPlaying) {
           this.waterPlaying = true;
-          this.sfx("sfx_water_steps", { loop: true, volume: 0.5 });
+          this.sfx("sfx_water_steps", { loop: true, volume: 0.5 }); // 原版显式 0.5（bundle:1868233）
         } else if (!want && this.waterPlaying) {
           this.stopWater();
         }
@@ -1039,7 +1039,7 @@ export class GameScene extends Phaser.Scene {
       if (frame !== prev) {
         this.doorSprites.get(role)?.setFrame(`${role === "fireboy" ? "FinishBoy" : "FinishGirl"}${String(frame).padStart(4, "0")}`);
         // 原版 Door.update（38465-38485）：开/关移动全程维持门音实例，到 0/21 帧停
-        if (frame > 0 && frame < 21 && !this.sound.isPlaying("sfx_door")) this.sfx("sfx_door", { volume: 0.45 });
+        if (frame > 0 && frame < 21 && !this.sound.isPlaying("sfx_door")) this.sfx("sfx_door");
         if ((frame === 0 || frame === 21) && this.sound.isPlaying("sfx_door")) this.sound.stopByKey("sfx_door");
         this.doorFrames.set(role, frame);
       }
@@ -1068,7 +1068,7 @@ export class GameScene extends Phaser.Scene {
       if (!img) return;
       if (ds.collected && img.visible) {
         img.setVisible(false);
-        this.sfx("sfx_diamond", { volume: 0.5 });
+        this.sfx("sfx_diamond");
       } else if (!ds.collected && !img.visible) {
         img.setVisible(true);
       }
@@ -1146,7 +1146,7 @@ export class GameScene extends Phaser.Scene {
       }
       // 原版 Wind.updateState：激活 playInstance 循环、失活停止（森林 14 关有风区）
       const anyOn = [...this.windViews.values()].some((w) => w.on);
-      if (anyOn && !this.sound.isPlaying("sfx_wind")) this.sfx("sfx_wind", { loop: true, volume: 0.3 });
+      if (anyOn && !this.sound.isPlaying("sfx_wind")) this.sfx("sfx_wind", { loop: true, volume: 0.2 }); // 原版显式 0.2（bundle:1968490 附近）
       if (!anyOn) this.sound.stopByKey("sfx_wind");
     });
   }
@@ -1164,7 +1164,7 @@ export class GameScene extends Phaser.Scene {
       else this.platformMoving.delete(id);
       this.platformPrev.set(id, { x, y });
     });
-    if (anyStart) this.sfx("sfx_platform", { volume: 0.5 });
+    if (anyStart) this.sfx("sfx_platform");
   }
 
   /** Navies 漂移（原版每帧：r′+=speed.r → pos.r=offset.r·sin r′ → 极坐标转直角坐标） */

@@ -45,7 +45,7 @@ export class TempleScene extends Phaser.Scene {
     const W = this.scale.width;
     const H = this.scale.height;
     // 选关界面延续菜单 BGM（Menu→Temple 不断；原版 45853 进关才 fadeOut）
-    if (getSettings().music && !this.sound.isPlaying("bgm_menu")) this.sound.play("bgm_menu", { loop: true, volume: 0.3 });
+    if (getSettings().music && !this.sound.isPlaying("bgm_menu")) this.sound.play("bgm_menu", { loop: true });
     this.data_ = this.cache.json.get("templeData") as TempleData;
 
     // 背景：MenuBackground0000 平铺
