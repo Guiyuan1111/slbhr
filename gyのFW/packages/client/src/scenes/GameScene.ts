@@ -365,13 +365,22 @@ export class GameScene extends Phaser.Scene {
     bc.fillStyle = "#000";
     bc.fillRect(0, 0, W, H);
 
-    // 4) 合成：右下 8px 软投影(alpha .1) → 3.5px 黑外描边(膨胀近似) → 岩壁
+    // 4) 合成：8px 高斯软投影(α.45, 零偏移) → 3.5px 黑外描边(膨胀近似) → 岩壁。
+    //    原版 applyFilter 管线（1829279-1829390）：InlineFilter(3,red)+OutlineFilter(3.5,black)
+    //    +ShadowFilter(8,0)——旧实现硬偏移(6,6) α.1 无模糊，边界带差实测 14px（x=140 列
+    //    原版 398 vs 我方 384，2026-10-09）；InlineFilter 红色内缘在灰度实测不可辨，暂不近似
+    const shadow = document.createElement("canvas");
+    shadow.width = W;
+    shadow.height = H;
+    const sc = shadow.getContext("2d")!;
+    sc.filter = "blur(8px)";
+    sc.drawImage(black, 0, 0);
     const final = document.createElement("canvas");
     final.width = W;
     final.height = H;
     const fc = final.getContext("2d")!;
-    fc.globalAlpha = 0.1;
-    fc.drawImage(black, 6, 6);
+    fc.globalAlpha = 0.45;
+    fc.drawImage(shadow, 0, 0);
     fc.globalAlpha = 1;
     for (const [ox, oy] of [[3, 0], [-3, 0], [0, 3], [0, -3], [2, 2], [-2, 2], [2, -2], [-2, -2], [3, 3], [-3, 3], [3, -3], [-3, -3]] as const) {
       fc.drawImage(black, ox, oy);
