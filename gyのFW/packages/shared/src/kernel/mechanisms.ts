@@ -173,33 +173,32 @@ export class Pusher extends Device {
     bd.position = center;
     this.body = world.CreateBody(bd);
     this.body.SetUserData("pusher");
-    // T 形六边形（原版 Pusher @Devices/Pusher：底唇 ±(pw/2+0.7)×0.2 + 茎 ±pw/2×ph）
-    // ——此前误写无唇梯形 ±1→±0.5，底唇碰撞面缺失；密度 0.03、电机力 7 亦为原版实测值
+    // 纯梯形（bundle @1745895-1746905 铁证）：底 ±(pw/2+0.5)@y0 → 顶 ±(pw/2)@yh，pw=1、h=0.6；
+    // density 0.1 / 力 5N / motor −15。旧版 T 形底唇 + 0.03 + 7N 是 0.3.6 误转写（原版无唇）。
+    // 贴图块 64×32 画在图块中心，梯形底边过 body origin、向上 19.2px —— 与贴图块下半重合。
     polygonFixture(this.body, B, [
-      { x: -1.2, y: -0.2 },
-      { x: 1.2, y: -0.2 },
-      { x: 1.2, y: 0 },
+      { x: -1, y: 0 },
+      { x: 1, y: 0 },
       { x: 0.5, y: 0.6 },
       { x: -0.5, y: 0.6 },
-      { x: -1.2, y: 0 },
     ], {
       categoryBits: FILTER.GROUND_CAT,
       maskBits: FILTER.LIQUID_SENSOR_MASK,
       friction: 0.7,
       restitution: 0,
-      density: 0.03,
+      density: 0.1,
       userData: "pusher",
     });
 
-    // prismatic：bodyA=按钮、bodyB=地面，轴 (0,1)，行程 [0, 0.7]（translation=下沉深度）
+    // prismatic：bodyA=按钮、bodyB=地面，轴 (0,1)，行程 [0, 0.7]；锚点=质心（原版 GetWorldCenter @1746872）
     const jd = new B.b2PrismaticJointDef();
-    jd.Initialize(this.body, groundBody, center, new B.b2Vec2(0, 1));
+    jd.Initialize(this.body, groundBody, this.body.GetWorldCenter(), new B.b2Vec2(0, 1));
     jd.lowerTranslation = 0;
     jd.upperTranslation = 0.7;
     jd.enableLimit = true;
     jd.enableMotor = true;
     jd.motorSpeed = -15;
-    jd.maxMotorForce = 7;
+    jd.maxMotorForce = 5;
     this.joint = world.CreateJoint(jd);
   }
 
