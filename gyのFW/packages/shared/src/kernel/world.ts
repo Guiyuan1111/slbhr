@@ -195,17 +195,15 @@ export class World {
     const jumpSound = () => {
       /* 音效属客户端，内核只留钩子 */
     };
-    // 风力（原版在 update 链中施力，先于物理步进）
+    // 风力（原版在 device update 链中施力；施力顺序对求解器无影响，取 simTimeS 为时基）
     for (const wind of this.mechs.winds) wind.applyForce(this.simTimeS);
     this.chars.fireboy.update(this.B, dt, inputs.fireboy, jumpSound);
     this.chars.watergirl.update(this.B, dt, inputs.watergirl, jumpSound);
 
-    this.built.world.Step(dt, 8, 3);
-    this.simTimeS += dt;
-    this.processContactEvents(events);
-
+    // 原版帧序（运行时探针 2026-10-09，forest_01 实测）：doors → wg → fb → 设备(逆注册序) → Step。
+    // 机关检查与门扫帧在 Step【前】：checkState 读的是上一步的关节角，状态变化当帧进入求解。
+    // 原实现放在 Step 后（反应滞后 1 帧）——research/11 §2B 驱动序残余的确定性来源之一。
     if (this.phase === "playing") {
-      // 机关逐帧检查（原版 update 链：拉杆过零/按钮阈值 → 组同步 → 平台 updateState）
       const mechEvents: MechEvent[] = [];
       for (const l of this.mechs.levers) l.checkState(mechEvents);
       for (const p of this.mechs.pushers) p.checkState(mechEvents);
@@ -214,6 +212,13 @@ export class World {
         this.mechs.manager.deviceChanged();
       }
       this.updateDoors(dt, events);
+    }
+
+    this.built.world.Step(dt, 8, 3);
+    this.simTimeS += dt;
+    this.processContactEvents(events);
+
+    if (this.phase === "playing") {
       this.checkEnd(events);
       this.timerMs += dt * 1000;
     }
