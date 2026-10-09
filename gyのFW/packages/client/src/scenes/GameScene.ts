@@ -476,15 +476,20 @@ export class GameScene extends Phaser.Scene {
       this.bodyViews.set(ball.id, img);
     }
 
-    // 移动平台（underGround：从岩缝里伸出）：黄帽+中段+黄帽，整体 scale(1.05,0.95)
+    // 移动平台（underGround：从岩缝里伸出）：黄帽+黄帽+中段+灯罩，整体 scale(1.05,0.95)。
+    // 子序照原版（运行时探针 2026-10-09 forest_01 帧 60）：capL(−w/2+16)→capR(+w/2−16)→
+    // center(0, scale.x=(格数−2)/3)→light(0,0, scale.x=(格数−1)/3, off 帧常显；on 态切帧属
+    // 服务端状态语义，快照无平台 state，暂不接)
     for (const p of level.platforms) {
       const capScale = p.h / 48;
       const capL = this.add.image(-(p.w / 2 - 16), 0, ATLAS_MECH, "BarCapLeft0000").setOrigin(0.5).setScale(capScale);
       const capR = this.add.image(p.w / 2 - 16, 0, ATLAS_MECH, "BarCapRight0000").setOrigin(0.5).setScale(capScale);
       const mid = this.add.image(0, 0, ATLAS_MECH, "BarCenter0000").setOrigin(0.5);
       mid.scaleX = (p.w / 32 - 2) / 3; // 原版 scale.x=(宽格-2)/3
+      const light = this.add.image(0, 0, ATLAS_MECH, "moving_platform_light_off0000").setOrigin(0.5);
+      light.scaleX = (p.w / 32 - 1) / 3; // 原版 scale.x=(宽格-1)/3
       const c = this.add
-        .container(p.x + p.w / 2 + PAD, p.y + p.h / 2 + PAD, [capL, mid, capR])
+        .container(p.x + p.w / 2 + PAD, p.y + p.h / 2 + PAD, [capL, capR, mid, light])
         .setDepth(1.2)
         .setScale(1.05, 0.95);
       this.platformViews.set(p.id, c);
