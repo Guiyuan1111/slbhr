@@ -505,12 +505,10 @@ export class GameScene extends Phaser.Scene {
       this.bodyViews.set(ball.id, img);
     }
 
-    // 移动平台（underGround：从岩缝里伸出）：黄帽+黄帽+中段+灯罩。子序照原版
-    // （MovingPlatform @1714490：capL→capR→center→light，帽无缩放、y=16−厚/2；
-    // 中段 scale.x=(长格−2)/3、灯 (长格−1)/3——长格=换轴后宽）。
-    // 竖直平台（宽<高）：原版换轴后内组 shapeSprite.rotation=n=−π/2、外层 scale 仍 (1.05,0.95)
-    // （体角 SetAngle(rotation)=0，快照端 −GetAngle 客户端再取负 → 容器角同为 −90，
-    // 旋转系里 scale(1.05,0.95) 与原版 scale∘rot 合成逐点等价）。
+    // 移动平台（underGround：从岩缝里伸出）：黄帽+黄帽+中段+灯罩。两级变换逐层照原版
+    // （MovingPlatform @1714490：外组 scale=n===0?(1.05,0.95):(0.95,1.05)、角=体角（快照端
+    // −GetAngle、客户端再取负 → pa=体角）；内组 shapeSprite.rotation=n=−90° 仅竖直平台。
+    // 帽无缩放、y=16−厚/2；中段 scale.x=(长格−2)/3、灯 (长格−1)/3——长格=换轴后宽）。
     for (const p of level.platforms) {
       const vert = p.w < p.h;
       const wSw = vert ? p.h : p.w; // 换轴后长边（原版 c.width↔c.height 互换）
@@ -522,11 +520,12 @@ export class GameScene extends Phaser.Scene {
       mid.scaleX = (wSw / 32 - 2) / 3; // 原版 scale.x=(宽格-2)/3
       const light = this.add.image(0, 0, ATLAS_MECH, "moving_platform_light_off0000").setOrigin(0.5);
       light.scaleX = (wSw / 32 - 1) / 3; // 原版 scale.x=(宽格-1)/3
+      const inner = this.add.container(0, 0, [capL, capR, mid, light]);
+      if (vert) inner.setAngle(-90); // 内组 n=−π/2 常驻（原版 shapeSprite.rotation）
       const c = this.add
-        .container(p.x + p.w / 2 + PAD, p.y + p.h / 2 + PAD, [capL, capR, mid, light])
+        .container(p.x + p.w / 2 + PAD, p.y + p.h / 2 + PAD, [inner])
         .setDepth(1.2)
-        .setScale(1.05, 0.95);
-      if (vert) c.setAngle(-90);
+        .setScale(vert ? 0.95 : 1.05, vert ? 1.05 : 0.95);
       this.platformViews.set(p.id, c);
     }
 

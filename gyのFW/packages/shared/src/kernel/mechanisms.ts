@@ -259,7 +259,10 @@ export class MovingPlatform {
     const bd = new B.b2BodyDef();
     bd.type = B.b2BodyType.b2_dynamicBody;
     bd.position = phys(B, cx, cy);
-    bd.angle = shapeRotation;
+    // 原版体角 = SetAngle(options.rotation)（bundle @1714870，Tiled 旋转，森林平台恒 0）；
+    // n=−π/2 只进 fixture（SetAsOrientedBox 第 4 参）。若同时烧进体角，两次 −90° 叠加 ≡ 横放，
+    // 竖直平台/转臂碰撞体整体躺倒 96×28（原版竖立 28×96），转臂摆位随之镜像。
+    bd.angle = 0;
     this.body = world.CreateBody(bd);
 
     // 板 fixture：SetAsOrientedBox(w/2, h/2−padY 0.06)；friction 0.7；density 0（平移）/0.5（转臂）
@@ -281,7 +284,7 @@ export class MovingPlatform {
       const oy = def.offsetY ?? 0;
       const anchor = new B.b2Vec2(this.body.GetPosition().x - ox, this.body.GetPosition().y - oy);
       const jd = new B.b2RevoluteJointDef();
-      jd.Initialize(groundBody, this.body, anchor);
+      jd.Initialize(this.body, groundBody, anchor); // 原版序（bundle @1716690：Initialize(平台, 地面)）；关节角=−体角−π/2，参数序对调会把竖直转臂终位镜像 180°
       const limit = (Math.PI * (def.dtheta ?? 0)) / 180;
       if (this.dthetaPositive) {
         jd.lowerAngle = 0;
