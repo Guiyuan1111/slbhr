@@ -18,6 +18,7 @@
 import Phaser from "phaser";
 import { DOOR, ROLES, type Role } from "@fw/shared";
 import type { LevelData, Rect } from "@fw/shared/level2";
+import { windBodyPos } from "@fw/shared/level2";
 import { AUDIO_GAME, loadAudioPack } from "../audio.js";
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
@@ -620,15 +621,18 @@ export class GameScene extends Phaser.Scene {
       this.romanViews.set(r.id, { bar });
     }
 
-    // 风区机身（liquids 层，depth 7）：wind_base 0000..0003@30fps；state≠0 时播循环
+    // 风区机身（liquids 层，depth 7）：wind_base 0000..0003@30fps；state≠0 时播循环。
+    // 机身/风柱位 = windBodyPos（内核 body 同点；原版 enable() 同步精灵=体位，bundle @1773990：
+    // effect 亦锚体位、origin(0.5,1)、rotation=同机身角、高=32·length、overChars 层）
     for (const w of level.winds) {
+      const bp = windBodyPos(w);
       const base = this.add
-        .sprite(w.rect.x + w.rect.w / 2 + PAD, w.rect.y + w.rect.h / 2 + PAD, ATLAS_MECH, "wind_base0000")
+        .sprite(bp.x + PAD, bp.y + PAD, ATLAS_MECH, "wind_base0000")
         .setOrigin(0.5)
         .setDepth(7)
         .setAngle(w.rotation + 90); // 内核 bd.angle=π(rotation+90)/180，物理角=Phaser 角
       const effect = this.add
-        .sprite(base.x, base.y + 8, ATLAS_MECH, "wind_effect0000")
+        .sprite(base.x, base.y, ATLAS_MECH, "wind_effect0000")
         .setOrigin(0.5, 1)
         .setDepth(7.5)
         .setAngle(base.angle)

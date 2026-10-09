@@ -140,6 +140,18 @@ export interface WindDef {
   initialState: number;
 }
 
+/** 风机身体原点（=原版 wind_base/wind_effect 精灵位）：BoxedDevice 矫正（bundle @1772560，
+ * 金轨迹实证）。boxSize={x:−3,y:2} 经插件 mpx(正)→e=(−48,+32)px，按 −(rotation+90)° 旋转；
+ * center = (原始x + e.x, 原始底边y − e.y)；rect.y 已换算顶边 → 底边 = rect.y + rect.h。
+ * 内核 Wind body 与客户端风机贴图共用此点（原版 enable() 自动同步精灵=体位）。 */
+export function windBodyPos(def: { rect: Rect; rotation: number }): { x: number; y: number } {
+  const rotDeg = def.rotation + 90;
+  const eAng = (-rotDeg * Math.PI) / 180;
+  const ex = -48 * Math.cos(eAng) - 32 * Math.sin(eAng);
+  const ey = -48 * Math.sin(eAng) + 32 * Math.cos(eAng);
+  return { x: def.rect.x + ex, y: def.rect.y + def.rect.h - ey };
+}
+
 export interface PlatformDef {
   id: string;
   /** 端点 A = 对象矩形（顶边系，像素） */

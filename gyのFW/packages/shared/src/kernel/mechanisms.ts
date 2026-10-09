@@ -8,7 +8,7 @@
  * deviceChanged = 组内所有信号源 state 的 OR → 赋给组内非信号设备（平台/窗）并 _updateState。
  * 平台纯信号驱动（updateState 仅在信号时调用，SetMotorSpeed ±2 持续生效到行程端点）。
  */
-import type { LevelData } from "../level2.js";
+import { windBodyPos, type LevelData } from "../level2.js";
 import type { B2 } from "./b2.js";
 import { circleFixture, FILTER, polygonFixture, px2m } from "./b2.js";
 
@@ -577,15 +577,8 @@ export class Wind {
     this.group = def.group;
     this.state = def.initialState;
     this.lengthM = def.lengthM;
-    // 机身中心（原版 BoxedDevice 矫正，金轨迹实证）：boxSize={x:−3,y:2} 经插件 mpx(正)→
-    // e=(−48,+32)px，按 −(rotation+90)° 旋转；center = (原始x + e.x, 原始底边y − e.y)。
-    // level2 的 rect.y 已换算顶边 → 底边 = rect.y + rect.h
-    const rotDeg = def.rotation + 90;
-    const eAng = (-rotDeg * Math.PI) / 180;
-    const ex = -48 * Math.cos(eAng) - 32 * Math.sin(eAng);
-    const ey = -48 * Math.sin(eAng) + 32 * Math.cos(eAng);
-    const cx = def.rect.x + ex;
-    const cy = def.rect.y + def.rect.h - ey;
+    // 机身中心 = windBodyPos（BoxedDevice 矫正，金轨迹实证）
+    const { x: cx, y: cy } = windBodyPos(def);
     const bd = new B.b2BodyDef();
     bd.type = B.b2BodyType.b2_staticBody;
     bd.position = phys(B, cx, cy);
