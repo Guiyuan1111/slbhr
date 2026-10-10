@@ -14,7 +14,7 @@
 
 - 47 关全部解析成功（`parseLevel` 零抛错）；除 `forest_bonus_2` 为 39×35 外，其余 46 关均为 39×29 格（tile 32px）。
 - 机关原语共 12 种形态；按「出现关数」直方图 top5：**PlatformDef 37 / LeverDef 31 / PusherDef 29 / BoxDef 15 / WindDef 15**。
-- 复杂度分布：低 14 关、中 26 关、高 7 关；按复杂度升序切 **5 批（9/10/10/10/8）**，13 组 `_1` 变体全部与本体同批（路线直接改造复用）。
+- 复杂度分布：低 14 关、中 26 关、高 7 关；按复杂度升序切 **5 批（9/10/10/10/8）**，13 组 `_1` 变体全部与本体同批（**2026-10-12 勘误：parseLevel 逐字段复核，13 组无一与本体 LevelData 全等**——全部含地形差异，多数另有机关差异，见 §4 表逐行；路线只能改造/换段复用，禁止直接复制）。
 - 预判最难 3 关：`forest_bonus_2` ≫ `forest_07` > `forest_15`（详见 §6）。
 - 数据可信度审计仅 2 条标注（§2）：forest_05 一个空对象、forest_22 一个未消费属性 `windWidth`；无任何未识别机关类型。
 
@@ -105,12 +105,12 @@ raw = 该原语出现在多少关；eff = 其中以**有效形态**出现（摆�
 |---|---|---|---|---|
 | forest_02 | PusherDef×4、PlatformDef×2(H1/V1)、HangingDef×2、water/lava/green、DiamondDef×16；链 4→2 | 39×29 | 中 | 4 压板全耦合 2 平台 + 三系液体横穿，机关多但无硬物理 |
 | forest_03 | WindDef×2(常开)、water/lava、DiamondDef×22 | 39×29 | 低 | 常开风柱爬升 + 22 颗钻收捡，零控制链 |
-| forest_03_1 | 同 forest_03（数据一致） | 39×29 | 低 | 同上，路线可直接复用 |
+| forest_03_1 | 同 03 但门对调（fb 351↔880、wg 832↔304）+ 地形 48 格差异 | 39×29 | 低 | 风柱段同构，门位互换须改造终点段 |
 | forest_04 | LeverDef×1、PusherDef×1、PlatformDef×2(V2)、PulleyDef×1、BoxDef×1、lava/green；链 2→2 | 39×29 | 中 | 首个 lever+pusher 双源链，叠加滑轮与箱、双液 |
-| forest_04_1 | 04 超集：+1 源 +1 台 +1 球（链 3→3） | 39×29 | 中 | 04 的三链加密版，本体路线扩段复用 |
+| forest_04_1 | 04 改版：钻石/压板/箱/球/平台/滑轮 6 字段均有差异 | 39×29 | 中 | 非 04 超集（多字段改版），仅原语与段落经验复用 |
 | forest_05 | LeverDef×3、PlatformDef×3(H3)、PulleyDef×1、water/lava；链 3→3 | 39×29 | 中 | 三拉杆顺次驱动三横台，唯一含空对象标注的关 |
 | forest_06 | 无机关，water/lava 液面 | 39×29 | 低 | 全 47 关唯二零机关关，纯液面走位 |
-| forest_06_1 | 同 forest_06（数据一致） | 39×29 | 低 | 同上，基线校准用 |
+| forest_06_1 | 同 06 但换液（water↔lava 全 8 段对调）+ 地形 30 格随液 | 39×29 | 低 | 几何同形液种互换，双角色渡段按免疫对调改造 |
 | forest_07 | LeverDef×1、PusherDef×4、PlatformDef×5(V1+旋转臂×4)、BallDef×3、lava/green；链 5→5 | 39×29 | 高 | 5 链全耦合且 4 台为旋转臂 + 3 球滚动物理，时序组合最重 |
 | forest_08 | LeverDef×2、PusherDef×2、PlatformDef×4(H1/V3)、BallDef×2、water/lava；链 4→4 | 39×29 | 中 | 四链四台纯调度 + 双球，无硬机关 |
 | forest_09 | WindDef×1(常开)、water/lava/green、DiamondDef×14；LeverDef×1 摆设 | 39×29 | 低 | 常开风 + 三系液体；拉杆无受驱设备（摆设不操作） |
@@ -118,15 +118,15 @@ raw = 该原语出现在多少关；eff = 其中以**有效形态**出现（摆�
 | forest_10 | LeverDef×2、PlatformDef×2(H1/V1)、water/lava/green；链 2→2 | 39×29 | 低 | 最小控制链样本：两杆两台 + 三系液体 |
 | forest_11 | LeverDef×2、PusherDef×1、PlatformDef×3(H1/V2)；链 3→3 | 39×29 | 低 | 三链三台，水+岩浆双液 |
 | forest_12 | HangingDef×3(fullRotation)、water/lava/green、DiamondDef×20 | 39×29 | 低 | 三摆板被动跨越，零控制链，收钻路线长 |
-| forest_12_1 | 同 forest_12（数据一致） | 39×29 | 低 | 同上，路线直接复用 |
+| forest_12_1 | 同 12 但门位上移（底排 y832→中部 y384）+ 地形 31 格差异 | 39×29 | 低 | 前程可循 12，末段终点改造 |
 | forest_13 | LeverDef×5、PusherDef×2、PlatformDef×6(H5/V1)、BoxDef×4；链 7→6 | 39×29 | 中 | 7 源 6 台全耦合矩阵 + 4 箱，无液体；纯调度密度大 |
-| forest_13_1 | 同 forest_13（数据一致） | 39×29 | 中 | 同上，路线直接复用 |
+| forest_13_1 | 13 改版：钻石/压板/箱/平台 4 字段均有差异 | 39×29 | 中 | 非 13 复制，原语与调度经验复用 |
 | forest_14 | RomanDef×1、WindDef×1(常开)、BoxDef×1、green | 39×29 | 低 | 跷跷板配重 + 常开风，单液系 |
-| forest_14_1 | 同 forest_14（数据一致） | 39×29 | 低 | 同上，路线直接复用 |
+| forest_14_1 | 同 14 但地形有差异（机关字段全同） | 39×29 | 低 | 机制面同构，路线可改造复用（差格需复验） |
 | forest_15 | LeverDef×4、PusherDef×4、PlatformDef×9(H7/V2)、DiamondDef×16；链 8→9 | 39×29 | 高 | 8 源 9 台全耦合为全 47 关最高链调度密度，且无液体兜底 |
 | forest_16 | LeverDef×2、PlatformDef×2(V2)、water/lava；链 2→2 | 39×29 | 低 | 双竖直平台链 + 双液，标准入门控制关 |
 | forest_17 | LeverDef×5、PlatformDef×11(H6/V5)；链 5→11 | 39×29 | 中 | 5 源驱动 11 台平台矩阵，单源扇出多、扳杆次序敏感 |
-| forest_17_1 | 17 加密：PlatformDef×12；链 5→12 | 39×29 | 中 | 17 的平台矩阵加一，本体路线扩段复用 |
+| forest_17_1 | 17 改版：出生点/拉杆/平台均有差异 | 39×29 | 中 | 平台矩阵面同构，按新出生点重排起步段 |
 | forest_18 | LeverDef×2、PusherDef×2、PlatformDef×5(V2+旋转臂×3)、water/lava/green | 39×29 | 高 | 3 旋转臂 + 三链 + 三系液体，硬机关与链调度叠加 |
 | forest_19 | PusherDef×4、PlatformDef×6(H1/V5)、HangingDef×2、BallDef×1、water/green；链 4→6 | 39×29 | 中 | 压板群驱 6 台 + 摆板 + 球，四段绿液 |
 | forest_19_1 | 19 改版：LeverDef×3 替换 4 压板、液体加岩浆（三系）；PlatformDef×6(H1/V5)、HangingDef×2、BallDef×1；链 4→6 | 39×29 | 中 | 19 的控制源换型变体，链更多、摆板同构 |
@@ -135,18 +135,18 @@ raw = 该原语出现在多少关；eff = 其中以**有效形态**出现（摆�
 | forest_22 | PusherDef×2、PlatformDef×5(H2/V3)、WindDef×5(常开)；链 2→5 | 39×29 | 中 | 2 压板扇出 5 台 + 5 常开风走廊；含 windWidth 未消费属性 |
 | forest_23 | LeverDef×1、PusherDef×2、PlatformDef×3(H1/V2)、water/lava/green；链 3→3 | 39×29 | 中 | 三链三台 + 三系液体，标准中坚样本 |
 | forest_24 | PusherDef×1、PlatformDef×1(H1)、RomanDef×2、PulleyDef×1 | 39×29 | 中 | 跷跷板×2 + 滑轮 + 压板台，力学机关三件套 |
-| forest_24_1 | 24 + BoxDef×1（数据同构） | 39×29 | 中 | 同上多一箱，本体路线扩段复用 |
+| forest_24_1 | 24 改版：箱/滑轮均有差异 | 39×29 | 中 | 力学三件套面同构，箱滑轮段重排 |
 | forest_25 | LeverDef×2、PusherDef×1、PlatformDef×2(H1/V1)、HangingDef×1、WindDef×1(常关)、water/green | 39×29 | 中 | 双链 + 单摆板 + 常关风摆设，双液（水+绿） |
-| forest_25_1 | 同 25 但 HangingDef×7 | 39×29 | 中 | 摆板群（7 台 fullRotation）摆渡，本体路线扩段复用 |
+| forest_25_1 | 25 改版：摆板/钻石均有差异 | 39×29 | 中 | 摆板群摆渡段重建，链部分可循 25 |
 | forest_26 | WindDef×5(常开)、water/lava、DiamondDef×26 | 39×29 | 低 | 全 47 关钻石最多（26），常开风关卡，零控制链 |
 | forest_27 | LeverDef×2、PusherDef×1、PlatformDef×3(V1+旋转臂×2)、BallDef×1、WindDef×3(常关)、lava | 39×29 | 中 | 双旋转臂 + 球 + 三常关风摆设，单液系岩浆 |
-| forest_27_1 | 27 换液变体（lava→water） | 39×29 | 中 | 仅液体系不同，本体路线换渡段复用 |
+| forest_27_1 | 27 换液变体：液体/出生点/压板/风 4 字段均有差异 | 39×29 | 中 | 非「仅液体不同」，出生段与风走廊均需重排 |
 | forest_28 | LeverDef×4(2 摆设)、PlatformDef×2(H1/V1)、WindDef×2(常开×1)、water/lava、DiamondDef×18；链 2→2 | 39×29 | 低 | 双链 + 常开风 + 18 钻，摆设杆需跳过 |
 | forest_29 | LeverDef×1、PusherDef×2、PlatformDef×4(H1/V3)、PulleyDef×1、BoxDef×1、BallDef×1、water/lava/green；链 3→4 | 39×29 | 中 | 三链 + 滑轮 + 箱球道具 + 三系液体，复合面广 |
 | forest_30 | LeverDef×1、PusherDef×2、PlatformDef×3(V1+旋转臂×2)、PulleyDef×1、BoxDef×3、water/lava | 39×29 | 高 | 双旋转臂 + 滑轮 + 三箱推运，硬机关密度仅次于 bonus |
 | forest_31 | LeverDef×2、PusherDef×2、PlatformDef×3(H2+旋转臂×1)、water/lava/green；链 4→3 | 39×29 | 中 | 4 源 3 台（含多源组）+ 旋转臂 + 三系液体 |
 | forest_32 | PusherDef×2、PlatformDef×2(V2)、BoxDef×1、BallDef×1、water/lava/green；链 2→2 | 39×29 | 中 | 压板双链 + 推箱滚球 + 三系液体 |
-| forest_32_1 | 32 换液变体（液量分布不同） | 39×29 | 中 | 同 32，本体路线换渡段复用 |
+| forest_32_1 | 32 换液变体：液体/球/平台 3 字段均有差异 | 39×29 | 中 | 渡段与滚球段均需改造 |
 | forest_bonus_1 | LeverDef×1、PusherDef×1、PlatformDef×37(H5/V26/零轴×6，24 台无源摆设)、PulleyDef×1、WindowDef×2、BallDef×1、water/lava；链 2→7 | 39×29 | 高 | 37 平台的超大矩阵（过半为摆设）+ 隐形墙，规模全 47 关第二 |
 | forest_bonus_2 | LeverDef×2、PusherDef×12、PlatformDef×47(H36/V9/零轴×2，11 台无源摆设)、BoxDef×35(boxheavy×17)、PulleyDef×2；链 14→34 | 39×35 | 高 | 唯一 39×35 大图；14 源 34 台 + 12 压板 + 35 箱（17 重箱），规模与密度双极值 |
 | forest_bonus_3 | LeverDef×2、PusherDef×3、PlatformDef×6(H3/V3，斜置 rotation≠0×2)、BallDef×3、green；链 5→6 | 39×29 | 中 | 5 链 6 台含 2 台 135° 斜置平台 + 3 球，绿液 |
@@ -157,7 +157,7 @@ raw = 该原语出现在多少关；eff = 其中以**有效形态**出现（摆�
 
 ## 5. 生产批次表（5 批，复杂度升序，每批 8–10 关）
 
-分批原则：批内 total 升序；13 组 `_1` 变体与本体**同批**（解析数据一致或为本体超集/换液变体，路线直接改造复用）；
+分批原则：批内 total 升序；13 组 `_1` 变体与本体**同批**（**2026-10-12 parseLevel 逐字段复核勘误：13 组无一全等**——全部含地形差异、多数另有机关差异，逐行实况见 §4；原表「数据一致/路线直接复用」作废，一律改造或换段复用）；
 每批只引入尽量少的新原语，其余全部复用前批。「原语库+内核初排」逐批复用：批 N 开工前，批 1..N−1 的路线段
 与原语操作模板（routetool kernel.mjs 时间线）已入库。
 

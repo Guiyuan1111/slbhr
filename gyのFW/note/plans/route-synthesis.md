@@ -12,6 +12,10 @@
 3. 硬化     node --import tsx scripts/e2e/routetool/optimize.mjs --level <id> \
               --route scripts/e2e/inputs/routes/<id>.json --scan 2 --one --jobs 4 --write
 4. 复核     node --import tsx scripts/e2e/routetool/scan.mjs scripts/e2e/inputs/routes/<id>.json 2 4
+            （残余刀锋→4b. 逃逸：node --import tsx scripts/e2e/routetool/multistart.mjs \
+              --level <id> --scan 1 --jobs 4——枚举单方向刀锋预移 1f 至 WIN 孪生盆位重降；
+              forest_01 实证：单盆位下降收敛 ≠ 全局不可达，预移一跳即 ±1f fatal 0/222；
+              注意复合预移混沌耦合，工具已按逐个预移+独立全局验收实现）
 5. 门禁     PATH="$PWD/TEMP/node:$PATH" node scripts/e2e/route.mjs --level <id> --repeat 3 --port <分配端口>
 ```
 
@@ -71,6 +75,6 @@
 ## 5. 完工定义（每关）
 
 - [ ] `scripts/e2e/inputs/routes/<id>.json` 存在，source 字段写明路径描述与产线口径
-- [ ] scan.mjs ±2f 致命表 ≤ 满意水平（±1f 致命项尽量少；残余迟到向刀锋在 source 里注明）
+- [ ] scan.mjs ±2f 致命表 fatal 0（不归零先跑 multistart 盆位逃逸；仍残余才在 source 里注明并列出刀锋表）
 - [ ] route.mjs 门禁 repeat≥3 ALL PASS（记录胜时与末坐标）
 - [ ] 汇报：一行路径描述 + 门禁结果 + 残余风险（若有）
