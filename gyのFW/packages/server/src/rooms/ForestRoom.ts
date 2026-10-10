@@ -8,6 +8,8 @@
  * - 固定步长驱动 box2d World（60Hz，累加器补偿抖动，防螺旋上限 6 步）
  * - 死亡流程（原版 E1）：任一人死 → 死亡烟雾 → gameover，静置等玩家点 GameOverMenu Retry
  *   （原版无自动重开；F2 翻转 2026-10-11）；任意客户端发 restart 即整关重开（won/gameover 时）
+ * - 玩家暂停（原版 E4）：任一端 P 键 → 服务端权威全场物理冻结+时钟停摆，再按解除
+ *   （F3 翻转 2026-10-11，原为本地停手 AFK 语义）
  * - 断线冻结：phase=paused 等待重连 60s，重连恢复、超时才踢出
  */
 import type { Client } from "colyseus";
@@ -60,6 +62,9 @@ export class ForestRoom extends Room<RoomState> {
   private startedWall = 0;
   /** 已运行步数（与 kernel 帧号一致） */
   private stepIndex = 0;
+  /** 玩家暂停（F3：服务端权威，任一端可置/解除；tick 见 userPaused 早退） */
+  private userPaused = false;
+  private userPausedBy: Role | null = null;
 
   onCreate(options: JoinOptions) {
     this.roomPassword = String(options.password ?? "");
@@ -99,6 +104,26 @@ export class ForestRoom extends Room<RoomState> {
       if (this.state.phase === "won" || this.state.phase === "gameover") {
         this.restartLevel();
       }
+    });
+
+    // 玩家暂停（F3 翻转，原版 E4 togglePause=game.paused 全场冻结）：任一端 P 键都打给
+    // 服务端，由这里权威置位/解除并广播双端。started 才受理（lobby/ready/won/gameover
+    // 没有可冻结的物理；断线等待的 phase=paused 是另一套冻结，不与玩家暂停叠加）。
+    // 暂停期键不冻结（原版键掩码在 game.paused 下保留，恢复后按住即生效——服务端 tick
+    // 早退但 inputQueue 照常入队，恢复后按意图跨度自然归帧）。
+    this.onMessage("pause", (client) => {
+      const role = this.roles.get(client.sessionId);
+      if (!role || this.userPaused || this.state.phase !== "started") return;
+      this.userPaused = true;
+      this.userPausedBy = role;
+      this.broadcast("pause-changed", { paused: true, by: role });
+    });
+    this.onMessage("resume", () => {
+      if (!this.userPaused) return;
+      this.userPaused = false;
+      const by = this.userPausedBy;
+      this.userPausedBy = null;
+      this.broadcast("pause-changed", { paused: false, by });
     });
 
     // 调试钩子（FW_DEBUG_AUTO_WIN=1）：started 5s 后注入真实 win 事件，验证 win 下流全链
@@ -176,10 +201,15 @@ export class ForestRoom extends Room<RoomState> {
       await this.allowReconnection(client, RECONNECT_SECONDS);
       if (this.state.phase === "paused") this.state.phase = prevPhase;
       this.syncState();
+      // 重连端错过了 pause-changed 广播：仍处玩家暂停则补发一条，让它恢复暂停画面
+      if (this.userPaused) client.send("pause-changed", { paused: true, by: this.userPausedBy });
     } catch {
       this.roles.delete(client.sessionId);
       this.state.players.delete(role);
       this.currentInputs[role] = { ...EMPTY_INPUT };
+      // 超时踢出：玩家暂停一并解除（剩余端回 lobby；若不解除，补位新对会被冻在开局前）
+      this.userPaused = false;
+      this.userPausedBy = null;
       // 仍有一人在场 → 相位回 lobby 允许补位；补位 join 走 restartLevel 整关重开
       // （原版 retry 语义）。不回 lobby 的话 phase 永久卡 paused，tick 停转成死房。
       if (this.roles.size > 0) {
@@ -216,6 +246,9 @@ export class ForestRoom extends Room<RoomState> {
   /** 整关重开（原版 retry：整状态重载） */
   private restartLevel() {
     this.world.reset();
+    // 玩家暂停不跨重开（原版 retry 走完整 startLevel，game.paused 归 false）
+    this.userPaused = false;
+    this.userPausedBy = null;
     this.state.phase = "ready";
     this.syncState();
     this.readyTimer = setTimeout(() => {
@@ -234,6 +267,18 @@ export class ForestRoom extends Room<RoomState> {
       this.acc = 0;
       // 大厅/暂停期心跳：每秒一跳，死 TCP（对端消失/服务重启）会在 1-2s 内触发
       // ws close，让双方页面及时显示断线，而不是挂着假活的等待页（实玩反馈 2026-10-05）
+      this.pingAcc += dtMs;
+      if (this.pingAcc >= 1000) {
+        this.pingAcc = 0;
+        this.broadcast("ping");
+      }
+      return;
+    }
+    if (this.userPaused) {
+      // F3 玩家暂停：全场物理冻结+时钟停摆（原版 clock.pause 语义）。弃掉暂停期墙钟
+      // （恢复不跳帧）；心跳照发保持断线探测；inputQueue 不动——暂停期到达的输入留在
+      // 队里，恢复后按意图跨度归帧，按住不放=恢复瞬间生效（与原版键掩码语义一致）
+      this.acc = 0;
       this.pingAcc += dtMs;
       if (this.pingAcc >= 1000) {
         this.pingAcc = 0;

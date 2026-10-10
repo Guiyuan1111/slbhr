@@ -1,7 +1,8 @@
 /**
  * 游戏内弹窗三件套（原版 IngameMenu 基类 + PauseMenu/EndMenu/GameOverMenu 复刻）。
  * 以独立 Scene 叠于 GameScene 之上（scene.launch），Game 场景保持渲染
- * （won/gameover 时服务端已停步；pause 为本地停手，服务端继续——联机对齐 AFK 语义）。
+ * （won/gameover 时服务端已停步；pause 为服务端权威全场物理冻结——F3 翻转 2026-10-11，
+ * 原版 togglePause=game.paused 语义，任一端 P 键双端同冻结）。
  *
  * 板 = PopupBackground0000 1082×642，容器置于 (64,159)（居中）。
  * 子元素一律用板内局部坐标（板中心 = (541,321)）；screen = local + (64,159)。
@@ -67,8 +68,9 @@ export class PauseMenu extends Phaser.Scene {
       handle().__fwLeaveToMenu?.();
     });
     stoneButton(this, board, CX, 241, "继续", () => {
-      handle().__fwPauseKeyboard?.(false);
-      this.scene.stop();
+      // F3：经 __fwTogglePause 发 resume 给服务端；菜单由 pause-changed 回声统一关闭
+      // （本地不抢停——若对端已解除，回声早已关掉本面板，此钮不会存在）
+      handle().__fwTogglePause?.();
     });
   }
 }

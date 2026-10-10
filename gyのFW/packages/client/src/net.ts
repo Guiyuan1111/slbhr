@@ -8,6 +8,7 @@
  * 0.3.0 消息面（与 server ForestRoom 对齐）：
  * - 私发 "role"；广播 "death" {role} / "finish" {fbDiamonds,wgDiamonds,silver,timeMs} /
  *   "sfx" {kind,...}（lever|pusher 机关音、diamond|door 备用）；
+ * - "pause-changed" {paused,by}（F3 翻转：任一端 P 键 → 服务端权威全场冻结，广播双端）；
  * - phase 词汇 lobby|ready|started|paused|won|gameover，经 onStateChange 差分出 onPhase。
  */
 import { Client, type Room } from "colyseus.js";
@@ -39,11 +40,19 @@ export interface SfxMessage {
   role?: Role;
 }
 
+/** pause-changed 消息载荷（F3：服务端权威玩家暂停，双端广播/重连补发） */
+export interface PauseChangedMessage {
+  paused: boolean;
+  by: Role | null;
+}
+
 export interface NetCallbacks {
   onRole: (role: Role) => void;
   onDeath: (p: { role: Role }) => void;
   onFinish?: (p: FinishData) => void;
   onSfx?: (p: SfxMessage) => void;
+  /** 玩家暂停状态翻转（服务端权威；本端发起的也会经广播回来，不本地抢先置位） */
+  onPauseChanged?: (p: PauseChangedMessage) => void;
   /** phase 迁移（onStateChange 差分，带前值） */
   onPhase?: (phase: string, prev: string) => void;
   /** 连接断开（已自动尝试重连）；参数=是否重连成功 */
@@ -97,6 +106,7 @@ export class Net {
       this.sfxQueue.push(payload);
       cb.onSfx?.(payload);
     });
+    room.onMessage("pause-changed", (payload: PauseChangedMessage) => cb.onPauseChanged?.(payload));
     // levelError 为保留通道：当前 create 校验走 MatchMakeError；先注册接入
     room.onMessage("levelError", (payload: { message?: string }) => {
       console.warn("[fw] levelError:", payload?.message);
@@ -152,6 +162,16 @@ export class Net {
 
   restart(): void {
     this.room.send("restart", {});
+  }
+
+  /** 请求全场暂停（P 键；服务端权威置位后经 pause-changed 广播回双端） */
+  pause(): void {
+    this.room.send("pause", {});
+  }
+
+  /** 请求解除暂停 */
+  resume(): void {
+    this.room.send("resume", {});
   }
 
   leave(): void {

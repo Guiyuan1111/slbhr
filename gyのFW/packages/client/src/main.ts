@@ -147,6 +147,7 @@ async function enterGame(): Promise<void> {
   (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level, keyboard };
   (globalThis as unknown as Record<string, unknown>).__fwRestart = () => net?.restart();
   (globalThis as unknown as Record<string, unknown>).__fwPauseKeyboard = (b: boolean) => keyboard?.setPaused(b);
+  // F3：P 键/暂停菜单「继续」统一入口——只发请求，画面以服务端 pause-changed 回声为准
   (globalThis as unknown as Record<string, unknown>).__fwTogglePause = () => togglePause();
   (globalThis as unknown as Record<string, unknown>).__fwSfx = (name: string) => {
     if (!getSettings().fx) return;
@@ -227,6 +228,14 @@ async function start(mode: "create" | "join"): Promise<void> {
           const name = role === "fireboy" ? "火人" : "水女孩";
           $("#toast").textContent = `${name}化烟了！点「再试一次」重开`;
           setTimeout(() => ($("#toast").textContent = ""), 2000);
+        },
+        onPauseChanged: ({ paused }) => {
+          // F3：服务端权威回声（本端发起也走广播回来）。phase 仍是 started（服务端
+          // 玩家暂停不占用 phase=paused——那是断线等待专用词），HUD/键盘暂停闸门不动：
+          // 原版暂停期按住的键在恢复瞬间生效（服务端冻结期输入照常入队，恢复即归帧）
+          pausedByUser = paused;
+          if (paused) phaser?.scene.start("PauseMenu");
+          else phaser?.scene.stop("PauseMenu");
         },
         onPhase: (phase) => {
           updateHud();
@@ -332,13 +341,13 @@ function bootPhaser(): void {
   }
 }
 
-/** 本地暂停（联机对齐 AFK 语义：本地停手，服务端继续） */
+/** 玩家暂停（F3 翻转，原版 E4 togglePause=game.paused 全场物理冻结）：
+ * P 键只向服务端发 pause/resume 请求，置位/解除以 pause-changed 广播为准
+ * （onPauseChanged 统一翻画面，双端同一时刻冻结/恢复）。 */
 function togglePause(): void {
-  if (!gameStarted) return;
-  pausedByUser = !pausedByUser;
-  keyboard?.setPaused(pausedByUser);
-  if (pausedByUser) phaser?.scene.start("PauseMenu");
-  else phaser?.scene.stop("PauseMenu");
+  if (!gameStarted || !net) return;
+  if (pausedByUser) net.resume();
+  else net.pause();
 }
 
 function bindUi(): void {

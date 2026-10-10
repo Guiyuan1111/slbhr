@@ -3,7 +3,7 @@
  *
  * 用法（Git Bash，先注入便携 Node PATH；构建产物由调用方保证）：
  *   node scripts/e2e/journey.mjs journey [--port 3571]   # 通关→继续→forest_02 新房开局（全旅程，需 FW_DEBUG_FORCE_DOORS 加速到门）
- *   node scripts/e2e/journey.mjs pause   [--port 3572]   # KeyP 暂停：服务端收到「全松」冲刷、角色停驱（0.3.27 setPaused 修复回归）
+ *   node scripts/e2e/journey.mjs pause   [--port 3572]   # KeyP 暂停：服务端权威全场物理冻结+时钟停摆，恢复推进（F3 翻转回归）
  *   node scripts/e2e/journey.mjs rejoin  [--port 3573]   # 断线超时→补位重进：房间整关重开而非死房（0.3.27 onLeave 修复回归；用 FW_RECONNECT_SECONDS 缩窗）
  *   node scripts/e2e/journey.mjs deathretry [--port 3574] # 死亡→gameover 静置（原版无自动重开）→Retry 整关重开（F2 翻转回归）
  *   node scripts/e2e/journey.mjs rolesplit [--port 3576] # 按角色分键：fb 只认方向键/wg 只认 WASD，跨组键免疫（F1 翻转回归）
@@ -81,9 +81,10 @@ try {
     await ctxA.close();
     await ctxB.close();
   } else if (MODE === "pause") {
-    // ── 场景 2：本地暂停输入冲刷 —— 按住右行走 → KeyP：服务端必须收到「全松」，
-    // anim 回 idle（服务端停驱）；再按 P 恢复。0.3.27 前置位后 emit 被闸拦，末次按住态
-    // 留在服务端 → anim 恒 jumping（角色持续怼墙）。
+    // ── 场景 2：暂停全场物理冻结（F3 翻转回归，原版 E4 togglePause=game.paused）——
+    // 双方各按住行进键 → 一端 KeyP：服务端权威冻结，双端位置/时钟停摆（anim 停在
+    // jumping，不再是旧 AFK 语义的「全松冲刷回 idle」）；再按 P 恢复，暂停期按住的键
+    // 恢复瞬间生效（原版键掩码语义；服务端冻结期输入照常入队，恢复即归帧）。
     const ctxA = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
     const ctxB = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
     const a = await ctxA.newPage();
@@ -92,26 +93,35 @@ try {
     await enterAs(b, PORT, "join", code, "forest_01");
     await waitForStarted(a);
     await waitForStarted(b);
+    const snapOf = (page) => roomState(page, `JSON.stringify({ fx: s.players.get("fireboy").x, wx: s.players.get("watergirl").x, t: s.timerMs, fa: String(s.players.get("fireboy").anim) })`);
     await a.keyboard.down("ArrowRight");
-    await a.waitForTimeout(700);
-    const animMoving = await roomState(a, `String(s.players.get("fireboy").anim)`);
-    check("按住右 → 服务端驱动行走（anim=jumping）", animMoving === "jumping", `anim=${animMoving}`);
+    await b.keyboard.down("KeyD");
+    await a.waitForTimeout(600);
+    const run1 = JSON.parse(await snapOf(a));
+    check("按住行进键 → 服务端驱动行走（anim=jumping）", run1.fa === "jumping", `anim=${run1.fa}`);
     await a.keyboard.press("p");
-    await a.waitForTimeout(700);
-    const animPaused = await roomState(a, `String(s.players.get("fireboy").anim)`);
-    check("KeyP 暂停 → 「全松」冲刷到服务端（anim=idle）", animPaused === "idle", `anim=${animPaused}`);
+    // 按键→服务端受理有 1-3 帧固有延迟（网络+tick），冻结前最后一两步会继续走——
+    // 双采样断言：+600ms 冻结必已稳定，再等 400ms 取第二样，两位级相等才算冻结
+    await a.waitForTimeout(600);
+    const frozen1 = JSON.parse(await snapOf(a));
+    await a.waitForTimeout(400);
+    const frozen2 = JSON.parse(await snapOf(a));
+    check("KeyP 暂停 → fb 位置冻结", frozen2.fx === frozen1.fx, `x ${frozen1.fx}→${frozen2.fx}`);
+    check("全场冻结 → wg（B 端）位置同冻结", frozen2.wx === frozen1.wx, `x ${frozen1.wx}→${frozen2.wx}`);
+    check("冻结 → 时钟停摆（timerMs 不走）", frozen2.t === frozen1.t, `t ${frozen1.t}→${frozen2.t}`);
+    check("冻结 → anim 停在 jumping（服务端停更，非全松回 idle）", frozen2.fa === "jumping", `anim=${frozen2.fa}`);
     const phase = await roomState(a, `String(s.phase)`);
-    check("本地暂停不改服务端相位（AFK 语义）", phase === "started", `phase=${phase}`);
+    check("玩家暂停不占 phase（started 保留；paused=断线专用词）", phase === "started", `phase=${phase}`);
     await a.keyboard.press("p");
     await a.waitForTimeout(500);
-    // 暂停即冲刷：物理上仍按着的键不会自动恢复（这正是防「挂后台卡键」的语义），
-    // 恢复后需重按才重新驱动——验证暂停闸确实已放开
+    const resumed = JSON.parse(await snapOf(a));
+    check("再按 P → fb 恢复推进（暂停期按住的键生效）", resumed.fx - frozen2.fx > 10, `dx=${(resumed.fx - frozen2.fx).toFixed(2)}`);
+    check("恢复 → wg 同步推进（全场解除）", resumed.wx - frozen2.wx > 10, `dx=${(resumed.wx - frozen2.wx).toFixed(2)}`);
+    check("恢复 → 时钟续走", resumed.t > frozen2.t, `t ${frozen2.t}→${resumed.t}`);
     await a.keyboard.up("ArrowRight");
-    await a.keyboard.down("ArrowRight");
-    await a.waitForTimeout(500);
-    const animResumed = await roomState(a, `String(s.players.get("fireboy").anim)`);
-    check("再按 P 恢复 → 重按右重新驱动（anim=jumping）", animResumed === "jumping", `anim=${animResumed}`);
-    await a.keyboard.up("ArrowRight");
+    await b.keyboard.up("KeyD");
+    await a.screenshot({ path: join(OUT, "pause-a.png") });
+    await b.screenshot({ path: join(OUT, "pause-b.png") });
     results.pass = results.checks.every((c) => c.ok);
     await ctxA.close();
     await ctxB.close();
