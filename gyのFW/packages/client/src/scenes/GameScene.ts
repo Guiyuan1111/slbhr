@@ -163,6 +163,33 @@ export class GameScene extends Phaser.Scene {
   private doorSprites = new Map<Role, Phaser.GameObjects.Sprite>();
   private doorFrames = new Map<Role, number>();
   private clockText!: Phaser.GameObjects.BitmapText;
+
+  // ---- 相机管理（原版 CameraManager bundle @1881500 移植，F4 翻转）----
+  // GameConfig.zooming（bundle @1260）：lockAtMinScale=true, minScaleRatio=0.9, lockScaleRatio=0.97；
+  // maxScale=1.5；滚轮 ×0.8/×1.2 钳 [minScale,maxScale]，1s 静置 debounce 回弹；
+  // 自动适配 worldPadding{top:100,left:200,bottom:100,right:200}、viewportPadding top64、
+  // 最小可视 40×30 格（窄屏/移动 20×15）；焦点=双角色中点；弹簧 a=1/15（用户操作 1/3）、阻尼 0.5。
+  private camMinScale = 1;
+  private camLockScale = 1;
+  private camMaxScale = 1.5;
+  private camUserScale: number | null = null;
+  private camWheelScale: number | null = null;
+  private camUserCenter: { x: number; y: number } | null = null;
+  private camWheelReset: number | null = null;
+  private camFrozen = true;
+  private camX = 0;
+  private camY = 0;
+  private camScale = 1;
+  private camTX = 0;
+  private camTY = 0;
+  private camTScale = 1;
+  private camVX = 0;
+  private camVY = 0;
+  private camVScale = 0;
+  private pinchState: { startDist: number; startScale: number } | null = null;
+  private panState: { cx: number; cy: number; px: number; py: number } | null = null;
+  /** HUD 反缩放登记（zoom≠1 时逐帧补偿，见 buildHud 头注） */
+  private hudItems: Array<{ obj: Phaser.GameObjects.Image | Phaser.GameObjects.BitmapText; x: number; y: number }> = [];
   private redTotal = 0;
   private blueTotal = 0;
   private silverTotal = 0;
@@ -234,12 +261,11 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     const { level } = this.d;
-    // 相机：可视域 = 画布 1280×960，scroll=(16,16) → 屏幕 = 世界−16 = 关卡+16（原版 settled
-    // 实测 stage=level+(16,16)，2026-10-09 帧探针）。此前 setBounds(32,32,1248,928) 小于视口，
-    // 边界钳制把 centerOn 的 scroll(16,16) 压成 (32,32)，全场景整体上移 16px（地形顶实测 192 vs 原版 208）。
-    // 边界改设画布全幅 (0,0,1312,992)：钳制区间 [0,32]，scroll 16 不再被吞。
-    this.cameras.main.setBounds(0, 0, level.widthPx + PAD * 2, level.heightPx + PAD * 2);
-    this.cameras.main.centerOn(level.widthPx / 2 + PAD, level.heightPx / 2 + PAD);
+    // 相机管理（F4 翻转，原版 CameraManager @1881500）：此前固定全景（冻结偏离）。
+    // 原版行为：加载期 camFreeze 在全图 minScale，started 解冻后每帧自动适配双角色。
+    // settled 口径不变：双角色同屏时自动适配 h=1 → 边界钳制居中 → scroll(16,16)
+    // （关卡 1248×928 vs 画布 1280×960，2026-10-09 帧探针实测 stage=level+(16,16)）。
+    this.setupCameraManager(level);
 
     for (const d of level.diamonds) {
       this.diamondKinds.set(d.id, d.kind);
@@ -844,6 +870,166 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * 相机管理（原版 CameraManager bundle @1881500 移植，F4 翻转）：
+   * - 初始冻结在全图 minScale（原版 camFreeze 直到开局序列 @1943673 解冻）；
+   * - started 解冻后每帧 updateCamTarget + 弹簧 animate（a=1/15，用户操作中 1/3，阻尼 0.5）；
+   * - 滚轮 ×0.8/×1.2 钳 [minScale,1.5]，1s 静置 lockAtMinScale 回弹（≤lockScale 停在 lockScale，否则复位）；
+   * - 双指捏合缩放、单指拖拽 >10px 平移（panend/pinchend 复位）；
+   *   原版以 cursors.active 闸（触屏光标激活禁用），本复刻触屏键为 DOM 按钮不占画布，无此闸。
+   * 边界=关卡矩形 (PAD,PAD,w,h)：Phaser 边界钳制/超界居中等价原版 checkBounds
+   * （关卡小于视口时 target 居中、大于时钳边），settled=scroll(16,16)。
+   */
+  private setupCameraManager(level: LevelData): void {
+    const rw = this.scale.width;
+    const rh = this.scale.height;
+    this.camMinScale = Math.min((0.9 * rw) / level.widthPx, (0.9 * rh) / level.heightPx);
+    this.camLockScale = Math.min((0.97 * rw) / level.widthPx, (0.97 * rh) / level.heightPx);
+    this.cameras.main.setBounds(PAD, PAD, level.widthPx, level.heightPx);
+    this.camScale = this.camMinScale;
+    this.camX = this.camTX = level.widthPx / 2 + PAD;
+    this.camY = this.camTY = level.heightPx / 2 + PAD;
+    this.camTScale = this.camMinScale;
+    this.applyCam();
+    this.input.on("wheel", (_p: unknown, _ov: unknown, _dx: number, dy: number) => this.onCamWheel(dy));
+    this.input.on("pointermove", (p: Phaser.Input.Pointer) => this.onCamPointerMove(p));
+    this.input.on("pointerup", (p: Phaser.Input.Pointer) => this.onCamPointerUp(p));
+  }
+
+  /** 滚轮缩放（原版 $(window).wheel @1883520：×0.8/×1.2，从当前动画值乘；1s debounce 回弹） */
+  private onCamWheel(dy: number): void {
+    if (this.camFrozen) return;
+    const next = Math.min(this.camMaxScale, Math.max(this.camMinScale, (dy > 0 ? 0.8 : 1.2) * this.cameras.main.zoom));
+    this.camWheelScale = next;
+    if (this.camWheelReset != null) window.clearTimeout(this.camWheelReset);
+    this.camWheelReset = window.setTimeout(() => {
+      this.camWheelScale = this.camWheelScale != null && this.camWheelScale <= this.camLockScale ? this.camLockScale : null;
+      this.camWheelReset = null;
+    }, 1000);
+  }
+
+  /** 双指捏合（原版 pinch @1883640：startScale×比例 钳位）与单指拖拽平移（pan @1885447，threshold 10） */
+  private onCamPointerMove(p: Phaser.Input.Pointer): void {
+    if (this.camFrozen || !p.isDown) return;
+    const p1 = this.input.pointer1;
+    const p2 = this.input.pointer2;
+    if (p1.isDown && p2.isDown) {
+      const dist = Phaser.Math.Distance.Between(p1.x, p1.y, p2.x, p2.y);
+      if (!this.pinchState) this.pinchState = { startDist: dist, startScale: this.cameras.main.zoom };
+      if (this.pinchState.startDist > 0) {
+        this.camUserScale = Math.min(this.camMaxScale, Math.max(this.camMinScale, this.pinchState.startScale * (dist / this.pinchState.startDist)));
+      }
+      return;
+    }
+    if (this.camUserScale != null) return;
+    const cx = this.camUserCenter?.x ?? this.camX - PAD;
+    const cy = this.camUserCenter?.y ?? this.camY - PAD;
+    if (!this.panState) {
+      if (p.getDistance() < 10) return; // 原版 hammer pan threshold: 10
+      this.panState = { cx, cy, px: p.x, py: p.y };
+    }
+    const zoom = this.cameras.main.zoom;
+    this.camUserCenter = { x: this.panState.cx - (p.x - this.panState.px) / zoom, y: this.panState.cy - (p.y - this.panState.py) / zoom };
+  }
+
+  private onCamPointerUp(_p: Phaser.Input.Pointer): void {
+    // 原版 pinchend/panend：userScale lockAtMinScale 回弹；userCenter 立即复位（回到自动适配焦点）
+    if (this.camUserScale != null) {
+      this.camUserScale = this.camUserScale <= this.camLockScale ? this.camLockScale : null;
+    }
+    this.camUserCenter = null;
+    this.pinchState = null;
+    this.panState = null;
+  }
+
+  /** 每帧目标：焦点=双角色中点（userCenter 覆盖），缩放=自动适配（userScale/wheelScale 覆盖） */
+  private updateCamTarget(): void {
+    const { level } = this.d;
+    const st = this.d.net.room?.state;
+    if (!st) return;
+    const fb = st.players?.get?.("fireboy");
+    const wg = st.players?.get?.("watergirl");
+    if (!fb || !wg) return;
+    const fx = Number(fb.x) || 0;
+    const fy = Number(fb.y) || 0;
+    const gx = Number(wg.x) || 0;
+    const gy = Number(wg.y) || 0;
+    const rw = this.scale.width;
+    const rh = this.scale.height;
+    // 自动适配（原版 updateCamera @1886262）：间距 bbox + worldPadding(200/100)，钳到关卡大小
+    const c = Math.min(Math.abs(gx - fx) + 400, level.widthPx);
+    const d = Math.min(Math.abs(gy - fy) + 200, level.heightPx);
+    const vw = rw;
+    const vh = rh - 64; // viewportPadding top 64
+    const i = c > vw ? vw / c : 1;
+    const j = d > vh ? vh / d : 1;
+    let h = i < 1 || j < 1 ? Math.min(i, j) : 1;
+    // 最小可视 40×30 格（窄屏/移动 20×15；mpx=32）
+    const small = !this.sys.game.device.os.desktop || rw <= 780 || rh <= 480;
+    const tiles = small ? { w: 20, h: 15 } : { w: 40, h: 30 };
+    if (h * tiles.w * 32 > rw) h = rw / (tiles.w * 32);
+    if (h * tiles.h * 32 > rh) h = rh / (tiles.h * 32);
+    if (this.camUserScale != null) h = this.camUserScale;
+    if (this.camWheelScale != null) h = this.camWheelScale;
+    this.camTScale = h;
+    // 焦点：双角色中点（关卡坐标→世界 +PAD）；拖拽平移时 userCenter 覆盖
+    this.camTX = (this.camUserCenter?.x ?? (fx + gx) / 2) + PAD;
+    this.camTY = (this.camUserCenter?.y ?? (fy + gy) / 2) + PAD;
+  }
+
+  /** 弹簧逼近目标并应用（原版 animate @1887350：a=1/15 或 1/3，阻尼 0.5；目标轨迹同源） */
+  private animateCam(): void {
+    const a = this.camUserCenter != null ? 1 / 3 : 1 / 15;
+    this.camVX = (this.camVX + (this.camTX - this.camX) * a) * 0.5;
+    this.camVY = (this.camVY + (this.camTY - this.camY) * a) * 0.5;
+    this.camVScale = (this.camVScale + (this.camTScale - this.camScale) * a) * 0.5;
+    this.camX += this.camVX;
+    this.camY += this.camVY;
+    this.camScale += this.camVScale;
+    this.applyCam();
+  }
+
+  private applyCam(): void {
+    const cam = this.cameras.main;
+    cam.setZoom(this.camScale);
+    cam.centerOn(this.camX, this.camY);
+    // HUD 反缩放：zoom 以视口中点为枢轴，screen = M + (pos−M)·zoom → 保持 screen=pos 需 pos' = M + (pos−M)/zoom
+    if (this.camScale !== 1 && this.hudItems.length > 0) {
+      const inv = 1 / this.camScale;
+      const mx = this.scale.width / 2;
+      const my = this.scale.height / 2;
+      for (const h of this.hudItems) {
+        h.obj.setScale(inv);
+        h.obj.x = mx + (h.x - mx) * inv;
+        h.obj.y = my + (h.y - my) * inv;
+      }
+    } else if (this.hudItems.length > 0) {
+      for (const h of this.hudItems) {
+        h.obj.setScale(1);
+        h.obj.x = h.x;
+        h.obj.y = h.y;
+      }
+    }
+  }
+
+  /** 相机复位（ready 整轮重开，等价原版整关 reload 回冻结全图） */
+  private resetCamera(level: LevelData): void {
+    if (this.camWheelReset != null) window.clearTimeout(this.camWheelReset);
+    this.camWheelReset = null;
+    this.camUserScale = null;
+    this.camWheelScale = null;
+    this.camUserCenter = null;
+    this.pinchState = null;
+    this.panState = null;
+    this.camVX = this.camVY = this.camVScale = 0;
+    this.camScale = this.camMinScale;
+    this.camX = this.camTX = level.widthPx / 2 + PAD;
+    this.camY = this.camTY = level.heightPx / 2 + PAD;
+    this.camTScale = this.camMinScale;
+    this.camFrozen = true;
+    this.applyCam();
+  }
+
   private buildTutorial(level: LevelData): void {
     for (const step of level.tutorials) {
       if (!step.textItems.length || !step.trigger) continue;
@@ -930,13 +1116,14 @@ export class GameScene extends Phaser.Scene {
 
   /** ui 层：顶部藤蔓时钟（正计时 MM:SS 真实秒，G14 去占位）+ 左上角红/蓝/银钻石计数 */
   private buildHud(): void {
-    // HUD 挂相机（scrollFactor 0），坐标 = 视口系（关卡矩形内）
+    // HUD 挂相机（scrollFactor 0），坐标 = 视口系（关卡矩形内）。
+    // 原版 Phaser 2 的 root.scale 只缩世界容器、HUD 不动；Phaser 3 camera.zoom 会连 HUD 一起缩，
+    // 由 applyCam 逐帧做 1/zoom 反缩放+反平移补偿（zoom=1 恒等，基线无扰）。
     const clockX = 640; // 画布 1280 的水平中心（原版 LevelUI 时钟位）
     // 原版 Clock 锚点 (0.5, 0.05)：盘面上探 5px；文字区在 y≈55-83（像素差分热图实证）
-    this.add.image(clockX, 0, ATLAS_TEMPLE, "Clock0000").setOrigin(0.5, 0.05).setDepth(9).setScrollFactor(0);
-    // 原版 LevelUI 右上暂停钮（渲染保真；联机暂停语义属服务端功能，此处仅视觉）
-    // 原版 LevelUI 右上暂停钮（0.3.13 起接本机暂停：P 键/点击 → PauseMenu，本地停手语义）
-    this.add
+    const clockFace = this.add.image(clockX, 0, ATLAS_TEMPLE, "Clock0000").setOrigin(0.5, 0.05).setDepth(9).setScrollFactor(0);
+    // 原版 LevelUI 右上暂停钮（0.3.13 起接本机暂停：P 键/点击 → PauseMenu）
+    const pauseBtn = this.add
       .image(1265, 15, ATLAS_POPUP, "PauseButton0000")
       .setOrigin(1, 0)
       .setDepth(9)
@@ -949,6 +1136,12 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5, 0)
       .setDepth(9)
       .setScrollFactor(0);
+    this.hudItems = [
+      { obj: clockFace, x: clockX, y: 0 },
+      { obj: pauseBtn, x: 1265, y: 15 },
+      { obj: this.clockText, x: clockX, y: 56 },
+    ];
+    this.applyCam(); // 建好后立即补一次 HUD 补偿（冻结期 minScale 视图下 HUD 也不缩）
   }
 
   setMyRole(role: Role): void {
@@ -987,6 +1180,12 @@ export class GameScene extends Phaser.Scene {
     }
     if (pts.length > 0) this.updateTutorial(...pts);
 
+    // 相机管理：解冻后每帧目标适配 + 弹簧逼近（原版 Level.update → camManager.update()）
+    if (!this.camFrozen) {
+      this.updateCamTarget();
+      this.animateCam();
+    }
+
     this.updateNavies();
     this.snapPending = false;
   }
@@ -994,12 +1193,14 @@ export class GameScene extends Phaser.Scene {
   /** phase 迁移副作用（E15/E1/M9） */
   private onPhaseChanged(prev: string, cur: string): void {
     if (cur === "ready") this.resetRound(prev);
+    if (cur === "started") this.camFrozen = false; // 原版开局序列解冻相机（camFreeze=@1943673）
     if (cur === "won" && !this.stairsPlayed) this.playStairsSequence();
   }
 
   /** 整轮复位（重开=ready）：瞬移标记 + 清演出/门帧/烟，跨图平滑会把角色滑回出生点 */
   private resetRound(prev: string): void {
     this.snapPending = true;
+    this.resetCamera(this.d.level); // 相机回冻结全图（原版整关 reload 重建 CameraManager）
     this.stairsPlayed = false;
     this.finishData = null;
     this.d.net.lastFinish = null;
