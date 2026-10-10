@@ -1,8 +1,9 @@
 /**
- * 路线产线·±1f 容忍硬化器：node --import tsx scripts/e2e/routetool/optimize.mjs --level <id> [--route <path>] [--sweeps 10] [--write]
+ * 路线产线·±Nf 容忍硬化器：node --import tsx scripts/e2e/routetool/optimize.mjs --level <id> [--route <path>] [--sweeps 10] [--scan 1] [--write]
  *
- * 对路线每个事件做 ±1f 扫描统计致命数（fatal），坐标下降成组平移（同角色 12f 内
- * 相邻事件连动）降低 fatal；每轮净恶化回滚历史最优。产出：
+ * 对路线每个事件做 ±Nf 扫描统计致命数（fatal，--scan N 控制深度，默认 1；真实门禁
+ * 曾现 CDP 抖动 ±1f 致挂，故关键关卡用 --scan 2），坐标下降成组平移（同角色 --win W
+ * 帧内相邻事件连动，默认 12；顽固事件可 --win 24 扩词表）降低 fatal；每轮净恶化回滚历史最优。产出：
  *   --write        覆写路线 JSON（source 字段追加硬化记录）
  *   默认           写 <route>.opt.json（不覆盖原路线，人工比对后采用）
  * 收敛判据：fatal=0 即整条路线任意事件 ±1f 仍 WIN；最优快照随进度落盘断点续用。
@@ -17,6 +18,9 @@ const level = argOf(args, "level", "forest_01");
 const routePath = argOf(args, "route", join(ROOT, "scripts", "e2e", "inputs", "routes", `${level}.json`));
 const absRoute = isAbsolute(routePath) ? routePath : join(ROOT, routePath);
 const SWEEPS = Number(argOf(args, "sweeps", "10"));
+const SCAN = Math.max(1, Number(argOf(args, "scan", "1")));
+/** 成组平移的邻域窗宽（帧）；顽固事件可加大词表（--win 24） */
+const WIN = Math.max(4, Number(argOf(args, "win", "12")));
 const routeDoc = JSON.parse(readFileSync(absRoute, "utf8"));
 
 const SIDES = ["fb", "wg"];
@@ -28,15 +32,17 @@ function run(T) {
   return runKernel(level, { totalFrames: routeDoc.totalFrames, fb: T.fb, wg: T.wg });
 }
 
-/** 逐事件 ±1f 扫描（only 传平坦索引集合则只扫子集——验证移动局部性） */
+/** 逐事件 ±Nf 扫描（only 传平坦索引集合则只扫子集——验证移动局部性） */
 function scanTables(T, only = null) {
   const fatal = [];
+  const offs = [];
+  for (let d = -SCAN; d <= SCAN; d++) if (d !== 0) offs.push(d);
   for (let s = 0; s < 2; s++) {
     const side = SIDES[s];
     for (let li = 0; li < T[side].length; li++) {
       const i = s * NB + li;
       if (only && !only.has(i)) continue;
-      for (const d of [-1, 1]) {
+      for (const d of offs) {
         const TT = clone(T);
         TT[side][li].f += d;
         if (!run(TT).won) { fatal.push({ i, side, li, f: T[side][li].f, dir: T[side][li].dir, type: T[side][li].type, d }); break; }
@@ -46,14 +52,14 @@ function scanTables(T, only = null) {
   return fatal;
 }
 
-/** 移动集：idx 与同角色 12f 内相邻事件构成连续 run（单点 / 整 run 两档） */
+/** 移动集：idx 与同角色 WINf 内相邻事件构成连续 run（单点 / 整 run 两档） */
 function moveSets(T, i) {
   const side = SIDES[Math.floor(i / NB)];
   const li = local(side, i);
   const evs = T[side];
   let lo = li, hi = li;
-  while (lo > 0 && evs[lo - 1].f >= evs[lo].f - 12) lo--;
-  while (hi < evs.length - 1 && evs[hi + 1].f <= evs[hi].f + 12) hi++;
+  while (lo > 0 && evs[lo - 1].f >= evs[lo].f - WIN) lo--;
+  while (hi < evs.length - 1 && evs[hi + 1].f <= evs[hi].f + WIN) hi++;
   const sets = [[li]];
   if (hi > lo) sets.push(Array.from({ length: hi - lo + 1 }, (_, k) => lo + k));
   return { side, sets };
@@ -75,19 +81,21 @@ if (!run(cur).won) { console.error("基线必须 WIN（先跑通初排再硬化�
 for (let sweep = 0; sweep < SWEEPS; sweep++) {
   const F = scanTables(cur);
   log(`sweep ${sweep}: fatal ${F.length}/${totalEvents}（累计 ${((Date.now() - t0) / 1000).toFixed(0)}s）`);
-  if (F.length < bestFatal) { bestFatal = F.length; best = clone(cur); writeFileSync(absRoute + ".best.json", JSON.stringify(best)); }
+  if (F.length < bestFatal) { bestFatal = F.length; best = clone(cur); writeFileSync(absRoute + ".best.json", JSON.stringify({ ...routeDoc, fb: best.fb, wg: best.wg })); }
   if (F.length === 0) break;
   for (const { i } of F) {
     const { side, sets } = moveSets(cur, i);
     let done = false;
     for (const lis of sets) {
-      for (const d of [1, -1, 2, -2, 3, -3, 4, -4]) {
+      for (const d of [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6]) {
         const cand = shifted(cur, side, lis, d);
         if (!run(cand).won) continue;
-        // 局部验证：本集各成员 ±1（物理影响仅向前传播）
+        // 局部验证：本集各成员 ±N（物理影响仅向前传播）
         let ok = true;
+        const verify = [];
+        for (let dd = -SCAN; dd <= SCAN; dd++) if (dd !== 0) verify.push(dd);
         for (const li of lis) {
-          for (const dd of [-1, 1]) {
+          for (const dd of verify) {
             const TT = clone(cand);
             TT[side][li].f += dd;
             if (!run(TT).won) { ok = false; break; }
