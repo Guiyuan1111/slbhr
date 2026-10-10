@@ -102,7 +102,7 @@ async function runOnce(browser, inputTimeline, expectWin, tag) {
       break;
     }
     if (statusA.includes("失败") || (await b.textContent("#hud-status"))?.includes("失败")) {
-      // gameover 阶段会自动重开——若从未通关，靠最终 won 断言反映
+      // gameover 后静置等 Retry（F2 翻转，原版无自动重开）——若从未通关，靠最终 won 断言反映
     }
   }
   await ctxA.close();

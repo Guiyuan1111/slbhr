@@ -5,6 +5,7 @@
  *   node scripts/e2e/journey.mjs journey [--port 3571]   # 通关→继续→forest_02 新房开局（全旅程，需 FW_DEBUG_FORCE_DOORS 加速到门）
  *   node scripts/e2e/journey.mjs pause   [--port 3572]   # KeyP 暂停：服务端收到「全松」冲刷、角色停驱（0.3.27 setPaused 修复回归）
  *   node scripts/e2e/journey.mjs rejoin  [--port 3573]   # 断线超时→补位重进：房间整关重开而非死房（0.3.27 onLeave 修复回归；用 FW_RECONNECT_SECONDS 缩窗）
+ *   node scripts/e2e/journey.mjs deathretry [--port 3574] # 死亡→gameover 静置（原版无自动重开）→Retry 整关重开（F2 翻转回归）
  *
  * 断言全部读权威 state 或服务端日志，不依赖 DOM 轮询文本。
  */
@@ -143,8 +144,49 @@ try {
     await b2.screenshot({ path: join(OUT, "rejoin-b2.png") });
     results.pass = results.checks.every((c) => c.ok);
     await ctxA.close();
+  } else if (MODE === "deathretry") {
+    // ── 场景 4：死亡静置 Retry（F2 翻转回归）——wg 走进岩浆 → gameover 后必须静置
+    // （原版无自动重开；0.3.28 前是 2.5s 自动整关重开），显式 restart 才整关重开。
+    const ctxA = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+    const ctxB = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+    const a = await ctxA.newPage();
+    const b = await ctxB.newPage();
+    const code = await enterAs(a, PORT, "create", "", "forest_02");
+    await enterAs(b, PORT, "join", code, "forest_02");
+    await waitForStarted(a);
+    await waitForStarted(b);
+    log(`[deathretry] 房间 ${code} 开局（forest_02：wg 右行 40px 进岩浆）`);
+    // B（水女孩）按住 D 走进 row28 岩浆
+    await b.keyboard.down("KeyD");
+    let over = false;
+    for (let i = 0; i < 40; i++) {
+      await a.waitForTimeout(250);
+      if ((await roomState(a, `String(s.phase)`)) === "gameover") { over = true; break; }
+    }
+    await b.keyboard.up("KeyD");
+    check("wg 入岩浆 → phase=gameover", over);
+    const diedAt = Date.now();
+    // 静置 3.5s（超过旧自动重开窗 2.5s）断言相位仍是 gameover
+    await a.waitForTimeout(3500);
+    const still = await roomState(a, `String(s.phase)`);
+    check("gameover 静置 3.5s 不自动重开（原版语义）", still === "gameover", `phase=${still}`);
+    // 显式 Retry（复用 GameOverMenu「再试一次」同一入口 __fwRestart → restart 消息）
+    await a.evaluate(() => window.__fwRestart());
+    let restarted = false;
+    for (let i = 0; i < 20; i++) {
+      await a.waitForTimeout(250);
+      if ((await roomState(a, `String(s.phase)`)) === "started") { restarted = true; break; }
+    }
+    check("Retry → 整关重开 ready→started", restarted, `耗时 ${Date.now() - diedAt}ms（含静置）`);
+    const lvl = await roomState(a, `String(s.levelId)`);
+    check("重开后关卡不变", lvl === "forest_02", `levelId=${lvl}`);
+    await a.screenshot({ path: join(OUT, "deathretry-a.png") });
+    await b.screenshot({ path: join(OUT, "deathretry-b.png") });
+    results.pass = results.checks.every((c) => c.ok);
+    await ctxA.close();
+    await ctxB.close();
   } else {
-    throw new Error(`未知模式: ${MODE}（可用 journey|pause|rejoin）`);
+    throw new Error(`未知模式: ${MODE}（可用 journey|pause|rejoin|deathretry）`);
   }
 
   await browser.close();

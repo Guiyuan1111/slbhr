@@ -109,7 +109,7 @@ function updateHud(): void {
     started: "",
     paused: "对方断线，等待重连…",
     won: "通关！",
-    gameover: "有人化烟了！整关即将重开（按 R 立即重开）",
+    gameover: "有人化烟了！点「再试一次」重开（或按 R）",
   };
   $("#hud-status").textContent = text[phase] ?? "";
   $("#hud-status").classList.toggle("warn", phase === "paused" || phase === "gameover");

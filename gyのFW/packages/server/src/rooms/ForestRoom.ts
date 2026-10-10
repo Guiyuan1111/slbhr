@@ -6,8 +6,8 @@
  * - 角色分配（先到先得 fireboy，后到 watergirl）；URL 参数选关（?level=forest_xx）
  * - 开局流程（原版 startLevel 语义）：双人到齐 → ready 2.0s → started + 开钟
  * - 固定步长驱动 box2d World（60Hz，累加器补偿抖动，防螺旋上限 6 步）
- * - 死亡流程（原版 E1）：任一人死 → 死亡烟雾 → gameover → 2.5s 自动整关重开；
- *   任意客户端可发 restart 提前重开（won/gameover 时）
+ * - 死亡流程（原版 E1）：任一人死 → 死亡烟雾 → gameover，静置等玩家点 GameOverMenu Retry
+ *   （原版无自动重开；F2 翻转 2026-10-11）；任意客户端发 restart 即整关重开（won/gameover 时）
  * - 断线冻结：phase=paused 等待重连 60s，重连恢复、超时才踢出
  */
 import type { Client } from "colyseus";
@@ -28,8 +28,6 @@ const STEP_MS = 1000 / 60;
 const RECONNECT_SECONDS = Number(process.env.FW_RECONNECT_SECONDS ?? 60);
 /** 原版 startLevel：_.delay(1600)+_.delay(400) → 2.0s 开钟 */
 const READY_MS = 2000;
-/** gameover → 自动整关重开（原版 GameOver 菜单 Retry 的联机化，偏离已记录） */
-const AUTO_RESTART_MS = 2500;
 
 export class ForestRoom extends Room<RoomState> {
   maxClients = 2;
@@ -41,7 +39,6 @@ export class ForestRoom extends Room<RoomState> {
   private pingAcc = 0;
   private roomPassword = "";
   private readyTimer: NodeJS.Timeout | undefined;
-  private restartTimer: NodeJS.Timeout | undefined;
   /** 已就绪开钟标记（避免重复调度） */
   private startedOnce = false;
   /** FW_DUMP=1 诊断：内存缓冲、每 30 帧一次批量落盘（每步 appendFileSync 在 Windows
@@ -98,7 +95,7 @@ export class ForestRoom extends Room<RoomState> {
     });
 
     this.onMessage("restart", () => {
-      // won/gameover 阶段任意客户端可立即重开（gameover 另有 2.5s 自动重开兜底）
+      // won/gameover 阶段任意客户端可重开（原版 GameOverMenu/EndMenu Retry 的联机化映射）
       if (this.state.phase === "won" || this.state.phase === "gameover") {
         this.restartLevel();
       }
@@ -195,7 +192,6 @@ export class ForestRoom extends Room<RoomState> {
 
   onDispose() {
     if (this.readyTimer) clearTimeout(this.readyTimer);
-    if (this.restartTimer) clearTimeout(this.restartTimer);
   }
 
   /** 双人到齐：ready 2.0s → started（原版 1600+400ms 开钟） */
@@ -219,7 +215,6 @@ export class ForestRoom extends Room<RoomState> {
 
   /** 整关重开（原版 retry：整状态重载） */
   private restartLevel() {
-    if (this.restartTimer) clearTimeout(this.restartTimer);
     this.world.reset();
     this.state.phase = "ready";
     this.syncState();
@@ -304,10 +299,8 @@ export class ForestRoom extends Room<RoomState> {
       } else if (ev.type === "death") {
         this.broadcast("death", { role: ev.role });
       } else if (ev.type === "gameover") {
+        // 原版语义（F2 翻转）：gameover 静置，GameOverMenu Retry 点击才整关重开（onMessage restart）
         this.state.phase = "gameover";
-        // 原版 GameOver 菜单 Retry 的联机化：2.5s 后自动整关重开
-        if (this.restartTimer) clearTimeout(this.restartTimer);
-        this.restartTimer = setTimeout(() => this.restartLevel(), AUTO_RESTART_MS);
       } else if (ev.type === "mech") {
         // 机关音效/灯事件直发（lever/pusher 翻转）
         this.broadcast("sfx", { kind: ev.event.kind, group: ev.event.group, state: ev.event.state });
