@@ -36,7 +36,9 @@ const KEYS = {
   wg: { up: "KeyW", left: "KeyA", right: "KeyD" },
 };
 
-/** 双页合并时间轴：[{t, page:'a'|'b', key, type}] */
+/** 双页合并时间轴：[{t, page:'a'|'b', key, type}]
+ * （路线自身负责时序健壮性：±1f 迟到向致命的刀锋事件须在内核层预移早帧——见 v37 注记；
+ *  墙钟层只做统一窗口瞄准，不做逐事件偏移。） */
 function mergedTimeline() {
   const out = [];
   for (const [role, tag] of [["fb", "a"], ["wg", "b"]]) {
@@ -66,43 +68,36 @@ async function sleepPrecise(page, until) {
 let EPOCH = 0; // performance.now() → Date.now() 换算补偿
 let T0 = 0; // 本轮回放零点（Date.now()）
 
-async function runOnce(browser, runTag) {
-  const ctxA = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
-  const ctxB = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
-  const a = await ctxA.newPage();
-  const b = await ctxB.newPage();
+async function runOnce(browserA, browserB, runTag) {
+  const a = await browserA.newPage();
+  const b = await browserB.newPage();
+  await a.setViewportSize({ width: 1400, height: 1000 });
+  await b.setViewportSize({ width: 1400, height: 1000 });
   const result = { tag: runTag, won: false, diedAt: null, winAtMs: null, trace: [], events: 0 };
 
   const code = await enterAs(a, PORT, "create", "", LEVEL);
-  // 页内相位观察器（rAF 分辨率）+ 高频记录器（40ms）：只读权威 state，零行为干预。
+  // 页内相位观察器（rAF 分辨率，A 页，观察到 started 即自熄——运行期 A 页只跑游戏本体，
+  // 任何页内常驻计时器都会与派发时刻相位锁死：实测 40ms 记录器与 f332 每轮必撞 26-118ms）。
   // 锚定原理：服务端 beginReady 与开钟恰好相隔 READY_MS=2000ms（setTimeout），
   // A 页经 patch 看到 ready 与看到 started 的观察延迟同源于 ~50ms patch 周期，
   // 两者相减即消掉观察延迟——t0 = ready_seen + 2000ms，残差只有 2s 内 patch 相位漂移。
   await a.evaluate(() => {
     window.__fwPhaseT = {};
-    window.__rec = [];
     const watch = () => {
       try {
         const ph = String(window.__fwInit.net.room.state.phase);
         if (ph && !(ph in window.__fwPhaseT)) window.__fwPhaseT[ph] = Date.now();
+        if (window.__fwPhaseT.started) return; // 开钟锚定完成，让出 rAF（诊断记录器在 B 页）
       } catch { /* 初始未连接 */ }
       requestAnimationFrame(watch);
     };
     requestAnimationFrame(watch);
-    window.__recTimer = window.setInterval(() => {
-      try {
-        const s = window.__fwInit.net.room.state;
-        window.__rec.push({
-          t: Date.now(),
-          ph: String(s.phase),
-          fb: [s.players.get("fireboy")?.x, s.players.get("fireboy")?.y],
-          wg: [s.players.get("watergirl")?.x, s.players.get("watergirl")?.y],
-        });
-      } catch { /* ready 前状态未就绪 */ }
-    }, 40);
   });
   const joinedB = Date.now();
   await enterAs(b, PORT, "join", code, LEVEL);
+  // 双页运行期一律零页内常驻计时器：任何页内 interval 都会与固定事件时刻相位锁死
+  // （实测 40ms 记录器与 f332 每轮必撞 26-118ms、37ms 素数化仍给渲染主线程添任务）。
+  // 诊断采样全部走 CDP 侧（250ms 采样器/500ms 胜负轮询，受静默窗调度）。
   // CDP 输入链路预热：Shift 不在游戏键表（Arrow*/WASD/Touch*）内，无输入副作用
   for (let i = 0; i < 5; i++) {
     await a.keyboard.down("Shift");
@@ -145,6 +140,13 @@ async function runOnce(browser, runTag) {
 
   const timeline = mergedTimeline();
   result.events = timeline.length;
+  // 诊断静默窗：派发进行中（键盘 CDP 调用前后 ~80ms）采样/轮询的 evaluate 必须让路——
+  // 否则固定节拍的诊断与固定时刻的派发确定性相撞（实测 250ms 采样 tick 正撞 f316、
+  // 500ms 胜负轮询正撞 f332，每轮在该事件迟到 20-36ms=1-2 帧晚，正中路线脆弱走廊）。
+  let dispatchBusyUntil = 0;
+  const yieldToDispatch = async () => {
+    while (Date.now() < dispatchBusyUntil) await a.waitForTimeout(20);
+  };
   const deadCheck = async () => {
     const d = await roomState(a, `String(s.players.get("fireboy").dying) + String(s.players.get("watergirl").dying)`);
     return d === "truetrue" || d === "truefalse" || d === "falsetrue" ? d : null;
@@ -154,6 +156,7 @@ async function runOnce(browser, runTag) {
   const sampler = (async () => {
     while (Date.now() - t0 < TOTAL_MS + 15000) {
       await a.waitForTimeout(SAMPLE_MS);
+      await yieldToDispatch();
       const el = Date.now() - t0;
       const snap = await roomState(
         a,
@@ -165,6 +168,10 @@ async function runOnce(browser, runTag) {
 
   const dispatch = (async () => {
     for (const ev of timeline) {
+      // 两段睡眠：先睡到事件前 130ms，打开静默窗预告，再睡剩余段——采样/轮询若在
+      // 预告后才醒来必然让路；更早醒来的 evaluate 最迟 ~30ms 完成，仍赶在派发前结束
+      await sleepPrecise(a, ev.t - 130);
+      dispatchBusyUntil = t0 + ev.t + 80;
       await sleepPrecise(a, ev.t);
       const page = ev.page === "a" ? a : b;
       const sent = Date.now() - t0;
@@ -178,6 +185,7 @@ async function runOnce(browser, runTag) {
   let shot = false;
   while (Date.now() < deadline) {
     await a.waitForTimeout(500);
+    await yieldToDispatch();
     const phase = await roomState(a, `String(s.phase)`);
     if (phase === "won") {
       result.won = true;
@@ -214,8 +222,8 @@ async function runOnce(browser, runTag) {
     await a.screenshot({ path: join(OUT, `${runTag}-fail-a.png`) });
     await b.screenshot({ path: join(OUT, `${runTag}-fail-b.png`) });
   }
-  await ctxA.close();
-  await ctxB.close();
+  await a.close();
+  await b.close();
   return result;
 }
 
@@ -234,11 +242,15 @@ try {
     if (m) phaseMs[m[1]] = Number(m[2]);
   });
   // max-semi-space-size=64：Phaser 逐帧分配导致 minor GC 频繁，实测 renderer 主线程
-  // 30-80ms 停顿正落在派发上（门禁容差 ~12ms），扩新生代把 GC 频率压掉一个量级
-  const browser = await chromium.launch({ channel: "msedge", headless: true, args: ["--mute-audio", "--js-flags=--max-semi-space-size=64"] });
+  // 30-80ms 停顿正落在派发上（门禁容差 ~12ms），扩新生代把 GC 频率压掉一个量级。
+  // 双页各开独立浏览器实例：键盘注入走浏览器进程 UI 线程、GPU 进程与 CDP 连接均为
+  // 实例级共享——单实例双 context 时 A 页诊断与 B 页派发在这些共享层互相踩踏。
+  const launch = () => chromium.launch({ channel: "msedge", headless: true, args: ["--mute-audio", "--js-flags=--max-semi-space-size=64"] });
+  const browserA = await launch();
+  const browserB = await launch();
   for (let r = 1; r <= REPEAT; r++) {
     try {
-      const res = await runOnce(browser, `route-run${r}`);
+      const res = await runOnce(browserA, browserB, `route-run${r}`);
       results.push(res);
       const ok = res.won && !res.diedAt && !res.dispatchError;
       log(`[${res.tag}] ${ok ? "PASS" : "FAIL"} won=${res.won} winAt=${res.winAtMs}ms died=${res.diedAt ?? "-"} final=${res.finalPhase} fb=(${res.final?.fb?.[0]?.toFixed(0)},${res.final?.fb?.[1]?.toFixed(0)}) wg=(${res.final?.wg?.[0]?.toFixed(0)},${res.final?.wg?.[1]?.toFixed(0)})`);
@@ -249,7 +261,8 @@ try {
       pass = false;
     }
   }
-  await browser.close();
+  await browserA.close();
+  await browserB.close();
 } finally {
   server?.kill();
 }
