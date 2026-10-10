@@ -2,7 +2,7 @@
 
 服务端权威的《森林冰火人 1：森林神庙》双人对战合作网页游戏。完整开发计划见 [note/PLAN.md](note/PLAN.md)。
 
-> **当前版本**：0.3.26（Tiled rotation 全量修复：bonus_3 135° 斜台与 forest_24_1 17.4° 斜箱体角接原版 SetAngle(rotation)，28 处旋转风区任意角验证通过；上版 0.3.25 机关碰撞体/贴图一致性专项九连修复（P0 平台体角双旋转/推杆梯形/拉杆镜像/吊挂滑轮罗马杆快照/风机/窗/灯罩/球首帧）；成因分析与判决表见 note/research/2026-10-fidelity/12-mech-collider-audit.md。此前 0.3.0-0.3.24 完成 box2d 保真重写 + 全 UI 复刻 + 性能专项 + 保真四连轮：48 关、机关全谱、双浏览器真联机、物理复刻度 84.31、动画 99.97、视觉 95.20。量化基准见 [benchmark/](benchmark/README.md)，性能对比报告见 [note/report/perf/2026-10-08-perf-optimization.md](note/report/perf/2026-10-08-perf-optimization.md)，复刻度报告见 [2026-10-06-fidelity-benchmark.md](note/report/perf/2026-10-06-fidelity-benchmark.md)，逐版改动见 [note/release/](note/release/)）
+> **当前版本**：0.3.27（门扫帧 round 闸门卡摆修复：真实游玩双角色站门内从不通关的根因——推进闸门 round(frac)<21 恒卡 20.83 帧、isUp 单步脉冲错峰永不相交；isUp 改原版口径每步重算后真实走位入门→开门→win→EndMenu 全链在体打通，e2e 新增不依赖 FORCE_DOORS 的真实走位通关模式；附带修复 BodyState.state 漏注册/setPaused 吞末次输入/重连丢 Room/断线超时死房。取证全档 note/research/2026-10-fidelity/13-door-sweep-stall.md。上版 0.3.26 Tiled rotation 全量修复、0.3.25 机关碰撞体/贴图一致性专项见 note/research/2026-10-fidelity/12-mech-collider-audit.md。此前 0.3.0-0.3.24 完成 box2d 保真重写 + 全 UI 复刻 + 性能专项 + 保真四连轮：48 关、机关全谱、双浏览器真联机、物理复刻度 84.31、动画 99.97、视觉 95.20。量化基准见 [benchmark/](benchmark/README.md)，性能对比报告见 [note/report/perf/2026-10-08-perf-optimization.md](note/report/perf/2026-10-08-perf-optimization.md)，复刻度报告见 [2026-10-06-fidelity-benchmark.md](note/report/perf/2026-10-06-fidelity-benchmark.md)，逐版改动见 [note/release/](note/release/)）
 >
 > **使用边界**：本项目使用官方游戏素材与关卡数据，仅供两名开发者私下联机游玩。禁止公开分发、上线或商用。
 

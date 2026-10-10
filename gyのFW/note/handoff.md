@@ -1,5 +1,7 @@
 # Handoff：需要真人完成的事与已知限制
 
+**更新**：2026-10-10（**0.3.27 已发布：门扫帧 round 闸门卡摆修复——真实游玩通关链全线打通**——用户实测双人都站门内仍进不了下一关：并发双代理（服务端→客户端全链审计 + bundle 字证）+ 内核逐帧探针定位根因 updateDoors 推进闸门 `round(frac)<21` 使 frac 恒卡 20.83 帧、isUp 退化为单步脉冲、双门错峰到齐永不相交 → 永不 win 且门动画恒差一帧不全开；历史测试全绿系传送/FORCE_DOORS 锁步恰好绕开错峰路径。isUp 改原版口径每步重算后，e2e 新增真实走位入门通关模式（zz_probe fixture 运行时安装/移除 + 键盘时间线），真实服务端 `[doors] open=true`→`[win] phase=won`→HUD「通关！」在体打通；附带修复 BodyState.state 漏注册（0.3.25 灯罩换帧从未下发）/setPaused 吞末次输入/重连丢 Room/断线超时死房四处。84/84 单测 · det 48 关位级一致 · e2e 三模式全 PASS。取证全档 research/2026-10-fidelity/13-door-sweep-stall.md，release/0.3.27.md）
+
 **更新**：2026-10-09（**0.3.26 已发布：Tiled rotation 全量修复**——用户要求排查同类问题的第二轮：48 关扫 rotation≠0 共 30 处，28 处风区（任意角逐台验证 ✓）+ bonus_3 两台 135° 斜台 + forest_24_1 一台 17.41° 斜箱（后三类 rotation 此前被静默丢弃）；bundle 字证 MovingPlatform @1715777 / Box @1725729 均体角=SetAngle(rotation)；det r27 基线漂移恰为两关、其余 46 关位级不动；lever/pusher/roman 尊重视角但无数据用例，记档不实现；快照角四族配对表收口。research/12 §五，release/0.3.26.md）
 
 **更新**：2026-10-09（**0.3.25 已发布：机关碰撞体/贴图一致性专项**——实玩报告拉杆碰撞/图画不一致，双代理并行审计 14 机关族+字节级取证九连修复：P0 平台体角/fixture 双旋转（shapeRotation 同时烧进 bd.angle 与 fixture，竖直平台/转臂碰撞体整体横躺 96×28、摆位镜像；修复后转储五臂竖立 28×96@槽位、拉动摆成 96×28 横桥；det 新基线 r26-posefix）；推杆原版梯形（0.3.6 T 形唇误转写）；拉杆快照角误取负；吊挂/滑轮/罗马杆快照下发（此前整族隐形）；竖直平台贴图；风机体心 windBodyPos；window 结案（原版全图集缺帧，不渲染=忠实）；平台灯罩状态链（BodyState.state）+ 球首帧对体心。成因五根因+全族判决表见 research/12-mech-collider-audit.md。release/0.3.25.md）

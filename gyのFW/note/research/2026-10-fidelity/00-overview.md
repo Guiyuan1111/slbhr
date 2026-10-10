@@ -75,4 +75,7 @@ gravity=1000px/s²、ptmRatio=32、LIQUID_TILE 映射、液体下半格实体+�
 ## 后续研究文档
 
 - [08-pulley-forensics.md](08-pulley-forensics.md)：forest_04 滑轮金轨迹取证全录（金轨迹解码纠偏、终点三体吻合、锚点符号终审、亚像素混沌定性）
+- [11-residual-divergence-forensics.md](11-residual-divergence-forensics.md)：残余偏差成因分析（混沌/驱动层/工具对照）
+- [12-mech-collider-audit.md](12-mech-collider-audit.md)：机关碰撞体/贴图一致性专项（P0 双旋转等五根因 + rotation 轴同类排查 §五）
+- [13-door-sweep-stall.md](13-door-sweep-stall.md)：门扫帧 round 闸门卡摆（0.3.27 真实游玩永不通关根因 + 原版通关语义字证 + 锁步偏差教训）
 - 量化基准与对比报告：benchmark/（fidelity-score + visual-diff）与 note/report/perf/2026-10-06-fidelity-benchmark.md
