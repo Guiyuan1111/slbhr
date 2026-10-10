@@ -11,6 +11,7 @@
  * - 断线冻结：phase=paused 等待重连 60s，重连恢复、超时才踢出
  */
 import type { Client } from "colyseus";
+import { appendFileSync } from "node:fs";
 import { Room, ServerError } from "../colyseus.cjs.js";
 import { ROLES, EMPTY_INPUT, type Role, type InputState } from "@fw/shared";
 import { World, type WorldEvent } from "@fw/shared/kernel";
@@ -43,6 +44,25 @@ export class ForestRoom extends Room<RoomState> {
   private restartTimer: NodeJS.Timeout | undefined;
   /** 已就绪开钟标记（避免重复调度） */
   private startedOnce = false;
+  /** FW_DUMP=1 诊断：内存缓冲、每 30 帧一次批量落盘（每步 appendFileSync 在 Windows
+   * 上的阻塞会反过来污染输入到达时刻，诊断工具不得干扰被测系统） */
+  private dumpBuf: string[] = [];
+  private dumpSeg = 0;
+
+  /** 换段（开钟/重开）：把残余缓冲落盘后开新文件 */
+  private dumpReset() {
+    if (process.env.FW_DUMP !== "1") return;
+    if (this.dumpBuf.length > 0) {
+      appendFileSync(`TEMP/server-dump-${this.dumpSeg}.jsonl`, this.dumpBuf.join("\n") + "\n");
+      this.dumpBuf = [];
+    }
+    this.dumpSeg++;
+  }  /** 输入队列：{到达墙钟, 角色, 全量快照}；tick 内按意图跨度排水（见 onMessage 注释） */
+  private inputQueue: { t: number; role: Role; data: InputState }[] = [];
+  /** 开钟墙钟零点：第 k 步意图跨度 = (startedWall + k·STEP_MS, startedWall + (k+1)·STEP_MS] */
+  private startedWall = 0;
+  /** 已运行步数（与 kernel 帧号一致） */
+  private stepIndex = 0;
 
   onCreate(options: JoinOptions) {
     this.roomPassword = String(options.password ?? "");
@@ -62,12 +82,19 @@ export class ForestRoom extends Room<RoomState> {
     this.onMessage("input", (client, data: Partial<InputState>) => {
       const role = this.roles.get(client.sessionId);
       if (!role) return;
-      // 全量快照语义：缺省键按 false 处理（World.step 直读，见 currentInputs）
-      this.currentInputs[role] = {
-        up: data?.up === true,
-        left: data?.left === true,
-        right: data?.right === true,
-      };
+      // 全量快照语义：缺省键按 false 处理。带到达时间戳入队，由 tick 按意图跨度排水——
+      // 直接写 currentInputs 会被「晚到的唤醒」提前一个步消费（Wakeup 与 16.7ms 边界
+      // 有 ±5-15ms 抖动，多步补帧时同输入还会覆盖两个步），队列消费与唤醒时机解耦。
+      this.inputQueue.push({
+        t: Date.now(),
+        role,
+        data: {
+          up: data?.up === true,
+          left: data?.left === true,
+          right: data?.right === true,
+        },
+      });
+      if (this.inputQueue.length > 128) this.inputQueue.splice(0, this.inputQueue.length - 128);
     });
 
     this.onMessage("restart", () => {
@@ -102,6 +129,9 @@ export class ForestRoom extends Room<RoomState> {
         this.world.doors.watergirl.isOpen = true;
       }, 500);
     }
+    // 模拟唤醒保持默认 16.7ms：Windows 定时器分辨率 ~15.6ms，更密的 interval 会被钳制
+    // （实测 setInterval(4) 实际均值 16.8ms、p95 24.7ms）。输入应用的帧精度不靠唤醒密度，
+    // 靠 inputQueue 的意图跨度排水（见 tick/inputQueue 注释）。
     this.setSimulationInterval((dtMs) => this.tick(dtMs));
   }
 
@@ -172,10 +202,18 @@ export class ForestRoom extends Room<RoomState> {
   private beginReady() {
     this.state.phase = "ready";
     this.syncState();
+    // 纯观测时间戳（e2e 路由回放的 t0 锚点）：不参与任何逻辑分支
+    console.log(`[phase] ready @${Date.now()}`);
     this.readyTimer = setTimeout(() => {
       this.startedOnce = true;
       this.state.phase = "started";
+      // 输入队列时基零点：清掉 ready 期残留，第 k 步跨度以此为基准
+      this.startedWall = Date.now();
+      this.stepIndex = 0;
+      this.inputQueue = [];
+      this.dumpReset();
       this.syncState();
+      console.log(`[phase] started @${Date.now()}`);
     }, READY_MS);
   }
 
@@ -187,6 +225,10 @@ export class ForestRoom extends Room<RoomState> {
     this.syncState();
     this.readyTimer = setTimeout(() => {
       this.state.phase = "started";
+      this.startedWall = Date.now();
+      this.stepIndex = 0;
+      this.inputQueue = [];
+      this.dumpReset();
       this.syncState();
     }, READY_MS);
   }
@@ -207,9 +249,42 @@ export class ForestRoom extends Room<RoomState> {
     this.acc += Math.min(dtMs, 100);
     let steps = 0;
     while (this.acc >= STEP_MS && steps < 6) {
+      // 按意图跨度排水输入队列：第 k 步消费「目标帧为 k」的消息。
+      // 路由派发目标 = startedWall + k·STEP_MS − 10ms（到达 ≈ −8ms，CDP 抖动 ±2ms），
+      // deadline 取 B_k + 4：比它早到的消息归本步（吸收 10ms 迟到），比上个 deadline
+      // （B_{k−1}+4 = B_k − 12.7）晚到的消息才归本步（容忍 4.7ms 提前）。唤醒相位 φ
+      // 相对 started 本是随机的（interval 从建房就跑、acc 在 started 前清零），队列
+      // 消费只认意图跨度，φ 与唤醒抖动都被解耦。
+      const deadline = this.startedWall + this.stepIndex * STEP_MS + 4;
+      while (this.inputQueue.length > 0 && this.inputQueue[0].t <= deadline) {
+        const q = this.inputQueue.shift()!;
+        if (process.env.FW_DUMP === "1") {
+          this.dumpBuf.push(JSON.stringify({ consume: this.stepIndex, role: q.role, at: q.t - this.startedWall, keys: q.data }));
+        }
+        this.currentInputs[q.role] = q.data;
+      }
       this.handleEvents(this.world.step(STEP_MS / 1000, this.currentInputs));
+      if (process.env.FW_DUMP === "1") {
+        // 与内核 trace 同惯例：step 后写（本行 = 第 f 帧步进完成态）
+        const fb = this.world.snapshotPlayer("fireboy");
+        const wg = this.world.snapshotPlayer("watergirl");
+        this.dumpBuf.push(JSON.stringify({
+          f: this.stepIndex,
+          fb: [fb.x, fb.y],
+          wg: [wg.x, wg.y],
+          in: {
+            fb: { ...this.currentInputs.fireboy },
+            wg: { ...this.currentInputs.watergirl },
+          },
+        }));
+        if (this.dumpBuf.length >= 30) {
+          appendFileSync(`TEMP/server-dump-${this.dumpSeg}.jsonl`, this.dumpBuf.join("\n") + "\n");
+          this.dumpBuf = [];
+        }
+      }
       this.acc -= STEP_MS;
       steps++;
+      this.stepIndex++;
     }
     if (steps > 0) this.syncState();
   }
