@@ -12,6 +12,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join, isAbsolute } from "node:path";
 import { argOf, log, ROOT } from "../lib.mjs";
 import { runKernel } from "./kernel.mjs";
+import { ScanPool } from "./pool.mjs";
 
 const args = process.argv.slice(2);
 const level = argOf(args, "level", "forest_01");
@@ -21,22 +22,26 @@ const SWEEPS = Number(argOf(args, "sweeps", "10"));
 const SCAN = Math.max(1, Number(argOf(args, "scan", "1")));
 /** 成组平移的邻域窗宽（帧）；顽固事件可加大词表（--win 24） */
 const WIN = Math.max(4, Number(argOf(args, "win", "12")));
+/** 并行工人核数（默认物理核-1，夹 [2,10]）；±N 扫描是回跑风暴，近线性加速 */
+const JOBS = Number(argOf(args, "jobs", "0")) || undefined;
 const routeDoc = JSON.parse(readFileSync(absRoute, "utf8"));
+const pool = new ScanPool(JOBS);
 
 const SIDES = ["fb", "wg"];
 const NB = routeDoc.fb.length;
 const clone = (T) => ({ fb: T.fb.map((e) => ({ ...e })), wg: T.wg.map((e) => ({ ...e })) });
 const local = (side, i) => (side === "fb" ? i : i - NB);
 
-function run(T) {
-  return runKernel(level, { totalFrames: routeDoc.totalFrames, fb: T.fb, wg: T.wg });
+async function run(T) {
+  return (await pool.run(level, { totalFrames: routeDoc.totalFrames, fb: T.fb, wg: T.wg })).won;
 }
 
-/** 逐事件 ±Nf 扫描（only 传平坦索引集合则只扫子集——验证移动局部性） */
-function scanTables(T, only = null) {
-  const fatal = [];
+/** 逐事件 ±Nf 扫描（only 传平坦索引集合则只扫子集——验证移动局部性）。
+ * 全量 job 一次性入池并行回跑：±2f 全量 444 跑从串行 ~130s 压到 ~130s/K。 */
+async function scanTables(T, only = null) {
   const offs = [];
   for (let d = -SCAN; d <= SCAN; d++) if (d !== 0) offs.push(d);
+  const jobs = [];
   for (let s = 0; s < 2; s++) {
     const side = SIDES[s];
     for (let li = 0; li < T[side].length; li++) {
@@ -45,10 +50,15 @@ function scanTables(T, only = null) {
       for (const d of offs) {
         const TT = clone(T);
         TT[side][li].f += d;
-        if (!run(TT).won) { fatal.push({ i, side, li, f: T[side][li].f, dir: T[side][li].dir, type: T[side][li].type, d }); break; }
+        jobs.push({ i, side, li, f: T[side][li].f, dir: T[side][li].dir, type: T[side][li].type, d, route: { totalFrames: routeDoc.totalFrames, fb: TT.fb, wg: TT.wg } });
       }
     }
   }
+  const rs = await Promise.all(jobs.map((j) => pool.run(level, j.route)));
+  const fatal = [];
+  jobs.forEach((j, k) => {
+    if (!rs[k].won) fatal.push({ i: j.i, side: j.side, li: j.li, f: j.f, dir: j.dir, type: j.type, d: j.d });
+  });
   return fatal;
 }
 
@@ -76,10 +86,13 @@ let bestFatal = Infinity;
 const totalEvents = NB + routeDoc.wg.length;
 const t0 = Date.now();
 
-if (!run(cur).won) { console.error("基线必须 WIN（先跑通初排再硬化）"); process.exit(1); }
+const denom = totalEvents * 2 * SCAN; // 并行扫描计全方向（逐事件不再 break），分母同步修正
+if (!(await run(cur))) { console.error("基线必须 WIN（先跑通初排再硬化）"); process.exit(1); }
 
 // --one：每采纳一个移动就整表重扫（消陈旧致命表的级联抖动；慢但稳，1 移动≈1 sweep）
 const ONE = args.includes("--one");
+/** 致命表按事件去重（同事件 ±d 多方向致命只下降一次） */
+const uniq = (F) => [...new Map(F.map((x) => [x.i, x])).values()];
 
 if (ONE) {
   // --one 逐个击破：候选先过局部 ±SCAN 预筛，再全量重扫验收——只采纳「全局严格改善」
@@ -88,17 +101,17 @@ if (ONE) {
   // 兜不住远期耦合（修 A 破 B 只有全量重扫见真章）；且致命计数是内核版本相对的——
   // 内核一改（如 F7 接触时序），同一路线的致命集即洗牌，硬化必须在最终内核上重跑。
   for (let sweep = 0; sweep < SWEEPS; sweep++) {
-    const F = scanTables(cur);
-    log(`sweep ${sweep}: fatal ${F.length}/${totalEvents}（累计 ${((Date.now() - t0) / 1000).toFixed(0)}s）`);
+    const F = await scanTables(cur);
+    log(`sweep ${sweep}: fatal ${F.length}/${denom}（${uniq(F).length} 事件，累计 ${((Date.now() - t0) / 1000).toFixed(0)}s）`);
     if (F.length < bestFatal) { bestFatal = F.length; best = clone(cur); writeFileSync(absRoute + ".best.json", JSON.stringify({ ...routeDoc, fb: best.fb, wg: best.wg })); }
     if (F.length === 0) break;
     let adopted = false;
-    for (const { i } of F) {
+    for (const { i } of uniq(F)) {
       const { side, sets } = moveSets(cur, i);
       outer: for (const lis of sets) {
         for (const d of [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6]) {
           const cand = shifted(cur, side, lis, d);
-          if (!run(cand).won) continue;
+          if (!(await run(cand))) continue;
           // 局部预筛（快速剔除明显劣化候选，省全量重扫）
           let ok = true;
           const verify = [];
@@ -107,14 +120,18 @@ if (ONE) {
             for (const dd of verify) {
               const TT = clone(cand);
               TT[side][li].f += dd;
-              if (!run(TT).won) { ok = false; break; }
+              if (!(await run(TT))) { ok = false; break; }
             }
             if (!ok) break;
           }
           if (!ok) continue;
-          const Fc = scanTables(cand);
+          const Fc = await scanTables(cand);
           if (Fc.length < F.length) {
             cur = cand;
+            // 采纳即入账（严格更优）：不等到下个 sweep 开头——否则最后一个采纳会被收尾回滚丢掉
+            bestFatal = Fc.length;
+            best = clone(cur);
+            writeFileSync(absRoute + ".best.json", JSON.stringify({ ...routeDoc, fb: best.fb, wg: best.wg }));
             log(`  [${side.toUpperCase()} f${lis.map((li) => cur[side][li].f).join("/")}] ${d >= 0 ? "+" : ""}${d} ✓ 全局 ${F.length}→${Fc.length}`);
             adopted = true;
             break outer;
@@ -127,62 +144,61 @@ if (ONE) {
   }
 } else {
   for (let sweep = 0; sweep < SWEEPS; sweep++) {
-  const F = scanTables(cur);
-  log(`sweep ${sweep}: fatal ${F.length}/${totalEvents}（累计 ${((Date.now() - t0) / 1000).toFixed(0)}s）`);
-  if (F.length < bestFatal) { bestFatal = F.length; best = clone(cur); writeFileSync(absRoute + ".best.json", JSON.stringify({ ...routeDoc, fb: best.fb, wg: best.wg })); }
-  if (F.length === 0) break;
-  for (const { i } of F) {
-    const { side, sets } = moveSets(cur, i);
-    let done = false;
-    for (const lis of sets) {
-      for (const d of [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6]) {
-        const cand = shifted(cur, side, lis, d);
-        if (!run(cand).won) continue;
-        // 局部验证：本集各成员 ±N（物理影响仅向前传播）
-        let ok = true;
-        const verify = [];
-        for (let dd = -SCAN; dd <= SCAN; dd++) if (dd !== 0) verify.push(dd);
-        for (const li of lis) {
-          for (const dd of verify) {
-            const TT = clone(cand);
-            TT[side][li].f += dd;
-            if (!run(TT).won) { ok = false; break; }
+    const F = await scanTables(cur);
+    log(`sweep ${sweep}: fatal ${F.length}/${denom}（${uniq(F).length} 事件，累计 ${((Date.now() - t0) / 1000).toFixed(0)}s）`);
+    if (F.length < bestFatal) { bestFatal = F.length; best = clone(cur); writeFileSync(absRoute + ".best.json", JSON.stringify({ ...routeDoc, fb: best.fb, wg: best.wg })); }
+    if (F.length === 0) break;
+    for (const { i } of uniq(F)) {
+      const { side, sets } = moveSets(cur, i);
+      let done = false;
+      for (const lis of sets) {
+        for (const d of [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6]) {
+          const cand = shifted(cur, side, lis, d);
+          if (!(await run(cand))) continue;
+          // 局部验证：本集各成员 ±N（物理影响仅向前传播）
+          let ok = true;
+          const verify = [];
+          for (let dd = -SCAN; dd <= SCAN; dd++) if (dd !== 0) verify.push(dd);
+          for (const li of lis) {
+            for (const dd of verify) {
+              const TT = clone(cand);
+              TT[side][li].f += dd;
+              if (!(await run(TT))) { ok = false; break; }
+            }
+            if (!ok) break;
           }
-          if (!ok) break;
+          if (!ok) continue;
+          cur = cand;
+          log(`  [${side.toUpperCase()} f${lis.map((li) => cur[side][li].f).join("/")}] ${d >= 0 ? "+" : ""}${d} ✓`);
+          done = true;
+          break;
         }
-        if (!ok) continue;
-        cur = cand;
-        log(`  [${side.toUpperCase()} f${lis.map((li) => cur[side][li].f).join("/")}] ${d >= 0 ? "+" : ""}${d} ✓`);
-        done = true;
-        break;
+        if (done) break;
       }
-      if (done) break;
+      if (!done) log(`  [${side.toUpperCase()} i${i}] 顽固（同角色邻域内无可行移动）`);
     }
-    if (!done) log(`  [${side.toUpperCase()} i${i}] 顽固（同角色邻域内无可行移动）`);
-    // --one：单一移动后整表重扫再决策（每移动一个 fatal 项即跳出本 sweep）
-    if (ONE && done) break;
-  }
-  const F2 = scanTables(cur);
-  if (F2.length <= bestFatal) { bestFatal = F2.length; best = clone(cur); writeFileSync(absRoute + ".best.json", JSON.stringify({ ...routeDoc, fb: best.fb, wg: best.wg })); }
-  log(`sweep ${sweep} 末: fatal ${F2.length}（best ${bestFatal}）`);
-  if (F2.length > bestFatal) cur = clone(best);
-  if (F2.length === 0) break;
+    const F2 = await scanTables(cur);
+    if (F2.length <= bestFatal) { bestFatal = F2.length; best = clone(cur); writeFileSync(absRoute + ".best.json", JSON.stringify({ ...routeDoc, fb: best.fb, wg: best.wg })); }
+    log(`sweep ${sweep} 末: fatal ${F2.length}/${denom}（best ${bestFatal}）`);
+    if (F2.length > bestFatal) cur = clone(best);
+    if (F2.length === 0) break;
   }
 }
 
 // 以历史最优收尾（cur 可能劣于 best）
 cur = clone(best);
-const finalF = scanTables(cur);
-log(`final fatal ${finalF.length}/${totalEvents}`);
-for (const x of finalF) log(`  ${x.side.toUpperCase()}#${x.i} f${x.f} ${x.type} ${x.dir} ${x.d}`);
+const finalF = await scanTables(cur);
+log(`final fatal ${finalF.length}/${denom}（${uniq(finalF).length} 事件）`);
+for (const x of uniq(finalF)) log(`  ${x.side.toUpperCase()}#${x.i} f${x.f} ${x.type} ${x.dir} ${x.d}`);
 
 const outDoc = {
   ...routeDoc,
   fb: cur.fb,
   wg: cur.wg,
-  source: `${routeDoc.source ?? "unknown"}; routetool/optimize.mjs ${new Date().toISOString().slice(0, 10)} fatal ${finalF.length}/${totalEvents}`,
+  source: `${routeDoc.source ?? "unknown"}; routetool/optimize.mjs ${new Date().toISOString().slice(0, 10)} fatal ${finalF.length}/${denom}`,
 };
 const outPath = args.includes("--write") ? absRoute : absRoute.replace(/\.json$/, "") + ".opt.json";
 writeFileSync(outPath, JSON.stringify(outDoc, null, 1));
-log(`已写 ${outPath}（fatal ${finalF.length}/${totalEvents}）`);
+log(`已写 ${outPath}（fatal ${finalF.length}/${denom}）`);
+pool.close();
 process.exit(0);
