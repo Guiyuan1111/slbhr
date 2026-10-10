@@ -59,3 +59,31 @@
 - IDM 按进程/网卡层嗅探 URL 扩展名（.mp3 等），`--disable-extensions` 无效
 - 复刻侧根治：音频走 `/assets/audio/s/:name`（服务器补 .mp3、octet-stream），URL 无媒体扩展名即不在接管名单
 - 只读原版（8099）采集时：本地改写代理 + `page.route(正则含 ?v= 查询串)` abort——请求不出浏览器、零 socket、零媒体字节，IDM 无物可劫
+
+## 路线产线与 v35（2026-10-11，M1 工具化）
+
+> 本节起路线不再以 TEMP 脚本内的 JS 表为准，改由产线工具维护**平坦事件 JSON**：
+> `scripts/e2e/inputs/routes/forest_01.json`（fb/wg 各一条 `[{f, dir, type}]`，56+55 事件）。
+
+**v35 路线**（86de12a）：由优化器对 v34 做坐标下降硬化产出——逐事件 ±1f 扫描致命数 35/111 → 8/111
+（残余 8 处为杠杆混沌区单角色邻域无可行移动的确定性死锁，详见下节根因）。内核复核 WIN @f2365。
+
+**产线工具**（1224b8e，`scripts/e2e/routetool/`）：
+- `kernel.mjs`：内核 harness——tsx 直载 TS 内核（与真实服务端同一份实现），双关卡库解析
+  （data/tutorials/levels + data/forest/levels）；`runKernel` 回跑路线返回 WIN/死亡帧。
+- `validate.mjs`：内核复核 CLI（`node --import tsx scripts/e2e/routetool/validate.mjs --level <id>
+  [--trace <out>]`），WIN/FAIL 退出码，trace 落逐帧位置供诊断。
+- `optimize.mjs`：±1f 容忍硬化器——逐事件 ±1f 扫描 fatal，坐标下降成组平移（同角色 12f 内
+  相邻事件连动，单点/整 run 两档，位移 ±1..±4），候选需过局部 ±1 验证；每轮净恶化回滚历史最优，
+  最优快照随时落盘（`<route>.best.json`）；默认写 `<route>.opt.json` 人工比对，`--write` 才覆写。
+- 等价性取证：TS 直载内核 vs TEMP 期编译产物内核，同 v35 路线前 700 帧逐帧位级比对 0 分歧
+  （TEMP/routetool-check/，校验后该目录已清理）。
+
+**真实门禁链**（`scripts/e2e/route.mjs`，0 钩子）：
+- 时基锚定用**服务端 `[phase] ready/started @wall` 日志**（335b5e7 加的纯观测戳）——旧锚
+  （页面 ready 观察 +2000ms）把客户端 ~50ms 观察延迟系统性算进零点，被 tick 取整成混合 +3f/+4f 滑帧。
+- mono↔wall 桥接：`EPOCH = performance.now() - Date.now()` 在锚定后现算，补齐 T0 到观察点间的墙钟差。
+- 服务端**输入队列按意图跨度排水**：消息带到达墙钟戳，每步 `deadline = startedWall + stepIndex*STEP_MS + 4`
+  消费到期消息——彻底解耦 Windows setInterval 唤醒抖动（实测 setInterval(4) 均值 16.8ms）与唤醒相位 φ；
+  110/111 逐事件精确落内核帧（1 例 +25ms 服务端管线打嗝落在容忍事件上不可见）。
+- 66ms RESEND keepalive 与变化消息在消费日志中可区分（前者是同状态重发，非输入延迟）。

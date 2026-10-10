@@ -39,6 +39,7 @@
 | **暂停输入冲刷** | `journey.mjs pause` | 按住右→KeyP：服务端 anim=jumping→idle（收到全松）；本地暂停不改相位；恢复后重按生效 | 0.3.27 setPaused 修复；未来暂停/输入闸回归 |
 | **断线超时补位** | `journey.mjs rejoin`（FW_RECONNECT_SECONDS=4 缩窗） | 超时后 phase 回 lobby；补位→整关重开→started；补位者获水女孩席位 | 0.3.27 onLeave 死房修复；未来重连/补位回归 |
 | **sync 字段探针** | 内嵌于 regression 所有模式 | 页面内直读权威 state：全部机关映射的 state 字段、doors 六字段、levelId 必须真实到达 | 0.3.25 defineTypes 漏注册类缺陷——**客户端视角**的字段存在性 |
+| **全程通关门禁（P3）** | `route.mjs --level <id> --repeat 3` | routetool 产线路线 → 双浏览器真实键盘全程回放 → phase=won；repeat≥3 ALL PASS；0 调试钩子 | 0.3.27 门卡摆的真实全程版；未来任何物理/机关/输入管道回归（forest_01 已达此标准，余关见 §五） |
 
 ## 四、每版发版前的强制门禁清单
 
@@ -52,7 +53,11 @@
 
 ## 五、当前已知缺口（按优先级）
 
-1. **P3 全自动通关 bot**：目前 L3 的「真实走位」只覆盖门带终点段（zz_probe 出生点在门前）；从出生点打通 forest_01 全关需要内核规划器生成全程输入时间线。可行路径：内核确定性 ⇒ 脚本化搜索/手工编排路由 ⇒ 内核验证 ⇒ 原样回放真实服务端。扩展后可将「48 关全部可真实通关」纳入 L3。
+1. **P3 全自动通关 bot（forest_01 已落地，产线已工具化）**：routetool 产线
+   （`scripts/e2e/routetool/`：内核 harness/validate/optimize）+ 门禁 runner（`route.mjs`，
+   服务端 [phase] 锚定 + 输入队列排水）→ forest_01 repeat≥3 ALL PASS。**剩余工作**：
+   其余 47 关按「原语库+内核初排 → optimize ±1f 硬化 → validate → 门禁」批量生产
+   （批次计划见 note/plans/level-batches.md）；产出后将「48 关全部可真实通关」整体纳入 L3 必过清单。
 2. 其余关卡的机关级旅程用例（拉杆/推箱/风区/摆绳在体交互）目前依赖 L1+L2，未逐一在体。
 3. 音频层（播放与否/音量）无自动化断言，仅实玩抽检。
 4. 触屏（Touch* 虚拟键）无 e2e 覆盖。
@@ -64,3 +69,12 @@
 - `regression.mjs`：接入 lib + sync 探针计入 PASS 判定。
 - 服务端 `FW_RECONNECT_SECONDS` 旋钮（默认 60s 不变）：rejoin 场景无需等满一分钟。
 - kernel2「双门异时到位」+「属性化 20 组随机错峰」用例。
+
+## 七、路线产线（2026-10-11 落地，P3 主体）
+
+- `scripts/e2e/routetool/kernel.mjs`：内核 harness（tsx 直载 TS，与真实服务端同一份内核；双关卡库）。已做编译产物↔TS 直载位级等价取证（700 帧 0 分歧）。
+- `scripts/e2e/routetool/validate.mjs`：内核复核 CLI（WIN/FAIL 退出码 + 逐帧 trace）。
+- `scripts/e2e/routetool/optimize.mjs`：±1f 容忍硬化器（成组平移坐标下降 + 最优快照回滚）。
+- `scripts/e2e/route.mjs`：真实门禁 runner——服务端 `[phase]` 墙钟锚定、mono↔wall 桥接、双页合并时间轴精准派发、0 钩子断言 phase=won。
+- 服务端输入队列（335b5e7）：消息按到达墙钟戳入队、每步按意图跨度排水——真实服务端逐事件精确复现内核时序的前提。
+- 观测纪律：FW_DUMP 等诊断逐帧落盘必须缓冲（30 行/写、分段），禁止逐帧同步 IO 扰动节拍；门禁本体 0 钩子。
