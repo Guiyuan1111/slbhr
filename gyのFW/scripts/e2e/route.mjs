@@ -233,7 +233,9 @@ try {
     const m = String(buf).match(/\[phase\] (ready|started) @(\d+)/);
     if (m) phaseMs[m[1]] = Number(m[2]);
   });
-  const browser = await chromium.launch({ channel: "msedge", headless: true, args: ["--mute-audio"] });
+  // max-semi-space-size=64：Phaser 逐帧分配导致 minor GC 频繁，实测 renderer 主线程
+  // 30-80ms 停顿正落在派发上（门禁容差 ~12ms），扩新生代把 GC 频率压掉一个量级
+  const browser = await chromium.launch({ channel: "msedge", headless: true, args: ["--mute-audio", "--js-flags=--max-semi-space-size=64"] });
   for (let r = 1; r <= REPEAT; r++) {
     try {
       const res = await runOnce(browser, `route-run${r}`);

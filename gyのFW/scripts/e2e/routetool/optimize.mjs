@@ -78,7 +78,55 @@ const t0 = Date.now();
 
 if (!run(cur).won) { console.error("基线必须 WIN（先跑通初排再硬化）"); process.exit(1); }
 
-for (let sweep = 0; sweep < SWEEPS; sweep++) {
+// --one：每采纳一个移动就整表重扫（消陈旧致命表的级联抖动；慢但稳，1 移动≈1 sweep）
+const ONE = args.includes("--one");
+
+if (ONE) {
+  // --one 逐个击破：候选先过局部 ±SCAN 预筛，再全量重扫验收——只采纳「全局严格改善」
+  // 的移动，每采纳一个即全量重扫再找下一个。为何验收必须全局：单帧移动会混沌级重塑
+  // 整个致命集（research/11 §A，实测 fb#6-1 让 9 项致命里 5 项换位），局部 ±SCAN 验证
+  // 兜不住远期耦合（修 A 破 B 只有全量重扫见真章）；且致命计数是内核版本相对的——
+  // 内核一改（如 F7 接触时序），同一路线的致命集即洗牌，硬化必须在最终内核上重跑。
+  for (let sweep = 0; sweep < SWEEPS; sweep++) {
+    const F = scanTables(cur);
+    log(`sweep ${sweep}: fatal ${F.length}/${totalEvents}（累计 ${((Date.now() - t0) / 1000).toFixed(0)}s）`);
+    if (F.length < bestFatal) { bestFatal = F.length; best = clone(cur); writeFileSync(absRoute + ".best.json", JSON.stringify({ ...routeDoc, fb: best.fb, wg: best.wg })); }
+    if (F.length === 0) break;
+    let adopted = false;
+    for (const { i } of F) {
+      const { side, sets } = moveSets(cur, i);
+      outer: for (const lis of sets) {
+        for (const d of [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6]) {
+          const cand = shifted(cur, side, lis, d);
+          if (!run(cand).won) continue;
+          // 局部预筛（快速剔除明显劣化候选，省全量重扫）
+          let ok = true;
+          const verify = [];
+          for (let dd = -SCAN; dd <= SCAN; dd++) if (dd !== 0) verify.push(dd);
+          for (const li of lis) {
+            for (const dd of verify) {
+              const TT = clone(cand);
+              TT[side][li].f += dd;
+              if (!run(TT).won) { ok = false; break; }
+            }
+            if (!ok) break;
+          }
+          if (!ok) continue;
+          const Fc = scanTables(cand);
+          if (Fc.length < F.length) {
+            cur = cand;
+            log(`  [${side.toUpperCase()} f${lis.map((li) => cur[side][li].f).join("/")}] ${d >= 0 ? "+" : ""}${d} ✓ 全局 ${F.length}→${Fc.length}`);
+            adopted = true;
+            break outer;
+          }
+        }
+      }
+      if (adopted) break;
+    }
+    if (!adopted) { log("逐个击破：全词表无严格改善候选，收敛退出"); break; }
+  }
+} else {
+  for (let sweep = 0; sweep < SWEEPS; sweep++) {
   const F = scanTables(cur);
   log(`sweep ${sweep}: fatal ${F.length}/${totalEvents}（累计 ${((Date.now() - t0) / 1000).toFixed(0)}s）`);
   if (F.length < bestFatal) { bestFatal = F.length; best = clone(cur); writeFileSync(absRoute + ".best.json", JSON.stringify({ ...routeDoc, fb: best.fb, wg: best.wg })); }
@@ -111,12 +159,15 @@ for (let sweep = 0; sweep < SWEEPS; sweep++) {
       if (done) break;
     }
     if (!done) log(`  [${side.toUpperCase()} i${i}] 顽固（同角色邻域内无可行移动）`);
+    // --one：单一移动后整表重扫再决策（每移动一个 fatal 项即跳出本 sweep）
+    if (ONE && done) break;
   }
   const F2 = scanTables(cur);
-  if (F2.length <= bestFatal) { bestFatal = F2.length; best = clone(cur); }
+  if (F2.length <= bestFatal) { bestFatal = F2.length; best = clone(cur); writeFileSync(absRoute + ".best.json", JSON.stringify({ ...routeDoc, fb: best.fb, wg: best.wg })); }
   log(`sweep ${sweep} 末: fatal ${F2.length}（best ${bestFatal}）`);
   if (F2.length > bestFatal) cur = clone(best);
   if (F2.length === 0) break;
+  }
 }
 
 // 以历史最优收尾（cur 可能劣于 best）
