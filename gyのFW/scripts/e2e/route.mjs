@@ -16,6 +16,7 @@
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { setPriority, constants as osConst } from "node:os";
 import { chromium } from "playwright";
 import { OUT, ROOT, argOf, enterAs, log, readRole, roomState, startServer, waitForStarted } from "./lib.mjs";
 
@@ -228,6 +229,10 @@ async function runOnce(browserA, browserB, runTag) {
 }
 
 mkdirSync(OUT, { recursive: true });
+// 派发进程提优先级：门禁常与其他产线任务（优化器/子 agent 内核回跑）共存，普通优先级的
+// sleepPrecise 自旋会被抢占造成派发迟到（实测共存期 f316 刀锋 2/3 挂）；HIGH 级让调度自旋
+// 免于普通负载抢占（浏览器渲染进程不受影响，属另一层）。
+try { setPriority(osConst.priority.PRIORITY_HIGH); } catch { /* 多用户会话受限则退回普通级 */ }
 let server;
 const results = [];
 let pass = true;
