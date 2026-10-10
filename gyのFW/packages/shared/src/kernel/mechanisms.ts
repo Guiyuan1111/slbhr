@@ -232,7 +232,7 @@ export class MovingPlatform {
   private readonly dthetaPositive: boolean;
   private readonly B: B2;
 
-  constructor(B: B2, world: any, groundBody: any, def: { x: number; y: number; w: number; h: number; dx: number; dy: number; group: number; dtheta?: number; offsetY?: number }) {
+  constructor(B: B2, world: any, groundBody: any, def: { x: number; y: number; w: number; h: number; dx: number; dy: number; group: number; dtheta?: number; offsetY?: number; rotation?: number }) {
     this.B = B;
     this.group = def.group;
     this.isRevolute = def.dtheta !== undefined;
@@ -259,10 +259,11 @@ export class MovingPlatform {
     const bd = new B.b2BodyDef();
     bd.type = B.b2BodyType.b2_dynamicBody;
     bd.position = phys(B, cx, cy);
-    // 原版体角 = SetAngle(options.rotation)（bundle @1714870，Tiled 旋转，森林平台恒 0）；
-    // n=−π/2 只进 fixture（SetAsOrientedBox 第 4 参）。若同时烧进体角，两次 −90° 叠加 ≡ 横放，
-    // 竖直平台/转臂碰撞体整体躺倒 96×28（原版竖立 28×96），转臂摆位随之镜像。
-    bd.angle = 0;
+    // 原版体角 = SetAngle(options.rotation)（bundle @1715777；Device 基类以 rad(c.rotation)
+    // 预设，@1657987）。n=−π/2 只进 fixture（SetAsOrientedBox 第 4 参）。若把 n 同时烧进
+    // 体角，两次 −90° 叠加 ≡ 横放——竖直平台/转臂碰撞体整体躺倒 96×28（原版竖立 28×96）。
+    // rotation 多为 0（即此前 bd.angle=0 的等价形态），bonus_3 有 135° 斜台非零实义。
+    bd.angle = ((def.rotation ?? 0) * Math.PI) / 180;
     this.body = world.CreateBody(bd);
 
     // 板 fixture：SetAsOrientedBox(w/2, h/2−padY 0.06)；friction 0.7；density 0（平移）/0.5（转臂）
@@ -336,13 +337,15 @@ export interface PropBody {
   kind: "box" | "boxheavy" | "ball";
 }
 
-export function buildBox(B: B2, world: any, def: { x: number; y: number }, heavy: boolean): PropBody {
+export function buildBox(B: B2, world: any, def: { x: number; y: number; rotation?: number }, heavy: boolean): PropBody {
   // level2 的 x,y 已是图块中心；boxWidth/Height 1.77（BoxHeavy 同几何，密度/圆摩擦不同）
   const size = 1.77;
   const center = phys(B, def.x, def.y);
   const bd = new B.b2BodyDef();
   bd.type = B.b2BodyType.b2_dynamicBody;
   bd.position = center;
+  // 原版 Box 家族体角 = SetAngle(options.rotation)（bundle @1725729；forest_24_1 箱子 17.4°）
+  bd.angle = ((def.rotation ?? 0) * Math.PI) / 180;
   const body = world.CreateBody(bd);
   // 八边形主体（切角 0.1；源码 push 后 reverse）
   const g = 0.1;

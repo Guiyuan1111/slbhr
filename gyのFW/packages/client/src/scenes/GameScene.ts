@@ -501,6 +501,7 @@ export class GameScene extends Phaser.Scene {
         .image(b.x + PAD, b.y + PAD, ATLAS_MECH, b.heavy ? "movingbox20000" : "movingbox0000")
         .setOrigin(0.5)
         .setDepth(3);
+      if (b.rotation) img.setAngle(b.rotation); // 体角=Tiled 旋转（快照同族取负配对，初角先行）
       this.bodyViews.set(b.id, img);
     }
     for (const ball of level.balls) {
@@ -533,6 +534,8 @@ export class GameScene extends Phaser.Scene {
         .container(p.x + p.w / 2 + PAD, p.y + p.h / 2 + PAD, [inner])
         .setDepth(1.2)
         .setScale(vert ? 0.95 : 1.05, vert ? 1.05 : 0.95);
+      // 初角=Tiled 旋转（快照体角，bonus_3 斜台 135°）；内组 −90° 与原版两级结构同构
+      if (p.rotation) c.setAngle(p.rotation);
       this.platformViews.set(p.id, c);
       this.platformLights.set(p.id, { img: light, state: 0 });
     }

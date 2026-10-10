@@ -119,6 +119,8 @@ export interface BoxDef {
   heavy: boolean;
   x: number;
   y: number;
+  /** 度（原版 Device 基类 SetAngle(rad(rotation))；forest_24_1 实测 17.4°） */
+  rotation: number;
 }
 
 export interface BallDef {
@@ -168,6 +170,8 @@ export interface PlatformDef {
   dtheta?: number;
   /** 旋转/竖直变体的 y 偏移，米（实测 −1/−1.5） */
   offsetY?: number;
+  /** Tiled 旋转，度（原版体角=SetAngle(rotation)；森林平台多为 0，bonus_3 有 135° 斜台） */
+  rotation: number;
 }
 
 export interface HangingDef {
@@ -438,6 +442,7 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
               group: num(o.properties?.group, 0),
               dtheta: o.properties?.dtheta === undefined ? undefined : num(o.properties.dtheta),
               offsetY: o.properties?.offsetY === undefined ? undefined : num(o.properties.offsetY),
+              rotation: num(o.rotation),
             });
           } else if (type === "hanging" || type === "pulley") {
             const pts = absPoints(o);
@@ -494,10 +499,10 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
               });
               break;
             case "box":
-              boxes.push({ id: `x${boxes.length}`, heavy: false, x: c.x, y: c.y });
+              boxes.push({ id: `x${boxes.length}`, heavy: false, x: c.x, y: c.y, rotation: num(o.rotation) });
               break;
             case "boxheavy":
-              boxes.push({ id: `x${boxes.length}`, heavy: true, x: c.x, y: c.y });
+              boxes.push({ id: `x${boxes.length}`, heavy: true, x: c.x, y: c.y, rotation: num(o.rotation) });
               break;
             case "ball":
               balls.push({ id: `a${balls.length}`, x: c.x, y: c.y });
