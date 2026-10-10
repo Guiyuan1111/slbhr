@@ -6,6 +6,7 @@
  *   node scripts/e2e/journey.mjs pause   [--port 3572]   # KeyP 暂停：服务端收到「全松」冲刷、角色停驱（0.3.27 setPaused 修复回归）
  *   node scripts/e2e/journey.mjs rejoin  [--port 3573]   # 断线超时→补位重进：房间整关重开而非死房（0.3.27 onLeave 修复回归；用 FW_RECONNECT_SECONDS 缩窗）
  *   node scripts/e2e/journey.mjs deathretry [--port 3574] # 死亡→gameover 静置（原版无自动重开）→Retry 整关重开（F2 翻转回归）
+ *   node scripts/e2e/journey.mjs rolesplit [--port 3576] # 按角色分键：fb 只认方向键/wg 只认 WASD，跨组键免疫（F1 翻转回归）
  *
  * 断言全部读权威 state 或服务端日志，不依赖 DOM 轮询文本。
  */
@@ -185,8 +186,54 @@ try {
     results.pass = results.checks.every((c) => c.ok);
     await ctxA.close();
     await ctxB.close();
+  } else if (MODE === "rolesplit") {
+    // ── 场景 5：按角色分键（F1 翻转回归）——fb 只认方向键，wg 只认 W/A/D，跨组键免疫。
+    // 原版证据：bundle @1856520（wg→W/A/D）、@1856587（else fb→UP/LEFT/RIGHT）。
+    const ctxA = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+    const ctxB = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+    const a = await ctxA.newPage();
+    const b = await ctxB.newPage();
+    const code = await enterAs(a, PORT, "create", "", "forest_01");
+    await enterAs(b, PORT, "join", code, "forest_01");
+    await waitForStarted(a);
+    await waitForStarted(b);
+    check("角色分配 A=火人", (await readRole(a)).includes("火人"), await readRole(a));
+    check("角色分配 B=水女孩", (await readRole(b)).includes("水女孩"), await readRole(b));
+    log(`[rolesplit] 房间 ${code} 开局（forest_01 平地，四段各 400ms 位移观测）`);
+    const xOf = (page, role) => roomState(page, `Number(s.players.get("${role}").x)`);
+    const fx0 = await xOf(a, "fireboy");
+    const wx0 = await xOf(b, "watergirl");
+    // 1) fb 忽略 WASD：A 按住 KeyD 400ms，fb.x 必须原地
+    await a.keyboard.down("KeyD");
+    await a.waitForTimeout(400);
+    await a.keyboard.up("KeyD");
+    const fx1 = await xOf(a, "fireboy");
+    check("fb 忽略 WASD（KeyD 原地）", Math.abs(fx1 - fx0) < 1, `dx=${(fx1 - fx0).toFixed(2)}`);
+    // 2) fb 认方向键：A 按住 ArrowRight 400ms，fb.x 右移
+    await a.keyboard.down("ArrowRight");
+    await a.waitForTimeout(400);
+    await a.keyboard.up("ArrowRight");
+    const fx2 = await xOf(a, "fireboy");
+    check("fb 方向键右移", fx2 - fx1 > 10, `dx=${(fx2 - fx1).toFixed(2)}`);
+    // 3) wg 忽略方向键：B 按住 ArrowLeft 400ms，wg.x 必须原地
+    await b.keyboard.down("ArrowLeft");
+    await b.waitForTimeout(400);
+    await b.keyboard.up("ArrowLeft");
+    const wx1 = await xOf(b, "watergirl");
+    check("wg 忽略方向键（ArrowLeft 原地）", Math.abs(wx1 - wx0) < 1, `dx=${(wx1 - wx0).toFixed(2)}`);
+    // 4) wg 认 WASD：B 按住 KeyD 400ms，wg.x 右移
+    await b.keyboard.down("KeyD");
+    await b.waitForTimeout(400);
+    await b.keyboard.up("KeyD");
+    const wx2 = await xOf(b, "watergirl");
+    check("wg WASD 右移", wx2 - wx1 > 10, `dx=${(wx2 - wx1).toFixed(2)}`);
+    await a.screenshot({ path: join(OUT, "rolesplit-a.png") });
+    await b.screenshot({ path: join(OUT, "rolesplit-b.png") });
+    results.pass = results.checks.every((c) => c.ok);
+    await ctxA.close();
+    await ctxB.close();
   } else {
-    throw new Error(`未知模式: ${MODE}（可用 journey|pause|rejoin|deathretry）`);
+    throw new Error(`未知模式: ${MODE}（可用 journey|pause|rejoin|deathretry|rolesplit）`);
   }
 
   await browser.close();

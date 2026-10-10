@@ -5,7 +5,7 @@
  *   node scripts/e2e/regression.mjs [--repeat 3] [--script inputs.json] [--port 3557]
  *
  * 流程：构建产物由调用方保证（npm run build）→ 起服 → 双 headless 浏览器走真实菜单
- * （创建/加入/房间码）→ ready→started → 按 inputs 时间线注入键盘 → 断言：
+ * （创建/加入/房间码）→ ready→started → 按 inputs 时间线注入键盘（F1 按角色分键后，方向键只作用于 fb 页、WASD 只作用于 wg 页——一条时间线双页同注入各取所需，walkin-doors.json 即此用法）→ 断言：
  *   - window.__errs 全程为空
  *   - 有 winning 脚本：HUD 出现「通关！」（phase=won）且 finish 数据合理
  *   - 无脚本：soak 模式（30s 物理浸泡，只断言零错误 + 角色存活）
@@ -45,7 +45,7 @@ function installFixtures() {
   return installed;
 }
 
-/** 按 [{t, key, type:'down'|'up'}] 时间线注入键盘（key: 'ArrowRight'|'ArrowLeft'|'ArrowUp'） */
+/** 按 [{t, key, type:'down'|'up'}] 时间线注入键盘（key 为 Playwright 键名；方向键只作用于 fb 页、WASD 只作用于 wg 页，F1 按角色分键） */
 async function runOnce(browser, inputTimeline, expectWin, tag) {
   const ctxA = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   const ctxB = await browser.newContext({ viewport: { width: 1400, height: 1000 } });

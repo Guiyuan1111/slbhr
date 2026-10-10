@@ -37,6 +37,8 @@ let phaser: Phaser.Game | null = null;
 let selectedLevel = urlLevel;
 let net: Net | null = null;
 let keyboard: KeyboardInput | null = null;
+/** 本机角色（onRole 到达即记，键盘分键 F1 用） */
+let myRole: Role | null = null;
 /** 触屏虚拟按键（M2；粗指针设备或 ?touch=1 时生效，与键盘同源合并） */
 let touch: TouchControls | null = null;
 let gameStarted = false;
@@ -128,6 +130,8 @@ async function enterGame(): Promise<void> {
   // 返场重进时旧实例的监听与 15Hz 重发定时器会残留——先销毁（曾随房间叠加）
   keyboard?.destroy();
   keyboard = new KeyboardInput(window, (input) => net?.sendInput(input));
+  // 返场重进时角色已知（onRole 先于键盘构造到达）；首进由 onRole 回调补设
+  if (myRole) keyboard.setRole(myRole);
   touch = new TouchControls((code, pressed) => keyboard?.setVirtual(code, pressed));
 
   // 场景数据走全局句柄：Phaser 已随页面启动（Menu/Temple 选关流），此处仅切入 Game
@@ -213,13 +217,15 @@ async function start(mode: "create" | "join"): Promise<void> {
       {
         onRole: (role: Role) => {
           $("#hud-role").textContent = role === "fireboy" ? "你扮演：火人" : "你扮演：水女孩";
+          myRole = role;
+          keyboard?.setRole(role); // 键盘分键（F1）：fb=方向键，wg=W/A/D
           // 场景可能已启动（角色消息晚到），同步给渲染层
           const scene = phaser?.scene.getScene("Game") as import("./scenes/GameScene").GameScene | null;
           scene?.setMyRole(role);
         },
         onDeath: ({ role }) => {
           const name = role === "fireboy" ? "火人" : "水女孩";
-          $("#toast").textContent = `${name}化烟了！整关即将重开`;
+          $("#toast").textContent = `${name}化烟了！点「再试一次」重开`;
           setTimeout(() => ($("#toast").textContent = ""), 2000);
         },
         onPhase: (phase) => {

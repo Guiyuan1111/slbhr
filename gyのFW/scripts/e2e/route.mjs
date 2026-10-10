@@ -7,7 +7,7 @@
  * 路由文件 scripts/e2e/inputs/routes/<level>.json：内核验证过的逐帧时间线
  * （[{f, dir:'up'|'left'|'right', type:'down'|'up'}]，fb/wg 各一条）。
  * 回放语义：
- *   - fb 页（房主=火人）用方向键，wg 页（加入方=水女孩）用 WASD——与客户端 E16「两组键通吃本机角色」一致；
+ *   - fb 页（房主=火人）用方向键，wg 页（加入方=水女孩）用 WASD——与客户端 F1 按角色分键一致（原版 bundle @1856520/1856587）；
  *   - 帧→毫秒：t = f·(1000/60) + offset（默认 -10：瞄准服务端 60Hz tick 接受窗中心，
  *     抵消 CDP 派发 ~2ms 延迟；粗等 waitForTimeout，末 40ms performance.now 自旋控精度）；
  *   - 全程零调试钩子：物理只由真实键盘输入驱动，断言全部读权威 state；

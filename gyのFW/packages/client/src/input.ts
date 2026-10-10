@@ -1,18 +1,31 @@
 /**
- * 键盘输入：方向键 / WASD → InputState 快照。
+ * 键盘输入：按角色分键（F1 翻转，原版语义）——火人=方向键 ↑←→，水女孩=W/A/D。
+ * 触屏虚拟键（TouchLeft/Right/Up）两角色同构，均控制本机角色（原版触屏控制器按角色
+ * 实例化，dual 模式 wg 垫左下、fb 垫右下，互不可跨）。
+ * 原版证据：bundle init.js @1856520 `"wg"===id → addKey(W)/addKey(A)/addKey(D)`、
+ * @1856587 else(fb) → addKey(UP)/addKey(LEFT)/addKey(RIGHT)。
  *
  * 发送策略（PLAN §5.2）：
  * - 按键状态变化即发（按钮事件频率天然很低）；
  * - 另有 66ms（≈15Hz）定时强制重发最后状态，防单次消息丢失后角色卡键；
  * - 每条消息带单调递增 seq（服务器按全量快照语义消费，seq 仅用于排查乱序/重放）。
- * 联机每机单角色：两组键（方向键/WASD）通吃本机角色（E16，冻结偏离，见 wiring §13）。
  */
-import { sameInput, type InputState } from "@fw/shared";
+import { sameInput, type InputState, type Role } from "@fw/shared";
 
-const LEFT = ["ArrowLeft", "KeyA", "TouchLeft"];
-const RIGHT = ["ArrowRight", "KeyD", "TouchRight"];
-const UP = ["ArrowUp", "KeyW", "TouchUp"];
-const ALL = [...LEFT, ...RIGHT, ...UP];
+/** 角色键位表（原版 bundle @1856520-1856662；无下键——跳跃制游戏） */
+const KEYSETS: Record<Role, { left: string[]; right: string[]; up: string[] }> = {
+  fireboy: { left: ["ArrowLeft"], right: ["ArrowRight"], up: ["ArrowUp"] },
+  watergirl: { left: ["KeyA"], right: ["KeyD"], up: ["KeyW"] },
+};
+/** 触屏虚拟键（touch.ts 注入），与角色键位并列合并 */
+const TOUCH = { left: ["TouchLeft"], right: ["TouchRight"], up: ["TouchUp"] };
+const ALL_CODES = [
+  ...new Set([
+    ...KEYSETS.fireboy.left, ...KEYSETS.fireboy.right, ...KEYSETS.fireboy.up,
+    ...KEYSETS.watergirl.left, ...KEYSETS.watergirl.right, ...KEYSETS.watergirl.up,
+    ...TOUCH.left, ...TOUCH.right, ...TOUCH.up,
+  ]),
+];
 
 /** 上行消息 = 输入快照 + 序列号（服务器只读 up/left/right） */
 export type InputMessage = InputState & { seq: number };
@@ -25,10 +38,12 @@ export class KeyboardInput {
   private paused = false;
   private seq = 0;
   private resendTimer: number;
+  /** 本机角色（onRole 到达前为 null：键盘不生效，触屏在进房后才有意义） */
+  private role: Role | null = null;
 
   constructor(target: Window, private onInput: (input: InputMessage) => void) {
     const handle = (e: KeyboardEvent, pressed: boolean) => {
-      if (!ALL.includes(e.code)) return;
+      if (!ALL_CODES.includes(e.code)) return;
       e.preventDefault();
       if (pressed) this.pressed.add(e.code);
       else this.pressed.delete(e.code);
@@ -49,9 +64,16 @@ export class KeyboardInput {
 
   private pressed = new Set<string>();
 
+  /** onRole 到达时注入本机角色，键位表随之定向（就位后重发一次快照，收敛悬空按住态） */
+  setRole(role: Role): void {
+    this.role = role;
+    this.emit();
+  }
+
   /** 本机左右移动键是否按住（水声 waterSteps 的原版触发条件之一） */
   isMoveDown(): boolean {
-    return [...this.pressed].some((c) => LEFT.includes(c) || RIGHT.includes(c));
+    const ks = this.keyset();
+    return [...this.pressed].some((c) => ks.left.includes(c) || ks.right.includes(c));
   }
 
   /** 暂停期间丢弃上报（菜单/结算时防止误触发） */
@@ -79,12 +101,23 @@ export class KeyboardInput {
     window.clearInterval(this.resendTimer);
   }
 
+  /** 当前生效的键位组：角色未就位时仅触屏键可贡献（键盘方向过滤为空集） */
+  private keyset(): { left: string[]; right: string[]; up: string[] } {
+    const ks = this.role ? KEYSETS[this.role] : { left: [], right: [], up: [] };
+    return {
+      left: [...ks.left, ...TOUCH.left],
+      right: [...ks.right, ...TOUCH.right],
+      up: [...ks.up, ...TOUCH.up],
+    };
+  }
+
   private emit(force = false): void {
     if (this.paused) return;
+    const ks = this.keyset();
     const next: InputState = {
-      up: UP.some((c) => this.pressed.has(c)),
-      left: LEFT.some((c) => this.pressed.has(c)),
-      right: RIGHT.some((c) => this.pressed.has(c)),
+      up: ks.up.some((c) => this.pressed.has(c)),
+      left: ks.left.some((c) => this.pressed.has(c)),
+      right: ks.right.some((c) => this.pressed.has(c)),
     };
     if (!force && sameInput(next, this.last)) return;
     this.last = next;
