@@ -209,6 +209,9 @@ defineTypes(BodyState, {
   x: "number",
   y: "number",
   angle: "number",
+  // 组信号 OR（平台灯罩 light_on/off 换帧依据）——0.3.25 漏注册导致该字段
+  // 从未真正下发，客户端灯罩恒为初始帧
+  state: "number",
 });
 
 defineTypes(WindState, {

@@ -125,9 +125,14 @@ export class ForestRoom extends Room<RoomState> {
     this.currentInputs[role] = { ...EMPTY_INPUT };
     // 告诉客户端它扮演谁（后续所有按角色区分的渲染都靠这条）
     client.send("role", role);
-    // 双人到齐 → 开局倒计时（原版 startLevel 语义：延时后开钟）
-    if (this.roles.size === 2 && !this.startedOnce) {
-      this.beginReady();
+    // 双人到齐 → 开局倒计时（原版 startLevel 语义：延时后开钟）。
+    // startedOnce 后的补位（断线超时释放席位、phase 已回 lobby）走整关重开而非首开
+    if (this.roles.size === 2) {
+      if (!this.startedOnce) {
+        this.beginReady();
+      } else if (this.state.phase === "lobby") {
+        this.restartLevel();
+      }
     }
     this.syncState();
   }
@@ -147,6 +152,12 @@ export class ForestRoom extends Room<RoomState> {
       this.roles.delete(client.sessionId);
       this.state.players.delete(role);
       this.currentInputs[role] = { ...EMPTY_INPUT };
+      // 仍有一人在场 → 相位回 lobby 允许补位；补位 join 走 restartLevel 整关重开
+      // （原版 retry 语义）。不回 lobby 的话 phase 永久卡 paused，tick 停转成死房。
+      if (this.roles.size > 0) {
+        this.state.phase = "lobby";
+        this.syncState();
+      }
       // 两人都走了 → Colyseus 自动回收空房（默认 disposeOnDisconnect）
     }
   }

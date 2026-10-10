@@ -56,11 +56,13 @@ export class KeyboardInput {
 
   /** 暂停期间丢弃上报（菜单/结算时防止误触发） */
   setPaused(paused: boolean): void {
-    this.paused = paused;
-    if (paused) {
+    // 先在未暂停态把「全松」快照发出去再置位——置位后 emit 被闸拦下，
+    // 末次按住态会留在服务端持续驱动角色（如按着→进门后暂停，角色一直怼墙）
+    if (paused && !this.paused) {
       this.pressed.clear();
       this.emit();
     }
+    this.paused = paused;
   }
 
   /**

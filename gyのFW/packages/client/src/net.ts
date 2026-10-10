@@ -59,6 +59,7 @@ export class Net {
   /** sfx 消息队列（场景每帧取空；sfx 有可感知延迟但 ≤1 帧，可接受） */
   sfxQueue: SfxMessage[] = [];
   private client!: Client;
+  private prevPhase = "";
 
   /** 服务器地址：开发直连 2567，生产同源自适应 ws/wss */
   static serverUrl(): string {
@@ -76,51 +77,59 @@ export class Net {
       p.mode === "create"
         ? await client.create("forest", { levelId: p.levelId, password: p.password })
         : await client.joinById(p.code!.trim(), { levelId: p.levelId, password: p.password });
+    net.bindRoom(cb);
+    return net;
+  }
 
-    net.room.onMessage("role", (role: Role) => {
-      net.myRole = role;
+  /** 绑定本房间的全部消息/状态监听。重连拿到新 Room 实例后必须重绑，否则一切回调静默失效 */
+  private bindRoom(cb: NetCallbacks): void {
+    const room = this.room;
+    room.onMessage("role", (role: Role) => {
+      this.myRole = role;
       cb.onRole(role);
     });
-    net.room.onMessage("death", (payload: { role: Role }) => cb.onDeath(payload));
-    net.room.onMessage("finish", (payload: FinishData) => {
-      net.lastFinish = payload;
+    room.onMessage("death", (payload: { role: Role }) => cb.onDeath(payload));
+    room.onMessage("finish", (payload: FinishData) => {
+      this.lastFinish = payload;
       cb.onFinish?.(payload);
     });
-    net.room.onMessage("sfx", (payload: SfxMessage) => {
-      net.sfxQueue.push(payload);
+    room.onMessage("sfx", (payload: SfxMessage) => {
+      this.sfxQueue.push(payload);
       cb.onSfx?.(payload);
     });
     // levelError 为保留通道：当前 create 校验走 MatchMakeError；先注册接入
-    net.room.onMessage("levelError", (payload: { message?: string }) => {
+    room.onMessage("levelError", (payload: { message?: string }) => {
       console.warn("[fw] levelError:", payload?.message);
     });
 
-    // phase 迁移差分（比轮询及时，且带前值）
-    let prevPhase = "";
-    net.room.onStateChange((state) => {
+    // phase 迁移差分（比轮询及时，且带前值；prevPhase 挂实例上，重连重绑后仍连续）
+    room.onStateChange((state) => {
       const phase = String(state?.phase ?? "");
-      if (phase && phase !== prevPhase) {
-        const prev = prevPhase;
-        prevPhase = phase;
+      if (phase && phase !== this.prevPhase) {
+        const prev = this.prevPhase;
+        this.prevPhase = phase;
         cb.onPhase?.(phase, prev);
       }
     });
 
-    net.room.onLeave(async (code) => {
+    room.onLeave(async (code) => {
       // 1000 = 自己主动离开；否则用重连令牌自动重连（服务端冻结等待中）
       if (code === 1000) {
         cb.onDisconnect(true);
         return;
       }
       try {
-        const token = (net.room as unknown as { reconnectionToken?: string }).reconnectionToken;
-        if (token) await client.reconnect(token);
+        const token = (room as unknown as { reconnectionToken?: string }).reconnectionToken;
+        if (token) {
+          // reconnect 返回的是新 Room 实例：必须换绑 net.room 并重挂全部监听
+          this.room = await this.client.reconnect(token);
+          this.bindRoom(cb);
+        }
         cb.onDisconnect(true);
       } catch {
         cb.onDisconnect(false);
       }
     });
-    return net;
   }
 
   /**
