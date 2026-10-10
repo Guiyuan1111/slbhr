@@ -16,29 +16,17 @@
  * zz_probe 是 forest_01 克隆（出生点挪到门带左侧平地），fixtures/levels/*.json 起服前
  * 安装进 data/tutorials/levels、结束后自动移除——不污染官方 48 关枚举测试与发行数据。
  */
-import { spawn } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { chromium } from "playwright";
-
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const OUT = join(ROOT, "scripts", "e2e", "out");
+import { OUT, ROOT, argOf, enterAs, log, readRole, runInputs, startServer, syncProbe, waitForStarted } from "./lib.mjs";
 
 const args = process.argv.slice(2);
-function argOf(name, def) {
-  const i = args.indexOf(`--${name}`);
-  return i >= 0 ? args[i + 1] : def;
-}
-const REPEAT = Number(argOf("repeat", "1"));
+const REPEAT = Number(argOf(args, "repeat", "1"));
 const EXPECT_WIN = args.includes("--expect-win");
-const INPUTS_FILE = argOf("script", "");
-const PORT = Number(argOf("port", "3557"));
-const BASE = `http://127.0.0.1:${PORT}`;
-const PASSWORD = "e2e-pw";
-const LEVEL = argOf("level", "forest_01");
-
-const log = (...a) => console.log("[e2e]", ...a);
+const INPUTS_FILE = argOf(args, "script", "");
+const PORT = Number(argOf(args, "port", "3557"));
+const LEVEL = argOf(args, "level", "forest_01");
 
 /** fixtures/levels/*.json → data/tutorials/levels/（仅安装缺省不存在的；返回安装清单供清理） */
 function installFixtures() {
@@ -57,87 +45,30 @@ function installFixtures() {
   return installed;
 }
 
-function startServer() {
-  // --import tsx：进程内加载 TS（无 CLI 子进程）——kill 才能真正杀掉服务器，
-  // 否则 tsx CLI 的 node 子进程会变孤儿霸占端口（实测坑，见冻结文档）
-  const child = spawn(process.execPath, [
-    "--import", "tsx",
-    join(ROOT, "packages", "server", "src", "index.ts"),
-  ], {
-    env: { ...process.env, PORT: String(PORT), FW_HOST: "127.0.0.1" },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("server 启动超时")), 30000);
-    const ondata = (buf) => {
-      const s = String(buf);
-      process.stdout.write(s);
-      if (s.includes("EADDRINUSE")) {
-        clearTimeout(timer);
-        reject(new Error("端口被占用（疑似孤儿服务器进程，先按端口清理）"));
-      } else if (s.includes("http+ws")) {
-        clearTimeout(timer);
-        resolve(child);
-      }
-    };
-    child.stdout.on("data", ondata);
-    child.stderr.on("data", (b) => process.stderr.write(b));
-    child.on("exit", (code) => reject(new Error("server 提前退出: " + code)));
-  });
-}
-
-async function enterAs(page, mode, roomCode) {
-  await page.goto(`${BASE}/?level=${LEVEL}`, { waitUntil: "domcontentloaded" });
-  await page.fill("#password", PASSWORD);
-  if (mode === "join") await page.fill("#roomcode", roomCode);
-  await page.click(mode === "create" ? "#btn-create" : "#btn-join");
-  await page.waitForSelector("#menu", { state: "hidden", timeout: 15000 });
-  await page.waitForFunction(() => /房间码 [^（\s]{4,}/.test(document.querySelector("#hud-room")?.textContent ?? ""), null, { timeout: 20000 });
-  const roomText = await page.textContent("#hud-room");
-  // Colyseus roomId 字符集不止 alnum：取 房间码 与（密码已校验）之间的完整串
-  const code = (roomText.match(/房间码 ([^（\s]+)/) || [])[1] ?? "";
-  return code;
-}
-
 /** 按 [{t, key, type:'down'|'up'}] 时间线注入键盘（key: 'ArrowRight'|'ArrowLeft'|'ArrowUp'） */
-async function runInputs(page, timeline, totalMs) {
-  const start = Date.now();
-  const sorted = [...timeline].sort((a, b) => a.t - b.t);
-  let i = 0;
-  while (i < sorted.length) {
-    const ev = sorted[i];
-    const wait = ev.t - (Date.now() - start);
-    if (wait > 0) await page.waitForTimeout(Math.min(wait, 100));
-    if (Date.now() - start >= ev.t) {
-      await page.keyboard[ev.type](ev.key);
-      i++;
-    }
-  }
-  if (totalMs) {
-    const remain = totalMs - (Date.now() - start);
-    if (remain > 0) await page.waitForTimeout(remain);
-  }
-}
-
 async function runOnce(browser, inputTimeline, expectWin, tag) {
   const ctxA = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   const ctxB = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   const a = await ctxA.newPage();
   const b = await ctxB.newPage();
-  const result = { tag, errors: [], won: false, finish: null };
+  const result = { tag, errors: [], won: false, finish: null, syncErrors: [] };
 
-  const code = await enterAs(a, "create");
+  const code = await enterAs(a, PORT, "create", "", LEVEL);
   if (!code) throw new Error("创建房间未取到房间码");
-  await enterAs(b, "join", code);
+  await enterAs(b, PORT, "join", code, LEVEL);
   log(`[${tag}] 房间 ${code} 双方入座，等待 ready→started`);
   // 等 started：必须读权威状态相位，不能等 DOM 文本清空——hud-status 由 250ms 轮询刷写
   // 且初始即为空串，轮询 tick 前存在假空窗，会让注入抢先于 started，输入被客户端键盘
   // 暂停闸（setPaused(phase!=="started")）整段丢弃且 15Hz 重发重放"全松"快照，角色冻结、
   // won 永假（2026-10-09 诊断：双方 30s 钉在出生点 vx=0 anim=idle）
-  const startedGate = `(() => { try { return window.__fwInit.net.room.state.phase === "started"; } catch { return false; } })()`;
-  await a.waitForFunction(startedGate, null, { timeout: 20000 });
-  await b.waitForFunction(startedGate, null, { timeout: 20000 });
+  await waitForStarted(a);
+  await waitForStarted(b);
   await a.waitForTimeout(300);
+
+  // sync 字段探针：defineTypes 漏注册类缺陷（0.3.25 BodyState.state）在客户端表现为字段缺席
+  result.syncErrors = await syncProbe(a);
+  if (result.syncErrors.length > 0) log(`[${tag}] ⚠ sync 探针异常: ${result.syncErrors.join("; ")}`);
+  result.role = await readRole(a);
 
   if (inputTimeline.length > 0) {
     await Promise.all([runInputs(a, inputTimeline), runInputs(b, inputTimeline)]);
@@ -186,7 +117,7 @@ let server;
 let pass = false;
 const results = [];
 try {
-  server = await startServer();
+  server = await startServer(PORT);
   mkdirSync(OUT, { recursive: true });
   let timeline = [];
   if (INPUTS_FILE) {
@@ -200,8 +131,8 @@ try {
     try {
       const res = await runOnce(browser, timeline, INPUTS_FILE.length > 0, `run${r}`);
       results.push(res);
-      const ok = res.errors.length === 0 && (!EXPECT_WIN || res.won);
-      log(`run${r}: ${ok ? "PASS" : "FAIL"} won=${res.won} errors=${res.errors.length}`);
+      const ok = res.errors.length === 0 && res.syncErrors.length === 0 && (!EXPECT_WIN || res.won);
+      log(`run${r}: ${ok ? "PASS" : "FAIL"} won=${res.won} errors=${res.errors.length} sync=${res.syncErrors.length}`);
       if (!ok) pass = false;
     } catch (err) {
       log(`run${r}: EXCEPTION`, String(err));

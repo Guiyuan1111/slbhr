@@ -23,7 +23,8 @@ interface JoinOptions {
 }
 
 const STEP_MS = 1000 / 60;
-const RECONNECT_SECONDS = 60;
+/** 断线重连等待；FW_RECONNECT_SECONDS 仅供 e2e 缩短窗口（默认 60s 不变） */
+const RECONNECT_SECONDS = Number(process.env.FW_RECONNECT_SECONDS ?? 60);
 /** 原版 startLevel：_.delay(1600)+_.delay(400) → 2.0s 开钟 */
 const READY_MS = 2000;
 /** gameover → 自动整关重开（原版 GameOver 菜单 Retry 的联机化，偏离已记录） */
