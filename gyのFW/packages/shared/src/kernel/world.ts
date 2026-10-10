@@ -59,11 +59,6 @@ export interface PlayerSnapshot {
   doorUp: boolean;
 }
 
-interface ContactEvent {
-  begin: boolean;
-  contact: any;
-}
-
 export class World {
   readonly level: LevelData;
   private built: BuiltWorld;
@@ -76,7 +71,8 @@ export class World {
   phase: WorldPhase = "playing";
   timerMs = 0;
 
-  private contactEvents: ContactEvent[] = [];
+  /** Step 期间的事件落点：接触回调直改状态并即时产事件（原版口径，F7） */
+  private stepEvents: WorldEvent[] | null = null;
   private listener: any;
   private pendingRemove: any[] = [];
 
@@ -102,14 +98,27 @@ export class World {
     const B = this.B;
     const listener = new B.b2ContactListener();
     const self = this;
+    // 原版口径（F7 翻转）：回调内直接改状态——液体致死/门带/钻石/脚底表在 Step 求解期间
+    // 即时生效（research/11 §2B；box2d.ts 回调同步触发）。body 移除仍延迟到步后
+    // （box2d 禁止回调内 DestroyBody，原版插件 _toRemove 同款，见 flushPendingRemove）。
+    // stepEvents 为 null 时不处理（reset/DestroyBody 连带的步外 EndContact——按 fixture
+    // 类型全为无操作，跳过与原版等价）。
     listener.BeginContact = function (contact: any) {
-      self.contactEvents.push({ begin: true, contact });
+      if (self.stepEvents) self.classifyContactPair(contact, true, self.stepEvents);
     };
     listener.EndContact = function (contact: any) {
-      self.contactEvents.push({ begin: false, contact });
+      if (self.stepEvents) self.classifyContactPair(contact, false, self.stepEvents);
     };
     this.listener = listener;
     this.built.world.SetContactListener(listener);
+  }
+
+  /** 接触对按"回调所有者视角"双向分类（feet/door/wind/diamond 四类回调的并集） */
+  private classifyContactPair(contact: any, begin: boolean, events: WorldEvent[]): void {
+    const fa = contact.GetFixtureA ? contact.GetFixtureA() : contact.m_fixtureA;
+    const fb = contact.GetFixtureB ? contact.GetFixtureB() : contact.m_fixtureB;
+    this.classifyContact(fa, fb, begin, events, contact);
+    this.classifyContact(fb, fa, begin, events, contact);
   }
 
   // -------------------------------------------------- 公共查询
@@ -234,9 +243,11 @@ export class World {
       this.updateDoors(dt, events);
     }
 
+    this.stepEvents = events; // 接触回调内直改（F7，原版口径）
     this.built.world.Step(dt, 8, 3);
+    this.stepEvents = null;
     this.simTimeS += dt;
-    this.processContactEvents(events);
+    this.flushPendingRemove();
 
     if (this.phase === "playing") {
       this.checkEnd(events);
@@ -245,16 +256,8 @@ export class World {
     return events;
   }
 
-  /** 原版在接触回调里直接改状态（body 移除由插件 _toRemove 延迟）——这里统一出步后处理 */
-  private processContactEvents(events: WorldEvent[]): void {
-    for (const { begin, contact } of this.contactEvents) {
-      const fa = contact.GetFixtureA ? contact.GetFixtureA() : contact.m_fixtureA;
-      const fb = contact.GetFixtureB ? contact.GetFixtureB() : contact.m_fixtureB;
-      this.classifyContact(fa, fb, begin, events, contact);
-      this.classifyContact(fb, fa, begin, events, contact);
-    }
-    this.contactEvents.length = 0;
-    // 延迟移除已收集钻石体
+  /** 延迟移除已收集钻石体（box2d 禁止回调内 DestroyBody；原版插件 _toRemove 同款） */
+  private flushPendingRemove(): void {
     while (this.pendingRemove.length) {
       this.built.world.DestroyBody(this.pendingRemove.pop());
     }
@@ -418,7 +421,7 @@ export class World {
     this.phase = "playing";
     this.timerMs = 0;
     this.simTimeS = 0;
-    this.contactEvents.length = 0;
+    this.stepEvents = null;
     this.pendingRemove.length = 0;
     this.installContactListener();
   }
