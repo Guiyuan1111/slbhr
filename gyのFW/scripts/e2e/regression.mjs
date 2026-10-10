@@ -10,9 +10,14 @@
  *   - 有 winning 脚本：HUD 出现「通关！」（phase=won）且 finish 数据合理
  *   - 无脚本：soak 模式（30s 物理浸泡，只断言零错误 + 角色存活）
  * 截图存 scripts/e2e/out/。
+ *
+ * 真实走位入门（0.3.27 起，不依赖 FW_DEBUG_FORCE_DOORS）：
+ *   node scripts/e2e/regression.mjs --level zz_probe --script scripts/e2e/inputs/walkin-doors.json --expect-win
+ * zz_probe 是 forest_01 克隆（出生点挪到门带左侧平地），fixtures/levels/*.json 起服前
+ * 安装进 data/tutorials/levels、结束后自动移除——不污染官方 48 关枚举测试与发行数据。
  */
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
@@ -34,6 +39,23 @@ const PASSWORD = "e2e-pw";
 const LEVEL = argOf("level", "forest_01");
 
 const log = (...a) => console.log("[e2e]", ...a);
+
+/** fixtures/levels/*.json → data/tutorials/levels/（仅安装缺省不存在的；返回安装清单供清理） */
+function installFixtures() {
+  const srcDir = join(ROOT, "scripts", "e2e", "fixtures", "levels");
+  const dstDir = join(ROOT, "data", "tutorials", "levels");
+  if (!existsSync(srcDir)) return [];
+  const installed = [];
+  for (const f of readdirSync(srcDir)) {
+    if (!f.endsWith(".json")) continue;
+    const dst = join(dstDir, f);
+    if (!existsSync(dst)) {
+      copyFileSync(join(srcDir, f), dst);
+      installed.push(dst);
+    }
+  }
+  return installed;
+}
 
 function startServer() {
   // --import tsx：进程内加载 TS（无 CLI 子进程）——kill 才能真正杀掉服务器，
@@ -157,32 +179,41 @@ async function runOnce(browser, inputTimeline, expectWin, tag) {
   return result;
 }
 
-const server = await startServer();
-mkdirSync(OUT, { recursive: true });
-let timeline = [];
-if (INPUTS_FILE) {
-  timeline = JSON.parse(readFileSync(INPUTS_FILE, "utf8"));
-  log(`输入时间线：${timeline.length} 个事件`);
-}
+const installedFixtures = installFixtures();
+if (installedFixtures.length > 0) log(`已安装关卡 fixture：${installedFixtures.map((f) => f.split(/[\\/]/).pop()).join(", ")}`);
 
-const browser = await chromium.launch({ channel: "msedge", headless: true, args: ["--mute-audio"] });
+let server;
+let pass = false;
 const results = [];
-let pass = true;
-for (let r = 1; r <= REPEAT; r++) {
-  try {
-    const res = await runOnce(browser, timeline, INPUTS_FILE.length > 0, `run${r}`);
-    results.push(res);
-    const ok = res.errors.length === 0 && (!EXPECT_WIN || res.won);
-    log(`run${r}: ${ok ? "PASS" : "FAIL"} won=${res.won} errors=${res.errors.length}`);
-    if (!ok) pass = false;
-  } catch (err) {
-    log(`run${r}: EXCEPTION`, String(err));
-    results.push({ tag: `run${r}`, exception: String(err) });
-    pass = false;
+try {
+  server = await startServer();
+  mkdirSync(OUT, { recursive: true });
+  let timeline = [];
+  if (INPUTS_FILE) {
+    timeline = JSON.parse(readFileSync(INPUTS_FILE, "utf8"));
+    log(`输入时间线：${timeline.length} 个事件`);
   }
+
+  const browser = await chromium.launch({ channel: "msedge", headless: true, args: ["--mute-audio"] });
+  pass = true;
+  for (let r = 1; r <= REPEAT; r++) {
+    try {
+      const res = await runOnce(browser, timeline, INPUTS_FILE.length > 0, `run${r}`);
+      results.push(res);
+      const ok = res.errors.length === 0 && (!EXPECT_WIN || res.won);
+      log(`run${r}: ${ok ? "PASS" : "FAIL"} won=${res.won} errors=${res.errors.length}`);
+      if (!ok) pass = false;
+    } catch (err) {
+      log(`run${r}: EXCEPTION`, String(err));
+      results.push({ tag: `run${r}`, exception: String(err) });
+      pass = false;
+    }
+  }
+  await browser.close();
+} finally {
+  server?.kill();
+  for (const f of installedFixtures) rmSync(f, { force: true });
 }
-await browser.close();
-server.kill();
 writeFileSync(join(OUT, "results.json"), JSON.stringify(results, null, 2));
 console.log(`[e2e] ${pass ? "ALL PASS" : "FAILED"}（${results.length} 轮，截图与明细在 scripts/e2e/out/）`);
 process.exit(pass ? 0 : 1);
