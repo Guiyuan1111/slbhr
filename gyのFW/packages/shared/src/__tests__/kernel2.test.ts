@@ -215,6 +215,45 @@ describe("内核：门与通关", () => {
     expect(win).toBe(true);
     expect(w.phase).toBe("won");
   });
+
+  it("门属性化：随机错峰/随机停靠位 20 组全部到 win（锁步巧合免疫）", () => {
+    // 0.3.26 教训：同帧到齐的锁步用例会让单步脉冲侥幸通过。本用例用固定种子的
+    // 伪随机错峰（后到者 1~180 帧）+ 带内随机停靠位（±20px），任何依赖「恰好同时」
+    // 的实现都必然在某一组暴露。
+    let seed = 0x5f3759df;
+    const rnd = () => {
+      // xorshift32，确定性可复现
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      return (seed >>> 0) / 0x100000000;
+    };
+    for (let tc = 0; tc < 20; tc++) {
+      const w = loadForest01();
+      stepN(w, 30);
+      const fbDelay = Math.floor(rnd() * 240); // 0~4s 后火人才到
+      const wgGap = 1 + Math.floor(rnd() * 180); // 火人后再 1~3s 水女孩才到
+      const fbJit = (rnd() * 2 - 1) * 20;
+      const wgJit = (rnd() * 2 - 1) * 20;
+      let won = false;
+      const total = 60 + fbDelay + wgGap + 120;
+      for (let i = 0; i < total; i++) {
+        if (i === fbDelay) teleport(w, "fireboy", w.doors.fireboy.pos.x + fbJit, w.doors.fireboy.pos.y - 36);
+        if (i === fbDelay + wgGap) teleport(w, "watergirl", w.doors.watergirl.pos.x + wgJit, w.doors.watergirl.pos.y - 36);
+        const evs = w.step(1 / 60, { fireboy: NONE, watergirl: NONE });
+        if (i > fbDelay + wgGap && evs.some((e) => e.type === "win")) {
+          won = true;
+          break;
+        }
+      }
+      if (!won) {
+        throw new Error(
+          `组 ${tc} 未通关：fbDelay=${fbDelay} wgGap=${wgGap} fbJit=${fbJit.toFixed(1)} wgJit=${wgJit.toFixed(1)} phase=${w.phase}`
+        );
+      }
+      expect(w.phase).toBe("won");
+    }
+  });
 });
 
 describe("内核：钻石", () => {
