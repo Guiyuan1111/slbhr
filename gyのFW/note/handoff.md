@@ -1,5 +1,7 @@
 # Handoff：需要真人完成的事与已知限制
 
+**更新**：2026-10-10（**自验收制度落地**——针对「实玩才暴露问题」：确立 L0-L4 分层验收阶梯与发版强制门禁清单（note/self-acceptance.md），补齐 L3 行为在体层：e2e 新增全旅程续关（通关→继续→forest_02 新房开局）/暂停输入冲刷/断线超时补位三场景（scripts/e2e/journey.mjs + lib.mjs 公共库），regression 全模式内嵌 sync 字段探针（客户端视角断言 defineTypes 注册完整性，0.3.25 灯罩缺陷类）；内核新增属性化门用例（20 组随机错峰+带内随机停靠位，锁步巧合免疫）；服务端 FW_RECONNECT_SECONDS 旋钮（默认 60s 不变）。85/85 单测 · typecheck · e2e 全模式 PASS）
+
 **更新**：2026-10-10（**0.3.27 已发布：门扫帧 round 闸门卡摆修复——真实游玩通关链全线打通**——用户实测双人都站门内仍进不了下一关：并发双代理（服务端→客户端全链审计 + bundle 字证）+ 内核逐帧探针定位根因 updateDoors 推进闸门 `round(frac)<21` 使 frac 恒卡 20.83 帧、isUp 退化为单步脉冲、双门错峰到齐永不相交 → 永不 win 且门动画恒差一帧不全开；历史测试全绿系传送/FORCE_DOORS 锁步恰好绕开错峰路径。isUp 改原版口径每步重算后，e2e 新增真实走位入门通关模式（zz_probe fixture 运行时安装/移除 + 键盘时间线），真实服务端 `[doors] open=true`→`[win] phase=won`→HUD「通关！」在体打通；附带修复 BodyState.state 漏注册（0.3.25 灯罩换帧从未下发）/setPaused 吞末次输入/重连丢 Room/断线超时死房四处。84/84 单测 · det 48 关位级一致 · e2e 三模式全 PASS。取证全档 research/2026-10-fidelity/13-door-sweep-stall.md，release/0.3.27.md）
 
 **更新**：2026-10-09（**0.3.26 已发布：Tiled rotation 全量修复**——用户要求排查同类问题的第二轮：48 关扫 rotation≠0 共 30 处，28 处风区（任意角逐台验证 ✓）+ bonus_3 两台 135° 斜台 + forest_24_1 一台 17.41° 斜箱（后三类 rotation 此前被静默丢弃）；bundle 字证 MovingPlatform @1715777 / Box @1725729 均体角=SetAngle(rotation)；det r27 基线漂移恰为两关、其余 46 关位级不动；lever/pusher/roman 尊重视角但无数据用例，记档不实现；快照角四族配对表收口。research/12 §五，release/0.3.26.md）
