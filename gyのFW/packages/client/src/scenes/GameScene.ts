@@ -119,7 +119,8 @@ interface NavyItem {
 }
 
 interface TutorialItem {
-  text: Phaser.GameObjects.Text;
+  /** 同 id 组的全部文本对象（原版一条 text 对象 = 一条 bitmapText，见 setupTutorial @1929845） */
+  texts: Phaser.GameObjects.BitmapText[];
   trigger: Rect | undefined;
   shown: boolean;
 }
@@ -455,7 +456,7 @@ export class GameScene extends Phaser.Scene {
    */
   private buildMechs(level: LevelData): void {
     // 推块（underGround）：block + 点亮层（tint 组色）。快照只有压下二值（state 0|1），
-    // 贴图压下取 6px≈0.2m 阈值位移（原版 0.7m 连续行程二档化，冻结偏离 #5）
+    // 贴图压下取 6px≈0.2m 阈值位移（0.3.1 起快照下发连续 x/y，块体贴图随体——原版 0.7m 连续行程已对齐）
     for (const m of level.pushers) {
       const block = this.add.image(m.x + PAD, m.y + PAD, ATLAS_MECH, "pusher_block0000").setOrigin(0.5).setDepth(1.2);
       const light = this.add
@@ -845,40 +846,37 @@ export class GameScene extends Phaser.Scene {
 
   private buildTutorial(level: LevelData): void {
     for (const step of level.tutorials) {
-      if (!step.text || !step.textRect) continue;
-      const text = this.add
-        .text(step.textRect.x + PAD + step.textRect.w / 2, step.textRect.y + PAD, step.text, {
-          fontFamily: 'Georgia, "KaiTi", "STKaiti", "SimSun", serif',
-          fontSize: "19px",
-          color: "#efe6b0",
-          stroke: "#241d0e",
-          strokeThickness: 2,
-          fontStyle: "bold",
-          wordWrap: { width: step.textRect.w, useAdvancedWrap: true },
-          align: "center",
-        })
-        .setOrigin(0.5, 0)
-        .setDepth(0.8)
-        .setVisible(false)
-        .setAlpha(0);
-      this.tutorialItems.push({ text, trigger: step.trigger, shown: false });
+      if (!step.textItems.length || !step.trigger) continue;
+      // 原版 setupTutorial（bundle @1929845）：每 text 对象一条 bitmapText(k.x, k.y, "font", 文本, 18, halign)，
+      // maxWidth = 对象宽，初始不可见；同 id 组共享触发矩形，任一角色进入整组淡入。
+      // （原版 cacheAsBitmap 是 Phaser 2 渲染缓存优化，非语义，此处不移植。）
+      const texts = step.textItems.map((t) => {
+        const bt = this.add.bitmapText(t.x, t.y, FONT_MAIN, t.text, 18);
+        // 运行时接受 'left'|'center'|'right'（Phaser 3 字体排版），本仓 phaser 类型标注偏差强转
+        bt.align = (t.halign ?? "left") as unknown as typeof bt.align;
+        return bt.setMaxWidth(t.width).setDepth(0.8).setVisible(false).setAlpha(0);
+      });
+      this.tutorialItems.push({ texts, trigger: step.trigger, shown: false });
     }
   }
 
-  /** 教学渐显判定（冻结偏离 #4：按本机角色；原版=任一角色进矩形，结构上可直接扩展） */
+  /** 教学渐显判定：原版=任一角色进矩形，组内全部文本 400ms 淡入/淡出（updateTutorial 双角色坐标） */
   private updateTutorial(...points: Array<{ x: number; y: number }>): void {
     for (const item of this.tutorialItems) {
-      const hit = points.some((p) => p.x >= item.trigger!.x && p.x <= item.trigger!.x + item.trigger!.w && p.y >= item.trigger!.y && p.y <= item.trigger!.y + item.trigger!.h);
       const r = item.trigger;
       if (!r) continue;
       const inside = points.some((p) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h);
       if (inside && !item.shown) {
         item.shown = true;
-        item.text.setVisible(true).setAlpha(0);
-        this.tweens.add({ targets: item.text, alpha: 1, duration: 400 });
+        for (const t of item.texts) {
+          t.setVisible(true).setAlpha(0);
+          this.tweens.add({ targets: t, alpha: 1, duration: 400 });
+        }
       } else if (!inside && item.shown) {
         item.shown = false;
-        this.tweens.add({ targets: item.text, alpha: 0, duration: 400, onComplete: () => item.text.setVisible(false) });
+        for (const t of item.texts) {
+          this.tweens.add({ targets: t, alpha: 0, duration: 400, onComplete: () => t.setVisible(false) });
+        }
       }
     }
   }

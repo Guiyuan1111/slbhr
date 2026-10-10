@@ -215,6 +215,11 @@ export interface TutorialStep {
   /** 全部文本（同 id 多条，forest_01 Tutorial_dual id=0 实测 2 条） */
   texts: string[];
   textRects: Rect[];
+  /**
+   * 逐文本对象明细（原版 setupTutorial @1929845：bitmapText(k.x, k.y, "font", 文本, 18, halign)、
+   * maxWidth = 对象宽、初始不可见——位置用 text 对象自身坐标而非触发矩形换算）。
+   */
+  textItems: Array<{ text: string; halign?: string; x: number; y: number; width: number }>;
 }
 
 export interface LevelData {
@@ -548,12 +553,13 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
       for (const o of layer.objects ?? []) {
         const stepId = num(o.properties?.id, -1);
         if (stepId < 0) continue;
-        const step = steps.get(stepId) ?? { id: stepId, texts: [], textRects: [] };
+        const step = steps.get(stepId) ?? { id: stepId, texts: [], textRects: [], textItems: [] };
         if (o.text?.text) {
           step.texts.push(String(o.text.text));
           step.textRects.push({ x: num(o.x), y: num(o.y), w: num(o.width), h: num(o.height) });
           step.text = step.texts[0];
           step.textRect = step.textRects[0];
+          step.textItems.push({ text: String(o.text.text), halign: o.text.halign, x: num(o.x), y: num(o.y), width: num(o.width) });
         } else {
           step.trigger = { x: num(o.x), y: num(o.y), w: num(o.width), h: num(o.height) };
         }
