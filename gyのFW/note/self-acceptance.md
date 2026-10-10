@@ -36,7 +36,7 @@
 | 强制通关 | `FW_DEBUG_FORCE_DOORS=1 regression.mjs --script movements.json --expect-win` | win→phase→HUD 通关！全链 | 相位机/结算链回归（**加速器**，覆盖面由下一行兜底） |
 | **真实走位通关** | `regression.mjs --level zz_probe --script inputs/walkin-doors.json --expect-win` | 真实接触→开门→win，无任何钩子 | 0.3.27 门卡摆本体；未来任何门感应回归 |
 | **全旅程续关** | `journey.mjs journey` | 通关→继续→预选 forest_02→弹面板→新房 ready→started→角色重分配 | 0.3.24 续关链 + 0.3.27 全旅程级验收 |
-| **暂停输入冲刷** | `journey.mjs pause` | 按住右→KeyP：服务端 anim=jumping→idle（收到全松）；本地暂停不改相位；恢复后重按生效 | 0.3.27 setPaused 修复；未来暂停/输入闸回归 |
+| **暂停全场冻结** | `journey.mjs pause` | 双方各按行进键→一端 KeyP：双端位置/timerMs 位级停摆（anim 停在 jumping 非全松回 idle）；phase 仍 started；再按 P 恢复推进（暂停期按住的键生效=原版键掩码语义）（F3 翻转后口径） | F3 翻转（服务端权威 userPaused）；未来暂停/输入闸回归 |
 | **断线超时补位** | `journey.mjs rejoin`（FW_RECONNECT_SECONDS=4 缩窗） | 超时后 phase 回 lobby；补位→整关重开→started；补位者获水女孩席位 | 0.3.27 onLeave 死房修复；未来重连/补位回归 |
 | **sync 字段探针** | 内嵌于 regression 所有模式 | 页面内直读权威 state：全部机关映射的 state 字段、doors 六字段、levelId 必须真实到达 | 0.3.25 defineTypes 漏注册类缺陷——**客户端视角**的字段存在性 |
 | **全程通关门禁（P3）** | `route.mjs --level <id> --repeat 3` | routetool 产线路线 → 双浏览器真实键盘全程回放 → phase=won；repeat≥3 ALL PASS；0 调试钩子 | 0.3.27 门卡摆的真实全程版；未来任何物理/机关/输入管道回归（forest_01 已达此标准，余关见 §五） |
