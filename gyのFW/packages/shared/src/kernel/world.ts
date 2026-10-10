@@ -59,6 +59,16 @@ export interface PlayerSnapshot {
   doorUp: boolean;
 }
 
+export interface WorldOptions {
+  /**
+   * 风力时基（F6 翻转）：原版 = 墙钟 elapsed 秒（页面加载起算，逐跑相位随机不可复现）；
+   * 缺省 = 仿真时间 simTimeS（det 48 关位级门禁/金轨迹对拍/单测的确定性口径，位级可复现）。
+   * 生产服务端传墙钟 `() => (Date.now() - epochMs) / 1000`；e2e/门禁服务端经
+   * FW_WIND_PHASE 固定相位偏移 `() => simTimeS + PHASE`（PHASE=0 与缺省位级相同）。
+   */
+  windClockS?: () => number;
+}
+
 export class World {
   readonly level: LevelData;
   private built: BuiltWorld;
@@ -67,16 +77,23 @@ export class World {
   private chars: Record<Role, Character>;
   /** 原版 data.diamonds 等价物从 Character 取 */
   private simTimeS = 0;
+  /** 风力时基（F6）：缺省仿真时间，生产传墙钟（见 WorldOptions 注释） */
+  private windClockS: () => number;
 
   phase: WorldPhase = "playing";
   timerMs = 0;
+
+  /** 当前仿真秒（只读）：服务端 FW_WIND_PHASE 固定相位时基的读取点 */
+  get simSeconds(): number {
+    return this.simTimeS;
+  }
 
   /** Step 期间的事件落点：接触回调直改状态并即时产事件（原版口径，F7） */
   private stepEvents: WorldEvent[] | null = null;
   private listener: any;
   private pendingRemove: any[] = [];
 
-  constructor(level: LevelData) {
+  constructor(level: LevelData, options: WorldOptions = {}) {
     this.level = level;
     this.B = b2();
     this.built = buildLevelWorld(level);
@@ -85,6 +102,7 @@ export class World {
       fireboy: new Character(this.B, this.built.world, "fireboy", level.spawn.fireboy),
       watergirl: new Character(this.B, this.built.world, "watergirl", level.spawn.watergirl),
     };
+    this.windClockS = options.windClockS ?? (() => this.simTimeS);
     for (const wind of this.mechs.winds) {
       wind.registerCharBodies([
         ["fireboy", this.chars.fireboy.body],
@@ -224,8 +242,9 @@ export class World {
     const jumpSound = () => {
       /* 音效属客户端，内核只留钩子 */
     };
-    // 风力（原版在 device update 链中施力；施力顺序对求解器无影响，取 simTimeS 为时基）
-    for (const wind of this.mechs.winds) wind.applyForce(this.simTimeS);
+    // 风力（原版在 device update 链中施力；施力顺序对求解器无影响）。时基 F6 翻转：
+    // 生产=墙钟（windClockS 注入），缺省=simTimeS 保持 det/金轨迹位级确定
+    for (const wind of this.mechs.winds) wind.applyForce(this.windClockS());
     this.chars.fireboy.update(this.B, dt, inputs.fireboy, jumpSound);
     this.chars.watergirl.update(this.B, dt, inputs.watergirl, jumpSound);
 

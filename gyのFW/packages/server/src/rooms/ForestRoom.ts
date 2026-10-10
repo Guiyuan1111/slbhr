@@ -74,7 +74,17 @@ export class ForestRoom extends Room<RoomState> {
     }
 
     this.bundle = loadLevel(levelId);
-    this.world = new World(this.bundle.level);
+    // 风力时基（F6 翻转）：生产=墙钟（原版页面加载起算的逐跑随机相位；锚=世界创建时刻，
+    // 跨整关重开延续——原版 Retry 是否整页刷新无字证，同为逐跑随机，记档即可）。
+    // FW_WIND_PHASE=X（e2e/门禁专用）→ simTimeS+X 固定相位偏移，X=0 与内核缺省位级相同，
+    // 路线回放与 det/金轨迹口径全线可复现。
+    const windPhase = process.env.FW_WIND_PHASE !== undefined ? Number(process.env.FW_WIND_PHASE) : null;
+    const worldEpochMs = Date.now();
+    this.world = new World(this.bundle.level, {
+      windClockS: windPhase !== null
+        ? () => this.world.simSeconds + windPhase
+        : () => (Date.now() - worldEpochMs) / 1000,
+    });
 
     this.setState(new RoomState());
     this.state.levelId = levelId;

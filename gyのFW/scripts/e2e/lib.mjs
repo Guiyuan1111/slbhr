@@ -29,7 +29,9 @@ export function startServer(port, extraEnv = {}) {
     "--import", "tsx",
     join(ROOT, "packages", "server", "src", "index.ts"),
   ], {
-    env: { ...process.env, PORT: String(port), FW_HOST: "127.0.0.1", ...extraEnv },
+    // FW_WIND_PHASE=0：e2e/门禁服务端风力用固定相位偏移（F6），与内核缺省位级同口径——
+    // 否则生产墙钟相位逐跑随机，风区关路线回放永远不可复现。需要随机相位时显式覆盖。
+    env: { ...process.env, PORT: String(port), FW_HOST: "127.0.0.1", FW_WIND_PHASE: process.env.FW_WIND_PHASE ?? "0", ...extraEnv },
     stdio: ["ignore", "pipe", "pipe"],
   });
   return new Promise((resolve, reject) => {
