@@ -949,9 +949,6 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5, 0)
       .setDepth(9)
       .setScrollFactor(0);
-
-    // 钻石计数迁出画布（原版游戏内无计数，仅通关结算面板有）→ DOM #hud-diamonds
-    (globalThis as unknown as Record<string, unknown>).__fwHudTotals = { red: this.redTotal, blue: this.blueTotal, silver: this.silverTotal };
   }
 
   setMyRole(role: Role): void {
@@ -1193,18 +1190,9 @@ export class GameScene extends Phaser.Scene {
     this.sound.stopByKey("sfx_water_steps");
   }
 
-  /** 钻石双向差分（隐藏 + 音效；整关重开 collected=false 时复位可见，E1） */
+  /** 钻石双向差分（隐藏 + 音效；整关重开 collected=false 时复位可见，E1）。原版局内无计数 UI，钻石只在结算面板出现 */
   private updateDiamonds(st: any): void {
-    let redGot = 0;
-    let blueGot = 0;
-    let silverGot = 0;
     st.diamonds?.forEach?.((ds: { collected: boolean }, id: string) => {
-      const kind = this.diamondKinds.get(id);
-      if (ds.collected) {
-        if (kind === "red") redGot++;
-        else if (kind === "blue") blueGot++;
-        else if (kind === "silver") silverGot++;
-      }
       const img = this.diamondSprites.get(id);
       if (!img) return;
       if (ds.collected && img.visible) {
@@ -1214,11 +1202,6 @@ export class GameScene extends Phaser.Scene {
         img.setVisible(true);
       }
     });
-    // E17：红栏只数红、蓝栏只数蓝（fbwg/银钻不进红蓝栏），银钻单列
-    const redStr = `${redGot}/${this.redTotal}`;
-    const blueStr = `${blueGot}/${this.blueTotal}`;
-    const silverStr = `${silverGot}/${this.silverTotal}`;
-    (globalThis as unknown as Record<string, unknown>).__fwHudCounts = { red: redGot, blue: blueGot, silver: silverGot };
   }
 
   /** 机关快照消费（E13）：lever 角度+灯、pusher 压下、平台/箱/球位姿、风区显隐 */

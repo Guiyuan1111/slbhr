@@ -116,15 +116,6 @@ function updateHud(): void {
   keyboard?.setPaused(phase !== "started");
   // 触屏按钮：ready 起显示（预备手指），非进行阶段隐藏；输入仍走 keyboard 的暂停闸门
   touch?.setActive(phase === "ready" || phase === "started");
-  // 钻石计数（GameScene 写 __fwHudCounts；原版游戏内无计数，DOM 承载以免画布偏离）
-  const hudCounts = (globalThis as unknown as Record<string, { red: number; blue: number; silver: number }>).__fwHudCounts;
-  const hudTotals = (globalThis as unknown as Record<string, { red: number; blue: number; silver: number }>).__fwHudTotals;
-  const diaEl = document.querySelector("#hud-diamonds");
-  if (diaEl && hudCounts && hudTotals) {
-    const parts = ["红 " + hudCounts.red + "/" + hudTotals.red, "蓝 " + hudCounts.blue + "/" + hudTotals.blue];
-    if (hudTotals.silver > 0) parts.push("银 " + hudCounts.silver + "/" + hudTotals.silver);
-    diaEl.textContent = parts.join(" · ");
-  }
 }
 
 async function enterGame(): Promise<void> {
@@ -172,8 +163,6 @@ async function enterGame(): Promise<void> {
     sm.stop("GameOverMenu");
     sm.stop("PauseMenu");
     sm.start("Temple");
-    const dia = document.querySelector("#hud-diamonds");
-    if (dia) dia.textContent = "";
     const hud = document.querySelector("#hud");
     if (hud) hud.classList.add("hidden");
     updateHud();
