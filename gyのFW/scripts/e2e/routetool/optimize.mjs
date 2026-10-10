@@ -1,0 +1,129 @@
+/**
+ * 路线产线·±1f 容忍硬化器：node --import tsx scripts/e2e/routetool/optimize.mjs --level <id> [--route <path>] [--sweeps 10] [--write]
+ *
+ * 对路线每个事件做 ±1f 扫描统计致命数（fatal），坐标下降成组平移（同角色 12f 内
+ * 相邻事件连动）降低 fatal；每轮净恶化回滚历史最优。产出：
+ *   --write        覆写路线 JSON（source 字段追加硬化记录）
+ *   默认           写 <route>.opt.json（不覆盖原路线，人工比对后采用）
+ * 收敛判据：fatal=0 即整条路线任意事件 ±1f 仍 WIN；最优快照随进度落盘断点续用。
+ */
+import { readFileSync, writeFileSync } from "node:fs";
+import { join, isAbsolute } from "node:path";
+import { argOf, log, ROOT } from "../lib.mjs";
+import { runKernel } from "./kernel.mjs";
+
+const args = process.argv.slice(2);
+const level = argOf(args, "level", "forest_01");
+const routePath = argOf(args, "route", join(ROOT, "scripts", "e2e", "inputs", "routes", `${level}.json`));
+const absRoute = isAbsolute(routePath) ? routePath : join(ROOT, routePath);
+const SWEEPS = Number(argOf(args, "sweeps", "10"));
+const routeDoc = JSON.parse(readFileSync(absRoute, "utf8"));
+
+const SIDES = ["fb", "wg"];
+const NB = routeDoc.fb.length;
+const clone = (T) => ({ fb: T.fb.map((e) => ({ ...e })), wg: T.wg.map((e) => ({ ...e })) });
+const local = (side, i) => (side === "fb" ? i : i - NB);
+
+function run(T) {
+  return runKernel(level, { totalFrames: routeDoc.totalFrames, fb: T.fb, wg: T.wg });
+}
+
+/** 逐事件 ±1f 扫描（only 传平坦索引集合则只扫子集——验证移动局部性） */
+function scanTables(T, only = null) {
+  const fatal = [];
+  for (let s = 0; s < 2; s++) {
+    const side = SIDES[s];
+    for (let li = 0; li < T[side].length; li++) {
+      const i = s * NB + li;
+      if (only && !only.has(i)) continue;
+      for (const d of [-1, 1]) {
+        const TT = clone(T);
+        TT[side][li].f += d;
+        if (!run(TT).won) { fatal.push({ i, side, li, f: T[side][li].f, dir: T[side][li].dir, type: T[side][li].type, d }); break; }
+      }
+    }
+  }
+  return fatal;
+}
+
+/** 移动集：idx 与同角色 12f 内相邻事件构成连续 run（单点 / 整 run 两档） */
+function moveSets(T, i) {
+  const side = SIDES[Math.floor(i / NB)];
+  const li = local(side, i);
+  const evs = T[side];
+  let lo = li, hi = li;
+  while (lo > 0 && evs[lo - 1].f >= evs[lo].f - 12) lo--;
+  while (hi < evs.length - 1 && evs[hi + 1].f <= evs[hi].f + 12) hi++;
+  const sets = [[li]];
+  if (hi > lo) sets.push(Array.from({ length: hi - lo + 1 }, (_, k) => lo + k));
+  return { side, sets };
+}
+function shifted(T, side, lis, d) {
+  const TT = clone(T);
+  for (const li of lis) TT[side][li].f += d;
+  return TT;
+}
+
+let cur = clone(routeDoc);
+let best = clone(cur);
+let bestFatal = Infinity;
+const totalEvents = NB + routeDoc.wg.length;
+const t0 = Date.now();
+
+if (!run(cur).won) { console.error("基线必须 WIN（先跑通初排再硬化）"); process.exit(1); }
+
+for (let sweep = 0; sweep < SWEEPS; sweep++) {
+  const F = scanTables(cur);
+  log(`sweep ${sweep}: fatal ${F.length}/${totalEvents}（累计 ${((Date.now() - t0) / 1000).toFixed(0)}s）`);
+  if (F.length < bestFatal) { bestFatal = F.length; best = clone(cur); writeFileSync(absRoute + ".best.json", JSON.stringify(best)); }
+  if (F.length === 0) break;
+  for (const { i } of F) {
+    const { side, sets } = moveSets(cur, i);
+    let done = false;
+    for (const lis of sets) {
+      for (const d of [1, -1, 2, -2, 3, -3, 4, -4]) {
+        const cand = shifted(cur, side, lis, d);
+        if (!run(cand).won) continue;
+        // 局部验证：本集各成员 ±1（物理影响仅向前传播）
+        let ok = true;
+        for (const li of lis) {
+          for (const dd of [-1, 1]) {
+            const TT = clone(cand);
+            TT[side][li].f += dd;
+            if (!run(TT).won) { ok = false; break; }
+          }
+          if (!ok) break;
+        }
+        if (!ok) continue;
+        cur = cand;
+        log(`  [${side.toUpperCase()} f${lis.map((li) => cur[side][li].f).join("/")}] ${d >= 0 ? "+" : ""}${d} ✓`);
+        done = true;
+        break;
+      }
+      if (done) break;
+    }
+    if (!done) log(`  [${side.toUpperCase()} i${i}] 顽固（同角色邻域内无可行移动）`);
+  }
+  const F2 = scanTables(cur);
+  if (F2.length <= bestFatal) { bestFatal = F2.length; best = clone(cur); }
+  log(`sweep ${sweep} 末: fatal ${F2.length}（best ${bestFatal}）`);
+  if (F2.length > bestFatal) cur = clone(best);
+  if (F2.length === 0) break;
+}
+
+// 以历史最优收尾（cur 可能劣于 best）
+cur = clone(best);
+const finalF = scanTables(cur);
+log(`final fatal ${finalF.length}/${totalEvents}`);
+for (const x of finalF) log(`  ${x.side.toUpperCase()}#${x.i} f${x.f} ${x.type} ${x.dir} ${x.d}`);
+
+const outDoc = {
+  ...routeDoc,
+  fb: cur.fb,
+  wg: cur.wg,
+  source: `${routeDoc.source ?? "unknown"}; routetool/optimize.mjs ${new Date().toISOString().slice(0, 10)} fatal ${finalF.length}/${totalEvents}`,
+};
+const outPath = args.includes("--write") ? absRoute : absRoute.replace(/\.json$/, "") + ".opt.json";
+writeFileSync(outPath, JSON.stringify(outDoc, null, 1));
+log(`已写 ${outPath}（fatal ${finalF.length}/${totalEvents}）`);
+process.exit(0);
