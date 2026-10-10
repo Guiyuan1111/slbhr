@@ -353,16 +353,15 @@ export class World {
   private updateDoors(dt: number, events: WorldEvent[]): void {
     for (const role of ["fireboy", "watergirl"] as const) {
       const door = this.built.doors[role];
-      const frame = Math.round(door.frac);
-      door.isUp = frame === 21 && door.frac >= 21;
       const advance = 25 * Math.min(0.04, dt);
       if (door.isOpen) {
-        if (frame < 21) {
+        // 推进闸门必须用 frac 本身：round(frac)<21 会在 20.83 帧提前停摆，
+        // isUp 永差一步（0.3.26 及之前真实游玩永不通关的根因，双门只能同帧脉冲到齐）
+        if (door.frac < 21) {
           door.frac = Math.min(21, door.frac + advance);
         }
-        if (Math.round(door.frac) === 21 && !door.signaled) {
+        if (door.frac >= 21 && !door.signaled) {
           door.signaled = true;
-          door.isUp = true;
           events.push({ type: "door-open", role });
         }
       } else {
@@ -371,6 +370,9 @@ export class World {
           door.signaled = false;
         }
       }
+      // 原版口径（45097 前后）：isUp 每帧由当前帧号重算（21===a）——
+      // 站门期间持续为真（signal 每帧驱动 checkEndGame），离开即随扫帧回退
+      door.isUp = door.frac >= 21;
     }
   }
 

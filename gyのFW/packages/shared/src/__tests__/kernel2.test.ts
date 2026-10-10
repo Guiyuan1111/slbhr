@@ -183,6 +183,38 @@ describe("内核：门与通关", () => {
     expect(upSeen).toBe(true);
     expect(w.snapshotPlayer("watergirl").atDoor).toBe(true);
   });
+
+  it("双门异时到位：先到者 isUp 持续为真，后到者补齐 → win（0.3.26 单步脉冲回归）", () => {
+    const w = loadForest01();
+    stepN(w, 30);
+    // 火人先站入感应带正中；水女孩 80 帧（≈1.33s）后才站入——真实游玩两人必然错峰到门。
+    // 旧实现推进闸门 round(frac)<21 使 frac 卡在 20.83 帧，isUp 只在 signaled 步闪现一帧，
+    // 双门脉冲几乎永不重叠 → 永不通关；正解（原版口径）是 isUp 每帧重算且站门期间持续为真。
+    teleport(w, "fireboy", w.doors.fireboy.pos.x, w.doors.fireboy.pos.y - 36);
+    let firstUp = -1;
+    let brokeEarly = false;
+    for (let i = 0; i < 80; i++) {
+      w.step(1 / 60, { fireboy: NONE, watergirl: NONE });
+      const up = w.snapshotPlayer("fireboy").doorUp;
+      if (up && firstUp < 0) firstUp = i;
+      if (!up && firstUp >= 0) brokeEarly = true;
+    }
+    expect(firstUp).toBeGreaterThanOrEqual(0);
+    expect(firstUp).toBeLessThan(70); // 25fps 扫 21 帧 ≈ 0.9s 内到位
+    expect(brokeEarly).toBe(false);
+    expect(w.snapshotPlayer("fireboy").atDoor).toBe(true);
+
+    teleport(w, "watergirl", w.doors.watergirl.pos.x, w.doors.watergirl.pos.y - 36);
+    let win = false;
+    for (let i = 0; i < 120; i++) {
+      if (w.step(1 / 60, { fireboy: NONE, watergirl: NONE }).some((e) => e.type === "win")) {
+        win = true;
+        break;
+      }
+    }
+    expect(win).toBe(true);
+    expect(w.phase).toBe("won");
+  });
 });
 
 describe("内核：钻石", () => {
