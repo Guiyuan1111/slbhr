@@ -2,7 +2,7 @@
  * P3 全自动通关门禁：路由时间线（真实键盘）→ 真实服务端 → 双浏览器 phase=won。
  *
  * 用法（Git Bash，先注入便携 Node PATH；构建产物由调用方保证）：
- *   node scripts/e2e/route.mjs [--level forest_01] [--port 3575] [--repeat 2] [--offset -10] [--sample 250]
+ *   node scripts/e2e/route.mjs [--level forest_01] [--port 3575] [--repeat 2] [--offset -10] [--offset-b 0] [--sample 250]
  *
  * 路由文件 scripts/e2e/inputs/routes/<level>.json：内核验证过的逐帧时间线
  * （[{f, dir:'up'|'left'|'right', type:'down'|'up'}]，fb/wg 各一条）。
@@ -25,6 +25,7 @@ const LEVEL = argOf(args, "level", "forest_01");
 const PORT = Number(argOf(args, "port", "3575"));
 const REPEAT = Number(argOf(args, "repeat", "1"));
 const OFFSET = Number(argOf(args, "offset", "-10"));
+const OFFB = Number(argOf(args, "offset-b", "0"));
 const SAMPLE_MS = Number(argOf(args, "sample", "250"));
 
 const routeDoc = JSON.parse(readFileSync(join(ROOT, "scripts", "e2e", "inputs", "routes", `${LEVEL}.json`), "utf8"));
@@ -43,8 +44,11 @@ const KEYS = {
 function mergedTimeline() {
   const out = [];
   for (const [role, tag] of [["fb", "a"], ["wg", "b"]]) {
+    // offset-b：page-B（wg）逐毫秒补偿——实测某些关卡 B 页 CDP 派发系统性晚 ~25ms（≈1.5f），
+    // 刀锋落点（如 forest_06_1 wg 越池）会被翻进池内；路线文件保持内核验证原样，仅墙钟层前移。
+    const off = tag === "b" ? OFFSET + OFFB : OFFSET;
     for (const ev of routeDoc[role]) {
-      out.push({ t: Math.round(ev.f * MS_PER_F) + OFFSET, page: tag, key: KEYS[role][ev.dir], type: ev.type, f: ev.f, role });
+      out.push({ t: Math.round(ev.f * MS_PER_F) + off, page: tag, key: KEYS[role][ev.dir], type: ev.type, f: ev.f, role });
     }
   }
   out.sort((x, y) => x.t - y.t || (x.type === "up" ? -1 : 1));
