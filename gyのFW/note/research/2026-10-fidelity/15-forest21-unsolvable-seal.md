@@ -66,3 +66,17 @@ wg 蓝：B(192,224)、B(192,80)、B(192,672)、B(512,768)、B(592,480)。
 - `probe56.mjs` / `probe58.mjs`：§1.2 列实体 dump（c24-c33 全行 tile 类型 + 关卡对象清单）
 - `probe59.mjs`：E6 补充——wg 提前起跳三组参数（不楔死方案）仍回落
 - 运行方式：`PATH="$PWD/TEMP/node:$PATH" node --import tsx note/evidence/forest21/probeNN.mjs`（相对路径已修正，仓库根目录执行）
+
+---
+
+## 【2026-10-12 推翻】§4 前半——内核"风机不注册"不是原版行为，是保真缺口（已修复 0d24592）
+
+§4 所称"内核对风机的处理（initialState 默认 0 + 不注册 MechManager）是对原版引擎行为的忠实还原"**被原版 bundle 直读证伪**：
+
+1. **原版 Wind 构造器末尾调用 `this.registerDevice()`**（`init.eb02fbdab2aa1d24.js` Wind 定义区，`States/Level/Devices/Wind`，约 40590 行）→ 风机**进入** MechManager.deviceGroups，是组联动的**跟随端**。
+2. **原版 `MechManager.deviceChanged`**（同文件 43234 区）：组内信号持有设备（Lever 38737 / Beamer 38351,38435 / LightPusher 38827 / Pusher 39906 有 `signal`）state 取 OR → **赋给组内一切无 signal 设备**（`b.state = g`）→ 逐设备 `_updateState()`。风机 `update()` 门控 `invertInput ? +!state : state === 1`（invertInput 在关卡数据集零使用）。
+3. **修复**（commit `0d24592`）：内核 `Wind.hasSignal = false` + `buildMechanisms` 风机循环 `manager.register(w)`；`signalApply()` 空实现（原版 _updateState 对风机只刷可见性/音效，物理在 update() 直读 state）。
+4. **A/B 47 关快照回归**（TEMP/s30-ab-regression.mjs，900f 轻输入）：42 关位级零漂移；漂移仅 forest_09_1 / 21 / 25 / 25_1 / 28 五关，方向恰为"跟随端加入组信号"（如 21：winds `[0,0,0]→[0,1,1]`；09_1：`[1,0]→[1,1]`），双角色位 47 关全部不变。vitest 81/81 全绿。
+5. **f0 自动翻转的忠实性一并核实**：forest_21 g3/g4 拉杆（gid24，实例 `startPos:1`，tile 缺省 `onis:1`）初始关节角 × onis < 0 → 原版首次 `checkState` 同样立即翻转并 `signal.dispatch`（不是本复制杜撰的启动事件）。startPos 仅设初始杆角（bundle Lever 定义区：`startPos===-1 ? SetAngle(lower) : SetAngle(upper)`），state 一律从 0 起——tileset `Objects.json` tileproperties 提供 onis/startPos 缺省（local1: onis1/startPos-1；local2: onis-1/startPos1），实例属性覆盖。
+
+**结论改写**：§1-§3 的几何证据（E1-E6）在"风机死"前提下依然成立（它们不依赖风机状态），但**不可通性判定不成立**——三风机受同组拉杆联动（g1 拉杆 (928,928)、g3 拉杆 (352,928)、g4 拉杆 (320,704) 均在地层可及区），g3/g4 风机自 f0 即 ON（拉杆 f0 自动翻转），g1 风机随玩家扳动启用。E2 的箱→滑轮→plat2 链条与风柱举升组合重新打开，**forest_21 需按"拉杆供能风机"语义重做路线**（§5 处置选项作废，回归正常产线）。
