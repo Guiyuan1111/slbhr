@@ -127,7 +127,7 @@
 | # | 曾列偏离 | 核销证据（代码现状） | 残留清理 |
 |---|---|---|---|
 | 1 | 教学渐显判定=本机角色（wiring §13 #4） | **已按原版「任一角色」（pers1‖pers2）实现**：GameScene.ts:987-993 双角色坐标都传入 updateTutorial（0.3.19 D5，release/0.3.19.md:11） | GameScene.ts:868 与 :987 注释仍写「按本机角色/冻结偏离 #4」——**注释已失实，需改** |
-| 2 | pusher 贴图二档，原版 0.7m 连续行程（wiring §13 #5） | **已连续**：快照下发 x/y，块体贴图随体（GameScene.ts:1251-1261，0.3.1 PusherState） | GameScene.ts:458 注释仍写「二档化，冻结偏离 #5」——**注释已失实，需改** |
+| 2 | pusher 贴图二档，原版 0.7m 连续行程（wiring §13 #5） | **已连续**：快照下发 x/y，块体贴图随体（GameScene.ts:1251-1261，0.3.1 PusherState） | GameScene.ts:458 注释仍写「二档化，冻结偏离 #5」——**注释已失实，需改**〔2026-10-11 销账：该失实注释已修，grep 二档/冻结偏离 #5 无命中，见 report/audit/2026-10-11-note-facts.md §3.2〕 |
 | 3 | 银钻行「有银钻就单列」（wiring §13 附近冻结要求） | 已按原版 puzzle 型规则：overlays.ts:92-97「general 三行；puzzle 两行（Finish/Silver，钻石行隐藏）」 | 无 |
 | 4 | 时钟/结算/暂停用系统衬线文本（wiring §13 #6 其余项） | 时钟 bitmapText（GameScene.ts:932-935）、三弹窗/菜单/Temple 全 bitmapText（overlays.ts:46/60/164、MenuScene.ts:76、TempleScene.ts:107） | 仅教学文字残留（=确认区 F5） |
 | 5 | animFrame 不进快照、rising 头部倾角不渲染（wiring §13 #7） | 头部倾角已进快照并渲染（GameScene.ts:1114 `ps.headTilt`）；动画状态机按内核 AnimState（idle/jumping/rising/falling，GameScene.ts:1133-1162）——与原版客户端本地状态机同构，原版本无快照概念，无语义差 | 无 |
