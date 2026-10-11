@@ -573,6 +573,8 @@ export function buildRoman(B: B2, world: any, groundBody: any, def: { pts: Array
 export class Wind {
   readonly body: any;
   readonly group: number;
+  /** 原版 Wind 无 signal（bundle 38737/38827/39906 仅 Lever/LightPusher/Pusher/Beamer 持有）→ 纯跟随端 */
+  readonly hasSignal = false;
   state: number;
   private readonly lengthM: number;
   private readonly activeRoles = new Set<"fireboy" | "watergirl">();
@@ -612,6 +614,10 @@ export class Wind {
     if (active) this.activeRoles.add(role);
     else this.activeRoles.delete(role);
   }
+
+  /** 组信号到达（原版 deviceChanged→_updateState）：原版仅刷可见性/音效，物理在 update() 直读
+   * state（invertInput 数据集零使用）→ 内核无需动作。 */
+  signalApply(): void {}
 
   /** 施力（每步 pre-Step；nowS=仿真时间秒）。
    * 原版 update()（vendor Wind 区间）：力 = d×(1.2+0.2·sin(t/1000))×100×(1−|a|/length)，
@@ -728,7 +734,12 @@ export function buildMechanisms(B: B2, world: any, groundBody: any, level: Level
   for (const d of level.hangings) hangings.push(buildHanging(B, world, groundBody, d));
   for (const d of level.pulleys) pulleys.push(buildPulley(B, world, d));
   for (const d of level.romans) romans.push(buildRoman(B, world, groundBody, d));
-  for (const d of level.winds) winds.push(new Wind(B, world, d));
+  for (const d of level.winds) {
+    const w = new Wind(B, world, d);
+    winds.push(w);
+    // 原版 Wind 构造器末尾 this.registerDevice()（bundle 40590）→ 进组受拉杆/推杆联动
+    manager.register(w);
+  }
   for (const d of level.windows) buildWindow(B, world, d);
 
   return { manager, levers, pushers, platforms, props, winds, hangings, pulleys, romans };
