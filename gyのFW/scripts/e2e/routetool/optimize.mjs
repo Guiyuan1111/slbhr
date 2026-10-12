@@ -64,7 +64,9 @@ async function scanTables(T, only = null) {
 
 /** 移动集：idx 与同角色 WINf 内相邻事件构成连续 run（单点 / 整 run 两档） */
 function moveSets(T, i) {
-  const side = SIDES[Math.floor(i / NB)];
+  // 全局平坦索引 → 角色侧：scanTables 里 i = s·NB + li 仅在 s∈{0,1} 有效；
+  // 当 wg 事件数 > fb 时 Math.floor(i/NB) 可达 2 → SIDES[2]=undefined 越界（forest_02 fb274/wg322 实证）
+  const side = SIDES[i >= NB ? 1 : 0];
   const li = local(side, i);
   const evs = T[side];
   let lo = li, hi = li;
