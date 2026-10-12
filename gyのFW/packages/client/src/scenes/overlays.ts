@@ -91,33 +91,31 @@ export class EndMenu extends Phaser.Scene {
       stars: number;
     };
     const board = buildBoard(this);
-    // 原版 EndMenu：general 三行（Finish/Diamonds/Time）；puzzle 两行（Finish/Silver，钻石行隐藏）
-    const rows: Array<{ icon: string; ok: boolean; limit?: string }> =
-      d.type === "puzzle"
-        ? [
-            { icon: "FinishIcon0000", ok: true },
-            { icon: "SilverIcon0000", ok: d.silver > 0 },
-          ]
-        : [
-            { icon: "FinishIcon0000", ok: true },
-            { icon: "DiamondsIcon0000", ok: d.diamonds >= d.diamondsTotal },
-            { icon: "TimeIcon0000", ok: d.timeLimitSec > 0 && d.timeSec <= d.timeLimitSec, limit: `${String(Math.floor(d.timeSec / 60)).padStart(2, "0")}:${String(d.timeSec % 60).padStart(2, "0")}` },
-          ];
+    // 原版 EndMenu @1917750（renderContent + layoutContent @1919230）：
+    //   行 y = 板中心 + (−0.5·halfHeight + {20,100,180})（general 三行；halfHeight=板高/2=321 → +180.5/260.5/340.5）；
+    //   puzzle/dark 两行 +60/+140 且钻石行隐藏；行组 x=−200（图标中心=行组−e.width/2=−246.5、勾叉=+46.5）；
+    //   星碑 (180,−60)、popupArrow (5,−60)、Continue (0, halfHeight−140)；逐行达成 700ms 节拍。
+    // 板内中心 (541,321) 换算：图标 x=294.5、勾叉 x=387.5、星碑 (721,261)、箭头 (546,261)、Continue (541,502)。
+    // （2026-10-12 勘误重排：旧版行位 60/140/220 偏上 120px、偏右 46px，星碑偏上 100px，箭头漏画；
+    //  旧版还带"时间值文本"——bundle 字证为镜像站注入物（原行被注释 + true&& 混淆 + console.log 残留，
+    //  原版 EndMenu 三行 FinishCounter 全部 text="" 构造，无任何数值文本），已删除。）
+    const twoRows = d.type === "puzzle" || d.type === "dark";
+    const rows: Array<{ icon: string; ok: boolean; hide?: boolean }> = [
+      { icon: "FinishIcon0000", ok: true },
+      { icon: "DiamondsIcon0000", ok: d.diamonds >= d.diamondsTotal, hide: twoRows },
+      { icon: d.type === "puzzle" ? "SilverIcon0000" : "TimeIcon0000", ok: twoRows ? d.silver > 0 : d.timeLimitSec > 0 && d.timeSec <= d.timeLimitSec },
+    ];
     rows.forEach((row, i) => {
-      const y = 60 + i * 80;
-      board.add(this.add.image(341, y, ATLAS_POPUP, row.icon).setOrigin(0.5));
-      if (row.limit) {
-        board.add(
-          this.add.bitmapText(301, y + 35, FONT_MAIN, row.limit, 18).setOrigin(0.5).setAlpha(0.7)
-        );
-      }
+      const y = 321 - 160.5 + (twoRows ? [60, 140, 140][i] : [20, 100, 180][i]);
+      if (row.hide) return;
+      board.add(this.add.image(294.5, y, ATLAS_POPUP, row.icon).setOrigin(0.5));
       const tick = this.add
-        .image(433, y, ATLAS_POPUP, row.ok ? "TickIcon0000" : "CrossIcon0000")
+        .image(387.5, y, ATLAS_POPUP, row.ok ? "TickIcon0000" : "CrossIcon0000")
         .setOrigin(0.5)
         .setVisible(false);
       board.add(tick);
-      // 原版时序：每 700ms 逐行达成
-      this.time.delayedCall(500 + i * 700, () => {
+      // 原版时序：每 700ms 逐行达成（f=700 起 _.delay 步进）
+      this.time.delayedCall(700 + i * 700, () => {
         tick.setVisible(true);
         handle().__fwSfx?.("sfx_end_pass");
       });
@@ -126,8 +124,10 @@ export class EndMenu extends Phaser.Scene {
     const stars = Math.max(1, Math.min(3, d.stars || 1));
     // 星碑贴图按关卡类型选变体（原版 44320-22：general/speed/puzzle/dark）
     const stonePrefix = d.type === "puzzle" ? "FinishStonePuzzle" : d.type === "speed" ? "FinishStoneSpeed" : d.type === "dark" ? "FinishStoneDark" : "FinishStone";
-    const stone = this.add.sprite(721, 161, ATLAS_POPUP, stonePrefix + "0000").setOrigin(0.5);
+    const stone = this.add.sprite(721, 261, ATLAS_POPUP, stonePrefix + "0000").setOrigin(0.5);
     board.add(stone);
+    // 原版指示箭头 popupArrow (5,−60)：指向星碑（此前整处漏画）
+    board.add(this.add.image(546, 261, ATLAS_POPUP, "popupArrow0000").setOrigin(0.5));
     const endF = stars === 3 ? 21 : stars === 2 ? 14 : 7;
     this.anims.create({
       key: `finish-stars-${stars}`,
@@ -137,7 +137,7 @@ export class EndMenu extends Phaser.Scene {
       })),
       frameRate: 30,
     });
-    this.time.delayedCall(500 + 3 * 700, () => {
+    this.time.delayedCall(700 + 3 * 700, () => {
       stone.play(`finish-stars-${stars}`);
       handle().__fwSfx?.("sfx_end_diamond");
     });
@@ -150,7 +150,7 @@ export class EndMenu extends Phaser.Scene {
       if (h.__fwNextLevel) h.__fwNextLevel();
       else h.__fwLeaveToMenu?.();
     });
-    this.time.delayedCall(500 + 3 * 700 + 300, () => {
+    this.time.delayedCall(700 + 3 * 700 + 300, () => {
       enabled = true;
     });
   }

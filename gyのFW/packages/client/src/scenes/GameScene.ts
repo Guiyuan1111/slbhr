@@ -885,7 +885,10 @@ export class GameScene extends Phaser.Scene {
     const rh = this.scale.height;
     this.camMinScale = Math.min((0.9 * rw) / level.widthPx, (0.9 * rh) / level.heightPx);
     this.camLockScale = Math.min((0.97 * rw) / level.widthPx, (0.97 * rh) / level.heightPx);
-    this.cameras.main.setBounds(PAD, PAD, level.widthPx, level.heightPx);
+    // 不用 Phaser setBounds：视口(1280×960)大于关卡矩形(1248×928)时其钳制会把滚动
+    // 钉死在 (32,32)，centerOn 全被否决——0.3.29-F4 动态相机因此在所有标准关上失效
+    // （2026-10-12 相机轨迹实测：角色从出生点走到门区相机纹丝不动）。改为在弹簧目标上
+    // 按原版 checkBounds(@1889585) 语义自行钳制（updateCamTarget 内，含视口>世界时居中）。
     this.camScale = this.camMinScale;
     this.camX = this.camTX = level.widthPx / 2 + PAD;
     this.camY = this.camTY = level.heightPx / 2 + PAD;
@@ -975,6 +978,15 @@ export class GameScene extends Phaser.Scene {
     // 焦点：双角色中点（关卡坐标→世界 +PAD）；拖拽平移时 userCenter 覆盖
     this.camTX = (this.camUserCenter?.x ?? (fx + gx) / 2) + PAD;
     this.camTY = (this.camUserCenter?.y ?? (fy + gy) / 2) + PAD;
+    // 原版 checkBounds(@1889585)：钳弹簧目标而非每帧滚动——视口≥世界时钉在
+    // 居中位（我们的画布=关卡+2·16 边距，居中即 0.3.8 设计几何），视口<世界时
+    // 限制视口完全落在世界 [0, worldW/H] 内（世界=关卡四周 PAD 边距）。
+    const worldW = level.widthPx + PAD * 2;
+    const worldH = level.heightPx + PAD * 2;
+    const vwW = rw / h;
+    const vwH = rh / h;
+    this.camTX = vwW >= worldW ? worldW / 2 : Math.min(Math.max(this.camTX, vwW / 2), worldW - vwW / 2);
+    this.camTY = vwH >= worldH ? worldH / 2 : Math.min(Math.max(this.camTY, vwH / 2), worldH - vwH / 2);
   }
 
   /** 弹簧逼近目标并应用（原版 animate @1887350：a=1/15 或 1/3，阻尼 0.5；目标轨迹同源） */
@@ -1037,7 +1049,9 @@ export class GameScene extends Phaser.Scene {
       // maxWidth = 对象宽，初始不可见；同 id 组共享触发矩形，任一角色进入整组淡入。
       // （原版 cacheAsBitmap 是 Phaser 2 渲染缓存优化，非语义，此处不移植。）
       const texts = step.textItems.map((t) => {
-        const bt = this.add.bitmapText(t.x, t.y, FONT_MAIN, t.text, 18);
+        // 世界 = 关卡 +PAD：文本与触发矩形同域（此前漏 +PAD 致文本相对地砖偏 32px，
+        // 2026-10-12 用户报告第一关文字错位时实锤）
+        const bt = this.add.bitmapText(t.x + PAD, t.y + PAD, FONT_MAIN, t.text, 18);
         // 运行时接受 'left'|'center'|'right'（Phaser 3 字体排版），本仓 phaser 类型标注偏差强转
         bt.align = (t.halign ?? "left") as unknown as typeof bt.align;
         return bt.setMaxWidth(t.width).setDepth(0.8).setVisible(false).setAlpha(0);
@@ -1172,11 +1186,12 @@ export class GameScene extends Phaser.Scene {
     this.updateMechs(st);
     this.updatePlatformSound(st);
 
-    // 教学渐显按本机角色（传世界坐标=快照中心+PAD，与触发矩形同域）
+    // 教学渐显判定：原版=任一角色进矩形（双方同用关卡坐标），组内全部文本 400ms 淡入/淡出。
+    // 快照 ps.x/ps.y 本就是关卡坐标，与触发矩形同域直比（此前误加 PAD 形成 32px 迟触发死区）。
     const pts: Array<{ x: number; y: number }> = [];
     for (const role of ["fireboy", "watergirl"] as const) {
       const ps = st.players?.get?.(role);
-      if (ps && ps.dying !== true) pts.push({ x: (Number(ps.x) || 0) + PAD, y: (Number(ps.y) || 0) + PAD });
+      if (ps && ps.dying !== true) pts.push({ x: Number(ps.x) || 0, y: Number(ps.y) || 0 });
     }
     if (pts.length > 0) this.updateTutorial(...pts);
 
