@@ -40,7 +40,7 @@ Ground 差分 8 格 + Objects 增 2 对象：
 
 ## 5. oracle 双引擎复核结果（已收口，详见 21 号档）
 
-TEMP/r09/seal_kernel_ref.mjs（内核金轨迹）+ TEMP/r09/seal_oracle.mjs（oracle 只读 7 场景）：
+TEMP/r09/seal_kernel_ref.mjs（内核金轨迹）+ seal_oracle.mjs（oracle 只读 7 场景；两脚本及全部 trace 已按 TEMP 清理纪律随 TEMP/r09 移除，结论以本档与 21 号档为准）：
 
 | 探针 | 内核 | oracle | 一致 |
 |---|---|---|---|

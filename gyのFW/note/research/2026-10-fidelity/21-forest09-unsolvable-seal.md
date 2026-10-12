@@ -31,7 +31,7 @@
 
 **fb 门不可达 → won 恒 false。**（WG 侧门厅可达：槽角跃/坑底跳西两拓扑，kernel 拓扑级验证，因 fb 封死无需收口。）
 
-## 4. 双引擎对照汇总（oracle 127.0.0.1:8787 只读，spawn 注入 gid16，TEMP/r09/seal_oracle.mjs）
+## 4. 双引擎对照汇总（oracle 127.0.0.1:8787 只读，spawn 注入 gid16；探针脚本按 TEMP 清理纪律已随 TEMP/r09 移除，方法同 s33b/s35 模板）
 
 | 探针 | 内核 | oracle | 一致性 |
 |---|---|---|---|
