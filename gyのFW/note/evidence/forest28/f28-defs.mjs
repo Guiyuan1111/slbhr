@@ -1,0 +1,10 @@
+import { makeWorld } from "../../scripts/e2e/routetool/kernel.mjs";
+const w = makeWorld("forest_28");
+const L = w.level;
+console.log("spawn", JSON.stringify(L.spawn));
+console.log("doors", JSON.stringify(L.doors));
+console.log("levers", JSON.stringify(L.levers));
+console.log("platforms", JSON.stringify(L.platforms));
+console.log("winds", JSON.stringify(L.winds));
+console.log("diamonds", JSON.stringify(L.diamonds));
+console.log("liquids", JSON.stringify(L.liquidRuns));
