@@ -66,3 +66,4 @@ wg 存在完整通路（若与 fb 解耦则可通关）：R1-R10（r28 已验）
 - TEMP/r28/probe10.mjs（p1 下降实测）、probe13-D（板降后 bump 可越 + 800f 防睡摇摆）
 - TEMP/r28/o11-gate.mjs + o11-*-trace.json + o11-gate-out.json（oracle 三探）
 - note/evidence/forest11/02-forest11-kernel-gate-analysis.md（kernel 侧分析档）
+- 2026-10-11 补注：TEMP/r28 已按临时区纪律清理；上列 oracle 轨迹/汇总、fix-all.txt 及 probe*.mjs 已归档至 `note/evidence/forest11/`（同名文件），本节 TEMP 路径自此指归档副本。
