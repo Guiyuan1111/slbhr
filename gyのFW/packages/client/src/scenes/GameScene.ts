@@ -1144,9 +1144,10 @@ export class GameScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setInteractive({ useHandCursor: true })
       .on("pointerup", () => (globalThis as unknown as { __fwTogglePause?: () => void }).__fwTogglePause?.());
-    // 原版 LevelUI/Clock：TempleAssets Clock0000 + font 位图字 24 号（bitmapText 基准 48 半缩放）
+    // 原版 LevelUI/Clock：TempleAssets Clock0000 + font 位图字（oracle 实拍 2026-10-12：字形 39px 高
+    // ≈ 名义字号×1.6；旧 24 号只渲染 26px 高，偏小——注意文字 y=56 是文字区起点，加高后仍落在盘面内）
     this.clockText = this.add
-      .bitmapText(clockX, 56, FONT_MAIN, "00:00", 24)
+      .bitmapText(clockX, 56, FONT_MAIN, "00:00", 38)
       .setOrigin(0.5, 0)
       .setDepth(9)
       .setScrollFactor(0);
