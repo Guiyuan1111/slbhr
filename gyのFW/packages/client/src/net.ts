@@ -55,6 +55,8 @@ export interface NetCallbacks {
   onPauseChanged?: (p: PauseChangedMessage) => void;
   /** phase 迁移（onStateChange 差分，带前值） */
   onPhase?: (phase: string, prev: string) => void;
+  /** 关卡切换（onStateChange 差分；活房间 advance 换关回声，双端同触发） */
+  onLevelId?: (levelId: string, prev: string) => void;
   /** 连接断开（已自动尝试重连）；参数=是否重连成功 */
   onDisconnect: (recovered: boolean) => void;
 }
@@ -69,6 +71,7 @@ export class Net {
   sfxQueue: SfxMessage[] = [];
   private client!: Client;
   private prevPhase = "";
+  private prevLevelId = "";
 
   /** 服务器地址：开发直连 2567，生产同源自适应 ws/wss */
   static serverUrl(): string {
@@ -112,13 +115,19 @@ export class Net {
       console.warn("[fw] levelError:", payload?.message);
     });
 
-    // phase 迁移差分（比轮询及时，且带前值；prevPhase 挂实例上，重连重绑后仍连续）
+    // phase/levelId 迁移差分（比轮询及时，且带前值；prev* 挂实例上，重连重绑后仍连续）
     room.onStateChange((state) => {
       const phase = String(state?.phase ?? "");
       if (phase && phase !== this.prevPhase) {
         const prev = this.prevPhase;
         this.prevPhase = phase;
         cb.onPhase?.(phase, prev);
+      }
+      const levelId = String(state?.levelId ?? "");
+      if (levelId && levelId !== this.prevLevelId) {
+        const prev = this.prevLevelId;
+        this.prevLevelId = levelId;
+        cb.onLevelId?.(levelId, prev);
       }
     });
 
@@ -162,6 +171,11 @@ export class Net {
 
   restart(): void {
     this.room.send("restart", {});
+  }
+
+  /** 结算「继续」：活房间内直进下一关（服务端 advance 换关，席位保留） */
+  advance(levelId: string): void {
+    this.room.send("advance", { levelId });
   }
 
   /** 请求全场暂停（P 键；服务端权威置位后经 pause-changed 广播回双端） */

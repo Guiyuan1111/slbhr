@@ -48,6 +48,8 @@ let currentLevel: LevelData | null = null;
 let currentTempleEntry: { filename: string; time: number; type: string } | null = null;
 /** temple.json 关卡序（结算「继续」推算下一关用；enterGame 拉取时填充） */
 let templeLevels: Array<{ id: number; filename: string }> = [];
+/** temple.json 原始条目（含 time/type；活房间换关时重算 currentTempleEntry 用） */
+let templeRaw: Array<{ id?: number; filename?: string; time?: number; type?: string }> = [];
 /** 已选关卡的星级/通过判定（EndMenu 与 saveBest 共用） */
 let lastResult: { stars: number; passed: boolean } | null = null;
 
@@ -96,6 +98,32 @@ function tilesetUrl(source: string): string {
   return "/" + parts.join("/");
 }
 
+/** temple.json 条目查找（EndMenu 限时/星级/存档键口径；未命中返回 null 走 general 缺省） */
+function findTempleEntry(levelId: string): { filename: string; time: number; type: string } | null {
+  const e = templeRaw.find((lv) => String(lv.filename ?? "").endsWith(`/${levelId}.json`));
+  return e ? { filename: String(e.filename), time: Number(e.time) || 0, type: String(e.type ?? "general") } : null;
+}
+
+/** 活房间换关（服务端 advance 的 levelId 差分回声，双端同触发）：拉新关数据重建 Game
+ *  场景；席位/键盘/触屏链路不动（仍绑在同一房间）。 */
+async function reloadLevel(levelId: string): Promise<void> {
+  if (!net || !gameStarted) return;
+  try {
+    currentLevel = await fetchLevel(levelId);
+  } catch (e) {
+    console.error("[fw] 换关失败:", e);
+    return;
+  }
+  currentTempleEntry = findTempleEntry(levelId);
+  (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level: currentLevel, keyboard };
+  const sm = phaser!.scene;
+  sm.stop("EndMenu");
+  sm.stop("GameOverMenu");
+  sm.stop("PauseMenu");
+  sm.stop("Game");
+  sm.start("Game");
+}
+
 function show(err?: string): void {
   $("#menu-error").textContent = err ?? "";
 }
@@ -140,10 +168,10 @@ async function enterGame(): Promise<void> {
   currentTempleEntry = null;
   try {
     const tj = await (await fetch("/data/forest/temple.json")).json();
-    templeLevels = (tj.levels ?? []).map((lv: { id?: number; filename?: string }) => ({ id: Number(lv.id ?? 0), filename: String(lv.filename ?? "") }));
-    const entry = (tj.levels ?? []).find((lv: { filename?: string }) => String(lv.filename ?? "").endsWith(`/${levelId}.json`));
-    if (entry) currentTempleEntry = { filename: String(entry.filename), time: Number(entry.time) || 0, type: String(entry.type ?? "general") };
+    templeRaw = (tj.levels ?? []) as typeof templeRaw;
+    templeLevels = templeRaw.map((lv) => ({ id: Number(lv.id ?? 0), filename: String(lv.filename ?? "") }));
   } catch { /* 缺省 general/无限时，结算仍可用 */ }
+  currentTempleEntry = findTempleEntry(levelId);
   (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level, keyboard };
   (globalThis as unknown as Record<string, unknown>).__fwRestart = () => net?.restart();
   (globalThis as unknown as Record<string, unknown>).__fwPauseKeyboard = (b: boolean) => keyboard?.setPaused(b);
@@ -173,17 +201,18 @@ async function enterGame(): Promise<void> {
     updateHud();
   };
   (globalThis as unknown as Record<string, unknown>).__fwLeaveToMenu = leaveToMenu;
-  // 结算「继续」：原版 Continue 直进下一关（bundle EndMenu 44360 区段）；联机形态适配为
-  // 预选下一关 + 弹联机面板（房主创建即下一关，加入方以房间为准）。最后一关无后继 → 停选关树。
+  // 结算「继续」：原版 Continue 直进下一关（bundle EndMenu 44360 区段）。联机形态
+  // = 活房间内 advance 换关（席位保留、双端同跳，2026-10-12 实玩反馈：不再回大厅
+  // 重建房间）；无后继或已离房 → 回选关树（原版最后一关无 Continue 后继）。
   (globalThis as unknown as Record<string, unknown>).__fwNextLevel = () => {
-    leaveToMenu();
     const idx = templeLevels.findIndex((lv) => lv.filename === currentTempleEntry?.filename);
     const next = idx >= 0 ? templeLevels[idx + 1] : undefined;
-    if (!next || !next.filename) return;
-    selectedLevel = next.filename.split("/").pop()!.replace(".json", "");
-    const el = document.querySelector("#menu-level");
-    if (el) el.textContent = `已选关卡：${selectedLevel}`;
-    $("#menu").classList.remove("hidden");
+    const nextId = next?.filename?.split("/").pop()?.replace(".json", "");
+    if (net && gameStarted && nextId) {
+      net.advance(nextId);
+      return;
+    }
+    leaveToMenu();
   };
 
   // HUD 轮询由 bindUi 注册一次（性能审计 #3：曾按入房次数叠加永不清理）
@@ -277,6 +306,9 @@ async function start(mode: "create" | "join"): Promise<void> {
           } else if (phase === "gameover") {
             if (!pausedByUser) phaser?.scene.start("GameOverMenu");
           }
+        },
+        onLevelId: (levelId) => {
+          void reloadLevel(levelId);
         },
         onDisconnect: (recovered) => {
           if (!recovered) {

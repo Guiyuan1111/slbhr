@@ -65,6 +65,8 @@ export class ForestRoom extends Room<RoomState> {
   /** 玩家暂停（F3：服务端权威，任一端可置/解除；tick 见 userPaused 早退） */
   private userPaused = false;
   private userPausedBy: Role | null = null;
+  /** 风力时基零点（页面级语义：跨整关重开/换关延续，原版 Continue 直进下一关不刷新页面） */
+  private worldEpochMs = 0;
 
   onCreate(options: JoinOptions) {
     this.roomPassword = String(options.password ?? "");
@@ -74,17 +76,8 @@ export class ForestRoom extends Room<RoomState> {
     }
 
     this.bundle = loadLevel(levelId);
-    // 风力时基（F6 翻转）：生产=墙钟（原版页面加载起算的逐跑随机相位；锚=世界创建时刻，
-    // 跨整关重开延续——原版 Retry 是否整页刷新无字证，同为逐跑随机，记档即可）。
-    // FW_WIND_PHASE=X（e2e/门禁专用）→ simTimeS+X 固定相位偏移，X=0 与内核缺省位级相同，
-    // 路线回放与 det/金轨迹口径全线可复现。
-    const windPhase = process.env.FW_WIND_PHASE !== undefined ? Number(process.env.FW_WIND_PHASE) : null;
-    const worldEpochMs = Date.now();
-    this.world = new World(this.bundle.level, {
-      windClockS: windPhase !== null
-        ? () => this.world.simSeconds + windPhase
-        : () => (Date.now() - worldEpochMs) / 1000,
-    });
+    this.worldEpochMs = Date.now();
+    this.buildWorld();
 
     this.setState(new RoomState());
     this.state.levelId = levelId;
@@ -114,6 +107,30 @@ export class ForestRoom extends Room<RoomState> {
       if (this.state.phase === "won" || this.state.phase === "gameover") {
         this.restartLevel();
       }
+    });
+
+    // 结算「继续」直进下一关（原版 EndMenu Continue 的联机化，2026-10-12 实玩反馈）：
+    // 活房间内换关、双方席位保留，不再回大厅重建房间。下一关 id 由发起端按 temple.json
+    // 序算好带上（关卡合法性以服务端为准），仅 won 受理——双端各点一次时第二发在
+    // phase=ready 被天然忽略。
+    this.onMessage("advance", (_client, data: { levelId?: string }) => {
+      if (this.state.phase !== "won") return;
+      const id = String(data?.levelId ?? "");
+      if (!id || !levelExists(id) || id === this.state.levelId) return;
+      this.bundle = loadLevel(id);
+      this.buildWorld();
+      this.state.levelId = id;
+      // 旧关条目不能带进新关（syncState 只增不删，残留=幽灵机关/钻石/刚体）
+      this.state.diamonds.clear();
+      this.state.levers.clear();
+      this.state.pushers.clear();
+      this.state.platforms.clear();
+      this.state.props.clear();
+      this.state.winds.clear();
+      this.state.hangings.clear();
+      this.state.pulleys.clear();
+      this.state.romans.clear();
+      this.restartLevel();
     });
 
     // 玩家暂停（F3 翻转，原版 E4 togglePause=game.paused 全场冻结）：任一端 P 键都打给
@@ -165,6 +182,20 @@ export class ForestRoom extends Room<RoomState> {
     // （实测 setInterval(4) 实际均值 16.8ms、p95 24.7ms）。输入应用的帧精度不靠唤醒密度，
     // 靠 inputQueue 的意图跨度排水（见 tick/inputQueue 注释）。
     this.setSimulationInterval((dtMs) => this.tick(dtMs));
+  }
+
+  /** 世界构建（onCreate 与 advance 换关共用）。
+   *  风力时基（F6 翻转）：生产=墙钟（原版页面加载起算的逐跑随机相位；锚=房间创建时刻，
+   *  跨整关重开/换关延续——原版 Continue 直进下一关不刷新页面，同为页面级时基）。
+   *  FW_WIND_PHASE=X（e2e/门禁专用）→ simTimeS+X 固定相位偏移，X=0 与内核缺省位级相同，
+   *  路线回放与 det/金轨迹口径全线可复现。 */
+  private buildWorld(): void {
+    const windPhase = process.env.FW_WIND_PHASE !== undefined ? Number(process.env.FW_WIND_PHASE) : null;
+    this.world = new World(this.bundle.level, {
+      windClockS: windPhase !== null
+        ? () => this.world.simSeconds + windPhase
+        : () => (Date.now() - this.worldEpochMs) / 1000,
+    });
   }
 
   /** 创建与加入共用：密码不对直接拒绝 */
