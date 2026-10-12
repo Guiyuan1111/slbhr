@@ -15,7 +15,8 @@
 
 1. `init.js` 头部 0–8300 字节的 `GameConfig`（自适应 tick 调度、`zooming.lock`/`minScaleRatio`、cheating、`console.log2`、"quantumEdition" 等注释）——原版 Phaser 主循环被换成累积时间 substep 执行器（@200–4700）；
 2. `output\A\gameIndex.html` 里的 umami 统计、`/multiplayer.js`（netlib 键位转发联机）、全屏按钮（第 41–121 行）；`output\multiplayer.js` 与根目录 `multiplayer.js` 是两个不同版本（5899B vs 7934B），均为本地加入；
-3. main 模块域名白名单检查被注释掉改成恒真（@2264700 附近，原代码可见 `4399.com/localhost/127.0.0.1` 白名单被 `//` 注释）。
+3. main 模块域名白名单检查被注释掉改成恒真（@2264700 附近，原代码可见 `4399.com/localhost/127.0.0.1` 白名单被 `//` 注释）；
+4. **〔2026-10-12 补录，见 research/20〕** EndMenu 区（@1917750）：结算面板"时间值文本"为注入物（原行被 `//` 注释 + 重排三元 + `true &&` 混淆 + `console.log("Time current: …")` 残留；原版三行 FinishCounter 全部 `text=""` 构造，面板上无任何数值文本）。同段 `mobileTime` 选项亦为镜像适配。**"引擎本体可信"的边界由此修正：个别 UI 类内亦有零星注入，凡见注释行+`true&&`+console.log 组合即按注入甄别。**
 
 引擎本体（Phaser 2 + box2d.js + 关卡/素材/数值）可信为原始产物。
 
