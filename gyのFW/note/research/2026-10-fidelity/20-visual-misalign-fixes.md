@@ -73,3 +73,12 @@ puzzle/dark 两行变体（+60/+140、钻石行隐藏）按同一公式实现。
 
 - visual-diff 参照基准以旧钉位 (32,32) 校准（0.3.23-F3 时代），相机语义修复后需评估基准口径（原版参照截图在其自身 (32,32) 钉位下关卡左缘出屏 32px+右缘 64px 空带，与我们的居中几何固有差异 32px）。
 - 探针与截图暂存 TEMP/visfix/（复验用，收尾清理）。
+
+## 5. 角色静立层序：身体盖住头（报告③，2026-10-13，c1b96ae）
+
+用户报告：两角色静止时头的图片应在身体上层，实际身体盖住头，脖子接缝处异常。
+
+- **根因**：`GameScene` legs/head 创建时同为 depth 5；角色每次进入 `rising` 状态 legs 抬到 5.1、离开时归位 5——等深度下 Phaser 的稳定排序**保留交换后的显示列表序**，于是跳跃过一次之后 legs 永久渲染在 head 之上（出生时插入序 head 在后，故 newborn 静立是对的；用户看到的正是"跳过之后站着"的态）。
+- **修复**：深度彻底错开——legs 常态 4.9、head 恒 5、rising 期 legs 5.1（创建处同步 4.9）。层序不再依赖插入序/排序稳定性，与原版 removeChild+addChild 语义（char-region.js:374-384）视觉等效。
+- **验证**：`TEMP/visfix/depth-check.mjs`（双人真实房间，两轮 ArrowUp 跳跃+静立采样）：静立时两角色 legs depth 4.9 < head 5 且显示列表 idx 恒小于 head，VERDICT PASS；typecheck 通过、dist 已重建（服务端供 packages/client/dist）。
+- 探针与截图仍留 TEMP/visfix/ 至用户复验。
