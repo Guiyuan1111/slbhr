@@ -523,8 +523,10 @@ export function buildRoman(B: B2, world: any, groundBody: any, def: { pts: Array
     k = -(p1.y - p0.y) / 32;
     d = Math.atan(k / (m / 2));
   }
-  // bar 挂点 h = p1 + (−32px, +32px)
-  const h = { x: p1.x - 32, y: p1.y + 32 };
+  // bar 挂点 h = 折线顶点 p1 绝对坐标本身。
+  // 原版 @1748970: h = options.xy + poly[1] + (mpx(1), −mpx(1))，其中 options.xy = Tiled 位 + (32,−32)
+  // 且 mpx(1) = −32 → ±32 相消，h = Tiled 位 + poly[1] = 绝对 p1（oracle dump 实证：r0 枢轴 (624,448)、底座立于 (624,512) 地板面）。
+  const h = { x: p1.x, y: p1.y };
   // bar：动力学体，梯形 (±m/2, ∓0.3)（顶面内收 2m），SetAngle(d)
   const bd = new B.b2BodyDef();
   bd.type = B.b2BodyType.b2_dynamicBody;
