@@ -75,3 +75,56 @@
 1. **hanging 对象配对依据**：无 gid 对象的对应关系按 Pass0 同 id（base id29 ↔ `_1` id29）判定，为最合理对应（同 id 同 type 同 polyline 长度）但无 Tiled 官方对应保证；若改按最近邻配对（base29↔`_1`id31），增/改的划分细节会不同，但**增 6 + 改 1 的总数不变**。
 2. **收集品删减的通关语义**：钻石 12→1 是否改变通关条件/星级判定，本报告只报告对象层事实，未运行游戏验证。
 3. 元数据差异（tiledversion/nextobjectid）判断为重导出痕迹，非玩法差异——此为初判。
+
+---
+
+## forest_27_1 ↔ forest_27
+
+### ① 差异对象总数
+
+**23**（Ground 19 格差；Chars 改 2；Objects 改 2）
+地图级元数据差（不计入）：`version` 1→1.1、`tiledversion` "1.1.3"→"1.11.2"、`nextobjectid` 30→32、`tilesets` firstgid 重排 `1:Ground, 16:Chars, 23:LargeObjects, 26:Objects` → `1:Ground, 16:Chars, 24:LargeObjects, 27:Objects`（同一 tile 的 raw gid 整体 +1，已归一化，不构成差异）。
+
+### ② 逐条差异（脚本原样输出，方向 base→variant；tile 格附换算像素坐标，32px/格）
+
+#### 层 Ground (tilelayer)
+- cell[col=22..26, row=6] ×5 格（像素 x704..832, y192）: 7(Ground#6, type=6) → 6(Ground#5, type=5)
+- cell[col=29..32, row=6] ×4 格（像素 x928..1024, y192）: 7(Ground#6, type=6) → 6(Ground#5, type=5)
+- cell[col=36, row=26] ×1 格（像素 (1152,832)）: 0(空) → 2(Ground#1, type=1)
+- cell[col=37, row=26] ×1 格（像素 (1184,832)）: 0(空) → 1(Ground#0, type=0)
+- cell[col=6..10, row=27] ×5 格（像素 x192..320, y864）: 7(Ground#6, type=6) → 6(Ground#5, type=5)
+- cell[col=16..18, row=27] ×3 格（像素 x512..576, y864）: 7(Ground#6, type=6) → 1(Ground#0, type=0)
+- 合计 19 格（5+4+1+1+5+3）；其余 1112 格零差异。type 数值来源 `assets/tilemaps/tilesets/Ground.json` tileproperties。
+
+#### 层 Chars (objectgroup)
+- 修改 Chars#1(char)[char=wg] id(base)=1 id(变体)=1 @(256,128)→@(736,768)
+  - `x`: 256 → 736
+  - `y`: 128 → 768
+- 修改 Chars#0(char)[char=fb] id(base)=2 id(变体)=2 @(736,768)→@(256,128)
+  - `x`: 736 → 256
+  - `y`: 768 → 128
+- 即 wg 与 fb 出生点互换。其余 3 对象（gid18、gid19 出生点、gid22 银钻 @(48,880)）零变化（raw dump 验证）。
+
+#### 层 Objects (objectgroup)
+- 修改 Objects#0(pusher) id(base)=24 id(变体)=24 @(640,704)→@(1152,928)（位移 dx=512, dy=224）
+  - `x`: 640 → 1152
+  - `y`: 704 → 928
+  - properties.group=3 两侧一致；raw gid 26→27 系 firstgid 重排（Objects firstgid 26→27），归一化后同为 Objects#0(pusher)，非差异。
+- 修改 LargeObjects#2(wind) id(base)=25 id(变体)=25 @(256,592)
+  - `properties.group`: 4 → 0
+  - length=6、rotation=-90 两侧一致；raw gid 25→26 系 firstgid 重排（LargeObjects 23→24），归一化后同为 LargeObjects#2(wind)。
+- 其余 8 对象零变化（platform×3、wind×2、lever×2、ball×1；raw gid 25/26→26/27、28→29、36→37 均为 firstgid 重排归一化后一致）。
+
+### ③ 差异性质初判
+
+**机关差 ＋ 出生点互换 ＋ 地形面类型微调**，非镜像、非换液、未达 12↔12_1 级结构改造（Ground 主体 1112/1131 格不变，无门位/结构体迁建）：
+- 双出生点 (256,128) 与 (736,768) 互换（wg 去左上、fb 去右下，对调）；
+- pusher（Objects#0）从地图中部 (640,704) 移至右下角 (1152,928)；
+- wind @(256,592) 联动分组 group 4→0；
+- Ground 19 格：三段地表 type 6→5（共 14 格）、一段 type 6→0（3 格）、右下补 2 个实心格（type 1/0）。
+
+### ④ 存疑项
+
+1. **gid 23 归属歧义（本对特有）**：forest_27 的 firstgid 分配下 Chars（16..23）与 LargeObjects（23..25）区间在 gid23 重叠。已验证两图 Ground 数据无任何 ≥16 的 gid、对象层无 gid23（脚本检查输出：`Ground data gids>=16: 0 | objects with gid==23: 0` 两侧同），**该歧义不影响本次 diff 结论**；脚本按 Tiled 顺序分配原则把 gid23 判给 LargeObjects#0。
+2. **Ground type 数值变化的游戏语义**：type 6→5 / 6→0 / 补格 1/0 在引擎中的碰撞、伤害、附着判定差异未查引擎代码，本报告仅报告 tile 数据事实（Ground.json tileproperties 数值），性质初判里的"地形面类型微调"基于此数据层面。
+3. **pusher 移位的对象对应**：按 Pass0 同 id（id24↔id24，同 Objects#0 pusher、同 group=3）判定；此为 10 对象层中唯一 pusher，无歧义。
