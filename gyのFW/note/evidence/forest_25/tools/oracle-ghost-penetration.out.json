@@ -1,0 +1,720 @@
+[dump25] progress ready
+[dump25] level ready: forest/levels/forest_25.json
+[dump25] devices: [
+ {
+  "idx": 0,
+  "cls": "Wind",
+  "type": "wind",
+  "gid": 26,
+  "options": {},
+  "body": {
+   "btype": "static",
+   "mass": 0,
+   "pos": {
+    "x": -38.00058044448329,
+    "y": -6.500386800811974
+   },
+   "fixtures": [
+    {
+     "cat": 1,
+     "mask": 65535,
+     "grp": 0,
+     "sensor": true,
+     "density": 0,
+     "friction": 0.2
+    },
+    {
+     "cat": 1,
+     "mask": 65535,
+     "grp": 0,
+     "sensor": false,
+     "density": 0.2,
+     "friction": 0.4
+    }
+   ]
+  },
+  "sprite": {
+   "x": 1216.0185742234653,
+   "y": 208.01237762598316
+  }
+ },
+ {
+  "idx": 1,
+  "cls": "Lever",
+  "type": "lever",
+  "gid": 28,
+  "options": {},
+  "body": {
+   "btype": "dynamic",
+   "mass": 0.672,
+   "pos": {
+    "x": -15.410374116838572,
+    "y": -14.029720321468945
+   },
+   "fixtures": [
+    {
+     "cat": 1,
+     "mask": 61695,
+     "grp": 0,
+     "sensor": false,
+     "density": 1.6,
+     "friction": 0.7
+    }
+   ]
+  },
+  "sprite": null
+ },
+ {
+  "idx": 2,
+  "cls": "Lever",
+  "type": "lever",
+  "gid": 28,
+  "options": {},
+  "body": {
+   "btype": "dynamic",
+   "mass": 0.672,
+   "pos": {
+    "x": -35.92350754350291,
+    "y": -28.020969367594198
+   },
+   "fixtures": [
+    {
+     "cat": 1,
+     "mask": 61695,
+     "grp": 0,
+     "sensor": false,
+     "density": 1.6,
+     "friction": 0.7
+    }
+   ]
+  },
+  "sprite": null
+ },
+ {
+  "idx": 3,
+  "cls": "Pusher",
+  "type": "pusher",
+  "gid": 27,
+  "options": {},
+  "body": {
+   "btype": "dynamic",
+   "mass": 0.09,
+   "pos": {
+    "x": -2.5,
+    "y": -4
+   },
+   "fixtures": [
+    {
+     "cat": 1,
+     "mask": 61695,
+     "grp": 0,
+     "sensor": false,
+     "density": 0.1,
+     "friction": 0.7
+    }
+   ]
+  },
+  "sprite": null
+ },
+ {
+  "idx": 4,
+  "cls": "MovingPlatform",
+  "type": "platform",
+  "options": {},
+  "body": {
+   "btype": "dynamic",
+   "mass": 1,
+   "pos": {
+    "x": -33.5,
+    "y": -26.5
+   },
+   "fixtures": [
+    {
+     "cat": 256,
+     "mask": 4369,
+     "grp": 0,
+     "sensor": false,
+     "density": 0,
+     "friction": 0.7
+    }
+   ]
+  },
+  "sprite": {
+   "x": 1072,
+   "y": 848
+  }
+ },
+ {
+  "idx": 5,
+  "cls": "MovingPlatform",
+  "type": "platform",
+  "options": {},
+  "body": {
+   "btype": "dynamic",
+   "mass": 1,
+   "pos": {
+    "x": -4.5,
+    "y": -23.5
+   },
+   "fixtures": [
+    {
+     "cat": 256,
+     "mask": 4369,
+     "grp": 0,
+     "sensor": false,
+     "density": 0,
+     "friction": 0.7
+    }
+   ]
+  },
+  "sprite": {
+   "x": 144,
+   "y": 752
+  }
+ },
+ {
+  "idx": 6,
+  "cls": "Hanging",
+  "type": "hanging",
+  "options": {},
+  "body": {
+   "btype": "dynamic",
+   "mass": 5.460000000000001,
+   "pos": {
+    "x": -21.5,
+    "y": -23.25052118822345
+   },
+   "fixtures": [
+    {
+     "cat": 65535,
+     "mask": 65535,
+     "grp": 0,
+     "sensor": false,
+     "density": 2.5,
+     "friction": 0.4
+    }
+   ]
+  },
+  "sprite": null
+ }
+]
+[dump25] teleport: {"ok":true,"how":"SetPosition","btnPos":{"x":-2.5,"y":-4},"fbPos":{"x":-2.5,"y":-3.1}}
+[dump25] p0 pick: {"hasSprite":true,"sprite0":{"x":1072,"y":848},"body0":{"x":-33.5,"y":-26.5}}
+[dump25] t0 {"t":3503,"p0sprite":{"x":1072,"y":832.3},"p0body":{"x":-33.5,"y":-26.01},"fb":{"x":-2.5137,"y":-2.8922},"btnY":-4.6054,"fbDead":false,"wgDead":false}
+[dump25] t8 {"t":5595,"p0sprite":{"x":1072,"y":751.7},"p0body":{"x":-33.5,"y":-23.492},"fb":{"x":-2.5137,"y":-2.892},"btnY":-4.6054,"fbDead":false,"wgDead":false}
+[dump25] stabilized early
+[dump25] timeline len: 13
+{
+ "dump": {
+  "ptm": 32,
+  "gravityY": 1000,
+  "devices": [
+   {
+    "idx": 0,
+    "cls": "Wind",
+    "type": "wind",
+    "gid": 26,
+    "options": {},
+    "body": {
+     "btype": "static",
+     "mass": 0,
+     "pos": {
+      "x": -38.00058044448329,
+      "y": -6.500386800811974
+     },
+     "fixtures": [
+      {
+       "cat": 1,
+       "mask": 65535,
+       "grp": 0,
+       "sensor": true,
+       "density": 0,
+       "friction": 0.2
+      },
+      {
+       "cat": 1,
+       "mask": 65535,
+       "grp": 0,
+       "sensor": false,
+       "density": 0.2,
+       "friction": 0.4
+      }
+     ]
+    },
+    "sprite": {
+     "x": 1216.0185742234653,
+     "y": 208.01237762598316
+    }
+   },
+   {
+    "idx": 1,
+    "cls": "Lever",
+    "type": "lever",
+    "gid": 28,
+    "options": {},
+    "body": {
+     "btype": "dynamic",
+     "mass": 0.672,
+     "pos": {
+      "x": -15.410374116838572,
+      "y": -14.029720321468945
+     },
+     "fixtures": [
+      {
+       "cat": 1,
+       "mask": 61695,
+       "grp": 0,
+       "sensor": false,
+       "density": 1.6,
+       "friction": 0.7
+      }
+     ]
+    },
+    "sprite": null
+   },
+   {
+    "idx": 2,
+    "cls": "Lever",
+    "type": "lever",
+    "gid": 28,
+    "options": {},
+    "body": {
+     "btype": "dynamic",
+     "mass": 0.672,
+     "pos": {
+      "x": -35.92350754350291,
+      "y": -28.020969367594198
+     },
+     "fixtures": [
+      {
+       "cat": 1,
+       "mask": 61695,
+       "grp": 0,
+       "sensor": false,
+       "density": 1.6,
+       "friction": 0.7
+      }
+     ]
+    },
+    "sprite": null
+   },
+   {
+    "idx": 3,
+    "cls": "Pusher",
+    "type": "pusher",
+    "gid": 27,
+    "options": {},
+    "body": {
+     "btype": "dynamic",
+     "mass": 0.09,
+     "pos": {
+      "x": -2.5,
+      "y": -4
+     },
+     "fixtures": [
+      {
+       "cat": 1,
+       "mask": 61695,
+       "grp": 0,
+       "sensor": false,
+       "density": 0.1,
+       "friction": 0.7
+      }
+     ]
+    },
+    "sprite": null
+   },
+   {
+    "idx": 4,
+    "cls": "MovingPlatform",
+    "type": "platform",
+    "options": {},
+    "body": {
+     "btype": "dynamic",
+     "mass": 1,
+     "pos": {
+      "x": -33.5,
+      "y": -26.5
+     },
+     "fixtures": [
+      {
+       "cat": 256,
+       "mask": 4369,
+       "grp": 0,
+       "sensor": false,
+       "density": 0,
+       "friction": 0.7
+      }
+     ]
+    },
+    "sprite": {
+     "x": 1072,
+     "y": 848
+    }
+   },
+   {
+    "idx": 5,
+    "cls": "MovingPlatform",
+    "type": "platform",
+    "options": {},
+    "body": {
+     "btype": "dynamic",
+     "mass": 1,
+     "pos": {
+      "x": -4.5,
+      "y": -23.5
+     },
+     "fixtures": [
+      {
+       "cat": 256,
+       "mask": 4369,
+       "grp": 0,
+       "sensor": false,
+       "density": 0,
+       "friction": 0.7
+      }
+     ]
+    },
+    "sprite": {
+     "x": 144,
+     "y": 752
+    }
+   },
+   {
+    "idx": 6,
+    "cls": "Hanging",
+    "type": "hanging",
+    "options": {},
+    "body": {
+     "btype": "dynamic",
+     "mass": 5.460000000000001,
+     "pos": {
+      "x": -21.5,
+      "y": -23.25052118822345
+     },
+     "fixtures": [
+      {
+       "cat": 65535,
+       "mask": 65535,
+       "grp": 0,
+       "sensor": false,
+       "density": 2.5,
+       "friction": 0.4
+      }
+     ]
+    },
+    "sprite": null
+   }
+  ],
+  "ground": {
+   "btype": "static",
+   "mass": 0,
+   "pos": {
+    "x": 0,
+    "y": 0
+   },
+   "fixturesFirst5": [
+    {
+     "cat": 1,
+     "mask": 4369,
+     "grp": 0,
+     "sensor": false,
+     "density": 0,
+     "friction": 0.8
+    },
+    {
+     "cat": 1,
+     "mask": 4369,
+     "grp": 0,
+     "sensor": false,
+     "density": 0,
+     "friction": 0.8
+    },
+    {
+     "cat": 1,
+     "mask": 4369,
+     "grp": 0,
+     "sensor": false,
+     "density": 0,
+     "friction": 0.8
+    },
+    {
+     "cat": 1,
+     "mask": 4369,
+     "grp": 0,
+     "sensor": false,
+     "density": 0,
+     "friction": 0.8
+    },
+    {
+     "cat": 1,
+     "mask": 4369,
+     "grp": 0,
+     "sensor": false,
+     "density": 0,
+     "friction": 0.8
+    }
+   ],
+   "fixtureCount": 175
+  }
+ },
+ "tele": {
+  "ok": true,
+  "how": "SetPosition",
+  "btnPos": {
+   "x": -2.5,
+   "y": -4
+  },
+  "fbPos": {
+   "x": -2.5,
+   "y": -3.1
+  }
+ },
+ "pick": {
+  "hasSprite": true,
+  "sprite0": {
+   "x": 1072,
+   "y": 848
+  },
+  "body0": {
+   "x": -33.5,
+   "y": -26.5
+  }
+ },
+ "timeline": [
+  {
+   "t": 3503,
+   "p0sprite": {
+    "x": 1072,
+    "y": 832.3
+   },
+   "p0body": {
+    "x": -33.5,
+    "y": -26.01
+   },
+   "fb": {
+    "x": -2.5137,
+    "y": -2.8922
+   },
+   "btnY": -4.6054,
+   "fbDead": false,
+   "wgDead": false
+  },
+  {
+   "t": 3768,
+   "p0sprite": {
+    "x": 1072,
+    "y": 816.3
+   },
+   "p0body": {
+    "x": -33.5,
+    "y": -25.508
+   },
+   "fb": {
+    "x": -2.5137,
+    "y": -2.892
+   },
+   "btnY": -4.6054,
+   "fbDead": false,
+   "wgDead": false
+  },
+  {
+   "t": 4024,
+   "p0sprite": {
+    "x": 1072,
+    "y": 799.3
+   },
+   "p0body": {
+    "x": -33.5,
+    "y": -24.978
+   },
+   "fb": {
+    "x": -2.5137,
+    "y": -2.892
+   },
+   "btnY": -4.6054,
+   "fbDead": false,
+   "wgDead": false
+  },
+  {
+   "t": 4283,
+   "p0sprite": {
+    "x": 1072,
+    "y": 782.5
+   },
+   "p0body": {
+    "x": -33.5,
+    "y": -24.452
+   },
+   "fb": {
+    "x": -2.5137,
+    "y": -2.892
+   },
+   "btnY": -4.6054,
+   "fbDead": false,
+   "wgDead": false
+  },
+  {
+   "t": 4548,
+   "p0sprite": {
+    "x": 1072,
+    "y": 765.4
+   },
+   "p0body": {
+    "x": -33.5,
+    "y": -23.92
+   },
+   "fb": {
+    "x": -2.5137,
+    "y": -2.892
+   },
+   "btnY": -4.6054,
+   "fbDead": false,
+   "wgDead": false
+  },
+  {
+   "t": 4811,
+   "p0sprite": {
+    "x": 1072,
+    "y": 751.7
+   },
+   "p0body": {
+    "x": -33.5,
+    "y": -23.492
+   },
+   "fb": {
+    "x": -2.5137,
+    "y": -2.892
+   },
+   "btnY": -4.6054,
+   "fbDead": false,
+   "wgDead": false
+  },
+  {
+   "t": 5074,
+   "p0sprite": {
+    "x": 1072,
+    "y": 751.7
+   },
+   "p0body": {
+    "x": -33.5,
+    "y": -23.492
+   },
+   "fb": {
+    "x": -2.5137,
+    "y": -2.892
+   },
+   "btnY": -4.6054,
+   "fbDead": false,
+   "wgDead": false
+  },
+  {
+   "t": 5336,
+   "p0sprite": {
+    "x": 1072,
+    "y": 751.7
+   },
+   "p0body": {
+    "x": -33.5,
+    "y": -23.492
+   },
+   "fb": {
+    "x": -2.5137,
+    "y": -2.892
+   },
+   "btnY": -4.6054,
+   "fbDead": false,
+   "wgDead": false
+  },
+  {
+   "t": 5595,
+   "p0sprite": {
+    "x": 1072,
+    "y": 751.7
+   },
+   "p0body": {
+    "x": -33.5,
+    "y": -23.492
+   },
+   "fb": {
+    "x": -2.5137,
+    "y": -2.892
+   },
+   "btnY": -4.6054,
+   "fbDead": false,
+   "wgDead": false
+  },
+  {
+   "t": 5860,
+   "p0sprite": {
+    "x": 1072,
+    "y": 751.7
+   },
+   "p0body": {
+    "x": -33.5,
+    "y": -23.492
+   },
+   "fb": {
+    "x": -2.5137,
+    "y": -2.892
+   },
+   "btnY": -4.6054,
+   "fbDead": false,
+   "wgDead": false
+  },
+  {
+   "t": 6122,
+   "p0sprite": {
+    "x": 1072,
+    "y": 751.7
+   },
+   "p0body": {
+    "x": -33.5,
+    "y": -23.492
+   },
+   "fb": {
+    "x": -2.5137,
+    "y": -2.892
+   },
+   "btnY": -4.6054,
+   "fbDead": false,
+   "wgDead": false
+  },
+  {
+   "t": 6387,
+   "p0sprite": {
+    "x": 1072,
+    "y": 751.7
+   },
+   "p0body": {
+    "x": -33.5,
+    "y": -23.492
+   },
+   "fb": {
+    "x": -2.5137,
+    "y": -2.892
+   },
+   "btnY": -4.6054,
+   "fbDead": false,
+   "wgDead": false
+  },
+  {
+   "t": 6650,
+   "p0sprite": {
+    "x": 1072,
+    "y": 751.7
+   },
+   "p0body": {
+    "x": -33.5,
+    "y": -23.492
+   },
+   "fb": {
+    "x": -2.5137,
+    "y": -2.892
+   },
+   "btnY": -4.6054,
+   "fbDead": false,
+   "wgDead": false
+  }
+ ]
+}
