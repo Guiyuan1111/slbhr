@@ -299,7 +299,7 @@ export class MovingPlatform {
       jd.enableMotor = true;
       this.joint = world.CreateJoint(jd);
     } else {
-      // 平移：轴=(dx,dy)（米）；lower=−|axis|、upper=0；state1 = 原位+(dx,dy)（屏幕）
+      // 平移：轴=(dx,dy)（米）；lower=−|axis|、upper=0；state1 屏幕位移 = −(dx·32, dy·32)px（17/19/20/22 四号蓝图内核实测勘误，旧注释"(dx,dy)"符号相反）
       const jd = new B.b2PrismaticJointDef();
       jd.Initialize(this.body, groundBody, this.body.GetPosition(), new B.b2Vec2(def.dx, def.dy));
       const len = Math.hypot(def.dx, def.dy);

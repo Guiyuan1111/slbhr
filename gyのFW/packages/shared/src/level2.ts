@@ -78,7 +78,7 @@ export type DiamondKind = "red" | "blue" | "silver" | "fbwg";
 export interface DiamondDef {
   id: string;
   kind: DiamondKind;
-  /** 64×64 图块对象的中心（像素；原版生成时再整体上抬 1m，由内核处理） */
+  /** 64×64 图块对象的中心（像素；内核直接以此中心生成 22×22 感应盒，无 1m 上抬——build.ts 钻石段与 19/22 号蓝图探针实证） */
   x: number;
   y: number;
 }
