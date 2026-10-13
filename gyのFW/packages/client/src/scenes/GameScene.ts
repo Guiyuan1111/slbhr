@@ -751,7 +751,7 @@ export class GameScene extends Phaser.Scene {
       const cy = s.y - 32 + PAD;
       const p = PREFIX[role];
       const glow = this.add.image(cx, cy, ATLAS_CHARS, `${p}_glow0000`).setOrigin(0.5).setScale(PLAYER_SCALE).setAlpha(0.9).setDepth(4);
-      const legs = this.add.sprite(cx, cy, ATLAS_CHARS, `${p}_legs_idle0000`).setOrigin(0.5).setScale(PLAYER_SCALE).setDepth(5);
+      const legs = this.add.sprite(cx, cy, ATLAS_CHARS, `${p}_legs_idle0000`).setOrigin(0.5).setScale(PLAYER_SCALE).setDepth(4.9);
       const head = this.add.sprite(cx, cy, ATLAS_CHARS, `${p}_head_idle0000`).setOrigin(0.5).setScale(PLAYER_SCALE).setDepth(5);
       const smoke = this.add.sprite(cx, cy + 21, ATLAS_CHARS, "death_smoke0000").setOrigin(0.5).setScale(PLAYER_SCALE).setDepth(5.5).setVisible(false);
       smoke.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => smoke.setVisible(false));
@@ -1347,8 +1347,9 @@ export class GameScene extends Phaser.Scene {
       const anim = String(ps.anim ?? "idle");
       const p = PREFIX[role];
       // 层序按状态："rising" 时 legs 提到 head 之上，其余 head 在上（removeChild+addChild 的
-      // Phaser3 等效 = setDepth；此前误实现为面向驱动，向左走/上升两层序全反）
-      view.legs.setDepth(anim === "rising" ? 5.1 : 5);
+      // Phaser3 等效 = setDepth）。⚠ 深度必须错开而不能同为 5：rising 后归位的等深度经稳定
+      // 排序会保留交换后的列表序 → legs 永久压过 head（用户实测 2026-10-13：跳跃后静立脖子接缝异常）
+      view.legs.setDepth(anim === "rising" ? 5.1 : 4.9);
       if (view.anim !== anim) {
         view.anim = anim;
         switch (anim) {
