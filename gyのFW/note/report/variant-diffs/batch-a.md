@@ -68,3 +68,52 @@
 - tilesets 定义存在差异: [,,] → [,,] —— 已查明为 Objects.json firstgid 24→23（脚本显示 `[,,]` 因 tileset name 字段为空），由此产生的 Objects 层 gid 整体 -1 偏移已在上文 ③.2 逐条扣除。
 - Chars obj id=24 的对象类型未在 diff 中展开（Chars 层 gid 未变，仅坐标变），移动对象身份按 id=24 直接对应，无存疑。
 
+
+## forest_17_1 vs forest_17
+
+- 文件: `forest_17_1.json` ↔ `forest_17.json`
+- ①差异对象总数: **8**（增 0 + 删 1 + 改对象 7 + tilelayer 变化格 0，tilelayer 变化按格计，合并 run 展示）
+- 原始逐条数据: `TEMP/flashA/forest_17_1_vs_forest_17.raw.json`
+
+### ② 逐条差异（共 21 条记录）
+
+| # | 类型 | 层 | 位置 | 内容 |
+|---|------|----|------|------|
+| 1 | 元数据 | (top-level) | nextobjectid | 28 → 27 |
+| 2 | 元数据 | (tilesets) | tilesets | tileset 列表不同: [,,] → [,,] |
+| 3 | 改 | Chars | obj id=2 @(32,896) | x: 32 → 96 |
+| 4 | 改 | Objects | obj id=6 @(576,224) | gid: 26 → 25 |
+| 5 | 改 | Objects | obj id=7 @(288,288) | gid: 26 → 25 |
+| 6 | 改 | Objects | obj id=7 @(288,288) | x: 288 → 704 |
+| 7 | 改 | Objects | obj id=7 @(288,288) | y: 288 → 192 |
+| 8 | 改 | Objects | obj id=8 @(864,224) | gid: 26 → 25 |
+| 9 | 改 | Objects | obj id=9 @(704,192) | gid: 26 → 25 |
+| 10 | 改 | Objects | obj id=9 @(704,192) | x: 704 → 288 |
+| 11 | 改 | Objects | obj id=9 @(704,192) | y: 192 → 288 |
+| 12 | 改 | Objects | obj id=10 @(1120,672) | gid: 25 → 24 |
+| 13 | 改 | Objects | obj id=16 @(96,800) | height: 96 → 32 |
+| 14 | 改 | Objects | obj id=16 @(96,800) | properties.dx: 0 → 3 |
+| 15 | 改 | Objects | obj id=16 @(96,800) | properties.dy: 4 → <absent> |
+| 16 | 改 | Objects | obj id=16 @(96,800) | propertytypes.dx: float → int |
+| 17 | 改 | Objects | obj id=16 @(96,800) | propertytypes.dy: float → <absent> |
+| 18 | 改 | Objects | obj id=16 @(96,800) | width: 32 → 96 |
+| 19 | 改 | Objects | obj id=16 @(96,800) | x: 96 → 1120 |
+| 20 | 改 | Objects | obj id=16 @(96,800) | y: 800 → 256 |
+| 21 | 删 | Objects | obj id=27 @(1024,224) | 对象在 B 中无对应 (type=platform name= gid=-) |
+
+### ③ 差异性质初判
+
+**机关差（双杠杆换位）+ 平台布局改造（删 1 垂直平台 + 1 平台移位反向）+ firstgid 重编号**；Ground 层零差异（0 格变化），非镜像、非换液：
+
+1. **双杠杆换位（真实机关差）**：A 中 id=7 (group=2)@(288,288) 与 id=9 (group=3)@(704,192)，在 B 中两者位置互换（id=7→(704,192)、id=9→(288,288)），group 属性未变。脚本按 id 匹配呈现为两条位移记录，语义上是一对杠杆（Objects tile 索引 2 = lever）位置对调。
+2. **平台布局改造（真实结构差，已取证）**：A 共 12 个 platform 对象，B 共 11 个。A 的 id=16 垂直平台 @(96,800) 32×96、属性 dx:0/dy:4（左下角）在 B 中**无任何对应**（B 侧 platform 清单已全量比对）；A 的 id=27 水平平台 @(1024,224) 96×32、dx:-3 在 B 中以 id=16 呈现 @(1120,256) 96×32、dx:3——移位约 101px 且移动方向取反。脚本按 id 匹配把 id=16 的全部字段变化逐条列出、并把 id=27 记为删除，两记录合起来的语义即上述"删一梯 + 移一平台"。
+3. **角色出生点位移**：Chars obj id=2 x: 32→96（右移 2 格）。
+4. **firstgid 重编号（表示差，非玩法差）**：与 13 对同理，Objects.json firstgid A=24、B=23，Objects 层 gid 变化（26→25、25→24）均为同贴图索引重编号（索引 2=lever、索引 1=lever），已扣除。
+5. 元数据差：nextobjectid 28→27。
+
+### ④ 存疑项（3）
+
+- 顶层字段 nextobjectid: 28 → 27 —— 编号表示差，不影响玩法。
+- tilesets 定义存在差异: [,,] → [,,] —— 已查明为 Objects.json firstgid 24→23，gid 整体 -1 偏移已在上文 ③.4 逐条扣除。
+- Objects 层对象 id=27 在 A 中无法按 id 或几何(<=64px)匹配到 B 侧对象，按删除计 —— **已澄清**：实为 A id=27 平台移位 101px 后成为 B id=16（超出 64px 回退阈值），"删除 id=27"与"id=16 全字段修改"两条记录为同一处逻辑改造，diffCount 按计数规则记 8（删 1 + 改 7），逻辑差异数为 7 处对象级变化（2 杠杆换位 + 1 角色位移 + 1 平台删除 + 1 平台移位反向）。
+
