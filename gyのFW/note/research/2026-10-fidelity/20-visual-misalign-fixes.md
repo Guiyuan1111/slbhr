@@ -82,3 +82,16 @@ puzzle/dark 两行变体（+60/+140、钻石行隐藏）按同一公式实现。
 - **修复**：深度彻底错开——legs 常态 4.9、head 恒 5、rising 期 legs 5.1（创建处同步 4.9）。层序不再依赖插入序/排序稳定性，与原版 removeChild+addChild 语义（char-region.js:374-384）视觉等效。
 - **验证**：`TEMP/visfix/depth-check.mjs`（双人真实房间，两轮 ArrowUp 跳跃+静立采样）：静立时两角色 legs depth 4.9 < head 5 且显示列表 idx 恒小于 head，VERDICT PASS；typecheck 通过、dist 已重建（服务端供 packages/client/dist）。
 - 探针与截图仍留 TEMP/visfix/ 至用户复验。
+
+## 6. 字号 ×1.6 推翻（2026-10-13 午，第三次勘误）
+
+§4 引入的 FONT_SCALE=1.6 是**口径混淆**，实际把所有 UI 文字放大了 1.6 倍，已移除（时钟/按钮字/标题/时限全部回归原版名义字号 24/26/36/18）。
+
+证据链（全部一手）：
+1. **字体文件逐字节一致**（`cmp` 原版 output/A/assets/fonts/chinese/font.fnt vs 我方 public 同路径）：继 xadvance=72/宽86/高88，数字 xadvance=36/宽57/高77，lineHeight=52，**info size=48**。
+2. **Phaser3 缩放律源码实证**（node_modules/phaser GetBitmapTextSize.js:90）：`scale = src.fontSize / src.fontData.size`——分母即 info.size(48)；WebGL 渲染器取同一 `bounds.characters` 画四边形。我方度量语义：`width = Σxadvance×s/48`、`height = lineHeight×s/48`（探针实证："0"@18→14=36×0.375、"00:40"@29→109=180×0.604、"继续"@42→126=144×0.875，全中）。
+3. **oracle 侧缩放律拟合**：oracle dump 的 w/h 是**墨迹盒**（字形宽高×scale）——时钟数字 77×24/48=38.5≈39 ✓、时限数字 77×18/48=28.9≈29 ✓、"继续"高 88×26/48=47.7≈49 ✓、宽 158×26/48=85.6≈86 ✓。四组独立数据全部精确落在 fontSize/48 上。
+4. **结论**：两引擎同字体文件 + 同缩放律（fontSize/48）→ **同名义字号渲染像素本就相同**；"原版字高 1.6 倍"是把 oracle 墨迹高（29）除以我方 lineHeight 对象高（19.5@18）得出的伪比值。
+5. **"宽度自相矛盾"存疑项同批解除**：oracle 宽是墨迹盒（含 xoffset 负偏/末字溢出），我方宽是步进和——75 vs 68、86 vs 78 均为定义差异而非渲染差异，字形落位（步进×同 scale）两引擎一致。
+
+修复后构建 dump（真实通关 won:true）：时钟 "00:39"@24 → 90×26（墨迹数字高 38.5=oracle 39）；时限 "00:40"@18 → 68×20（墨迹 28.9≈29）；"继续"@26 → 78×28（墨迹 47.7≈49）。§4 的"×1.6 字号校正"条目由本节推翻。
