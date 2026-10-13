@@ -18,10 +18,12 @@ const CX = 541;
 const CY = 321;
 /** 原版 contentSize 基准：halfWidth ≈ 433（0.8×板宽/2） */
 const HALF_W = 433;
-/** 原版位图字实测缩放（oracle 实拍 2026-10-12：原版同名义字号的字形渲染高约为我们
- *  Phaser3 的 1.6 倍——时钟 24 号实测 39px 高、按钮字 26 号 49px 高、时限文本 18 号 29px 高）。
- *  按钮字 26→42、标题 36→58、时限 18→29 均由此换算。 */
-const FONT_SCALE = 1.6;
+/** 字号口径（2026-10-13 推翻 ×1.6，一手证据见 note/research 20 §6）：Phaser2 与 Phaser3
+ *  的位图字缩放语义完全一致——scale = fontSize / fnt.info.size(=48)，两引擎同一字体文件
+ *  同名义字号渲染像素相同。此前 ×1.6 系口径混淆：oracle dump 的 h 是"墨迹高"（字形高×scale），
+ *  我方 dH 是 lineHeight×scale 的对象高，二者相除得伪比值 1.6，实际把字放大了 1.6 倍。
+ *  （时钟 24 号墨迹高 77×0.5=38.5≈39、按钮字 26 号 88×0.542≈48、时限 18 号 77×0.375≈29
+ *  ——都是 oracle 名义字号下的原生结果，不是要乘 1.6 的理由。）*/
 
 type Handle = Record<string, any>;
 const handle = (): Handle => (globalThis as unknown as Handle) ?? {};
@@ -50,7 +52,7 @@ export function stoneButton(
     .image(x, y, ATLAS_MENU, "StoneButton0000")
     .setDisplaySize(252, 117)
     .setInteractive({ useHandCursor: true });
-  const txt = scene.add.bitmapText(x, y - 14, FONT_MAIN, label, Math.round(26 * FONT_SCALE)).setOrigin(0.5, 0.5);
+  const txt = scene.add.bitmapText(x, y - 14, FONT_MAIN, label, 26).setOrigin(0.5, 0.5);
   btn.on("pointerup", onClick);
   btn.on("pointerover", () => btn.setFrame("StoneButton0001"));
   btn.on("pointerout", () => btn.setFrame("StoneButton0000"));
@@ -64,7 +66,7 @@ export class PauseMenu extends Phaser.Scene {
   }
   create(): void {
     const board = buildBoard(this);
-    board.add(this.add.bitmapText(CX, 40, FONT_MAIN, "暫停", Math.round(36 * FONT_SCALE)).setOrigin(0.5, 0.5));
+    board.add(this.add.bitmapText(CX, 40, FONT_MAIN, "暫停", 36).setOrigin(0.5, 0.5));
     stoneButton(this, board, CX + HALF_W / 3, 108, "再试一次", () => {
       this.scene.stop();
       handle().__fwRestart?.();
@@ -135,7 +137,7 @@ export class EndMenu extends Phaser.Scene {
       const s = d.timeLimitSec % 60;
       const limitStr = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
       board.add(
-        this.add.bitmapText(541 - 244, 321 + 55, FONT_MAIN, limitStr, Math.round(18 * FONT_SCALE)).setOrigin(0.5, 0.5)
+        this.add.bitmapText(541 - 244, 321 + 55, FONT_MAIN, limitStr, 18).setOrigin(0.5, 0.5)
       );
     }
     // 星数由 main 按关卡类型算好传入（puzzle=银钻口径；general=1+钻石+限时）；帧段 1-7/8-14/15-21
@@ -194,7 +196,7 @@ export class GameOverMenu extends Phaser.Scene {
   }
   create(): void {
     const board = buildBoard(this);
-    board.add(this.add.bitmapText(CX, 40, FONT_MAIN, "游戏结束", Math.round(36 * FONT_SCALE)).setOrigin(0.5, 0.5));
+    board.add(this.add.bitmapText(CX, 40, FONT_MAIN, "游戏结束", 36).setOrigin(0.5, 0.5));
     stoneButton(this, board, CX - 0.4 * HALF_W, 254, "返回菜单", () => {
       this.scene.stop();
       handle().__fwLeaveToMenu?.();
