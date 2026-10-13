@@ -117,3 +117,41 @@
 - tilesets 定义存在差异: [,,] → [,,] —— 已查明为 Objects.json firstgid 24→23，gid 整体 -1 偏移已在上文 ③.4 逐条扣除。
 - Objects 层对象 id=27 在 A 中无法按 id 或几何(<=64px)匹配到 B 侧对象，按删除计 —— **已澄清**：实为 A id=27 平台移位 101px 后成为 B id=16（超出 64px 回退阈值），"删除 id=27"与"id=16 全字段修改"两条记录为同一处逻辑改造，diffCount 按计数规则记 8（删 1 + 改 7），逻辑差异数为 7 处对象级变化（2 杠杆换位 + 1 角色位移 + 1 平台删除 + 1 平台移位反向）。
 
+
+## forest_19_1 vs forest_19
+
+- 文件: `forest_19_1.json` ↔ `forest_19.json`
+- ①差异对象总数: **13**（增 0 + 删 0 + 改对象 3 + tilelayer 变化格 10，tilelayer 变化按格计，合并 run 展示）
+- 原始逐条数据: `TEMP/flashA/forest_19_1_vs_forest_19.raw.json`
+
+### ② 逐条差异（共 10 条记录）
+
+| # | 类型 | 层 | 位置 | 内容 |
+|---|------|----|------|------|
+| 1 | 元数据 | (top-level) | nextobjectid | 38 → 34 |
+| 2 | 改 | Ground | cells(16..20,11) x5 | gid: 7 → 6 |
+| 3 | 改 | Ground | cells(28..30,15) x3 | gid: 7 → 6 |
+| 4 | 改 | Ground | cells(31..32,15) x2 | gid: 1 → 6 |
+| 5 | 改 | Objects | obj id=34 [id 34↔17 几何匹配] @(544,160) | gid: 26 → 24 |
+| 6 | 改 | Objects | obj id=34 [id 34↔17 几何匹配] @(544,160) | id: 34 → 17 |
+| 7 | 改 | Objects | obj id=35 [id 35↔18 几何匹配] @(1120,928) | gid: 25 → 24 |
+| 8 | 改 | Objects | obj id=35 [id 35↔18 几何匹配] @(1120,928) | id: 35 → 18 |
+| 9 | 改 | Objects | obj id=37 [id 37↔16 几何匹配] @(128,608) | gid: 25 → 24 |
+| 10 | 改 | Objects | obj id=37 [id 37↔16 几何匹配] @(128,608) | id: 37 → 16 |
+
+### ③ 差异性质初判
+
+**机关差（3 处杠杆→推块换件）+ Ground 局部贴图替换（10 格两处）**，非镜像、非换液：
+
+1. **机关换件（真实玩法差，已取证）**：本对两文件 tilesets 完全一致（Objects firstgid 均为 24，脚本无 tilesets 差异行），故 gid 变化为真实贴图变化。按 `assets/tilemaps/tilesets/Objects.json` 的 tiles 映射（"0"=pusher、"1"=lever、"2"=lever）：
+   - A id=34 gid=26（索引 2，lever）@ (544,160) group=5 → B id=17 gid=24（索引 0，**pusher**）同位同组；
+   - A id=35 gid=25（索引 1，lever）@ (1120,928) group=5 → B id=18 gid=24（pusher）同位同组；
+   - A id=37 gid=25（lever）@ (128,608) group=1 → B id=16 gid=24（pusher）同位同组。
+   三处均为杠杆替换为推块，位置与 group 属性不变，对象 id 重排（几何匹配距离 0）。
+2. **Ground 贴图替换（10 格两处，firstgid 两边均 1，语义一致）**：row 11 x=16..20 共 5 格 gid 7→6（索引 6→5，type 6→5）；row 15 x=28..30 共 3 格 gid 7→6；row 15 x=31..32 共 2 格 gid 1→6（索引 0→5，type 0→5）。为地表/地块贴图型号替换，非大面积地形重构。
+3. 元数据差：nextobjectid 38→34（编号表示差）。
+
+### ④ 存疑项（1）
+
+- 顶层字段 nextobjectid: 38 → 34 —— 编号表示差，不影响玩法；本对无 tilesets 差异、无对象增删、无匹配失配。
+
