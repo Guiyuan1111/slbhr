@@ -143,6 +143,10 @@ function updateHud(): void {
   };
   $("#hud-status").textContent = text[phase] ?? "";
   $("#hud-status").classList.toggle("warn", phase === "paused" || phase === "gameover");
+  // 原版 endGame 状态无任何顶部 HUD 文本条（bundle States/End 只建 EndMenu/GameOverMenu，
+  // 见 note/research 09 §结算弹窗；DOM 条浮在画布之上不受结算黑罩压暗，终局会盖住结算板顶部）——
+  // won/gameover 隐藏联机栏，回到 ready/started（重开/换关）自动恢复
+  $("#hud-top").classList.toggle("hidden", phase === "won" || phase === "gameover");
   keyboard?.setPaused(phase !== "started");
   // 触屏按钮：ready 起显示（预备手指），非进行阶段隐藏；输入仍走 keyboard 的暂停闸门
   touch?.setActive(phase === "ready" || phase === "started");

@@ -195,6 +195,9 @@ export class GameScene extends Phaser.Scene {
   private silverTotal = 0;
   private navyItems: NavyItem[] = [];
   private tutorialItems: TutorialItem[] = [];
+  /** won/gameover 后教学判定冻结（原版 endGame 切态后 Level.update 停跑 → updateTutorial 不再执行，
+   *  见 note/research 09 §结算弹窗与 TEMP/uifix1 oracle 取证；我方 Game 为常驻场景须显式停判） */
+  private tutorialFrozen = false;
   private stairsSprites = new Map<Role, Phaser.GameObjects.Sprite>();
   /** 通关演出/结算板状态 */
   private stairsPlayed = false;
@@ -1128,7 +1131,9 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** ui 层：顶部藤蔓时钟（正计时 MM:SS 真实秒，G14 去占位）+ 左上角红/蓝/银钻石计数 */
+  /** ui 层：顶部藤蔓时钟（正计时 MM:SS 真实秒，G14 去占位）+ 右上暂停钮。
+   *  （旧注「左上角红/蓝/银钻石计数」系笔误：钻石只在世界内拾取、无计数 HUD——原版
+   *  LevelUI（bundle @1914421）亦仅 PauseButton+Clock 两件，结算行内才有钻石达成图标。）*/
   private buildHud(): void {
     // HUD 挂相机（scrollFactor 0），坐标 = 视口系（关卡矩形内）。
     // 原版 Phaser 2 的 root.scale 只缩世界容器、HUD 不动；Phaser 3 camera.zoom 会连 HUD 一起缩，
@@ -1194,7 +1199,7 @@ export class GameScene extends Phaser.Scene {
       const ps = st.players?.get?.(role);
       if (ps && ps.dying !== true) pts.push({ x: Number(ps.x) || 0, y: Number(ps.y) || 0 });
     }
-    if (pts.length > 0) this.updateTutorial(...pts);
+    if (pts.length > 0 && !this.tutorialFrozen) this.updateTutorial(...pts);
 
     // 相机管理：解冻后每帧目标适配 + 弹簧逼近（原版 Level.update → camManager.update()）
     if (!this.camFrozen) {
@@ -1210,7 +1215,29 @@ export class GameScene extends Phaser.Scene {
   private onPhaseChanged(prev: string, cur: string): void {
     if (cur === "ready") this.resetRound(prev);
     if (cur === "started") this.camFrozen = false; // 原版开局序列解冻相机（camFreeze=@1943673）
+    if (cur === "won" || cur === "gameover") this.freezeTutorial();
     if (cur === "won" && !this.stairsPlayed) this.playStairsSequence();
+  }
+
+  /**
+   * 终局教学冻结（原版口径 2026-10-14 取证 TEMP/uifix1）：
+   * 原版 gameFinish/gameOver（bundle @1950896/@1949960 一带）= ui.clock.stop() + state.start("endGame")
+   * 整态切换——Level.update 停跑，updateTutorial 不再执行，文字以切换瞬间的可见态冻结
+   * （oracle won 实拍顶部条带无教学文字残留，峰值仅为砖高光 153,153,153）。
+   * 我方 Game 为常驻场景、update 持续跑，won 后角色钉在门口会触发「站在门前」组滞留——
+   * 故终局显式停判，并把已显示组按原版淡出臂（400ms alpha→0 后隐藏，bundle updateTutorial else 分支）收掉。
+   * 时钟/暂停钮不在此列：原版仅 stop 计数、sprite 保留渲染于 0.7 黑罩下（won 实拍金色峰值
+   * 77,69,21 = 进行中 254,227,71 的 0.30 倍），我方画布内实测 77,68,20 已逐像素同口径。
+   */
+  private freezeTutorial(): void {
+    this.tutorialFrozen = true;
+    for (const item of this.tutorialItems) {
+      if (!item.shown) continue;
+      item.shown = false;
+      for (const t of item.texts) {
+        this.tweens.add({ targets: t, alpha: 0, duration: 400, onComplete: () => t.setVisible(false) });
+      }
+    }
   }
 
   /** 整轮复位（重开=ready）：瞬移标记 + 清演出/门帧/烟，跨图平滑会把角色滑回出生点 */
@@ -1218,6 +1245,7 @@ export class GameScene extends Phaser.Scene {
     this.snapPending = true;
     this.resetCamera(this.d.level); // 相机回冻结全图（原版整关 reload 重建 CameraManager）
     this.stairsPlayed = false;
+    this.tutorialFrozen = false; // 新一轮恢复教学判定（原版 retry=整状态重载重建 tutorialTexts）
     this.finishData = null;
     this.d.net.lastFinish = null;
     this.finishDelayEvent?.remove();
