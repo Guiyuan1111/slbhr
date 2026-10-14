@@ -6,7 +6,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(HERE, "..", "..");
+const ROOT = join(HERE, "..", "..", "..", "..");
 const { parseLevel } = await import(pathToFileURL(join(ROOT, "packages/shared/src/level2.ts")).href);
 
 const { dir, doc } = locateLevel("forest_17");
