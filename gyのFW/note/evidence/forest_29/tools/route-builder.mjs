@@ -8,30 +8,30 @@ const P = {
   fA1: 24,               // 板缘跳→池西北角
   fA2: 124,              // 角跳→直落西板y384
   fW2a: 320, fW2b: 336, fJ2: 342, // 西板东行→跳W2水槽→盖板(224-320,384)
-  fW3a: 400, fJ3: 423,   // 盖板东行→跳→杠杆台西端(落x~444)
-  fJ4h: [482, 489], fJ4: 490, fJ4a: 60, // 蓄速右跳: 越杠杆臂+越台缘x544→井口→板2
-  fW4: [600, 675],       // 板2脉冲西行→下45°斜坡(448,768)-(480,736)→ledge平段
-  fJ4bh: [700, 706], fJ4b: 707, fJ4ba: 55, // ledge x~445起跳西(v~40)→越x416-448三角→B柱hyp/顶
-  fW5: [740, 800],       // B柱顶脉冲西行→走离x384→b10坡→推杆顶(336-368,876.8)
-  fJ5: 812, fJ5w: 2,     // 推杆顶微蓄速(v~15)西跳→柱A顶(288-320,768)
-  fJ5b: [880, 980],      // 柱A西行走离→地板y896→西行进fb门
-  fW7: [990, 1100],      // 地面西行→fb门(64-128)
+  fW3a: 400, fJ3: 423,   // 盖板东行→跳→杠杆臂/立柱(落x~444.6, feet~413-445)
+  fW4: [458, 462],       // 落臂后慢速西行4f(v~25)→走出臂西端→落640沿台(416-448)
+  fJ4bh: [505, 512], fJ4b: 513, fJ4ba: 60, // 640沿台西跳(v~40-70)→越x416墙(顶576)→落塔顶(352-416,576)
+  fW5: [560, 578],       // 塔顶/平台连续西行(走离x352落b11帽顶/平台736)→x~260
+  fJ5: 579, fJ5a: 60,    // (预留, 现于塔壁滑落途中无害)
+  fJ7: 805, fJ7a: 20, // (备而不用) // 平台x268.7西跳(v~110)→飞越绿池槽→落地面x~89(fb门内)
+  fW7: [790, 832], fW7b: [840, 1080],      // 平台西行穿绿池顶(736,传感器带741.8够不到)→走离x160→落地面→fb门
   // WG（东侧）
   gW1a: [2, 50],         // 东行上双坡→hump顶西段
   gW1b: [60, 66],        // 顶东微蓄速v~30
   gJ1: 68, gJ1a: 55,     // 东跳(v~30)越下降楔→落主板上部x~1030-1060
-  gW2a: [150, 180],      // 主板东行→x~1121滑行
-  gW2b: [190, 194],      // 短按东行→x~1140
-  gW2c: [208, 212],      // 短按东行→x~1147
-  gW2c2: [222, 225],     // 短按东行→出东缘x1152(v~30)→落东柱顶y640 x~1169
-  gW2d: [300, 304],      // 柱顶西向蓄速v~30
-  gJ2: 306, gJ2a: 30,    // 西跳→板底削顶盖板滑行(v_c~64)→出x832→落池西坡x~806
-  gW3a: [660, 740],      // 涉水东行脉冲(吃银钻852-875)
-  gW3b: [745, 825],      // 涉水西行脉冲→出西坡(800,640)→柱顶y640
-  gW3c: [830, 866],      // 脉冲西行→坡(768,640)-(736,672)→块y672顶
-  gW3d: [868, 880],      // 连续西按12f→离x736缘(v~100)→井腔→块y832 x~660
-  gW4: [950, 1025],      // 块y832脉冲西行→x608缘→落地y896 x~590
-  gW5: [1060, 1180],     // 地面西行→wg门(192-256)
+  gW2a: [140, 178],      // 板上西行冲刺→滑行停x~1011(spawn板西缘台阶前)
+  gJ2: 205, gJ2a: 30,    // 西小跳越过x1008台阶→落主板平段x~935
+  gW2b: [240, 360],      // 8/8西脉冲: 行板+爬上坡(832→800抬升32px)→崖缘v~65走离→柱坡(768,544)-(800,576)滑入池西端
+  gW2c9: [400, 406],     // 6f西按蓄速v~49→x~850平段
+  gJ5: 407, gJ5a: 40,    // 平段全力西跳→落柱坡(768-800,544-576)→滑入池
+  gJ3: 745, gJ3a: 30,    // 西坡顶小跳32px→柱顶(768-800,608)
+  gW3a2: [575, 660],     // 涉水东行8/8→银钻(852-875)采集→
+  gW3b: [670, 735],      // 涉水西行8/8→返西坡(800,640)-(841.6,656)
+  gW3c: [755, 795],      // 柱顶西行8/8→走离x768→坡(768,640)-(736,672)→块y672→缘x736
+  gW3d: [800, 820],      // 连续西按→走离块缘→竖井落地面段(608-800,864)
+  gJ4: 905, gJ4a: 50,    // 跳上柱(544-576,顶800)
+  gW4: [830, 900],       // 地面段西行→柱(544-576)前
+    gW5: [1060, 1180],     // 地面西行→wg门(192-256)
 };
 for (const a of process.argv.slice(2)) {
   const m = a.match(/^([a-zA-Z0-9]+)=(.+)$/);
@@ -56,30 +56,29 @@ const pulse = (a, f0, f1, d, on = 4, off = 6) => {
   hold(fb, p.fA1 + 90, p.fA2 - 1, "left"); jmp(fb, p.fA2, "left");
   hold(fb, p.fW2a, p.fW2b, "right"); jmp(fb, p.fJ2, "right");
   hold(fb, p.fW3a, p.fJ3 - 1, "right"); jmp(fb, p.fJ3, "right");
-  hold(fb, p.fJ4h[0], p.fJ4h[1], "right"); jmp(fb, p.fJ4, "right", p.fJ4a);
-  pulse(fb, p.fW4[0], p.fW4[1], "left", 8, 8);
+  hold(fb, p.fW4[0], p.fW4[1], "left");
   hold(fb, p.fJ4bh[0], p.fJ4bh[1], "left"); jmp(fb, p.fJ4b, "left", p.fJ4ba);
-  pulse(fb, p.fW5[0], p.fW5[1], "left", 8, 8);
-  hold(fb, p.fJ5 - p.fJ5w, p.fJ5 - 1, "left"); jmp(fb, p.fJ5, "left", 70);
-  hold(fb, p.fJ5b[0], p.fJ5b[1], "left");
+  hold(fb, p.fW5[0], p.fW5[1], "left"); jmp(fb, p.fJ5, "left", p.fJ5a);
+  jmp(fb, p.fJ7, "left", p.fJ7a);
   hold(fb, p.fW7[0], p.fW7[1], "left");
+  hold(fb, p.fW7b[0], p.fW7b[1], "right");
 }
 {
   const p = P;
   hold(wg, p.gW1a[0], p.gW1a[1], "right");
   pulse(wg, p.gW1b[0], p.gW1b[1], "right", 4, 8);
   jmp(wg, p.gJ1, "right", p.gJ1a);
-  hold(wg, p.gW2a[0], p.gW2a[1], "right");
-  hold(wg, p.gW2b[0], p.gW2b[1], "right");
-  hold(wg, p.gW2c[0], p.gW2c[1], "right");
-  hold(wg, p.gW2c2[0], p.gW2c2[1], "right");
-  hold(wg, p.gW2d[0], p.gW2d[1], "left");
+  hold(wg, p.gW2a[0], p.gW2a[1], "left");
   jmp(wg, p.gJ2, "left", p.gJ2a);
-  pulse(wg, p.gW3a[0], p.gW3a[1], "right", 8, 8);
-  pulse(wg, p.gW3b[0], p.gW3b[1], "left", 8, 8);
-  pulse(wg, p.gW3c[0], p.gW3c[1], "left", 8, 8);
-  hold(wg, p.gW3d[0], p.gW3d[1], "left");
+  pulse(wg, p.gW2b[0], p.gW2b[1], "left", 8, 8);
+  hold(wg, p.gW2c9[0], p.gW2c9[1], "left");
+  jmp(wg, p.gJ5, "left", p.gJ5a);
+  pulse(wg, p.gW3a2[0], p.gW3a2[1], "right", 8, 8);
+
+  jmp(wg, p.gJ3, "left", p.gJ3a);
+  hold(wg, p.gW3c[0], p.gW3c[1], "left");
   pulse(wg, p.gW4[0], p.gW4[1], "left", 8, 8);
+  jmp(wg, p.gJ4, "left", p.gJ4a);
   hold(wg, p.gW5[0], p.gW5[1], "left");
 }
 
@@ -108,8 +107,8 @@ for (let f = 0; f < TOTAL; f++) {
 console.log(`result: ${dead ? dead + " DEAD" : won ? "WIN" : "TIMEOUT"} @f${endF}`);
 if (process.argv.includes("--trace")) writeFileSync(process.argv[process.argv.indexOf("--trace") + 1], JSON.stringify({ endF, dead, trace }));
 // 分段检查点
-const marks = [P.fA2 + 90, P.fJ2 + 56, P.fJ3 + 62, P.fJ4, P.fJ4 + 62, P.fJ4 + 110, P.fW4[0] + 35, P.fW4[1], P.fJ4bh[0], P.fJ4b, P.fJ4b + 30, P.fJ4b + 62, P.fJ4b + 90, P.fW5[1], P.fW5[1] + 25, P.fJ5, P.fJ5 + 30, P.fJ5 + 71, P.fJ5 + 110, P.fJ5b[0] + 25, P.fJ5b[1], P.fJ5b[1] + 30, P.fW7[0], P.fW7[1],
-  P.gW1a[1], P.gJ1, P.gJ1 + 62, P.gJ1 + 100, P.gW2a[1], P.gW2b[1], P.gW2c[1], P.gW2c2[0] - 2, P.gW2c2[1], P.gW2c2[1] + 25, P.gW2c2[1] + 60, P.gJ2, P.gJ2 + 80, P.gJ2 + 200, P.gJ2 + 300, P.gJ2 + 345, P.gW3a[1], P.gW3b[1], P.gW3c[1], P.gW3d[1], P.gW3d[1] + 45, P.gW4[1], P.gW4[1] + 30, P.gW5[1], P.gW5[1] + 30];
+const marks = [P.fJ3 + 30, P.fJ3 + 40, P.fW4[1], P.fW4[1] + 40, P.fW4[1] + 45, P.fJ4bh[0] - 2, P.fJ4b, P.fJ4b + 20, P.fJ4b + 40, P.fJ4b + 62, P.fJ4b + 90, P.fW5[0] - 2, P.fW5[1] - 5, P.fJ5, P.fJ5 + 30, P.fJ5 + 62, P.fJ5 + 75, P.fJ5 + 90, P.fW7[0], P.fW7[1],
+  P.gW1a[1], P.gJ1, P.gJ1 + 62, P.gW2a[1], P.gJ2, P.gJ2 + 40, P.gW2b[1], P.gW2b[1] + 40, P.gW2c9[0], P.gW2c9[1], P.gJ5, P.gJ5 + 40, P.gJ5 + 70, P.gW3a2[1], P.gW3b[1], P.gJ3, P.gJ3 + 35, P.gW3c[1], P.gW3d[1], P.gW3d[1] + 50, P.gW4[0], P.gJ4, P.gJ4 + 40, P.gW4[1], P.gW5[1], P.gW5[1] + 40];
 marks.sort((a, b) => a - b);
 let prev = -1;
 const lines = [];
