@@ -1,0 +1,365 @@
+[d24] level ready: forest/levels/forest_24.json
+{
+ "romans": [
+  {
+   "idx": 4,
+   "options": {
+    "atlasName": null,
+    "frameName": null,
+    "lightAtlas": null,
+    "lightFrame": null,
+    "enableBody": true,
+    "name": "",
+    "type": "roman",
+    "x": 656,
+    "y": 480,
+    "visible": true,
+    "rotation": 0,
+    "polygon": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      -64
+     ],
+     [
+      168,
+      0
+     ]
+    ],
+    "properties": {},
+    "layer": "overGround",
+    "width": null,
+    "height": null
+   },
+   "joint": {
+    "type": 1,
+    "bodyA": {
+     "type": "dynamic",
+     "pos": {
+      "x": -19.5007,
+      "y": -14.0003
+     },
+     "angleDeg": 18.1702,
+     "mass": 0.75,
+     "inertia": 10.0381,
+     "fixtures": [
+      {
+       "shape": 2,
+       "cat": 1,
+       "mask": 65535,
+       "grp": 0,
+       "sensor": false,
+       "density": 0.1,
+       "friction": 0.7,
+       "restitution": 0
+      }
+     ]
+    },
+    "bodyB": {
+     "type": "static",
+     "pos": {
+      "x": -19.5,
+      "y": -16
+     },
+     "angleDeg": 0,
+     "mass": 0,
+     "inertia": 0,
+     "fixtures": [
+      {
+       "shape": 2,
+       "cat": 1,
+       "mask": 65535,
+       "grp": 0,
+       "sensor": false,
+       "density": 0.1,
+       "friction": 0.7,
+       "restitution": 0
+      }
+     ]
+    },
+    "err": "TypeError: Cannot set properties of undefined (setting 'x')"
+   }
+  },
+  {
+   "idx": 5,
+   "options": {
+    "atlasName": null,
+    "frameName": null,
+    "lightAtlas": null,
+    "lightFrame": null,
+    "enableBody": true,
+    "name": "",
+    "type": "roman",
+    "x": 896,
+    "y": 864,
+    "visible": true,
+    "rotation": 0,
+    "polygon": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      -64
+     ],
+     [
+      192,
+      0
+     ]
+    ],
+    "properties": {},
+    "layer": "overGround",
+    "width": null,
+    "height": null
+   },
+   "joint": {
+    "type": 1,
+    "bodyA": {
+     "type": "dynamic",
+     "pos": {
+      "x": -27.0005,
+      "y": -26.0002
+     },
+     "angleDeg": 16.3406,
+     "mass": 0.84,
+     "inertia": 14.0252,
+     "fixtures": [
+      {
+       "shape": 2,
+       "cat": 1,
+       "mask": 65535,
+       "grp": 0,
+       "sensor": false,
+       "density": 0.1,
+       "friction": 0.7,
+       "restitution": 0
+      }
+     ]
+    },
+    "bodyB": {
+     "type": "static",
+     "pos": {
+      "x": -27,
+      "y": -28
+     },
+     "angleDeg": 0,
+     "mass": 0,
+     "inertia": 0,
+     "fixtures": [
+      {
+       "shape": 2,
+       "cat": 1,
+       "mask": 65535,
+       "grp": 0,
+       "sensor": false,
+       "density": 0.1,
+       "friction": 0.7,
+       "restitution": 0
+      }
+     ]
+    },
+    "err": "TypeError: Cannot set properties of undefined (setting 'x')"
+   }
+  }
+ ],
+ "boxes": [
+  {
+   "idx": 0,
+   "cls": "Box",
+   "options": {
+    "gid": 27
+   },
+   "body": {
+    "type": "dynamic",
+    "pos": {
+     "x": -11,
+     "y": -15.067
+    },
+    "angleDeg": -0.0001,
+    "mass": 1.4008,
+    "inertia": 0.7231,
+    "fixtures": [
+     {
+      "shape": 0,
+      "cat": 4096,
+      "mask": 4096,
+      "grp": 0,
+      "sensor": false,
+      "density": 0,
+      "friction": 0.5,
+      "restitution": 0
+     },
+     {
+      "shape": 0,
+      "cat": 17,
+      "mask": 4097,
+      "grp": 0,
+      "sensor": false,
+      "density": 0,
+      "friction": 0.1,
+      "restitution": 0
+     },
+     {
+      "shape": 0,
+      "cat": 17,
+      "mask": 4097,
+      "grp": 0,
+      "sensor": false,
+      "density": 0,
+      "friction": 0.1,
+      "restitution": 0
+     },
+     {
+      "shape": 0,
+      "cat": 17,
+      "mask": 4097,
+      "grp": 0,
+      "sensor": false,
+      "density": 0,
+      "friction": 0.1,
+      "restitution": 0
+     },
+     {
+      "shape": 0,
+      "cat": 17,
+      "mask": 4097,
+      "grp": 0,
+      "sensor": false,
+      "density": 0,
+      "friction": 0.1,
+      "restitution": 0
+     },
+     {
+      "shape": 2,
+      "cat": 1,
+      "mask": 65535,
+      "grp": 0,
+      "sensor": false,
+      "density": 0.45,
+      "friction": 0.4,
+      "restitution": 0
+     }
+    ]
+   }
+  }
+ ],
+ "chars": {
+  "fb": {
+   "type": "dynamic",
+   "pos": {
+    "x": -6,
+    "y": -14.892
+   },
+   "angleDeg": 0,
+   "mass": 0.9548,
+   "inertia": 0.0682,
+   "fixtures": [
+    {
+     "shape": 2,
+     "cat": 16,
+     "mask": 4353,
+     "grp": 0,
+     "sensor": false,
+     "density": 1.4,
+     "friction": 0,
+     "restitution": 0
+    },
+    {
+     "shape": 0,
+     "cat": 16,
+     "mask": 4353,
+     "grp": 0,
+     "sensor": false,
+     "density": 0,
+     "friction": 0.5,
+     "restitution": 0
+    },
+    {
+     "shape": 0,
+     "cat": 16,
+     "mask": 4353,
+     "grp": 0,
+     "sensor": false,
+     "density": 0,
+     "friction": 0,
+     "restitution": 0
+    },
+    {
+     "shape": 0,
+     "cat": 4096,
+     "mask": 4096,
+     "grp": -1,
+     "sensor": false,
+     "density": 0,
+     "friction": 0,
+     "restitution": 0
+    }
+   ]
+  },
+  "wg": {
+   "type": "dynamic",
+   "pos": {
+    "x": -8,
+    "y": -14.892
+   },
+   "angleDeg": 0,
+   "mass": 0.9548,
+   "inertia": 0.0682,
+   "fixtures": [
+    {
+     "shape": 2,
+     "cat": 16,
+     "mask": 4353,
+     "grp": 0,
+     "sensor": false,
+     "density": 1.4,
+     "friction": 0,
+     "restitution": 0
+    },
+    {
+     "shape": 0,
+     "cat": 16,
+     "mask": 4353,
+     "grp": 0,
+     "sensor": false,
+     "density": 0,
+     "friction": 0.5,
+     "restitution": 0
+    },
+    {
+     "shape": 0,
+     "cat": 16,
+     "mask": 4353,
+     "grp": 0,
+     "sensor": false,
+     "density": 0,
+     "friction": 0,
+     "restitution": 0
+    },
+    {
+     "shape": 0,
+     "cat": 4096,
+     "mask": 4096,
+     "grp": -1,
+     "sensor": false,
+     "density": 0,
+     "friction": 0,
+     "restitution": 0
+    }
+   ]
+  }
+ },
+ "others": [
+  {
+   "idx": 2,
+   "cls": "Pusher",
+   "body": null
+  }
+ ],
+ "ptm": 32,
+ "gravityY": 1000
+}
