@@ -1,0 +1,137 @@
+[A] f0 构建后(未step): lever=[g1:0/ja-36,g3:0/ja-36] pushers=[g0:0/t0.000,g0:0/t0.000] plats=[(848,848,a0,ja0) (592,560,a0) (718.5,720,a0)]
+[A] step1 后        : lever=[g1:0/ja-30.66,g3:0/ja-30.66] pushers=[g0:0/t0.000,g0:0/t0.000] plats=[(848,848,a0,ja0) (592,560,a0) (718.5,720,a0)]
+[A] step10 后       : lever=[g1:0/ja-30.66,g3:0/ja-30.66] pushers=[g0:0/t0.000,g0:0/t0.000] plats=[(848,848,a0,ja0) (592,560,a0) (718.5,720,a0)]
+[B] f0: lever=[g1:0/ja-30.66,g3:0/ja-30.66] pushers=[g0:0/t0.000,g0:0/t0.000] plats=[(848,848,a0,ja0) (592,560,a0) (718.5,720,a0)]
+[B] f1: lever=[g1:0/ja-30.66,g3:0/ja-30.66] pushers=[g0:0/t0.000,g0:0/t0.000] plats=[(848,848,a0,ja0) (592,560,a0) (718.5,720,a0)]
+[B] f5: lever=[g1:0/ja-30.66,g3:0/ja-30.66] pushers=[g0:0/t0.000,g0:0/t0.000] plats=[(848,848,a0,ja0) (592,560,a0) (718.5,720,a0)]
+[B] f20: lever=[g1:0/ja-30.66,g3:0/ja-30.66] pushers=[g0:0/t0.000,g0:0/t0.000] plats=[(848,848,a0,ja0) (592,560,a0) (718.5,720,a0)]
+[B] f60: lever=[g1:0/ja-30.66,g3:0/ja-30.66] pushers=[g0:0/t0.000,g0:0/t0.000] plats=[(848,848,a0,ja0) (592,560,a0) (718.5,720,a0)]
+[B] f120: lever=[g1:0/ja-30.66,g3:0/ja-30.66] pushers=[g0:0/t0.000,g0:0/t0.000] plats=[(848,848,a0,ja0) (592,560,a0) (718.5,720,a0)]
+[B] f239: lever=[g1:0/ja-30.66,g3:0/ja-30.66] pushers=[g0:0/t0.000,g0:0/t0.000] plats=[(848,848,a0,ja0) (592,560,a0) (718.5,720,a0)]
+[B] 240f players: fb=(96,92.54401671219054) wg=(1024,92.54402154789379)
+[B] 240f plat rects: p_rot x[833.9,862.1] y[800,896] | p_g3 x[544,640] y[545.9,574.1] | p_g1 x[669,768] y[705.9,734.1]
+[B] 240f lever rods: l_g1 x[987.9,1019] y[731.8,775.2] a=30.66 | l_g3 x[91.9,123] y[475.8,519.2] a=30.66
+[C] 压 b1(g0)→p0 旋转:
+  f0: b1 t=0.178 st=0 p0 a=0ja0 @(848,848)
+  b1 ON @f2
+  hold f0: p0 a=-3.42ja3.42 @(849.91,847.94)
+  hold f60: p0 a=-91.26ja91.26 @(879.99,815.3)
+  hold f120: p0 a=-91.26ja91.26 @(879.99,815.3)
+  hold f180: p0 a=-91.26ja91.26 @(879.99,815.3)
+  hold f240: p0 a=-91.26ja91.26 @(879.99,815.3)
+  hold 末 p0 x[831.7,928.3] y[800.2,830.4] ja=ja91.26
+[C] 离手回转:
+  rel f0: b1 st=1/t=0.701 p0 a=-91.26 @(879.99,815.3)
+  rel f60: b1 st=0/t=-0.001 p0 a=1.84 @(846.97,847.98)
+  rel f120: b1 st=0/t=-0.001 p0 a=1.84 @(846.97,847.98)
+  rel f180: b1 st=0/t=-0.001 p0 a=1.84 @(846.97,847.98)
+  rel f240: b1 st=0/t=-0.001 p0 a=1.84 @(846.97,847.98)
+  回转末 p0 x[831.4,862.6] y[799.6,896.4]
+[D] 压 b0(g0)→p0 旋转:
+  hold f0: b0 st=1 p0 a=-3.42 @(849.91,847.94)
+  hold f60: b0 st=1 p0 a=-91.26 @(879.99,815.3)
+  hold f120: b0 st=1 p0 a=-91.26 @(879.99,815.3)
+  hold f180: b0 st=1 p0 a=-91.26 @(879.99,815.3)
+  hold f240: b0 st=1 p0 a=-91.26 @(879.99,815.3)
+  b0 ON @f2; hold 末 p0 x[831.7,928.3] y[800.2,830.4]
+[E] 杠杆 l0(g1) ON:
+  flipON torque=-30 @f11
+  on+f0: lever=1/ja13.46 p_g1@(720.63,720)
+  on+f50: lever=1/ja38 p_g1@(773.97,720)
+  on+f100: lever=1/ja38 p_g1@(814.5,720)
+  on+f150: lever=1/ja38 p_g1@(814.5,720)
+  on+f200: lever=1/ja38 p_g1@(814.5,720)
+  on+f250: lever=1/ja38 p_g1@(814.5,720)
+  on+f300: lever=1/ja38 p_g1@(814.5,720)
+  ON 终位 p_g1 x[765,864] y[705.9,734.1]
+[E] 杠杆 OFF(扭矩30) @f13:
+  off+f0: lever=0/ja-15.48 p_g1@(812.37,720)
+  off+f50: lever=0/ja-38 p_g1@(759.03,720)
+  off+f100: lever=0/ja-38 p_g1@(718.5,720)
+  off+f150: lever=0/ja-38 p_g1@(718.5,720)
+  off+f200: lever=0/ja-38 p_g1@(718.5,720)
+  off+f250: lever=0/ja-38 p_g1@(718.5,720)
+  off+f300: lever=0/ja-38 p_g1@(718.5,720)
+  OFF 回位 p_g1 x[669,768] y[705.9,734.1]
+[F] 杠杆 l1(g3) ON:
+  flipON torque=-30 @f11
+  on+f0: lever=1/ja13.46 p_g3@(589.87,560)
+  on+f50: lever=1/ja38 p_g3@(536.53,560)
+  on+f100: lever=1/ja38 p_g3@(496,560)
+  on+f150: lever=1/ja38 p_g3@(496,560)
+  on+f200: lever=1/ja38 p_g3@(496,560)
+  on+f250: lever=1/ja38 p_g3@(496,560)
+  on+f300: lever=1/ja38 p_g3@(496,560)
+  ON 终位 p_g3 x[448,544] y[545.9,574.1]
+[F] 杠杆 OFF(扭矩30) @f13:
+  off+f0: lever=0/ja-15.48 p_g3@(498.13,560)
+  off+f50: lever=0/ja-38 p_g3@(551.47,560)
+  off+f100: lever=0/ja-38 p_g3@(592,560)
+  off+f150: lever=0/ja-38 p_g3@(592,560)
+  off+f200: lever=0/ja-38 p_g3@(592,560)
+  off+f250: lever=0/ja-38 p_g3@(592,560)
+  off+f300: lever=0/ja-38 p_g3@(592,560)
+  OFF 回位 p_g3 x[544,640] y[545.9,574.1]
+[G] L1 lava r10 c5-9 fireboy: inLiq@f1 存活 150f pos=(240.0,298.9) inLiq=true
+[G] L1 lava r10 c5-9 watergirl: inLiq@f1 DEAD@f1 pos=(240.0,290.8)
+[G] W1 water r12 c32-35 fireboy: inLiq@f1 DEAD@f1 pos=(1088.0,354.8)
+[G] W1 water r12 c32-35 watergirl: inLiq@f1 存活 150f pos=(1088.0,362.9) inLiq=true
+[G] W2a water r16 c7-9 fireboy: inLiq@f1 DEAD@f1 pos=(272.0,482.8)
+[G] W2a water r16 c7-9 watergirl: inLiq@f1 存活 150f pos=(272.0,490.9) inLiq=true
+[G] W2b water r16 c12-13 fireboy: inLiq@f1 DEAD@f1 pos=(416.0,482.8)
+[G] W2b water r16 c12-13 watergirl: inLiq@f1 存活 150f pos=(415.9,488.4) inLiq=true
+[G] L2 lava r18 c36-37 fireboy: inLiq@f1 存活 150f pos=(1183.9,552.4) inLiq=true
+[G] L2 lava r18 c36-37 watergirl: inLiq@f1 DEAD@f1 pos=(1184.0,546.8)
+[G] L3 lava r20 c26-27 fireboy: inLiq@f1 存活 150f pos=(863.9,616.4) inLiq=true
+[G] L3 lava r20 c26-27 watergirl: inLiq@f1 DEAD@f1 pos=(864.0,610.8)
+[G] L4 lava r23 c7-10 fireboy: inLiq@f1 存活 150f pos=(288.0,714.9) inLiq=true
+[G] L4 lava r23 c7-10 watergirl: inLiq@f1 DEAD@f1 pos=(288.0,706.8)
+[G] W3 water r23 c13-16 fireboy: inLiq@f1 DEAD@f1 pos=(480.0,706.8)
+[G] W3 water r23 c13-16 watergirl: inLiq@f1 存活 150f pos=(480.0,714.9) inLiq=true
+[G] G1 green r27 c9-10 fireboy: inLiq@f1 DEAD@f1 pos=(320.0,834.8)
+[G] G1 green r27 c9-10 watergirl: inLiq@f1 DEAD@f1 pos=(320.0,834.8)
+[G] G2 green r27 c14-15 fireboy: inLiq@f1 DEAD@f1 pos=(480.0,834.8)
+[G] G2 green r27 c14-15 watergirl: inLiq@f1 DEAD@f1 pos=(480.0,834.8)
+[H] d0 red fireboy@(320,80): got@f0 dead=false pos=(320.0,54.3) ev=["diamond"]
+[H] d1 red fireboy@(120,240): got@f0 dead=false pos=(120.0,200.3) ev=["diamond"]
+[H] d2 red fireboy@(272,440): got@f0 dead=false pos=(272.0,400.3) ev=["diamond"]
+[H] d3 red fireboy@(544,368): got@f0 dead=false pos=(544.0,328.3) ev=["diamond"]
+[H] d4 red fireboy@(704,416): got@f0 dead=false pos=(706.2,378.5) ev=["diamond"]
+[H] d5 red fireboy@(288,688): got@f0 dead=false pos=(288.0,648.3) ev=["diamond"]
+[H] d6 red fireboy@(368,816): got@f0 dead=false pos=(368.0,790.3) ev=["diamond"]
+[H] d7 blue watergirl@(912,240): got@f0 dead=false pos=(912.0,200.3) ev=["diamond"]
+[H] d8 blue watergirl@(832,432): got@f0 dead=false pos=(838.6,406.3) ev=["diamond"]
+[H] d9 blue watergirl@(976,688): got@f0 dead=false pos=(978.2,650.5) ev=["diamond"]
+[H] d10 blue watergirl@(712,664): got@f0 dead=false pos=(712.0,624.3) ev=["diamond"]
+[H] d11 blue watergirl@(640,480): got@f0 dead=false pos=(642.2,442.5) ev=["diamond"]
+[H] d12 blue watergirl@(480,688): got@f0 dead=false pos=(480.0,648.3) ev=["diamond"]
+[H] d13 blue watergirl@(432,816): got@f0 dead=false pos=(432.0,790.3) ev=["diamond"]
+[I] f0: fbAt=false wgAt=false fbUp=false wgUp=false
+[I] f20: fbAt=true wgAt=true fbUp=false wgUp=false
+[I] f40: fbAt=true wgAt=true fbUp=false wgUp=false
+[I] phase=won @f53 fbDoor=true wgDoor=true ev=["door-open","door-open","win"]
+[J] p0-ON: x[831.7,928.3] y[800.2,830.4] a=-91.26
+[J] fb 传送墙位 (848,868) 压住 b1 静立 180f:
+  f0: fb=(848.0,868.3) dead=false b1st=1 p0a=-91.26
+  f60: fb=(848.0,860.5) dead=false b1st=1 p0a=-91.26
+  f120: fb=(848.0,860.5) dead=false b1st=1 p0a=-91.26
+  f179: fb=(848.0,860.5) dead=false b1st=1 p0a=-91.26
+  f180: fb=(848.0,860.5) dead=false b1st=1 p0a=-91.26
+[J2] 松手后 p0 回转、fb 滞留墙位:
+  f0: fb=(848.0,860.5) p0a=-91.26 dead=false
+  f30: fb=(848.0,860.5) p0a=-55.44 dead=false
+  f60: fb=(818.6,860.5) p0a=-0.52 dead=false
+  f90: fb=(815.2,860.5) p0a=1.39 dead=false
+  f119: fb=(815.2,860.5) p0a=1.39 dead=false
+  f120: fb=(815.2,860.5) p0a=1.39 dead=false
+[K] fb 站 b1:
+  f0: fb=(640.0,854.2) b1t=0.402 st=0 p0ja=ja0
+  f40: fb=(640.0,860.5) b1t=0.607 st=1 p0ja=ja75.98
+  f80: fb=(640.0,860.5) b1t=0.607 st=1 p0ja=ja91.26
+  f120: fb=(640.0,860.5) b1t=0.607 st=1 p0ja=ja91.26
+  f160: fb=(640.0,860.5) b1t=0.607 st=1 p0ja=ja91.26
+  f200: fb=(640.0,860.5) b1t=0.607 st=1 p0ja=ja91.26
+  f239: fb=(640.0,860.5) b1t=0.607 st=1 p0ja=ja91.26
+  f240: fb=(640.0,860.5) b1t=0.607 st=1 p0ja=ja91.26
+  b1 ON @f1（fb 站踏真实链）
+done

@@ -1,0 +1,535 @@
+== mechanisms: manager:undefined levers:2 pushers:2 platforms:3 props:0 winds:0 hangings:0 pulleys:0 romans:0
+== players f0: {"role":"fireboy","x":96,"y":96,"vx":0,"vy":0,"anim":"idle","facing":1,"headTilt":0,"inLiquid":false,"dying":false,"dead":false,"isDead":false,"atDoor":false,"doorFrame":0,"doorUp":false} {"role":"watergirl","x":1024,"y":97,"vx":0,"vy":0,"anim":"idle","facing":1,"headTilt":0,"inLiquid":false,"dying":false,"dead":false,"isDead":false,"atDoor":false,"doorFrame":0,"doorUp":false}
+== diamonds: [
+  {
+    id: 'd0',
+    kind: 'red',
+    char: 'fb',
+    x: 320,
+    y: 80,
+    collected: false
+  },
+  {
+    id: 'd1',
+    kind: 'red',
+    char: 'fb',
+    x: 120,
+    y: 240,
+    collected: false
+  },
+  {
+    id: 'd2',
+    kind: 'red',
+    char: 'fb',
+    x: 272,
+    y: 440,
+    collected: false
+  },
+  {
+    id: 'd3',
+    kind: 'red',
+    char: 'fb',
+    x: 544,
+    y: 368,
+    collected: false
+  },
+  {
+    id: 'd4',
+    kind: 'red',
+    char: 'fb',
+    x: 704,
+    y: 416,
+    collected: false
+  },
+  {
+    id: 'd5',
+    kind: 'red',
+    char: 'fb',
+    x: 288,
+    y: 688,
+    collected: false
+  },
+  {
+    id: 'd6',
+    kind: 'red',
+    char: 'fb',
+    x: 368,
+    y: 816,
+    collected: false
+  },
+  {
+    id: 'd7',
+    kind: 'blue',
+    char: 'wg',
+    x: 912,
+    y: 240,
+    collected: false
+  },
+  {
+    id: 'd8',
+    kind: 'blue',
+    char: 'wg',
+    x: 832,
+    y: 432,
+    collected: false
+  },
+  {
+    id: 'd9',
+    kind: 'blue',
+    char: 'wg',
+    x: 976,
+    y: 688,
+    collected: false
+  },
+  {
+    id: 'd10',
+    kind: 'blue',
+    char: 'wg',
+    x: 712,
+    y: 664,
+    collected: false
+  },
+  {
+    id: 'd11',
+    kind: 'blue',
+    char: 'wg',
+    x: 640,
+    y: 480,
+    collected: false
+  },
+  {
+    id: 'd12',
+    kind: 'blue',
+    char: 'wg',
+    x: 480,
+    y: 688,
+    collected: false
+  },
+  {
+    id: 'd13',
+    kind: 'blue',
+    char: 'wg',
+    x: 432,
+    y: 816,
+    collected: false
+  }
+]
+== doors fb: {"role":"fireboy","char":"fb","pos":{"x":992,"y":896},"isOpen":false,"frac":0,"isUp":false,"signaled":false}  pos(px)= (992,900)
+== doors wg: {"role":"watergirl","char":"wg","pos":{"x":1088,"y":896},"isOpen":false,"frac":0,"isUp":false,"signaled":false}  pos(px)= (1088,900)
+== liquids: [
+  { kind: 'lava', type: 6, row: 10, col: '5..9', bodyPos: '(160,320)' },
+  {
+    kind: 'water',
+    type: 5,
+    row: 12,
+    col: '32..35',
+    bodyPos: '(1024,384)'
+  },
+  {
+    kind: 'water',
+    type: 5,
+    row: 16,
+    col: '7..9',
+    bodyPos: '(224,512)'
+  },
+  {
+    kind: 'water',
+    type: 5,
+    row: 16,
+    col: '12..13',
+    bodyPos: '(384,512)'
+  },
+  {
+    kind: 'lava',
+    type: 6,
+    row: 18,
+    col: '36..37',
+    bodyPos: '(1152,576)'
+  },
+  {
+    kind: 'lava',
+    type: 6,
+    row: 20,
+    col: '26..27',
+    bodyPos: '(832,640)'
+  },
+  {
+    kind: 'lava',
+    type: 6,
+    row: 23,
+    col: '7..10',
+    bodyPos: '(224,736)'
+  },
+  {
+    kind: 'water',
+    type: 5,
+    row: 23,
+    col: '13..16',
+    bodyPos: '(416,736)'
+  },
+  {
+    kind: 'green',
+    type: 7,
+    row: 27,
+    col: '9..10',
+    bodyPos: '(288,864)'
+  },
+  {
+    kind: 'green',
+    type: 7,
+    row: 27,
+    col: '14..15',
+    bodyPos: '(448,864)'
+  }
+]
+lever g1 state=0 angle=36.00deg ja=-36.00deg motor=0.00 pos= { x: 992, y: 768 } pivotAnchorA= (989.18,771.88) limits=[ -36.0 , 36.0 ] maxMT= 10 mass= 0.6720
+lever g3 state=0 angle=36.00deg ja=-36.00deg motor=0.00 pos= { x: 96, y: 512 } pivotAnchorA= (93.18,515.88) limits=[ -36.0 , 36.0 ] maxMT= 10 mass= 0.6720
+pusher g0 state=0 t=0.000 motor=-15.00 pos= { x: 1184, y: 896 } anchorA= (1184,887.47) axis= ? mass= 0.0900
+pusher g0 state=0 t=0.000 motor=-15.00 pos= { x: 640, y: 896 } anchorA= (640,887.47) axis= ? mass= 0.0900
+platform g0 state=0 pos= { x: 848, y: 848 } angle=0.00deg mass=1.3200 ja=0.00deg motor=0.00 anchorA=(848,816)
+platform g3 state=0 pos= { x: 592, y: 560 } angle=0.00deg mass=1.0000 anchorA=(592,560)
+platform g1 state=0 pos= { x: 718.5, y: 720 } angle=0.00deg mass=1.0000 anchorA=(718.5,720)
+lever-g1 ud=null fsud="" sens=false poly(rot-applied): (993.1,774.7) (985.3,769.1) (1011.6,732.8) (1019.4,738.5) (992,768) (992,768) (992,768) (992,768)
+lever-g3 ud=null fsud="" sens=false poly(rot-applied): (97.1,518.7) (89.3,513.1) (115.6,476.8) (123.4,482.5) (96,512) (96,512) (96,512) (96,512)
+pusher-g0 ud="pusher" fsud="pusher" sens=false poly(rot-applied): (1152,896) (1168,876.8) (1200,876.8) (1216,896) (1184,896) (1184,896) (1184,896) (1184,896)
+pusher-g0 ud="pusher" fsud="pusher" sens=false poly(rot-applied): (608,896) (624,876.8) (656,876.8) (672,896) (640,896) (640,896) (640,896) (640,896)
+platform-g0 ud=null fsud={"reflection":true} sens=false poly(rot-applied): (862.1,800) (862.1,896) (833.9,896) (833.9,800) (848,848) (848,848) (848,848) (848,848)
+platform-g3 ud=null fsud={"reflection":true} sens=false poly(rot-applied): (640,574.1) (544,574.1) (544,545.9) (640,545.9) (592,560) (592,560) (592,560) (592,560)
+platform-g1 ud=null fsud={"reflection":true} sens=false poly(rot-applied): (768,734.1) (669,734.1) (669,705.9) (768,705.9) (718.5,720) (718.5,720) (718.5,720) (718.5,720)
+== bodies: 40
+b0 ud="pers" fsud="" sens=false poly: (1009.6,90.6) (1038.4,90.6) (1029.4,125.8) (1018.6,125.8) (1024,97) (1024,97) (1024,97) (1024,97)
+b0 ud="pers" fsud="feet" sens=false circle @(1024,97) r=6.4
+b0 ud="pers" fsud="" sens=false circle @(1024,97) r=15.4
+b0 ud="pers" fsud={"portal-sensor":true} sens=false circle @(1024,97) r=3.2
+  ^^ b0 bodyPos=(1024,97) bodyAngle=0deg
+b1 ud="pers" fsud="" sens=false poly: (81.6,89.6) (110.4,89.6) (101.4,124.8) (90.6,124.8) (96,96) (96,96) (96,96) (96,96)
+b1 ud="pers" fsud="feet" sens=false circle @(96,96) r=6.4
+b1 ud="pers" fsud="" sens=false circle @(96,96) r=15.4
+b1 ud="pers" fsud={"portal-sensor":true} sens=false circle @(96,96) r=3.2
+  ^^ b1 bodyPos=(96,96) bodyAngle=0deg
+b2 ud=null fsud={"reflection":true} sens=false poly: (768,734.1) (669,734.1) (669,705.9) (768,705.9) (718.5,720) (718.5,720) (718.5,720) (718.5,720)
+  ^^ b2 bodyPos=(718.5,720) bodyAngle=0deg
+b3 ud=null fsud={"reflection":true} sens=false poly: (640,574.1) (544,574.1) (544,545.9) (640,545.9) (592,560) (592,560) (592,560) (592,560)
+  ^^ b3 bodyPos=(592,560) bodyAngle=0deg
+b4 ud=null fsud={"reflection":true} sens=false poly: (862.1,800) (862.1,896) (833.9,896) (833.9,800) (848,848) (848,848) (848,848) (848,848)
+  ^^ b4 bodyPos=(848,848) bodyAngle=0deg
+b5 ud="pusher" fsud="pusher" sens=false poly: (608,896) (624,876.8) (656,876.8) (672,896) (640,896) (640,896) (640,896) (640,896)
+  ^^ b5 bodyPos=(640,896) bodyAngle=0deg
+b6 ud="pusher" fsud="pusher" sens=false poly: (1152,896) (1168,876.8) (1200,876.8) (1216,896) (1184,896) (1184,896) (1184,896) (1184,896)
+  ^^ b6 bodyPos=(1184,896) bodyAngle=0deg
+b7 ud=null fsud="" sens=false poly: (97.1,518.7) (89.3,513.1) (115.6,476.8) (123.4,482.5) (96,512) (96,512) (96,512) (96,512)
+  ^^ b7 bodyPos=(96,512) bodyAngle=36deg
+b8 ud=null fsud="" sens=false poly: (993.1,774.7) (985.3,769.1) (1011.6,732.8) (1019.4,738.5) (992,768) (992,768) (992,768) (992,768)
+  ^^ b8 bodyPos=(992,768) bodyAngle=36deg
+b9 ud=null fsud={"type":"door","char":"wg"} sens=true poly: (1120,904) (1056,904) (1056,896) (1120,896) (1088,900) (1088,900) (1088,900) (1088,900)
+  ^^ b9 bodyPos=(1088,900) bodyAngle=0deg
+b10 ud=null fsud={"type":"door","char":"fb"} sens=true poly: (1024,904) (960,904) (960,896) (1024,896) (992,900) (992,900) (992,900) (992,900)
+  ^^ b10 bodyPos=(992,900) bodyAngle=0deg
+b11 ud=null fsud={"type":"diamond","char":"wg"} sens=true poly: (443.2,827.2) (420.8,827.2) (420.8,804.8) (443.2,804.8) (432,816) (432,816) (432,816) (432,816)
+  ^^ b11 bodyPos=(432,816) bodyAngle=0deg
+b12 ud=null fsud={"type":"diamond","char":"wg"} sens=true poly: (491.2,699.2) (468.8,699.2) (468.8,676.8) (491.2,676.8) (480,688) (480,688) (480,688) (480,688)
+  ^^ b12 bodyPos=(480,688) bodyAngle=0deg
+b13 ud=null fsud={"type":"diamond","char":"wg"} sens=true poly: (651.2,491.2) (628.8,491.2) (628.8,468.8) (651.2,468.8) (640,480) (640,480) (640,480) (640,480)
+  ^^ b13 bodyPos=(640,480) bodyAngle=0deg
+b14 ud=null fsud={"type":"diamond","char":"wg"} sens=true poly: (723.2,675.2) (700.8,675.2) (700.8,652.8) (723.2,652.8) (712,664) (712,664) (712,664) (712,664)
+  ^^ b14 bodyPos=(712,664) bodyAngle=0deg
+b15 ud=null fsud={"type":"diamond","char":"wg"} sens=true poly: (987.2,699.2) (964.8,699.2) (964.8,676.8) (987.2,676.8) (976,688) (976,688) (976,688) (976,688)
+  ^^ b15 bodyPos=(976,688) bodyAngle=0deg
+b16 ud=null fsud={"type":"diamond","char":"wg"} sens=true poly: (843.2,443.2) (820.8,443.2) (820.8,420.8) (843.2,420.8) (832,432) (832,432) (832,432) (832,432)
+  ^^ b16 bodyPos=(832,432) bodyAngle=0deg
+b17 ud=null fsud={"type":"diamond","char":"wg"} sens=true poly: (923.2,251.2) (900.8,251.2) (900.8,228.8) (923.2,228.8) (912,240) (912,240) (912,240) (912,240)
+  ^^ b17 bodyPos=(912,240) bodyAngle=0deg
+b18 ud=null fsud={"type":"diamond","char":"fb"} sens=true poly: (379.2,827.2) (356.8,827.2) (356.8,804.8) (379.2,804.8) (368,816) (368,816) (368,816) (368,816)
+  ^^ b18 bodyPos=(368,816) bodyAngle=0deg
+b19 ud=null fsud={"type":"diamond","char":"fb"} sens=true poly: (299.2,699.2) (276.8,699.2) (276.8,676.8) (299.2,676.8) (288,688) (288,688) (288,688) (288,688)
+  ^^ b19 bodyPos=(288,688) bodyAngle=0deg
+b20 ud=null fsud={"type":"diamond","char":"fb"} sens=true poly: (715.2,427.2) (692.8,427.2) (692.8,404.8) (715.2,404.8) (704,416) (704,416) (704,416) (704,416)
+  ^^ b20 bodyPos=(704,416) bodyAngle=0deg
+b21 ud=null fsud={"type":"diamond","char":"fb"} sens=true poly: (555.2,379.2) (532.8,379.2) (532.8,356.8) (555.2,356.8) (544,368) (544,368) (544,368) (544,368)
+  ^^ b21 bodyPos=(544,368) bodyAngle=0deg
+b22 ud=null fsud={"type":"diamond","char":"fb"} sens=true poly: (283.2,451.2) (260.8,451.2) (260.8,428.8) (283.2,428.8) (272,440) (272,440) (272,440) (272,440)
+  ^^ b22 bodyPos=(272,440) bodyAngle=0deg
+b23 ud=null fsud={"type":"diamond","char":"fb"} sens=true poly: (131.2,251.2) (108.8,251.2) (108.8,228.8) (131.2,228.8) (120,240) (120,240) (120,240) (120,240)
+  ^^ b23 bodyPos=(120,240) bodyAngle=0deg
+b24 ud=null fsud={"type":"diamond","char":"fb"} sens=true poly: (331.2,91.2) (308.8,91.2) (308.8,68.8) (331.2,68.8) (320,80) (320,80) (320,80) (320,80)
+  ^^ b24 bodyPos=(320,80) bodyAngle=0deg
+b25 ud=null fsud="" sens=false poly: (1248,1228) (-1448,1228) (-1448,1028) (1248,1028) (0,0) (0,0) (0,0) (0,0)
+  ^^ b25 bodyPos=(0,0) bodyAngle=0deg
+b26 ud=null fsud="" sens=false poly: (1248,-100) (-1448,-100) (-1448,-300) (1248,-300) (0,0) (0,0) (0,0) (0,0)
+  ^^ b26 bodyPos=(0,0) bodyAngle=0deg
+b27 ud=null fsud="" sens=false poly: (1548,928) (1348,928) (1348,-1128) (1548,-1128) (0,0) (0,0) (0,0) (0,0)
+  ^^ b27 bodyPos=(0,0) bodyAngle=0deg
+b28 ud=null fsud="" sens=false poly: (-100,928) (-300,928) (-300,-1128) (-100,-1128) (0,0) (0,0) (0,0) (0,0)
+  ^^ b28 bodyPos=(0,0) bodyAngle=0deg
+b29 ud=null fsud={"type":"liquid_death","liquidType":7} sens=true poly: (448,896) (448,869.8) (512,869.8) (512,896) (448,864) (448,864) (448,864) (448,864)
+b29 ud=null fsud={"type":"ice","liquidType":7} sens=false poly: (448,880) (448,864) (512,864) (512,880) (448,864) (448,864) (448,864) (448,864)
+b29 ud=null fsud={"type":"liquid","liquidType":7} sens=true poly: (448,880) (448,868.8) (512,868.8) (512,880) (448,864) (448,864) (448,864) (448,864)
+  ^^ b29 bodyPos=(448,864) bodyAngle=0deg
+b30 ud=null fsud={"type":"liquid_death","liquidType":7} sens=true poly: (288,896) (288,869.8) (352,869.8) (352,896) (288,864) (288,864) (288,864) (288,864)
+b30 ud=null fsud={"type":"ice","liquidType":7} sens=false poly: (288,880) (288,864) (352,864) (352,880) (288,864) (288,864) (288,864) (288,864)
+b30 ud=null fsud={"type":"liquid","liquidType":7} sens=true poly: (288,880) (288,868.8) (352,868.8) (352,880) (288,864) (288,864) (288,864) (288,864)
+  ^^ b30 bodyPos=(288,864) bodyAngle=0deg
+b31 ud=null fsud={"type":"liquid_death","liquidType":5} sens=true poly: (416,768) (416,741.8) (544,741.8) (544,768) (416,736) (416,736) (416,736) (416,736)
+b31 ud=null fsud={"type":"ice","liquidType":5} sens=false poly: (416,752) (416,736) (544,736) (544,752) (416,736) (416,736) (416,736) (416,736)
+b31 ud=null fsud={"type":"liquid","liquidType":5} sens=true poly: (416,752) (416,740.8) (544,740.8) (544,752) (416,736) (416,736) (416,736) (416,736)
+  ^^ b31 bodyPos=(416,736) bodyAngle=0deg
+b32 ud=null fsud={"type":"liquid_death","liquidType":6} sens=true poly: (224,768) (224,741.8) (352,741.8) (352,768) (224,736) (224,736) (224,736) (224,736)
+b32 ud=null fsud={"type":"ice","liquidType":6} sens=false poly: (224,752) (224,736) (352,736) (352,752) (224,736) (224,736) (224,736) (224,736)
+b32 ud=null fsud={"type":"liquid","liquidType":6} sens=true poly: (224,752) (224,740.8) (352,740.8) (352,752) (224,736) (224,736) (224,736) (224,736)
+  ^^ b32 bodyPos=(224,736) bodyAngle=0deg
+b33 ud=null fsud={"type":"liquid_death","liquidType":6} sens=true poly: (832,672) (832,645.8) (896,645.8) (896,672) (832,640) (832,640) (832,640) (832,640)
+b33 ud=null fsud={"type":"ice","liquidType":6} sens=false poly: (832,656) (832,640) (896,640) (896,656) (832,640) (832,640) (832,640) (832,640)
+b33 ud=null fsud={"type":"liquid","liquidType":6} sens=true poly: (832,656) (832,644.8) (896,644.8) (896,656) (832,640) (832,640) (832,640) (832,640)
+  ^^ b33 bodyPos=(832,640) bodyAngle=0deg
+b34 ud=null fsud={"type":"liquid_death","liquidType":6} sens=true poly: (1152,608) (1152,581.8) (1216,581.8) (1216,608) (1152,576) (1152,576) (1152,576) (1152,576)
+b34 ud=null fsud={"type":"ice","liquidType":6} sens=false poly: (1152,592) (1152,576) (1216,576) (1216,592) (1152,576) (1152,576) (1152,576) (1152,576)
+b34 ud=null fsud={"type":"liquid","liquidType":6} sens=true poly: (1152,592) (1152,580.8) (1216,580.8) (1216,592) (1152,576) (1152,576) (1152,576) (1152,576)
+  ^^ b34 bodyPos=(1152,576) bodyAngle=0deg
+b35 ud=null fsud={"type":"liquid_death","liquidType":5} sens=true poly: (384,544) (384,517.8) (448,517.8) (448,544) (384,512) (384,512) (384,512) (384,512)
+b35 ud=null fsud={"type":"ice","liquidType":5} sens=false poly: (384,528) (384,512) (448,512) (448,528) (384,512) (384,512) (384,512) (384,512)
+b35 ud=null fsud={"type":"liquid","liquidType":5} sens=true poly: (384,528) (384,516.8) (448,516.8) (448,528) (384,512) (384,512) (384,512) (384,512)
+  ^^ b35 bodyPos=(384,512) bodyAngle=0deg
+b36 ud=null fsud={"type":"liquid_death","liquidType":5} sens=true poly: (224,544) (224,517.8) (320,517.8) (320,544) (224,512) (224,512) (224,512) (224,512)
+b36 ud=null fsud={"type":"ice","liquidType":5} sens=false poly: (224,528) (224,512) (320,512) (320,528) (224,512) (224,512) (224,512) (224,512)
+b36 ud=null fsud={"type":"liquid","liquidType":5} sens=true poly: (224,528) (224,516.8) (320,516.8) (320,528) (224,512) (224,512) (224,512) (224,512)
+  ^^ b36 bodyPos=(224,512) bodyAngle=0deg
+b37 ud=null fsud={"type":"liquid_death","liquidType":5} sens=true poly: (1024,416) (1024,389.8) (1152,389.8) (1152,416) (1024,384) (1024,384) (1024,384) (1024,384)
+b37 ud=null fsud={"type":"ice","liquidType":5} sens=false poly: (1024,400) (1024,384) (1152,384) (1152,400) (1024,384) (1024,384) (1024,384) (1024,384)
+b37 ud=null fsud={"type":"liquid","liquidType":5} sens=true poly: (1024,400) (1024,388.8) (1152,388.8) (1152,400) (1024,384) (1024,384) (1024,384) (1024,384)
+  ^^ b37 bodyPos=(1024,384) bodyAngle=0deg
+b38 ud=null fsud={"type":"liquid_death","liquidType":6} sens=true poly: (160,352) (160,325.8) (320,325.8) (320,352) (160,320) (160,320) (160,320) (160,320)
+b38 ud=null fsud={"type":"ice","liquidType":6} sens=false poly: (160,336) (160,320) (320,320) (320,336) (160,320) (160,320) (160,320) (160,320)
+b38 ud=null fsud={"type":"liquid","liquidType":6} sens=true poly: (160,336) (160,324.8) (320,324.8) (320,336) (160,320) (160,320) (160,320) (160,320)
+  ^^ b38 bodyPos=(160,320) bodyAngle=0deg
+b39 ud="ground" fsud="" sens=false poly: (32,32) (-32,32) (-32,-32) (32,-32) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (470.4,896) (470.4,880) (512,864) (512,896) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (448,896) (448,864) (489.6,880) (489.6,896) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (32,32) (-32,32) (-32,-32) (32,-32) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (310.4,896) (310.4,880) (352,864) (352,896) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (288,896) (288,864) (329.6,880) (329.6,896) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (448,768) (448,750.4) (512,750.4) (512,768) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (502.4,768) (502.4,752) (544,736) (544,768) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (416,768) (416,736) (457.6,752) (457.6,768) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (256,768) (256,750.4) (320,750.4) (320,768) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (310.4,768) (310.4,752) (352,736) (352,768) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (224,768) (224,736) (265.6,752) (265.6,768) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (32,32) (-32,32) (-32,-32) (32,-32) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (854.4,672) (854.4,656) (896,640) (896,672) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (832,672) (832,640) (873.6,656) (873.6,672) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (32,32) (-32,32) (-32,-32) (32,-32) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1174.4,608) (1174.4,592) (1216,576) (1216,608) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1152,608) (1152,576) (1193.6,592) (1193.6,608) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (32,32) (-32,32) (-32,-32) (32,-32) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (406.4,544) (406.4,528) (448,512) (448,544) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (384,544) (384,512) (425.6,528) (425.6,544) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (256,544) (256,526.4) (288,526.4) (288,544) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (278.4,544) (278.4,528) (320,512) (320,544) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (224,544) (224,512) (265.6,528) (265.6,544) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1056,416) (1056,398.4) (1120,398.4) (1120,416) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1110.4,416) (1110.4,400) (1152,384) (1152,416) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1024,416) (1024,384) (1065.6,400) (1065.6,416) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (192,352) (192,334.4) (288,334.4) (288,352) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (278.4,352) (278.4,336) (320,320) (320,352) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (160,352) (160,320) (201.6,336) (201.6,352) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,928) (0,896) (1248,896) (1248,928) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,896) (1216,864) (1248,864) (1248,896) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (544,896) (544,864) (576,896) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (512,896) (512,864) (544,864) (544,896) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (352,896) (352,864) (448,864) (448,896) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (224,896) (224,864) (288,864) (288,896) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (192,896) (224,864) (224,896) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (64,896) (64,864) (96,896) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,896) (0,864) (64,864) (64,896) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,864) (1216,832) (1248,832) (1248,864) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,864) (0,832) (64,832) (64,864) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,832) (1216,800) (1248,800) (1248,832) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (704,832) (704,800) (736,800) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (608,832) (608,800) (704,800) (704,832) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (32,832) (32,800) (64,832) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,832) (0,800) (32,800) (32,832) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (832,800) (832,768) (1248,768) (1248,800) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (736,800) (736,768) (768,768) (768,800) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (704,800) (736,768) (736,800) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (576,800) (576,768) (608,800) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,800) (0,768) (32,768) (32,800) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,768) (1216,736) (1248,736) (1248,768) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (928,768) (928,736) (960,768) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (768,768) (768,736) (928,736) (928,768) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (544,768) (544,736) (576,768) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (352,768) (352,736) (416,736) (416,768) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (128,768) (128,736) (224,736) (224,768) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,768) (0,736) (32,736) (32,768) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,736) (1216,704) (1248,704) (1248,736) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (864,736) (864,704) (928,704) (928,736) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (640,736) (640,704) (672,704) (672,736) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (160,736) (160,704) (192,736) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (128,736) (128,704) (160,704) (160,736) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (96,736) (128,704) (128,736) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,736) (0,704) (32,704) (32,736) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,704) (1216,672) (1248,672) (1248,704) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1120,704) (1120,672) (1152,704) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1056,704) (1056,672) (1120,672) (1120,704) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1024,704) (1056,672) (1056,704) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (768,704) (768,672) (928,672) (928,704) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (640,704) (640,672) (672,672) (672,704) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,704) (0,672) (32,672) (32,704) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,672) (1216,640) (1248,640) (1248,672) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (896,672) (896,640) (928,640) (928,672) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (768,672) (768,640) (832,640) (832,672) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (736,640) (768,640) (768,672) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (640,672) (640,640) (672,672) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (608,672) (608,640) (640,640) (640,672) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (576,640) (608,640) (608,672) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,672) (0,640) (32,640) (32,672) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,640) (1216,608) (1248,608) (1248,640) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1184,608) (1216,608) (1216,640) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (960,640) (960,608) (992,608) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (896,640) (896,608) (960,608) (960,640) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (736,640) (736,608) (768,608) (768,640) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (576,640) (576,608) (608,640) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (544,608) (576,608) (576,640) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (32,640) (32,608) (64,608) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,640) (0,608) (32,608) (32,640) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,608) (1216,576) (1248,576) (1248,608) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1120,608) (1120,576) (1152,576) (1152,608) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (992,608) (992,576) (1056,576) (1056,608) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (960,608) (992,576) (992,608) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (736,608) (736,576) (768,576) (768,608) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (544,608) (544,576) (576,608) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (416,608) (416,576) (544,576) (544,608) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (160,608) (160,576) (192,576) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,608) (0,576) (160,576) (160,608) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,576) (1216,544) (1248,544) (1248,576) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (736,576) (736,544) (768,576) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (640,576) (640,544) (736,544) (736,576) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,576) (0,544) (448,544) (448,576) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,544) (1216,512) (1248,512) (1248,544) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (672,544) (672,512) (736,512) (736,544) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (640,544) (672,512) (672,544) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (448,544) (448,512) (544,512) (544,544) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (320,544) (320,512) (384,512) (384,544) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,544) (0,512) (224,512) (224,544) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,512) (1216,480) (1248,480) (1248,512) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1184,480) (1216,480) (1216,512) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (864,512) (864,480) (896,480) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (832,512) (832,480) (864,480) (864,512) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (800,512) (832,480) (832,512) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (704,512) (704,480) (736,480) (736,512) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (672,512) (704,480) (704,512) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (544,512) (544,480) (576,480) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (512,512) (512,480) (544,480) (544,512) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (480,512) (512,480) (512,512) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (192,512) (192,480) (224,512) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (32,512) (32,480) (64,512) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,512) (0,480) (32,480) (32,512) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1152,480) (1152,448) (1248,448) (1248,480) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1120,448) (1152,448) (1152,480) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (928,480) (928,448) (960,448) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (896,480) (896,448) (928,448) (928,480) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (864,480) (896,448) (896,480) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (736,480) (736,448) (768,448) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (704,480) (736,448) (736,480) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (576,480) (576,448) (608,448) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (512,480) (512,448) (576,448) (576,480) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,480) (0,448) (32,448) (32,480) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (960,448) (960,416) (1248,416) (1248,448) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (928,448) (960,416) (960,448) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (768,448) (768,416) (800,416) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (736,448) (768,416) (768,448) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (608,448) (608,416) (640,416) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (544,448) (544,416) (608,416) (608,448) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (512,448) (544,416) (544,448) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,448) (0,416) (32,416) (32,448) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1152,416) (1152,384) (1248,384) (1248,416) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (992,416) (992,384) (1024,384) (1024,416) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (960,416) (992,384) (992,416) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (800,416) (800,384) (832,384) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (768,416) (800,384) (800,416) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (640,416) (640,384) (672,384) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (608,416) (640,384) (640,416) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,416) (0,384) (32,384) (32,416) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,384) (1216,352) (1248,352) (1248,384) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (832,384) (832,352) (864,352) (864,384) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (800,384) (832,352) (832,384) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (672,384) (672,352) (704,352) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (640,384) (672,352) (672,384) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,384) (0,352) (32,352) (32,384) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,352) (1216,320) (1248,320) (1248,352) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (864,352) (864,320) (896,320) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (832,352) (832,320) (864,320) (864,352) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (672,352) (672,320) (704,320) (704,352) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (448,352) (448,320) (480,352) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (320,352) (320,320) (448,320) (448,352) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (128,352) (128,320) (160,320) (160,352) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (96,320) (128,320) (128,352) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,352) (0,320) (32,320) (32,352) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1152,320) (1152,288) (1248,288) (1248,320) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1120,320) (1152,288) (1152,320) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1024,320) (1024,288) (1056,320) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (832,320) (832,288) (1024,288) (1024,320) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (672,320) (672,288) (704,288) (704,320) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (640,288) (672,288) (672,320) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (416,320) (416,288) (448,320) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (384,320) (384,288) (416,288) (416,320) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (352,320) (384,288) (384,320) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,320) (0,288) (128,288) (128,320) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,288) (1216,256) (1248,256) (1248,288) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (832,288) (832,256) (864,256) (864,288) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (544,288) (544,256) (704,256) (704,288) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (512,256) (544,256) (544,288) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (32,288) (32,256) (64,288) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,288) (0,256) (32,256) (32,288) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,256) (1216,224) (1248,224) (1248,256) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (544,256) (544,224) (576,256) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (512,256) (512,224) (544,224) (544,256) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (256,224) (288,224) (288,256) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,256) (0,224) (32,224) (32,256) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,224) (1216,192) (1248,192) (1248,224) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (512,224) (512,192) (544,192) (544,224) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (480,192) (512,192) (512,224) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (224,224) (224,192) (288,192) (288,224) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (192,224) (224,192) (224,224) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,224) (0,192) (32,192) (32,224) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,192) (1216,160) (1248,160) (1248,192) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1056,192) (1056,160) (1152,160) (1152,192) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1024,160) (1056,160) (1056,192) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (480,192) (480,160) (544,160) (544,192) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (448,160) (480,160) (480,192) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (288,192) (288,160) (320,160) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (256,192) (256,160) (288,160) (288,192) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (224,192) (256,160) (256,192) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (32,192) (32,160) (64,160) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,192) (0,160) (32,160) (32,192) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,160) (1216,128) (1248,128) (1248,160) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1088,160) (1088,128) (1120,160) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (992,160) (992,128) (1088,128) (1088,160) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (960,128) (992,128) (992,160) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (704,160) (704,128) (736,128) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (672,128) (704,128) (704,160) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (512,160) (512,128) (544,160) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (288,160) (288,128) (512,128) (512,160) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (256,160) (288,128) (288,160) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (128,160) (128,128) (160,128) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,160) (0,128) (128,128) (128,160) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,128) (1216,96) (1248,96) (1248,128) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (960,128) (960,96) (992,96) (992,128) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (736,128) (736,96) (768,96) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (672,128) (672,96) (736,96) (736,128) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (640,96) (672,96) (672,128) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (384,128) (384,96) (416,128) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (352,128) (384,96) (384,128) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,128) (0,96) (32,96) (32,128) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,96) (1216,64) (1248,64) (1248,96) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (960,96) (960,64) (992,64) (992,96) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (768,96) (768,64) (800,64) (800,96) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (736,96) (768,64) (768,96) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (640,96) (640,64) (672,64) (672,96) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,96) (0,64) (32,64) (32,96) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (1216,64) (1216,32) (1248,32) (1248,64) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (960,64) (960,32) (992,32) (992,64) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (768,64) (768,32) (800,32) (800,64) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (640,64) (640,32) (672,32) (672,64) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (608,32) (640,32) (640,64) (0,0) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,64) (0,32) (32,32) (32,64) (0,0) (0,0) (0,0) (0,0)
+b39 ud="ground" fsud="" sens=false poly: (0,32) (0,0) (1248,0) (1248,32) (0,0) (0,0) (0,0) (0,0)
+  ^^ b39 bodyPos=(0,0) bodyAngle=0deg
