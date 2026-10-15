@@ -21,3 +21,8 @@
 - v39 已存快照 forest_15.json.v39.json（optimize 断点续用会覆写 .best.json，v39 原载体已入库 75c0b36）
 - v41 MC 基线: 107/150 (71.3%) seed=42，fails 全为 deathF=-1 超时型（mc-v41-base.log）
 - 下一步: --one 严格全局改善模式 --scan 2（覆盖 MC slip +2/+3 档）
+
+## r15f-03 --one scan2 硬化进行中（TEMP/r15f/opt-one-s2.log）
+- 进度: 70→63(fb3634-2)→60(fb4196-4)→59(fb3596+2)→57(fb3636+2)→54(fb3454+4)，6 采纳全在 fb 侧
+- 节奏 ~1 采纳/5-8min（每候选过局部预筛后需全量 1440 跑验收 ~155s）
+- 诊断探针 TEMP/r15f/poscan.mjs 就绪：MC slip 仅正向(+1 2%/+2 0.6%/+3 0.2%)，负向致命不影响门禁——平台期用它量化 MC 相关残余
