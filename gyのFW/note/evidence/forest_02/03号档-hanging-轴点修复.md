@@ -35,7 +35,7 @@
 ## 5. 影响面
 
 - det 48 关 `--compare r29`：**7 关位级漂移** = forest_02/12/12_1/19/19_1/25/25_1（idle+scripted 双异）——全部含 hanging，属"修对"的预期漂移；其余 41 关位级不变（含全部 8 绿关中无 hanging 的 6 关）。
-- 含 hanging 关卡全清单（17）：02/04/04_1/05/12/12_1/19/19_1/21/24/24_1/25/25_1/29/30/bonus_1/bonus_2。
+- 〔勘误〕hanging 仅 7 关：02/12/12_1/19/19_1/25/25_1（=det 漂移全部 7 关，精确吻合）；初稿 17 关系 hanging(7)+pulley(10) 合并统计口误，pulley 走独立 buildPulley 未受影响。
 - 新基线 **r30** 存档 `benchmark/results/det-r30.json`，自验 48/48。
 - 绿关 e2e 复跑：forest_04 / forest_12（绿关中仅此两关含 hanging）`--repeat 3`，见 §6。
 
