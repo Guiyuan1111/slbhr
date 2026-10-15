@@ -251,6 +251,8 @@ export class World {
     // 原版帧序（运行时探针 2026-10-09，forest_01 实测）：doors → wg → fb → 设备(逆注册序) → Step。
     // 机关检查与门扫帧在 Step【前】：checkState 读的是上一步的关节角，状态变化当帧进入求解。
     // 原实现放在 Step 后（反应滞后 1 帧）——research/11 §2B 驱动序残余的确定性来源之一。
+    // 设备逐帧 update 链（原版每帧 device.update()）：当前唯一物理实义=转臂限位硬钳（P1-D1）
+    for (const p of this.mechs.platforms) p.update();
     if (this.phase === "playing") {
       const mechEvents: MechEvent[] = [];
       for (const l of this.mechs.levers) l.checkState(mechEvents);

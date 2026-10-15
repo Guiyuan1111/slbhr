@@ -10,7 +10,7 @@
  */
 import { windBodyPos, type LevelData } from "../level2.js";
 import type { B2 } from "./b2.js";
-import { circleFixture, FILTER, polygonFixture, px2m } from "./b2.js";
+import { boxFixture, circleFixture, FILTER, polygonFixture, px2m } from "./b2.js";
 
 /** 屏幕像素点 → 物理 vec（新建 b2Vec2） */
 function phys(B: B2, x: number, y: number): any {
@@ -315,6 +315,20 @@ export class MovingPlatform {
     }
   }
 
+  /** 逐帧 update（原版 MovingPlatform.update @1679971-1680049）：转臂关节角限位硬钳——
+   * GetJointAngleRadians() < lower → SetAngle(−lower)；> upper → SetAngle(−upper)（每帧回钳，
+   * 抵消马达压限位的求解器软过冲，实测无此钳稳态 −91.257° vs oracle −90°）。关节角=−体角
+   * （Initialize(平台,地面) 序），故 SetAngle 取反号；prismatic 无 GetJointAngleRadians，
+   * oracle 以存在性短路，我方以 isRevolute 分支等价。 */
+  update(): void {
+    if (!this.isRevolute) return;
+    const a = this.joint.GetJointAngleRadians();
+    const lo = this.joint.GetLowerLimit();
+    const hi = this.joint.GetUpperLimit();
+    if (a < lo) this.body.SetAngle(-lo);
+    else if (a > hi) this.body.SetAngle(-hi);
+  }
+
   /** 信号驱动（原版 updateState：SetMotorSpeed ±2 + 唤醒小力） */
   updateState(_silent: boolean): void {
     const b = this.isRevolute && this.dthetaPositive ? -2 : 2;
@@ -429,7 +443,16 @@ export function buildHanging(B: B2, world: any, groundBody: any, def: { pts: Arr
   abd.type = B.b2BodyType.b2_dynamicBody;
   abd.position = phys(B, anchorPx.x, anchorPx.y);
   const anchorBody = world.CreateBody(abd);
-  circleFixture(anchorBody, B, 0.05, undefined, { categoryBits: 0, maskBits: 0, density: 0 });
+  // 锚点 fixture：原版 enable(g) 自带精灵矩形（hanging_anchor0000 帧 38×35px，Body 构造
+  // setRectangleFromSprite），@1647143 仅改 categoryBits=0，density=1/摩擦 0.2 为插件缺省
+  // → mass 1.2988 / I 0.2821。若零惯量（旧实现 density 0 小圆），joint2 的反扭矩通道为零，
+  // 板心在世界系焊死、绳向钟摆自由度丢失（31 号档 §1.3 P0）
+  boxFixture(anchorBody, B, 38 / 2 / 32, 35 / 2 / 32, { x: 0, y: 0 }, 0, {
+    categoryBits: 0,
+    density: 1,
+    friction: 0.2,
+    restitution: 0,
+  });
 
   // 板体：六边形（m=barWidth/2，端尖 +0.1，半厚 0.12）；density 2.5 fr 0.4；阻尼 0.4/0.3
   const m = barWidth / 2;
