@@ -58,7 +58,7 @@ const INSTALL = (script, frames, roleExpr) => `(function () {
 const DRAIN = `(function(){ var c=window.__cap; if(!c) return {stopped:true,chunk:[]}; return { stopped:c.stopped, chunk:c.samples.splice(0,c.samples.length) }; })()`;
 
 async function runOnce(name, gid, objXY, script, frames, marks) {
-  const browser = await chromium.launch({ channel: "msedge", headless: true }).catch(() => chromium.launch());
+  const browser = await chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true }).catch(() => chromium.launch());
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.addInitScript(INIT_HOOKS);

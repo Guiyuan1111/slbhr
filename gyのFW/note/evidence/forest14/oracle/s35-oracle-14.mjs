@@ -114,7 +114,7 @@ async function runOnce(browserFactory, name, script) {
   };
 }
 
-const browserFactory = () => chromium.launch({ channel: "msedge", headless: true }).catch(() => chromium.launch());
+const browserFactory = () => chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true }).catch(() => chromium.launch());
 const out = {};
 out.VA_vertical = await runOnce(browserFactory, "VA", [{ f: 80, down: ["up"] }, { f: 105, up: ["up"] }]);
 out.WB_leftjump = await runOnce(browserFactory, "WB", [{ f: 80, down: ["up", "left"] }, { f: 120, up: ["up"] }]);

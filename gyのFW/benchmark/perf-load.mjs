@@ -141,7 +141,7 @@ const results = {
   rounds: [],
 };
 const browser = await chromium.launch({
-  channel: "msedge",
+  channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined),
   headless: true,
   args: ["--mute-audio", "--enable-precise-memory-info"],
 });

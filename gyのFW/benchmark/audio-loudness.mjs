@@ -88,7 +88,7 @@ if (args.includes("--runtime")) {
     child.stderr.on("data", ondata);
   });
   try {
-    const browser = await chromium.launch({ channel: "msedge", headless: true, args: ["--mute-audio"] });
+    const browser = await chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true, args: ["--mute-audio"] });
     const page = await browser.newPage();
     await page.goto("http://127.0.0.1:2569/", { waitUntil: "domcontentloaded" });
     await page.waitForFunction(`(() => { try { return !!window.__fw && !!window.__fw.sound; } catch { return false; } })()`, null, { timeout: 60000 });

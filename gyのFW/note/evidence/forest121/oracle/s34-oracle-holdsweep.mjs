@@ -51,7 +51,7 @@ const INSTALL = (script) => `(function () {
 })()`;
 const DRAIN = `(function(){ var c=window.__cap; if(!c) return {stopped:true,chunk:[]}; return { stopped:c.stopped, chunk:c.samples.splice(0,c.samples.length) }; })()`;
 
-const browser = await chromium.launch({ channel: "msedge", headless: true });
+const browser = await chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true });
 const context = await browser.newContext({ viewport: { width: 1280, height: 960 } });
 const page = await context.newPage();
 await page.addInitScript(INIT_HOOKS);

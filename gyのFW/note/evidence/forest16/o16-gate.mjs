@@ -92,7 +92,7 @@ const DRAIN = `(function(){ var c=window.__cap; if(!c) return {stopped:true,chun
 const DRAIN_MOVERS = `(function(){ var c=window.__cap; if(!c) return {stopped:true,a:null,b:null}; return { stopped:c.stopped, a:c.a, b:c.b }; })()`;
 
 async function runOnce(name, spawnOverrides, script, frames, marks, roleExpr = "pers1") {
-  const browser = await chromium.launch({ channel: "msedge", headless: true }).catch(() => chromium.launch());
+  const browser = await chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true }).catch(() => chromium.launch());
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.addInitScript(INIT_HOOKS);
@@ -160,7 +160,7 @@ console.log(JSON.stringify(out, null, 1));
 
 // O5: 动体观测（无注入自然出生，采样动态刚体）
 {
-  const browser = await chromium.launch({ channel: "msedge", headless: true }).catch(() => chromium.launch());
+  const browser = await chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true }).catch(() => chromium.launch());
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.addInitScript(INIT_HOOKS);

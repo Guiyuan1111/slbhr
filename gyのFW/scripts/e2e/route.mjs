@@ -254,7 +254,7 @@ try {
   // 30-80ms 停顿正落在派发上（门禁容差 ~12ms），扩新生代把 GC 频率压掉一个量级。
   // 双页各开独立浏览器实例：键盘注入走浏览器进程 UI 线程、GPU 进程与 CDP 连接均为
   // 实例级共享——单实例双 context 时 A 页诊断与 B 页派发在这些共享层互相踩踏。
-  const launch = () => chromium.launch({ channel: "msedge", headless: true, args: ["--mute-audio", "--js-flags=--max-semi-space-size=64"] });
+  const launch = () => chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true, args: ["--mute-audio", "--js-flags=--max-semi-space-size=64"] });
   const browserA = await launch();
   const browserB = await launch();
   for (let r = 1; r <= REPEAT; r++) {

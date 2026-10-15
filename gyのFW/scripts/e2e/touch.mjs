@@ -54,7 +54,7 @@ const check = (name, ok, detail = "") => {
   if (!ok) failures++;
 };
 
-const browser = await chromium.launch({ channel: "msedge", headless: true, args: ["--mute-audio"] });
+const browser = await chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true, args: ["--mute-audio"] });
 try {
   // ---------- A. iPhone 触摸设备（创建者 = 火人） ----------
   const iphone = await browser.newContext({ ...devices["iPhone 13"], locale: "zh-CN" });

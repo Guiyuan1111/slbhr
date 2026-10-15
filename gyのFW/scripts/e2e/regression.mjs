@@ -125,7 +125,7 @@ try {
     log(`输入时间线：${timeline.length} 个事件`);
   }
 
-  const browser = await chromium.launch({ channel: "msedge", headless: true, args: ["--mute-audio"] });
+  const browser = await chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true, args: ["--mute-audio"] });
   pass = true;
   for (let r = 1; r <= REPEAT; r++) {
     try {

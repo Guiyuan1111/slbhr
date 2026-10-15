@@ -5,7 +5,7 @@ const log = (...a) => console.log("[o23f]", ...a);
 const READY_LEVEL = () => { try { const g = require('Phaser').GAMES[0]; const L = g.level; return !!(L && L.loadCompleted && L.pers1 && L.pers1.body && L.groundBody); } catch { return false; } };
 
 async function main() {
-  const browser = await chromium.launch({ channel: "msedge", headless: true, args: ["--mute-audio"] });
+  const browser = await chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true, args: ["--mute-audio"] });
   const page = await browser.newPage({ viewport: { width: 1280, height: 960 } });
   await page.addInitScript(`
     window.__KEYMAP = { left: 37, up: 38, right: 39, down: 40, a: 65, w: 87, d: 68, s: 83 };

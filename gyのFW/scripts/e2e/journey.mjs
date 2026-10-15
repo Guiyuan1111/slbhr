@@ -30,7 +30,7 @@ let server;
 try {
   server = await startServer(PORT, MODE === "journey" ? { FW_DEBUG_FORCE_DOORS: "1" } : MODE === "rejoin" ? { FW_RECONNECT_SECONDS: "4" } : {});
   mkdirSync(OUT, { recursive: true });
-  const browser = await chromium.launch({ channel: "msedge", headless: true, args: ["--mute-audio"] });
+  const browser = await chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true, args: ["--mute-audio"] });
 
   if (MODE === "journey") {
     // ── 场景 1：全旅程 —— forest_01 通关 → EndMenu「继续」→ 预选 forest_02 → 弹联机面板 → 新房开局
