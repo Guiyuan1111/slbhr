@@ -684,9 +684,36 @@ export class GameScene extends Phaser.Scene {
       this.windViews.set(w.id, { base, effect, on: false });
     }
 
-    // 窗框（仅 forest_bonus_1 两处）：**刻意不渲染**——原版 Window 设备引用的
-    // WindowLeft/Right/Center0000 帧在原版全部已发行图集（A/B 变体）中均不存在，
-    // 运行时缺帧渲染空白，即原版玩家看到的窗框本就是隐形墙；内核静态体已复刻物理。
+    // 窗框（仅 forest_bonus_1 两处，64×32 横窗）：oracle @1740286-1742086——主精灵
+    // _default0000 载体帧（34×34）+ 子帧 WindowLeft/Right0000 分列 x=∓(w/2−0.5)m
+    // （mpx=−32v 双取负，屏幕 Left 在左）、WindowCenter0000 居中且 scale.x=(w−2)/3
+    // （2m 窗=0 不画），整体 1.05 缩放；竖窄窗走交换支（w<h→sw/sh 互换+angle −90）。
+    // 此前"三帧不存在、原版亦渲染空白"系审计误判——帧实存 MechAssets A–F 全部图集
+    // （31 号档 §4.2），物理面（静态盒 cat1/mask61695）内核早已复刻。
+    for (const w of level.windows) {
+      const wm = w.rect.w / 32;
+      const hm = w.rect.h / 32;
+      let sw = wm;
+      let sh = hm;
+      let angle = 0;
+      if (wm < hm) {
+        [sw, sh] = [hm, wm];
+        angle = -90;
+      }
+      const capX = (sw / 2 - 0.5) * 32;
+      const capY = -(sh / 2 - 0.5) * 32;
+      const win = this.add
+        .container(w.rect.x + w.rect.w / 2 + PAD, w.rect.y + w.rect.h / 2 + PAD)
+        .setDepth(1.27)
+        .setAngle(angle)
+        .setScale(1.05);
+      win.add([
+        this.add.image(0, 0, ATLAS_MECH, "_default0000").setOrigin(0.5),
+        this.add.image(-capX, capY, ATLAS_MECH, "WindowLeft0000").setOrigin(0.5),
+        this.add.image(capX, capY, ATLAS_MECH, "WindowRight0000").setOrigin(0.5),
+        this.add.image(0, 0, ATLAS_MECH, "WindowCenter0000").setOrigin(0.5).setScale((sw - 2) / 3, 1),
+      ]);
+    }
   }
 
   /** props 快照 key（"box:0"/"boxheavy:2"/"ball:3"）→ 视图 key（x 下标 / a 下标-boxes 数） */
