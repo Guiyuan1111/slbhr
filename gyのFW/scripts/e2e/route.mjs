@@ -173,10 +173,14 @@ async function runOnce(browserA, browserB, runTag) {
 
   const dispatch = (async () => {
     for (const ev of timeline) {
-      // 两段睡眠：先睡到事件前 130ms，打开静默窗预告，再睡剩余段——采样/轮询若在
-      // 预告后才醒来必然让路；更早醒来的 evaluate 最迟 ~30ms 完成，仍赶在派发前结束
-      await sleepPrecise(a, ev.t - 130);
+      // 静默窗预告必须在进入长睡前就位：本机（Linux VM）roomState evaluate 偶发 200ms+（Windows ~30ms），
+      // 旧实现预告晚至 ev.t-130 才设置，采样在预告前醒来即放行，evaluate 会压过派发点
+      //（实测 250ms 采样 tick 每轮都把 f332 迟到 74-211ms）。预告窗 [t-250, t+80] 宽 330ms > 采样周期
+      // 250ms → 采样任意一次醒来必然已见预告让路；仅 t-250 前已 in-flight 的 evaluate 仍可能越窗，
+      // 其最迟完成于 t-50（按 200ms 计），不压派发点。
       dispatchBusyUntil = t0 + ev.t + 80;
+      // 两段睡眠：先睡到事件前 130ms，再睡剩余段
+      await sleepPrecise(a, ev.t - 130);
       await sleepPrecise(a, ev.t);
       const page = ev.page === "a" ? a : b;
       const sent = Date.now() - t0;
@@ -243,8 +247,13 @@ let pass = true;
 // 服务端相位时间戳（纯观测）：t0 锚定的权威来源。
 // 旧锚（readySeen+2000）把客户端观察延迟（patch+rAF ~50ms）系统性算进零点，
 // 非整数全局偏移被服务端按 tick 取整成混合 +3f/+4f 逐事件滑帧，正中 ±1f 刀锋事件。
-const phaseMs = { ready: 0, started: 0 };
-try {
+// 每轮独立服务器+浏览器实例（跨轮累积修复）：单进程 repeat3 时 run2 起受前轮残留干扰——
+// Ubuntu 实测三种 offset 组合下 run2 均系统性翻车，独立进程×3（各自新服务器+新浏览器）
+// 对照 3/3 全 PASS 坐实。Windows 机同构复用未暴露此效应，系本机（VM 2.5GHz/软件渲染）
+// 实时性弱、累积被放大；代价是每轮 +2 次浏览器启动（~4s）。
+let phaseMs = { ready: 0, started: 0 };
+for (let r = 1; r <= REPEAT; r++) {
+  phaseMs = { ready: 0, started: 0 };
   server = await startServer(PORT);
   server.stdout.on("data", (buf) => {
     const m = String(buf).match(/\[phase\] (ready|started) @(\d+)/);
@@ -254,26 +263,27 @@ try {
   // 30-80ms 停顿正落在派发上（门禁容差 ~12ms），扩新生代把 GC 频率压掉一个量级。
   // 双页各开独立浏览器实例：键盘注入走浏览器进程 UI 线程、GPU 进程与 CDP 连接均为
   // 实例级共享——单实例双 context 时 A 页诊断与 B 页派发在这些共享层互相踩踏。
-  const launch = () => chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true, args: ["--mute-audio", "--js-flags=--max-semi-space-size=64"] });
+  // Linux 加 --disable-webgl：VM 无硬件 GL（vmwgfx EGL 链路不通），WebGL 落 SwiftShader
+  // 软件渲染把 rAF 拖到 ~33fps，客户端输入采样节拍与 60Hz tick 失配必翻车；Canvas 满帧 60。
+  const launch = () => chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true, args: ["--mute-audio", "--js-flags=--max-semi-space-size=64", ...(process.platform === "linux" ? ["--disable-webgl"] : [])] });
   const browserA = await launch();
   const browserB = await launch();
-  for (let r = 1; r <= REPEAT; r++) {
-    try {
-      const res = await runOnce(browserA, browserB, `route-run${r}`);
-      results.push(res);
-      const ok = res.won && !res.diedAt && !res.dispatchError;
-      log(`[${res.tag}] ${ok ? "PASS" : "FAIL"} won=${res.won} winAt=${res.winAtMs}ms died=${res.diedAt ?? "-"} final=${res.finalPhase} fb=(${res.final?.fb?.[0]?.toFixed(0)},${res.final?.fb?.[1]?.toFixed(0)}) wg=(${res.final?.wg?.[0]?.toFixed(0)},${res.final?.wg?.[1]?.toFixed(0)})`);
-      if (!ok) pass = false;
-    } catch (err) {
-      log(`[route-run${r}] EXCEPTION`, String(err));
-      results.push({ tag: `route-run${r}`, exception: String(err) });
-      pass = false;
-    }
+  try {
+    const res = await runOnce(browserA, browserB, `route-run${r}`);
+    results.push(res);
+    const ok = res.won && !res.diedAt && !res.dispatchError;
+    log(`[${res.tag}] ${ok ? "PASS" : "FAIL"} won=${res.won} winAt=${res.winAtMs}ms died=${res.diedAt ?? "-"} final=${res.finalPhase} fb=(${res.final?.fb?.[0]?.toFixed(0)},${res.final?.fb?.[1]?.toFixed(0)}) wg=(${res.final?.wg?.[0]?.toFixed(0)},${res.final?.wg?.[1]?.toFixed(0)})`);
+    if (!ok) pass = false;
+  } catch (err) {
+    log(`[route-run${r}] EXCEPTION`, String(err));
+    results.push({ tag: `route-run${r}`, exception: String(err) });
+    pass = false;
+  } finally {
+    await browserA.close().catch(() => {});
+    await browserB.close().catch(() => {});
+    server?.kill();
+    server = null;
   }
-  await browserA.close();
-  await browserB.close();
-} finally {
-  server?.kill();
 }
 writeFileSync(join(OUT, "route-results.json"), JSON.stringify({ level: LEVEL, offset: OFFSET, pass, results }, null, 1));
 console.log(`[e2e] route ${LEVEL}: ${pass ? "ALL PASS" : "FAILED"}（${results.length} 轮，trace 明细 scripts/e2e/out/route-results.json）`);
