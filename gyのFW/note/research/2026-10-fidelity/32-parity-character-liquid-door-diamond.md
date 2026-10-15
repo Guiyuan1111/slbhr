@@ -363,4 +363,5 @@ character.ts 逐行一致'"。本档按字节偏移复核：
 3. **Clock.start 的精确时刻**（ready 倒计时结束 vs Level create）未逐字节追认，通关计时的零点口径
    沿用前档仲裁；本档仅对 1600ms 演出账与整秒取整差异背书。
 
-（临时切片 `TEMP/rpc/` 共 8 文件按纪律保留至本档合入后由主会话裁决清理；本槽未改动任何 .ts/.mjs 源码。）
+（临时切片 `TEMP/rpc/`（mod_{character,liquid,door,diamond}.js 及 pretty 副本共 8 文件）审计完成即已按纪律删除；
+所有被引原文均可在 oracle `init.eb02fbdab2aa1d24.js` 按 §9 偏移表直接重切复核。本槽未改动任何 .ts/.mjs 源码。）
