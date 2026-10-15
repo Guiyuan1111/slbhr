@@ -41,3 +41,12 @@
 - seqclear.mjs（每步单位移+即时 poscan 验收+回滚拉黑）从 posbest(41 项 cost 0.2560) 起步
 - 实测耦合烈度: wg#70 单事件 -1f → 全局 0.256→0.334（+33 项）；wg#79 -3f → 0.256→0.196（-8 项）——混沌双向
 - 修正 batchclear 选择器 bug（clean.has(k) 名义自净校验缺失），教训记录
+
+## r15f-06 会话接力复验（r15f 新会话, 17:5x）
+- 断点核对: seq1.json.bak == base40.json.posbest.json（md5 838feb76 短前缀），seqclear 输入=POSBEST 实证
+- seq1.json = POSBEST + wg#79@7523→7520 + wg#13@1010→1007 + fb#45/46/47 三连 5386/5390/5393→5383/5387/5390（-3 回退无对应日志行；但复测 cost 与 step2 终态等价，见下）
+- SEQ1 复测: WIN + 正向 poscan 33 项 cost 0.1860（与断点日志 step2 后 0.1860/33 项完全一致——fb 三连两版 poscan 等价，孰优未分辨，存疑）
+- SEQ1 MC 实测: 127/150 (84.7%) seed=42（mcany.mjs=mc.mjs 逐行同构仅改 --route；对比 v41 基线 71.3% = +13.4pp；fails 仍全 deathF=-1 超时型）
+- 吞吐修正: 本机独占 ~0.55s/kernel run（晨间 4.2s/run 系与 one-scan2 抢 CPU 所致），poscan≈60s，seqclear 步进≈1min
+- seqclear-2 续跑启动（jobs 5）: 自 33 项 0.1860 起步，wg#70 -1 ✗(0.2780)、wg#73 -2 ✗(0.2240) 首两候选回滚拉黑
+- 目标差距: MC 84.7% → ≥98%，对应 cost 需 0.1860 → ≲0.02（≈全部 ±1 影区清零）
