@@ -9,7 +9,7 @@
 |---|---|---|
 | 形态 | VMware 虚拟机（hostname gy-VMware-Virtual-Platform） | 宿主未直接勘察 |
 | CPU | i5-13400F，8 vCPU（每 vCPU 独占一物理核，1 线程/核） | avx2/sha_ni 等指令集齐全；`tsc_reliable nonstop_tsc constant_tsc` |
-| 频率 | 固定 2496MHz，无 cpufreq governor | 虚拟机无调频抖动 |
+| 频率呈现 | /proc/cpuinfo 恒报 2496MHz（BogoMIPS 4992） | **这是 VMware 报告的名义基频（13400F 基频=2.5GHz），不反映真实执行频率**；真实频率客户机不可见。实测 openssl rsa2048 单核 sign/s：229-385（波动大），粗略参照裸金属 4.6GHz 水平的 ~55-70%——未跑满睿频，宿主侧（任务管理器/电源计划/VM 处理器设置）才能定谳 |
 | 内存 | 15GiB，swap 4GiB（swappiness=10，实测几乎不用） | 门禁运行时 available ~8.8Gi |
 | 磁盘 | VMware Virtual NVMe Disk 100G（nvme0n1，非旋转） | / 用量 ~36-38% |
 | GPU | VMware SVGA II；`vmwgfx` 驱动已加载，/dev/dri/card0+renderD128 在 | **宿主侧 3D 加速是开着的** |
