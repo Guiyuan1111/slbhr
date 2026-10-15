@@ -38,8 +38,8 @@ window 渲染缺失（31 号档 §4.2）是同问题的**审计侧变体**：错
 
 | 面 | 状态 |
 |---|---|
-| Devices 在用 15 类（platform/pusher/lever/hanging/pulley/roman/window/door/diamond/portal/box/boxheavy/boxmirror/infinitemirror/wind） | 30-33 号档已审，P0/P1 清零 |
-| **ball（BallPrototype，13 关 20 对象在用）** | **唯一未审 Devices/Prototype 类型 → rb1 槽审计中（34 号档）** |
+| Devices 在用 15 类（platform/pusher/lever/hanging/pulley/roman/window/door/diamond/portal/box/boxheavy/boxmirror/infinitemirror/wind/ball） | 30-34 号档**全部审完**，P0/P1 清零 |
+| ball（BallPrototype，13 关 20 对象在用） | **34 号档已审（2026-10-15）：P0=0 P1=0 P2=3**——121 项探针全 PASS、20/20 球体心位级一致、逐参数一致；P2×3 挂账（rotation/damping 零触发 temple 风险、params.BALL.radius 陈旧已当场纠 0.9→0.4） |
 | beamer/rotmirror/lightpusher/timedpusher | 森林 0 使用，temple 移植风险清单挂账（33 号档 §1） |
 | MechManager 组同步/Device 基类/world 参数/Ground | 30 号档 §0 十六项已审 ✓ |
 | character/liquid | 32 号档 P0=0 P1=0 |

@@ -144,9 +144,9 @@ export const BOX = {
   width: 1.8,
 } as const;
 
-/** 球（Ball @1662664） */
+/** 球（Ball @1662664；radius 0.4 实证=oracle mass 2.3π·0.4²=1.1561，34 号档 §2；零引用，历史笔误 0.9 已纠） */
 export const BALL = {
-  radius: 0.9,
+  radius: 0.4,
   density: 2.3,
   restitution: 0.1,
 } as const;
