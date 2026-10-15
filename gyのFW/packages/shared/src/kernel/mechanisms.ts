@@ -443,7 +443,7 @@ export function buildHanging(B: B2, world: any, groundBody: any, def: { pts: Arr
     { x: -m, y: -0.12 },
     { x: m, y: -0.12 },
     { x: n, y: 0 },
-  ], { friction: 0.4, restitution: 0, density: 2.5 });
+  ], { categoryBits: 65535, maskBits: 65535, friction: 0.4, restitution: 0, density: 2.5 });
   platform.SetLinearDamping(0.4);
   platform.SetAngularDamping(0.3);
 
@@ -451,9 +451,11 @@ export function buildHanging(B: B2, world: any, groundBody: any, def: { pts: Arr
   const dd = new B.b2DistanceJointDef();
   dd.Initialize(anchorBody, platform, phys(B, anchorPx.x, anchorPx.y), phys(B, posPx.x, posPx.y));
   world.CreateJoint(dd);
-  // 关节 2：revolute（anchor↔platform），限位 ±0.425π（fullRotation 无限位）
+  // 关节 2：revolute（anchor↔platform），限位 ±0.425π（fullRotation 无限位）。
+  // 轴点 = 板位置点 pos（原版 Hanging @1646198：o.Initialize(g, p, f)，f=pxm(pos)）——
+  // 板绕自身板心自转（挂绳末端的风车板），轴错用锚点会退化成钟摆锤、丢失自转自由度
   const rd = new B.b2RevoluteJointDef();
-  rd.Initialize(anchorBody, platform, phys(B, anchorPx.x, anchorPx.y));
+  rd.Initialize(anchorBody, platform, phys(B, posPx.x, posPx.y));
   if (!def.fullRotation) {
     rd.lowerAngle = -0.425 * Math.PI;
     rd.upperAngle = 0.425 * Math.PI;
