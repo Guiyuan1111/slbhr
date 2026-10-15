@@ -5,6 +5,12 @@
 > 模块定位：`define("States/Level/Devices/Hanging")` @**1645763**、`Pulley` @**1697647**、`Roman` @**1708275**、`Window` @**1739926**（共 27 个 Devices 模块，160.9 万–174.2 万区间）。
 > 评级：P0=宏观可感知 / P1=边缘或非物理面 / P2=数值微差·等价实现。
 > 本槽只审计落盘，未改任何 .ts/.mjs 源码；探针脚本只读 import 仓库源码。
+>
+> **〔2026-10-15 主会话修复状态〕** §1.3 P0 已修（commit 907ba54）：`mechanisms.ts` buildHanging
+> 锚点体 fixture 改原版精灵矩形 38×35px（density 1/friction 0.2/cat 0/mask 65535），
+> 探针复跑锚点体 mass=1.2988/inertia=0.2821 逐位归位、8 N·s 冲量板心摆幅 339→415px、绳角 ±18°；
+> det r32 基线漂移面=hanging 7 关（02/12/12_1/19/19_1/25/25_1）与其余 41 关位级不变，
+> e2e forest_12 repeat3 ALL PASS。§window P1（渲染缺失）待办：客户端补 WindowLeft/Center/Right 绘制。
 
 ## 0. 公共事实（两侧共享的换算与缺省）
 
