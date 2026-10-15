@@ -36,7 +36,7 @@ export const FILTER = {
   PORTAL_CAT: 4096,
   PORTAL_MASK: 4096,
   /** 液体显示/光源带（Liquid sensorFixture） */
-  LIQUID_SENSOR_MASK: 61695, // 0xF0FF：不含角色 bit4
+  LIQUID_SENSOR_MASK: 61695, // 0xF0FF：不含 bit8-11（bit8=平台 256）；实含角色 bit4
   /** 世界四壁（Phaser.Physics.Box2D.worldBoundsFilterCategory，vendor @setBounds） */
   WALL_CAT: 32768,
   WALL_MASK: 65535,
