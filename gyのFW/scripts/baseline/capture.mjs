@@ -65,7 +65,9 @@ const inputScript = args.script ? JSON.parse(fs.readFileSync(path.resolve(args.s
 
 // ---------- 浏览器 ----------
 async function launchBrowser() {
-  for (const channel of ["msedge", "chrome"]) {
+  const preferred = process.env.FW_BROWSER_CHANNEL;
+  const candidates = preferred ? [preferred, undefined] : ["msedge", "chrome", undefined];
+  for (const channel of candidates) {
     try {
       const b = await chromium.launch({
         channel,
@@ -77,13 +79,13 @@ async function launchBrowser() {
           "--disable-backgrounding-occluded-windows",
         ],
       });
-      console.log(`[capture] browser channel: ${channel}`);
+      console.log(`[capture] browser channel: ${channel ?? "bundled-chromium"}`);
       return b;
     } catch (e) {
-      console.log(`[capture] channel ${channel} unavailable: ${String(e).split("\n")[0]}`);
+      console.log(`[capture] channel ${channel ?? "bundled-chromium"} unavailable: ${String(e).split("\n")[0]}`);
     }
   }
-  throw new Error("no system Edge/Chrome found");
+  throw new Error("no usable browser channel（可 npx playwright install chromium 或设 FW_BROWSER_CHANNEL）");
 }
 
 // ---------- 页面内常量脚本 ----------

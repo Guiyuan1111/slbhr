@@ -143,17 +143,19 @@ function serveStatic(rootDir, port) {
 }
 
 async function launchBrowser() {
-  for (const channel of ["msedge", "chrome"]) {
+  const preferred = process.env.FW_BROWSER_CHANNEL;
+  const candidates = preferred ? [preferred, undefined] : ["msedge", "chrome", undefined];
+  for (const channel of candidates) {
     try {
       const b = await chromium.launch({
         channel, headless: true,
         args: ["--mute-audio", "--disable-background-timer-throttling", "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows"],
       });
-      console.log(`[anim] browser channel: ${channel}`);
+      console.log(`[anim] browser channel: ${channel ?? "bundled-chromium"}`);
       return b;
     } catch { /* 下一个 channel */ }
   }
-  throw new Error("no system Edge/Chrome found");
+  throw new Error("no usable browser channel（可 npx playwright install chromium 或设 FW_BROWSER_CHANNEL）");
 }
 
 const INIT_HOOKS = `

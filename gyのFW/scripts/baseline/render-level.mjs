@@ -15,9 +15,11 @@
  *   注意本图例的 '~'/'!' 直接按 gid 语义渲染（6=水杀火、7=岩浆杀水）。
  */
 import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const args = process.argv.slice(2);
-const refRoot = "D:/01_Guiyuan1111/GitHub/slbhr/Fireboy-and-Watergirl/output/A";
+const refRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../../Fireboy-and-Watergirl/output/A");
 
 if (args[0] === "--all") {
   console.log(`${refRoot}/data/tutorials/levels/forest_01.json`);
