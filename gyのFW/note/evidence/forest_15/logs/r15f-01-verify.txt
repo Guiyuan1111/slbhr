@@ -15,3 +15,9 @@
 
 ## 基底决定
 基底 = v41（现 forest_15.json），理由: 已验证 WIN@7936 且 fatal 少于 v39（29 vs 39），是 r15e 最后存活的 G5 链重建版。
+
+## r15f-02 硬化启动（10:5x-11:1x）
+- v41 默认模式 optimize --scan 1 --sweeps 10: 每轮 greedy 采纳净恶化 29→31→回滚 best=29，确定性原地踏步（混沌锁死），3.5 轮后手动终止（TEMP/r15f/opt-s1.log，20 次"顽固"）
+- v39 已存快照 forest_15.json.v39.json（optimize 断点续用会覆写 .best.json，v39 原载体已入库 75c0b36）
+- v41 MC 基线: 107/150 (71.3%) seed=42，fails 全为 deathF=-1 超时型（mc-v41-base.log）
+- 下一步: --one 严格全局改善模式 --scan 2（覆盖 MC slip +2/+3 档）
