@@ -10,7 +10,11 @@
 > 锚点体 fixture 改原版精灵矩形 38×35px（density 1/friction 0.2/cat 0/mask 65535），
 > 探针复跑锚点体 mass=1.2988/inertia=0.2821 逐位归位、8 N·s 冲量板心摆幅 339→415px、绳角 ±18°；
 > det r32 基线漂移面=hanging 7 关（02/12/12_1/19/19_1/25/25_1）与其余 41 关位级不变，
-> e2e forest_12 repeat3 ALL PASS。§window P1（渲染缺失）待办：客户端补 WindowLeft/Center/Right 绘制。
+> e2e forest_12 repeat3 ALL PASS。§window P1（渲染缺失）**已修（2026-10-15，用户令）**：GameScene
+> 按原版结构补绘——容器（中心+PAD、1.05 缩放、交换支 angle −90）挂 _default0000 载体帧 +
+> Left/Right ∓16px + Center scale.x=(w−2)/3（2m 窗=0 不画），depth 1.27；失实注释同批移除。
+> 显示列表取证（note/evidence/forest_bonus_1/tools/verify-window.mjs，playwright+`__fw` 句柄）：
+> bonus_1 两处窗 8 对象位置/缩放/深度/可见性逐项与 oracle 结构一致，无帧缺失警告。
 
 ## 0. 公共事实（两侧共享的换算与缺省）
 
