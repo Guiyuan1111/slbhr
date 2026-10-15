@@ -139,6 +139,8 @@ export interface WindDef {
   rotation: number;
   /** 米（图块集默认 10） */
   lengthM: number;
+  /** 米（原版 properties.windWidth ?? 2.6，@1734124；仅 forest_22 一柱=1.5） */
+  windWidth?: number;
   initialState: number;
 }
 
@@ -504,11 +506,22 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
               });
               break;
             case "box":
-              boxes.push({ id: `x${boxes.length}`, heavy: false, x: c.x, y: c.y, rotation: num(o.rotation) });
+            case "boxheavy": {
+              // BoxedDevice 中心矫正（原版 @1623528）：e=(mpx(boxSize.x/2), mpx(boxSize.y/2))，boxSize 缺省
+              // {2,2}→e=(32,32)px，按 −rotation 旋转后 x+=e.x、y−=e.y；rot=0 时=(x+32,y−32) 与图块中心一致
+              const rot = num(o.rotation);
+              const th = (-rot * Math.PI) / 180;
+              const ex = 32 * (Math.cos(th) - Math.sin(th));
+              const ey = 32 * (Math.sin(th) + Math.cos(th));
+              boxes.push({
+                id: `x${boxes.length}`,
+                heavy: typeName === "boxheavy",
+                x: num(o.x) + ex,
+                y: num(o.y) - ey,
+                rotation: rot,
+              });
               break;
-            case "boxheavy":
-              boxes.push({ id: `x${boxes.length}`, heavy: true, x: c.x, y: c.y, rotation: num(o.rotation) });
-              break;
+            }
             case "ball":
               balls.push({ id: `a${balls.length}`, x: c.x, y: c.y });
               break;
@@ -520,6 +533,7 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
                 rotation: num(o.rotation),
                 lengthM: num(props.length, 10),
                 initialState: num(props.initialState),
+                windWidth: props.windWidth === undefined ? undefined : num(props.windWidth),
               });
               break;
             default:
@@ -537,6 +551,7 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
               rotation: num(o.rotation),
               lengthM: num(props.length, 10),
               initialState: num(props.initialState),
+              windWidth: props.windWidth === undefined ? undefined : num(props.windWidth),
             });
           } else {
             unknown.push(`LargeObjects:${typeName || `local${localId}`}`);

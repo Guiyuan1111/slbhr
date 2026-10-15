@@ -248,8 +248,10 @@ export class MovingPlatform {
       const t = wM;
       wM = hM;
       hM = t;
-      cx += def.w / 2; // 原版 swap 后 x += 原 w/2（此前写反，竖直平台碰撞体偏 48px）
-      cy += def.h / 2; // y += 原 h/2
+      cx += def.w / 2;
+ // 原版 swap 后 x += 原 w/2（此前写反，竖直平台碰撞体偏 48px）
+      cy += def.h / 2;
+ // y += 原 h/2
       shapeRotation = -Math.PI / 2;
     } else {
       cx += def.w / 2;
@@ -581,14 +583,16 @@ export class Wind {
   readonly hasSignal = false;
   state: number;
   private readonly lengthM: number;
+  private readonly windWidth: number;
   private readonly activeRoles = new Set<"fireboy" | "watergirl">();
   private readonly B: B2;
 
-  constructor(B: B2, world: any, def: { rect: { x: number; y: number; w: number; h: number }; rotation: number; lengthM: number; initialState: number; group: number }) {
+  constructor(B: B2, world: any, def: { rect: { x: number; y: number; w: number; h: number }; rotation: number; lengthM: number; windWidth?: number; initialState: number; group: number }) {
     this.B = B;
     this.group = def.group;
     this.state = def.initialState;
     this.lengthM = def.lengthM;
+    this.windWidth = def.windWidth ?? 2.6;
     // 机身中心 = windBodyPos（BoxedDevice 矫正，金轨迹实证）
     const { x: cx, y: cy } = windBodyPos(def);
     const bd = new B.b2BodyDef();
@@ -603,9 +607,9 @@ export class Wind {
       { x: 1.25, y: 0.6 },
       { x: -1.25, y: 0.6 },
     ], { friction: 0.4, restitution: 0, density: 0.2 });
-    // 风柱传感器：宽 windWidth 2.6，高 length，从机身上方 0.5m 起
+    // 风柱传感器：宽 windWidth（原版 properties.windWidth ?? 2.6 @1734124），高 length，机身上方 0.5m 起
     const shape = new B.b2PolygonShape();
-    shape.SetAsOrientedBox(2.6 / 2, this.lengthM / 2, new B.b2Vec2(0, this.lengthM / 2 + 0.5), 0);
+    shape.SetAsOrientedBox(this.windWidth / 2, this.lengthM / 2, new B.b2Vec2(0, this.lengthM / 2 + 0.5), 0);
     const fd = new B.b2FixtureDef();
     fd.shape = shape;
     fd.isSensor = true;
