@@ -1,0 +1,10 @@
+import { makeWorld } from "../../scripts/e2e/routetool/kernel.mjs";
+import { teleport } from "./lib17.mjs";
+const w = makeWorld("forest_17");
+const b = w.chars.fireboy.body;
+const show = (tag) => console.log(tag, "phys", b.GetPosition().x.toFixed(2), b.GetPosition().y.toFixed(2), "snap", w.snapshotPlayer("fireboy").x.toFixed(1), w.snapshotPlayer("fireboy").y.toFixed(1));
+show("f0:");
+teleport(w, "fireboy", 600, 768);
+show("after tele:");
+w.step(1 / 60, { fireboy: { up: false, left: false, right: false }, watergirl: { up: false, left: false, right: false } });
+show("after step:");
