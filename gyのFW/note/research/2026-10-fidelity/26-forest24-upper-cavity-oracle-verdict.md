@@ -1,5 +1,7 @@
 # 26 号档：forest_24 上腔封闭 oracle 定谳（主会话复核，呈报处置）
 
+> **【处置裁决 2026-10-15 用户终裁：保原样豁免】**计入豁免名单（第 14 个）。关卡数据保持原版不动，不修复、不计绿。Ubuntu 接管会话落档；oracle 定谳证据见正文。
+
 **日期**：2026-10-14 11:2x-11:4x ｜ **性质**：r24b `915e765` §11"上腔不可行性实证"的主会话独立复核 + oracle 定谳
 **工具**：`note/evidence/forest_24/tools/`（dump24-roman.mjs / swing24.mjs / k24.mjs / k24-swing.mjs / d24-roman.out.json，本次入库）
 
