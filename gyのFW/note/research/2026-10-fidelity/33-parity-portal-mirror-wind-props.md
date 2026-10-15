@@ -230,3 +230,12 @@ Wind 残差合计：**P1×1（windWidth）+ P2×5**（flat、invertInput、力�
    属未来移植风险，建议届时加显式告警（本档不改源码）。
 5. utf-8 与 latin1 偏移差（+9，全在 1.84M 后字体数据区）：本档所有 @N 已统一 latin1 字节偏移；若以文本模式
    read 复核会偏 9 字节。
+
+---
+
+## 修复状态（2026-10-15 主会话核验后处置）
+
+- **P1-1 windWidth**：✅ 已修 72c2bd0——level2.ts 两处 wind 解码透传 `windWidth`，Wind 类 `def.windWidth ?? 2.6`；探针实证 forest_22 id=26 柱半宽 1.300→0.750m，其余柱缺省 1.300m 不变。
+- **P1-2 BoxedDevice 旋转中心**：✅ 已修 72c2bd0——box/boxheavy 解码按原版公式 e=(32,32)px R(−rotation) 矫正；探针实证 forest_24_1 箱中心 (1092.107, 859.038) 与原版算术逐位一致；rot=0 走精确路径，其余 46 关 det 位级不变。
+- det 基线 r30 → **r31**（仅 forest_24_1 漂，预期；48/48 自验一致，c784c10）。
+- P2 项（portal/boxmirror/infinitemirror 零使用、wind flat/invertInput/力尾截零等）暂不处置，留作 temple 世界移植时的风险清单。
