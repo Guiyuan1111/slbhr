@@ -1,0 +1,17 @@
+# r15f 接力验证（2026-10-15, Ubuntu）
+环境: node v22.22.1, 8 核
+命令: node --import tsx scripts/e2e/routetool/validate.mjs --level forest_15 --route <path>
+
+## 全家族内核复核
+- v39 (forest_15.json.best.json): WIN @f7936 (96fb+86wg)
+- v40: FAIL 超时未过关
+- v41 (forest_15.json 主文件): WIN @f7936 (94fb+86wg)
+- v42: FAIL 超时未过关
+- v43: FAIL 超时未过关  ← 派发断点版本已退化，r15e 尾段改动 (wg#37+5f/b2全压60f/12↑E tap9f/endgame钉墙) 破坏通关
+
+## ±1f fatal 扫描 (scan.mjs <path> 1 7)
+- v39: 39/364 fatal
+- v41: 29/360 fatal
+
+## 基底决定
+基底 = v41（现 forest_15.json），理由: 已验证 WIN@7936 且 fatal 少于 v39（29 vs 39），是 r15e 最后存活的 G5 链重建版。
