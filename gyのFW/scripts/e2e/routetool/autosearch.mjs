@@ -290,13 +290,20 @@ const SEG = {
     },
   },
   S7: {
-    maxDepth: 8, capFb: 6, capWg: 6,
+    maxDepth: 12, capFb: 7, capWg: 7,
     vocab: {
-      // 塔顶(224)→顶层(row6 x[384,1248])之间 x[192,384] 为缺口且顶层高 32px：先跳东登顶层再东行走门
-      fb: [spec("jumpDrift", 1, 0, 50), spec("runJump", 1, 150), spec("runJump", 1, 170), spec("goTo", 700, 12),
-        spec("goTo", 900, 12), spec("goTo", 1056, 8), spec("goTo", 1050, 8), spec("sleep", 15)],
-      wg: [spec("jumpDrift", 1, 0, 50), spec("runJump", 1, 150), spec("runJump", 1, 170), spec("goTo", 700, 12),
-        spec("goTo", 900, 12), spec("goTo", 1168, 8), spec("goTo", 1160, 8), spec("sleep", 15)],
+      // 实证（dbg7-dbg9 探针 + 瓦片 r4-r6 dump + 绿迹 f2040-2150 双验证，2026-10-16）：
+      //   种子终态（S6 停泊重放）fb 箱顶 [215,253]G、wg 352 板 [293,317]G。顶层真通道：
+      //   西塔(224)东缘满速助跑跳（空中持续压右加速至 vx287，飞行 ~300px）→ 台阶B顶
+      //   (128, x[320,416]) → 东落顶层(192, x≥384) → 东行走门。箱顶站跳弧线顶点 feet~168
+      //   差 40px 越不过台阶B西立面（dbg9 实证撞墙滑落板），必须先回塔。
+      //   fb: 箱顶西跳回塔（升 64px）→ 塔上助跑跳；wg: 板西跳上箱 → 箱顶西跳回塔 → 同款。
+      fb: [spec("jumpDrift", -1, 0, 40), spec("jumpDrift", 1, 0, 50), spec("runJump", 1, 150), spec("runJump", 1, 170),
+        spec("runJump", 1, 185), spec("runJump", 1, 190), spec("goTo", 700, 12), spec("goTo", 900, 12),
+        spec("goTo", 1056, 8), spec("goTo", 1050, 8), spec("sleep", 15)],
+      wg: [spec("jumpDrift", -1, 0, 30), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", 1, 0, 50), spec("runJump", 1, 150),
+        spec("runJump", 1, 170), spec("runJump", 1, 185), spec("runJump", 1, 190), spec("goTo", 700, 12), spec("goTo", 900, 12),
+        spec("goTo", 1168, 8), spec("goTo", 1160, 8), spec("sleep", 15)],
     },
   },
 };
