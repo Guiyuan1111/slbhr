@@ -883,6 +883,8 @@ if (resumePath) {
     seedSf = [...s.final.sf]; seedSw = [...s.final.sw]; prefixF = s.final.endF;
   }
   startIdx = Math.max(segRange[0], prev.segs.filter((s) => s.final).length);
+  // --forcestart N：配方返工时强制从段 N 重搜（种子仍取前一最终稿的累积程序前缀）
+  if (argOf("forcestart")) startIdx = Math.max(segRange[0], Number(argOf("forcestart")));
   log(`resume: 载入前 ${startIdx} 段定稿（累积程序 fb ${seedSf.length} / wg ${seedSw.length} 原语，前缀 ${prefixF}f）`);
 }
 
