@@ -28,8 +28,12 @@ const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => {
 };
 
 const DEFAULT_LEVEL_ID = "forest_01";
+const urlParams = new URLSearchParams(location.search);
 /** URL ?level= 选关（冻结需求 #12；合法性由服务端校验，非法 id 返回 4404 文案） */
-const urlLevel = new URLSearchParams(location.search).get("level") ?? "";
+const urlLevel = urlParams.get("level") ?? "";
+/** 邀请深链 ?room=<房间码>&pw=<密码>：创建者 HUD 一键复制生成，对方打开自动填入并加入 */
+const inviteRoom = urlParams.get("room") ?? "";
+const invitePw = urlParams.get("pw") ?? "";
 /** 关卡四周的岩壁边距（原版 groundTexture 1312×992 = 关卡 +32 边距） */
 
 let phaser: Phaser.Game | null = null;
@@ -324,6 +328,35 @@ async function start(mode: "create" | "join"): Promise<void> {
     );
     const codeShown = net.room.roomId;
     $("#hud-room").textContent = `房间码 ${codeShown}（密码已校验）`;
+    // 创建者：一键复制邀请链接（对方打开自动填房间码/密码并加入；pw 随链接即视为已授权）
+    if (mode === "create") {
+      const invite = `${location.origin}${location.pathname}?level=${encodeURIComponent(
+        selectedLevel || urlLevel || DEFAULT_LEVEL_ID,
+      )}&room=${encodeURIComponent(codeShown)}&pw=${encodeURIComponent(password)}`;
+      const btn = document.createElement("button");
+      btn.id = "btn-invite";
+      btn.type = "button";
+      btn.textContent = "复制邀请链接";
+      btn.style.cssText =
+        "margin-left:8px;font-size:12px;padding:2px 8px;cursor:pointer;background:#2b3a2b;color:#cfe3c3;border:1px solid #556b4f;border-radius:4px;pointer-events:auto"; // #hud 整层 none 防挡画布，按钮单点恢复可点
+      btn.addEventListener("click", () => {
+        void navigator.clipboard
+          .writeText(invite)
+          .catch(() => {
+            const ta = document.createElement("textarea");
+            ta.value = invite;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            ta.remove();
+          })
+          .finally(() => {
+            btn.textContent = "已复制";
+            setTimeout(() => (btn.textContent = "复制邀请链接"), 1500);
+          });
+      });
+      $("#hud-room").appendChild(btn);
+    }
     await enterGame();
   } catch (e: any) {
     // 进房成功但进游戏失败（关卡缺失等）→ 退回菜单并释放房间
@@ -389,6 +422,12 @@ function togglePause(): void {
 function bindUi(): void {
   $("#btn-create").addEventListener("click", () => start("create"));
   $("#btn-join").addEventListener("click", () => start("join"));
+  // 邀请深链：房间码/密码已带全时自动加入（延迟一拍让 Phaser 初始化先走；失败回落面板可手改）
+  if (inviteRoom && invitePw) {
+    $<HTMLInputElement>("#roomcode").value = inviteRoom;
+    $<HTMLInputElement>("#password").value = invitePw;
+    window.setTimeout(() => void start("join"), 300);
+  }
   // HUD 轮询刷新（4Hz 足够，DOM 开销可忽略；模块级单例，重入不叠加）
   setInterval(updateHud, 250);
   bootPhaser();
