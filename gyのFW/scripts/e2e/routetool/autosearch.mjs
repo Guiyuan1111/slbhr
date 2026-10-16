@@ -294,12 +294,21 @@ const SEG = {
   },
   S2: {
     maxDepth: 10, capFb: 7, capWg: 6,
+    // wg 登板 v2（dbg26 法证 2026-10-16）：沉底 P1（P1y 恒 592.3 不回升，ride 无效）东缘 x160
+    //   高出廊面 48px 成坎——S1 出发位 [190.7,604.5] 西行被坎卡死（v1 vocab goTo120/100 全死锁，
+    //   full4 S2 未解根因）。原地 jo(-1,570)：垂直起跳 + 高空(y<570)左漂 ~31px 过坎落台东缘
+    //   [159.6,542.7]，板上 goTo(60) 西行入窗 [24,80]（板上无障碍，fb 已东跳不挡）。
+    //   jo(-1,555) 漂移窗过短不过坎（dbg26 v4 实证）。
+    recipe: {
+      fb: [spec("jumpDrift", 1, 0, 90), spec("goTo", 220, 10), spec("sleep", 15)],
+      wg: [spec("jumpOnto", -1, 570), spec("goTo", 60, 10), spec("sleep", 15)],
+    },
     vocab: {
-      // fb：P1 西缘原地跳东上 480 台（升 ~96px，绿迹同款无助跑跳）；wg 接位 P1 西缘
+      // fb：P1 西缘原地跳东上 480 台（升 ~96px，绿迹同款无助跑跳）
       fb: [spec("jumpDrift", 1, 0, 90), spec("jumpDrift", 1, 0, 70), spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475),
         spec("runJump", 1, 60), spec("runJump", 1, 100), spec("goTo", 200, 12), spec("goTo", 300, 12), spec("sleep", 15)],
-      wg: [spec("goTo", 120, 12), spec("goTo", 100, 12), spec("jumpOnto", -1, 555), spec("jumpOnto", -1, 570),
-        spec("jumpDrift", -1, 0, 40), spec("goTo", 60, 12), spec("goTo", 48, 12), spec("sleep", 15)],
+      wg: [spec("jumpOnto", -1, 570), spec("jumpOnto", -1, 560), spec("jumpOnto", -1, 580), spec("jumpOnto", -1, 555),
+        spec("goTo", 60, 10), spec("goTo", 80, 10), spec("goTo", 48, 12), spec("sleep", 15)],
     },
   },
   S3: {
