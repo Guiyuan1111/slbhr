@@ -794,10 +794,11 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
         continue;
       }
       const deadlineAbsF = (cand.entryF >= 0 ? cand.entryF : 0) + segC.horizonF;
-      let seamEntryF = -1;
+      let seamEntryF = -1, seamWhy = "";
       if (nextC) {
         const nr = evaluate(nextC, trimmed.sf, trimmed.sw, cand.endF + SEAM_GRACE_F + 120);
-        if (seamOkNr(nr, trimmed, nextC)) seamEntryF = nr.entryF;
+        const sv = seamOkNr(nr, trimmed, nextC);
+        if (sv === true) seamEntryF = nr.entryF; else seamWhy = String(sv);
       }
       // 穷举 ±1f 验收门（seam 过后对本段新增事件全量扰动；绿路线 fatal=0/222 实证可达）
       let exFatal = 1, exGroups = [];
@@ -806,7 +807,7 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
         exFatal = ex.fatal; exGroups = ex.groups;
       }
       const rec = { cand: trimmed, events: dr.events, inline: { fatal: exFatal, groups: exGroups }, exhaustiveFatal: exFatal, score2: cand.score - 500 * exFatal, seamEntryF, trimDepth: [kFb, kWg] };
-      log(`    fin[${node.name ?? "?"}] try[${kFb},${kWg}] seam=${seamEntryF} exFatal=${exFatal}${exGroups.length ? " groups=" + JSON.stringify(exGroups).slice(0, 220) : ""}`);
+      log(`    fin[${node.name ?? "?"}] try[${kFb},${kWg}] seam=${seamEntryF}${seamWhy ? " (" + seamWhy + ")" : ""} exFatal=${exFatal}${exGroups.length ? " groups=" + JSON.stringify(exGroups).slice(0, 220) : ""}`);
       const acc = (r) => ((r.seamEntryF >= 0 || !nextC) && r.exhaustiveFatal === 0 ? 1 : 0);
       if (!best || acc(rec) - acc(best) > 0) best = rec;
       else if (acc(rec) === acc(best) && rec.score2 > best.score2) best = rec;
@@ -825,13 +826,13 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
  *  |vx| 小被当站立豁免，实为走离板缘的前奏——entry 只在 f814 命中一瞬，冻结态已走落西缘。
  *  entry 是下段的稳定泊位契约，蒸发即伪过）。 */
 function seamOkNr(nr, trimmed, nextC) {
-  if (nr.entryF < 0 || !nr.entryS) return false;
+  if (nr.entryF < 0 || !nr.entryS) return "entry-no-fire";
   const drained = nr.idxEnd.fb >= trimmed.sf.length && nr.idxEnd.wg >= trimmed.sw.length;
-  if (!drained) return false;
+  if (!drained) return `not-drained idx=${nr.idxEnd.fb}/${trimmed.sf.length},${nr.idxEnd.wg}/${trimmed.sw.length}`;
   const pre = (r) => nr.drainF[r] >= 0 && nr.entryF <= nr.drainF[r];
   const moving = (r) => Math.abs(nr.entryS[r].vx) > 25;
-  for (const r of ["fb", "wg"]) if (moving(r) && !pre(r)) return false;
-  if (nextC && !allS(nextC.entryG, nr.S, nr.M, nr.D)) return false;
+  for (const r of ["fb", "wg"]) if (moving(r) && !pre(r)) return `moving-${r}-post-drain`;
+  if (nextC && !allS(nextC.entryG, nr.S, nr.M, nr.D)) return `end-state-evaporated fb[${nr.S.fb.x.toFixed(0)},${nr.S.fb.y.toFixed(0)}] wg[${nr.S.wg.x.toFixed(0)},${nr.S.wg.y.toFixed(0)}]`;
   return true;
 }
 
@@ -840,7 +841,7 @@ function seamOkNr(nr, trimmed, nextC) {
 function seamCheck(final, nextSegDef) {
   const nextC = segCtxOf(nextSegDef);
   const nr = evaluate(nextC, final.cand.sf, final.cand.sw, final.cand.endF + SEAM_GRACE_F + 120);
-  if (!seamOkNr(nr, final.cand, nextC)) return { ok: false };
+  if (seamOkNr(nr, final.cand, nextC) !== true) return { ok: false };
   return { ok: true, entryF: nr.entryF, grace: Math.max(0, nr.entryF - final.cand.endF) };
 }
 
