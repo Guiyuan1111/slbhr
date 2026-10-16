@@ -796,6 +796,7 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
         exFatal = ex.fatal; exGroups = ex.groups;
       }
       const rec = { cand: trimmed, events: dr.events, inline: { fatal: exFatal, groups: exGroups }, exhaustiveFatal: exFatal, score2: cand.score - 500 * exFatal, seamEntryF, trimDepth: [kFb, kWg] };
+      log(`    fin[${node.name ?? "?"}] try[${kFb},${kWg}] seam=${seamEntryF} exFatal=${exFatal}${exGroups.length ? " groups=" + JSON.stringify(exGroups).slice(0, 220) : ""}`);
       const acc = (r) => ((r.seamEntryF >= 0 || !nextC) && r.exhaustiveFatal === 0 ? 1 : 0);
       if (!best || acc(rec) - acc(best) > 0) best = rec;
       else if (acc(rec) === acc(best) && rec.score2 > best.score2) best = rec;
