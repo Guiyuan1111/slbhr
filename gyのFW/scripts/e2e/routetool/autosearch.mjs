@@ -302,16 +302,21 @@ const SEG = {
     //   v3 补 waitPx 跨角色同步（dbg-s2b 轨迹法证）：wg 若立即登板则 ~f800 永久离开廊窗
     //   [140,280]×[598,618]，而 fb 要 ~f910 才滑入 shaft 窗 → 联合 entry 永不触发（entry@-1，
     //   full5 recipe 宏假死根因）。waitPx("fb",24,72) 状态锚定等 fb 入窗再跳，entry ~f890 即燃。
+    //   v4（dbg27 穷举 0/22）：jo 位置敏感漂移 ±1f 三处脆（漂移窗随弧相位）+ goTo 防过冲
+    //   刹车在 slick 台面进振荡爬行（±1f 落点漂 17px 即 200 帧爬不进窗）→ 改 jd(-1,0,24)
+    //   立跳全漂 24f（落点 [47-81] 直插窗，lip 提前 27px 越过）+ hold(-1,60) 无条件西行
+    //   过线即停、slick 滑行 ~80px 由竖井西墙 x~32 接住（墙锚停靠，窗锚定免疫落点方差）。
     recipe: {
       fb: [spec("jumpDrift", 1, 0, 90), spec("goTo", 220, 10), spec("sleep", 15)],
-      wg: [spec("waitPx", "fb", 24, 72), spec("jumpOnto", -1, 570), spec("goTo", 60, 10), spec("sleep", 15)],
+      wg: [spec("waitPx", "fb", 24, 72), spec("sleep", 60), spec("jumpDrift", -1, 0, 24), spec("hold", -1, 60), spec("sleep", 15)],
     },
     vocab: {
       // fb：P1 西缘原地跳东上 480 台（升 ~96px，绿迹同款无助跑跳）
       fb: [spec("jumpDrift", 1, 0, 90), spec("jumpDrift", 1, 0, 70), spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475),
         spec("runJump", 1, 60), spec("runJump", 1, 100), spec("goTo", 200, 12), spec("goTo", 300, 12), spec("sleep", 15)],
-      wg: [spec("waitPx", "fb", 24, 72), spec("waitPx", "fb", 30, 70), spec("jumpOnto", -1, 570), spec("jumpOnto", -1, 560), spec("jumpOnto", -1, 580), spec("jumpOnto", -1, 555),
-        spec("goTo", 60, 10), spec("goTo", 80, 10), spec("goTo", 48, 12), spec("sleep", 15)],
+      wg: [spec("waitPx", "fb", 24, 72), spec("sleep", 45), spec("sleep", 60), spec("sleep", 75),
+        spec("jumpDrift", -1, 0, 20), spec("jumpDrift", -1, 0, 24), spec("jumpDrift", -1, 0, 28),
+        spec("hold", -1, 60), spec("hold", -1, 80), spec("sleep", 15)],
     },
   },
   S3: {
