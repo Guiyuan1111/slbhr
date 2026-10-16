@@ -499,6 +499,7 @@ function searchSegment(segDef, seeds, opts) {
   const layers = [];
   const seen = new Set();
   let evals = 0, solved = null, bestEver = null;
+  let metBeam = null; // 首个产出 met 候选的层前沿（早熟家系 seam 不过时继续搜，此快照供定稿兜底）
   // 总重放上限：种子程序长度估计 + horizon + 宽限（前缀帧数以种子 endF 为准，由调用方传入 opts.prefixF）
   const prefixF = opts.prefixF ?? 0;
   const totalCapF = prefixF + segC.horizonF + GRACE_F + 120;
@@ -563,10 +564,17 @@ function searchSegment(segDef, seeds, opts) {
       path: progNames(b.sf).slice(0, 160) + " | " + progNames(b.sw).slice(0, 160),
     });
     log(`  ${segDef.id} d${depth}: evals=${evals} best=${b.score.toFixed(0)} wp=${b.unlocked}/${segC.wpG.length} met=${b.met} rob=${layers.at(-1).rob ?? "-"} entry@${b.r.entryF} fb=[${layers.at(-1).fb}] wg=[${layers.at(-1).wg}]`);
-    if (b.met) { solved = b; break; }
+    if (b.met) {
+      // met 不即停：先试定稿阶梯，seam 过关才收（早熟脆家系 met 会饿死下段——v4 实证
+      // d8 4原语落窗即坠家系抢跑）；不过则继续加深让鲁棒家系上位，快照首个 met 前沿兜底
+      const finTry = finalizeSegment({ beam }, segDef, prefixF, opts.nextDef ?? null);
+      if (finTry && (finTry.seamEntryF >= 0 || !opts.nextDef)) { solved = b; break; }
+      if (!metBeam) metBeam = beam;
+    }
     if (evals > BUDGET) { log(`  ${segDef.id} evals 预算耗尽（${BUDGET}）`); exhausted = true; break; }
     if ((Date.now() - opts.t0) / 1000 > opts.wallBudgetS) { log(`  ${segDef.id} 墙钟预算耗尽`); exhausted = true; break; }
   }
+  if (!solved && metBeam) { solved = metBeam.find((n) => n.met) ?? null; beam = metBeam; }
   return {
     id: segDef.id, title: segDef.title, horizonF: segC.horizonF, maxDepth,
     solved: !!solved, exhausted, evals, wallS: +((Date.now() - t0) / 1000).toFixed(1), layers,
@@ -588,7 +596,15 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
   const nextC = nextDef ? segCtxOf(nextDef) : null;
   const pool = segRes.beam.filter((n) => n.met).slice(0, 8);
   const out = [];
-  for (const cand of pool) {
+  for (const node of pool) {
+    // 活前沿节点字段在 .r 里（报表 beam 才是摊平形状）——不归一化则 metIdx 恒 undefined，
+    // 阶梯退化为只试全长（d43e739 上线以来浅剪从未真正执行，v4 实证）
+    const R = node.r ?? {};
+    const cand = {
+      ...node,
+      entryF: node.entryF ?? R.entryF, endF: node.endF ?? R.endF, metAt: node.metAt ?? R.metAt,
+      metIdx: node.metIdx ?? R.metIdx,
+    };
     const mi = cand.metIdx ?? { fb: cand.sf.length, wg: cand.sw.length };
     const depthTries = [[mi.fb, mi.wg]];
     for (const k of [1, 2, 3]) {
@@ -710,7 +726,7 @@ for (let si = startIdx; si <= segRange[1]; si++) {
   if (wallLeftS <= 60) { log(`整关墙钟预算（${MAXMINUTES}min）耗尽，停在段 ${segDef.id}`); break; }
   log(`== 段 ${segDef.id}（${si + 1}/${chain.segments.length}）${segDef.title} horizon=${segDef.horizonF}f`);
   const seeds = seedSf.length || seedSw.length ? [{ sf: seedSf, sw: seedSw }] : [{ sf: [], sw: [] }];
-  const segRes = searchSegment(segDef, seeds, { t0: t0All, wallBudgetS, prefixF });
+  const segRes = searchSegment(segDef, seeds, { t0: t0All, wallBudgetS, prefixF, nextDef: chain.segments[si + 1] ?? null });
   const segReport = { id: segRes.id, title: segRes.title, solved: segRes.solved, exhausted: segRes.exhausted, evals: segRes.evals, wallS: segRes.wallS, layers: segRes.layers, bestEver: segRes.bestEver ? { ...segRes.bestEver, sf: undefined, sw: undefined } : null };
 
   if (!segRes.solved) {
@@ -729,9 +745,15 @@ for (let si = startIdx; si <= segRange[1]; si++) {
     break;
   }
 
-  // 段定稿（top-3 inline 采样，score′ 定稿）+ 种子泊位（对下一段 entry 验证）
+  // 段定稿（top-8 inline 采样 + 修剪阶梯 + 下段 entry 实测，seam 优先定稿）+ 种子泊位
   const nextDef0 = chain.segments[si + 1] ?? null;
   const fin = await finalizeSegment(segRes, segDef, prefixF, nextDef0);
+  if (!fin) {
+    segReport.failure = { ...(segReport.failure ?? {}), note: "定稿池空（beam 无 met 候选）" };
+    report.segs.push(segReport);
+    log(`${segDef.id} 定稿池空——后续段中止`);
+    break;
+  }
   segReport.final = {
     sf: fin.cand.sf, sw: fin.cand.sw, score: +fin.cand.score.toFixed(0), score2: +fin.score2.toFixed(0),
     entryF: fin.cand.entryF, endF: fin.cand.endF, metAt: fin.cand.metAt,
