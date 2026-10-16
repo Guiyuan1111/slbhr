@@ -346,7 +346,9 @@ const SEG = {
     //   vMax 拉满 999 单程直压才是正解。fb：台东行 → 东缘 640 落 512 廊 → 东行 P0 候乘位。
     recipe: {
       fb: [spec("goTo", 600, 12), spec("goTo", 1060, 12), spec("sleep", 15)],
-      wg: [spec("runJump", 1, 0, 18), spec("walkTo", 1, 341, 999), spec("sleep", 15)],
+      // sleep(20) 吸收头：finalizer 会砍种子尾段 settle（full8 实证 S2 trim 17/18 砍掉
+      //   hold(-1,60) 后的 sleep(15) → rj 从滑行态提前 15f 发射 → 弧线变质落井底 [364,605]）
+      wg: [spec("sleep", 20), spec("runJump", 1, 0, 18), spec("walkTo", 1, 341, 999), spec("sleep", 15)],
     },
     vocab: {
       // fb：480 台东行 → 东缘落 512 廊 → 东行候乘
