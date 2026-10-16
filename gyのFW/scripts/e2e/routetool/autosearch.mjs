@@ -345,15 +345,21 @@ const SEG = {
     //   教训：walkTo vMax 限速脉冲步进本身是脆弱性发生器（80 脉冲事件 136 败）——
     //   vMax 拉满 999 单程直压才是正解。fb：台东行 → 东缘 640 落 512 廊 → 东行 P0 候乘位。
     recipe: {
-      fb: [spec("goTo", 600, 12), spec("goTo", 1060, 12), spec("sleep", 15)],
+      // fb v2（full12/13 法证 2026-10-16）：goTo(1060) 在 slick 廊面进刹车振荡极限环——
+      //   振荡脉冲 ±1f 对 S3 目标不可见（环绕 1060 反复过窗）但 S4 里推迟 goTo(1060) 完成
+      //   → 登乘阶梯整体晚 ~60f → S4 deadline 不 met（fb[73] left-down@1191 -1 fatal）。
+      //   改 walkTo(1,1070,999)：过线即反刹，滑行被 P0 沉位西立面 x~1076 墙锚接住（pinned
+      //   vx=0），停位相位免疫。S4 fb 头 goTo(1080) 随之永不可达，换 sleep(30)（S4 配方）。
+      fb: [spec("goTo", 600, 12), spec("walkTo", 1, 1070, 999), spec("sleep", 15)],
       // sleep(20) 吸收头：finalizer 会砍种子尾段 settle（full8 实证 S2 trim 17/18 砍掉
       //   hold(-1,60) 后的 sleep(15) → rj 从滑行态提前 15f 发射 → 弧线变质落井底 [364,605]）
       wg: [spec("sleep", 20), spec("runJump", 1, 0, 18), spec("walkTo", 1, 341, 999), spec("sleep", 15)],
     },
     vocab: {
-      // fb：480 台东行 → 东缘落 512 廊 → 东行候乘
-      fb: [spec("goTo", 500, 12), spec("goTo", 650, 12), spec("goTo", 800, 12), spec("goTo", 1060, 12),
-        spec("goTo", 1090, 12), spec("walkTo", 1, 1050, 90), spec("sleep", 15)],
+      // fb：480 台东行 → 东缘落 512 廊 → 东行候乘（walkTo 过线反刹 + P0 立面墙锚收滑）
+      fb: [spec("goTo", 500, 12), spec("goTo", 650, 12), spec("goTo", 800, 12),
+        spec("walkTo", 1, 1070, 999), spec("walkTo", 1, 1064, 999), spec("walkTo", 1, 1076, 999),
+        spec("goTo", 1060, 12), spec("goTo", 1090, 12), spec("sleep", 15)],
       // wg：P1 西缘跳东上 480 台 → 东行压 b1（P0 下行）
       wg: [spec("runJump", 1, 0, 18), spec("runJump", 1, 0, 15), spec("runJump", 1, 0, 21),
         spec("walkTo", 1, 338, 999), spec("walkTo", 1, 341, 999), spec("walkTo", 1, 344, 999),
@@ -366,7 +372,7 @@ const SEG = {
       // 实证（probe4，2026-10-15）：fb 廊上东行靠 P0 沉位西立面（x~1076，顶 480 高廊面 32px 为台）；
       //   板下台阶 y[384,416] 把净空压到 29px → 登乘只能立面垂直跳（jo 顶头截断+下落东漂上 P0）；
       //   wg 松 b1 后 P0 载 fb 升顶须 fb 骑乘唤醒（ride）；顶 384 比板 352 低 32px，跳西落板压 b0。
-      fb: [spec("goTo", 1080, 12), spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475), spec("ride", 0, 396, 412),
+      fb: [spec("sleep", 30), spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475), spec("ride", 0, 396, 412),
         spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 25), spec("goTo", 970, 10), spec("goTo", 992, 10),
         spec("sleep", 60)],
       wg: [spec("sleep", 30), spec("waitPx", "fb", 1080, 1214), spec("goTo", 1060, 12), spec("goTo", 1100, 12),
