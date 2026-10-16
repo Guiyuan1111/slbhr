@@ -574,59 +574,57 @@ function searchSegment(segDef, seeds, opts) {
   };
 }
 
-/** 段定稿：top-3（beam 前 3 达标者）各 drive 重放收事件表 + inline 采样，score′ 最高者为段定稿（§4.3 阶段一） */
+/** 段定稿：beam 前 8 达标者，各做【修剪深度阶梯】+ drive 重放收事件表 + inline 采样 + 下段 entry 实测，
+ *  按（seam 通过, score′）字典序定稿（§4.3 阶段一）。
+ *  修剪深度阶梯（S0b 饥饿实证）：泊位修剪剪掉 metAt 在飞原语，其弧线可能正是下段 entry
+ *  的入窗穿越（S0a d9 解的 fb 第 5 原语 runJump(-1,1150) 即入窗弧线，剪掉后 fb 撞东墙
+ *  坠落永不过窗）；故 metIdx 剪（S5 泊位，防悬空谓词阻塞队列）不过关时逐级多保留 1-3
+ *  个原语重试，末级不剪兜底。每级以「下段 entry 实测 + 队列排干（idxEnd=长度，防保留
+ *  永不完成的原语重新引入 S5 阻塞）」双检。 */
 function finalizeSegment(segRes, segDef, prefixF, nextDef) {
   const segC = segCtxOf(segDef);
-  const pool3 = segRes.beam.filter((n) => n.met).slice(0, 3);
+  const nextC = nextDef ? segCtxOf(nextDef) : null;
+  const pool = segRes.beam.filter((n) => n.met).slice(0, 8);
   const out = [];
-  for (const cand of pool3) {
-    const totalFrames = (cand.endF > 0 ? cand.endF : prefixF + segC.horizonF) + 30;
-    const dr = replayEvents(cand.sf, cand.sw, totalFrames);
-    if (!dr.result.won && dr.result.deathF >= 0) { out.push({ cand, inline: { fatal: SAMPLES, groups: [] }, score2: -1e6 }); continue; }
-    const deadlineAbsF = (cand.entryF >= 0 ? cand.entryF : 0) + segC.horizonF;
-    const ins = inlineSample(dr.events, segC, deadlineAbsF, SAMPLES, Math.max(0, cand.entryF));
-    out.push({ cand, events: dr.events, inline: ins, score2: cand.score - 500 * ins.fatal });
+  for (const cand of pool) {
+    const mi = cand.metIdx ?? { fb: cand.sf.length, wg: cand.sw.length };
+    const depthTries = [[mi.fb, mi.wg]];
+    for (const k of [1, 2, 3]) {
+      const t = [Math.min(cand.sf.length, mi.fb + k), Math.min(cand.sw.length, mi.wg + k)];
+      if (t[0] !== depthTries.at(-1)[0] || t[1] !== depthTries.at(-1)[1]) depthTries.push(t);
+    }
+    depthTries.push([cand.sf.length, cand.sw.length]);
+    let best = null;
+    for (const [kFb, kWg] of depthTries) {
+      const trimmed = { ...cand, sf: cand.sf.slice(0, Math.max(1, kFb)), sw: cand.sw.slice(0, Math.max(1, kWg)), parked: true };
+      const totalFrames = (cand.endF > 0 ? cand.endF : prefixF + segC.horizonF) + 30;
+      const dr = replayEvents(trimmed.sf, trimmed.sw, totalFrames);
+      if (!dr.result.won && dr.result.deathF >= 0) { best = { cand: trimmed, inline: { fatal: SAMPLES, groups: [] }, score2: -1e6, seamEntryF: -1, trimDepth: [kFb, kWg] }; continue; }
+      const deadlineAbsF = (cand.entryF >= 0 ? cand.entryF : 0) + segC.horizonF;
+      const ins = inlineSample(dr.events, segC, deadlineAbsF, SAMPLES, Math.max(0, cand.entryF));
+      let seamEntryF = -1;
+      if (nextC) {
+        const nr = evaluate(nextC, trimmed.sf, trimmed.sw, cand.endF + SEAM_GRACE_F + 120);
+        const drained = nr.idxEnd.fb >= trimmed.sf.length && nr.idxEnd.wg >= trimmed.sw.length;
+        if (nr.entryF >= 0 && drained) seamEntryF = nr.entryF;
+      }
+      const rec = { cand: trimmed, events: dr.events, inline: ins, score2: cand.score - 500 * ins.fatal, seamEntryF, trimDepth: [kFb, kWg] };
+      if (!best || ((rec.seamEntryF >= 0) - (best.seamEntryF >= 0)) > 0) best = rec;
+      else if (best.seamEntryF >= 0 === rec.seamEntryF >= 0 && rec.score2 > best.score2) best = rec;
+      if (best.seamEntryF >= 0) break; // 深度阶梯已过关（优先浅剪），停止加保留
+    }
+    out.push(best);
   }
-  out.sort((x, y) => y.score2 - x.score2);
-  const win = out[0];
-  if (!win) return win;
-  // 种子泊位（S5 实证双病根）：metAt 帧尚未【完成】的原语对达标已有贡献但留之有害——
-  //   其悬空条件谓词（waitPx）或被立面顶死的 goTo 会在下一段重放中永久阻塞队列，
-  //   复跳型（jumpDrift）则会破坏下段 entry。截到 metAt 前最后完成的原语：
-  //   f0..metAt-1 重放逐帧不变，metAt 起双方无输入驻留；落位态由 seamCheck（含宽限与
-  //   换种子救援 R3）验证下一段 entry。
-  if (win.cand.metIdx) {
-    win.cand = {
-      ...win.cand,
-      sf: win.cand.sf.slice(0, Math.max(1, win.cand.metIdx.fb)),
-      sw: win.cand.sw.slice(0, Math.max(1, win.cand.metIdx.wg)),
-      parked: true,
-    };
-  }
-  return win;
+  out.sort((x, y) => ((y.seamEntryF >= 0) - (x.seamEntryF >= 0)) || (y.score2 - x.score2));
+  return out[0];
 }
 
-/** seam 校验（§9-3）：段定稿终态直接断言下一段 entry；失败宽限 SEAM_GRACE_F 帧重查（事件表确定性重放） */
+/** seam 校验（§9-3）：对【修剪后】定稿程序以 evaluate 重放，逐帧查下一段 entryG（含死亡短路）。
+ *  旧版先断言修剪前存储终态 = 假阳性（修剪剪掉的在飞原语弧线可能正是入窗穿越，S0b 饥饿实证），废除。 */
 function seamCheck(final, nextSegDef) {
   const nextC = segCtxOf(nextSegDef);
-  const probe = (Sx, Mx, Dx) => allS(nextC.entryG, Sx, Mx, Dx);
-  if (probe(final.cand.S, final.cand.M, final.cand.D)) return { ok: true, entryF: final.cand.endF, grace: 0 };
-  const totalFrames = final.cand.endF + SEAM_GRACE_F + 2;
-  const dr = replayEvents(final.cand.sf, final.cand.sw, totalFrames);
-  const ins = expandFlat(dr.events.fb, dr.events.wg, totalFrames);
-  const w2 = makeWorld(LEVEL);
-  for (let f = 0; f < totalFrames; f++) {
-    w2.step(1 / 60, { fireboy: ins.fb[f], watergirl: ins.wg[f] });
-    const a = w2.snapshotPlayer("fireboy"), b = w2.snapshotPlayer("watergirl");
-    if (a.dead || a.dying || b.dead || b.dying) break;
-    const Sx = {
-      fb: { x: a.x, y: a.y, vx: a.vx, vy: a.vy, atDoor: a.atDoor, grounded: w2.players.fireboy.feetContacts.length > 0, dead: a.dead || a.dying },
-      wg: { x: b.x, y: b.y, vx: b.vx, vy: b.vy, atDoor: b.atDoor, grounded: w2.players.watergirl.feetContacts.length > 0, dead: b.dead || b.dying },
-    };
-    const Mx = w2.mechSnapshot();
-    const Dx = { won: w2.phase === "won", doors: w2.doors };
-    if (f >= final.cand.endF && probe(Sx, Mx, Dx)) return { ok: true, entryF: f, grace: f - final.cand.endF };
-  }
+  const nr = evaluate(nextC, final.cand.sf, final.cand.sw, final.cand.endF + SEAM_GRACE_F + 120);
+  if (nr.entryF >= 0) return { ok: true, entryF: nr.entryF, grace: Math.max(0, nr.entryF - final.cand.endF) };
   return { ok: false };
 }
 
@@ -719,9 +717,10 @@ for (let si = startIdx; si <= segRange[1]; si++) {
     sf: fin.cand.sf, sw: fin.cand.sw, score: +fin.cand.score.toFixed(0), score2: +fin.score2.toFixed(0),
     entryF: fin.cand.entryF, endF: fin.cand.endF, metAt: fin.cand.metAt,
     inlineFatal: fin.inline.fatal, inlineGroups: fin.inline.groups,
+    trimDepth: fin.trimDepth ?? null, seamEntryF: fin.seamEntryF ?? null,
     prog: { fb: progNames(fin.cand.sf), wg: progNames(fin.cand.sw) },
   };
-  log(`  ${segDef.id} 定稿: score'=${fin.score2.toFixed(0)} inlineFatal=${fin.inline.fatal}/${SAMPLES} end@f${fin.cand.endF}`);
+  log(`  ${segDef.id} 定稿: score'=${fin.score2.toFixed(0)} inlineFatal=${fin.inline.fatal}/${SAMPLES} end@f${fin.cand.endF} trim=${(fin.trimDepth ?? []).join("/")} seamEntry@${fin.seamEntryF ?? "-"}`);
 
   // seam 校验（对下一段 entry；末段无）
   const nextDef = chain.segments[si + 1];
@@ -734,11 +733,11 @@ for (let si = startIdx; si <= segRange[1]; si++) {
       const alt = segRes.beam.filter((n) => n.met && n !== fin.cand).slice(0, 2);
       let salvaged = null;
       for (const altCand of alt) {
-        const altFin = { cand: altCand, inline: { fatal: 0, groups: [] }, score2: altCand.score };
+        const ami = altCand.metIdx ?? { fb: altCand.sf.length, wg: altCand.sw.length };
+        const trimmed = { ...altCand, sf: altCand.sf.slice(0, Math.max(1, ami.fb)), sw: altCand.sw.slice(0, Math.max(1, ami.wg)), parked: true };
+        const altFin = { cand: trimmed, inline: { fatal: 0, groups: [] }, score2: altCand.score };
         const s2 = seamCheck(altFin, nextDef);
         if (s2.ok) {
-          const mi = altCand.metIdx ?? { fb: altCand.sf.length, wg: altCand.sw.length };
-          const trimmed = { ...altCand, sf: altCand.sf.slice(0, Math.max(1, mi.fb)), sw: altCand.sw.slice(0, Math.max(1, mi.wg)) };
           salvaged = true; segReport.final = { sf: trimmed.sf, sw: trimmed.sw, score: +altCand.score.toFixed(0), score2: +altCand.score.toFixed(0), entryF: altCand.entryF, endF: altCand.endF, metAt: altCand.metAt, inlineFatal: null, inlineGroups: [], prog: { fb: progNames(trimmed.sf), wg: progNames(trimmed.sw) }, seamRescued: true }; segReport.seam = s2; fin.cand = trimmed; fin.inline = { fatal: 0, groups: [] }; break;
         }
       }
