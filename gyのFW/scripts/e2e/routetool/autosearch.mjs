@@ -672,11 +672,16 @@ for (let si = startIdx; si <= segRange[1]; si++) {
   const segReport = { id: segRes.id, title: segRes.title, solved: segRes.solved, exhausted: segRes.exhausted, evals: segRes.evals, wallS: segRes.wallS, layers: segRes.layers, bestEver: segRes.bestEver ? { ...segRes.bestEver, sf: undefined, sw: undefined } : null };
 
   if (!segRes.solved) {
-    // 失败语义工件（§6）：最高解锁路标 / 卡点断言 / 逐层曲线 / 死因
+    // 失败语义工件（§6）：最高解锁路标 / 卡点断言 / 逐层曲线 / 死因 / 前沿 beam 程序（复活与词表修补的实证依据）
     segReport.failure = {
       bestUnlocked: segRes.bestEver?.unlocked ?? 0,
       note: "机器穷尽报告：见 layers 曲线与 bestEver 终态；卡点=首个未达 waypoint 组",
     };
+    segReport.beam = segRes.beam.slice(0, 6).map((n) => ({
+      score: +n.score.toFixed(0), met: !!n.met, entryF: n.entryF, endF: n.endF,
+      S: { fb: [+n.S.fb.x.toFixed(1), +n.S.fb.y.toFixed(1)], wg: [+n.S.wg.x.toFixed(1), +n.S.wg.y.toFixed(1)] },
+      sf: n.sf, sw: n.sw,
+    }));
     report.segs.push(segReport);
     log(`${segDef.id} 未解——后续段中止`);
     break;
