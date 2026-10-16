@@ -8,7 +8,7 @@
 // 负对照：墙贴位（restX≈783.6）预期 B4 型 0 命中。
 // 用法：cd gyのFW && node --import tsx ../TEMP/r05g/probe1-seam.mjs
 import { writeFileSync } from "node:fs";
-import { makeWorld } from "../../gyのFW/scripts/e2e/routetool/kernel.mjs";
+import { makeWorld } from "../../../../../scripts/e2e/routetool/kernel.mjs";
 
 const NONE = { up: false, left: false, right: false };
 const ms = (w) => w.mechSnapshot();
