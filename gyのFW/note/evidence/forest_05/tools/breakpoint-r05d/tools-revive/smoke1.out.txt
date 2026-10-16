@@ -1,0 +1,39 @@
+[A.0] === 格式同构 ===
+[A.1 基线 runKernel(forest_01 绿路线)] {"won":true,"deathF":-1,"winF":2365}
+[A.2 最小剧本 drive] {"won":false,"deathF":-1}
+[A.3 wg 终态] {"x":47.615999999999985,"y":732.5440000000003,"vx":0,"vy":0,"dead":false}
+[A.4 toRouteDoc 字段集] ["fb","level","source","tickHz","totalFrames","wg"]
+[A.4 基线 routes 字段集] ["fb","level","source","tickHz","totalFrames","wg"]
+[A.5 事件项字段集 doc/基线] [["dir,f,type"],["dir,f,type"]]
+[A.6 同构判定] ISOMORPHIC
+[A.7 mini 事件表] {"fb":[],"wg":[{"f":2,"dir":"right","type":"down"},{"f":27,"dir":"left","type":"down"},{"f":27,"dir":"right","type":"up"},{"f":38,"dir":"left","type":"up"},{"f":38,"dir":"right","type":"down"},{"f":41,"dir":"left","type":"down"},{"f":41,"dir":"right","type":"up"},{"f":44,"dir":"left","type":"up"},{"f":44,"dir":"right","type":"down"},{"f":47,"dir":"left","type":"down"},{"f":47,"dir":"right","type":"up"}]}
+[A.8 mini 事件表 runKernel] {"won":false,"deathF":-1,"lastTrace":{"f":599,"fb":[96,860.5440167121906],"wg":[47.615999999999985,732.5440000000003],"ph":"playing"}}
+[A.9 等价: 闭环终态 vs 事件表回放终态 wg.x] [47.615999999999985,47.615999999999985,true]
+[A.9 等价: wg.y] [732.5440000000003,732.5440000000003,true]
+[B.0] === 闭环原语有效性 ===
+[B.1 goTo(300,tol14)] {"result":{"won":false,"deathF":-1},"doneF":66,"doneX":286.16,"doneErr":-13.84,"finalX":286.49,"finalErr":-13.51,"fbEvents":8}
+[B.1 goTo(500,tol14)] {"result":{"won":false,"deathF":-1},"doneF":110,"doneX":487.18,"doneErr":-12.82,"finalX":487.5,"finalErr":-12.5,"fbEvents":8}
+[B.1 goTo(300,tol6)] {"result":{"won":false,"deathF":-1},"doneF":77,"doneX":296.26,"doneErr":-3.74,"finalX":296.19,"finalErr":-3.81,"fbEvents":16}
+[B.1 goTo(500,tol6)] {"result":{"won":false,"deathF":-1},"doneF":121,"doneX":496.22,"doneErr":-3.78,"finalX":496.06,"finalErr":-3.94,"fbEvents":16}
+[B.1 goTo(640,tol8)] {"result":{"won":false,"deathF":-1},"doneF":158,"doneX":633.03,"doneErr":-6.97,"finalX":633.41,"finalErr":-6.59,"fbEvents":18}
+[B.1b wg goTo(130,tol8)] {"result":{"won":false,"deathF":-1},"doneF":32,"doneX":123.77,"doneErr":-6.23,"finalX":123.65,"finalErr":-6.35,"wgEvents":16}
+[B.1b wg goTo(110,tol14)] {"result":{"won":false,"deathF":-1},"doneF":2,"doneX":96,"doneErr":-14,"finalX":96,"finalErr":-14,"wgEvents":0}
+[B.2 jump] {"result":{"won":false,"deathF":-1},"fbEvents":[{"f":2,"dir":"up","type":"down"},{"f":3,"dir":"up","type":"up"}],"airFrames":22,"riseY":41.99,"minY":822.01,"y0":864}
+[B.3 fb→right] {"who":"fb","dir":"right","won":false,"deathF":186}
+[B.3 fb→left] {"who":"fb","dir":"left","won":false,"deathF":-1}
+[B.3 wg→right] {"who":"wg","dir":"right","won":false,"deathF":132}
+[B.3 wg→left] {"who":"wg","dir":"left","won":false,"deathF":-1}
+[C.0] === 驱动等价性 ===
+[C.1 结果对比 runKernel/drive] [{"won":true,"winF":2365},{"won":true,"winF":2365}]
+[C.2 位级位置对比（kT[f] vs dT[f+1]）] {"comparedRolesFrames":2365,"scalars":18920,"mismatch":0,"first":""}
+[C.3 事件表 fb 一致] {"docN":56,"drvN":54,"equal":false}
+[C.3 事件表 wg 一致] {"docN":55,"drvN":52,"equal":false}
+[C.3 fb 差异样本] ["440:left:down","819:right:down"]
+[C.3 wg 差异样本] ["510:left:down","897:right:down","1967:left:down"]
+[C.4 原序(不排序)事件表 fb/wg 一致] [false,false]
+[C.5 逐帧输入状态对比(0..winF-1)] {"scalars":14190,"mismatch":0}
+[C.5 冗余 down 沿归因] ["fb 440:left:down（同键已按下，冗余重按）","fb 819:right:down（同键已按下，冗余重按）","wg 510:left:down（同键已按下，冗余重按）","wg 897:right:down（同键已按下，冗余重按）","wg 1967:left:down（同键已按下，冗余重按）"]
+[B.4] === S2 实例化冒烟 ===
+[B.4 brakedHop(right,700,400)] {"won":false,"deathF":-1}
+[B.4 edgeDrop(right,5)] {"won":false,"deathF":-1}
+[Z.9] smoke1 done
