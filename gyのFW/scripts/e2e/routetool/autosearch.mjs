@@ -564,7 +564,7 @@ function inlineSample(baseEvents, segC, deadlineAbsF, R, minF = 0, requireMet = 
     const T = { fb: evs.fb.map((e) => ({ ...e })), wg: evs.wg.map((e) => ({ ...e })) };
     T[pick.side][pick.i].f += dir;
     const ok = replayEventRoute(T, segC, deadlineAbsF, requireMet);
-    if (!ok) { fatal++; groups.push({ side: pick.side, i: pick.i, f: evs[pick.side][pick.i].f, dir }); }
+    if (!ok.ok) { fatal++; groups.push({ side: pick.side, i: pick.i, f: evs[pick.side][pick.i].f, dir }); }
   }
   return { fatal, groups };
 }
@@ -578,7 +578,8 @@ function exhaustiveSample(baseEvents, segC, deadlineAbsF, minF = 0) {
     for (const dir of [-1, 1]) {
       const T = { fb: baseEvents.fb.map((e) => ({ ...e })), wg: baseEvents.wg.map((e) => ({ ...e })) };
       T[side][i].f += dir;
-      if (!replayEventRoute(T, segC, deadlineAbsF)) return { fatal: 1, groups: [{ side, i, f: baseEvents[side][i].f, dir }] };
+      const rr = replayEventRoute(T, segC, deadlineAbsF);
+      if (!rr.ok) return { fatal: 1, groups: [{ side, i, f: baseEvents[side][i].f, dir, ev: baseEvents[side][i], why: rr.why }] };
     }
   }
   return { fatal: 0, groups: [] };
@@ -592,7 +593,7 @@ function replayEventRoute(T, segC, deadlineAbsF, requireMet = true) {
   for (let f = 0; f <= deadlineAbsF; f++) {
     w.step(1 / 60, { fireboy: ins.fb[f], watergirl: ins.wg[f] });
     const a = w.snapshotPlayer("fireboy"), b = w.snapshotPlayer("watergirl");
-    if (a.dead || a.dying || b.dead || b.dying) return false;
+    if (a.dead || a.dying || b.dead || b.dying) return { ok: false, why: `die@${f} fb[${a.x.toFixed(0)},${a.y.toFixed(0)}] wg[${b.x.toFixed(0)},${b.y.toFixed(0)}]` };
     const Sx = {
       fb: { x: a.x, y: a.y, vx: a.vx, vy: a.vy, atDoor: a.atDoor, grounded: w.players.fireboy.feetContacts.length > 0, dead: a.dead || a.dying },
       wg: { x: b.x, y: b.y, vx: b.vx, vy: b.vy, atDoor: b.atDoor, grounded: w.players.watergirl.feetContacts.length > 0, dead: b.dead || b.dying },
@@ -601,7 +602,9 @@ function replayEventRoute(T, segC, deadlineAbsF, requireMet = true) {
     const Dx = { won: w.phase === "won", doors: w.doors };
     if (allS(segC.targetG, Sx, Mx, Dx)) { met = true; break; }
   }
-  return requireMet ? met : true;
+  if (!requireMet) return { ok: true, why: "alive" };
+  if (!met) return { ok: false, why: `no-met fb[${Sx?.fb.x.toFixed(0) ?? "?"},${Sx?.fb.y.toFixed(0) ?? "?"}] wg[${Sx?.wg.x.toFixed(0) ?? "?"},${Sx?.wg.y.toFixed(0) ?? "?"}]` };
+  return { ok: true, why: "met" };
 }
 
 // ---------------------------------------------------------------- 主流程
