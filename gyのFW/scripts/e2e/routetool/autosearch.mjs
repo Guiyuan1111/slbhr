@@ -249,13 +249,19 @@ const SEG = {
     //   落地残速下滑出目标盆 + wg hold(+1) 反向设计错误。
     recipe: {
       fb: [spec("runJump", -1, 950, 20), spec("hold", -1, 540), spec("edgeDrop", -1, 20), spec("hold", -1, 470), spec("sleep", 15)],
-      wg: [spec("jumpDrift", -1, 0, 90), spec("runJump", -1, 950, 20), spec("hold", -1, 540), spec("edgeDrop", -1, 20), spec("hold", -1, 520), spec("sleep", 15)],
+      // wg v3（dbg25 穷举 0/36 法证 + 绿迹 f392-544 复刻）：绿迹塔顶出口 = 落稳后纯左走 12f
+      //   (v-132)@1185 起跳 up 保持 24f 左键全程压 → 落台 [1002,668.6] 续左 4f (v-233)@975
+      //   起跳 Δ26 越双杀带 → 落 [736] 续左撞檐东面自动攀爬上廊。rj 位置锚定等价复刻
+      //   （起跳态由落稳 v0 确定性走步重建，±1f 只动触发帧不动终态）。v2 之败：jd 自
+      //   clamp 悬空/落稳态直接起跳，launch 事件 ±1f 全灭（dbg25 v2 扫描 wg[5-8] 6 fails）。
+      wg: [spec("runJump", -1, 1185, 24), spec("runJump", -1, 975, 26), spec("hold", -1, 540), spec("edgeDrop", -1, 20), spec("hold", -1, 520), spec("sleep", 15)],
     },
     vocab: {
       fb: [spec("runJump", -1, 950, 20), spec("runJump", -1, 975, 20), spec("runJump", -1, 925, 20),
         spec("hold", -1, 540), spec("hold", -1, 560), spec("edgeDrop", -1, 20),
         spec("hold", -1, 470), spec("hold", -1, 490), spec("sleep", 15)],
-      wg: [spec("jumpDrift", -1, 0, 90), spec("runJump", -1, 950, 20), spec("runJump", -1, 975, 20), spec("runJump", -1, 925, 20),
+      wg: [spec("runJump", -1, 1185, 24), spec("runJump", -1, 1175, 24), spec("runJump", -1, 1195, 24),
+        spec("runJump", -1, 975, 26), spec("runJump", -1, 965, 26), spec("runJump", -1, 985, 26),
         spec("hold", -1, 540), spec("hold", -1, 560), spec("edgeDrop", -1, 20),
         spec("hold", -1, 520), spec("hold", -1, 490), spec("sleep", 15)],
     },
