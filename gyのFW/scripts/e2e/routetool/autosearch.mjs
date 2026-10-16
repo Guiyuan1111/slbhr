@@ -118,15 +118,38 @@ const PRIM_TABLE = {
   sleep: (...a) => S.sleep(...a),
   goTo: (...a) => S.goTo(...a),
   jump: (...a) => S.jump(...a),
+  /** 定向持键到位置线（墙角归一化件）：按 dir 前进直到跨线即完成——后续原语接管时
+   *  物理状态由墙/线锚定（冲墙滑行 v→0、后撤步离面），事件表 ±1f 只影响到达帧不影响终态。 */
+  hold: (d, xLine) => S.hold(ds(d), (c) => (d > 0 ? c.me.x >= xLine : c.me.x <= xLine)),
   jumpDrift: (d, ...a) => S.jumpDrift(ds(d), ...a),
   jumpOnto: (d, ...a) => S.jumpOnto(ds(d), ...a),
-  /** runJump 直包 + f0 护栏：character.currentRunForce 初始 undefined，首帧即压方向会算出 NaN 力
-   *  永久毒化刚体（vx 冻结）。首帧返回 NONE 让 else 分支初始化 currentRunForce，f1 起正常。 */
+  /** runJump 直包 + f0 护栏 + up 保持 holdF 帧 + done 语义修复。
+   *  f0-护栏：character.currentRunForce 初始 undefined，关卡首帧即压方向会算出 NaN 力永久毒化
+   *  刚体（vx 冻结）——只在 ctx.f≤1 时返回 NONE 让 else 分支完成初始化，首个方向事件落在 f2
+   *  （±1f→f1 仍安全）；链中段原语（ctx.f>1 起跳）不受护栏，按压帧零漂移。
+   *  up-保持：S.runJump 起跳次帧即松 up（press/release 对 Δ=1），事件表 ±1f 会把两事件
+   *  坍缩到同一帧 → up 有效宽度 0 → 跳跃消失（dbg19 fb[1]/fb[2]、墙跳 fb[31]/fb[32] 实证）。
+   *  holdF=起跳后 up 总时长（帧），spec 尾参可调（缺省 6）：可变跳高的"跳斩"随释放帧提前而砍
+   *  弧线——带 hop/mount 用 25f（绿迹同款：弧长 259px 落 1039 留 mount 跑道；6f 砍弧落 ~1060
+   *  贴脸即掠死）；短跳 6f 下 ±1f 只改 1/6 时长（~1-2px）。
+   *  done 修复（dbg20 实证）：S.runJump.done 的 air 锁存不区分起跳前后——出生下落/上一跳
+   *  弧线的离地帧会把 air 预置 true，本原语在自己的起跳帧（pre 态仍 grounded）即完成，队列
+   *  在空中换手，下个原语立即按己方线压反向（弧线污染坠带）。改为只在【本原语起跳后】经历
+   *  离地→再落地才完成；起跳前的任何离地不计数。 */
   runJump: (d, ...a) => {
-    const stp = S.runJump(ds(d), ...a);
+    const holdF = a.length > 1 ? a[a.length - 1] : 6;
+    const stp = S.runJump(ds(d), a[0]);
     const orig = stp.run.bind(stp);
-    let first = true;
-    stp.run = (ctx) => { if (first) { first = false; return NONE; } return orig(ctx); };
+    let jumpedAt = -1, airAfter = false;
+    stp.run = (ctx) => {
+      if (ctx.f <= 1) return NONE;
+      const inp = orig(ctx);
+      if (inp.up) jumpedAt = ctx.f;
+      else if (jumpedAt >= 0 && ctx.f <= jumpedAt + holdF - 1) { inp.up = true; }
+      if (jumpedAt >= 0 && !ctx.me.grounded) airAfter = true;
+      return inp;
+    };
+    stp.done = (c) => jumpedAt >= 0 && airAfter && c.me.grounded;
     return stp;
   },
   brakedHop: (d, ...a) => S2.brakedHop(ds(d), ...a),
@@ -192,16 +215,27 @@ const progNames = (spList) => spList.map((sp) => `${sp.n}(${sp.a.join(",")})`).j
 const SEG = {
   S0a: {
     maxDepth: 16, capFb: 9, capWg: 8,
+    // recipe v15（dbg22 绿迹逐帧法证 2026-10-16，全连续零停顿复刻绿按压状态）：
+    //   绿 fb 帧事实：f175 带跳（x~780，Δ25）→ f230 落 [1038.7,v0]（弧 259px）→ 地面重建 +24.5/f
+    //   → f240 mount 跳 [1060.9,v229]（跑动起跳，非贴墙）→ 空中 v274 饱和零衰减，贴脸穿越在
+    //   bottom~831（脸带 [832,) 上沿 1px 掠过，绿 222/222 实证此刀刃 ±1f 稳）→ f271 东墙钳制
+    //   [1200.4] → f275 落顶 → 走西至 1171.6（v-174）f332 西跳（Δ20）→ f370 落 704 台
+    //   [1001,668.6] 正中目标盒。任何停顿（goTo 振荡/后撤步）都破坏按压 (x,v) 相位 → 掠面砍升限。
+    //   rj 尾参 = holdF（25/20 复刻绿 Δ）。wg 加 sleep(60) 错峰：否则与 fb 在带跳落点 ~1039
+    //   （双达 f230）与塔顶 1200（双达 f260-275）两处同帧碰撞；绿 wg 表内建 f185-334 空窗同理。
+    recipe: {
+      fb: [spec("runJump", 1, 780, 25), spec("runJump", 1, 1052, 25), spec("runJump", -1, 1172, 20), spec("hold", -1, 1040), spec("sleep", 15)],
+      wg: [spec("sleep", 60), spec("runJump", 1, 490), spec("runJump", 1, 1104, 26), spec("goTo", 1200, 12), spec("sleep", 15)],
+    },
     vocab: {
-      // fb：底层东行趟过 wg 敏感带 [576,736] → 满速跳过 fb 敏感带 [832,992]（线 ~830，落 ~1060）
-      //   → 紧接跳上 800 塔（升 96px）→ 塔顶西跳上 704 台东段（落 ~950-1100）
-      fb: [spec("runJump", 1, 800), spec("runJump", 1, 830), spec("runJump", 1, 1080), spec("runJump", 1, 1100),
-        spec("runJump", 1, 1120), spec("runJump", -1, 1150), spec("runJump", -1, 1180), spec("jumpDrift", -1, 0, 60),
-        spec("sleep", 15)],
-      // wg：768 台东行走落（落点 ~480-500，带前安全）→ 落地即跳过 wg 敏感带（落 ~730-760）
-      //   → 趟过 fb 敏感带 → 跳上 800 塔就位
-      wg: [spec("runJump", 1, 460), spec("runJump", 1, 480), spec("runJump", 1, 500), spec("runJump", 1, 1080),
-        spec("runJump", 1, 1100), spec("goTo", 1180, 12), spec("goTo", 1200, 10), spec("sleep", 15)],
+      // fb v15：绿复刻链 [rj(780,25) → rj(1052,25) → rj(-1,1172,20) → sleep] 为骨架，
+      //   邻域变体（线 ±10-20 / holdF 20-25）供搜索修复；goTo/hold 备而不用（停顿破坏按压相位）。
+      fb: [spec("runJump", 1, 780, 25), spec("runJump", 1, 770, 25), spec("runJump", 1, 790, 25), spec("runJump", 1, 1052, 25),
+        spec("runJump", 1, 1049, 25), spec("runJump", 1, 1069, 25), spec("runJump", -1, 1172, 20), spec("runJump", -1, 1162, 20),
+        spec("runJump", -1, 1182, 20), spec("runJump", -1, 1172, 24), spec("hold", -1, 1000), spec("hold", -1, 1020), spec("sleep", 15), spec("sleep", 30)],
+      // wg v15：spawn 错峰 sleep(60) + 既有干净链（0 fatal 实证）+ 邻域变体
+      wg: [spec("sleep", 60), spec("sleep", 45), spec("sleep", 75), spec("runJump", 1, 490), spec("runJump", 1, 1104, 26),
+        spec("runJump", 1, 1102, 26), spec("runJump", 1, 1106, 26), spec("goTo", 1200, 12), spec("goTo", 1190, 12), spec("sleep", 15)],
     },
   },
   S0b: {
@@ -640,7 +674,18 @@ function searchSegment(segDef, seeds, opts) {
 function finalizeSegment(segRes, segDef, prefixF, nextDef) {
   const segC = segCtxOf(segDef);
   const nextC = nextDef ? segCtxOf(nextDef) : null;
-  const pool = segRes.beam.filter((n) => n.met).slice(0, 8);
+  // 池按程序前缀签名去重（同族 padding 候选挤占 top-8 会饿死异族鲁棒组合，exha-s0a2 实证）
+  const pool = [];
+  const seenFam = new Set();
+  for (const n of segRes.beam) {
+    if (!n.met) continue;
+    const R = n.r ?? {};
+    const key = progNames((n.sf ?? []).slice(0, 3)) + "|" + progNames((n.sw ?? []).slice(0, 3));
+    if (seenFam.has(key)) continue;
+    seenFam.add(key);
+    pool.push(n);
+    if (pool.length >= 8) break;
+  }
   const out = [];
   for (const node of pool) {
     // 活前沿节点字段在 .r 里（报表 beam 才是摊平形状）——不归一化则 metIdx 恒 undefined，
