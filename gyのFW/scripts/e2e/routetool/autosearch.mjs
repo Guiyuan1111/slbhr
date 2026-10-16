@@ -217,12 +217,16 @@ const SEG = {
     },
   },
   S1: {
-    maxDepth: 14, capFb: 8, capWg: 8,
-    // 登板宏（dbg13/14 实证）：rj-150 登板✓但 P1 沉降到位（~592）晚于队列冻死，fb 落回
-    // 地面；waitPlat 让队列活到 platY 入窗再 jo 重登。beam shaping 看不见两层后的收益
-    // （waitPlat 节点 d9 被剪），以 recipe 宏整组注入 d1，evaluate/鲁棒门/定稿阶梯全照走
+    maxDepth: 14, capFb: 8, capWg: 8, horizonF: 450,
+    // 登板宏（dbg15 实证，2026-10-16）：西行触发区 [272,336]（任一角色进入即翻转 l0），
+    // P1(obj33 x[32,160]) 沉降 496→592 约 97f 且驻留；fb 西行被 P1 东立面(160)顶死在
+    // [175.6,604.5]——rj 起跳线 150 永不可达（队列搁浅）。贴脸 jo(-1,546)：apex feet≈549
+    // 越过板顶 576，y<546 左漂越立面落板顶 ~155，再 go48 西行至 px[24,72]。
+    // waitPlat 先行（s1r5 教训）：宏里边走边沉会撞上静台阶爬行-坠落弧（inline 10/20 全聚在
+    // f731-740 与 f536-590 连锁）；等板沉定（状态锚定，天然吸收 wg 过杆 ±1f）再走，走位/
+    // 登板全程无时序耦合。horizon 450：metAt ~f895（segF 374）超出旧 300。
     recipe: {
-      fb: [spec("runJump", -1, 150), spec("goTo", 48, 12), spec("waitPlat", 1, 586, 600), spec("jumpOnto", -1, 555), spec("sleep", 30)],
+      fb: [spec("waitPlat", 1, 586, 600), spec("goTo", 176, 8), spec("jumpOnto", -1, 546), spec("goTo", 48, 12), spec("sleep", 30)],
       wg: [spec("goTo", 200, 12), spec("sleep", 15)],
     },
     vocab: {
@@ -656,7 +660,7 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
       let seamEntryF = -1;
       if (nextC) {
         const nr = evaluate(nextC, trimmed.sf, trimmed.sw, cand.endF + SEAM_GRACE_F + 120);
-        if (seamOkNr(nr, trimmed)) seamEntryF = nr.entryF;
+        if (seamOkNr(nr, trimmed, nextC)) seamEntryF = nr.entryF;
       }
       const rec = { cand: trimmed, events: dr.events, inline: ins, score2: cand.score - 500 * ins.fatal, seamEntryF, trimDepth: [kFb, kWg] };
       if (!best || ((rec.seamEntryF >= 0) - (best.seamEntryF >= 0)) > 0) best = rec;
@@ -669,16 +673,20 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
   return out[0];
 }
 
-/** seam 判据（§9-3 v3）：下段 entryG 实测命中 + 双侧队列排干（防永不完成原语阻塞，S5 教训）
+/** seam 判据（§9-3 v4）：下段 entryG 实测命中 + 双侧队列排干（防永不完成原语阻塞，S5 教训）
  *  + 入窗帧【移动中】的角色须在排干前入窗（排干后该侧 adds 接管输入必然扰动移动态；
- *  站立侧豁免——搜索自会选温和开场原语，full-rob2 锁存行走穿越 vs v3 S0a 站立保持两形态实证）。 */
-function seamOkNr(nr, trimmed) {
+ *  站立侧豁免——搜索自会选温和开场原语，full-rob2 锁存行走穿越 vs v3 S0a 站立保持两形态实证）
+ *  + 【入窗态须存续到冻结帧】（v4 新增，S1 教训：剪掉尾部 sleep 后锁存 left，入窗瞬间
+ *  |vx| 小被当站立豁免，实为走离板缘的前奏——entry 只在 f814 命中一瞬，冻结态已走落西缘。
+ *  entry 是下段的稳定泊位契约，蒸发即伪过）。 */
+function seamOkNr(nr, trimmed, nextC) {
   if (nr.entryF < 0 || !nr.entryS) return false;
   const drained = nr.idxEnd.fb >= trimmed.sf.length && nr.idxEnd.wg >= trimmed.sw.length;
   if (!drained) return false;
   const pre = (r) => nr.drainF[r] >= 0 && nr.entryF <= nr.drainF[r];
   const moving = (r) => Math.abs(nr.entryS[r].vx) > 25;
   for (const r of ["fb", "wg"]) if (moving(r) && !pre(r)) return false;
+  if (nextC && !allS(nextC.entryG, nr.S, nr.M, nr.D)) return false;
   return true;
 }
 
@@ -687,7 +695,7 @@ function seamOkNr(nr, trimmed) {
 function seamCheck(final, nextSegDef) {
   const nextC = segCtxOf(nextSegDef);
   const nr = evaluate(nextC, final.cand.sf, final.cand.sw, final.cand.endF + SEAM_GRACE_F + 120);
-  if (!seamOkNr(nr, final.cand)) return { ok: false };
+  if (!seamOkNr(nr, final.cand, nextC)) return { ok: false };
   return { ok: true, entryF: nr.entryF, grace: Math.max(0, nr.entryF - final.cand.endF) };
 }
 
