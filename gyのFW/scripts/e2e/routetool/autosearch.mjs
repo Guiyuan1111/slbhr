@@ -256,7 +256,7 @@ const SEG = {
       //   wg 松 b1 后 P0 载 fb 升顶须 fb 骑乘唤醒（ride）；顶 384 比板 352 低 32px，跳西落板压 b0。
       fb: [spec("goTo", 1080, 12), spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475), spec("ride", 0, 396, 412),
         spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 25), spec("goTo", 970, 10), spec("goTo", 992, 10),
-        spec("sleep", 15)],
+        spec("sleep", 60)],
       wg: [spec("sleep", 30), spec("waitPx", "fb", 1080, 1214), spec("goTo", 1060, 12), spec("goTo", 1100, 12),
         spec("sleep", 15)],
     },
@@ -266,13 +266,14 @@ const SEG = {
     vocab: {
       // fb：先走回 b0 上方再压站（种尾截断的 jd 会让 fb 多跳一步离箱，需回位）→ 候 wg 登 P0
       //   （b0 已压）→ 离 b0 西跳上 288 块（P0 载 wg 升）→ 块顶西行（自然推箱随行）
-      fb: [spec("goTo", 970, 10), spec("goTo", 992, 10), spec("sleep", 30), spec("waitPx", "wg", 1100, 1214),
+      fb: [spec("goTo", 970, 10), spec("goTo", 992, 10), spec("sleep", 30), spec("waitPx", "wg", 1080, 1214),
         spec("jumpDrift", -1, 0, 30), spec("jumpDrift", -1, 0, 50),
-        spec("jumpOnto", -1, 290), spec("goTo", 750, 12), spec("goTo", 700, 12), spec("goTo", 650, 12), spec("sleep", 15)],
+        spec("jumpOnto", -1, 290), spec("goTo", 740, 12), spec("goTo", 750, 12), spec("goTo", 700, 12), spec("goTo", 650, 12), spec("sleep", 15)],
       // wg：东行靠 P0 沉位立面（go 1080 同 S4 fb 实证，1100 被立面顶住永不达）→ 立面跳登乘
-      //   → 骑乘唤醒升至顶（fb 离 b0）→ 跳西上板 → 东缘步级跳上 288 块 → 西行就位
+      //   → 骑乘唤醒升至顶 → 平台东端就位（launch 点远，跳西弧线才越过板立面 x1088，探针实证）
+      //   → 跳西上板 → 东缘步级跳上 288 块 → 西行就位
       wg: [spec("goTo", 1080, 12), spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475), spec("ride", 0, 396, 412),
-        spec("jumpDrift", -1, 0, 50), spec("runJump", -1, 1100),
+        spec("goTo", 1190, 12), spec("jumpDrift", -1, 0, 50), spec("runJump", -1, 1100),
         spec("jumpDrift", -1, 0, 70), spec("goTo", 950, 10), spec("jumpDrift", -1, 0, 30),
         spec("jumpDrift", -1, 0, 50), spec("jumpOnto", -1, 290), spec("goTo", 800, 12), spec("sleep", 15)],
     },
@@ -369,7 +370,7 @@ function evaluate(segC, sf, sw, totalCapF) {
     wg: { x: b.x, y: b.y, vx: b.vx, vy: b.vy, atDoor: b.atDoor, grounded: w.players.watergirl.feetContacts.length > 0, dead: b.dead || b.dying },
   };
   return {
-    deathF, deadWho, entryF, wpMetF, metAt, wonAt, endF, metIdx,
+    deathF, deadWho, entryF, wpMetF, metAt, wonAt, endF, metIdx, idxEnd: { fb: idx.fb, wg: idx.wg },
     S: Send, M: w.mechSnapshot(),
     D: { won: w.phase === "won", doors: { fireboy: { isUp: w.doors.fireboy.isUp }, watergirl: { isUp: w.doors.watergirl.isUp } } },
   };
@@ -539,7 +540,7 @@ function searchSegment(segDef, seeds, opts) {
 }
 
 /** 段定稿：top-3（beam 前 3 达标者）各 drive 重放收事件表 + inline 采样，score′ 最高者为段定稿（§4.3 阶段一） */
-function finalizeSegment(segRes, segDef, prefixF) {
+function finalizeSegment(segRes, segDef, prefixF, nextDef) {
   const segC = segCtxOf(segDef);
   const pool3 = segRes.beam.filter((n) => n.met).slice(0, 3);
   const out = [];
@@ -553,13 +554,18 @@ function finalizeSegment(segRes, segDef, prefixF) {
   }
   out.sort((x, y) => y.score2 - x.score2);
   const win = out[0];
-  // 种子队尾截断：metAt 帧尚未启动的原语对达标无贡献，其悬空条件谓词（waitPx 等）
-  // 会在下一段重放中永久阻塞队列（S5 实证）。保留 metAt 帧的活动原语让其自然收尾。
-  if (win?.cand?.metIdx) {
+  if (!win) return win;
+  // 种子泊位（S5 实证双病根）：metAt 帧尚未【完成】的原语对达标已有贡献但留之有害——
+  //   其悬空条件谓词（waitPx）或被立面顶死的 goTo 会在下一段重放中永久阻塞队列，
+  //   复跳型（jumpDrift）则会破坏下段 entry。截到 metAt 前最后完成的原语：
+  //   f0..metAt-1 重放逐帧不变，metAt 起双方无输入驻留；落位态由 seamCheck（含宽限与
+  //   换种子救援 R3）验证下一段 entry。
+  if (win.cand.metIdx) {
     win.cand = {
       ...win.cand,
-      sf: win.cand.sf.slice(0, Math.min(win.cand.sf.length, win.cand.metIdx.fb + 1)),
-      sw: win.cand.sw.slice(0, Math.min(win.cand.sw.length, win.cand.metIdx.wg + 1)),
+      sf: win.cand.sf.slice(0, Math.max(1, win.cand.metIdx.fb)),
+      sw: win.cand.sw.slice(0, Math.max(1, win.cand.metIdx.wg)),
+      parked: true,
     };
   }
   return win;
@@ -664,8 +670,9 @@ for (let si = startIdx; si <= segRange[1]; si++) {
     break;
   }
 
-  // 段定稿（top-3 inline 采样，score′ 定稿）
-  const fin = await finalizeSegment(segRes, segDef, prefixF);
+  // 段定稿（top-3 inline 采样，score′ 定稿）+ 种子泊位（对下一段 entry 验证）
+  const nextDef0 = chain.segments[si + 1] ?? null;
+  const fin = await finalizeSegment(segRes, segDef, prefixF, nextDef0);
   segReport.final = {
     sf: fin.cand.sf, sw: fin.cand.sw, score: +fin.cand.score.toFixed(0), score2: +fin.score2.toFixed(0),
     entryF: fin.cand.entryF, endF: fin.cand.endF, metAt: fin.cand.metAt,
@@ -688,7 +695,8 @@ for (let si = startIdx; si <= segRange[1]; si++) {
         const altFin = { cand: altCand, inline: { fatal: 0, groups: [] }, score2: altCand.score };
         const s2 = seamCheck(altFin, nextDef);
         if (s2.ok) {
-          const trimmed = { ...altCand, sf: altCand.sf.slice(0, Math.min(altCand.sf.length, (altCand.metIdx?.fb ?? altCand.sf.length - 1) + 1)), sw: altCand.sw.slice(0, Math.min(altCand.sw.length, (altCand.metIdx?.wg ?? altCand.sw.length - 1) + 1)) };
+          const mi = altCand.metIdx ?? { fb: altCand.sf.length, wg: altCand.sw.length };
+          const trimmed = { ...altCand, sf: altCand.sf.slice(0, Math.max(1, mi.fb)), sw: altCand.sw.slice(0, Math.max(1, mi.wg)) };
           salvaged = true; segReport.final = { sf: trimmed.sf, sw: trimmed.sw, score: +altCand.score.toFixed(0), score2: +altCand.score.toFixed(0), entryF: altCand.entryF, endF: altCand.endF, metAt: altCand.metAt, inlineFatal: null, inlineGroups: [], prog: { fb: progNames(trimmed.sf), wg: progNames(trimmed.sw) }, seamRescued: true }; segReport.seam = s2; fin.cand = trimmed; fin.inline = { fatal: 0, groups: [] }; break;
         }
       }
