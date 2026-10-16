@@ -302,14 +302,14 @@ const SEG = {
         spec("runJump", 1, 185), spec("runJump", 1, 190), spec("goTo", 700, 12), spec("goTo", 900, 12),
         spec("goTo", 1056, 8), spec("goTo", 1050, 8), spec("sleep", 15)],
       wg: [spec("jumpDrift", -1, 0, 30), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", 1, 0, 50), spec("runJump", 1, 150),
-        spec("runJump", 1, 170), spec("runJump", 1, 185), spec("runJump", 1, 190), spec("goTo", 1168, 8),
-        spec("goTo", 1160, 8), spec("sleep", 15)],
+        spec("runJump", 1, 170), spec("runJump", 1, 185), spec("runJump", 1, 190),
+        spec("goTo", 1168, 8), spec("goTo", 1160, 8), spec("sleep", 15)],
     },
   },
 };
 
 // ---------------------------------------------------------------- evaluate：单候选全量重放（进程内确定性，§1.4）
-// 语义对齐 botcore.drive（fb→wg→step，run→done→推进，死亡/WIN 短路），
+// 语义对齐 botcore.drive（fb→wg→step，run→done→推进，队列空锁存末输入，死亡/WIN 短路），
 // 另加：entry 联合首帧（入场门控）、段相对 horizon、双队列空+宽限冻结。
 function evaluate(segC, sf, sw, totalCapF) {
   const w = makeWorld(LEVEL);
@@ -330,7 +330,9 @@ function evaluate(segC, sf, sw, totalCapF) {
     const idxSnap = { fb: idx.fb, wg: idx.wg }; // 本帧将执行的原语下标（done 推进前）
     for (const role of ["fb", "wg"]) {
       const stp = progs[role][idx[role]];
-      if (!stp) { inputs[role] = NONE; continue; }
+      // 队列空 = 锁存末输入（对齐 botcore.drive/验收内核；复位 NONE 会让搜索期 met
+      // 与定稿 drive 重放不一致——S7 实证：goTo 末件锁存 right 走出门区，WIN 掉门）
+      if (!stp) continue;
       const ctx = {
         f, w, me: meS[role], other: meS[role === "fb" ? "wg" : "fb"],
         mem: (stp._mem ??= {}),
@@ -744,7 +746,9 @@ if (okSegs >= 1) {
   const allSolved = report.segs.length === chain.segments.slice(segRange[0], segRange[1] + 1).length && report.segs.every((s) => s.solved);
   if (allSolved) {
     const sf = last.final.sf, sw = last.final.sw;
-    const dr = replayEvents(sf, sw, prefixF + 90);
+    // 重放上限 = 前缀 + 末段 horizon + 宽限（WIN 帧可落在 entry 后数百帧，prefix+90 不够——S7 实证 WIN@f1978）
+    const segH = chain.segments[segRange[1]].horizonF ?? 500;
+    const dr = replayEvents(sf, sw, prefixF + segH + GRACE_F + 120);
     log(`定稿重放: ${dr.result.won ? `WIN @f${dr.result.winF}` : dr.result.deathF >= 0 ? `死亡@f${dr.result.deathF}` : "未胜"}`);
     if (dr.result.won) {
       const totalFrames = dr.result.winF + 60;
