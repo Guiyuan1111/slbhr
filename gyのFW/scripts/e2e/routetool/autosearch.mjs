@@ -325,7 +325,8 @@ function evaluate(segC, sf, sw, totalCapF) {
   let lastQueueEmptyF = -1;
   let metIdx = null;
   const inputs = { fb: NONE, wg: NONE };
-  const drainF = { fb: -1, wg: -1 }; // 各侧队列排干帧（seam 判据用：入窗穿越须发生在排干前，排干后 adds 即扰动）
+  const drainF = { fb: -1, wg: -1 }; // 各侧队列排干帧（seam 判据用：移动中的角色入窗须发生在排干前，排干后 adds 即扰动）
+  let entryS = null;                 // 入窗帧状态（seam 判据取 vx：站立侧豁免排干前约束）
   for (let f = 0; f < totalCapF; f++) {
     const meS = { fb: snapOf("fireboy"), wg: snapOf("watergirl") };
     const idxSnap = { fb: idx.fb, wg: idx.wg }; // 本帧将执行的原语下标（done 推进前）
@@ -361,7 +362,7 @@ function evaluate(segC, sf, sw, totalCapF) {
     };
     const Mx = w.mechSnapshot();
     const Dx = { won: w.phase === "won", doors: w.doors };
-    if (entryF < 0 && allS(segC.entryG, Sx, Mx, Dx)) entryF = f;
+    if (entryF < 0 && allS(segC.entryG, Sx, Mx, Dx)) { entryF = f; entryS = Sx; }
     if (entryF >= 0) {
       const segF = f - entryF;
       for (let wi = 0; wi < segC.wpG.length; wi++) if (wpMetF[wi] < 0 && allS(segC.wpG[wi], Sx, Mx, Dx)) wpMetF[wi] = segF;
@@ -383,7 +384,7 @@ function evaluate(segC, sf, sw, totalCapF) {
     wg: { x: b.x, y: b.y, vx: b.vx, vy: b.vy, atDoor: b.atDoor, grounded: w.players.watergirl.feetContacts.length > 0, dead: b.dead || b.dying },
   };
   return {
-    deathF, deadWho, entryF, wpMetF, metAt, wonAt, endF, metIdx, drainF, idxEnd: { fb: idx.fb, wg: idx.wg },
+    deathF, deadWho, entryF, entryS, wpMetF, metAt, wonAt, endF, metIdx, drainF, idxEnd: { fb: idx.fb, wg: idx.wg },
     S: Send, M: w.mechSnapshot(),
     D: { won: w.phase === "won", doors: { fireboy: { isUp: w.doors.fireboy.isUp }, watergirl: { isUp: w.doors.watergirl.isUp } } },
   };
@@ -611,11 +612,7 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
       let seamEntryF = -1;
       if (nextC) {
         const nr = evaluate(nextC, trimmed.sf, trimmed.sw, cand.endF + SEAM_GRACE_F + 120);
-        const drained = nr.idxEnd.fb >= trimmed.sf.length && nr.idxEnd.wg >= trimmed.sw.length;
-        // 入窗须发生在双侧队列排干前：排干后下段 adds 即接管输入，锁存驻留期的穿越是幻觉
-        const preDisturb = nr.entryF >= 0 && nr.drainF.fb >= 0 && nr.drainF.wg >= 0
-          && nr.entryF <= Math.min(nr.drainF.fb, nr.drainF.wg);
-        if (drained && preDisturb) seamEntryF = nr.entryF;
+        if (seamOkNr(nr, trimmed)) seamEntryF = nr.entryF;
       }
       const rec = { cand: trimmed, events: dr.events, inline: ins, score2: cand.score - 500 * ins.fatal, seamEntryF, trimDepth: [kFb, kWg] };
       if (!best || ((rec.seamEntryF >= 0) - (best.seamEntryF >= 0)) > 0) best = rec;
@@ -628,17 +625,26 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
   return out[0];
 }
 
-/** seam 校验（§9-3）：对【修剪后】定稿程序以 evaluate 重放，逐帧查下一段 entryG（含死亡短路）；
- *  入窗须发生在双侧队列排干前（排干后下段 adds 接管输入，锁存驻留期穿越是幻觉——full-rob2 实证）。
+/** seam 判据（§9-3 v3）：下段 entryG 实测命中 + 双侧队列排干（防永不完成原语阻塞，S5 教训）
+ *  + 入窗帧【移动中】的角色须在排干前入窗（排干后该侧 adds 接管输入必然扰动移动态；
+ *  站立侧豁免——搜索自会选温和开场原语，full-rob2 锁存行走穿越 vs v3 S0a 站立保持两形态实证）。 */
+function seamOkNr(nr, trimmed) {
+  if (nr.entryF < 0 || !nr.entryS) return false;
+  const drained = nr.idxEnd.fb >= trimmed.sf.length && nr.idxEnd.wg >= trimmed.sw.length;
+  if (!drained) return false;
+  const pre = (r) => nr.drainF[r] >= 0 && nr.entryF <= nr.drainF[r];
+  const moving = (r) => Math.abs(nr.entryS[r].vx) > 25;
+  for (const r of ["fb", "wg"]) if (moving(r) && !pre(r)) return false;
+  return true;
+}
+
+/** seam 校验（§9-3）：对【修剪后】定稿程序以 evaluate 重放，逐帧查下一段 entryG（含死亡短路）。
  *  旧版先断言修剪前存储终态 = 假阳性（修剪剪掉的在飞原语弧线可能正是入窗穿越，S0b 饥饿实证），废除。 */
 function seamCheck(final, nextSegDef) {
   const nextC = segCtxOf(nextSegDef);
   const nr = evaluate(nextC, final.cand.sf, final.cand.sw, final.cand.endF + SEAM_GRACE_F + 120);
-  const drained = nr.idxEnd.fb >= final.cand.sf.length && nr.idxEnd.wg >= final.cand.sw.length;
-  const preDisturb = nr.entryF >= 0 && nr.drainF.fb >= 0 && nr.drainF.wg >= 0
-    && nr.entryF <= Math.min(nr.drainF.fb, nr.drainF.wg);
-  if (drained && preDisturb) return { ok: true, entryF: nr.entryF, grace: Math.max(0, nr.entryF - final.cand.endF) };
-  return { ok: false };
+  if (!seamOkNr(nr, final.cand)) return { ok: false };
+  return { ok: true, entryF: nr.entryF, grace: Math.max(0, nr.entryF - final.cand.endF) };
 }
 
 // ---------------------------------------------------------------- --verify 模式：对既有 routes JSON 复核 + ±Nf 扫描
