@@ -1,0 +1,1025 @@
+{
+ "level": "forest_01",
+ "totalFrames": 2500,
+ "segments": [
+  {
+   "id": "S0a",
+   "title": "底层东行大跳：fb 上 704 台东段（跨泥池），wg 上 800 台",
+   "computable": true,
+   "entryFirstAllF": 0,
+   "waypointFirstAllF": [
+    370,
+    378
+   ],
+   "targetFirstAllF": 378,
+   "greenRefF": 310,
+   "horizonF": 700,
+   "assertions": [
+    {
+     "where": "entry",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 0
+    },
+    {
+     "where": "wp0",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 190
+    },
+    {
+     "where": "wp0",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 344
+    },
+    {
+     "where": "wp0",
+     "kind": "grounded",
+     "path": "players.fb.feetContacts.length>0",
+     "firstSatF": 0
+    },
+    {
+     "where": "wp1",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 354
+    },
+    {
+     "where": "wp1",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 138
+    },
+    {
+     "where": "wp1",
+     "kind": "grounded",
+     "path": "players.wg.feetContacts.length>0",
+     "firstSatF": 0
+    },
+    {
+     "where": "target",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 211
+    },
+    {
+     "where": "target",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 344
+    },
+    {
+     "where": "target",
+     "kind": "grounded",
+     "path": "players.fb.feetContacts.length>0",
+     "firstSatF": 0
+    },
+    {
+     "where": "target",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 354
+    },
+    {
+     "where": "target",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 138
+    },
+    {
+     "where": "target",
+     "kind": "grounded",
+     "path": "players.wg.feetContacts.length>0",
+     "firstSatF": 0
+    },
+    {
+     "where": "target",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 0
+    }
+   ]
+  },
+  {
+   "id": "S0b",
+   "title": "西跳链回廊：fb/wg 经 800→704→672→640 廊西行就位",
+   "computable": true,
+   "entryFirstAllF": 378,
+   "waypointFirstAllF": [
+    455,
+    531
+   ],
+   "targetFirstAllF": 569,
+   "greenRefF": 610,
+   "horizonF": 500,
+   "assertions": [
+    {
+     "where": "entry",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 211
+    },
+    {
+     "where": "entry",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 344
+    },
+    {
+     "where": "entry",
+     "kind": "grounded",
+     "path": "players.fb.feetContacts.length>0",
+     "firstSatF": 0
+    },
+    {
+     "where": "entry",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 354
+    },
+    {
+     "where": "entry",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 138
+    },
+    {
+     "where": "entry",
+     "kind": "grounded",
+     "path": "players.wg.feetContacts.length>0",
+     "firstSatF": 0
+    },
+    {
+     "where": "entry",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 0
+    },
+    {
+     "where": "wp0",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 455
+    },
+    {
+     "where": "wp0",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 378
+    },
+    {
+     "where": "wp0",
+     "kind": "grounded",
+     "path": "players.fb.feetContacts.length>0",
+     "firstSatF": 378
+    },
+    {
+     "where": "wp1",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 531
+    },
+    {
+     "where": "wp1",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 413
+    },
+    {
+     "where": "wp1",
+     "kind": "grounded",
+     "path": "players.wg.feetContacts.length>0",
+     "firstSatF": 378
+    },
+    {
+     "where": "target",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 496
+    },
+    {
+     "where": "target",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 396
+    },
+    {
+     "where": "target",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 518
+    },
+    {
+     "where": "target",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 460
+    },
+    {
+     "where": "target",
+     "kind": "grounded",
+     "path": "players.fb.feetContacts.length>0",
+     "firstSatF": 378
+    },
+    {
+     "where": "target",
+     "kind": "grounded",
+     "path": "players.wg.feetContacts.length>0",
+     "firstSatF": 378
+    },
+    {
+     "where": "target",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 378
+    }
+   ]
+  },
+  {
+   "id": "S1",
+   "title": "fb 过杆翻转 l0 → P1 沉底 → fb 登 P1 贴西墙",
+   "computable": true,
+   "entryFirstAllF": 569,
+   "waypointFirstAllF": [
+    569,
+    616
+   ],
+   "targetFirstAllF": 685,
+   "greenRefF": 700,
+   "horizonF": 300,
+   "assertions": [
+    {
+     "where": "entry",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 58
+    },
+    {
+     "where": "entry",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 396
+    },
+    {
+     "where": "entry",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 120
+    },
+    {
+     "where": "entry",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 460
+    },
+    {
+     "where": "entry",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 0
+    },
+    {
+     "where": "wp0",
+     "kind": "leverState",
+     "path": "mechSnapshot().levers[0].state",
+     "firstSatF": 569
+    },
+    {
+     "where": "wp1",
+     "kind": "platY",
+     "path": "mechSnapshot().platforms[1].y",
+     "firstSatF": 616
+    },
+    {
+     "where": "target",
+     "kind": "platY",
+     "path": "mechSnapshot().platforms[1].y",
+     "firstSatF": 641
+    },
+    {
+     "where": "target",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 684
+    },
+    {
+     "where": "target",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 654
+    },
+    {
+     "where": "target",
+     "kind": "grounded",
+     "path": "players.fb.feetContacts.length>0",
+     "firstSatF": 569
+    },
+    {
+     "where": "target",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 664
+    },
+    {
+     "where": "target",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 569
+    },
+    {
+     "where": "target",
+     "kind": "grounded",
+     "path": "players.wg.feetContacts.length>0",
+     "firstSatF": 569
+    },
+    {
+     "where": "target",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 569
+    }
+   ]
+  },
+  {
+   "id": "S2",
+   "title": "fb 竖井跳上 480 台，wg 接位 P1 西墙",
+   "computable": true,
+   "entryFirstAllF": 684,
+   "waypointFirstAllF": [
+    777,
+    811,
+    761
+   ],
+   "targetFirstAllF": 814,
+   "greenRefF": 815,
+   "horizonF": 300,
+   "assertions": [
+    {
+     "where": "entry",
+     "kind": "platY",
+     "path": "mechSnapshot().platforms[1].y",
+     "firstSatF": 641
+    },
+    {
+     "where": "entry",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 684
+    },
+    {
+     "where": "entry",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 654
+    },
+    {
+     "where": "entry",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 32
+    },
+    {
+     "where": "entry",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 460
+    },
+    {
+     "where": "entry",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 0
+    },
+    {
+     "where": "wp0",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 777
+    },
+    {
+     "where": "wp1",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 799
+    },
+    {
+     "where": "wp1",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 783
+    },
+    {
+     "where": "wp2",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 761
+    },
+    {
+     "where": "wp2",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 735
+    },
+    {
+     "where": "target",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 799
+    },
+    {
+     "where": "target",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 783
+    },
+    {
+     "where": "target",
+     "kind": "grounded",
+     "path": "players.fb.feetContacts.length>0",
+     "firstSatF": 684
+    },
+    {
+     "where": "target",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 761
+    },
+    {
+     "where": "target",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 735
+    },
+    {
+     "where": "target",
+     "kind": "grounded",
+     "path": "players.wg.feetContacts.length>0",
+     "firstSatF": 685
+    },
+    {
+     "where": "target",
+     "kind": "platY",
+     "path": "mechSnapshot().platforms[1].y",
+     "firstSatF": 684
+    },
+    {
+     "where": "target",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 684
+    }
+   ]
+  },
+  {
+   "id": "S3",
+   "title": "wg 竖井跳 480 台并压 b1（P0 下行），fb 东行 512 廊候乘",
+   "computable": true,
+   "entryFirstAllF": 811,
+   "waypointFirstAllF": [
+    848,
+    882,
+    922
+   ],
+   "targetFirstAllF": 990,
+   "greenRefF": 1010,
+   "horizonF": 340,
+   "assertions": [
+    {
+     "where": "entry",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 36
+    },
+    {
+     "where": "entry",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 783
+    },
+    {
+     "where": "entry",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 761
+    },
+    {
+     "where": "entry",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 735
+    },
+    {
+     "where": "entry",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 0
+    },
+    {
+     "where": "wp0",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 848
+    },
+    {
+     "where": "wp1",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 875
+    },
+    {
+     "where": "wp1",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 855
+    },
+    {
+     "where": "wp2",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 916
+    },
+    {
+     "where": "wp2",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 922
+    },
+    {
+     "where": "target",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 916
+    },
+    {
+     "where": "target",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 857
+    },
+    {
+     "where": "target",
+     "kind": "grounded",
+     "path": "players.wg.feetContacts.length>0",
+     "firstSatF": 811
+    },
+    {
+     "where": "target",
+     "kind": "pusherState",
+     "path": "mechSnapshot().pushers[1].state",
+     "firstSatF": 839
+    },
+    {
+     "where": "target",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 990
+    },
+    {
+     "where": "target",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 922
+    },
+    {
+     "where": "target",
+     "kind": "grounded",
+     "path": "players.fb.feetContacts.length>0",
+     "firstSatF": 814
+    },
+    {
+     "where": "target",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 811
+    }
+   ]
+  },
+  {
+   "id": "S4",
+   "title": "P0 下行 fb 登乘→升顶→跳西 352 板→压 b0（P0 再降候 wg）",
+   "computable": true,
+   "entryFirstAllF": 990,
+   "waypointFirstAllF": [
+    993,
+    1064,
+    1219,
+    1342
+   ],
+   "targetFirstAllF": 1343,
+   "greenRefF": 1400,
+   "horizonF": 420,
+   "assertions": [
+    {
+     "where": "entry",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 75
+    },
+    {
+     "where": "entry",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 857
+    },
+    {
+     "where": "entry",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 222
+    },
+    {
+     "where": "entry",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 779
+    },
+    {
+     "where": "entry",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 0
+    },
+    {
+     "where": "wp0",
+     "kind": "platY",
+     "path": "mechSnapshot().platforms[0].y",
+     "firstSatF": 993
+    },
+    {
+     "where": "wp1",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 1064
+    },
+    {
+     "where": "wp1",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 1055
+    },
+    {
+     "where": "wp2",
+     "kind": "platY",
+     "path": "mechSnapshot().platforms[0].y",
+     "firstSatF": 1219
+    },
+    {
+     "where": "wp3",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 990
+    },
+    {
+     "where": "wp3",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 1305
+    },
+    {
+     "where": "target",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 990
+    },
+    {
+     "where": "target",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 1306
+    },
+    {
+     "where": "target",
+     "kind": "grounded",
+     "path": "players.fb.feetContacts.length>0",
+     "firstSatF": 990
+    },
+    {
+     "where": "target",
+     "kind": "pusherState",
+     "path": "mechSnapshot().pushers[0].state",
+     "firstSatF": 1343
+    },
+    {
+     "where": "target",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 1279
+    },
+    {
+     "where": "target",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 1202
+    },
+    {
+     "where": "target",
+     "kind": "grounded",
+     "path": "players.wg.feetContacts.length>0",
+     "firstSatF": 990
+    },
+    {
+     "where": "target",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 990
+    }
+   ]
+  },
+  {
+   "id": "S5",
+   "title": "P0 载 wg 升顶→wg 跳西，双上 288 板西行",
+   "computable": true,
+   "entryFirstAllF": 1342,
+   "waypointFirstAllF": [
+    1534,
+    1342,
+    1678
+   ],
+   "targetFirstAllF": 1770,
+   "greenRefF": 1800,
+   "horizonF": 420,
+   "assertions": [
+    {
+     "where": "entry",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 213
+    },
+    {
+     "where": "entry",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 1306
+    },
+    {
+     "where": "entry",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 280
+    },
+    {
+     "where": "entry",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 850
+    },
+    {
+     "where": "entry",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 0
+    },
+    {
+     "where": "wp0",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 1534
+    },
+    {
+     "where": "wp0",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 1526
+    },
+    {
+     "where": "wp1",
+     "kind": "platY",
+     "path": "mechSnapshot().platforms[0].y",
+     "firstSatF": 1342
+    },
+    {
+     "where": "wp2",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 1678
+    },
+    {
+     "where": "target",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 1709
+    },
+    {
+     "where": "target",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 1617
+    },
+    {
+     "where": "target",
+     "kind": "grounded",
+     "path": "players.fb.feetContacts.length>0",
+     "firstSatF": 1342
+    },
+    {
+     "where": "target",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 1758
+    },
+    {
+     "where": "target",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 1688
+    },
+    {
+     "where": "target",
+     "kind": "grounded",
+     "path": "players.wg.feetContacts.length>0",
+     "firstSatF": 1342
+    },
+    {
+     "where": "target",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 1342
+    }
+   ]
+  },
+  {
+   "id": "S6",
+   "title": "推箱西行落 352 层，登西塔上顶层",
+   "computable": true,
+   "entryFirstAllF": 1770,
+   "waypointFirstAllF": [
+    1907,
+    1829,
+    1954
+   ],
+   "targetFirstAllF": 1997,
+   "greenRefF": 2010,
+   "horizonF": 340,
+   "assertions": [
+    {
+     "where": "entry",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 122
+    },
+    {
+     "where": "entry",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 1316
+    },
+    {
+     "where": "entry",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 217
+    },
+    {
+     "where": "entry",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 1688
+    },
+    {
+     "where": "entry",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 0
+    },
+    {
+     "where": "wp0",
+     "kind": "propX",
+     "path": "mechSnapshot().props[0].x",
+     "firstSatF": 1907
+    },
+    {
+     "where": "wp1",
+     "kind": "propY",
+     "path": "mechSnapshot().props[0].y",
+     "firstSatF": 1829
+    },
+    {
+     "where": "wp2",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 1954
+    },
+    {
+     "where": "target",
+     "kind": "propX",
+     "path": "mechSnapshot().props[0].x",
+     "firstSatF": 1923
+    },
+    {
+     "where": "target",
+     "kind": "propY",
+     "path": "mechSnapshot().props[0].y",
+     "firstSatF": 1829
+    },
+    {
+     "where": "target",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 1908
+    },
+    {
+     "where": "target",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 1997
+    },
+    {
+     "where": "target",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 1920
+    },
+    {
+     "where": "target",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 1777
+    },
+    {
+     "where": "target",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 1770
+    }
+   ]
+  },
+  {
+   "id": "S7",
+   "title": "顶层东行→fb 门→wg 门→WIN",
+   "computable": true,
+   "entryFirstAllF": 1997,
+   "waypointFirstAllF": [
+    2260,
+    2268,
+    2319
+   ],
+   "targetFirstAllF": 2365,
+   "greenRefF": 2365,
+   "horizonF": 500,
+   "assertions": [
+    {
+     "where": "entry",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 41
+    },
+    {
+     "where": "entry",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 1997
+    },
+    {
+     "where": "entry",
+     "kind": "px",
+     "path": "snapshotPlayer(wg).x",
+     "firstSatF": 41
+    },
+    {
+     "where": "entry",
+     "kind": "py",
+     "path": "snapshotPlayer(wg).y",
+     "firstSatF": 1692
+    },
+    {
+     "where": "entry",
+     "kind": "alive",
+     "path": "!snapshotPlayer(*).dying&&!dead",
+     "firstSatF": 0
+    },
+    {
+     "where": "wp0",
+     "kind": "px",
+     "path": "snapshotPlayer(fb).x",
+     "firstSatF": 2260
+    },
+    {
+     "where": "wp0",
+     "kind": "py",
+     "path": "snapshotPlayer(fb).y",
+     "firstSatF": 1999
+    },
+    {
+     "where": "wp1",
+     "kind": "atDoor",
+     "path": "snapshotPlayer(fb).atDoor",
+     "firstSatF": 2268
+    },
+    {
+     "where": "wp2",
+     "kind": "doorUp",
+     "path": "doors.fb.isUp",
+     "firstSatF": 2319
+    },
+    {
+     "where": "target",
+     "kind": "phaseWon",
+     "path": "phase==='won'",
+     "firstSatF": 2365
+    }
+   ]
+  }
+ ],
+ "allComputable": true
+}

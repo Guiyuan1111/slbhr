@@ -1,0 +1,206 @@
+{
+  "level": "forest_01",
+  "note": "auto-design 槽草案：从已绿路线(scripts/e2e/inputs/routes/forest_01.json v38)内核回放反推的 8 段检查点链。断言 kind 的取数路径见 verify 输出。窗口数字均为绿路线实测体心坐标(px)±裕量。",
+  "assertKinds": {
+    "px": "w.snapshotPlayer(role).x ∈ [min,max]",
+    "py": "w.snapshotPlayer(role).y ∈ [min,max]",
+    "vx": "w.snapshotPlayer(role).vx ∈ [min,max]",
+    "grounded": "w.players[role].feetContacts.length > 0",
+    "alive": "!snapshotPlayer(fb/wg).dying && !dead（双方）",
+    "leverState": "w.mechSnapshot().levers[id].state === value",
+    "platY": "w.mechSnapshot().platforms[id].y ∈ [min,max]",
+    "pusherState": "w.mechSnapshot().pushers[id].state === value",
+    "propX": "w.mechSnapshot().props[id].x ∈ [min,max]",
+    "propY": "w.mechSnapshot().props[id].y ∈ [min,max]",
+    "atDoor": "w.snapshotPlayer(role).atDoor === true",
+    "doorUp": "w.doors[role].isUp === true",
+    "phaseWon": "w.phase === 'won'"
+  },
+  "segments": [
+    {
+      "id": "S0a",
+      "title": "底层东行大跳：fb 上 704 台东段（跨泥池），wg 上 800 台",
+      "entry": [{ "kind": "alive" }],
+      "waypoints": [
+        [{ "kind": "px", "role": "fb", "min": 850, "max": 1120 }, { "kind": "py", "role": "fb", "min": 648, "max": 690 }, { "kind": "grounded", "role": "fb" }],
+        [{ "kind": "px", "role": "wg", "min": 1150, "max": 1240 }, { "kind": "py", "role": "wg", "min": 745, "max": 778 }, { "kind": "grounded", "role": "wg" }]
+      ],
+      "target": [
+        { "kind": "px", "role": "fb", "min": 950, "max": 1120 }, { "kind": "py", "role": "fb", "min": 648, "max": 690 }, { "kind": "grounded", "role": "fb" },
+        { "kind": "px", "role": "wg", "min": 1150, "max": 1240 }, { "kind": "py", "role": "wg", "min": 745, "max": 778 }, { "kind": "grounded", "role": "wg" },
+        { "kind": "alive" }
+      ],
+      "horizonF": 700,
+      "greenRefF": 310
+    },
+    {
+      "id": "S0b",
+      "title": "西跳链回廊：fb/wg 经 800→704→672→640 廊西行就位",
+      "entry": [
+        { "kind": "px", "role": "fb", "min": 950, "max": 1120 }, { "kind": "py", "role": "fb", "min": 648, "max": 690 }, { "kind": "grounded", "role": "fb" },
+        { "kind": "px", "role": "wg", "min": 1150, "max": 1240 }, { "kind": "py", "role": "wg", "min": 745, "max": 778 }, { "kind": "grounded", "role": "wg" },
+        { "kind": "alive" }
+      ],
+      "waypoints": [
+        [{ "kind": "px", "role": "fb", "min": 544, "max": 640 }, { "kind": "py", "role": "fb", "min": 630, "max": 700 }, { "kind": "grounded", "role": "fb" }],
+        [{ "kind": "px", "role": "wg", "min": 544, "max": 640 }, { "kind": "py", "role": "wg", "min": 630, "max": 700 }, { "kind": "grounded", "role": "wg" }]
+      ],
+      "target": [
+        { "kind": "px", "role": "fb", "min": 260, "max": 560 }, { "kind": "py", "role": "fb", "min": 598, "max": 618 },
+        { "kind": "px", "role": "wg", "min": 400, "max": 700 }, { "kind": "py", "role": "wg", "min": 598, "max": 618 },
+        { "kind": "grounded", "role": "fb" }, { "kind": "grounded", "role": "wg" }, { "kind": "alive" }
+      ],
+      "horizonF": 500,
+      "greenRefF": 610
+    },
+    {
+      "id": "S1",
+      "title": "fb 过杆翻转 l0 → P1 沉底 → fb 登 P1 贴西墙",
+      "entry": [
+        { "kind": "px", "role": "fb", "min": 260, "max": 560 }, { "kind": "py", "role": "fb", "min": 598, "max": 618 },
+        { "kind": "px", "role": "wg", "min": 400, "max": 700 }, { "kind": "py", "role": "wg", "min": 598, "max": 618 },
+        { "kind": "alive" }
+      ],
+      "waypoints": [
+        [{ "kind": "leverState", "id": 0, "value": 1 }],
+        [{ "kind": "platY", "id": 1, "min": 560, "max": 600 }]
+      ],
+      "target": [
+        { "kind": "platY", "id": 1, "min": 586, "max": 600 },
+        { "kind": "px", "role": "fb", "min": 24, "max": 72 }, { "kind": "py", "role": "fb", "min": 534, "max": 556 },
+        { "kind": "grounded", "role": "fb" },
+        { "kind": "px", "role": "wg", "min": 140, "max": 280 }, { "kind": "py", "role": "wg", "min": 598, "max": 618 },
+        { "kind": "grounded", "role": "wg" }, { "kind": "alive" }
+      ],
+      "horizonF": 300,
+      "greenRefF": 700
+    },
+    {
+      "id": "S2",
+      "title": "fb 竖井跳上 480 台，wg 接位 P1 西墙",
+      "entry": [
+        { "kind": "platY", "id": 1, "min": 586, "max": 600 },
+        { "kind": "px", "role": "fb", "min": 24, "max": 72 }, { "kind": "py", "role": "fb", "min": 534, "max": 556 },
+        { "kind": "px", "role": "wg", "min": 140, "max": 280 }, { "kind": "py", "role": "wg", "min": 598, "max": 618 },
+        { "kind": "alive" }
+      ],
+      "waypoints": [
+        [{ "kind": "py", "role": "fb", "min": 300, "max": 505 }],
+        [{ "kind": "px", "role": "fb", "min": 160, "max": 360 }, { "kind": "py", "role": "fb", "min": 435, "max": 465 }],
+        [{ "kind": "px", "role": "wg", "min": 24, "max": 80 }, { "kind": "py", "role": "wg", "min": 534, "max": 556 }]
+      ],
+      "target": [
+        { "kind": "px", "role": "fb", "min": 160, "max": 360 }, { "kind": "py", "role": "fb", "min": 435, "max": 465 }, { "kind": "grounded", "role": "fb" },
+        { "kind": "px", "role": "wg", "min": 24, "max": 80 }, { "kind": "py", "role": "wg", "min": 534, "max": 556 }, { "kind": "grounded", "role": "wg" },
+        { "kind": "platY", "id": 1, "min": 586, "max": 600 }, { "kind": "alive" }
+      ],
+      "horizonF": 300,
+      "greenRefF": 815
+    },
+    {
+      "id": "S3",
+      "title": "wg 竖井跳 480 台并压 b1（P0 下行），fb 东行 512 廊候乘",
+      "entry": [
+        { "kind": "px", "role": "fb", "min": 160, "max": 360 }, { "kind": "py", "role": "fb", "min": 435, "max": 465 },
+        { "kind": "px", "role": "wg", "min": 24, "max": 80 }, { "kind": "py", "role": "wg", "min": 534, "max": 556 },
+        { "kind": "alive" }
+      ],
+      "waypoints": [
+        [{ "kind": "py", "role": "wg", "min": 300, "max": 505 }],
+        [{ "kind": "px", "role": "wg", "min": 170, "max": 400 }, { "kind": "py", "role": "wg", "min": 430, "max": 465 }],
+        [{ "kind": "px", "role": "fb", "min": 672, "max": 1000 }, { "kind": "py", "role": "fb", "min": 466, "max": 495 }]
+      ],
+      "target": [
+        { "kind": "px", "role": "wg", "min": 336, "max": 368 }, { "kind": "py", "role": "wg", "min": 430, "max": 458 }, { "kind": "grounded", "role": "wg" },
+        { "kind": "pusherState", "id": 1, "value": 1 },
+        { "kind": "px", "role": "fb", "min": 1000, "max": 1120 }, { "kind": "py", "role": "fb", "min": 466, "max": 492 }, { "kind": "grounded", "role": "fb" },
+        { "kind": "alive" }
+      ],
+      "horizonF": 340,
+      "greenRefF": 1010
+    },
+    {
+      "id": "S4",
+      "title": "P0 下行 fb 登乘→升顶→跳西 352 板→压 b0（P0 再降候 wg）",
+      "entry": [
+        { "kind": "px", "role": "wg", "min": 336, "max": 368 }, { "kind": "py", "role": "wg", "min": 430, "max": 458 },
+        { "kind": "px", "role": "fb", "min": 1000, "max": 1120 }, { "kind": "py", "role": "fb", "min": 466, "max": 492 },
+        { "kind": "alive" }
+      ],
+      "waypoints": [
+        [{ "kind": "platY", "id": 0, "min": 486, "max": 500 }],
+        [{ "kind": "px", "role": "fb", "min": 1090, "max": 1214 }, { "kind": "py", "role": "fb", "min": 340, "max": 470 }],
+        [{ "kind": "platY", "id": 0, "min": 396, "max": 412 }],
+        [{ "kind": "px", "role": "fb", "min": 900, "max": 1010 }, { "kind": "py", "role": "fb", "min": 305, "max": 330 }]
+      ],
+      "target": [
+        { "kind": "px", "role": "fb", "min": 955, "max": 1012 }, { "kind": "py", "role": "fb", "min": 306, "max": 326 }, { "kind": "grounded", "role": "fb" },
+        { "kind": "pusherState", "id": 0, "value": 1 },
+        { "kind": "px", "role": "wg", "min": 1030, "max": 1120 }, { "kind": "py", "role": "wg", "min": 466, "max": 492 }, { "kind": "grounded", "role": "wg" },
+        { "kind": "alive" }
+      ],
+      "horizonF": 420,
+      "greenRefF": 1400
+    },
+    {
+      "id": "S5",
+      "title": "P0 载 wg 升顶→wg 跳西，双上 288 板西行",
+      "entry": [
+        { "kind": "px", "role": "fb", "min": 955, "max": 1012 }, { "kind": "py", "role": "fb", "min": 306, "max": 326 },
+        { "kind": "px", "role": "wg", "min": 1030, "max": 1120 }, { "kind": "py", "role": "wg", "min": 466, "max": 492 },
+        { "kind": "alive" }
+      ],
+      "waypoints": [
+        [{ "kind": "px", "role": "wg", "min": 1090, "max": 1214 }, { "kind": "py", "role": "wg", "min": 340, "max": 470 }],
+        [{ "kind": "platY", "id": 0, "min": 396, "max": 412 }],
+        [{ "kind": "py", "role": "wg", "min": 240, "max": 320 }]
+      ],
+      "target": [
+        { "kind": "px", "role": "fb", "min": 550, "max": 760 }, { "kind": "py", "role": "fb", "min": 245, "max": 265 }, { "kind": "grounded", "role": "fb" },
+        { "kind": "px", "role": "wg", "min": 750, "max": 900 }, { "kind": "py", "role": "wg", "min": 245, "max": 265 }, { "kind": "grounded", "role": "wg" },
+        { "kind": "alive" }
+      ],
+      "horizonF": 420,
+      "greenRefF": 1800
+    },
+    {
+      "id": "S6",
+      "title": "推箱西行落 352 层，登西塔上顶层",
+      "entry": [
+        { "kind": "px", "role": "fb", "min": 550, "max": 760 }, { "kind": "py", "role": "fb", "min": 245, "max": 265 },
+        { "kind": "px", "role": "wg", "min": 750, "max": 900 }, { "kind": "py", "role": "wg", "min": 245, "max": 265 },
+        { "kind": "alive" }
+      ],
+      "waypoints": [
+        [{ "kind": "propX", "id": 0, "min": 0, "max": 320 }],
+        [{ "kind": "propY", "id": 0, "min": 310, "max": 335 }],
+        [{ "kind": "py", "role": "fb", "min": 0, "max": 205 }]
+      ],
+      "target": [
+        { "kind": "propX", "id": 0, "min": 200, "max": 250 }, { "kind": "propY", "id": 0, "min": 310, "max": 335 },
+        { "kind": "px", "role": "fb", "min": 180, "max": 360 }, { "kind": "py", "role": "fb", "min": 60, "max": 185 },
+        { "kind": "px", "role": "wg", "min": 180, "max": 360 }, { "kind": "py", "role": "wg", "min": 60, "max": 250 },
+        { "kind": "alive" }
+      ],
+      "horizonF": 340,
+      "greenRefF": 2010
+    },
+    {
+      "id": "S7",
+      "title": "顶层东行→fb 门→wg 门→WIN",
+      "entry": [
+        { "kind": "px", "role": "fb", "min": 180, "max": 360 }, { "kind": "py", "role": "fb", "min": 60, "max": 185 },
+        { "kind": "px", "role": "wg", "min": 180, "max": 360 }, { "kind": "py", "role": "wg", "min": 60, "max": 250 },
+        { "kind": "alive" }
+      ],
+      "waypoints": [
+        [{ "kind": "px", "role": "fb", "min": 990, "max": 1120 }, { "kind": "py", "role": "fb", "min": 140, "max": 175 }],
+        [{ "kind": "atDoor", "role": "fb" }],
+        [{ "kind": "doorUp", "role": "fb" }]
+      ],
+      "target": [{ "kind": "phaseWon" }],
+      "horizonF": 500,
+      "greenRefF": 2365
+    }
+  ]
+}
