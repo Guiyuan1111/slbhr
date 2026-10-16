@@ -122,6 +122,22 @@ const PRIM_TABLE = {
    *  物理状态由墙/线锚定（冲墙滑行 v→0、后撤步离面），事件表 ±1f 只影响到达帧不影响终态。 */
   hold: (d, xLine) => S.hold(ds(d), (c) => (d > 0 ? c.me.x >= xLine : c.me.x <= xLine)),
   jumpDrift: (d, ...a) => S.jumpDrift(ds(d), ...a),
+  /** 限速行进到线 + 过线主动反刹（精确定点件，S3 b1 板实证）：到线时速度≤vMax，
+   *  过线即反刹 3 帧（~24.5px/s²）停定——slick 面松键滑阻≈0，无反刹会 coast 数百 px
+   *  （dbg29 实证 walkTo(350,80) ±1f 过线速超限 → done 不燃 → coast 850px 出台缘）。
+   *  goTo 防过冲刹车在 slick 面存在刹车/加速极限环（200 帧爬不进 32px 窗），此件无环。 */
+  walkTo: (d, xLine, vMax = 70) => {
+    const D = ds(d), O = d > 0 ? "left" : "right";
+    return {
+      name: `walk${d}${xLine}`,
+      run: (c) => {
+        const past = d > 0 ? c.me.x >= xLine : c.me.x <= xLine;
+        if (!past) return Math.abs(c.me.vx) > vMax ? NONE : { ...NONE, [D]: true };
+        return Math.abs(c.me.vx) > 20 ? { ...NONE, [O]: true } : NONE;
+      },
+      done: (c) => (d > 0 ? c.me.x >= xLine : c.me.x <= xLine) && Math.abs(c.me.vx) <= 20 && c.me.grounded,
+    };
+  },
   jumpOnto: (d, ...a) => S.jumpOnto(ds(d), ...a),
   /** runJump 直包 + f0 护栏 + up 保持 holdF 帧 + done 语义修复。
    *  f0-护栏：character.currentRunForce 初始 undefined，关卡首帧即压方向会算出 NaN 力永久毒化
@@ -321,14 +337,25 @@ const SEG = {
   },
   S3: {
     maxDepth: 12, capFb: 6, capWg: 8,
+    // wg 配方 v3（dbg29 法证 2026-10-16）：jd 双弧与 jo 均为檐口 marginal 弹道——480 台西缘
+    //   x128 过缘净空仅 ~5px，漂移起始 ±1f 经 auto-climb pop 放大成 ±20px 落点彩票
+    //   （35/41/136 败全源于此）。v3 破局：runJump(1,0,18) 固定冲量单跳（up 保持不增跳高，
+    //   三档 holdF 终态全同）+ walkTo(1,341,999) 反馈式走停（横穿速度剖面与历史扰动解耦，
+    //   主动刹车 |vx|≤20 → 台面摩擦停驻）。穷举 68/68 fails=0（line 338 亦 0/68）。
+    //   教训：walkTo vMax 限速脉冲步进本身是脆弱性发生器（80 脉冲事件 136 败）——
+    //   vMax 拉满 999 单程直压才是正解。fb：台东行 → 东缘 640 落 512 廊 → 东行 P0 候乘位。
+    recipe: {
+      fb: [spec("goTo", 600, 12), spec("goTo", 1060, 12), spec("sleep", 15)],
+      wg: [spec("runJump", 1, 0, 18), spec("walkTo", 1, 341, 999), spec("sleep", 15)],
+    },
     vocab: {
       // fb：480 台东行 → 东缘落 512 廊 → 东行候乘
       fb: [spec("goTo", 500, 12), spec("goTo", 650, 12), spec("goTo", 800, 12), spec("goTo", 1060, 12),
-        spec("goTo", 1090, 12), spec("sleep", 15)],
+        spec("goTo", 1090, 12), spec("walkTo", 1, 1050, 90), spec("sleep", 15)],
       // wg：P1 西缘跳东上 480 台 → 东行压 b1（P0 下行）
-      wg: [spec("jumpDrift", 1, 0, 90), spec("jumpDrift", 1, 0, 70), spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475),
-        spec("runJump", 1, 60), spec("runJump", 1, 100), spec("goTo", 352, 8), spec("goTo", 345, 8),
-        spec("goTo", 360, 8), spec("sleep", 15)],
+      wg: [spec("runJump", 1, 0, 18), spec("runJump", 1, 0, 15), spec("runJump", 1, 0, 21),
+        spec("walkTo", 1, 338, 999), spec("walkTo", 1, 341, 999), spec("walkTo", 1, 344, 999),
+        spec("jumpDrift", 1, 0, 90), spec("sleep", 15)],
     },
   },
   S4: {
