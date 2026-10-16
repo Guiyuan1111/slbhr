@@ -302,8 +302,8 @@ const SEG = {
         spec("runJump", 1, 185), spec("runJump", 1, 190), spec("goTo", 700, 12), spec("goTo", 900, 12),
         spec("goTo", 1056, 8), spec("goTo", 1050, 8), spec("sleep", 15)],
       wg: [spec("jumpDrift", -1, 0, 30), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", 1, 0, 50), spec("runJump", 1, 150),
-        spec("runJump", 1, 170), spec("runJump", 1, 185), spec("runJump", 1, 190), spec("goTo", 700, 12), spec("goTo", 900, 12),
-        spec("goTo", 1168, 8), spec("goTo", 1160, 8), spec("sleep", 15)],
+        spec("runJump", 1, 170), spec("runJump", 1, 185), spec("runJump", 1, 190), spec("goTo", 1168, 8),
+        spec("goTo", 1160, 8), spec("sleep", 15)],
     },
   },
 };
