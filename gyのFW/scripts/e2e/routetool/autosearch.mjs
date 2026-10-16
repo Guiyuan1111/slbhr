@@ -159,6 +159,17 @@ const PRIM_TABLE = {
     run: () => NONE,
     done: (c) => { const x = c.w.mechSnapshot().props[id]?.x; return x !== undefined && x >= min && x <= max; },
   }),
+  /** 骑乘唤醒（S4 实证）：平台马达仅作用于清醒岛（deviceChanged 只 SetMotorSpeed，
+   *  ApplyForce 不带 wake）；骑手站定后平台刚体入睡→永不升降。ride 以右偏往复输入
+   *  （10f 右/6f 左，东墙 1216 挡住不滑出）保持骑手清醒，直到平台 y 进入窗口。 */
+  ride: (id, minY, maxY) => {
+    let t = 0;
+    return {
+      name: `ride${id}${minY}-${maxY}`,
+      run: () => { t++; return t % 16 < 10 ? { ...NONE, right: true } : { ...NONE, left: true }; },
+      done: (c) => { const y = c.w.mechSnapshot().platforms[id]?.y; return y !== undefined && y >= minY && y <= maxY; },
+    };
+  },
 };
 const spec = (n, ...a) => ({ n, a });
 const stepOf = (sp) => PRIM_TABLE[sp.n](...sp.a);
@@ -240,13 +251,14 @@ const SEG = {
   S4: {
     maxDepth: 14, capFb: 12, capWg: 5,
     vocab: {
-      // fb：东行跳上 P0 沉位（wg 压 b1 保持）→ 乘升顶（wg 放开 b1 后）→ 跳西上 352 板 → 西行压 b0（P0 降候 wg）
-      fb: [spec("goTo", 1100, 12), spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475), spec("jumpDrift", 1, 0, 25),
-        spec("waitPlat", 0, 396, 412), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 70),
-        spec("runJump", -1, 1140), spec("jumpOnto", -1, 330), spec("goTo", 970, 10), spec("goTo", 992, 10),
-        spec("goTo", 990, 10), spec("sleep", 15)],
-      wg: [spec("sleep", 30), spec("sleep", 60), spec("waitPx", "fb", 1090, 1214), spec("goTo", 1060, 12),
-        spec("goTo", 1100, 12), spec("sleep", 15)],
+      // 实证（probe4，2026-10-15）：fb 廊上东行靠 P0 沉位西立面（x~1076，顶 480 高廊面 32px 为台）；
+      //   板下台阶 y[384,416] 把净空压到 29px → 登乘只能立面垂直跳（jo 顶头截断+下落东漂上 P0）；
+      //   wg 松 b1 后 P0 载 fb 升顶须 fb 骑乘唤醒（ride）；顶 384 比板 352 低 32px，跳西落板压 b0。
+      fb: [spec("goTo", 1080, 12), spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475), spec("ride", 0, 396, 412),
+        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 25), spec("goTo", 970, 10), spec("goTo", 992, 10),
+        spec("sleep", 15)],
+      wg: [spec("sleep", 30), spec("waitPx", "fb", 1080, 1214), spec("goTo", 1060, 12), spec("goTo", 1100, 12),
+        spec("sleep", 15)],
     },
   },
   S5: {
@@ -255,9 +267,9 @@ const SEG = {
       // fb：候 wg 登 P0 沉位（b0 已压）→ 离 b0 西跳上 288 块（P0 载 wg 升）→ 块顶西行（自然推箱随行）
       fb: [spec("sleep", 30), spec("waitPx", "wg", 1100, 1214), spec("jumpDrift", -1, 0, 30), spec("jumpDrift", -1, 0, 50),
         spec("jumpOnto", -1, 290), spec("goTo", 750, 12), spec("goTo", 700, 12), spec("goTo", 650, 12), spec("sleep", 15)],
-      // wg：东行登 P0 沉位 → 乘升顶（fb 离 b0）→ 跳西上板 → 东缘步级跳上 288 块 → 西行就位
-      wg: [spec("goTo", 1100, 12), spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475), spec("jumpDrift", 1, 0, 25),
-        spec("waitPlat", 0, 396, 412), spec("jumpDrift", -1, 0, 50), spec("runJump", -1, 1100),
+      // wg：东行登 P0 沉位 → 骑乘唤醒升至顶（fb 离 b0）→ 跳西上板 → 东缘步级跳上 288 块 → 西行就位
+      wg: [spec("goTo", 1100, 12), spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475), spec("ride", 0, 396, 412),
+        spec("jumpDrift", -1, 0, 50), spec("runJump", -1, 1100),
         spec("jumpDrift", -1, 0, 70), spec("goTo", 950, 10), spec("jumpDrift", -1, 0, 30),
         spec("jumpDrift", -1, 0, 50), spec("jumpOnto", -1, 290), spec("goTo", 800, 12), spec("sleep", 15)],
     },
