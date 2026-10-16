@@ -325,6 +325,7 @@ function evaluate(segC, sf, sw, totalCapF) {
   let lastQueueEmptyF = -1;
   let metIdx = null;
   const inputs = { fb: NONE, wg: NONE };
+  const drainF = { fb: -1, wg: -1 }; // 各侧队列排干帧（seam 判据用：入窗穿越须发生在排干前，排干后 adds 即扰动）
   for (let f = 0; f < totalCapF; f++) {
     const meS = { fb: snapOf("fireboy"), wg: snapOf("watergirl") };
     const idxSnap = { fb: idx.fb, wg: idx.wg }; // 本帧将执行的原语下标（done 推进前）
@@ -345,7 +346,7 @@ function evaluate(segC, sf, sw, totalCapF) {
       inputs[role] = next;
       let d = false;
       try { d = stp.done(ctx); } catch { d = false; }
-      if (d) idx[role]++;
+      if (d) { idx[role]++; if (idx[role] >= progs[role].length) drainF[role] = f; }
     }
     w.step(1 / 60, { fireboy: inputs.fb, watergirl: inputs.wg });
     const a = w.snapshotPlayer("fireboy"), b = w.snapshotPlayer("watergirl");
@@ -382,7 +383,7 @@ function evaluate(segC, sf, sw, totalCapF) {
     wg: { x: b.x, y: b.y, vx: b.vx, vy: b.vy, atDoor: b.atDoor, grounded: w.players.watergirl.feetContacts.length > 0, dead: b.dead || b.dying },
   };
   return {
-    deathF, deadWho, entryF, wpMetF, metAt, wonAt, endF, metIdx, idxEnd: { fb: idx.fb, wg: idx.wg },
+    deathF, deadWho, entryF, wpMetF, metAt, wonAt, endF, metIdx, drainF, idxEnd: { fb: idx.fb, wg: idx.wg },
     S: Send, M: w.mechSnapshot(),
     D: { won: w.phase === "won", doors: { fireboy: { isUp: w.doors.fireboy.isUp }, watergirl: { isUp: w.doors.watergirl.isUp } } },
   };
@@ -599,14 +600,22 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
       const trimmed = { ...cand, sf: cand.sf.slice(0, Math.max(1, kFb)), sw: cand.sw.slice(0, Math.max(1, kWg)), parked: true };
       const totalFrames = (cand.endF > 0 ? cand.endF : prefixF + segC.horizonF) + 30;
       const dr = replayEvents(trimmed.sf, trimmed.sw, totalFrames);
-      if (!dr.result.won && dr.result.deathF >= 0) { best = { cand: trimmed, inline: { fatal: SAMPLES, groups: [] }, score2: -1e6, seamEntryF: -1, trimDepth: [kFb, kWg] }; continue; }
+      if (!dr.result.won && dr.result.deathF >= 0) {
+        // 修剪重放死亡只作兜底记录，继续试更深保留（浅剪死亡→深保留可能不死且过窗）
+        const rec = { cand: trimmed, inline: { fatal: SAMPLES, groups: [] }, score2: -1e6, seamEntryF: -1, trimDepth: [kFb, kWg] };
+        if (!best) best = rec;
+        continue;
+      }
       const deadlineAbsF = (cand.entryF >= 0 ? cand.entryF : 0) + segC.horizonF;
       const ins = inlineSample(dr.events, segC, deadlineAbsF, SAMPLES, Math.max(0, cand.entryF));
       let seamEntryF = -1;
       if (nextC) {
         const nr = evaluate(nextC, trimmed.sf, trimmed.sw, cand.endF + SEAM_GRACE_F + 120);
         const drained = nr.idxEnd.fb >= trimmed.sf.length && nr.idxEnd.wg >= trimmed.sw.length;
-        if (nr.entryF >= 0 && drained) seamEntryF = nr.entryF;
+        // 入窗须发生在双侧队列排干前：排干后下段 adds 即接管输入，锁存驻留期的穿越是幻觉
+        const preDisturb = nr.entryF >= 0 && nr.drainF.fb >= 0 && nr.drainF.wg >= 0
+          && nr.entryF <= Math.min(nr.drainF.fb, nr.drainF.wg);
+        if (drained && preDisturb) seamEntryF = nr.entryF;
       }
       const rec = { cand: trimmed, events: dr.events, inline: ins, score2: cand.score - 500 * ins.fatal, seamEntryF, trimDepth: [kFb, kWg] };
       if (!best || ((rec.seamEntryF >= 0) - (best.seamEntryF >= 0)) > 0) best = rec;
@@ -619,12 +628,16 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
   return out[0];
 }
 
-/** seam 校验（§9-3）：对【修剪后】定稿程序以 evaluate 重放，逐帧查下一段 entryG（含死亡短路）。
+/** seam 校验（§9-3）：对【修剪后】定稿程序以 evaluate 重放，逐帧查下一段 entryG（含死亡短路）；
+ *  入窗须发生在双侧队列排干前（排干后下段 adds 接管输入，锁存驻留期穿越是幻觉——full-rob2 实证）。
  *  旧版先断言修剪前存储终态 = 假阳性（修剪剪掉的在飞原语弧线可能正是入窗穿越，S0b 饥饿实证），废除。 */
 function seamCheck(final, nextSegDef) {
   const nextC = segCtxOf(nextSegDef);
   const nr = evaluate(nextC, final.cand.sf, final.cand.sw, final.cand.endF + SEAM_GRACE_F + 120);
-  if (nr.entryF >= 0) return { ok: true, entryF: nr.entryF, grace: Math.max(0, nr.entryF - final.cand.endF) };
+  const drained = nr.idxEnd.fb >= final.cand.sf.length && nr.idxEnd.wg >= final.cand.sw.length;
+  const preDisturb = nr.entryF >= 0 && nr.drainF.fb >= 0 && nr.drainF.wg >= 0
+    && nr.entryF <= Math.min(nr.drainF.fb, nr.drainF.wg);
+  if (drained && preDisturb) return { ok: true, entryF: nr.entryF, grace: Math.max(0, nr.entryF - final.cand.endF) };
   return { ok: false };
 }
 
