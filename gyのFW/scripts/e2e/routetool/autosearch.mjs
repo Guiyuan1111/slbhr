@@ -388,6 +388,9 @@ function evaluate(segC, sf, sw, totalCapF) {
   };
 }
 const GRACE_F = Number(argOf("grace", "25"));
+const ROB_TOP = Number(argOf("robtop", "14"));         // 层内鲁棒采样候选数（0=关闭，退回纯前沿分）
+const ROB_SAMPLES = Number(argOf("robsamples", "6"));  // 每候选 ±1f 采样组数
+const ROB_W = Number(argOf("robw", "2000"));           // fatal 率折分权重（满脆 −ROB_W，量级=2 路标解锁）
 
 // ---------------------------------------------------------------- scoreOf（§4.1，E3 v2 同式）
 function scoreOf(segC, sf, sw, r) {
@@ -428,11 +431,13 @@ function replayEvents(sf, sw, totalFrames) {
 
 // ---------------------------------------------------------------- inline 扰动采样（§4.3 阶段一）
 // 对候选事件表做 R 组随机扰动（每组随机 1 事件平移 ±1f），重放判 fatal（死亡或 deadline 内 target 未达）。
-function inlineSample(baseEvents, segC, deadlineAbsF, R) {
+// minF：只采样 f≥minF 的事件（链式搜索下前缀事件已冻结，均匀罚全候选无区分度；
+// 本段新增事件的 ±1f 脆弱度才是本层可控量——s7j 全链 365/614 诊断结论）。
+function inlineSample(baseEvents, segC, deadlineAbsF, R, minF = 0, requireMet = true) {
   const evs = { fb: baseEvents.fb, wg: baseEvents.wg };
   const all = [];
-  for (const side of ["fb", "wg"]) for (let i = 0; i < evs[side].length; i++) all.push({ side, i });
-  if (!all.length) return { fatal: R, groups: [] };
+  for (const side of ["fb", "wg"]) for (let i = 0; i < evs[side].length; i++) { if (evs[side][i].f < minF) continue; all.push({ side, i }); }
+  if (!all.length) return { fatal: 0, groups: [] };
   let fatal = 0;
   const groups = [];
   for (let g = 0; g < R; g++) {
@@ -440,13 +445,14 @@ function inlineSample(baseEvents, segC, deadlineAbsF, R) {
     const dir = Math.random() < 0.5 ? -1 : 1;
     const T = { fb: evs.fb.map((e) => ({ ...e })), wg: evs.wg.map((e) => ({ ...e })) };
     T[pick.side][pick.i].f += dir;
-    const ok = replayEventRoute(T, segC, deadlineAbsF);
+    const ok = replayEventRoute(T, segC, deadlineAbsF, requireMet);
     if (!ok) { fatal++; groups.push({ side: pick.side, i: pick.i, f: evs[pick.side][pick.i].f, dir }); }
   }
   return { fatal, groups };
 }
-/** 扰动事件表回放：死亡或 deadlineAbsF 内 target 未达 → false */
-function replayEventRoute(T, segC, deadlineAbsF) {
+/** 扰动事件表回放：requireMet=true 时死亡或 deadlineAbsF 内 target 未达 → false；
+ *  false 时仅死亡判 fatal（层内非 met 候选的存活鲁棒度判据，到 deadline 仍活着即通过） */
+function replayEventRoute(T, segC, deadlineAbsF, requireMet = true) {
   const w = makeWorld(LEVEL);
   const ins = expandFlat(T.fb, T.wg, deadlineAbsF + 2);
   let met = false;
@@ -462,7 +468,7 @@ function replayEventRoute(T, segC, deadlineAbsF) {
     const Dx = { won: w.phase === "won", doors: w.doors };
     if (allS(segC.targetG, Sx, Mx, Dx)) { met = true; break; }
   }
-  return met;
+  return requireMet ? met : true;
 }
 
 // ---------------------------------------------------------------- 主流程
@@ -528,16 +534,33 @@ function searchSegment(segDef, seeds, opts) {
       continue;
     }
     cands.sort((x, y) => y.score - x.score);
+    // 鲁棒度入环（§4.3 阶段一前移到层内）：前沿 top-ROB_TOP 候选做本段事件 ±1f 采样，
+    // fatal 率折分后重排。动机（s7j 全链诊断）：事件表绝对帧锚定 vs 程序状态锚定的
+    // 错位逐段放大——S0a-S3 事件 70-75% ±1f fatal、死亡点集中在 S7 窄窗（110/365），
+    // 层内不淘汰脆谱系，末端必然组装出纸牌屋。met 候选判"扰动后仍达标"，
+    // 非 met 候选判"扰动后仍存活"（target 未达是常态，不能按未达罚）。
+    if (ROB_TOP > 0) {
+      for (const c of cands.slice(0, Math.min(ROB_TOP, cands.length))) {
+        if (c.r.entryF < 0) { c.rob = null; continue; }
+        const dr = replayEvents(c.sf, c.sw, Math.max(1, c.r.endF) + 2);
+        const deadlineAbsF = c.r.entryF + segC.horizonF;
+        const ins = inlineSample(dr.events, segC, deadlineAbsF, ROB_SAMPLES, c.r.entryF, !!c.met);
+        c.rob = { fatal: ins.fatal, n: ROB_SAMPLES };
+        c.score -= ROB_W * (ins.fatal / ROB_SAMPLES);
+      }
+      cands.sort((x, y) => y.score - x.score);
+    }
     beam = cands.slice(0, BEAM); // 仅前沿 beam（E3 定版：时长惩罚使父代恒优于子代，同池会耗尽前沿）
     const b = beam[0];
     if (!bestEver || b.score > bestEver.score) bestEver = b;
     layers.push({
       depth, evals, best: +b.score.toFixed(0), unlocked: b.unlocked, met: b.met,
+      rob: b.rob ? `${b.rob.fatal}/${b.rob.n}` : null,
       entryF: b.r.entryF, endF: b.r.endF,
       fb: [+b.r.S.fb.x.toFixed(0), +b.r.S.fb.y.toFixed(0)], wg: [+b.r.S.wg.x.toFixed(0), +b.r.S.wg.y.toFixed(0)],
       path: progNames(b.sf).slice(0, 160) + " | " + progNames(b.sw).slice(0, 160),
     });
-    log(`  ${segDef.id} d${depth}: evals=${evals} best=${b.score.toFixed(0)} wp=${b.unlocked}/${segC.wpG.length} met=${b.met} entry@${b.r.entryF} fb=[${layers.at(-1).fb}] wg=[${layers.at(-1).wg}]`);
+    log(`  ${segDef.id} d${depth}: evals=${evals} best=${b.score.toFixed(0)} wp=${b.unlocked}/${segC.wpG.length} met=${b.met} rob=${layers.at(-1).rob ?? "-"} entry@${b.r.entryF} fb=[${layers.at(-1).fb}] wg=[${layers.at(-1).wg}]`);
     if (b.met) { solved = b; break; }
     if (evals > BUDGET) { log(`  ${segDef.id} evals 预算耗尽（${BUDGET}）`); exhausted = true; break; }
     if ((Date.now() - opts.t0) / 1000 > opts.wallBudgetS) { log(`  ${segDef.id} 墙钟预算耗尽`); exhausted = true; break; }
@@ -561,7 +584,7 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
     const dr = replayEvents(cand.sf, cand.sw, totalFrames);
     if (!dr.result.won && dr.result.deathF >= 0) { out.push({ cand, inline: { fatal: SAMPLES, groups: [] }, score2: -1e6 }); continue; }
     const deadlineAbsF = (cand.entryF >= 0 ? cand.entryF : 0) + segC.horizonF;
-    const ins = inlineSample(dr.events, segC, deadlineAbsF, SAMPLES);
+    const ins = inlineSample(dr.events, segC, deadlineAbsF, SAMPLES, Math.max(0, cand.entryF));
     out.push({ cand, events: dr.events, inline: ins, score2: cand.score - 500 * ins.fatal });
   }
   out.sort((x, y) => y.score2 - x.score2);
@@ -780,9 +803,10 @@ async function robustAcceptance() {
   const JOBS = Number(argOf("jobs", "7"));
   const pool = new ScanPool(JOBS);
   const out = { base: null, pm1: null, pm2: null };
-  const base = await pool.run(doc.level, { totalFrames: doc.totalFrames, fb: doc.fb, wg: doc.wg });
-  out.base = { won: base.won, winF: base.winF ?? null };
-  log(`鲁棒验收基线: ${base.won ? `WIN @f${base.winF}` : "FAIL"}`);
+  // 基线用进程内 runKernel（scanworker 只回 won/deathF，无 winF——"WIN @fundefined" 假象即此）
+  const rkBase = kernel.runKernel(doc.level, doc);
+  out.base = { won: rkBase.won, winF: rkBase.winF ?? null };
+  log(`鲁棒验收基线: ${rkBase.won ? `WIN @f${rkBase.winF}` : "FAIL"}`);
   for (const d of [1, 2]) {
     const jobs = [];
     for (const side of ["fb", "wg"])
