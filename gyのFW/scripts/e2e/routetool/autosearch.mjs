@@ -299,15 +299,18 @@ const SEG = {
     //   full4 S2 未解根因）。原地 jo(-1,570)：垂直起跳 + 高空(y<570)左漂 ~31px 过坎落台东缘
     //   [159.6,542.7]，板上 goTo(60) 西行入窗 [24,80]（板上无障碍，fb 已东跳不挡）。
     //   jo(-1,555) 漂移窗过短不过坎（dbg26 v4 实证）。
+    //   v3 补 waitPx 跨角色同步（dbg-s2b 轨迹法证）：wg 若立即登板则 ~f800 永久离开廊窗
+    //   [140,280]×[598,618]，而 fb 要 ~f910 才滑入 shaft 窗 → 联合 entry 永不触发（entry@-1，
+    //   full5 recipe 宏假死根因）。waitPx("fb",24,72) 状态锚定等 fb 入窗再跳，entry ~f890 即燃。
     recipe: {
       fb: [spec("jumpDrift", 1, 0, 90), spec("goTo", 220, 10), spec("sleep", 15)],
-      wg: [spec("jumpOnto", -1, 570), spec("goTo", 60, 10), spec("sleep", 15)],
+      wg: [spec("waitPx", "fb", 24, 72), spec("jumpOnto", -1, 570), spec("goTo", 60, 10), spec("sleep", 15)],
     },
     vocab: {
       // fb：P1 西缘原地跳东上 480 台（升 ~96px，绿迹同款无助跑跳）
       fb: [spec("jumpDrift", 1, 0, 90), spec("jumpDrift", 1, 0, 70), spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475),
         spec("runJump", 1, 60), spec("runJump", 1, 100), spec("goTo", 200, 12), spec("goTo", 300, 12), spec("sleep", 15)],
-      wg: [spec("jumpOnto", -1, 570), spec("jumpOnto", -1, 560), spec("jumpOnto", -1, 580), spec("jumpOnto", -1, 555),
+      wg: [spec("waitPx", "fb", 24, 72), spec("waitPx", "fb", 30, 70), spec("jumpOnto", -1, 570), spec("jumpOnto", -1, 560), spec("jumpOnto", -1, 580), spec("jumpOnto", -1, 555),
         spec("goTo", 60, 10), spec("goTo", 80, 10), spec("goTo", 48, 12), spec("sleep", 15)],
     },
   },
@@ -438,6 +441,10 @@ function evaluate(segC, sf, sw, totalCapF) {
     const Mx = w.mechSnapshot();
     const Dx = { won: w.phase === "won", doors: w.doors };
     if (entryF < 0 && allS(segC.entryG, Sx, Mx, Dx)) { entryF = f; entryS = Sx; }
+    if (process.env.AS_DBG === segC.id && f % 40 === 0) {
+      const t = (g, name) => { try { return allS([g], Sx, Mx, Dx) ? 1 : 0; } catch { return "E"; } };
+      log(`    [dbg${segC.id}] f${f} fb[${a.x.toFixed(0)},${a.y.toFixed(0)},g${w.players.fireboy.feetContacts.length > 0 ? 1 : 0}] wg[${b.x.toFixed(0)},${b.y.toFixed(0)},g${w.players.watergirl.feetContacts.length > 0 ? 1 : 0}] P1y=${(Mx.platforms[1]?.y ?? -1).toFixed(0)} entry=${entryF >= 0 ? entryF : "no"} terms=[plat,fbx,fby,wgx,wgy]=${segC.entryG.map((g) => t(g)).join(",")}`);
+    }
     if (entryF >= 0) {
       const segF = f - entryF;
       for (let wi = 0; wi < segC.wpG.length; wi++) if (wpMetF[wi] < 0 && allS(segC.wpG[wi], Sx, Mx, Dx)) wpMetF[wi] = segF;
