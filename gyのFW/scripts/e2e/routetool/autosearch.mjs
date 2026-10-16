@@ -290,10 +290,13 @@ const SEG = {
     },
   },
   S7: {
-    maxDepth: 8, capFb: 5, capWg: 5,
+    maxDepth: 8, capFb: 6, capWg: 6,
     vocab: {
-      fb: [spec("goTo", 700, 12), spec("goTo", 900, 12), spec("goTo", 1056, 8), spec("goTo", 1050, 8), spec("sleep", 15)],
-      wg: [spec("goTo", 700, 12), spec("goTo", 900, 12), spec("goTo", 1168, 8), spec("goTo", 1160, 8), spec("sleep", 15)],
+      // 塔顶(224)→顶层(row6 x[384,1248])之间 x[192,384] 为缺口且顶层高 32px：先跳东登顶层再东行走门
+      fb: [spec("jumpDrift", 1, 0, 50), spec("runJump", 1, 150), spec("runJump", 1, 170), spec("goTo", 700, 12),
+        spec("goTo", 900, 12), spec("goTo", 1056, 8), spec("goTo", 1050, 8), spec("sleep", 15)],
+      wg: [spec("jumpDrift", 1, 0, 50), spec("runJump", 1, 150), spec("runJump", 1, 170), spec("goTo", 700, 12),
+        spec("goTo", 900, 12), spec("goTo", 1168, 8), spec("goTo", 1160, 8), spec("sleep", 15)],
     },
   },
 };
@@ -635,17 +638,19 @@ const report = {
   startedAt: new Date().toISOString(), segs: [], totals: null, robust: null, export: null,
 };
 
-// resume：载入先前各段定稿程序作为种子前缀
+// resume：载入先前各段定稿程序作为种子前缀。
+// 注意：定稿程序是【累积制】（f0 起全链前缀），取最后一段的 sf/sw 即可——
+// 若逐段 push 拼接会得到 O(n²) 重复巨型程序（历史块重放导致轨迹发散，S7 实证）。
 let seedSf = [], seedSw = [], prefixF = 0, startIdx = segRange[0];
 const resumePath = argOf("resume");
 if (resumePath) {
   const prev = JSON.parse(readFileSync(isAbsolute(resumePath) ? resumePath : resolve(ROOT, resumePath), "utf8"));
   for (const s of prev.segs) {
     if (!s.final) break;
-    seedSf.push(...s.final.sf); seedSw.push(...s.final.sw); prefixF = s.final.endF;
+    seedSf = [...s.final.sf]; seedSw = [...s.final.sw]; prefixF = s.final.endF;
   }
   startIdx = Math.max(segRange[0], prev.segs.filter((s) => s.final).length);
-  log(`resume: 载入前 ${startIdx} 段定稿（前缀 ${prefixF}f）`);
+  log(`resume: 载入前 ${startIdx} 段定稿（累积程序 fb ${seedSf.length} / wg ${seedSw.length} 原语，前缀 ${prefixF}f）`);
 }
 
 let okSegs = 0;
