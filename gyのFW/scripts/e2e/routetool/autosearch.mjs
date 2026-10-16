@@ -218,16 +218,15 @@ const SEG = {
   },
   S1: {
     maxDepth: 14, capFb: 8, capWg: 8, horizonF: 450,
-    // 登板宏（dbg15 实证，2026-10-16）：西行触发区 [272,336]（任一角色进入即翻转 l0），
-    // P1(obj33 x[32,160]) 沉降 496→592 约 97f 且驻留；fb 西行被 P1 东立面(160)顶死在
-    // [175.6,604.5]——rj 起跳线 150 永不可达（队列搁浅）。贴脸 jo(-1,546)：apex feet≈549
-    // 越过板顶 576，y<546 左漂越立面落板顶 ~155，再 go48 西行至 px[24,72]。
-    // waitPlat 先行（s1r5 教训）：宏里边走边沉会撞上静台阶爬行-坠落弧（inline 10/20 全聚在
-    // f731-740 与 f536-590 连锁）；等板沉定（状态锚定，天然吸收 wg 过杆 ±1f）再走，走位/
-    // 登板全程无时序耦合。horizon 450：metAt ~f895（segF 374）超出旧 300。
+    // 登板宏 v3（dbg16 扰动归因，2026-10-16）：s1r6 inline 10/20 全归因于两个动量敏感点
+    // ——(a) 障碍 [230,312] 的自动攀爬（步行速度恰好够，wg 卡 310/fb 卡 233-262）、
+    // (b) jo 漂移阈值 546 的越顶边界（apex 余量 ~27px，±1f 落回地面即搁浅）。
+    // 双跳配方：jd35 弹道越障碍（落点宽盆 [150,240]）+ jd30 空降板顶西段（feet apex 549
+    // 越板顶 576，落点 ~[40,80] ∈ 目标 px[24,72]），go60 收容两盆地；waitPlat 先行吸收
+    // wg 过杆 ±1f（状态锚定）。horizon 450：metAt ~f900（segF ~380）。
     recipe: {
-      fb: [spec("waitPlat", 1, 586, 600), spec("goTo", 176, 8), spec("jumpOnto", -1, 546), spec("goTo", 48, 12), spec("sleep", 30)],
-      wg: [spec("goTo", 200, 12), spec("sleep", 15)],
+      fb: [spec("waitPlat", 1, 586, 600), spec("goTo", 330, 10), spec("jumpDrift", -1, 0, 35), spec("goTo", 180, 10), spec("jumpDrift", -1, 0, 28), spec("runJump", -1, 78), spec("sleep", 30)],
+      wg: [spec("goTo", 280, 10), spec("jumpDrift", -1, 0, 35), spec("goTo", 200, 12), spec("sleep", 15)],
     },
     vocab: {
       // fb：廊上西行过杆（x≈304 翻转 l0 → P1 下沉 90f）→ 续西 → 跳上西行登 P1 沉位 → 西行贴墙
@@ -466,6 +465,21 @@ function inlineSample(baseEvents, segC, deadlineAbsF, R, minF = 0, requireMet = 
   }
   return { fatal, groups };
 }
+/** 穷举 ±1f 采样（定稿验收门，2026-10-16 绿路线 fatal=0/222 实证本关存在全鲁棒解）：
+ *  本段新增跨度（f≥minF）每事件 ±1 各一次，任一 fatal 即早退。每事件恰属一段的新增
+ *  跨度 ⇒ 逐段穷举 = 整关穷举。 */
+function exhaustiveSample(baseEvents, segC, deadlineAbsF, minF = 0) {
+  const all = [];
+  for (const side of ["fb", "wg"]) for (let i = 0; i < baseEvents[side].length; i++) { if (baseEvents[side][i].f < minF) continue; all.push({ side, i }); }
+  for (const { side, i } of all) {
+    for (const dir of [-1, 1]) {
+      const T = { fb: baseEvents.fb.map((e) => ({ ...e })), wg: baseEvents.wg.map((e) => ({ ...e })) };
+      T[side][i].f += dir;
+      if (!replayEventRoute(T, segC, deadlineAbsF)) return { fatal: 1, groups: [{ side, i, f: baseEvents[side][i].f, dir }] };
+    }
+  }
+  return { fatal: 0, groups: [] };
+}
 /** 扰动事件表回放：requireMet=true 时死亡或 deadlineAbsF 内 target 未达 → false；
  *  false 时仅死亡判 fatal（层内非 met 候选的存活鲁棒度判据，到 deadline 仍活着即通过） */
 function replayEventRoute(T, segC, deadlineAbsF, requireMet = true) {
@@ -600,7 +614,7 @@ function searchSegment(segDef, seeds, opts) {
       // met 不即停：先试定稿阶梯，seam 过关才收（早熟脆家系 met 会饿死下段——v4 实证
       // d8 4原语落窗即坠家系抢跑）；不过则继续加深让鲁棒家系上位，快照首个 met 前沿兜底
       const finTry = finalizeSegment({ beam }, segDef, prefixF, opts.nextDef ?? null);
-      if (finTry && (finTry.seamEntryF >= 0 || !opts.nextDef)) { solved = b; break; }
+      if (finTry && finTry.exhaustiveFatal === 0 && (finTry.seamEntryF >= 0 || !opts.nextDef)) { solved = b; break; }
       if (!metBeam) metBeam = beam;
     }
     if (evals > BUDGET) { log(`  ${segDef.id} evals 预算耗尽（${BUDGET}）`); exhausted = true; break; }
@@ -651,21 +665,27 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
       const dr = replayEvents(trimmed.sf, trimmed.sw, totalFrames);
       if (!dr.result.won && dr.result.deathF >= 0) {
         // 修剪重放死亡只作兜底记录，继续试更深保留（浅剪死亡→深保留可能不死且过窗）
-        const rec = { cand: trimmed, inline: { fatal: SAMPLES, groups: [] }, score2: -1e6, seamEntryF: -1, trimDepth: [kFb, kWg] };
+        const rec = { cand: trimmed, inline: { fatal: SAMPLES, groups: [] }, exhaustiveFatal: 1, score2: -1e6, seamEntryF: -1, trimDepth: [kFb, kWg] };
         if (!best) best = rec;
         continue;
       }
       const deadlineAbsF = (cand.entryF >= 0 ? cand.entryF : 0) + segC.horizonF;
-      const ins = inlineSample(dr.events, segC, deadlineAbsF, SAMPLES, Math.max(0, cand.entryF));
       let seamEntryF = -1;
       if (nextC) {
         const nr = evaluate(nextC, trimmed.sf, trimmed.sw, cand.endF + SEAM_GRACE_F + 120);
         if (seamOkNr(nr, trimmed, nextC)) seamEntryF = nr.entryF;
       }
-      const rec = { cand: trimmed, events: dr.events, inline: ins, score2: cand.score - 500 * ins.fatal, seamEntryF, trimDepth: [kFb, kWg] };
-      if (!best || ((rec.seamEntryF >= 0) - (best.seamEntryF >= 0)) > 0) best = rec;
-      else if (best.seamEntryF >= 0 === rec.seamEntryF >= 0 && rec.score2 > best.score2) best = rec;
-      if (best.seamEntryF >= 0) break; // 深度阶梯已过关（优先浅剪），停止加保留
+      // 穷举 ±1f 验收门（seam 过后对本段新增事件全量扰动；绿路线 fatal=0/222 实证可达）
+      let exFatal = 1, exGroups = [];
+      if (seamEntryF >= 0 || !nextC) {
+        const ex = exhaustiveSample(dr.events, segC, deadlineAbsF, Math.max(0, cand.entryF));
+        exFatal = ex.fatal; exGroups = ex.groups;
+      }
+      const rec = { cand: trimmed, events: dr.events, inline: { fatal: exFatal, groups: exGroups }, exhaustiveFatal: exFatal, score2: cand.score - 500 * exFatal, seamEntryF, trimDepth: [kFb, kWg] };
+      const acc = (r) => ((r.seamEntryF >= 0 || !nextC) && r.exhaustiveFatal === 0 ? 1 : 0);
+      if (!best || acc(rec) - acc(best) > 0) best = rec;
+      else if (acc(rec) === acc(best) && rec.score2 > best.score2) best = rec;
+      if (best && acc(best) === 1) break; // 已获穷举鲁棒定稿（优先浅剪），停止加保留
     }
     out.push(best);
   }
@@ -797,7 +817,7 @@ for (let si = startIdx; si <= segRange[1]; si++) {
     trimDepth: fin.trimDepth ?? null, seamEntryF: fin.seamEntryF ?? null,
     prog: { fb: progNames(fin.cand.sf), wg: progNames(fin.cand.sw) },
   };
-  log(`  ${segDef.id} 定稿: score'=${fin.score2.toFixed(0)} inlineFatal=${fin.inline.fatal}/${SAMPLES} end@f${fin.cand.endF} trim=${(fin.trimDepth ?? []).join("/")} seamEntry@${fin.seamEntryF ?? "-"}`);
+  log(`  ${segDef.id} 定稿: score'=${fin.score2.toFixed(0)} 穷举Fatal=${fin.exhaustiveFatal ?? "?"} end@f${fin.cand.endF} trim=${(fin.trimDepth ?? []).join("/")} seamEntry@${fin.seamEntryF ?? "-"}`);
 
   // seam 校验（对下一段 entry；末段无）
   const nextDef = chain.segments[si + 1];
