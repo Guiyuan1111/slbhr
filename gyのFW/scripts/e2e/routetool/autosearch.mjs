@@ -217,11 +217,21 @@ const SEG = {
     },
   },
   S1: {
-    maxDepth: 12, capFb: 8, capWg: 5,
+    maxDepth: 14, capFb: 8, capWg: 8,
+    // 登板宏（dbg13/14 实证）：rj-150 登板✓但 P1 沉降到位（~592）晚于队列冻死，fb 落回
+    // 地面；waitPlat 让队列活到 platY 入窗再 jo 重登。beam shaping 看不见两层后的收益
+    // （waitPlat 节点 d9 被剪），以 recipe 宏整组注入 d1，evaluate/鲁棒门/定稿阶梯全照走
+    recipe: {
+      fb: [spec("runJump", -1, 150), spec("goTo", 48, 12), spec("waitPlat", 1, 586, 600), spec("jumpOnto", -1, 555), spec("sleep", 30)],
+      wg: [spec("goTo", 200, 12), spec("sleep", 15)],
+    },
     vocab: {
       // fb：廊上西行过杆（x≈304 翻转 l0 → P1 下沉 90f）→ 续西 → 跳上西行登 P1 沉位 → 西行贴墙
+      //   waitPlat：新 seam（full-rob5 S0b trim9/8）下 fb 登板与 P1 沉位周期的时序耦合失配
+      //   （v5 d10 前沿耗尽 wp2/2 未 met），等板到位再跳解耦
       fb: [spec("goTo", 250, 10), spec("goTo", 230, 10), spec("goTo", 180, 12), spec("goTo", 150, 12),
         spec("jumpDrift", -1, 0, 60), spec("jumpDrift", -1, 0, 80), spec("jumpOnto", -1, 555), spec("jumpOnto", -1, 570),
+        spec("waitPlat", 1, 580, 600), spec("runJump", -1, 150), spec("runJump", -1, 170),
         spec("goTo", 60, 12), spec("goTo", 48, 12), spec("sleep", 15)],
       wg: [spec("goTo", 200, 12), spec("goTo", 170, 12), spec("goTo", 240, 12), spec("goTo", 150, 12), spec("sleep", 15)],
     },
@@ -511,10 +521,28 @@ function searchSegment(segDef, seeds, opts) {
   for (let depth = 1; depth <= maxDepth; depth++) {
     const cands = [];
     let deadKept = [];
+    // recipe 宏候选（cfg.recipe）：d1 直接种子+整组宏注入一次，评估/评分与词表候选同轨
+    if (depth === 1 && cfg.recipe) {
+      const sf2 = [...beam[0].sf, ...cfg.recipe.fb];
+      const sw2 = [...beam[0].sw, ...cfg.recipe.wg];
+      const sig = sigOf(sf2, sw2);
+      if (!seen.has(sig)) {
+        seen.add(sig);
+        const r = evaluate(segC, sf2, sw2, totalCapF);
+        evals++;
+        const sc = scoreOf(segC, sf2, sw2, r);
+        const cand = { sf: sf2, sw: sw2, ...sc, r };
+        if (r.deathF >= 0) deadKept.push(cand); else cands.push(cand);
+        log(`  ${segDef.id} d${depth}: recipe 宏 evals=${evals} score=${sc.score.toFixed(0)} wp=${sc.unlocked}/${segC.wpG.length} met=${sc.met} death@${r.deathF} entry@${r.entryF}`);
+      }
+    }
     for (const node of beam) {
       const dFb = node.sf.length, dWg = node.sw.length;
-      const role = dFb > dWg ? "wg" : dWg > dFb ? "fb" : (depth % 2 ? "fb" : "wg");
-      if ((role === "fb" && dFb - seedFb >= capFb) || (role === "wg" && dWg - seedWg >= capWg)) continue;
+      let role = dFb > dWg ? "wg" : dWg > dFb ? "fb" : (depth % 2 ? "fb" : "wg");
+      const capped = (rl) => (rl === "fb" && dFb - seedFb >= capFb) || (rl === "wg" && dWg - seedWg >= capWg);
+      // 所属侧 cap 满则换另一侧扩展（否则整层空转假耗尽——S1 capWg5 实证 d10 全员 skip）
+      if (capped(role)) role = role === "fb" ? "wg" : "fb";
+      if (capped(role)) continue;
       for (const prim of cfg.vocab[role]) {
         const sf2 = role === "fb" ? [...node.sf, prim] : node.sf;
         const sw2 = role === "wg" ? [...node.sw, prim] : node.sw;
