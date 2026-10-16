@@ -240,14 +240,24 @@ const SEG = {
   },
   S0b: {
     maxDepth: 12, capFb: 8, capWg: 8,
+    // 锚定链 v2（dbg24 离线法证 2026-10-16）：双角色同构西行链。台面 ~950 起跳越双杀带
+    //   [768,928]（fb 落 ~710 / wg 落 ~689，起跳点 ±5px 不触带西缘 928）→ hold(-1,540)
+    //   连续西行撞 672 檐东面（x608，高出台面 32px）自动攀爬弹弧一次跨两阶（檐 672→廊 640，
+    //   fb f444-500 / wg f549-570 实证，途中 x≤540 谓词在弧内完成）→ edgeDrop 收弧落地
+    //   → 停靠 hold 分档（fb 470→滑停 447 / wg 520→滑停 519，间隔 72px 防重叠）。
+    //   勿停杆区 296-312（防误翻 l0）。v1 之败（full-exha）：goTo 离散步进在 slick 台面
+    //   落地残速下滑出目标盆 + wg hold(+1) 反向设计错误。
+    recipe: {
+      fb: [spec("runJump", -1, 950, 20), spec("hold", -1, 540), spec("edgeDrop", -1, 20), spec("hold", -1, 470), spec("sleep", 15)],
+      wg: [spec("jumpDrift", -1, 0, 90), spec("runJump", -1, 950, 20), spec("hold", -1, 540), spec("edgeDrop", -1, 20), spec("hold", -1, 520), spec("sleep", 15)],
+    },
     vocab: {
-      // fb：台面西行蓄速 → ~950 起跳越过双杀带 [768,928]（落 ~660-720）→ 西行过台西端（512 落 640 廊）
-      //   → 廊上就位（勿停杆区 296-312，防误翻 l0）
-      fb: [spec("runJump", -1, 950), spec("runJump", -1, 975), spec("runJump", -1, 925), spec("jumpDrift", -1, 0, 90),
-        spec("goTo", 420, 12), spec("goTo", 380, 12), spec("goTo", 460, 12), spec("sleep", 15)],
-      // wg：塔顶西跳上台东段（落 ~1030-1120，带东侧安全）→ 西行蓄速 → ~950 跳越双杀带 → 西行落廊就位
-      wg: [spec("runJump", -1, 1180), spec("runJump", -1, 1160), spec("runJump", -1, 950), spec("runJump", -1, 930),
-        spec("jumpDrift", -1, 0, 90), spec("goTo", 500, 12), spec("goTo", 450, 12), spec("sleep", 15)],
+      fb: [spec("runJump", -1, 950, 20), spec("runJump", -1, 975, 20), spec("runJump", -1, 925, 20),
+        spec("hold", -1, 540), spec("hold", -1, 560), spec("edgeDrop", -1, 20),
+        spec("hold", -1, 470), spec("hold", -1, 490), spec("sleep", 15)],
+      wg: [spec("jumpDrift", -1, 0, 90), spec("runJump", -1, 950, 20), spec("runJump", -1, 975, 20), spec("runJump", -1, 925, 20),
+        spec("hold", -1, 540), spec("hold", -1, 560), spec("edgeDrop", -1, 20),
+        spec("hold", -1, 520), spec("hold", -1, 490), spec("sleep", 15)],
     },
   },
   S1: {
