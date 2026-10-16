@@ -436,6 +436,7 @@ function evaluate(segC, sf, sw, totalCapF) {
   let entryF = -1, deathF = -1, deadWho = null, metAt = -1, wonAt = -1, endF = 0;
   let lastQueueEmptyF = -1;
   let metIdx = null;
+  let Sx = null;
   const inputs = { fb: NONE, wg: NONE };
   const drainF = { fb: -1, wg: -1 }; // 各侧队列排干帧（seam 判据用：移动中的角色入窗须发生在排干前，排干后 adds 即扰动）
   let entryS = null;                 // 入窗帧状态（seam 判据取 vx：站立侧豁免排干前约束）
@@ -468,7 +469,7 @@ function evaluate(segC, sf, sw, totalCapF) {
       endF = f; break;
     }
     // 断言取 step 后状态（verify-chain.mjs/E1 同口径：step→逐帧联合求值）
-    const Sx = {
+    Sx = {
       fb: { x: a.x, y: a.y, vx: a.vx, vy: a.vy, atDoor: a.atDoor, grounded: w.players.fireboy.feetContacts.length > 0, dead: a.dead || a.dying },
       wg: { x: b.x, y: b.y, vx: b.vx, vy: b.vy, atDoor: b.atDoor, grounded: w.players.watergirl.feetContacts.length > 0, dead: b.dead || b.dying },
     };
@@ -589,12 +590,12 @@ function exhaustiveSample(baseEvents, segC, deadlineAbsF, minF = 0) {
 function replayEventRoute(T, segC, deadlineAbsF, requireMet = true) {
   const w = makeWorld(LEVEL);
   const ins = expandFlat(T.fb, T.wg, deadlineAbsF + 2);
-  let met = false;
+  let met = false, Sx = null;
   for (let f = 0; f <= deadlineAbsF; f++) {
     w.step(1 / 60, { fireboy: ins.fb[f], watergirl: ins.wg[f] });
     const a = w.snapshotPlayer("fireboy"), b = w.snapshotPlayer("watergirl");
     if (a.dead || a.dying || b.dead || b.dying) return { ok: false, why: `die@${f} fb[${a.x.toFixed(0)},${a.y.toFixed(0)}] wg[${b.x.toFixed(0)},${b.y.toFixed(0)}]` };
-    const Sx = {
+    Sx = {
       fb: { x: a.x, y: a.y, vx: a.vx, vy: a.vy, atDoor: a.atDoor, grounded: w.players.fireboy.feetContacts.length > 0, dead: a.dead || a.dying },
       wg: { x: b.x, y: b.y, vx: b.vx, vy: b.vy, atDoor: b.atDoor, grounded: w.players.watergirl.feetContacts.length > 0, dead: b.dead || b.dying },
     };
