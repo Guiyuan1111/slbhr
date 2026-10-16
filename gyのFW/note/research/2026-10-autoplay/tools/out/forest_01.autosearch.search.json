@@ -1,0 +1,916 @@
+{
+ "level": "forest_01",
+ "chain": "/home/gy/桌面/dev/slbhr/gyのFW/note/research/2026-10-autoplay/tools/checkpoints-forest_01.json",
+ "beam": 24,
+ "budget": 6000,
+ "samples": 10,
+ "startedAt": "2026-10-16T06:02:47.002Z",
+ "segs": [
+  {
+   "id": "S0a",
+   "title": "底层东行大跳：fb 上 704 台东段（跨泥池），wg 上 800 台",
+   "solved": true,
+   "exhausted": false,
+   "evals": 1089,
+   "wallS": 29.1,
+   "layers": [
+    {
+     "depth": 1,
+     "evals": 9,
+     "best": -840,
+     "unlocked": 0,
+     "met": false,
+     "entryF": 0,
+     "endF": 203,
+     "fb": [
+      866,
+      769
+     ],
+     "wg": [
+      96,
+      733
+     ],
+     "path": "runJump(1,830) | "
+    },
+    {
+     "depth": 2,
+     "evals": 57,
+     "best": -743,
+     "unlocked": 0,
+     "met": false,
+     "entryF": 0,
+     "endF": 203,
+     "fb": [
+      866,
+      769
+     ],
+     "wg": [
+      562,
+      861
+     ],
+     "path": "runJump(1,830) | runJump(1,460)"
+    },
+    {
+     "depth": 3,
+     "evals": 273,
+     "best": -656,
+     "unlocked": 0,
+     "met": false,
+     "entryF": 0,
+     "endF": 250,
+     "fb": [
+      1056,
+      766
+     ],
+     "wg": [
+      562,
+      861
+     ],
+     "path": "runJump(1,800) runJump(1,800) | runJump(1,460)"
+    },
+    {
+     "depth": 4,
+     "evals": 465,
+     "best": -503,
+     "unlocked": 0,
+     "met": false,
+     "entryF": 0,
+     "endF": 282,
+     "fb": [
+      1101,
+      766
+     ],
+     "wg": [
+      1112,
+      765
+     ],
+     "path": "runJump(1,830) runJump(1,1100) | runJump(1,460) runJump(1,1080)"
+    },
+    {
+     "depth": 5,
+     "evals": 681,
+     "best": -310,
+     "unlocked": 0,
+     "met": false,
+     "entryF": 0,
+     "endF": 291,
+     "fb": [
+      1124,
+      676
+     ],
+     "wg": [
+      1113,
+      776
+     ],
+     "path": "runJump(1,800) runJump(1,1080) runJump(1,1120) | runJump(1,460) runJump(1,1080)"
+    },
+    {
+     "depth": 6,
+     "evals": 873,
+     "best": 432,
+     "unlocked": 1,
+     "met": false,
+     "entryF": 0,
+     "endF": 334,
+     "fb": [
+      1158,
+      765
+     ],
+     "wg": [
+      1190,
+      765
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) | runJump(1,460) runJump(1,1100) goTo(1200,10)"
+    },
+    {
+     "depth": 7,
+     "evals": 1089,
+     "best": 7188,
+     "unlocked": 2,
+     "met": true,
+     "entryF": 0,
+     "endF": 310,
+     "fb": [
+      1038,
+      668
+     ],
+     "wg": [
+      1190,
+      765
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) jumpDrift(-1,0,60) | runJump(1,460) runJump(1,1100) goTo(1200,10)"
+    }
+   ],
+   "bestEver": {
+    "score": 7188,
+    "unlocked": 2,
+    "met": true,
+    "entryF": 0,
+    "endF": 310,
+    "fb": [
+     1038,
+     668
+    ],
+    "wg": [
+     1190,
+     765
+    ]
+   },
+   "final": {
+    "sf": [
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       800
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       1100
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       800
+      ]
+     }
+    ],
+    "sw": [
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       460
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       1100
+      ]
+     },
+     {
+      "n": "goTo",
+      "a": [
+       1200,
+       10
+      ]
+     }
+    ],
+    "score": 7188,
+    "score2": 5188,
+    "entryF": 0,
+    "endF": 310,
+    "metAt": 310,
+    "inlineFatal": 4,
+    "inlineGroups": [
+     {
+      "side": "fb",
+      "i": 0,
+      "f": 1,
+      "dir": -1
+     },
+     {
+      "side": "fb",
+      "i": 4,
+      "f": 173,
+      "dir": -1
+     },
+     {
+      "side": "fb",
+      "i": 0,
+      "f": 1,
+      "dir": 1
+     },
+     {
+      "side": "fb",
+      "i": 5,
+      "f": 248,
+      "dir": 1
+     }
+    ],
+    "prog": {
+     "fb": "runJump(1,800) runJump(1,1100) runJump(1,800)",
+     "wg": "runJump(1,460) runJump(1,1100) goTo(1200,10)"
+    }
+   },
+   "seam": {
+    "ok": true,
+    "entryF": 310,
+    "grace": 0
+   }
+  },
+  {
+   "id": "S0b",
+   "title": "西跳链回廊：fb/wg 经 800→704→672→640 廊西行就位",
+   "solved": true,
+   "exhausted": false,
+   "evals": 768,
+   "wallS": 25.9,
+   "layers": [
+    {
+     "depth": 1,
+     "evals": 8,
+     "best": -961,
+     "unlocked": 0,
+     "met": false,
+     "entryF": 310,
+     "endF": 336,
+     "fb": [
+      1025,
+      668
+     ],
+     "wg": [
+      1190,
+      765
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) jumpDrift(-1,0,90) | runJump(1,460) runJump(1,1100) goTo(1200,10)"
+    },
+    {
+     "depth": 2,
+     "evals": 40,
+     "best": -746,
+     "unlocked": 0,
+     "met": false,
+     "entryF": 312,
+     "endF": 393,
+     "fb": [
+      940,
+      669
+     ],
+     "wg": [
+      974,
+      669
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160)"
+    },
+    {
+     "depth": 3,
+     "evals": 192,
+     "best": 370,
+     "unlocked": 1,
+     "met": false,
+     "entryF": 312,
+     "endF": 516,
+     "fb": [
+      429,
+      605
+     ],
+     "wg": [
+      974,
+      669
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(420,12) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160)"
+    },
+    {
+     "depth": 4,
+     "evals": 384,
+     "best": 745,
+     "unlocked": 1,
+     "met": false,
+     "entryF": 312,
+     "endF": 516,
+     "fb": [
+      429,
+      605
+     ],
+     "wg": [
+      685,
+      669
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(420,12) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930)"
+    },
+    {
+     "depth": 5,
+     "evals": 576,
+     "best": 743,
+     "unlocked": 1,
+     "met": false,
+     "entryF": 312,
+     "endF": 517,
+     "fb": [
+      429,
+      605
+     ],
+     "wg": [
+      685,
+      669
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(420,12) goTo(420,12) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930)"
+    },
+    {
+     "depth": 6,
+     "evals": 768,
+     "best": 7149,
+     "unlocked": 2,
+     "met": true,
+     "entryF": 312,
+     "endF": 491,
+     "fb": [
+      429,
+      605
+     ],
+     "wg": [
+      560,
+      618
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(420,12) goTo(420,12) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930) goTo(500,12)"
+    }
+   ],
+   "bestEver": {
+    "score": 7149,
+    "unlocked": 2,
+    "met": true,
+    "entryF": 312,
+    "endF": 491,
+    "fb": [
+     429,
+     605
+    ],
+    "wg": [
+     560,
+     618
+    ]
+   },
+   "final": {
+    "sf": [
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       800
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       1100
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       800
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       -1,
+       975
+      ]
+     }
+    ],
+    "sw": [
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       460
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       1100
+      ]
+     },
+     {
+      "n": "goTo",
+      "a": [
+       1200,
+       10
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       -1,
+       1160
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       -1,
+       930
+      ]
+     }
+    ],
+    "score": 7149,
+    "score2": 6649,
+    "entryF": 312,
+    "endF": 491,
+    "metAt": 179,
+    "inlineFatal": 1,
+    "inlineGroups": [
+     {
+      "side": "fb",
+      "i": 6,
+      "f": 249,
+      "dir": -1
+     }
+    ],
+    "prog": {
+     "fb": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975)",
+     "wg": "runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930)"
+    }
+   },
+   "seam": {
+    "ok": true,
+    "entryF": 491,
+    "grace": 0
+   }
+  },
+  {
+   "id": "S1",
+   "title": "fb 过杆翻转 l0 → P1 沉底 → fb 登 P1 贴西墙",
+   "solved": true,
+   "exhausted": false,
+   "evals": 714,
+   "wallS": 33.3,
+   "layers": [
+    {
+     "depth": 1,
+     "evals": 11,
+     "best": -537,
+     "unlocked": 0,
+     "met": false,
+     "entryF": -1,
+     "endF": 935,
+     "fb": [
+      155,
+      605
+     ],
+     "wg": [
+      685,
+      669
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(60,12) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930)"
+    },
+    {
+     "depth": 2,
+     "evals": 66,
+     "best": 1585,
+     "unlocked": 2,
+     "met": false,
+     "entryF": 491,
+     "endF": 661,
+     "fb": [
+      192,
+      605
+     ],
+     "wg": [
+      211,
+      605
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(180,12) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930) goTo(200,12)"
+    },
+    {
+     "depth": 3,
+     "evals": 330,
+     "best": 1828,
+     "unlocked": 2,
+     "met": false,
+     "entryF": 491,
+     "endF": 661,
+     "fb": [
+      119,
+      543
+     ],
+     "wg": [
+      211,
+      605
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(180,12) jumpDrift(-1,0,60) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930) goTo(200,12)"
+    },
+    {
+     "depth": 4,
+     "evals": 450,
+     "best": 1827,
+     "unlocked": 2,
+     "met": false,
+     "entryF": 491,
+     "endF": 662,
+     "fb": [
+      119,
+      543
+     ],
+     "wg": [
+      211,
+      605
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(180,12) jumpDrift(-1,0,60) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930) goTo(200,12) goTo(200,12)"
+    },
+    {
+     "depth": 5,
+     "evals": 714,
+     "best": 7068,
+     "unlocked": 2,
+     "met": true,
+     "entryF": 491,
+     "endF": 627,
+     "fb": [
+      70,
+      543
+     ],
+     "wg": [
+      213,
+      605
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(180,12) jumpDrift(-1,0,60) goTo(48,12) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930) goTo(200,12) goTo(200,12)"
+    }
+   ],
+   "bestEver": {
+    "score": 7068,
+    "unlocked": 2,
+    "met": true,
+    "entryF": 491,
+    "endF": 627,
+    "fb": [
+     70,
+     543
+    ],
+    "wg": [
+     213,
+     605
+    ]
+   },
+   "final": {
+    "sf": [
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       800
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       1100
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       800
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       -1,
+       975
+      ]
+     },
+     {
+      "n": "goTo",
+      "a": [
+       180,
+       12
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       60
+      ]
+     }
+    ],
+    "sw": [
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       460
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       1100
+      ]
+     },
+     {
+      "n": "goTo",
+      "a": [
+       1200,
+       10
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       -1,
+       1160
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       -1,
+       930
+      ]
+     }
+    ],
+    "score": 7068,
+    "score2": 6568,
+    "entryF": 491,
+    "endF": 627,
+    "metAt": 136,
+    "inlineFatal": 1,
+    "inlineGroups": [
+     {
+      "side": "wg",
+      "i": 18,
+      "f": 311,
+      "dir": -1
+     }
+    ],
+    "prog": {
+     "fb": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(180,12) jumpDrift(-1,0,60)",
+     "wg": "runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930)"
+    }
+   },
+   "seam": {
+    "ok": true,
+    "entryF": 627,
+    "grace": 0
+   }
+  },
+  {
+   "id": "S2",
+   "title": "fb 竖井跳上 480 台，wg 接位 P1 西墙",
+   "solved": false,
+   "exhausted": false,
+   "evals": 1704,
+   "wallS": 101.9,
+   "layers": [
+    {
+     "depth": 1,
+     "evals": 8,
+     "best": -785,
+     "unlocked": 0,
+     "met": false,
+     "entryF": -1,
+     "endF": 1071,
+     "fb": [
+      119,
+      543
+     ],
+     "wg": [
+      176,
+      605
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(180,12) jumpDrift(-1,0,60) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930) goTo(120,12)"
+    },
+    {
+     "depth": 2,
+     "evals": 72,
+     "best": -786,
+     "unlocked": 0,
+     "met": false,
+     "entryF": -1,
+     "endF": 1071,
+     "fb": [
+      119,
+      543
+     ],
+     "wg": [
+      176,
+      605
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(180,12) jumpDrift(-1,0,60) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930) goTo(120,12) goTo(120,12)"
+    },
+    {
+     "depth": 3,
+     "evals": 288,
+     "best": -502,
+     "unlocked": 0,
+     "met": false,
+     "entryF": -1,
+     "endF": 1071,
+     "fb": [
+      237,
+      445
+     ],
+     "wg": [
+      176,
+      605
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(180,12) jumpDrift(-1,0,60) jumpOnto(1,475) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930) goTo(120,12) goTo(120,12)"
+    },
+    {
+     "depth": 4,
+     "evals": 480,
+     "best": -503,
+     "unlocked": 0,
+     "met": false,
+     "entryF": -1,
+     "endF": 1071,
+     "fb": [
+      237,
+      445
+     ],
+     "wg": [
+      176,
+      605
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(180,12) jumpDrift(-1,0,60) jumpOnto(1,475) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930) goTo(120,12) goTo(120,12) goTo(120,12)"
+    },
+    {
+     "depth": 5,
+     "evals": 696,
+     "best": -504,
+     "unlocked": 0,
+     "met": false,
+     "entryF": -1,
+     "endF": 1071,
+     "fb": [
+      237,
+      445
+     ],
+     "wg": [
+      176,
+      605
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(180,12) jumpDrift(-1,0,60) jumpOnto(1,475) sleep(15) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930) goTo(120,12) goTo(120,12) goTo(120,12)"
+    },
+    {
+     "depth": 6,
+     "evals": 888,
+     "best": -505,
+     "unlocked": 0,
+     "met": false,
+     "entryF": -1,
+     "endF": 1071,
+     "fb": [
+      237,
+      445
+     ],
+     "wg": [
+      176,
+      605
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(180,12) jumpDrift(-1,0,60) jumpOnto(1,475) sleep(15) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930) goTo(120,12) goTo(120,12) goTo(120,12) goTo(120,12)"
+    },
+    {
+     "depth": 7,
+     "evals": 1104,
+     "best": -506,
+     "unlocked": 0,
+     "met": false,
+     "entryF": -1,
+     "endF": 1071,
+     "fb": [
+      237,
+      445
+     ],
+     "wg": [
+      176,
+      605
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(180,12) jumpDrift(-1,0,60) jumpOnto(1,475) sleep(15) sleep(15) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930) goTo(120,12) goTo(120,12) goTo(120,12) goTo(120,12)"
+    },
+    {
+     "depth": 8,
+     "evals": 1296,
+     "best": -507,
+     "unlocked": 0,
+     "met": false,
+     "entryF": -1,
+     "endF": 1071,
+     "fb": [
+      237,
+      445
+     ],
+     "wg": [
+      176,
+      605
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(180,12) jumpDrift(-1,0,60) jumpOnto(1,475) sleep(15) sleep(15) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930) goTo(120,12) goTo(120,12) goTo(120,12) goTo(120,12) goTo(120,12)"
+    },
+    {
+     "depth": 9,
+     "evals": 1512,
+     "best": -508,
+     "unlocked": 0,
+     "met": false,
+     "entryF": -1,
+     "endF": 1071,
+     "fb": [
+      237,
+      445
+     ],
+     "wg": [
+      176,
+      605
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(180,12) jumpDrift(-1,0,60) jumpOnto(1,475) sleep(15) sleep(15) sleep(15) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930) goTo(120,12) goTo(120,12) goTo(120,12) goTo(120,12) goTo(120,12)"
+    },
+    {
+     "depth": 10,
+     "evals": 1704,
+     "best": -509,
+     "unlocked": 0,
+     "met": false,
+     "entryF": -1,
+     "endF": 1071,
+     "fb": [
+      237,
+      445
+     ],
+     "wg": [
+      176,
+      605
+     ],
+     "path": "runJump(1,800) runJump(1,1100) runJump(1,800) runJump(-1,975) goTo(180,12) jumpDrift(-1,0,60) jumpOnto(1,475) sleep(15) sleep(15) sleep(15) | runJump(1,460) runJump(1,1100) goTo(1200,10) runJump(-1,1160) runJump(-1,930) goTo(120,12) goTo(120,12) goTo(120,12) goTo(120,12) goTo(120,12) goTo(120,12)"
+    }
+   ],
+   "bestEver": {
+    "score": -502,
+    "unlocked": 0,
+    "met": false,
+    "entryF": -1,
+    "endF": 1071,
+    "fb": [
+     237,
+     445
+    ],
+    "wg": [
+     176,
+     605
+    ]
+   },
+   "failure": {
+    "bestUnlocked": 0,
+    "note": "机器穷尽报告：见 layers 曲线与 bestEver 终态；卡点=首个未达 waypoint 组"
+   }
+  }
+ ],
+ "totals": {
+  "segsSolved": 3,
+  "segsTotal": 9,
+  "evals": 4275,
+  "wallS": 193.6,
+  "fullAuto": false
+ },
+ "robust": null,
+ "export": null,
+ "greenCompare": null
+}
