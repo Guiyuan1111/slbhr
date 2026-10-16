@@ -375,7 +375,10 @@ const SEG = {
       fb: [spec("sleep", 30), spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475), spec("ride", 0, 396, 412),
         spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 25), spec("goTo", 970, 10), spec("goTo", 992, 10),
         spec("sleep", 60)],
-      wg: [spec("sleep", 30), spec("waitPx", "fb", 1080, 1214), spec("goTo", 1060, 12), spec("goTo", 1100, 12),
+      // wg v2（full16 法证 2026-10-16）：fb 墙锚停 1076 后 waitPx(fb,1080,1214) 永不燃
+      //   （idx 卡 24/25 not-drained，seam 全败根因）→ 窗改 [1070,1214]；goTo(1100) 亦 slick
+      //   振荡不收敛 → walkTo(1,1060,999) 单程直压反刹（S5 entry 窗 [1030,1120] 容停点摊开）
+      wg: [spec("sleep", 30), spec("waitPx", "fb", 1070, 1214), spec("walkTo", 1, 1060, 999),
         spec("sleep", 15)],
     },
   },
