@@ -1,8 +1,9 @@
 //  身体模型：头顶=core-21.76，脚底=core+35.2；满跳rise=102.5(vy-479.3,g≈1120)；跑加速600
 //  原语 S2p 逐字沿用 bot6-f05.mjs（S1/W3/S2 已实证），runJump holdF=0 即空中零输入恒速弹道
 import { writeFileSync } from "node:fs";
-import { makeWorld } from "../../../scripts/e2e/routetool/kernel.mjs";
-import { NONE, S, drive, toRouteDoc } from "../../../scripts/e2e/routetool/botcore.mjs";
+import { fileURLToPath } from "node:url";
+import { makeWorld } from "../../../../../scripts/e2e/routetool/kernel.mjs";
+import { NONE, S, drive, toRouteDoc } from "../../../../../scripts/e2e/routetool/botcore.mjs";
 
 // ---- 谓词 ----
 const ms = (c) => c.w.mechSnapshot();
@@ -156,4 +157,4 @@ for (let pos = 650; pos <= 655; pos += 5) {
   }
 }
 console.log(`\n总计 ${results.length} 组合，登上P3东顶：${hits}`);
-writeFileSync("/home/gy/桌面/dev/slbhr/gyのFW/TEMP/r05f/w3sweep_wall.json", JSON.stringify(results));
+writeFileSync(fileURLToPath(new URL("./w3sweep_wall.json", import.meta.url)), JSON.stringify(results));

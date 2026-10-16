@@ -10,8 +10,9 @@
 //  身体模型：头顶=core-21.76，脚底=core+35.2；满跳rise=102.5(vy-479.3,g≈1120)；跑加速600
 //  原语 S2p 逐字沿用 bot6-f05.mjs（S1/W3/S2 已实证），runJump holdF=0 即空中零输入恒速弹道
 import { writeFileSync } from "node:fs";
-import { makeWorld } from "../../../scripts/e2e/routetool/kernel.mjs";
-import { NONE, S, drive, toRouteDoc } from "../../../scripts/e2e/routetool/botcore.mjs";
+import { fileURLToPath } from "node:url";
+import { makeWorld } from "../../../../../scripts/e2e/routetool/kernel.mjs";
+import { NONE, S, drive, toRouteDoc } from "../../../../../scripts/e2e/routetool/botcore.mjs";
 
 const args = process.argv.slice(2);
 const argOf = (k, d) => { const i = args.indexOf(`--${k}`); return i >= 0 && args[i + 1] !== undefined ? args[i + 1] : d; };
@@ -249,7 +250,7 @@ const r = drive(w, { fb, wg }, TOTAL, {
     console.log(`[mech] f${f} P=${m.platforms.map((p) => p.x.toFixed(0)).join("/")} levers=${st}`);
   },
 });
-writeFileSync("TEMP/r05f/trace7.json", JSON.stringify(r.trace));
+writeFileSync(fileURLToPath(new URL("./trace7.json", import.meta.url)), JSON.stringify(r.trace));
 console.log("result:", JSON.stringify(r.result));
 const fbS = w.snapshotPlayer("fireboy"), wgS = w.snapshotPlayer("watergirl");
 console.log(`final fb=(${fbS.x.toFixed(1)},${fbS.y.toFixed(1)}) wg=(${wgS.x.toFixed(1)},${wgS.y.toFixed(1)}) phase=${w.phase} fbDoor=${fbS.doorFrame}/${fbS.atDoor} wgDoor=${wgS.doorFrame}/${wgS.atDoor}`);

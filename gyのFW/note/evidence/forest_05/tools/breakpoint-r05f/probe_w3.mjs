@@ -1,7 +1,7 @@
 // probe_w3: W3 起跳几何实证——fb 翻杆2驻东，wg 走到 714 短按 L 起跳，逐帧回放
 import { writeFileSync } from "node:fs";
-import { makeWorld } from "../../../scripts/e2e/routetool/kernel.mjs";
-import { NONE, S, drive } from "../../../scripts/e2e/routetool/botcore.mjs";
+import { makeWorld } from "../../../../../scripts/e2e/routetool/kernel.mjs";
+import { NONE, S, drive } from "../../../../../scripts/e2e/routetool/botcore.mjs";
 
 for (const tapF of [4, 6, 8, 12]) {
   const w = makeWorld("forest_05");
