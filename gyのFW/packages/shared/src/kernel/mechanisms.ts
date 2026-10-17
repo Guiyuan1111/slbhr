@@ -669,10 +669,9 @@ export class Wind {
       if (!this.activeRoles.has(role as "fireboy" | "watergirl")) continue;
       const cp = body.GetPosition();
       const dist = Math.hypot(cp.x - bp.x, cp.y - bp.y);
-      const f = (1.2 + 0.2 * Math.sin(nowS)) * 100 * Math.max(0, 1 - dist / this.lengthM);
-      if (f > 0) {
-        body.ApplyForce(new this.B.b2Vec2(dir.x * f, dir.y * f), new this.B.b2Vec2(0, 0));
-      }
+      const f = (1.2 + 0.2 * Math.sin(nowS)) * 100 * (1 - dist / this.lengthM);
+      // oracle 无钳制（bundle L59568-59569：1−dist/length 可为负=柱顶外吸回；dist 恒按算）
+      body.ApplyForce(new this.B.b2Vec2(dir.x * f, dir.y * f), new this.B.b2Vec2(0, 0));
       // 全向阻尼：v × 0.975^(dt·60)（oracle 原文 0.975 ** (elapsed/(1000/60))，严格同式）
       // + 15 m/s 限速
       const v = body.GetLinearVelocity();
