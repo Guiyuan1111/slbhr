@@ -1,0 +1,12 @@
+{
+  "source": "oracle",
+  "dtSchedule": "ms-quantized-rec",
+  "tolerance": 173,
+  "sampleEvery": 1,
+  "mechEvery": 0,
+  "compareEvents": false,
+  "compareVelocities": false,
+  "comparePhase": false,
+  "outcomeWindowF": 128,
+  "notes": "oracle 金输出·风关首例（采集器 scripts/e2e/oracle/goldcollect.mjs --capture --route forest_26 --runs 2，2026-10-17，×2 采样流 BITEXACT，WIN@f1593；goldfix 槽 06 号档 §7.3 风关解禁条件已满足：windsem 风阻尼修复 4198ef3+99ed9fc 落定 + 本槽 09 号档风相位对拍判定=恒定偏移可锚定）。dtSchedule=实录 elapsed 整数 ms 序列（dtschedule.json：首元素=arm 跳变钳制帧 1000/60，其后 [17,17,16] 循环，解析式 1599/1599 吻合）。风相位定值依据（09 号档 windphase 探针实测）：oracle 风读点=game.time.now（帧顶刷新，区间右端点，整数 ms），内核缺省 simTimeS（步前读，区间左端点）——两侧恒定偏移 median 16.333ms（≈1 帧读点约定差+首帧钳制残差），去中位残差 fixed-60 ±0.333ms / 实录 dtSeq ≤1ms=量化下界；力公式端到端 1010 笔 ApplyForce |obs−pred| max 3.6e-14（float64 噪声底）。runner 以缺省 PHASE=0 回放，该偏移包含在实测残差内：位置叶中位 4.64px / p99 131.1px / max 138.35px@f1224 → tolerance=173px（max×1.25，06 号档 §7.2 公式）；锚定修正 A/B（+16.333ms）风段位置 max 138→96px（风相位净贡献 ~30% 尾部），若 runner 将来支持 windClockS 注入可收紧至 ~120px。行为差主导证据：风 engage（f416）前位置 max 已 42px（内核优化路线跑速/落地相位，同 forest_01 类）；复合 8 分量 max 638px 全为 ±1 帧落地相位速度尖峰 → compareVelocities=false；compareEvents=false/comparePhase=false 同 forest_01/oracle-gold 口径。outcome：内核 won@f1497 vs oracle WIN@f1593，|Δ|=96 → outcomeWindowF=128（round(96×1.33)），status 恒精确。机制覆盖：wind×5（风时钟口径锁的 oracle 侧对照面）。"
+}
