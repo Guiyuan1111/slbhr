@@ -650,12 +650,17 @@ export class Wind {
    * state（invertInput 数据集零使用）→ 内核无需动作。 */
   signalApply(): void {}
 
-  /** 施力（每步 pre-Step；nowS=仿真时间秒）。
-   * 原版 update()（vendor Wind 区间）：力 = d×(1.2+0.2·sin(t/1000))×100×(1−|a|/length)，
-   * 门 b·d>0；随后对柱内体全向阻尼 v×(1−0.025·elapsed/16.67)（fixed-dt 即 ×0.975）+ 15m/s 限速。
+  /** 施力（每步 pre-Step；nowS=仿真时间秒，dtS=本步步长秒）。
+   * 原版 update()（bundle beautified L59569，原字节 md5 d637cb8c… 已核）：
+   * 力 = d×(1.2+0.2·sin(t/1000))×100×(1−|a|/length)（无钳制，dist>length 为负=吸回）；
+   * 阻尼 = v × 0.975^(elapsed_ms/(1000/60))——**dt 加权**：elapsed=当步 dt 毫秒
+   * （init L14704 每 tick 施行前赋值；L136-138 开发者注释随原 bundle 分发，非再分发者所加），
+   * 指数即 dt_s×60；随后 15m/s 限速。
+   * fixed 1/60 时指数恰=1（1/60·60===1 float 验证）→ ×0.975 与旧实现位级一致，
+   * det/fixtures/真机 e2e 基线零漂移；可变 dt（dtsweep 谱）下阻尼随步长正确缩放。
    * 金轨迹实证（forest_03 f724-760）：金 fb 贴墙上升 4px/帧 vs 旧实现 2.1——阻尼/限速段在
-   * 录制游戏内真实生效（bundle 内英文注释为再分发者所加，代码在执行路径上）。 */
-  applyForce(nowS: number): void {
+   * 录制游戏内真实生效。 */
+  applyForce(nowS: number, dtS: number): void {
     if (this.state !== 1) return;
     const dir = new this.B.b2Vec2(0, 1);
     dir.SelfRotateRadians(this.body.GetAngle());
@@ -668,9 +673,10 @@ export class Wind {
       if (f > 0) {
         body.ApplyForce(new this.B.b2Vec2(dir.x * f, dir.y * f), new this.B.b2Vec2(0, 0));
       }
-      // 全向阻尼（fixed-dt 16.67ms → ×0.975）+ 15 m/s 限速
+      // 全向阻尼：v × 0.975^(dt·60)（oracle 原文 0.975 ** (elapsed/(1000/60))，严格同式）
+      // + 15 m/s 限速
       const v = body.GetLinearVelocity();
-      v.SelfMul(0.975);
+      v.SelfMul(0.975 ** (dtS * 60));
       const speed = Math.hypot(v.x, v.y);
       if (speed > 15) {
         v.SelfMul(15 / speed);

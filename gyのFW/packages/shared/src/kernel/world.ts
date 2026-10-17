@@ -244,7 +244,7 @@ export class World {
     };
     // 风力（原版在 device update 链中施力；施力顺序对求解器无影响）。时基 F6 翻转：
     // 生产=墙钟（windClockS 注入），缺省=simTimeS 保持 det/金轨迹位级确定
-    for (const wind of this.mechs.winds) wind.applyForce(this.windClockS());
+    for (const wind of this.mechs.winds) wind.applyForce(this.windClockS(), dt);
     this.chars.fireboy.update(this.B, dt, inputs.fireboy, jumpSound);
     this.chars.watergirl.update(this.B, dt, inputs.watergirl, jumpSound);
 
