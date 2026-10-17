@@ -1,0 +1,12 @@
+{
+  "source": "oracle",
+  "dtSchedule": "ms-quantized-rec",
+  "tolerance": 25,
+  "sampleEvery": 1,
+  "mechEvery": 0,
+  "compareEvents": false,
+  "compareVelocities": false,
+  "comparePhase": false,
+  "outcomeWindowF": 128,
+  "notes": "oracle 金输出（原版引擎虚拟钟机，采集器 scripts/e2e/oracle/goldcollect.mjs --capture --route forest_01 --runs 2，2026-10-17，×2 采样流 BITEXACT，WIN@f2463）。dtSchedule=实录 elapsed 整数 ms 序列（dtschedule.json：首元素=arm 跳变钳制帧 1000/60，其后 [17,17,16] 循环，解析式 2499/2499 吻合）；内核按同序列回放，dt=值/1000 与 oracle world.Step 同算式。同 dt 序列比对结论（goldcollect --compare，06 号档）：逐位不成立——出生点静态偏置 0.0135px，行为差距主导。定值依据：位置叶中位 4.8px / p99 19.6px / max 20.2px → tolerance=25px（max+24% 跨机余量）；速度叶 ±1 帧落地相位尖峰（max ±490px/s、连跑 ≤6 帧）→ compareVelocities=false；oracle 侧采不到内核 WorldEvent → compareEvents=false（ev 恒 []）；oracle ph 恒 level 无比对值且 win 帧与内核错位 → comparePhase=false；内核 WIN@f2367 vs oracle WIN@f2463（跑速/门序行为性时长偏移 ≈4%，fixed-60 下 2365 同量级）→ outcomeWindowF=128（status 恒精确）。机制覆盖：lever/pusher×2/platform×2/prop（与 main case 同一路线，oracle 口径）。升级路径：内核控制器保真度提升后以 goldcollect --compare 重测收敛 tolerance 与窗口。"
+}
