@@ -1,0 +1,8 @@
+{
+  "source": "kernel-v1",
+  "dtSchedule": "fixed-60",
+  "tolerance": 0,
+  "sampleEvery": 1,
+  "mechEvery": 60,
+  "notes": "内核 v1 自基线（tolerance=0 位级锁行为）。route.json 为 inputs/routes/forest_26.json 逐字节拷贝（内核 WIN @f1497）。机制覆盖：wind×5（风时钟敏感关，锁定 F6 缺省 simTimeS 确定性口径——生产墙钟相位逐跑随机，不属本 fixture 面）。"
+}
