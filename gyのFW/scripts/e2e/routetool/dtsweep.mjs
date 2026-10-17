@@ -302,7 +302,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
 
   const levelsArg = argOf(argv, "levels");
   const all = hasFlag("all");
-  const outDir = argOf(argv, "outDir", join(ROOT, "note", "research", "2026-10-behavior-parity", "tools", "dtsweep"));
+  const outDir = argOf(argv, "outDir", join(ROOT, "TEMP", "dtsweep"));
   const levels = levelsArg ? levelsArg.split(",") : (all ? coveredLevels() : ["forest_01"]);
   const dirAbs = isAbsolute(outDir) ? outDir : join(ROOT, outDir);
   mkdirSync(dirAbs, { recursive: true });
