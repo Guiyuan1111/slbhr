@@ -134,6 +134,8 @@ git 列以快照 JSON `meta.git`（存档时脚本记录）为准；visual 系�
 | client-r3-client-before / -before2 | bb3b4ab | — | — | r3 前基线×2（canvas 分配 1374/1372KB/s、setDepth 968/966/8s、updateAvg 0.199/0.176ms） |
 | client-r3-client | be3d964 | — | — | r3 三件后：canvas 分配 **1114KB/s（-19%）**、setDepth **968→0**、updateAvg 0.146ms；WebGL 分配 776KB/s 带内 |
 | serialize-r4-encode / sync-r4-encode | f0118d3 | — | — | r4 两件后（生产语义）：60Hz scripted patch 50/58/91B、encCPU 0.29/0.11/0.27ms/仿真秒、线路 2.93/3.39/5.36KB/s/客户端；idle 20Hz patch 4/12B；**旧 serialize/sync 快照为累积伪影口径不可比** |
+| load-r5-before | a68c0bc | — | — | r5 冷启基线：Menu 769ms/4863KB·22req、reload 759ms/3KB |
+| load-r5-coldstart | 458bff2 | — | — | r5 件1 装载序整形后：**Menu 523.5ms（-32%）/3674KB·14req**、reload 532ms、即点→Game 620~698ms（真人驻留路径不变，见 r5 报告 §三注） |
 
 ## 注意
 
