@@ -44,12 +44,16 @@ forest_01 就绪后第 60 物理帧（无输入 idle）对 canvas 元素截图�
   level 加载完成时引爆并中断派发链。
 - 截图证据：results/visual-original.png / visual-ours.png。
 
-## 性能基准（0.3.21 起，性能专项报告见 note/report/perf/2026-10-08-perf-optimization.md）
+## 性能基准（0.3.21 起；r0 七件基线与 r1 第一轮优化见 note/report/perf/2026-10-18-r0-baseline.md / 2026-10-18-r1-optimization.md）
 
 ```bash
 node --import tsx benchmark/perf-step.mjs --save <label>        # 服务端物理 step：48 关计时
 node --import tsx benchmark/perf-determinism.mjs --compare <label>  # 位级一致门禁（引擎改动硬门）
 node --import tsx benchmark/perf-load.mjs --save <label>        # 客户端加载（先构建再测）
+node --import tsx benchmark/perf-sync.mjs --save <label>        # tick 链拆解：step/syncState/encode(20Hz)
+node --import tsx benchmark/perf-serialize.mjs --save <label>   # 真实 RoomState 出站 20 vs 60Hz 价签
+node --import tsx benchmark/perf-routeio.mjs --save <label>     # 路线回放/纯 step/世界构建吞吐
+node --expose-gc --import tsx benchmark/perf-mem.mjs --save <label>  # World 常驻/创建销毁/并发峰值
 ```
 
 - `perf-step`：每关预热 90 步 + 600 步计时（`PERF_STEPS`/`PERF_LEVELS` 可覆盖），
@@ -59,6 +63,15 @@ node --import tsx benchmark/perf-load.mjs --save <label>        # 客户端加�
   （--compare 退出码即结果）；快照 `results/det-<label>.json`。
 - `perf-load`：构建产物冷启动（新 context）DCL/Menu/Game 激活、传输字节、请求数、
   reload 缓存命中；页面错误非空即失败。快照 `results/load-<label>.json`。
+- `perf-sync`：快照路径成本拆解，buildState/syncState 与 ForestRoom.syncState 逐字段同构
+  （r1 起机关位姿走 mechanisms 直读，镜像同构）；20Hz 编码；快照 `results/sync-<label>.json`。
+- `perf-serialize`：真实 RoomState+Encoder+客户端 Reflection/Decoder 全管线（含等价校验
+  exit 1 守门），20Hz vs 60Hz 出站对比（patch 尺寸与出站率无关，60Hz=3×包数）；快照
+  `results/serialize-<label>.json`。
+- `perf-routeio`：12 正式路线整关回放（runKernel 门禁路径）/纯 step 环/世界构建三口径
+  （`PERF_ROUTES`/`PERF_RR_RUNS` 可覆盖）；快照 `results/routeio-<label>.json`。
+- `perf-mem`：World 常驻斜率、创建销毁吞吐、50 并发峰值差分（需 --expose-gc）；
+  快照 `results/mem-<label>.json`。
 
 ## 快照索引
 
@@ -94,9 +107,14 @@ git 列以快照 JSON `meta.git`（存档时脚本记录）为准；visual 系�
 |---|---|---|---|---|
 | perf-baseline-vm | 3a1cfdf | 0.6759ms | 28.7958ms | 优化前基线（vm 沙箱加载器） |
 | perf-r1-loader | 9f0155c | 0.0648ms | 2.4347ms | 主上下文加载器（R1，−90.4%） |
-| perf-r4-final | 0.3.21 | 0.0656ms | 2.4577ms | 终版复核（含 R3 客户端改动后） |
+| perf-r4-final | 0.3.21 | 0.0656ms | 2.4577ms | 终版复核（含 R3 客户端改动后；另机，仅量级参照） |
+| perf-r0-step | e477f9c | 0.0227ms | 0.3752ms | 本机 r0 基线（空载口径；scripted 档见 r0 报告 §二） |
+| perf-r1-step | 8d2b6d5 | 0.0193ms | 0.3205ms | r1 四件后（b2Timer 桩+jumpSound；时点读数 0.0177，带内 -15%~-22%） |
 | det-baseline-vm | 3a1cfdf | — | — | 位级哈希链基线（后续引擎改动的对照锚） |
+| det-r0-baseline | e477f9c | — | — | 位级门禁现锚（r1 四件后 --compare 仍 48/48 全绿） |
 | load-baseline / load-r3-load | 9f0155c | — | — | 客户端加载前/后（冷启动 6909→4858KB） |
+| sync-r0-sync → sync-r1-sync | e477f9c→8d2b6d5 | — | — | sync 段 forest_01 0.0210→0.0096ms（patch 字节不变） |
+| routeio-r0-routeio → routeio-r1-routeio | 269d83d→8d2b6d5 | — | — | 整关回放 10.34→12.14 关/s |
 
 ## 注意
 
