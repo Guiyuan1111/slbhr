@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<!-- rotcheck A/B 取证页：真实 θ(t) 流（final-b.json 184 帧 oracle 实录）经 20Hz patch 域
+     驱动两种渲染算法，逐 rAF 记录渲染角。旧=快照直吃（修复前 GameScene），新=mechTarget
+     （外推 25ms+收敛 30/s，GameScene 修复后算法的逐式转写）。 -->
+<html>
+<body><script>
+(() => {
+  const D2R = Math.PI / 180;
+  let DATA = null; // {dtMs:[..60Hz], ang:[rad]}
+  let built = null;
+
+  function build(dtMs, ang) {
+    // 60Hz schema 域：时间轴 + 量化后的 schema 角（服务端 Math.round(a*1000)/1000）
+    const t = [];
+    let acc = 0;
+    const q = [];
+    for (let i = 0; i < dtMs.length; i++) {
+      t.push(acc);
+      acc += dtMs[i];
+      q.push(Math.round(ang[i] * 1000) / 1000);
+    }
+    return { t, q, total: acc, dtMs, ang };
+  }
+
+  // true(θ) @nowMs：60Hz 真值线性插值（原版=每帧直读 body.angle）
+  function trueAt(b, nowMs) {
+    if (nowMs <= 0) return b.ang[0];
+    if (nowMs >= b.total) return b.ang[b.ang.length - 1];
+    let i = 1;
+    while (i < b.t.length && b.t[i] < nowMs) i++;
+    const t0 = b.t[i - 1], t1 = b.t[i];
+    const f = (nowMs - t0) / (t1 - t0);
+    return b.ang[i - 1] + (b.ang[i] - b.ang[i - 1]) * f;
+  }
+
+  // patch 域：客户端每帧可见 = 墙钟 nowMs 时服务端已写出的最新 schema 值
+  // （服务器 60Hz 写 schema，Colyseus 20Hz 出站；patch 内客户端持有旧值 → 阶梯天然呈现）
+  function patchVal(b, nowMs) {
+    const tick = Math.min(Math.floor(nowMs / (1000 / 60)), b.q.length - 1);
+    return b.q[tick];
+  }
+
+  const smOld = { a: null };
+  let P = { lead: 25, rate: 30 };
+  const smNew = { x: 0, y: 0, a: 0, vx: 0, vy: 0, va: 0, t: 0, rx: 0, ry: 0, ra: 0, init: false };
+  const rec = { old: [], neu: [], truth: [], frame: 0 };
+
+  function wrapAngle(d) {
+    return ((d + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+  }
+
+  // GameScene.mechTarget 逐式转写（delta 固定 1000/60，lead 25，rate 40）
+  function mechTarget(m, x, y, a, nowMs, deltaMs) {
+    if (!m.init) {
+      m.x = x; m.y = y; m.a = a; m.rx = x; m.ry = y; m.ra = a; m.t = nowMs; m.init = true;
+      return { x, y, a };
+    }
+    if (x !== m.x || y !== m.y || a !== m.a) {
+      const dt = Math.min(0.2, Math.max(1 / 120, (nowMs - m.t) / 1000));
+      m.vx = (x - m.x) / dt;
+      m.vy = (y - m.y) / dt;
+      m.va = wrapAngle(a - m.a) / dt;
+      m.x = x; m.y = y; m.a = a; m.t = nowMs;
+    }
+    const lead = P.lead;
+    const ex = m.x + (m.vx * lead) / 1000;
+    const ea = m.a + (m.va * lead) / 1000;
+    const k = 1 - Math.exp((-P.rate * deltaMs) / 1000);
+    m.rx += (ex - m.rx) * k;
+    m.ra += wrapAngle(ea - m.ra) * k;
+    return { x: m.rx, y: m.ry, a: m.ra };
+  }
+
+  function render(b, nowMs, deltaMs) {
+    const pv = patchVal(b, nowMs);
+    // 旧：快照直吃
+    smOld.a = pv;
+    // 新：外推+收敛
+    const nt = mechTarget(smNew, 0, 0, pv, nowMs, deltaMs);
+    rec.old.push(smOld.a);
+    rec.neu.push(nt.a);
+    rec.truth.push(trueAt(b, nowMs));
+    rec.frame++;
+  }
+
+  window.__ab = {
+    load(payload) {
+      DATA = build(payload.dtMs, payload.ang);
+      if (payload.lead != null) P.lead = payload.lead;
+      if (payload.rate != null) P.rate = payload.rate;
+      smOld.a = null;
+      Object.assign(smNew, { x: 0, y: 0, a: 0, vx: 0, vy: 0, va: 0, t: 0, rx: 0, ry: 0, ra: 0, init: false });
+      rec.old = []; rec.neu = []; rec.truth = []; rec.frame = 0;
+      return DATA.q.length;
+    },
+    step(n) { // 每步 = 1 rAF @1000/60 ms
+      const STEP = 1000 / 60;
+      for (let i = 0; i < (n || 1); i++) {
+        const nowMs = rec.frame * STEP;
+        if (nowMs > DATA.total + 100) break;
+        render(DATA, nowMs, STEP);
+      }
+      return rec.frame;
+    },
+    drain() {
+      const r = { old: rec.old, neu: rec.neu, truth: rec.truth, frame: rec.frame };
+      return r;
+    },
+  };
+})();
+</script></body>
+</html>
