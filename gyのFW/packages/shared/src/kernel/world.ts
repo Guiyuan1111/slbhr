@@ -18,6 +18,10 @@ import { buildLevelWorld, type BuiltWorld, type DoorInfo } from "./build.js";
 import { Character, type AnimState, type InputState } from "./character.js";
 import { buildMechanisms, type MechEvent, type Mechanisms } from "./mechanisms.js";
 
+/** 坐标换算再导出（r1 perf 件3）：服务器序列化侧（ForestRoom/基准镜像）直读 mechanisms
+ *  写 RoomState 时需要 m2px——保持单一换算定义，避免内联魔数漂移 */
+export { m2px } from "./b2.js";
+
 export type WorldPhase = "playing" | "won" | "gameover";
 
 export type WorldEvent =

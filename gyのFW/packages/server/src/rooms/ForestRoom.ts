@@ -16,7 +16,7 @@ import type { Client } from "colyseus";
 import { appendFileSync } from "node:fs";
 import { Room, ServerError } from "../colyseus.cjs.js";
 import { ROLES, EMPTY_INPUT, type Role, type InputState } from "@fw/shared";
-import { World, type WorldEvent } from "@fw/shared/kernel";
+import { World, m2px, type WorldEvent } from "@fw/shared/kernel";
 import { levelExists, loadLevel, type LevelBundle } from "../levels.js";
 import { RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState } from "./state.js";
 
@@ -406,9 +406,13 @@ export class ForestRoom extends Room<RoomState> {
     }
   }
 
-  /** World → Schema 状态（每 tick 全量写，框架出增量） */
+  /** World → Schema 状态（每 tick 全量写，框架出增量）。
+   *  r1 perf 件3（2026-10-18）：机关位姿不再经 mechSnapshot() 中间快照（每 tick ~30 个
+   *  快照对象+数组纯为序列化而建，hotspot 01 号档 §2.2），改由 mechanisms 直读逐字段写
+   *  RoomState——写入表达式与旧路径逐操作同构（角度/坐标取整算式原样），纯序列化侧零
+   *  物理影响，det 门 48/48 + fixtures 6/6 实测背书。 */
   private syncState() {
-    const snap = this.world.mechSnapshot();
+    const mechs = this.world.mechanisms;
     for (const role of ROLES) {
       const sim = this.world.snapshotPlayer(role);
       let ps = this.state.players.get(role);
@@ -439,91 +443,95 @@ export class ForestRoom extends Room<RoomState> {
       }
       ds.collected = d.collected;
     }
-    for (const l of snap.levers) {
-      let ls = this.state.levers.get(String(l.id));
+    for (let id = 0; id < mechs.levers.length; id++) {
+      const l = mechs.levers[id];
+      let ls = this.state.levers.get(String(id));
       if (!ls) {
         ls = new LeverState();
-        this.state.levers.set(String(l.id), ls);
+        this.state.levers.set(String(id), ls);
       }
       ls.group = l.group;
       ls.state = l.state;
-      ls.angle = Math.round(l.angle * 1000) / 1000;
+      ls.angle = Math.round(((l.angleDeg() * Math.PI) / 180) * 1000) / 1000;
     }
-    for (const p of snap.pushers) {
-      let ps = this.state.pushers.get(String(p.id));
+    for (let id = 0; id < mechs.pushers.length; id++) {
+      const p = mechs.pushers[id];
+      let ps = this.state.pushers.get(String(id));
       if (!ps) {
         ps = new PusherState();
-        this.state.pushers.set(String(p.id), ps);
+        this.state.pushers.set(String(id), ps);
       }
       ps.group = p.group;
       ps.state = p.state;
-    ps.x = Math.round(p.x * 10) / 10;
-    ps.y = Math.round(p.y * 10) / 10;
+      const pos = p.body.GetPosition();
+      ps.x = Math.round(m2px(pos.x) * 10) / 10;
+      ps.y = Math.round(m2px(pos.y) * 10) / 10;
     }
-    for (const p of snap.platforms) {
-      let bs = this.state.platforms.get(String(p.id));
+    for (let id = 0; id < mechs.platforms.length; id++) {
+      const p = mechs.platforms[id];
+      let bs = this.state.platforms.get(String(id));
       if (!bs) {
         bs = new BodyState();
-        this.state.platforms.set(String(p.id), bs);
+        this.state.platforms.set(String(id), bs);
       }
-      bs.x = Math.round(p.x * 10) / 10;
-      bs.y = Math.round(p.y * 10) / 10;
-      bs.angle = Math.round(p.angle * 1000) / 1000;
+      const pos = p.body.GetPosition();
+      bs.x = Math.round(m2px(pos.x) * 10) / 10;
+      bs.y = Math.round(m2px(pos.y) * 10) / 10;
+      bs.angle = Math.round(-p.body.GetAngle() * 1000) / 1000;
       bs.state = p.state;
     }
-    for (const p of snap.props) {
-      let bs = this.state.props.get(`${p.kind}:${p.id}`);
+    for (let id = 0; id < mechs.props.length; id++) {
+      const p = mechs.props[id];
+      const key = `${p.kind}:${id}`;
+      let bs = this.state.props.get(key);
       if (!bs) {
         bs = new BodyState();
-        this.state.props.set(`${p.kind}:${p.id}`, bs);
+        this.state.props.set(key, bs);
       }
-      bs.x = Math.round(p.x * 10) / 10;
-      bs.y = Math.round(p.y * 10) / 10;
-      bs.angle = Math.round(p.angle * 1000) / 1000;
+      const pos = p.body.GetPosition();
+      bs.x = Math.round(m2px(pos.x) * 10) / 10;
+      bs.y = Math.round(m2px(pos.y) * 10) / 10;
+      bs.angle = Math.round(-p.body.GetAngle() * 1000) / 1000;
     }
-    for (const wd of snap.winds) {
-      let ws = this.state.winds.get(String(wd.id));
+    for (let id = 0; id < mechs.winds.length; id++) {
+      const wd = mechs.winds[id];
+      let ws = this.state.winds.get(String(id));
       if (!ws) {
         ws = new WindState();
-        this.state.winds.set(String(wd.id), ws);
+        this.state.winds.set(String(id), ws);
       }
       ws.group = wd.group;
       ws.state = wd.state;
     }
     // 吊挂/滑轮/罗马杆位姿（0.3.25：此前内核有体、快照不下发，客户端板子全隐形）
-    for (const h of snap.hangings) {
-      let bs = this.state.hangings.get(String(h.id));
+    for (let id = 0; id < mechs.hangings.length; id++) {
+      const h = mechs.hangings[id];
+      let bs = this.state.hangings.get(String(id));
       if (!bs) {
         bs = new BodyState();
-        this.state.hangings.set(String(h.id), bs);
+        this.state.hangings.set(String(id), bs);
       }
-      bs.x = Math.round(h.x * 10) / 10;
-      bs.y = Math.round(h.y * 10) / 10;
-      bs.angle = Math.round(h.angle * 1000) / 1000;
+      const pos = h.platform.GetPosition();
+      bs.x = Math.round(m2px(pos.x) * 10) / 10;
+      bs.y = Math.round(m2px(pos.y) * 10) / 10;
+      bs.angle = Math.round(h.platform.GetAngle() * 1000) / 1000;
     }
-    for (const p of snap.pulleys) {
-      const halves = [["a", p.a], ["b", p.b]] as const;
-      for (const [suffix, pose] of halves) {
-        const key = `u${p.id}${suffix}`;
-        let bs = this.state.pulleys.get(key);
-        if (!bs) {
-          bs = new BodyState();
-          this.state.pulleys.set(key, bs);
-        }
-        bs.x = Math.round(pose.x * 10) / 10;
-        bs.y = Math.round(pose.y * 10) / 10;
-        bs.angle = Math.round(pose.angle * 1000) / 1000;
-      }
+    for (let id = 0; id < mechs.pulleys.length; id++) {
+      const p = mechs.pulleys[id];
+      this.syncPulleyHalf(`u${id}a`, p.plat1);
+      this.syncPulleyHalf(`u${id}b`, p.plat2);
     }
-    for (const r of snap.romans) {
-      let bs = this.state.romans.get(String(r.id));
+    for (let id = 0; id < mechs.romans.length; id++) {
+      const r = mechs.romans[id];
+      let bs = this.state.romans.get(String(id));
       if (!bs) {
         bs = new BodyState();
-        this.state.romans.set(String(r.id), bs);
+        this.state.romans.set(String(id), bs);
       }
-      bs.x = Math.round(r.x * 10) / 10;
-      bs.y = Math.round(r.y * 10) / 10;
-      bs.angle = Math.round(r.angle * 1000) / 1000;
+      const pos = r.bar.GetPosition();
+      bs.x = Math.round(m2px(pos.x) * 10) / 10;
+      bs.y = Math.round(m2px(pos.y) * 10) / 10;
+      bs.angle = Math.round(r.bar.GetAngle() * 1000) / 1000;
     }
     const doors = this.world.doors;
     this.state.doors.fbAtDoor = doors.fireboy.isOpen;
@@ -533,6 +541,19 @@ export class ForestRoom extends Room<RoomState> {
     this.state.doors.fbUp = doors.fireboy.isUp;
     this.state.doors.wgUp = doors.watergirl.isUp;
     this.state.timerMs = Math.round(this.world.timerMs);
+  }
+
+  /** 滑轮半侧位姿写入（u<id>a/u<id>b 两键，位姿口径同吊挂/罗马杆：+体角） */
+  private syncPulleyHalf(key: string, body: any) {
+    let bs = this.state.pulleys.get(key);
+    if (!bs) {
+      bs = new BodyState();
+      this.state.pulleys.set(key, bs);
+    }
+    const pos = body.GetPosition();
+    bs.x = Math.round(m2px(pos.x) * 10) / 10;
+    bs.y = Math.round(m2px(pos.y) * 10) / 10;
+    bs.angle = Math.round(body.GetAngle() * 1000) / 1000;
   }
 
   /** 每角色最近一次输入快照（input 消息全量语义） */

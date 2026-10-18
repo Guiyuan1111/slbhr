@@ -19,7 +19,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
 import { loadLevel } from "../packages/server/src/levels.js";
-import { World } from "@fw/shared/kernel";
+import { World, m2px } from "@fw/shared/kernel";
 import { EMPTY_INPUT } from "@fw/shared";
 import { RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState } from "../packages/server/src/rooms/state.js";
 import { Encoder } from "@colyseus/schema";
@@ -53,9 +53,19 @@ function buildState(world) {
   return state;
 }
 
-/** 与 ForestRoom.syncState 同构（全量写；setter 对相同值短路） */
+/** 与 ForestRoom.syncState 同构（全量写；setter 对相同值短路）。
+ *  r1 件3 起机关位姿走 mechanisms 直读（不再经 mechSnapshot 中间快照），镜像同构。 */
+function syncPulleyHalf(state, key, body) {
+  let bs = state.pulleys.get(key);
+  if (!bs) { bs = new BodyState(); state.pulleys.set(key, bs); }
+  const pos = body.GetPosition();
+  bs.x = Math.round(m2px(pos.x) * 10) / 10;
+  bs.y = Math.round(m2px(pos.y) * 10) / 10;
+  bs.angle = Math.round(body.GetAngle() * 1000) / 1000;
+}
+
 function syncState(world, state) {
-  const snap = world.mechSnapshot();
+  const mechs = world.mechanisms;
   for (const role of ROLES) {
     const sim = world.snapshotPlayer(role);
     const ps = state.players.get(role);
@@ -75,41 +85,57 @@ function syncState(world, state) {
     ps.doorUp = sim.doorUp;
   }
   for (const d of world.diamonds) state.diamonds.get(d.id).collected = d.collected;
-  for (const l of snap.levers) {
-    const ls = state.levers.get(String(l.id));
-    ls.group = l.group; ls.state = l.state; ls.angle = Math.round(l.angle * 1000) / 1000;
+  for (let id = 0; id < mechs.levers.length; id++) {
+    const l = mechs.levers[id];
+    const ls = state.levers.get(String(id));
+    ls.group = l.group; ls.state = l.state;
+    ls.angle = Math.round(((l.angleDeg() * Math.PI) / 180) * 1000) / 1000;
   }
-  for (const p of snap.pushers) {
-    const ps2 = state.pushers.get(String(p.id));
+  for (let id = 0; id < mechs.pushers.length; id++) {
+    const p = mechs.pushers[id];
+    const ps2 = state.pushers.get(String(id));
     ps2.group = p.group; ps2.state = p.state;
-    ps2.x = Math.round(p.x * 10) / 10; ps2.y = Math.round(p.y * 10) / 10;
+    const pos = p.body.GetPosition();
+    ps2.x = Math.round(m2px(pos.x) * 10) / 10; ps2.y = Math.round(m2px(pos.y) * 10) / 10;
   }
-  for (const p of snap.platforms) {
-    const bs = state.platforms.get(String(p.id));
-    bs.x = Math.round(p.x * 10) / 10; bs.y = Math.round(p.y * 10) / 10; bs.angle = Math.round(p.angle * 1000) / 1000;
+  for (let id = 0; id < mechs.platforms.length; id++) {
+    const p = mechs.platforms[id];
+    const bs = state.platforms.get(String(id));
+    const pos = p.body.GetPosition();
+    bs.x = Math.round(m2px(pos.x) * 10) / 10; bs.y = Math.round(m2px(pos.y) * 10) / 10;
+    bs.angle = Math.round(-p.body.GetAngle() * 1000) / 1000;
     bs.state = p.state;
   }
-  for (const p of snap.props) {
-    const bs = state.props.get(`${p.kind}:${p.id}`);
-    bs.x = Math.round(p.x * 10) / 10; bs.y = Math.round(p.y * 10) / 10; bs.angle = Math.round(p.angle * 1000) / 1000;
+  for (let id = 0; id < mechs.props.length; id++) {
+    const p = mechs.props[id];
+    const bs = state.props.get(`${p.kind}:${id}`);
+    const pos = p.body.GetPosition();
+    bs.x = Math.round(m2px(pos.x) * 10) / 10; bs.y = Math.round(m2px(pos.y) * 10) / 10;
+    bs.angle = Math.round(-p.body.GetAngle() * 1000) / 1000;
   }
-  for (const wd of snap.winds) {
-    const ws = state.winds.get(String(wd.id));
+  for (let id = 0; id < mechs.winds.length; id++) {
+    const wd = mechs.winds[id];
+    const ws = state.winds.get(String(id));
     ws.group = wd.group; ws.state = wd.state;
   }
-  for (const h of snap.hangings) {
-    const bs = state.hangings.get(String(h.id));
-    bs.x = Math.round(h.x * 10) / 10; bs.y = Math.round(h.y * 10) / 10; bs.angle = Math.round(h.angle * 1000) / 1000;
+  for (let id = 0; id < mechs.hangings.length; id++) {
+    const h = mechs.hangings[id];
+    const bs = state.hangings.get(String(id));
+    const pos = h.platform.GetPosition();
+    bs.x = Math.round(m2px(pos.x) * 10) / 10; bs.y = Math.round(m2px(pos.y) * 10) / 10;
+    bs.angle = Math.round(h.platform.GetAngle() * 1000) / 1000;
   }
-  for (const p of snap.pulleys) {
-    for (const [suffix, pose] of [["a", p.a], ["b", p.b]]) {
-      const bs = state.pulleys.get(`u${p.id}${suffix}`);
-      bs.x = Math.round(pose.x * 10) / 10; bs.y = Math.round(pose.y * 10) / 10; bs.angle = Math.round(pose.angle * 1000) / 1000;
-    }
+  for (let id = 0; id < mechs.pulleys.length; id++) {
+    const p = mechs.pulleys[id];
+    syncPulleyHalf(state, `u${id}a`, p.plat1);
+    syncPulleyHalf(state, `u${id}b`, p.plat2);
   }
-  for (const r of snap.romans) {
-    const bs = state.romans.get(String(r.id));
-    bs.x = Math.round(r.x * 10) / 10; bs.y = Math.round(r.y * 10) / 10; bs.angle = Math.round(r.angle * 1000) / 1000;
+  for (let id = 0; id < mechs.romans.length; id++) {
+    const r = mechs.romans[id];
+    const bs = state.romans.get(String(id));
+    const pos = r.bar.GetPosition();
+    bs.x = Math.round(m2px(pos.x) * 10) / 10; bs.y = Math.round(m2px(pos.y) * 10) / 10;
+    bs.angle = Math.round(r.bar.GetAngle() * 1000) / 1000;
   }
   const doors = world.doors;
   state.doors.fbAtDoor = doors.fireboy.isOpen;
