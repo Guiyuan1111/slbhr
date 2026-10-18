@@ -69,6 +69,14 @@ export interface WorldOptions {
   windClockS?: () => number;
 }
 
+/**
+ * 空音效钩子（模块级单例，r1 perf 件1）：step() 原为逐帧新建闭包——空函数语义不变，
+ * 消除每步闭包分配与 tsx keep-names 的 __name 包装开销（hotspot 01 号档 §1.2/§3 #3）。
+ */
+const jumpSoundHook = (): void => {
+  /* 音效属客户端，内核只留钩子 */
+};
+
 export class World {
   readonly level: LevelData;
   private built: BuiltWorld;
@@ -239,14 +247,11 @@ export class World {
     const events: WorldEvent[] = [];
     if (this.phase !== "playing") return events;
 
-    const jumpSound = () => {
-      /* 音效属客户端，内核只留钩子 */
-    };
     // 风力（原版在 device update 链中施力；施力顺序对求解器无影响）。时基 F6 翻转：
     // 生产=墙钟（windClockS 注入），缺省=simTimeS 保持 det/金轨迹位级确定
     for (const wind of this.mechs.winds) wind.applyForce(this.windClockS(), dt);
-    this.chars.fireboy.update(this.B, dt, inputs.fireboy, jumpSound);
-    this.chars.watergirl.update(this.B, dt, inputs.watergirl, jumpSound);
+    this.chars.fireboy.update(this.B, dt, inputs.fireboy, jumpSoundHook);
+    this.chars.watergirl.update(this.B, dt, inputs.watergirl, jumpSoundHook);
 
     // 原版帧序（运行时探针 2026-10-09，forest_01 实测）：doors → wg → fb → 设备(逆注册序) → Step。
     // 机关检查与门扫帧在 Step【前】：checkState 读的是上一步的关节角，状态变化当帧进入求解。
