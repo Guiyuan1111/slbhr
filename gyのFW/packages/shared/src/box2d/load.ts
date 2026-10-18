@@ -89,6 +89,61 @@ function lazyContactPoolPrefill(ns: Box2DNamespace): void {
   };
 }
 
+/**
+ * b2PolygonShape 构造/Copy 快速分派（r2 perf 件2，2026-10-18）：接触池懒填后剩余
+ * goog.base 自耗时（占构建 CPU 40.3%）100% 来自这两个调用点——构造器
+ * `goog.base(this, e_polygonShape, b2_polygonRadius)`（Closure 构造分发）与
+ * `Copy` 的 `goog.base(this, "Copy", a)`（原型链走查分发），两者都经由
+ * `arguments.callee.caller` 反射慢路径。世界构建期每个多边形 fixture 走构造器×2
+ * （polygonFixture 一次 + b2Fixture.Create 的 shape.Clone→new+Copy 一次）。
+ *
+ * 求值后替换（vendor 字节不动）：
+ * - 构造器替换为逐字节转写体：goog.base 构造分发 ≡ `b2Shape.call(this, e_polygonShape,
+ *   b2_polygonRadius)`（vendor goog.base 构造分支 = caller.superClass_.constructor.apply
+ *   (me, slice(arguments,1))，b2PolygonShape.superClass_ = b2Shape.prototype，无参透传）；
+ *   字段初始化三行（m_centroid/m_vertices/m_normals）原序照抄。复用原 prototype
+ *   （instanceof/静态 scratch Set.s_ps 等不变）、superClass_ 链照搬（goog.base 方法
+ *   分发走查 `a.constructor` 链时行为不变——prototype.constructor 仍指原函数）。
+ * - prototype.Copy 同款转写：方法分发 ≡ `b2Shape.prototype.Copy.call(this, a)`
+ *   （走查从 a.constructor=b2PolygonShape 起，首个超类实现即 b2Shape.prototype.Copy），
+ *   其余语句（ENABLE_ASSERTS 恒 false 跳过、m_centroid.Copy、m_count、顶点/法线逐点
+ *   Copy）原序照抄。
+ *
+ * 位级中性由 det 48/48（vs r0-baseline）+ fixtures 6/6 实测背书。
+ */
+function fastPolygonShapeDispatch(ns: Box2DNamespace): void {
+  const OriginalPolygonShape = ns.b2PolygonShape as new () => any;
+  const b2ShapeCtor = ns.b2Shape as (a: number, b: number) => void;
+  const b2ShapeCopy = ns.b2Shape.prototype.Copy as (a: any) => any;
+
+  function FastPolygonShape(this: any): void {
+    b2ShapeCtor.call(this, ns.b2ShapeType.e_polygonShape, ns.b2_polygonRadius);
+    this.m_centroid = new ns.b2Vec2(0, 0);
+    this.m_vertices = ns.b2Vec2.MakeArray(ns.b2_maxPolygonVertices);
+    this.m_normals = ns.b2Vec2.MakeArray(ns.b2_maxPolygonVertices);
+  }
+  FastPolygonShape.prototype = OriginalPolygonShape.prototype;
+  // 静态成员全量随迁（superClass_/base/ComputeCentroid 等——vendor 内部经命名空间静态调用）；
+  // caller/callee/arguments 为严格模式毒属性，跳过（仅函数对象元数据，无业务语义）
+  for (const key of Object.getOwnPropertyNames(OriginalPolygonShape)) {
+    if (key === "prototype" || key === "length" || key === "name" || key === "caller" || key === "callee" || key === "arguments") continue;
+    (FastPolygonShape as any)[key] = (OriginalPolygonShape as any)[key];
+  }
+  ns.b2PolygonShape = FastPolygonShape as any;
+
+  ns.b2PolygonShape.prototype.Copy = function (this: any, a: any): any {
+    b2ShapeCopy.call(this, a);
+    ns.ENABLE_ASSERTS && ns.b2Assert(a instanceof ns.b2PolygonShape);
+    this.m_centroid.Copy(a.m_centroid);
+    this.m_count = a.m_count;
+    for (let b = 0, c = this.m_count; b < c; ++b) {
+      this.m_vertices[b].Copy(a.m_vertices[b]);
+      this.m_normals[b].Copy(a.m_normals[b]);
+    }
+    return this;
+  };
+}
+
 export function loadBox2d(): Box2DNamespace {
   if (cached) return cached;
   const src = readFileSync(VENDOR, "latin1");
@@ -135,6 +190,7 @@ export function loadBox2d(): Box2DNamespace {
   );
   if (!ns) throw new Error("box2d bundle 求值完成但未见 this.box2d 导出");
   lazyContactPoolPrefill(ns);
+  fastPolygonShapeDispatch(ns);
   cached = ns as Box2DNamespace;
   return cached;
 }
