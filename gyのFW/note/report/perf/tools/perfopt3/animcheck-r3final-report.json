@@ -1,0 +1,565 @@
+{
+ "forest_01": {
+  "oracle": {
+   "settle": {
+    "fireboy": {
+     "head": "fire_head_idle@f0",
+     "mainFam": "fire_head_idle",
+     "fps": null,
+     "loopPeriods": [],
+     "legs": [
+      "S:fire_legs_idle#0"
+     ],
+     "smoke": null,
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f0",
+     "mainFam": "water_head_idle",
+     "fps": null,
+     "loopPeriods": [],
+     "legs": [
+      "S:water_legs_idle#0"
+     ],
+     "smoke": null,
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   },
+   "idle": {
+    "fireboy": {
+     "head": "fire_head_idle@f27 → fire_head_jumping@f211",
+     "mainFam": "fire_head_idle",
+     "fps": 30,
+     "loopPeriods": [
+      1,
+      1
+     ],
+     "legs": [
+      "S:fire_legs_idle#0",
+      "P:fire_legs_running#0",
+      "P:fire_legs_running#1"
+     ],
+     "smoke": null,
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f27",
+     "mainFam": "water_head_idle",
+     "fps": 10.9,
+     "loopPeriods": [
+      1
+     ],
+     "legs": [
+      "S:water_legs_idle#0"
+     ],
+     "smoke": null,
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   },
+   "walk": {
+    "fireboy": {
+     "head": "fire_head_idle@f207 → fire_head_jumping@f211 → fire_head_idle@f271",
+     "mainFam": "fire_head_jumping",
+     "fps": 30,
+     "loopPeriods": [
+      1,
+      1
+     ],
+     "legs": [
+      "S:fire_legs_idle#0",
+      "P:fire_legs_running#0",
+      "P:fire_legs_running#1",
+      "P:fire_legs_running#2",
+      "P:fire_legs_running#3",
+      "P:fire_legs_running#4"
+     ],
+     "smoke": null,
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f207",
+     "mainFam": "water_head_idle",
+     "fps": 40,
+     "loopPeriods": [
+      1
+     ],
+     "legs": [
+      "S:water_legs_idle#0"
+     ],
+     "smoke": null,
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   },
+   "coast": {
+    "fireboy": {
+     "head": "fire_head_jumping@f267 → fire_head_idle@f271",
+     "mainFam": "fire_head_idle",
+     "fps": null,
+     "loopPeriods": [],
+     "legs": [
+      "P:fire_legs_running#4",
+      "P:fire_legs_running#5",
+      "P:fire_legs_running#6",
+      "S:fire_legs_idle#0"
+     ],
+     "smoke": null,
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f267",
+     "mainFam": "water_head_idle",
+     "fps": null,
+     "loopPeriods": [],
+     "legs": [
+      "S:water_legs_idle#0"
+     ],
+     "smoke": null,
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   },
+   "jump": {
+    "fireboy": {
+     "head": "fire_head_idle@f297 → fire_head_rising@f303 → fire_head_idle@f307 → fire_head_falling@f313 → fire_head_idle@f324",
+     "mainFam": "fire_head_idle",
+     "fps": 30,
+     "loopPeriods": [
+      1
+     ],
+     "legs": [
+      "S:fire_legs_idle#0"
+     ],
+     "smoke": null,
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f297",
+     "mainFam": "water_head_idle",
+     "fps": 30,
+     "loopPeriods": [
+      1,
+      1
+     ],
+     "legs": [
+      "S:water_legs_idle#0"
+     ],
+     "smoke": null,
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   }
+  },
+  "client": {
+   "settle": {
+    "fireboy": {
+     "head": "fire_head_idle@f-1",
+     "mainFam": "fire_head_idle",
+     "fps": 35.6,
+     "loopPeriods": [
+      1
+     ],
+     "legs": [
+      "P:fire_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f-1",
+     "mainFam": "water_head_idle",
+     "fps": null,
+     "loopPeriods": [],
+     "legs": [
+      "P:water_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   },
+   "idle": {
+    "fireboy": {
+     "head": "fire_head_idle@f27 → fire_head_jumping@f212",
+     "mainFam": "fire_head_idle",
+     "fps": 30,
+     "loopPeriods": [
+      1,
+      1,
+      1,
+      1,
+      1
+     ],
+     "legs": [
+      "P:fire_legs_idle#0",
+      "P:fire_legs_running#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f27",
+     "mainFam": "water_head_idle",
+     "fps": 29.5,
+     "loopPeriods": [
+      1,
+      1,
+      1
+     ],
+     "legs": [
+      "P:water_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   },
+   "walk": {
+    "fireboy": {
+     "head": "fire_head_idle@f208 → fire_head_jumping@f212 → fire_head_idle@f272",
+     "mainFam": "fire_head_jumping",
+     "fps": 30,
+     "loopPeriods": [
+      1,
+      1
+     ],
+     "legs": [
+      "P:fire_legs_idle#0",
+      "P:fire_legs_running#0",
+      "P:fire_legs_running#1",
+      "P:fire_legs_running#2",
+      "P:fire_legs_running#3",
+      "P:fire_legs_running#4"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f208",
+     "mainFam": "water_head_idle",
+     "fps": 58.1,
+     "loopPeriods": [
+      1
+     ],
+     "legs": [
+      "P:water_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   },
+   "coast": {
+    "fireboy": {
+     "head": "fire_head_jumping@f268 → fire_head_idle@f272",
+     "mainFam": "fire_head_idle",
+     "fps": null,
+     "loopPeriods": [],
+     "legs": [
+      "P:fire_legs_running#3",
+      "P:fire_legs_running#4",
+      "P:fire_legs_running#5",
+      "P:fire_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f268",
+     "mainFam": "water_head_idle",
+     "fps": 56.3,
+     "loopPeriods": [
+      1
+     ],
+     "legs": [
+      "P:water_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   },
+   "jump": {
+    "fireboy": {
+     "head": "fire_head_idle@f297 → fire_head_rising@f304 → fire_head_idle@f308 → fire_head_falling@f314 → fire_head_idle@f325",
+     "mainFam": "fire_head_idle",
+     "fps": 29.2,
+     "loopPeriods": [
+      1
+     ],
+     "legs": [
+      "P:fire_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f297",
+     "mainFam": "water_head_idle",
+     "fps": 30,
+     "loopPeriods": [
+      1,
+      1
+     ],
+     "legs": [
+      "P:water_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   }
+  },
+  "oracleMarks": {},
+  "clientTailPhase": "started",
+  "clientSamples": 700
+ },
+ "forest_02": {
+  "oracle": {
+   "settle": {
+    "fireboy": {
+     "head": "fire_head_idle@f0",
+     "mainFam": "fire_head_idle",
+     "fps": null,
+     "loopPeriods": [],
+     "legs": [
+      "S:fire_legs_idle#0"
+     ],
+     "smoke": null,
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f0 → water_head_jumping@f31",
+     "mainFam": "water_head_idle",
+     "fps": null,
+     "loopPeriods": [],
+     "legs": [
+      "S:water_legs_idle#0",
+      "P:water_legs_running#0",
+      "P:water_legs_running#1"
+     ],
+     "smoke": null,
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   },
+   "death": {
+    "fireboy": {
+     "head": "fire_head_idle@f27",
+     "mainFam": "fire_head_idle",
+     "fps": 30,
+     "loopPeriods": [
+      1,
+      1,
+      1
+     ],
+     "legs": [
+      "S:fire_legs_idle#0"
+     ],
+     "smoke": null,
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f27 → water_head_jumping@f31",
+     "mainFam": "water_head_jumping",
+     "fps": 31.4,
+     "loopPeriods": [
+      1
+     ],
+     "legs": [
+      "S:water_legs_idle#0",
+      "P:water_legs_running#0",
+      "P:water_legs_running#1",
+      "P:water_legs_running#2",
+      "P:water_legs_running#3",
+      "P:water_legs_running#4"
+     ],
+     "smoke": "death_smoke#0..44 play[35..123]",
+     "dying": 188,
+     "dead": 99,
+     "dyingHidden": 187,
+     "hidden": 187,
+     "ice": 0
+    }
+   }
+  },
+  "client": {
+   "settle": {
+    "fireboy": {
+     "head": "fire_head_idle@f0",
+     "mainFam": "fire_head_idle",
+     "fps": 35.6,
+     "loopPeriods": [
+      1
+     ],
+     "legs": [
+      "P:fire_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f0 → water_head_jumping@f32",
+     "mainFam": "water_head_idle",
+     "fps": null,
+     "loopPeriods": [],
+     "legs": [
+      "P:water_legs_idle#0",
+      "P:water_legs_running#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   },
+   "death": {
+    "fireboy": {
+     "head": "fire_head_idle@f28",
+     "mainFam": "fire_head_idle",
+     "fps": 30,
+     "loopPeriods": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+     ],
+     "legs": [
+      "P:fire_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f28 → water_head_jumping@f32",
+     "mainFam": "water_head_jumping",
+     "fps": 30,
+     "loopPeriods": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+     ],
+     "legs": [
+      "P:water_legs_idle#0",
+      "P:water_legs_running#0",
+      "P:water_legs_running#1",
+      "P:water_legs_running#2",
+      "P:water_legs_running#3",
+      "P:water_legs_running#4"
+     ],
+     "smoke": "death_smoke#0..44 play[36..126]",
+     "dying": 196,
+     "dead": 103,
+     "dyingHidden": 196,
+     "hidden": 196,
+     "ice": 0
+    }
+   }
+  },
+  "oracleMarks": {
+   "lose": 151
+  },
+  "clientTailPhase": "gameover",
+  "clientSamples": 260
+ }
+}
