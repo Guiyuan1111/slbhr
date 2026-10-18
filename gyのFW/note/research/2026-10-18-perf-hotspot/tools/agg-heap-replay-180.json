@@ -1,0 +1,124 @@
+{
+ "file": "TEMP/hotspot/heap/replay-180.heapprofile",
+ "kind": "heap",
+ "totalSampledKB": 12526.5,
+ "allocTop": [
+  {
+   "fn": "exec @:-1",
+   "kb": 998.2,
+   "pct": 7.97
+  },
+  {
+   "fn": "slice @node:buffer:666",
+   "kb": 997.9,
+   "pct": 7.97
+  },
+  {
+   "fn": "(匿名) @bootstrap/node:0",
+   "kb": 768,
+   "pct": 6.13
+  },
+  {
+   "fn": "box2d.b2Island.Solve @:6023",
+   "kb": 522.9,
+   "pct": 4.17
+  },
+  {
+   "fn": "compileSourceTextModule @esm/utils:343",
+   "kb": 519.8,
+   "pct": 4.15
+  },
+  {
+   "fn": "(IDLE) @:-1",
+   "kb": 517.3,
+   "pct": 4.13
+  },
+  {
+   "fn": "box2d.b2WorldManifold.Initialize @:3350",
+   "kb": 515.4,
+   "pct": 4.11
+  },
+  {
+   "fn": "(匿名) @node:fs:0",
+   "kb": 515.3,
+   "pct": 4.11
+  },
+  {
+   "fn": "box2d.b2Body.GetLinearVelocity @:7255",
+   "kb": 513.7,
+   "pct": 4.1
+  },
+  {
+   "fn": "box2d.b2PolygonContact.Evaluate @:5082",
+   "kb": 512.9,
+   "pct": 4.09
+  },
+  {
+   "fn": "box2d.b2AABB.TestOverlap @:3539",
+   "kb": 512.3,
+   "pct": 4.09
+  },
+  {
+   "fn": "box2d.b2PolygonAndCircleContact.Create @:4039",
+   "kb": 512.2,
+   "pct": 4.09
+  },
+  {
+   "fn": "box2d.b2PolygonContact.Create @:5075",
+   "kb": 512.2,
+   "pct": 4.09
+  },
+  {
+   "fn": "box2d.b2ChainAndCircleContact.Create @:5172",
+   "kb": 512.2,
+   "pct": 4.09
+  },
+  {
+   "fn": "goog.inherits @:318",
+   "kb": 512.1,
+   "pct": 4.09
+  },
+  {
+   "fn": "box2d.b2Contact @:3886",
+   "kb": 512.1,
+   "pct": 4.09
+  },
+  {
+   "fn": "box2d.b2ContactVelocityConstraint @:5236",
+   "kb": 512,
+   "pct": 4.09
+  },
+  {
+   "fn": "makeNodeErrorWithCode @node:internal/errors:427",
+   "kb": 512,
+   "pct": 4.09
+  },
+  {
+   "fn": "compileForInternalLoader @bootstrap/realm:384",
+   "kb": 512,
+   "pct": 4.09
+  },
+  {
+   "fn": "(匿名) @worker/io:0",
+   "kb": 512,
+   "pct": 4.09
+  }
+ ],
+ "allocByCategory": [
+  {
+   "cat": "box2d引擎",
+   "kb": 5649.7,
+   "pct": 45.1
+  },
+  {
+   "cat": "node内部",
+   "kb": 4337.1,
+   "pct": 34.62
+  },
+  {
+   "cat": "其它",
+   "kb": 2539.6,
+   "pct": 20.27
+  }
+ ]
+}

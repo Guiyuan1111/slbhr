@@ -1,0 +1,129 @@
+{
+ "file": "TEMP/hotspot/heap/idle-400k.heapprofile",
+ "kind": "heap",
+ "totalSampledKB": 11226.6,
+ "allocTop": [
+  {
+   "fn": "exec @:-1",
+   "kb": 998.2,
+   "pct": 8.89
+  },
+  {
+   "fn": "slice @node:buffer:666",
+   "kb": 997.9,
+   "pct": 8.89
+  },
+  {
+   "fn": "set @:-1",
+   "kb": 519.4,
+   "pct": 4.63
+  },
+  {
+   "fn": "box2d.b2World.SolveTOI @:7801",
+   "kb": 516.4,
+   "pct": 4.6
+  },
+  {
+   "fn": "wrapSafe @cjs/loader:1594",
+   "kb": 513.6,
+   "pct": 4.58
+  },
+  {
+   "fn": "box2d.b2Island.SolveTOI @:6102",
+   "kb": 512.2,
+   "pct": 4.56
+  },
+  {
+   "fn": "tryCreateBuffer @node:fs:396",
+   "kb": 512.2,
+   "pct": 4.56
+  },
+  {
+   "fn": "compileForInternalLoader @bootstrap/realm:384",
+   "kb": 512.1,
+   "pct": 4.56
+  },
+  {
+   "fn": "(匿名) @v8/startup_snapshot:0",
+   "kb": 512.1,
+   "pct": 4.56
+  },
+  {
+   "fn": "internalBinding @bootstrap/realm:184",
+   "kb": 512.1,
+   "pct": 4.56
+  },
+  {
+   "fn": "box2d.b2Contact @:3886",
+   "kb": 512.1,
+   "pct": 4.56
+  },
+  {
+   "fn": "register @esm/loader:901",
+   "kb": 512,
+   "pct": 4.56
+  },
+  {
+   "fn": "box2d.b2Body.IsAwake @:7429",
+   "kb": 512,
+   "pct": 4.56
+  },
+  {
+   "fn": "initializeCJS @cjs/loader:440",
+   "kb": 512,
+   "pct": 4.56
+  },
+  {
+   "fn": "box2d.b2VelocityConstraintPoint @:5221",
+   "kb": 512,
+   "pct": 4.56
+  },
+  {
+   "fn": "box2d.b2AABB @:3449",
+   "kb": 512,
+   "pct": 4.56
+  },
+  {
+   "fn": "box2d.b2MakeArray @:436",
+   "kb": 512,
+   "pct": 4.56
+  },
+  {
+   "fn": "box2d.b2Vec2 @:517",
+   "kb": 512,
+   "pct": 4.56
+  },
+  {
+   "fn": "step @kernel/world.ts:0",
+   "kb": 512,
+   "pct": 4.56
+  },
+  {
+   "fn": "box2d.b2BroadPhase.UpdatePairs @:6605",
+   "kb": 512,
+   "pct": 4.56
+  }
+ ],
+ "allocByCategory": [
+  {
+   "cat": "box2d引擎",
+   "kb": 4612.8,
+   "pct": 41.09
+  },
+  {
+   "cat": "node内部",
+   "kb": 4584,
+   "pct": 40.83
+  },
+  {
+   "cat": "其它",
+   "kb": 1517.7,
+   "pct": 13.52
+  },
+  {
+   "cat": "内核胶水(shared/kernel)",
+   "kb": 512,
+   "pct": 4.56
+  }
+ ]
+}

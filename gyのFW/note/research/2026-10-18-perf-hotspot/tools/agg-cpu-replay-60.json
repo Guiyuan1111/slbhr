@@ -1,0 +1,343 @@
+{
+ "file": "TEMP/hotspot/cpu/replay-60.cpuprofile",
+ "kind": "cpu",
+ "totalMs": 9760.4,
+ "selfTop": [
+  {
+   "fn": "box2d.b2RevoluteJoint.SolveVelocityConstraints @:1496",
+   "selfMs": 705.9,
+   "selfPct": 7.23
+  },
+  {
+   "fn": "box2d.b2World.Step @:7907",
+   "selfMs": 684.6,
+   "selfPct": 7.01
+  },
+  {
+   "fn": "box2d.b2Island.Solve @:6023",
+   "selfMs": 579.9,
+   "selfPct": 5.94
+  },
+  {
+   "fn": "box2d.b2ContactSolver.SolveVelocityConstraints @:5548",
+   "selfMs": 456.8,
+   "selfPct": 4.68
+  },
+  {
+   "fn": "box2d.b2BroadPhase.UpdatePairs @:6605",
+   "selfMs": 415.6,
+   "selfPct": 4.26
+  },
+  {
+   "fn": "box2d.b2World.Solve @:7753",
+   "selfMs": 405.7,
+   "selfPct": 4.16
+  },
+  {
+   "fn": "box2d.b2Distance @:2646",
+   "selfMs": 383.8,
+   "selfPct": 3.93
+  },
+  {
+   "fn": "box2d.b2World.SolveTOI @:7801",
+   "selfMs": 380.6,
+   "selfPct": 3.9
+  },
+  {
+   "fn": "box2d.b2TimeOfImpact @:3770",
+   "selfMs": 376.7,
+   "selfPct": 3.86
+  },
+  {
+   "fn": "goog.base @:329",
+   "selfMs": 376.1,
+   "selfPct": 3.85
+  },
+  {
+   "fn": "box2d.b2Timer.GetMilliseconds @:3588",
+   "selfMs": 371.3,
+   "selfPct": 3.8
+  },
+  {
+   "fn": "(garbage collector) @:-1",
+   "selfMs": 257.3,
+   "selfPct": 2.64
+  },
+  {
+   "fn": "box2d.b2ContactManager.Collide @:6683",
+   "selfMs": 193.9,
+   "selfPct": 1.99
+  },
+  {
+   "fn": "box2d.b2Timer.Reset @:3585",
+   "selfMs": 192.6,
+   "selfPct": 1.97
+  },
+  {
+   "fn": "box2d.b2FindMaxSeparation @:4956",
+   "selfMs": 175.8,
+   "selfPct": 1.8
+  },
+  {
+   "fn": "box2d.b2DynamicTree.InsertLeaf @:6373",
+   "selfMs": 169.2,
+   "selfPct": 1.73
+  },
+  {
+   "fn": "box2d.b2DistanceProxy.GetSupport @:2424",
+   "selfMs": 165.1,
+   "selfPct": 1.69
+  },
+  {
+   "fn": "box2d.b2AABB.Combine2 @:3485",
+   "selfMs": 164.3,
+   "selfPct": 1.68
+  },
+  {
+   "fn": "box2d.b2DynamicTree.MoveProxy @:6366",
+   "selfMs": 128.6,
+   "selfPct": 1.32
+  },
+  {
+   "fn": "box2d.b2PolygonShape.ComputeAABB @:4263",
+   "selfMs": 112.8,
+   "selfPct": 1.16
+  },
+  {
+   "fn": "box2d.b2SeparationFunction.FindMinSeparation @:3705",
+   "selfMs": 105.9,
+   "selfPct": 1.08
+  },
+  {
+   "fn": "box2d.b2Body.IsAwake @:7429",
+   "selfMs": 102.6,
+   "selfPct": 1.05
+  },
+  {
+   "fn": "__name @kernel/world.ts:0",
+   "selfMs": 95.8,
+   "selfPct": 0.98
+  },
+  {
+   "fn": "box2d.b2Fixture.Synchronize @:7006",
+   "selfMs": 93.2,
+   "selfPct": 0.96
+  },
+  {
+   "fn": "box2d.b2ContactSolver.SolvePositionConstraints @:5767",
+   "selfMs": 92.4,
+   "selfPct": 0.95
+  }
+ ],
+ "inclTop": [
+  {
+   "fn": "(root) @:-1",
+   "inclMs": 9760.4,
+   "inclPct": 100
+  },
+  {
+   "fn": "run @esm/module_job:331",
+   "inclMs": 9366.4,
+   "inclPct": 95.96
+  },
+  {
+   "fn": "(匿名) @hotspot/prof-kernel-replay.mjs:0",
+   "inclMs": 9252.2,
+   "inclPct": 94.79
+  },
+  {
+   "fn": "step @kernel/world.ts:0",
+   "inclMs": 8795.3,
+   "inclPct": 90.11
+  },
+  {
+   "fn": "box2d.b2World.Step @:7907",
+   "inclMs": 8423.7,
+   "inclPct": 86.3
+  },
+  {
+   "fn": "box2d.b2World.Solve @:7753",
+   "inclMs": 4450.8,
+   "inclPct": 45.6
+  },
+  {
+   "fn": "box2d.b2Island.Solve @:6023",
+   "inclMs": 2462,
+   "inclPct": 25.22
+  },
+  {
+   "fn": "box2d.b2World.SolveTOI @:7801",
+   "inclMs": 2342.9,
+   "inclPct": 24
+  },
+  {
+   "fn": "box2d.b2TimeOfImpact @:3770",
+   "inclMs": 1759.2,
+   "inclPct": 18.02
+  },
+  {
+   "fn": "box2d.b2Body.SynchronizeFixtures @:7478",
+   "inclMs": 834,
+   "inclPct": 8.54
+  },
+  {
+   "fn": "box2d.b2Fixture.Synchronize @:7006",
+   "inclMs": 824.9,
+   "inclPct": 8.45
+  },
+  {
+   "fn": "box2d.b2Distance @:2646",
+   "inclMs": 787.8,
+   "inclPct": 8.07
+  },
+  {
+   "fn": "box2d.b2ContactManager.Collide @:6683",
+   "inclMs": 744.7,
+   "inclPct": 7.63
+  },
+  {
+   "fn": "box2d.b2RevoluteJoint.SolveVelocityConstraints @:1496",
+   "inclMs": 709.9,
+   "inclPct": 7.27
+  },
+  {
+   "fn": "box2d.b2ContactManager.FindNewContacts @:6713",
+   "inclMs": 630.4,
+   "inclPct": 6.46
+  },
+  {
+   "fn": "box2d.b2BroadPhase.UpdatePairs @:6605",
+   "inclMs": 601.8,
+   "inclPct": 6.17
+  },
+  {
+   "fn": "box2d.b2Contact.Update @:3988",
+   "inclMs": 522.5,
+   "inclPct": 5.35
+  },
+  {
+   "fn": "box2d.b2BroadPhase.MoveProxy @:6572",
+   "inclMs": 513.4,
+   "inclPct": 5.26
+  },
+  {
+   "fn": "box2d.b2DynamicTree.MoveProxy @:6366",
+   "inclMs": 488.2,
+   "inclPct": 5
+  },
+  {
+   "fn": "box2d.b2ContactSolver.SolveVelocityConstraints @:5548",
+   "inclMs": 456.8,
+   "inclPct": 4.68
+  },
+  {
+   "fn": "goog.base @:329",
+   "inclMs": 396.9,
+   "inclPct": 4.07
+  },
+  {
+   "fn": "reset @kernel/world.ts:0",
+   "inclMs": 393.1,
+   "inclPct": 4.03
+  },
+  {
+   "fn": "buildLevelWorld @kernel/build.ts:0",
+   "inclMs": 384.6,
+   "inclPct": 3.94
+  },
+  {
+   "fn": "box2d.b2Timer.GetMilliseconds @:3588",
+   "inclMs": 371.3,
+   "inclPct": 3.8
+  },
+  {
+   "fn": "box2d.b2DynamicTree.InsertLeaf @:6373",
+   "inclMs": 307.3,
+   "inclPct": 3.15
+  }
+ ],
+ "selfByCategory": [
+  {
+   "cat": "box2d引擎",
+   "selfMs": 8433.3,
+   "selfPct": 86.4
+  },
+  {
+   "cat": "其它",
+   "selfMs": 479.2,
+   "selfPct": 4.91
+  },
+  {
+   "cat": "内核胶水(shared/kernel)",
+   "selfMs": 324.4,
+   "selfPct": 3.32
+  },
+  {
+   "cat": "GC",
+   "selfMs": 257.3,
+   "selfPct": 2.64
+  },
+  {
+   "cat": "node内部",
+   "selfMs": 213.6,
+   "selfPct": 2.19
+  },
+  {
+   "cat": "v8/其它",
+   "selfMs": 28,
+   "selfPct": 0.29
+  },
+  {
+   "cat": "shared其它",
+   "selfMs": 14.5,
+   "selfPct": 0.15
+  },
+  {
+   "cat": "node_modules其它",
+   "selfMs": 8.9,
+   "selfPct": 0.09
+  },
+  {
+   "cat": "server",
+   "selfMs": 1.2,
+   "selfPct": 0.01
+  }
+ ],
+ "box2dFamilyIncl": [
+  {
+   "family": "island/求解外壳",
+   "inclMs": 17784.9,
+   "inclPct": 182.22
+  },
+  {
+   "family": "contact-solver 位置约束/TOI",
+   "inclMs": 4373,
+   "inclPct": 44.8
+  },
+  {
+   "family": "contact 维护",
+   "inclMs": 2745.5,
+   "inclPct": 28.13
+  },
+  {
+   "family": "broadphase 配对",
+   "inclMs": 2266.2,
+   "inclPct": 23.22
+  },
+  {
+   "family": "contact-solver 速度约束",
+   "inclMs": 1397.2,
+   "inclPct": 14.31
+  },
+  {
+   "family": "body/fixture 同步",
+   "inclMs": 838.6,
+   "inclPct": 8.59
+  },
+  {
+   "family": "js-绑定胶水",
+   "inclMs": 3.5,
+   "inclPct": 0.04
+  }
+ ]
+}

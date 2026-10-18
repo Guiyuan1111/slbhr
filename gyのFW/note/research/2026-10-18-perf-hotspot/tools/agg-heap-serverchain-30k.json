@@ -1,0 +1,134 @@
+{
+ "file": "TEMP/hotspot/heap/serverchain-30k.heapprofile",
+ "kind": "heap",
+ "totalSampledKB": 25432.9,
+ "allocTop": [
+  {
+   "fn": "box2d.b2Contact @:3886",
+   "kb": 5632.4,
+   "pct": 22.15
+  },
+  {
+   "fn": "(匿名) @bootstrap/node:0",
+   "kb": 1280.1,
+   "pct": 5.03
+  },
+  {
+   "fn": "sourceMapFromFile @source_map/source_map_cache:281",
+   "kb": 1092.5,
+   "pct": 4.3
+  },
+  {
+   "fn": "box2d.b2CrossVV @:666",
+   "kb": 1045.1,
+   "pct": 4.11
+  },
+  {
+   "fn": "internalBinding @bootstrap/realm:184",
+   "kb": 1024.1,
+   "pct": 4.03
+  },
+  {
+   "fn": "compileForInternalLoader @bootstrap/realm:384",
+   "kb": 1024.1,
+   "pct": 4.03
+  },
+  {
+   "fn": "exec @:-1",
+   "kb": 998.2,
+   "pct": 3.92
+  },
+  {
+   "fn": "receiveMessageOnPort @worker/io:341",
+   "kb": 528,
+   "pct": 2.08
+  },
+  {
+   "fn": "resolvePackageTargetString @esm/resolve:375",
+   "kb": 515.6,
+   "pct": 2.03
+  },
+  {
+   "fn": "decode @node:internal/encoding:441",
+   "kb": 513.3,
+   "pct": 2.02
+  },
+  {
+   "fn": "box2d.b2Timer.GetMilliseconds @:3588",
+   "kb": 512.6,
+   "pct": 2.02
+  },
+  {
+   "fn": "(匿名) @:0",
+   "kb": 512.5,
+   "pct": 2.02
+  },
+  {
+   "fn": "box2d.b2PairLessThan @:6646",
+   "kb": 512.5,
+   "pct": 2.02
+  },
+  {
+   "fn": "(匿名) @crypto/diffiehellman:0",
+   "kb": 512.3,
+   "pct": 2.01
+  },
+  {
+   "fn": "makeNodeErrorWithCode @node:internal/errors:427",
+   "kb": 512.3,
+   "pct": 2.01
+  },
+  {
+   "fn": "basename @node:path:1486",
+   "kb": 512.3,
+   "pct": 2.01
+  },
+  {
+   "fn": "box2d.b2CircleShape.ComputeAABB @:9220",
+   "kb": 512.2,
+   "pct": 2.01
+  },
+  {
+   "fn": "box2d.b2Manifold @:3324",
+   "kb": 512.2,
+   "pct": 2.01
+  },
+  {
+   "fn": "wrapSafe @cjs/loader:1594",
+   "kb": 512.2,
+   "pct": 2.01
+  },
+  {
+   "fn": "(IDLE) @:-1",
+   "kb": 512.2,
+   "pct": 2.01
+  }
+ ],
+ "allocByCategory": [
+  {
+   "cat": "node内部",
+   "kb": 11098.8,
+   "pct": 43.64
+  },
+  {
+   "cat": "box2d引擎",
+   "kb": 9751,
+   "pct": 38.34
+  },
+  {
+   "cat": "其它",
+   "kb": 3559,
+   "pct": 13.99
+  },
+  {
+   "cat": "node_modules其它",
+   "kb": 512,
+   "pct": 2.01
+  },
+  {
+   "cat": "colyseus/schema",
+   "kb": 512,
+   "pct": 2.01
+  }
+ ]
+}

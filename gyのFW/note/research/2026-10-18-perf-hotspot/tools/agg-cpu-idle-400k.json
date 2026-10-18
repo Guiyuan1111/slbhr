@@ -1,0 +1,338 @@
+{
+ "file": "TEMP/hotspot/cpu/idle-400k.cpuprofile",
+ "kind": "cpu",
+ "totalMs": 2457.2,
+ "selfTop": [
+  {
+   "fn": "box2d.b2World.Step @:7907",
+   "selfMs": 595.6,
+   "selfPct": 24.24
+  },
+  {
+   "fn": "box2d.b2World.Solve @:7753",
+   "selfMs": 518.1,
+   "selfPct": 21.09
+  },
+  {
+   "fn": "box2d.b2Timer.GetMilliseconds @:3588",
+   "selfMs": 167.2,
+   "selfPct": 6.81
+  },
+  {
+   "fn": "box2d.b2Timer @:3581",
+   "selfMs": 162.6,
+   "selfPct": 6.62
+  },
+  {
+   "fn": "box2d.b2World.SolveTOI @:7801",
+   "selfMs": 147.5,
+   "selfPct": 6
+  },
+  {
+   "fn": "__name @kernel/world.ts:0",
+   "selfMs": 89.1,
+   "selfPct": 3.63
+  },
+  {
+   "fn": "set natives @:-1",
+   "selfMs": 77,
+   "selfPct": 3.14
+  },
+  {
+   "fn": "step @kernel/world.ts:0",
+   "selfMs": 63.2,
+   "selfPct": 2.57
+  },
+  {
+   "fn": "box2d.b2Body.IsAwake @:7429",
+   "selfMs": 62.1,
+   "selfPct": 2.53
+  },
+  {
+   "fn": "update @kernel/character.ts:0",
+   "selfMs": 53.9,
+   "selfPct": 2.2
+  },
+  {
+   "fn": "(garbage collector) @:-1",
+   "selfMs": 52.6,
+   "selfPct": 2.14
+  },
+  {
+   "fn": "compileForInternalLoader @bootstrap/realm:384",
+   "selfMs": 47.2,
+   "selfPct": 1.92
+  },
+  {
+   "fn": "makeSyncRequest @esm/hooks:597",
+   "selfMs": 46.8,
+   "selfPct": 1.91
+  },
+  {
+   "fn": "box2d.b2BroadPhase.UpdatePairs @:6605",
+   "selfMs": 42.4,
+   "selfPct": 1.73
+  },
+  {
+   "fn": "waitForWorker @esm/hooks:518",
+   "selfMs": 34.5,
+   "selfPct": 1.4
+  },
+  {
+   "fn": "box2d.b2ContactManager.Collide @:6683",
+   "selfMs": 32.4,
+   "selfPct": 1.32
+  },
+  {
+   "fn": "box2d.b2Body.IsActive @:7447",
+   "selfMs": 26.4,
+   "selfPct": 1.08
+  },
+  {
+   "fn": "(匿名) @hotspot/prof-kernel-idle.mjs:0",
+   "selfMs": 21,
+   "selfPct": 0.85
+  },
+  {
+   "fn": "(idle) @:-1",
+   "selfMs": 17.3,
+   "selfPct": 0.7
+  },
+  {
+   "fn": "box2d.b2Contact.IsEnabled @:3921",
+   "selfMs": 11.6,
+   "selfPct": 0.47
+  },
+  {
+   "fn": "updateAnim @kernel/character.ts:0",
+   "selfMs": 11.5,
+   "selfPct": 0.47
+  },
+  {
+   "fn": "loadBox2d @box2d/load.ts:0",
+   "selfMs": 9.9,
+   "selfPct": 0.4
+  },
+  {
+   "fn": "compileSourceTextModule @esm/utils:343",
+   "selfMs": 8.8,
+   "selfPct": 0.36
+  },
+  {
+   "fn": "parseSource @cjs-module-lexer/lexer:84",
+   "selfMs": 8.5,
+   "selfPct": 0.34
+  },
+  {
+   "fn": "box2d.b2ContactManager.FindNewContacts @:6713",
+   "selfMs": 5.9,
+   "selfPct": 0.24
+  }
+ ],
+ "inclTop": [
+  {
+   "fn": "(root) @:-1",
+   "inclMs": 2457.2,
+   "inclPct": 100
+  },
+  {
+   "fn": "run @esm/module_job:331",
+   "inclMs": 2270.5,
+   "inclPct": 92.4
+  },
+  {
+   "fn": "(匿名) @hotspot/prof-kernel-idle.mjs:0",
+   "inclMs": 2158.2,
+   "inclPct": 87.83
+  },
+  {
+   "fn": "step @kernel/world.ts:0",
+   "inclMs": 2094.8,
+   "inclPct": 85.25
+  },
+  {
+   "fn": "box2d.b2World.Step @:7907",
+   "inclMs": 1789,
+   "inclPct": 72.81
+  },
+  {
+   "fn": "box2d.b2World.Solve @:7753",
+   "inclMs": 722.9,
+   "inclPct": 29.42
+  },
+  {
+   "fn": "box2d.b2World.SolveTOI @:7801",
+   "inclMs": 176.5,
+   "inclPct": 7.18
+  },
+  {
+   "fn": "box2d.b2Timer.GetMilliseconds @:3588",
+   "inclMs": 167.2,
+   "inclPct": 6.81
+  },
+  {
+   "fn": "__name @kernel/world.ts:0",
+   "inclMs": 166.1,
+   "inclPct": 6.76
+  },
+  {
+   "fn": "box2d.b2Timer @:3581",
+   "inclMs": 162.6,
+   "inclPct": 6.62
+  },
+  {
+   "fn": "(匿名) @dist/register-nyXW-TH3.mjs:1",
+   "inclMs": 85.9,
+   "inclPct": 3.49
+  },
+  {
+   "fn": "(匿名) @esm/index.mjs:0",
+   "inclMs": 85.9,
+   "inclPct": 3.49
+  },
+  {
+   "fn": "register @esm/loader:676",
+   "inclMs": 84.3,
+   "inclPct": 3.43
+  },
+  {
+   "fn": "register @esm/loader:1046",
+   "inclMs": 84.3,
+   "inclPct": 3.43
+  },
+  {
+   "fn": "makeSyncRequest @esm/hooks:597",
+   "inclMs": 81.3,
+   "inclPct": 3.31
+  },
+  {
+   "fn": "register @esm/loader:901",
+   "inclMs": 81.3,
+   "inclPct": 3.31
+  },
+  {
+   "fn": "set natives @:-1",
+   "inclMs": 77,
+   "inclPct": 3.14
+  },
+  {
+   "fn": "update @kernel/character.ts:0",
+   "inclMs": 66.9,
+   "inclPct": 2.72
+  },
+  {
+   "fn": "compileForInternalLoader @bootstrap/realm:384",
+   "inclMs": 63.7,
+   "inclPct": 2.59
+  },
+  {
+   "fn": "box2d.b2Body.IsAwake @:7429",
+   "inclMs": 62.1,
+   "inclPct": 2.53
+  },
+  {
+   "fn": "requireBuiltin @bootstrap/realm:421",
+   "inclMs": 59.5,
+   "inclPct": 2.42
+  },
+  {
+   "fn": "getModuleJobForImport @esm/loader:308",
+   "inclMs": 55.5,
+   "inclPct": 2.26
+  },
+  {
+   "fn": "(garbage collector) @:-1",
+   "inclMs": 52.6,
+   "inclPct": 2.14
+  },
+  {
+   "fn": "box2d.b2ContactManager.FindNewContacts @:6713",
+   "inclMs": 50.1,
+   "inclPct": 2.04
+  },
+  {
+   "fn": "loadAndTranslate @esm/loader:592",
+   "inclMs": 47.2,
+   "inclPct": 1.92
+  }
+ ],
+ "selfByCategory": [
+  {
+   "cat": "box2d引擎",
+   "selfMs": 1813.7,
+   "selfPct": 73.81
+  },
+  {
+   "cat": "内核胶水(shared/kernel)",
+   "selfMs": 224.5,
+   "selfPct": 9.14
+  },
+  {
+   "cat": "node内部",
+   "selfMs": 214.1,
+   "selfPct": 8.71
+  },
+  {
+   "cat": "其它",
+   "selfMs": 110.3,
+   "selfPct": 4.49
+  },
+  {
+   "cat": "GC",
+   "selfMs": 52.6,
+   "selfPct": 2.14
+  },
+  {
+   "cat": "v8/其它",
+   "selfMs": 20.9,
+   "selfPct": 0.85
+  },
+  {
+   "cat": "shared其它",
+   "selfMs": 12.9,
+   "selfPct": 0.52
+  },
+  {
+   "cat": "node_modules其它",
+   "selfMs": 8.2,
+   "selfPct": 0.34
+  }
+ ],
+ "box2dFamilyIncl": [
+  {
+   "family": "island/求解外壳",
+   "inclMs": 2704.5,
+   "inclPct": 110.06
+  },
+  {
+   "family": "contact-solver 位置约束/TOI",
+   "inclMs": 180.8,
+   "inclPct": 7.36
+  },
+  {
+   "family": "contact 维护",
+   "inclMs": 112.2,
+   "inclPct": 4.57
+  },
+  {
+   "family": "broadphase 配对",
+   "inclMs": 59.1,
+   "inclPct": 2.4
+  },
+  {
+   "family": "contact-solver 速度约束",
+   "inclMs": 3.6,
+   "inclPct": 0.15
+  },
+  {
+   "family": "js-绑定胶水",
+   "inclMs": 1.2,
+   "inclPct": 0.05
+  },
+  {
+   "family": "body/fixture 同步",
+   "inclMs": 0,
+   "inclPct": 0
+  }
+ ]
+}
