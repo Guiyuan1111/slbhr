@@ -52,7 +52,24 @@ export function listLevelIds(): string[] {
   return ids;
 }
 
+/**
+ * 逐关卡解析缓存（r2 perf 件5，2026-10-18）：loadLevel 每次调用都重新
+ * readFileSync+JSON.parse 关卡与图块集并全量 parseLevel——房间创建
+ * （ForestRoom onCreate / 切关）与多世界基准（perf-mem/serialize/sync、
+ * det 每关双世界）逐次重付同成本。
+ *
+ * 共享安全（LevelData 为纯定义数据）：kernel 构建链只读不写（mechanisms/
+ * character/build 全量审计无 def/level 字段赋值），World.reset() 整关重开
+ * 本就复用同一 LevelData 实例重建世界——多世界共享解析产物的不变式既有。
+ * 缓存键=关卡 id，条目=完整 LevelBundle（json 一并缓存，/api/level/:id 同享），
+ * 上界=关卡总数（静态数据集，48 关量级）；关卡编辑属静态数据变更，走服务
+ * 重启生效——与既有模型一致，不做失效监听。
+ */
+const bundleCache = new Map<string, LevelBundle>();
+
 export function loadLevel(id: string): LevelBundle {
+  const hit = bundleCache.get(id);
+  if (hit) return hit;
   for (const dir of LEVEL_DIRS) {
     const file = join(ROOT, dir, `${id}.json`);
     let raw: string;
@@ -72,7 +89,9 @@ export function loadLevel(id: string): LevelBundle {
       }
       return ts;
     };
-    return { id, json, level: parseLevel(id, json, getTileset) };
+    const bundle: LevelBundle = { id, json, level: parseLevel(id, json, getTileset) };
+    bundleCache.set(id, bundle);
+    return bundle;
   }
   throw new Error(`关卡不存在: ${id}（查找过 ${LEVEL_DIRS.join(", ")}）`);
 }
