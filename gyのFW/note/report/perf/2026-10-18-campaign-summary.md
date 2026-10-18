@@ -1,0 +1,203 @@
+# 性能优化战役 · 五轮总账（2026-10-18，r0–r5 收官报告）
+
+> 2026-10-18 · perfsum 槽 · **零代码改动**（本报告与文档收口为纯文档件）。
+> 覆盖：r0 基线 → r1 服务端 tick 链 → r2 世界构建吞吐 → r3 客户端帧预算 → r4 encode 勘误+微优 → r5 冷启动。
+> 数字纪律：**全部数字逐项回溯到五轮报告原文、commit 消息与 `benchmark/results/*.json` 快照三方可核**，
+> 禁新造数；各轮 commit 消息与报告/存档快照不一致处如实并列披露（§五），不擅自改数。
+> 位级红线终态：**det 48/48（锚=det-r0-baseline，全五轮逐件复跑全绿）+ fixtures 6/6（oracle-gold
+> 24.5357/142.6879 与 r0 逐字同值）+ patch 出站字节逐字不变**。
+
+## 〇、五轮总表
+
+| 轮 | 焦点 | commit 链（一件一 commit） | 件数 | 关键前后数字（同机同口径） | 门禁 |
+|---|---|---|---|---|---|
+| r0 | 基线（测量，零代码） | `dd93e66`→`9e1ac7b`→`6238f5a`→`cf093f3`→`a81cdb5` | 4 既有基准快照 + 3 新基准（serialize/routeio/mem）+ 1 负载探针 | det 48/48（vs r32，新锚 `det-r0-baseline`·链哈希 `34425e393ba1fa69…`）+ fixtures 6/6；perf-step 48 关空载 avg **0.0227ms**（bonus_2 0.3752）；perf-load Menu 1078ms/4862KB·22req、reload 3KB；perf-sync f01 347B/bonus_2 2646B（旧口径，后勘误）；perf-serialize 60Hz patch 370/450/2685B、线路 21.7/26.4/157.3KB/s（伪影口径，后勘误）；perf-routeio **10.34 关/s**、World 构建 9.4~11.1ms；perf-mem 常驻 2.9/4.47MB | det+fixtures（红线双判据全绿） |
+| r1 | 服务端 tick 链（步进/快照/回放） | `fa4a806`→`07fc78a`→`2b7efa6`→`8d2b6d5`→`264781b` | 4 件 | perf-step 综合 **0.0227→0.0177ms（-22.0% 时点；终态存档 0.0193，带 -15%~-22%）**，睡眠轻关最高 -58.5%；perf-sync sync 段 f01 **0.0210→0.0096ms（-54%）**/bonus_2 **0.0516→0.0191ms（-63%）**，patch 347/2646B 逐字不变；perf-routeio **10.34→12.14 关/s（+17.4%）**；r0 溢价归因勘误（§四） | det 48/48+fixtures 6/6 每件复跑+双路径 encodeAll 逐字节+e2e f01/f12 |
+| r2 | 世界构建吞吐+冷启动盘点 | `c3661b0`→`e3c8d75`→`b2b9c47`→`cfeb2f8`→`130863a`→`55d580b`→`bb3b4ab` | 6 件 | **World 构建 9.2~11.0→1.0~2.0ms（-82%~-90%，110→1166 个/s=10.5×）**；回放 12.14→**13.35 关/s（+10.0%）**；每 World 常驻 01 **2.9→0.69MB（-76%）**/bonus_2 4.47→2.88MB（-36%）；50 并发峰值 **Δ152→35.2MB（-77%）**；创建销毁 78.4→251.6/s（+221%）；步进连带 -3%~-6%；冷启硬口径与 r0 逐字一致（无动作项） | det 48/48+fixtures 6/6 每件复跑（oracle-gold maxDev 与 r0 逐字同值） |
+| r3 | 客户端帧预算 | `44ad165`→`158d395`→`be3d964`→`324d4f6`→`a96c636`→`9dea930` | 3 件+新基准 perf-client | **update() 分配份额 1044→31KB/s（-97%）**；页面总分配（canvas）**1374→1114KB/s（-19%）**；静止态 setDepth **968→0**/setAngle **2420→0**/setRotation **968→0**（/8s，depth 排序队列全消）；updateAvg **0.199→0.146ms**；满帧 60.6 维持；WebGL 分配 776KB/s 带内 | tsc/vitest 85/85+visual-diff 90.79/90.74（基线 89.42 同带）+e2e f01/f12 双 ALL PASS |
+| r4 | 服务端 encode 段 | `3573bd6`→`f0118d3`→`5cee17e`→`a68c0bc` | 2 件（件1=基准口径勘误，件2=微优） | **头号产出=勘误**：patch 370/450/2685→**50/58/91B**（7.4×/7.8×/**29.5×** 伪影）、encCPU 3.08→0.21ms/仿真秒（9~13×）、60Hz 线路 21.7/26.4/157.3→**2.93/3.39/5.36KB/s/客户端**、tick 链占比 ~1-5% 非 ~10%（§四）；件2 $filter 遮蔽：enc/tick **f01 -10.1%/f12 -12.0%/bonus_2 -3.7%**（绝对 0.0001~0.0002ms/tick） | **4 关×600 帧双路径 patch+encodeAll 逐字节相等**+det 48/48+fixtures 6/6+e2e 双关静窗 |
+| r5 | 冷启动资产管线 | `458bff2`→`476a254`→`71f4cff` | 1 件 | **冷启 Menu active 769→523.5ms（-32%，5 测中位；件 commit 时点读数 471ms/-39%）**；Menu 传输 **4863→3674KB、22→14req**（硬口径）；reload 759→532ms（-30%）；页内 DCL→menuActive **477→309ms（-35%）**（图片串行解码窗 275.7→150.9ms、首帧渲染 95.4→56.2ms）；点击建房→Game 567.5→697.5ms（快照存档值；即点路径等暖装尾巴，真人驻留路径不变，§三注） | visual-diff 90.67+det 48/48+fixtures 6/6+tsc/vitest 85/85+e2e f01/f12 静窗双 ALL PASS+邀请深链冒烟 |
+
+汇总口径：r0→r5 累计，**整关回放 10.34→13.35 关/s（+29.1%）**、48 关空载步进 **-15%~-22%**、
+World 构建 **10.5×**、每 World 常驻 **-76%**（forest_01）、客户端 update 分配份额 **-97%**、
+冷启 Menu **-32%**（同日配对口径）——全部位级中性（det/fixtures/patch 字节三门全绿贯穿五轮）。
+
+## 一、战役原则沉淀（三支柱，自五轮实践提炼）
+
+### 支柱 1：测量先行——每轮先剖析、先证伪假设，再动手
+
+五轮中任务书预置假设被剖析证伪/翻案四次，每次都改变了动手方向：
+
+| 轮 | 被证伪/翻案的假设 | 剖析结论 | 证据 |
+|---|---|---|---|
+| r1 | r0「runKernel 对纯 step 溢价 +3.9%~+153%（3 关 ≥90%）主体是快照成本」 | **尾帧稀释伪影**：纯 step 基线结局后早退近乎免费摊薄均值；快照移除后真实剩余溢价仅 +8%~26%（1.08~1.26）；snapshotPlayer×2 实际 ~6µs/帧 | r1 报告 §三分解表（4 关 runKernel/纯 step 至结局帧） |
+| r2 | 任务书「解析层（IO+JSON.parse+parseLevel）是大头」 | 解析层仅 **2-4%**，Box2D 构建链占 **95-97%**；goog.base self 74.5%，其中 7 类接触构造器 ~64%=vendor 每 b2World 预填 1792 接触对象的固定成本 | r2 报告 §一 makeWorld 分解+CPU profile |
+| r4 | r0/r1 的 encode 段数字（占比 ~10%、60Hz 线路 21.7~157.3KB/s） | **累积伪影**，生产真值小一个数量级（占比 1-5%、线路 2.93~5.36KB/s）；r0 §六「最坏带宽」数字作废 | r4 报告 §一勘误表+快照 serialize-r4-encode |
+| r5 | 任务书「网络瀑布/base64 内嵌是冷启瓶颈」 | 网络 19 请求全并行仅 ~55ms（maxParallelDownloads=32 缺省）；base64 前提不成立（Phaser 3.90 已 blob→objectURL）；真凶=**图片装载管线串行段 ~180ms+首帧渲染 ~100ms**（由总像素量决定） | r5 报告 §一 probe-decode 里程碑分桶 |
+
+操作范式：**每轮 STEP1 = 剖析工具先行（收容 `note/report/perf/tools/perfopt{3,4,5}/` 可复跑），
+先定量、先翻案，再选杠杆；结论全部来自可复现探针而非推断。**
+
+### 支柱 2：基准口径警戒——基准必须镜像生产语义
+
+- **r4 头号教训（29.5× 伪影）**：perf-serialize/perf-sync 缺 `encoder.discardChanges()`
+  （生产 `SchemaSerializer.applyPatches` 发送后即清变更集），量出的是「自始变更字段并集按
+  最新值重编码」而非本网格真增量——patch 放大至 29.5×、encCPU 9~13×、线路 24~29×。
+  **基准脚本与生产路径逐字段/逐调用同构是硬要求**；修正后旧快照加头部注+meta 披露
+  「绝对值不可再比」，新锚 `serialize-r4-encode`/`sync-r4-encode`（meta.git=f0118d3）。
+- **同类前科（r1）**：结局后 step 早退 vs 跑满 totalFrames 的尾帧稀释伪影——对照双方
+  「跑的帧数」必须同口径。
+- **负载口径（r0）**：空载（落睡空转）与 scripted（走跳持续驱动）差 **2~6×**——容量/优化
+  判读必须用 scripted 档，空载档只适合前后同口径自比（`benchmark/probe-step-load.mjs` 实证）。
+- **跨机/跨窗口径**：10-08 旧报告测于另机仅量级参照；时长类指标轮间波动大（r0 当日冷启
+  1244/912ms、r5 带 471~588ms），**跨轮对比以传输字节/请求数等硬口径+同日配对 A/B 为准**；
+  时点读数与终态存档（5 测中位）须分列（§五披露）。
+- **快照链纪律**：`--save`/`--compare` 每轮起锚下一轮（r0→r1→r2→r4→r5），快照 `meta.git`
+  自动溯源；benchmark/README 对每件基准的口径演变（r2 build 缓存命中口径、r4 生产语义口径、
+  r3 双渲染器口径）逐条加注。
+
+### 支柱 3：位级中性门禁体系——四层门禁+抖动归因纪律
+
+1. **det 位级锚**：`perf-determinism --compare r0-baseline`（48 关×600 步×idle/scripted 双输入，
+   全刚体 6×f64 原始位链式哈希）——全五轮逐件复跑 **48/48 全绿**，锚自 r0 建立后未再 bump；
+2. **fixtures 回归网**：6/6 PASS（v1 内核自基线 ×4 tolerance=0 + oracle-gold ×2），
+   oracle-gold maxDev 24.5357/142.6879 与 r0 **逐字同值**贯穿五轮；
+3. **patch 字节逐字节门禁**：r1 双路径 encodeAll 逐字节、r4 升级为 4 关×600 帧双路径
+   patch+encodeAll 逐字节（协议出站零变化的直接证据，`tools/perfopt4/ab-filter.mjs --gate` 可复现）；
+4. **visual-diff 首帧完整性**：r3/r5 客户端轮 90.67~90.79（HEAD 旧基线 89.42 同偏移同带）。
+- **e2e+抖动归因纪律**：真实双浏览器 e2e（repeat3×--offset -15）全轮通过；期间多次 1/3、0/3
+  抖动全部按同一流程归因——失败形态比对已录「输入注入抖动」签名族+**基线 worktree 独立构建
+  A/B**（r1 f04：基线 a81cdb5 同率翻车；r3 首窗 0/3：四版本稳定窗全 3/3；r5：基线 a68c0bc 3/3+
+  HEAD 静窗 3/3）——归因环境窗非回归，从不拿抖动窗当门禁；操作教训固化：**重启后 ≥30min 或
+  静窗再上门禁**。
+- **一件一 commit、独立过门、quarantine 披露**：全战役 16 个实施件零回滚件；r2 件6 触及 r1
+  改动面（kernel.mjs）按 quarantine 最小 diff 单独披露（r2 报告 §五）。
+
+## 二、收益总账（按用户价值面）
+
+### 服务端 tick 链（游玩直感：服务器容量与单 tick 延迟）
+
+| 面 | r0 → r5 | 出处 |
+|---|---|---|
+| 48 关空载步进 avg | 0.0227 → 0.0177~0.0193ms（**-15%~-22%**；睡眠轻关最高 -58.5%） | r1 件1/件2（fa4a806/07fc78a） |
+| syncState 快照写路径 | f01 **-54%** / bonus_2 **-63%**（0.0210→0.0096 / 0.0516→0.0191ms） | r1 件3（2b7efa6，存档 sync-r1-sync.json） |
+| encode 段 | 轻关 **-10.1%~-12.0%**（重关 -3.7%；绝对 0.0001~0.0002ms/tick） | r4 件2（f0118d3） |
+| 出站带宽（生产口径勘误后真值） | 60Hz scripted 2.93/3.39/5.36KB/s/客户端——**r0 伪影值（21.7~157.3）作废** | r4 件1（3573bd6，serialize-r4-encode） |
+| 协议输出 | patch 字节五轮**逐字不变**（r1 等价性结论在 r4 生产口径下复证成立） | r1 件3+r4 §一连锁勘误 4 |
+
+判读注：r4 勘误后 encode 段生产占比仅 ~1-5%，r1 的 sync 优化（占比曾达 19~33%）才是 tick 链
+真正的第二大头；步进物理本体（box2d Step 链）始终占绝对主导且为 vendor 必漂禁区（§四）。
+
+### 世界构建与内存（机器探索供给面/多房间容量）
+
+| 面 | r0/r1 → r2 | 出处 |
+|---|---|---|
+| World 构建 | 9.2~11.0 → **1.0~2.0ms（-82%~-90%，110→1166 个/s=10.5×）** | r2 件1-4/件6（c3661b0…55d580b） |
+| 整关回放吞吐 | 10.34 → 12.14（r1 +17.4%）→ **13.35 关/s（r2 +10.0%，累计 +29.1%）** | r1 件4+r2（8d2b6d5/55d580b，routeio-r2-routeio.json） |
+| 每 World 常驻 | forest_01 2.9→**0.69MB（-76%）**；bonus_2 4.47→2.88MB（-36%） | r2 件1（1792 预填接触对象消失，mem-r2-mem） |
+| 50 世界并发峰值 | Δ152→**35.2MB（-77%）**/Δ232→151MB；释放后回 17~20MB | 同上 |
+| 创建销毁吞吐 | 78.4→**251.6/s（+221%）**（12.76→3.97ms/World） | 同上 |
+| 关卡解析 | 服务端 loadLevel+routetool makeWorld 双缓存（0.3~0.5ms/次消除，命中 p50 0.0001ms） | r2 件5/件6（130863a/55d580b） |
+
+### 客户端（游玩直感：帧预算/GC 压力/加载速度）
+
+| 面 | before → after | 出处 |
+|---|---|---|
+| update() 段分配份额 | 1044 → **31KB/s（-97%，≈0.6KB/帧）** | r3 件1+件3（44ad165/be3d964，alloc-paired 配对差分） |
+| 页面总分配（canvas） | 1374 → **1114KB/s（-19%）** | r3（client-r3-client 快照，16:44 复跑 1124 同带） |
+| 静止态 setter 写入 | setDepth **968→0**、setAngle **2420→0**、setRotation **968→0**（/8s）——depth 排序队列全消 | r3 件2（158d395） |
+| updateAvg | 0.199 → **0.146ms**（满帧 60.6 维持，mechCalls 2904 零变化） | r3（perf-client） |
+| 冷启 Menu active | 769 → **523.5ms（-32%，同日配对 A/B）** | r5 件1（458bff2，load-r5-coldstart） |
+| 冷启传输（硬口径） | 4863 → **3674KB、22→14req（-1.19MB/-8req）**；进 Game 累计 6899KB 持平（总量不变只改分布） | 同上 |
+| reload / 页内口径 | 759→532ms（-30%）/ DCL→menuActive 477→309ms（-35%） | 同上 |
+
+### 勘误史（防虚账——本战役「负产出」同样入库）
+
+| 勘误/翻案 | 内容 | 影响 |
+|---|---|---|
+| r4 encode 累积伪影 | patch 370/450/2685→50/58/91B（最高 **29.5×**）、encCPU 0.68~3.08→0.07~0.21ms/仿真秒、60Hz 线路 21.7/26.4/157.3→2.93/3.39/5.36KB/s、tick 链占比 ~10%→**1-5%** | r0/r1 旧 serialize/sync 快照绝对值作废（口径注已挂 benchmark/README）；timerMs 降频、按关分级出站等「带宽优化」候选随之失去前提（r4 弃件） |
+| r1 routeio 溢价伪影 | r0「+3.9%~+153%」→真实剩余 +8%~26%（1.08~1.26），尾帧稀释 | 机器探索供给面读数以关/s 为准 |
+| r2 解析层假设证伪 | 解析 2-4% vs 构建链 95-97% | 优化方向从 IO 转向 vendor 构建链（收获 10.5×） |
+| r5 冷启瓶颈翻案 | 网络（55ms 全并行）/base64（已 blob）双假设证伪；真凶=图片装载串行段+首帧渲染（总像素量决定） | 优化从网络/编码转向装载序整形；「资产子集化」成为仅剩大杠杆（需破红线，§四） |
+| r0→r5 冷启时长口径 | r0 Menu 1078ms（当日 1244/912 波动）vs r5-before 769ms——时长类轮间波动大，非回归 | 硬口径（传输/req）+同日配对 A/B 为跨轮唯一可比口径 |
+
+## 三、实施件清单（16 件全览，零回滚）
+
+| 轮·件 | 改动一句话 | commit |
+|---|---|---|
+| r1·1 | jumpSound 闭包提升模块级（免逐帧新建） | `fa4a806` |
+| r1·2 | b2Timer 恒零遥测桩（免每步 12~13 次 new Date，vendor 字节不动） | `07fc78a` |
+| r1·3 | syncState 机关位姿 mechanisms 直读（免每 tick ~30 中间对象） | `2b7efa6` |
+| r1·4 | runKernel 缺省路径死亡判定直读（免逐帧双快照） | `8d2b6d5` |
+| r2·1 | 接触池懒填（预填 1792→0，goog.base 构建大头） | `c3661b0` |
+| r2·2 | b2PolygonShape 构造/Copy 直达分派 | `e3c8d75` |
+| r2·3 | build.ts 构建层分配削减（静态顶点模板/quadFixture 直构） | `b2b9c47` |
+| r2·4 | b2CircleShape 构造/Copy 直达分派 | `cfeb2f8` |
+| r2·5 | 服务端 loadLevel 逐关卡解析缓存 | `130863a` |
+| r2·6 | routetool makeWorld 逐关卡解析缓存（quarantine 最小 diff） | `55d580b` |
+| r3·1 | GameScene update 零稳态分配（回调绑定/首见缓存/输出复用） | `44ad165` |
+| r3·2 | 渲染脏标记守卫（静止态零 setter 写入） | `158d395` |
+| r3·3 | 输入轮询零分配（pressed 直查/预组合键集） | `be3d964` |
+| r4·1 | perf-serialize/perf-sync 生产语义修正（discardChanges，勘误件） | `3573bd6` |
+| r4·2 | 声明侧遮蔽 Schema[$filter]（8 schema 类，字节逐字不变） | `f0118d3` |
+| r5·1 | 冷启动装载序整形（四图集移出 Boot 关键路径+120ms 后台暖装+落定门） | `458bff2` |
+
+新增量具：perf-serialize/perf-routeio/perf-mem（r0）、perf-client（r3）、probe-step-load（r0）、
+剖析工具收容档 `note/report/perf/tools/perfopt{3,4,5}/`（r3 14 脚本+8 数据件、r4 5 脚本+2 profile、
+r5 3 脚本；r1/r2 无独立收容档，剖析产物随报告入档；hotspot 01 号档工具在
+`note/research/2026-10-18-perf-hotspot/tools/`）。
+
+## 四、剩余候选与前置（第六轮起）
+
+| 候选 | 数据 | 前置/定性 |
+|---|---|---|
+| **客户端渲染段**（r3 TOP1，数据最厚） | Canvas 软光栅 renderAvg 5.31~5.88ms vs updateAvg 0.146ms（帧预算 ~97% 在渲染段）；残余分配 ~18.1KB/帧主体在 Phaser 渲染管线内部 | **前置=真机口径校准**：本机无硬件 GL（headless WebGL=SwiftShader present 阻塞为环境项、Canvas=软光栅），软光栅数字≠真机 WebGL；动作前须真机 A/B 校准，剖析工具已收容（cdp-prof/alloc 族） |
+| **font.png 1.6MB 子集化**（r5 候选 TOP） | 冷启剩余大头=font.png 1.6MB/2048²（中文字库位图）+CharAssets 732KB 立绘；r5 装载序整形后首帧集内再无可挪项 | **前置=用户裁决破「资产内容红线」**（子集化/重排即改资产内容）——未裁决前不动 |
+| GameScene 音频批暖装 | 2.8MB/18req 可同款后台暖装，Game 即点路径可再 -50~100ms | 低优先顺手件（r5 同款手法，收益小） |
+| phaser 1.48MB 块拆分 | 脚本段 parse/eval ~120ms | r2 判拆分不值，r5 复核未推翻——维持不动 |
+| 50 并发 GC 拆账（r0 §八存疑） | 50×bonus_2 构建总耗时 ≈166ms/World vs 冷建 14ms，GC 暂停未拆账 | 仅多房间大并发场景相关，单人单房无关；拆账需每轮隔离 gc |
+| **vendor 必漂禁区清单（永挂账，除非用户特批）** | ①b2TimeOfImpact/SolveTOI 18%（r0 hotspot #6）②宽相代理插入链 b2DynamicTree.InsertLeaf 等 25~30%（r2 剩余热点）③goog.base 剩余（关节类 <5%，r2 §六）④关节求解序 7.2%（r0 hotspot #8） | 动则 det 位级基线必漂、fixtures/金轨迹全网重录——**永挂账不动** |
+
+弃件存档（数据支撑的放弃，防止重复立项）：timerMs 降频出站（r4：idle 线路 <3KB/s 不值协议变更）、
+imageLoadType=HTMLImageElement（r5：A/B 494.5 vs 471~533 带内无收益）、r0 候选 60Hz 分级出站
+（r4 勘误后带宽前提消失）。
+
+## 五、数字一致性核查（如实并列披露，不擅自改数）
+
+以下为各轮**实施 commit 消息时点读数**与**报告/存档快照终态口径**的差异，总账一律采用
+报告+存档快照口径，时点读数如实并列：
+
+| 项 | commit 消息值（时点） | 报告+存档快照值（终态） | 快照核验 |
+|---|---|---|---|
+| r1·3 sync 段 | `2b7efa6`：「0.0210→0.0070ms / 0.0516→0.0187ms」 | r1 报告：**0.0096 / 0.0191ms**（-54%/-63%） | `sync-r1-sync.json`（meta.git=8d2b6d5）syncMs=0.0096/0.0191——**报告/存档一致，commit 值为时点读数** |
+| r2·6 回放/构建 | `55d580b`：「13.37 关/s（+10.1%）、构建 110→1153/s」 | r2 报告 §三：**13.35 关/s（+10.0%）、1166/s** | `routeio-r2-routeio.json`（meta.git=55d580b）summary.replaysPerSec=**13.35**——报告与 commit bb3b4ab 用存档值，件 commit 为时点值；r2 报告 §〇件6 行亦留 13.37 时点值（报告内部两口径并存） |
+| r5·1 冷启 | `458bff2`：「Menu 769→**471ms（-39%）**、reload→517ms、点击→Game→615ms」 | r5 报告 §三：**523.5ms（-32%，5 测中位）**、reload 532ms、点击→Game 620~698 带（存档 697.5） | `load-r5-coldstart.json`（meta.git=458bff2）cold.menuActiveMs=**523.5**、gameActiveAfterClickMs=697.5；`476a254` 快照 commit 消息与存档一致——件 commit 取 5 测最快时点，总账取中位 -32% 并披露 -39% 时点值 |
+| r4 encCPU 两口径 | `a68c0bc`：「3.08→0.21ms/仿真秒」（纯 encode 计时，bonus_2） | `5cee17e`/快照：「0.29/0.11/0.27ms/仿真秒」（perf-serialize 基准环 60Hz scripted） | `serialize-r4-encode.json`（meta.git=f0118d3）encCpuMsPerSimSec=0.29/0.11/0.27——**非矛盾，两个口径**（纯计时 vs 基准环），引用时须注明口径，总账两值并存 |
+
+## 六、复现（门禁与基准总入口）
+
+```bash
+node --import tsx benchmark/perf-determinism.mjs --compare r0-baseline   # 位级门（现锚，全轮 48/48）
+node --import tsx scripts/e2e/routetool/fixture-runner.mjs              # fixtures 6/6
+node --import tsx benchmark/perf-step.mjs --compare perf-r2-step        # 步进面（r2 起锚）
+node --import tsx benchmark/perf-sync.mjs --compare r4-encode           # 生产语义口径锚
+node --import tsx benchmark/perf-serialize.mjs --compare r4-encode      # 出站生产口径锚
+node --import tsx benchmark/perf-routeio.mjs --compare r2-routeio       # 回放/构建吞吐
+node --expose-gc --import tsx benchmark/perf-mem.mjs --compare r2-mem   # 内存面
+node benchmark/perf-client.mjs --compare r3-client                      # 客户端帧预算
+node --import tsx benchmark/perf-load.mjs --no-build --compare r5-coldstart  # 冷启口径
+node benchmark/visual-diff.mjs                                          # 首帧完整性（客户端轮门禁）
+node --import tsx note/report/perf/tools/perfopt4/ab-filter.mjs --gate  # patch 字节逐字节门禁
+node scripts/e2e/route.mjs --level forest_01 --repeat 3 --offset -15    # e2e（空机时段/静窗！）
+```
+
+五轮报告：`note/report/perf/2026-10-18-r{0,1,2,3,4,5}-*.md`；
+快照：`benchmark/results/`（各轮 `--compare` 锚见 benchmark/README 快照索引）。
+
+## 七、一句话总账
+
+**五轮 16 件+1 基准口径勘误+7 件量具新建，全部位级中性（det 48/48+fixtures 6/6+patch 字节
+逐字不变贯穿）：服务端步进 -15~-22%、sync -54~-63%、encode -10~12%（真值占比 1-5%），
+世界构建 10.5×/回放 +29.1%/每 World 常驻 -76%/50 并发 -77%，客户端 update 分配 -97%/
+页面分配 -19%/冷启 Menu -32%/传输 -1.19MB——战役最大遗产除数字外是方法论：测量先行
+（四次假设翻案）、基准镜像生产语义（29.5× 伪影教训）、四层位级门禁+抖动 A/B 归因纪律。**
