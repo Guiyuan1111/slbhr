@@ -23,7 +23,7 @@ import { AUDIO_GAME, loadAudioPack } from "../audio.js";
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
-import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_MAIN, PLAYER_SCALE } from "./BootScene";
+import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_MAIN, PLAYER_SCALE, buildGameAnims, loadGameAtlases } from "./BootScene";
 import { getSettings } from "../settings";
 
 export interface GameInit {
@@ -290,6 +290,10 @@ export class GameScene extends Phaser.Scene {
     // Menu/选关冷启动不再为其付出传输；建房（网络握手）期间并行下载。
     // 场景重启时 Loader 对已入缓存的键自动跳过，不会重复下载。
     loadAudioPack(this, AUDIO_GAME);
+    // 游戏内四图集（r5 冷启动装载序整形）：Boot 不再装载（Menu 首帧用不到），
+    // MenuScene 后台暖装通常已就绪（此处静默跳过）；暖装被提前打断（快速建房/
+    // 邀请深链直进）时在此补齐，保证 create 前纹理完备——与旧 Boot 全量装载等价。
+    loadGameAtlases(this.load);
   }
 
   init(): void {
@@ -340,6 +344,9 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     const { level } = this.d;
+    // 游戏内动画注册（r5 随装载序从 BootScene 迁来：wind/liquid/finish_stone 的帧在
+    // ground/mech/popup 图集，Boot 阶段尚未装载；exists 幂等，重开/换关不重复建）
+    buildGameAnims(this.anims);
     // 相机管理（F4 翻转，原版 CameraManager @1881500）：此前固定全景（冻结偏离）。
     // 原版行为：加载期 camFreeze 在全图 minScale，started 解冻后每帧自动适配双角色。
     // settled 口径不变：双角色同屏时自动适配 h=1 → 边界钳制居中 → scroll(16,16)

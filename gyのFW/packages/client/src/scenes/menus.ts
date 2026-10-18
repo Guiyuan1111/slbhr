@@ -92,6 +92,10 @@ export class CompleteScene extends Phaser.Scene {
   constructor() {
     super("CompleteScene");
   }
+  preload(): void {
+    // r5 装载序兜底：popup 图集延迟装载后保证彩带帧就绪（暖装已就绪则静默跳过）
+    this.load.atlas(ATLAS_POPUP, "/assets/atlasses/PopupAssets.png", "/assets/atlasses/PopupAssets.json");
+  }
   create(): void {
     const board = buildBoard(this);
     // 彩带雨（Confetti0000-3，顶部随机下落旋转；两波 ≈4.5s，纯视觉不阻塞交互）

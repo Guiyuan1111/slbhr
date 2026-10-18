@@ -39,6 +39,9 @@ export class TempleScene extends Phaser.Scene {
 
   preload(): void {
     this.load.json("templeData", "/data/forest/temple.json");
+    // r5 装载序兜底：temple 图集随游戏内批次延迟装载（MenuScene 后台暖装通常已就绪，
+    // 此处静默跳过）；极快速进入选关时在此补齐
+    this.load.atlas(ATLAS_TEMPLE, "/assets/atlasses/Temples/forest/TempleAssets.png", "/assets/atlasses/Temples/forest/TempleAssets.json");
   }
 
   create(): void {

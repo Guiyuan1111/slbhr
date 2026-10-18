@@ -12,7 +12,7 @@ import { parseLevel, type LevelData } from "@fw/shared/level2";
 import { Net } from "./net";
 import { KeyboardInput } from "./input";
 import { TouchControls } from "./touch";
-import { BootScene } from "./scenes/BootScene";
+import { BootScene, bgWarmSettled } from "./scenes/BootScene";
 import { MenuScene } from "./scenes/MenuScene";
 import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
@@ -228,6 +228,9 @@ async function enterGame(): Promise<void> {
   gameStarted = true;
   $("#menu").classList.add("hidden");
   $("#hud").classList.remove("hidden");
+  // r5 装载序：等 MenuScene 后台暖装落定（已完成零等待；仍在飞时等它而非让
+  // GameScene 重复拉同一批文件）。未启动暖装的路径（邀请深链直进等）立即返回。
+  await bgWarmSettled();
   // 切入游戏场景（Game 若已在跑则重启以载入关卡数据）
   const sceneMgr = phaser!.scene;
   sceneMgr.stop("Menu");

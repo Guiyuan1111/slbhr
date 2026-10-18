@@ -8,7 +8,7 @@
  * 左下设置齿轮 (100,860)、右上"?" (1240,40)。
  */
 import Phaser from "phaser";
-import { ATLAS_CHARS, ATLAS_MENU, FONT_MAIN } from "./BootScene";
+import { ATLAS_CHARS, ATLAS_MENU, FONT_MAIN, startBgWarm } from "./BootScene";
 import { getSettings } from "../settings";
 
 export class MenuScene extends Phaser.Scene {
@@ -119,6 +119,13 @@ export class MenuScene extends Phaser.Scene {
     if (getSettings().music && !this.sound.isPlaying("bgm_menu")) {
       this.sound.play("bgm_menu", { loop: true });
     }
+
+    // 后台暖装游戏内四图集（r5 冷启动装载序整形）：利用玩家在开始界面的驻留把
+    // ground/mech/temple/popup 提前拉齐，进 Game 时 GameScene.preload 只剩音频。
+    // 延迟 120ms：先让 Menu 首帧独占渲染/解码，再开始后台拉取（不与首帧抢线程）；
+    // 立刻建房时 enterGame 会等暖装落定再切 Game（BootScene.bgWarmSettled），
+    // 不与 GameScene 兜底装载形成双载竞态。
+    this.time.delayedCall(120, () => startBgWarm(this));
   }
 
   update(_time: number, delta: number): void {

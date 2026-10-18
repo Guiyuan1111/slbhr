@@ -6,6 +6,14 @@
  *   液体/特效在 GroundAssets；UI 贴图在 PopupAssets/MenuAssets。
  * - 原 M1 加载的 tilemaps/tilesets/{Chars,Ground}.png 在素材包中不存在（Tiled 只留了
  *   元数据 JSON），地面改为程序化绘制（见 GameScene.buildGround）。
+ *
+ * 冷启动装载序整形（r5 perf，2026-10-18）：Boot 只装开始界面首帧必需
+ * （CharAssets 角色立绘/MenuAssets/位图字/四张独立图/menu 音频）；ground/mech/temple/popup
+ * 四图集（≈1.35MB）移出关键路径——MenuScene.create 首帧后由本场景 loader 后台暖装，
+ * GameScene.preload / TempleScene 等消费方照常声明装载（Phaser Loader 对已入纹理缓存
+ * 的键静默跳过，见 LoaderPlugin.keyExists→File.hasCacheConflict），暖装被提前打断时
+ * 由消费方补齐，任何进入路径都保证纹理就绪。剖析依据：DCL→Menu 大头是图片装载管线
+ * 的串行段（blob→Image ~180ms）而非网络（19 请求全并行仅 ~55ms）。
  */
 import Phaser from "phaser";
 import { AUDIO_MENU, loadAudioPack } from "../audio.js";
@@ -24,17 +32,46 @@ export const FONT_MAIN = "font";
  */
 export const PLAYER_SCALE = 0.95;
 
+/** 游戏内四图集（Menu 首帧用不到）：进阶装载共用入口——已缓存的键 Phaser 自动跳过 */
+export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
+  load.atlas(ATLAS_GROUND, "/assets/atlasses/GroundAssets.png", "/assets/atlasses/GroundAssets.json");
+  load.atlas(ATLAS_MECH, "/assets/atlasses/MechAssets.png", "/assets/atlasses/MechAssets.json");
+  load.atlas(ATLAS_TEMPLE, "/assets/atlasses/Temples/forest/TempleAssets.png", "/assets/atlasses/Temples/forest/TempleAssets.json");
+  load.atlas(ATLAS_POPUP, "/assets/atlasses/PopupAssets.png", "/assets/atlasses/PopupAssets.json");
+}
+
+/** 后台暖装落定状态（r5）：MenuScene 启动暖装时登记，进 Game 前等待其落定，
+ *  避免「暖装仍在飞 + GameScene 兜底重复拉同一批文件」的双载竞态 */
+let warmState: { done: Promise<void>; resolve: () => void } | null = null;
+
+/** MenuScene 调用：开始后台暖装并登记落定门（complete 或场景被切走都算落定） */
+export function startBgWarm(scene: Phaser.Scene): void {
+  if (warmState) return;
+  let resolve: () => void = () => {};
+  const done = new Promise<void>((r) => {
+    resolve = r;
+  });
+  warmState = { done, resolve };
+  const finish = (): void => warmState?.resolve();
+  scene.load.once("complete", finish);
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, finish);
+  loadGameAtlases(scene.load);
+  scene.load.start();
+}
+
+/** 进 Game 前等待暖装落定（未启动/已落定立即返回；剩余键由 GameScene.preload 兜底） */
+export function bgWarmSettled(): Promise<void> {
+  return warmState ? warmState.done : Promise.resolve();
+}
+
 export class BootScene extends Phaser.Scene {
   constructor() {
     super("Boot");
   }
 
   preload(): void {
+    // Menu 首帧必需：角色立绘（MenuScene 双角色 + idle 动画）/菜单图集/位图字/四张独立图
     this.load.atlas(ATLAS_CHARS, "/assets/atlasses/CharAssets.png", "/assets/atlasses/CharAssets.json");
-    this.load.atlas(ATLAS_GROUND, "/assets/atlasses/GroundAssets.png", "/assets/atlasses/GroundAssets.json");
-    this.load.atlas(ATLAS_MECH, "/assets/atlasses/MechAssets.png", "/assets/atlasses/MechAssets.json");
-    this.load.atlas(ATLAS_TEMPLE, "/assets/atlasses/Temples/forest/TempleAssets.png", "/assets/atlasses/Temples/forest/TempleAssets.json");
-    this.load.atlas(ATLAS_POPUP, "/assets/atlasses/PopupAssets.png", "/assets/atlasses/PopupAssets.json");
     this.load.atlas(ATLAS_MENU, "/assets/atlasses/MenuAssets.png", "/assets/atlasses/MenuAssets.json");
     // 原版画布内时钟的位图字（font 48 基准，LevelUI Clock 用 24 号 = 半缩放）
     this.load.bitmapFont(FONT_MAIN, "/assets/fonts/chinese/font.png", "/assets/fonts/chinese/font.fnt");
@@ -48,23 +85,19 @@ export class BootScene extends Phaser.Scene {
     // （0.3.21 加载性能优化：Menu 冷启动传输 -40%）。装载方式沿用无扩展名流式路由 +
     // 显式 type=mp3 的 IDM 防劫持约定，见 audio.ts。
     loadAudioPack(this, AUDIO_MENU);
+    // ground/mech/temple/popup 不在 Boot 关键路径（r5 冷启动装载序整形，见文件头注释）
   }
 
   create(): void {
-    this.buildAnims();
+    this.buildMenuAnims();
     // 先进开始界面（原版 load → menu 流）；GameScene 由入房后 scene.start 切入
     this.scene.start("Menu");
   }
 
-  private buildAnims(): void {
+  /** Menu 阶段就需要的动画（全部 CharAssets 帧与 MenuScene 立绘共用同一图集） */
+  private buildMenuAnims(): void {
     const a = this.anims;
-    const seq = (key: string, atlas: string, prefix: string, start: number, end: number, frameRate: number, repeat: number) => {
-      if (a.exists(key)) return;
-      const frames: Phaser.Types.Animations.AnimationFrame[] = [];
-      for (let i = start; i <= end; i++) frames.push({ key: atlas, frame: `${prefix}${String(i).padStart(4, "0")}` });
-      a.create({ key, frames, frameRate, repeat });
-    };
-
+    const seq = buildSeq(a);
     // 帧率全部按原版实测 30fps（init.js：idle/jumping/rising/falling 均 30）
     for (const role of ["fire", "water"] as const) {
       seq(`${role}_idle`, ATLAS_CHARS, `${role}_head_idle`, 0, role === "fire" ? 18 : 29, 30, -1);
@@ -80,24 +113,39 @@ export class BootScene extends Phaser.Scene {
       seq(`${role}_stairs`, ATLAS_CHARS, `${role}_stairs`, 0, 29, 25, 0);
     }
     seq("smoke", ATLAS_CHARS, "death_smoke", 0, 44, 30, 0);
-    // 风区机身（原版 Wind：generateFrameNames("wind_base",0,4)@30fps 循环；图集实有 0..3）
-    seq("wind_base", ATLAS_MECH, "wind_base", 0, 3, 30, -1);
-    // 风区尾迹（原版 Wind：wind_effect 0..30@30fps 循环，图集实有 0..29；随机起始帧由场景侧 setProgress）
-    seq("wind_effect", ATLAS_MECH, "wind_effect", 0, 29, 30, -1);
-    // 液体三段各 15 帧 30fps 循环（Left/中/Right）
-    for (const [key, base] of [
-      ["water", "WaterBox"],
-      ["lava", "FireBox"],
-      ["green", "GreenBox"],
-    ] as const) {
-      seq(`liquid_${key}`, ATLAS_GROUND, base, 0, 14, 30, -1);
-      seq(`liquid_${key}_left`, ATLAS_GROUND, `${base}Left`, 0, 14, 30, -1);
-      seq(`liquid_${key}_right`, ATLAS_GROUND, `${base}Right`, 0, 14, 30, -1);
-    }
-    // 结算星级石碑（to_1=1-7 / to_2=8-14 / to_3=15-21，30fps 一次性）
-    // 门动画键不再注册（E10：门改按快照 doorFrame 逐帧 setFrame，动画键会与帧驱动打架）
-    seq("finish_stone_1", ATLAS_POPUP, "FinishStone", 1, 7, 30, 0);
-    seq("finish_stone_2", ATLAS_POPUP, "FinishStone", 8, 14, 30, 0);
-    seq("finish_stone_3", ATLAS_POPUP, "FinishStone", 15, 21, 30, 0);
   }
+}
+
+/** 帧序列动画注册原语（exists 幂等，重启/重入不重复建） */
+function buildSeq(a: Phaser.Animations.AnimationManager) {
+  return (key: string, atlas: string, prefix: string, start: number, end: number, frameRate: number, repeat: number): void => {
+    if (a.exists(key)) return;
+    const frames: Phaser.Types.Animations.AnimationFrame[] = [];
+    for (let i = start; i <= end; i++) frames.push({ key: atlas, frame: `${prefix}${String(i).padStart(4, "0")}` });
+    a.create({ key, frames, frameRate, repeat });
+  };
+}
+
+/** 游戏内动画（ground/mech/popup 帧——图集随 GameScene 装载后再注册，r5 随装载序迁移） */
+export function buildGameAnims(a: Phaser.Animations.AnimationManager): void {
+  const seq = buildSeq(a);
+  // 风区机身（原版 Wind：generateFrameNames("wind_base",0,4)@30fps 循环；图集实有 0..3）
+  seq("wind_base", ATLAS_MECH, "wind_base", 0, 3, 30, -1);
+  // 风区尾迹（原版 Wind：wind_effect 0..30@30fps 循环，图集实有 0..29；随机起始帧由场景侧 setProgress）
+  seq("wind_effect", ATLAS_MECH, "wind_effect", 0, 29, 30, -1);
+  // 液体三段各 15 帧 30fps 循环（Left/中/Right）
+  for (const [key, base] of [
+    ["water", "WaterBox"],
+    ["lava", "FireBox"],
+    ["green", "GreenBox"],
+  ] as const) {
+    seq(`liquid_${key}`, ATLAS_GROUND, base, 0, 14, 30, -1);
+    seq(`liquid_${key}_left`, ATLAS_GROUND, `${base}Left`, 0, 14, 30, -1);
+    seq(`liquid_${key}_right`, ATLAS_GROUND, `${base}Right`, 0, 14, 30, -1);
+  }
+  // 结算星级石碑（to_1=1-7 / to_2=8-14 / to_3=15-21，30fps 一次性）
+  // 门动画键不再注册（E10：门改按快照 doorFrame 逐帧 setFrame，动画键会与帧驱动打架）
+  seq("finish_stone_1", ATLAS_POPUP, "FinishStone", 1, 7, 30, 0);
+  seq("finish_stone_2", ATLAS_POPUP, "FinishStone", 8, 14, 30, 0);
+  seq("finish_stone_3", ATLAS_POPUP, "FinishStone", 15, 21, 30, 0);
 }
