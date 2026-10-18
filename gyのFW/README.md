@@ -41,6 +41,7 @@ start.bat             # 构建 + 起服务器，配合樱花穿透使用（见�
 | oracle 对拍 | `scripts/e2e/oracle/`（lib/vtrun/vtdiff/goldcollect/windphase/animprobe） | 原版虚拟钟机族：确定性 60Hz 逐帧对拍、金输出采集、风相位/动画审计 |
 | dt 敏感度 | `node --import tsx scripts/e2e/routetool/dtsweep.mjs` | 同输入跨 dt 调度谱扫描（默认写 TEMP，写档案须显式 --outDir） |
 | 量化基准 | `benchmark/`（fidelity-score / visual-diff / anim / audio / perf-step / load / sync） | 复刻度指数与性能快照（`--save`/`--compare`） |
+| 性能优化战役 | [note/report/perf/2026-10-18-campaign-summary.md](note/report/perf/2026-10-18-campaign-summary.md)（总账）+ 同目录 r0–r5 五轮报告 | 2026-10-18 五轮 16 件全位级中性：步进 -15~-22%、世界构建 10.5×、客户端 update 分配 -97%、冷启 -32%（各轮 `--compare` 锚与快照索引见 [benchmark/README.md](benchmark/README.md)） |
 
 行为复刻战役全档索引、工具用法速查与挂账清单：[note/research/2026-10-behavior-parity/00-INDEX.md](note/research/2026-10-behavior-parity/00-INDEX.md)。全库函数级代码分析报告（架构/运行原理/工作流/AI 替代，2026-10-18 codebase-analyzer 产出）：[note/report/codebase-analysis/](note/report/codebase-analysis/index.md)。
 
