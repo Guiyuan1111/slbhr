@@ -56,6 +56,21 @@
 4. **风相位内核锚定改时未采纳**（08 状态板 #3、09 号档）：WorldOptions.windClockS+16.333ms 修正入口已内建，未采纳——动风钟漂 det 基线、生产固定 dt 下玩家不可见，留作可逆后续。存疑待核：其收益数字（oracle-gold 容差收紧 173→~120px）系 alignShift 重定前口径，11 号档 tolerance 已改 177，若启动需按新口径重估。
 5. **已完成销账**（原 10 号档 §5 后续 1/2，netopt 槽落地，代码+档卷提交可核）：+1 采样对齐收紧 → 9ff9c1d（alignShift=1+两关 tolerance 重定，档卷 269d83d）；服务器 setPatchRate(1000/60) → 4ba8478（档卷同上）。
 
+## §4 性能优化战役速查（2026-10-18 五轮，perfsum 槽补录）
+
+> 行为复刻战役之外的姊妹战役：五轮 16 实施件全部位级中性（det 48/48 锚=det-r0-baseline + fixtures 6/6 + patch 字节逐字不变贯穿），本节只做导航，数字以各轮报告与 `benchmark/results/` 快照为准。总账：[note/report/perf/2026-10-18-campaign-summary.md](../../report/perf/2026-10-18-campaign-summary.md)。
+
+| 轮 | 报告 | 一句话 | 终态 commit |
+|---|---|---|---|
+| r0 基线 | [2026-10-18-r0-baseline.md](../../report/perf/2026-10-18-r0-baseline.md) | 七件基准全量落快照+三新件（serialize/routeio/mem），det 新锚 r0-baseline；负载口径发现（空载 vs scripted 2~6×） | `a81cdb5` |
+| r1 tick 链 | [2026-10-18-r1-optimization.md](../../report/perf/2026-10-18-r1-optimization.md) | 四件：步进 -15~-22%、sync -54~-63%（patch 字节不变）、回放 +17.4%；r0 溢价归因勘误（尾帧稀释伪影） | `264781b` |
+| r2 世界构建 | [2026-10-18-r2-optimization.md](../../report/perf/2026-10-18-r2-optimization.md) | 六件：World 构建 10.5×（-82~-90%）、常驻内存 -76%、50 并发 -77%、回放再 +10%；剖析修正解析层假设（仅 2-4%） | `bb3b4ab` |
+| r3 客户端帧预算 | [2026-10-18-r3-client.md](../../report/perf/2026-10-18-r3-client.md) | 三件零稳态分配/脏标记守卫：update 分配份额 -97%、setDepth 968→0、页面分配 -19%；新增 perf-client；前任槽关机事故 3b 收尾披露 | `9dea930` |
+| r4 encode | [2026-10-18-r4-encode.md](../../report/perf/2026-10-18-r4-encode.md) | 头号产出=勘误（基准缺 discardChanges 累积伪影 29.5×，生产真值小一个量级）+件2 $filter 遮蔽 enc -10~12%（字节逐字不变） | `a68c0bc` |
+| r5 冷启动 | [2026-10-18-r5-coldstart.md](../../report/perf/2026-10-18-r5-coldstart.md) | 瓶颈翻案（网络/base64 非瓶颈，真凶=图片装载串行段+首帧渲染）；装载序整形冷启 Menu -32%、传输 -1.19MB/-8req | `71f4cff` |
+
+遗留候选与 vendor 必漂禁区清单（SolveTOI/InsertLeaf/goog.base/关节求解序——永挂账不动）见总账报告 §四。
+
 ## 附录 · 文档盘点记录（docsync 槽，2026-10-18）
 
 | 项 | 盘点结论 | 处置 |
