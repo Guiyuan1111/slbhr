@@ -1,13 +1,16 @@
-# 性能优化战役 · 五轮总账（2026-10-18，r0–r5 收官报告）
+# 性能优化战役 · 六轮总账（2026-10-18，r0–r6 收官报告）
 
-> 2026-10-18 · perfsum 槽 · **零代码改动**（本报告与文档收口为纯文档件）。
-> 覆盖：r0 基线 → r1 服务端 tick 链 → r2 世界构建吞吐 → r3 客户端帧预算 → r4 encode 勘误+微优 → r5 冷启动。
-> 数字纪律：**全部数字逐项回溯到五轮报告原文、commit 消息与 `benchmark/results/*.json` 快照三方可核**，
+> 2026-10-18 · perfsum 槽 · **零代码改动**（本报告与文档收口为纯文档件）；
+> r6 段由主会话补记（三 Flash 槽并行收官后独立复验追加）。
+> 覆盖：r0 基线 → r1 服务端 tick 链 → r2 世界构建吞吐 → r3 客户端帧预算 → r4 encode 勘误+微优 → r5 冷启动
+> → r6 音频暖装+容量基准+工具链（三槽并行，宿主机重启一次断点续作）。
+> 数字纪律：**全部数字逐项回溯到各轮报告原文、commit 消息与 `benchmark/results/*.json` 快照三方可核**，
 > 禁新造数；各轮 commit 消息与报告/存档快照不一致处如实并列披露（§五），不擅自改数。
-> 位级红线终态：**det 48/48（锚=det-r0-baseline，全五轮逐件复跑全绿）+ fixtures 6/6（oracle-gold
+> 位级红线终态：**det 48/48（锚=det-r0-baseline，全六轮逐件复跑全绿；r6 起门禁本体并行化，
+> 三方对照 r0 快照=串行回退=并行缺省 combined sha 同为 `34425e393ba1fa69…`）+ fixtures 6/6（oracle-gold
 > 24.5357/142.6879 与 r0 逐字同值）+ patch 出站字节逐字不变**。
 
-## 〇、五轮总表
+## 〇、六轮总表
 
 | 轮 | 焦点 | commit 链（一件一 commit） | 件数 | 关键前后数字（同机同口径） | 门禁 |
 |---|---|---|---|---|---|
@@ -17,10 +20,23 @@
 | r3 | 客户端帧预算 | `44ad165`→`158d395`→`be3d964`→`324d4f6`→`a96c636`→`9dea930` | 3 件+新基准 perf-client | **update() 分配份额 1044→31KB/s（-97%）**；页面总分配（canvas）**1374→1114KB/s（-19%）**；静止态 setDepth **968→0**/setAngle **2420→0**/setRotation **968→0**（/8s，depth 排序队列全消）；updateAvg **0.199→0.146ms**；满帧 60.6 维持；WebGL 分配 776KB/s 带内 | tsc/vitest 85/85+visual-diff 90.79/90.74（基线 89.42 同带）+e2e f01/f12 双 ALL PASS |
 | r4 | 服务端 encode 段 | `3573bd6`→`f0118d3`→`5cee17e`→`a68c0bc` | 2 件（件1=基准口径勘误，件2=微优） | **头号产出=勘误**：patch 370/450/2685→**50/58/91B**（7.4×/7.8×/**29.5×** 伪影）、encCPU 3.08→0.21ms/仿真秒（9~13×）、60Hz 线路 21.7/26.4/157.3→**2.93/3.39/5.36KB/s/客户端**、tick 链占比 ~1-5% 非 ~10%（§四）；件2 $filter 遮蔽：enc/tick **f01 -10.1%/f12 -12.0%/bonus_2 -3.7%**（绝对 0.0001~0.0002ms/tick） | **4 关×600 帧双路径 patch+encodeAll 逐字节相等**+det 48/48+fixtures 6/6+e2e 双关静窗 |
 | r5 | 冷启动资产管线 | `458bff2`→`476a254`→`71f4cff` | 1 件 | **冷启 Menu active 769→523.5ms（-32%，5 测中位；件 commit 时点读数 471ms/-39%）**；Menu 传输 **4863→3674KB、22→14req**（硬口径）；reload 759→532ms（-30%）；页内 DCL→menuActive **477→309ms（-35%）**（图片串行解码窗 275.7→150.9ms、首帧渲染 95.4→56.2ms）；点击建房→Game 567.5→697.5ms（快照存档值；即点路径等暖装尾巴，真人驻留路径不变，§三注） | visual-diff 90.67+det 48/48+fixtures 6/6+tsc/vitest 85/85+e2e f01/f12 静窗双 ALL PASS+邀请深链冒烟 |
+| r6 | 音频暖装+容量基准+工具链（三槽并行） | `567b2d3`(a 音频)→`8ba9507`(b 容量)→`4a6eb60`+`10c6400`(c 工具链)→`ab68e0e`(CDP 量具,主会话) | 3 件+1 量具前置+1 门禁本体加速 | **音频就绪点：点击进 Game 后 → Menu 驻留 +941ms**（18 键 2.0MB 并入 r5 暖装队列；驻留后点击→Game 409ms；冷启硬口径 3674KB/14req 与 r5 逐位同、总传输 6899KB 不变）；**容量拐点 96 房/192 客户端**（patch 率破 54/s；降级形态=patch 网格变粗非物理超步，128 房 CPU 84.8% 时漂 ≤0.34%；CPU 拟合 12.55%+0.644%/房≈135 房上限、RSS 1694KB/房→2GB≈1163 房、实测带宽 1.43KB/s/客户端；建议 ≤64 房/实例）；**det 门禁 4.05→2.27s（-44%）**+typecheck 2.31→1.42s（-38%）；堵红线级漏洞（DET_WORKERS 非法值曾可静默绿门禁） | det 三方对照全等（快照=串行=并行×4）+fixtures 6/6+tsc/vitest 85/85+F4 响度 12 键对齐+0 页面错误（主会话收官独立复跑 det 48/48·2.2s+fixtures 6/6） |
 
-汇总口径：r0→r5 累计，**整关回放 10.34→13.35 关/s（+29.1%）**、48 关空载步进 **-15%~-22%**、
+汇总口径：r0→r6 累计，**整关回放 10.34→13.35 关/s（+29.1%）**、48 关空载步进 **-15%~-22%**、
 World 构建 **10.5×**、每 World 常驻 **-76%**（forest_01）、客户端 update 分配份额 **-97%**、
-冷启 Menu **-32%**（同日配对口径）——全部位级中性（det/fixtures/patch 字节三门全绿贯穿五轮）。
+冷启 Menu **-32%**（同日配对口径）、音频批就绪点提前到 Menu 驻留期、单进程容量边界摸清
+（96 房拐点/建议 ≤64 房实例）、开发工具链 det 门禁 **-44%**/typecheck **-38%**——
+全部位级中性（det/fixtures/patch 字节三门全绿贯穿六轮）。
+
+## 〇.五、服务器容量面（r6 新测量面，公网部署选型输入）
+
+| 面 | 数字（4C/8T 本机，ws 轻量模拟客户端） | 出处 |
+|---|---|---|
+| 用户可感拐点 | **96 房/192 客户端**（patch 到达率破 54/s=60Hz 的 90%）；降级形态=patch 网格 16.7→~21ms，**非物理超步**（时漂全程 ≤0.34% vs 判据 2%） | r6b（`8ba9507`，capacity-r6b{,-ext}.json） |
+| CPU 拟合 | 12.55% + 0.644%/房 → 算术上限 ≈135 房/270 客户端（单进程事件循环为瓶颈，横向分片是唯一规模化路径） | 同上 |
+| 内存拟合 | RSS 126.3MB + 1694KB/房 → 2GB 预算 ≈1163 房（内存远非瓶颈） | 同上 |
+| 带宽 | 实测 1.43KB/s/客户端（f01 walk）；f01 全量口径 2.93KB/s（r4 锚）；机关重卡按 r4 step 倍数 ~18× 打折 | r6b + serialize-r4-encode |
+| 部署建议 | **≤64 房/实例留 25% 裕度**；64 房档复现 CPU 55.0%/54.6%（±1%） | r6b 报告 |
 
 ## 一、战役原则沉淀（三支柱，自五轮实践提炼）
 
@@ -110,6 +126,7 @@ World 构建 **10.5×**、每 World 常驻 **-76%**（forest_01）、客户端 u
 | 冷启 Menu active | 769 → **523.5ms（-32%，同日配对 A/B）** | r5 件1（458bff2，load-r5-coldstart） |
 | 冷启传输（硬口径） | 4863 → **3674KB、22→14req（-1.19MB/-8req）**；进 Game 累计 6899KB 持平（总量不变只改分布） | 同上 |
 | reload / 页内口径 | 759→532ms（-30%）/ DCL→menuActive 477→309ms（-35%） | 同上 |
+| 游戏内音频就绪点 | 点击进 Game 后 GameScene.preload 才装 → **Menu 驻留 +941ms**（r5 暖装队列同款；驻留后点击→Game 409ms，GameScene.preload 留兜底声明） | r6a（`567b2d3`，load-r6-audio.json） |
 
 ### 勘误史（防虚账——本战役「负产出」同样入库）
 
@@ -120,8 +137,11 @@ World 构建 **10.5×**、每 World 常驻 **-76%**（forest_01）、客户端 u
 | r2 解析层假设证伪 | 解析 2-4% vs 构建链 95-97% | 优化方向从 IO 转向 vendor 构建链（收获 10.5×） |
 | r5 冷启瓶颈翻案 | 网络（55ms 全并行）/base64（已 blob）双假设证伪；真凶=图片装载串行段+首帧渲染（总像素量决定） | 优化从网络/编码转向装载序整形；「资产子集化」成为仅剩大杠杆（需破红线，§四） |
 | r0→r5 冷启时长口径 | r0 Menu 1078ms（当日 1244/912 波动）vs r5-before 769ms——时长类轮间波动大，非回归 | 硬口径（传输/req）+同日配对 A/B 为跨轮唯一可比口径 |
+| r6a 音频批体积勘误 | 游戏内音频批旧档 2.8MB → 磁盘实测 **2.0MB**（2,058,151B，LevelMusic.mp3 占 1.29MB） | audio.ts 头注与 BootScene 注释已改；r5 总账引用处不受影响（r5 只涉传输字节实测） |
+| r6b 带宽口径归属澄清 | r4 的 5.36KB/s/客户端实为 **forest_bonus_2@60Hz** 档（91B/patch），forest_01 应为 2.93KB/s（50B）——r4 快照三档 f01/f12/bonus_2=2.93/3.39/5.36，引用单值时须带关卡归属 | r6b 实测 f01 walk 1.43KB/s 交叉印证；r4 报告原文无错，防误引 |
+| r6c 门禁本体红线漏洞 | det 并行化半成品曾存在 `DET_WORKERS=非数字`→NaN→零 worker→零行→compare 报「0 关位级一致」exit 0 **静默绿门禁**路径；且 worker 线程 tsx 钩子在本机 Node 22.22.1 必不自动注册（特性门 [[22,22,3]] 不满足） | 已修：非法值显式 exit 1；worker 分支显式 `tsx/esm/api register()`（探针实证）——门禁工具自身也须过「空跑≠绿」审查 |
 
-## 三、实施件清单（16 件全览，零回滚）
+## 三、实施件清单（19 件全览，零回滚）
 
 | 轮·件 | 改动一句话 | commit |
 |---|---|---|
@@ -141,8 +161,14 @@ World 构建 **10.5×**、每 World 常驻 **-76%**（forest_01）、客户端 u
 | r4·1 | perf-serialize/perf-sync 生产语义修正（discardChanges，勘误件） | `3573bd6` |
 | r4·2 | 声明侧遮蔽 Schema[$filter]（8 schema 类，字节逐字不变） | `f0118d3` |
 | r5·1 | 冷启动装载序整形（四图集移出 Boot 关键路径+120ms 后台暖装+落定门） | `458bff2` |
+| r6·a | 游戏内音频批 18 键并入 Menu 驻留期后台暖装（r5 队列同款+落定门，preload 留兜底） | `567b2d3` |
+| r6·b | 容量基准量具 perf-capacity.mjs+全曲线（96 房拐点/CPU·RSS·带宽拟合/部署建议） | `8ba9507` |
+| r6·c | det 门禁并行化（cap 4 worker+逆序派发，-44%）+DET_WORKERS 堵漏+typecheck --incremental | `4a6eb60`+`10c6400` |
+| r6·主 | perf-client CDP 远程真机模式（--cdp/--host、connectOverCDP、GPU 串采集；渲染段真口径量具前置） | `ab68e0e` |
 
 新增量具：perf-serialize/perf-routeio/perf-mem（r0）、perf-client（r3）、probe-step-load（r0）、
+**perf-capacity（r6b）**；量具强化：**perf-determinism 并行化（r6c，判据零变化三方对照）、
+perf-client CDP 远程模式（r6·主）**；
 剖析工具收容档 `note/report/perf/tools/perfopt{3,4,5}/`（r3 14 脚本+8 数据件、r4 5 脚本+2 profile、
 r5 3 脚本；r1/r2 无独立收容档，剖析产物随报告入档；hotspot 01 号档工具在
 `note/research/2026-10-18-perf-hotspot/tools/`）。
@@ -151,9 +177,9 @@ r5 3 脚本；r1/r2 无独立收容档，剖析产物随报告入档；hotspot 0
 
 | 候选 | 数据 | 前置/定性 |
 |---|---|---|
-| **客户端渲染段**（r3 TOP1，数据最厚） | Canvas 软光栅 renderAvg 5.31~5.88ms vs updateAvg 0.146ms（帧预算 ~97% 在渲染段）；残余分配 ~18.1KB/帧主体在 Phaser 渲染管线内部 | **前置=真机口径校准**：本机无硬件 GL（headless WebGL=SwiftShader present 阻塞为环境项、Canvas=软光栅），软光栅数字≠真机 WebGL；动作前须真机 A/B 校准，剖析工具已收容（cdp-prof/alloc 族） |
+| **客户端渲染段**（r3 TOP1，数据最厚） | Canvas 软光栅 renderAvg 5.31~5.88ms vs updateAvg 0.146ms（帧预算 ~97% 在渲染段）；残余分配 ~18.1KB/帧主体在 Phaser 渲染管线内部 | **前置=真机口径校准**：本机无硬件 GL（headless WebGL=SwiftShader present 阻塞为环境项、Canvas=软光栅；VMware 路径终判=Chromium GLES/EGL 架构级死路，见 gpu-vmwgfx 诊断）；**CDP 量具已就绪**（`ab68e0e`：宿主 Windows 开 `chrome --remote-debugging-port=9222` 即测），待真机 A/B 校准后动手；剖析工具已收容（cdp-prof/alloc 族） |
 | **font.png 1.6MB 子集化**（r5 候选 TOP） | 冷启剩余大头=font.png 1.6MB/2048²（中文字库位图）+CharAssets 732KB 立绘；r5 装载序整形后首帧集内再无可挪项 | **前置=用户裁决破「资产内容红线」**（子集化/重排即改资产内容）——未裁决前不动 |
-| GameScene 音频批暖装 | 2.8MB/18req 可同款后台暖装，Game 即点路径可再 -50~100ms | 低优先顺手件（r5 同款手法，收益小） |
+| ~~GameScene 音频批暖装~~ | **r6a 已做**（`567b2d3`，就绪点=Menu 驻留 +941ms） | 完结移入实施件 |
 | phaser 1.48MB 块拆分 | 脚本段 parse/eval ~120ms | r2 判拆分不值，r5 复核未推翻——维持不动 |
 | 50 并发 GC 拆账（r0 §八存疑） | 50×bonus_2 构建总耗时 ≈166ms/World vs 冷建 14ms，GC 暂停未拆账 | 仅多房间大并发场景相关，单人单房无关；拆账需每轮隔离 gc |
 | **vendor 必漂禁区清单（永挂账，除非用户特批）** | ①b2TimeOfImpact/SolveTOI 18%（r0 hotspot #6）②宽相代理插入链 b2DynamicTree.InsertLeaf 等 25~30%（r2 剩余热点）③goog.base 剩余（关节类 <5%，r2 §六）④关节求解序 7.2%（r0 hotspot #8） | 动则 det 位级基线必漂、fixtures/金轨迹全网重录——**永挂账不动** |
@@ -186,18 +212,22 @@ node --import tsx benchmark/perf-routeio.mjs --compare r2-routeio       # 回放
 node --expose-gc --import tsx benchmark/perf-mem.mjs --compare r2-mem   # 内存面
 node benchmark/perf-client.mjs --compare r3-client                      # 客户端帧预算
 node --import tsx benchmark/perf-load.mjs --no-build --compare r5-coldstart  # 冷启口径
+node --import tsx benchmark/perf-capacity.mjs --save <label>            # 容量曲线（r6b 量具，慢基准）
 node benchmark/visual-diff.mjs                                          # 首帧完整性（客户端轮门禁）
 node --import tsx note/report/perf/tools/perfopt4/ab-filter.mjs --gate  # patch 字节逐字节门禁
 node scripts/e2e/route.mjs --level forest_01 --repeat 3 --offset -15    # e2e（空机时段/静窗！）
 ```
 
-五轮报告：`note/report/perf/2026-10-18-r{0,1,2,3,4,5}-*.md`；
+六轮报告：`note/report/perf/2026-10-18-r{0,1,2,3,4,5}-*.md` + `2026-10-18-r6-{audio-warmup,capacity,toolchain}.md`；
 快照：`benchmark/results/`（各轮 `--compare` 锚见 benchmark/README 快照索引）。
 
 ## 七、一句话总账
 
-**五轮 16 件+1 基准口径勘误+7 件量具新建，全部位级中性（det 48/48+fixtures 6/6+patch 字节
-逐字不变贯穿）：服务端步进 -15~-22%、sync -54~-63%、encode -10~12%（真值占比 1-5%），
-世界构建 10.5×/回放 +29.1%/每 World 常驻 -76%/50 并发 -77%，客户端 update 分配 -97%/
-页面分配 -19%/冷启 Menu -32%/传输 -1.19MB——战役最大遗产除数字外是方法论：测量先行
-（四次假设翻案）、基准镜像生产语义（29.5× 伪影教训）、四层位级门禁+抖动 A/B 归因纪律。**
+**六轮 19 件+1 基准口径勘误+8 件量具新建，全部位级中性（det 48/48+fixtures 6/6+patch 字节
+逐字不变贯穿；r6 门禁本体并行化三方对照逐字节同）：服务端步进 -15~-22%、sync -54~-63%、
+encode -10~12%（真值占比 1-5%），世界构建 10.5×/回放 +29.1%/每 World 常驻 -76%/50 并发 -77%，
+客户端 update 分配 -97%/页面分配 -19%/冷启 Menu -32%/传输 -1.19MB/音频就绪点提前到 Menu 驻留，
+单进程容量边界摸清（96 房拐点、建议 ≤64 房/实例、横向分片为唯一规模化路径），
+开发环 det 门禁 -44%/typecheck -38%——战役最大遗产除数字外是方法论：测量先行
+（四次假设翻案）、基准镜像生产语义（29.5× 伪影教训）、四层位级门禁+抖动 A/B 归因纪律，
+外加 r6 的「门禁工具自身也要防静默绿」与断点续作纪律。**
