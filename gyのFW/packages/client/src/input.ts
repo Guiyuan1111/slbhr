@@ -19,6 +19,17 @@ const KEYSETS: Record<Role, { left: string[]; right: string[]; up: string[] }> =
 };
 /** 触屏虚拟键（touch.ts 注入），与角色键位并列合并 */
 const TOUCH = { left: ["TouchLeft"], right: ["TouchRight"], up: ["TouchUp"] };
+/**
+ * 角色键位 × 触屏键预组合（r3 客户端帧预算）：keyset() 此前每次调用现场
+ * spread 合并三个新数组（isMoveDown 每帧 1 次 + emit 按键事件/15Hz 重发），
+ * 现改为模块级只读共享结构，零分配。调用方（emit/isMoveDown）只读不改。
+ */
+const MERGED_KEYSETS: Record<Role, { left: string[]; right: string[]; up: string[] }> = {
+  fireboy: { left: [...KEYSETS.fireboy.left, ...TOUCH.left], right: [...KEYSETS.fireboy.right, ...TOUCH.right], up: [...KEYSETS.fireboy.up, ...TOUCH.up] },
+  watergirl: { left: [...KEYSETS.watergirl.left, ...TOUCH.left], right: [...KEYSETS.watergirl.right, ...TOUCH.right], up: [...KEYSETS.watergirl.up, ...TOUCH.up] },
+};
+/** 角色未就位（onRole 前）：键盘方向过滤为空集，仅触屏键可贡献 */
+const MERGED_TOUCH_ONLY = { left: TOUCH.left, right: TOUCH.right, up: TOUCH.up };
 const ALL_CODES = [
   ...new Set([
     ...KEYSETS.fireboy.left, ...KEYSETS.fireboy.right, ...KEYSETS.fireboy.up,
@@ -70,10 +81,13 @@ export class KeyboardInput {
     this.emit();
   }
 
-  /** 本机左右移动键是否按住（水声 waterSteps 的原版触发条件之一） */
+  /** 本机左右移动键是否按住（水声 waterSteps 的原版触发条件之一）。
+   *  r3：直查 pressed 集合——旧实现每帧 [...pressed].some(闭包)+keyset() 三数组全改共享结构，零分配 */
   isMoveDown(): boolean {
-    const ks = this.keyset();
-    return [...this.pressed].some((c) => ks.left.includes(c) || ks.right.includes(c));
+    const ks = this.role ? KEYSETS[this.role] : null;
+    // KEYSETS 各方向均为单键（F1 分键表），取 [0] 即全量
+    if (ks && (this.pressed.has(ks.left[0]) || this.pressed.has(ks.right[0]))) return true;
+    return this.pressed.has("TouchLeft") || this.pressed.has("TouchRight");
   }
 
   /** 暂停期间丢弃上报（菜单/结算时防止误触发） */
@@ -101,14 +115,10 @@ export class KeyboardInput {
     window.clearInterval(this.resendTimer);
   }
 
-  /** 当前生效的键位组：角色未就位时仅触屏键可贡献（键盘方向过滤为空集） */
+  /** 当前生效的键位组：角色未就位时仅触屏键可贡献（键盘方向过滤为空集）。
+   *  r3：返回模块级预组合只读结构（调用方 emit/isMoveDown 只读） */
   private keyset(): { left: string[]; right: string[]; up: string[] } {
-    const ks = this.role ? KEYSETS[this.role] : { left: [], right: [], up: [] };
-    return {
-      left: [...ks.left, ...TOUCH.left],
-      right: [...ks.right, ...TOUCH.right],
-      up: [...ks.up, ...TOUCH.up],
-    };
+    return this.role ? MERGED_KEYSETS[this.role] : MERGED_TOUCH_ONLY;
   }
 
   private emit(force = false): void {
