@@ -11,7 +11,7 @@
 import type { LevelData, LiquidRun } from "../level2.js";
 import { GROUND_TYPE, liquidKindOf } from "../level2.js";
 import type { B2 } from "./b2.js";
-import { b2, FILTER, boxFixture, makeFixtureDef, polygonFixture, px2m } from "./b2.js";
+import { b2, FILTER, boxFixture, makeFixtureDef, px2m, type FixtureOptions } from "./b2.js";
 
 export interface LiquidInfo {
   /** 物理世界中的 body（static，位置 (−col0, −row)） */
@@ -65,32 +65,54 @@ export interface BuiltWorld {
   heightPx: number;
 }
 
-/** 原版 createGroundShape（type 8/9 端盖、1/2 斜面、3/4 半格楔，单位米，本地顶点） */
-function groundShapePts(type: number): Array<{ x: number; y: number }> {
-  switch (type) {
-    case 1: // 也可 -2 / 11（11 已在解析层 remap 成 1）
-      return [{ x: -1, y: 0 }, { x: -1, y: -1 }, { x: 0, y: -1 }];
-    case 2: // 也可 12（已 remap）
-      return [{ x: 0, y: 0 }, { x: -1, y: -1 }, { x: 0, y: -1 }];
-    case 3:
-      return [{ x: 0, y: 0 }, { x: -1, y: 0 }, { x: -1, y: -1 }];
-    case 4:
-      return [{ x: 0, y: 0 }, { x: -1, y: 0 }, { x: 0, y: -1 }];
-    case 8: // 液体左端盖：整格宽 + 顶向外扩 0.3m（源码 (0,0)(-1.3,-0.5)(-1.3,-1)(0,-1)）
-      return [{ x: 0, y: 0 }, { x: -1.3, y: -0.5 }, { x: -1.3, y: -1 }, { x: 0, y: -1 }];
-    case 9: // 液体右端盖（镜像）
-      return [{ x: 0.3, y: -0.5 }, { x: -1, y: 0 }, { x: -1, y: -1 }, { x: 0.3, y: -1 }];
-    default:
-      throw new Error(`createGroundShape: 未支持的 type ${type}`);
-  }
+/** 原版 createGroundShape（type 8/9 端盖、1/2 斜面、3/4 半格楔，单位米，本地顶点）。
+ *  r2 件3：六种顶点全静态，缓存为模块级常量（构建期不再逐次分配）。 */
+const SHAPE_PTS: Readonly<Record<number, ReadonlyArray<{ x: number; y: number }>>> = {
+  1: [{ x: -1, y: 0 }, { x: -1, y: -1 }, { x: 0, y: -1 }], // 也可 -2 / 11（11 已在解析层 remap 成 1）
+  2: [{ x: 0, y: 0 }, { x: -1, y: -1 }, { x: 0, y: -1 }], // 也可 12（已 remap）
+  3: [{ x: 0, y: 0 }, { x: -1, y: 0 }, { x: -1, y: -1 }],
+  4: [{ x: 0, y: 0 }, { x: -1, y: 0 }, { x: 0, y: -1 }],
+  // 液体左端盖：整格宽 + 顶向外扩 0.3m（源码 (0,0)(-1.3,-0.5)(-1.3,-1)(0,-1)）
+  8: [{ x: 0, y: 0 }, { x: -1.3, y: -0.5 }, { x: -1.3, y: -1 }, { x: 0, y: -1 }],
+  // 液体右端盖（镜像）
+  9: [{ x: 0.3, y: -0.5 }, { x: -1, y: 0 }, { x: -1, y: -1 }, { x: 0.3, y: -1 }],
+};
+
+function groundShapePts(type: number): ReadonlyArray<{ x: number; y: number }> {
+  const pts = SHAPE_PTS[type];
+  if (!pts) throw new Error(`createGroundShape: 未支持的 type ${type}`);
+  return pts;
 }
 
-function groundFixture(B: B2, groundBody: any, pts: Array<{ x: number; y: number }>): void {
-  polygonFixture(groundBody, B, pts, {
-    categoryBits: FILTER.GROUND_CAT,
-    maskBits: FILTER.GROUND_MASK,
-    friction: 0.8,
-  });
+/** 地面 fixture 公共过滤项（原版 createGroundFixture 语义） */
+const GROUND_FIXTURE_OPTS: FixtureOptions = {
+  categoryBits: FILTER.GROUND_CAT,
+  maskBits: FILTER.GROUND_MASK,
+  friction: 0.8,
+};
+
+/**
+ * 多边形 fixture 直构（r2 件3）：顶点一步到位落 b2Vec2——省旧路径
+ * 「模板 → 平移出中间 {x,y}[] → polygonFixture 再 map 出 b2Vec2[]」的两层数组/对象
+ * 分配（b2PolygonShape.Set 只读输入数组并拷贝进自身 m_vertices，不保留引用）。
+ * 平移表达式与旧路径逐操作同构（p.x - ox / p.y - oy），位级同值。
+ */
+function groundFixture(B: B2, groundBody: any, pts: ReadonlyArray<{ x: number; y: number }>, ox: number, oy: number): void {
+  const shape = new B.b2PolygonShape();
+  const verts = new Array(pts.length);
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+    verts[i] = new B.b2Vec2(p.x - ox, p.y - oy);
+  }
+  shape.Set(verts);
+  groundBody.CreateFixture(makeFixtureDef(B, { shape, ...GROUND_FIXTURE_OPTS }));
+}
+
+/** 轴对齐四边形 fixture 直构（实体 run / 液体中段与感应带：四角坐标 → b2Vec2 一步到位） */
+function quadFixture(body: any, B: B2, x1: number, y1: number, x2: number, y2: number, opts: FixtureOptions): any {
+  const shape = new B.b2PolygonShape();
+  shape.Set([new B.b2Vec2(x1, y1), new B.b2Vec2(x2, y1), new B.b2Vec2(x2, y2), new B.b2Vec2(x1, y2)]);
+  return body.CreateFixture(makeFixtureDef(B, { shape, ...opts }));
 }
 
 /** 液体行段三件静态几何 + Liquid 感应体（convertTilemap 液体分支 + Liquid 构造体逐字节转写） */
@@ -98,22 +120,11 @@ function buildLiquid(B: B2, world: any, groundBody: any, run: LiquidRunInfo): vo
   const { col0, col1, row } = run;
   const A = col1 - col0 + 1;
   // 左端盖：createGroundShape(8, (pxm(d)-A+1, pxm(e)))，d=col1*32、e=row*32 → 平移 (col0, row)
-  const leftOrigin = { x: col0, y: row };
-  groundFixture(B, groundBody, groundShapePts(8).map((p) => ({ x: p.x - leftOrigin.x, y: p.y - leftOrigin.y })));
+  groundFixture(B, groundBody, groundShapePts(8), col0, row);
   // 右端盖：createGroundShape(9, (pxm(d), pxm(e))) → 平移 (col1, row)
-  const rightOrigin = { x: col1, y: row };
-  groundFixture(B, groundBody, groundShapePts(9).map((p) => ({ x: p.x - rightOrigin.x, y: p.y - rightOrigin.y })));
+  groundFixture(B, groundBody, groundShapePts(9), col1, row);
   // 中段下半格盒：(−1,−0.45)(−A+1,−0.45)(−A+1,−1)(−1,−1) − (col0, row)
-  groundFixture(
-    B,
-    groundBody,
-    [
-      { x: -1, y: -0.45 },
-      { x: -A + 1, y: -0.45 },
-      { x: -A + 1, y: -1 },
-      { x: -1, y: -1 },
-    ].map((p) => ({ x: p.x - col0, y: p.y - row })),
-  );
+  quadFixture(groundBody, B, -1 - col0, -0.45 - row, -A + 1 - col0, -1 - row, GROUND_FIXTURE_OPTS);
 
   // Liquid 设备体：static body SetPosition(−col0, −row)，局部 fixture [−A,0]×…
   const bd = new B.b2BodyDef();
@@ -121,12 +132,7 @@ function buildLiquid(B: B2, world: any, groundBody: any, run: LiquidRunInfo): vo
   bd.position = new B.b2Vec2(-col0, -row);
   const body = world.CreateBody(bd);
   // 显示/光源带：液面下 0.15–0.5m，mask 61695（不含角色），sensor
-  polygonFixture(body, B, [
-    { x: 0, y: -0.15 },
-    { x: -A, y: -0.15 },
-    { x: -A, y: -0.5 },
-    { x: 0, y: -0.5 },
-  ], {
+  quadFixture(body, B, 0, -0.15, -A, -0.5, {
     categoryBits: FILTER.GROUND_CAT,
     maskBits: FILTER.LIQUID_SENSOR_MASK,
     friction: 0.7,
@@ -134,24 +140,14 @@ function buildLiquid(B: B2, world: any, groundBody: any, run: LiquidRunInfo): vo
     userData: { type: "liquid", liquidType: run.liquidType },
   });
   // 冰面带：上半格，mask 0（森林无冰，保留几何保真）
-  polygonFixture(body, B, [
-    { x: 0, y: 0 },
-    { x: -A, y: 0 },
-    { x: -A, y: -0.5 },
-    { x: 0, y: -0.5 },
-  ], {
+  quadFixture(body, B, 0, 0, -A, -0.5, {
     categoryBits: FILTER.GROUND_CAT,
     maskBits: 0,
     friction: 0,
     userData: { type: "ice", liquidType: run.liquidType },
   });
   // 致死带：液面下 0.18–1.0m，mask 4369，sensor
-  polygonFixture(body, B, [
-    { x: 0, y: -0.18 },
-    { x: -A, y: -0.18 },
-    { x: -A, y: -1 },
-    { x: 0, y: -1 },
-  ], {
+  quadFixture(body, B, 0, -0.18, -A, -1, {
     categoryBits: FILTER.GROUND_CAT,
     maskBits: FILTER.GROUND_MASK,
     friction: 0.7,
@@ -211,20 +207,11 @@ export function buildLevelWorld(level: LevelData): BuiltWorld {
         const right = col + 1 < level.cols ? level.groundType[row * level.cols + col + 1] : -99;
         if (right === GROUND_TYPE.SOLID) continue;
         // 实体 run 收口：[(0,0),(−A,0),(−A,−1),(0,−1)] − (v/32, w/32)
-        groundFixture(
-          B,
-          groundBody,
-          [
-            { x: 0, y: 0 },
-            { x: -runA, y: 0 },
-            { x: -runA, y: -1 },
-            { x: 0, y: -1 },
-          ].map((p) => ({ x: p.x - runV / 32, y: p.y - py / 32 })),
-        );
+        quadFixture(groundBody, B, -runV / 32, -py / 32, -runA - runV / 32, -1 - py / 32, GROUND_FIXTURE_OPTS);
         runA = 0;
       } else if (inside && (t === GROUND_TYPE.SLOPE_A || t === GROUND_TYPE.SLOPE_B || t === GROUND_TYPE.WEDGE_C || t === GROUND_TYPE.WEDGE_D)) {
         // 斜面/半格楔：createGroundShape(t, (col, row))
-        groundFixture(B, groundBody, groundShapePts(t).map((p) => ({ x: p.x - col, y: p.y - row })));
+        groundFixture(B, groundBody, groundShapePts(t), col, row);
       }
       // 液体格与 DECOR(−1)/空格：液体行段由 level.liquidRuns 统一构建，此处仅天然打断实体 run
     }
