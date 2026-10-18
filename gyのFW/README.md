@@ -42,7 +42,7 @@ start.bat             # 构建 + 起服务器，配合樱花穿透使用（见�
 | dt 敏感度 | `node --import tsx scripts/e2e/routetool/dtsweep.mjs` | 同输入跨 dt 调度谱扫描（默认写 TEMP，写档案须显式 --outDir） |
 | 量化基准 | `benchmark/`（fidelity-score / visual-diff / anim / audio / perf-step / load / sync） | 复刻度指数与性能快照（`--save`/`--compare`） |
 
-行为复刻战役全档索引、工具用法速查与挂账清单：[note/research/2026-10-behavior-parity/00-INDEX.md](note/research/2026-10-behavior-parity/00-INDEX.md)。
+行为复刻战役全档索引、工具用法速查与挂账清单：[note/research/2026-10-behavior-parity/00-INDEX.md](note/research/2026-10-behavior-parity/00-INDEX.md)。全库函数级代码分析报告（架构/运行原理/工作流/AI 替代，2026-10-18 codebase-analyzer 产出）：[note/report/codebase-analysis/](note/report/codebase-analysis/index.md)。
 
 ## 技术栈
 

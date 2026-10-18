@@ -1,5 +1,7 @@
 # gy-fw（森林冰火人联机版）代码分析报告
 
+> **档卷归属**：本目录由 codebase-analyzer skill 产出（2026-10-18 从 `codebase-analyzer/reports/` 迁入 note 体系）。**承接关系**：上一轮同 skill 分析（2026-09-30，commit 4c99b59）对象是 Fireboy-and-Watergirl **原版 oracle**，其知识已融入 `note/research/2026-10-fidelity/01-original-engine-spec.md` 等档卷（物理文件已清理）；本轮分析对象是**我方复刻工程 gyのFW 本体**——两轮互补：旧轮答"原版怎么做"，本轮答"我们怎么做的"。
+
 **分析时间**：2026-10-18_102654
 **分析范围**：`/home/gy/桌面/dev/slbhr/gyのFW`（排除 Fireboy-and-Watergirl/、TEMP/、dist/、node_modules/、codebase-analyzer/、.git/；note/ 作架构背景参考）
 **分析模式**：完整分析（65 个源码文件，核心文件全量深读）
