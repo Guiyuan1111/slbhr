@@ -1,0 +1,261 @@
+{
+  "meta": {
+    "file": "TEMP/perfopt7/prof/attrib-r7-prof-walk.cpuprofile",
+    "date": "2026-10-18T13:50:15.873Z",
+    "samplesTotal": 12700,
+    "hitsTotal": 12699,
+    "wallMs": 19619,
+    "note": "份额=hitCount/总 hitCount；SIGPROF 自代价在案（r6b：stime +7.5% 量级），只作构成判读"
+  },
+  "buckets": {
+    "idle": 99.4,
+    "loader-ts": 0.2,
+    "node-internals": 0.17,
+    "v8-jit": 0.1,
+    "GC": 0.07,
+    "other": 0.03,
+    "program(native)": 0.02
+  },
+  "top30": [
+    {
+      "hits": 12623,
+      "name": "(idle)",
+      "url": "",
+      "bucket": "idle",
+      "line": -1,
+      "pctOfSamples": 99.4
+    },
+    {
+      "hits": 9,
+      "name": "(garbage collector)",
+      "url": "",
+      "bucket": "GC",
+      "line": -1,
+      "pctOfSamples": 0.07
+    },
+    {
+      "hits": 3,
+      "name": "parseSource",
+      "url": "node:internal/deps/cjs-module-lexer/lexer",
+      "bucket": "node-internals",
+      "line": 84,
+      "pctOfSamples": 0.02
+    },
+    {
+      "hits": 2,
+      "name": "(program)",
+      "url": "",
+      "bucket": "program(native)",
+      "line": -1,
+      "pctOfSamples": 0.02
+    },
+    {
+      "hits": 2,
+      "name": "compileSourceTextModule",
+      "url": "node:internal/modules/esm/utils",
+      "bucket": "v8-jit",
+      "line": 343,
+      "pctOfSamples": 0.02
+    },
+    {
+      "hits": 2,
+      "name": "decode",
+      "url": "node:internal/encoding",
+      "bucket": "node-internals",
+      "line": 441,
+      "pctOfSamples": 0.02
+    },
+    {
+      "hits": 1,
+      "name": "(anonymous)",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "loader-ts",
+      "line": 0,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "E",
+      "url": "node:internal/errors",
+      "bucket": "node-internals",
+      "line": 548,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "(anonymous)",
+      "url": "node:internal/async_hooks",
+      "bucket": "node-internals",
+      "line": 0,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "(anonymous)",
+      "url": "node:internal/validators",
+      "bucket": "node-internals",
+      "line": 0,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "(anonymous)",
+      "url": "node:internal/fs/utils",
+      "bucket": "node-internals",
+      "line": 0,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "internalBinding",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "loader-ts",
+      "line": 184,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "(anonymous)",
+      "url": "node:internal/streams/readable",
+      "bucket": "node-internals",
+      "line": 0,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "on",
+      "url": "node:internal/event_target",
+      "bucket": "node-internals",
+      "line": 978,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "prepareExecution",
+      "url": "node:internal/process/pre_execution",
+      "bucket": "loader-ts",
+      "line": 95,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "(anonymous)",
+      "url": "node:internal/event_target",
+      "bucket": "node-internals",
+      "line": 779,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "set",
+      "url": "node:diagnostics_channel",
+      "bucket": "other",
+      "line": 44,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "toRealPath",
+      "url": "node:internal/modules/helpers",
+      "bucket": "loader-ts",
+      "line": 59,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "URLContext",
+      "url": "node:internal/url",
+      "bucket": "node-internals",
+      "line": 174,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "finalizeResolution",
+      "url": "node:internal/modules/esm/resolve",
+      "bucket": "loader-ts",
+      "line": 228,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "ModuleJob",
+      "url": "node:internal/modules/esm/module_job",
+      "bucket": "loader-ts",
+      "line": 132,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "defineImportAssertionAlias",
+      "url": "node:internal/modules/esm/hooks",
+      "bucket": "loader-ts",
+      "line": 77,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "load",
+      "url": "node:internal/modules/esm/hooks",
+      "bucket": "loader-ts",
+      "line": 335,
+      "pctOfSamples": 0.01
+    }
+  ]
+}

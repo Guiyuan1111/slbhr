@@ -1,0 +1,261 @@
+{
+  "meta": {
+    "file": "TEMP/perfopt7/prof/attrib-r7-prof-sim-nopatch.cpuprofile",
+    "date": "2026-10-18T13:50:15.692Z",
+    "samplesTotal": 17689,
+    "hitsTotal": 17688,
+    "wallMs": 27265,
+    "note": "份额=hitCount/总 hitCount；SIGPROF 自代价在案（r6b：stime +7.5% 量级），只作构成判读"
+  },
+  "buckets": {
+    "idle": 99.6,
+    "node-internals": 0.14,
+    "loader-ts": 0.13,
+    "GC": 0.07,
+    "v8-jit": 0.05,
+    "other": 0.01,
+    "program(native)": 0.01
+  },
+  "top30": [
+    {
+      "hits": 17617,
+      "name": "(idle)",
+      "url": "",
+      "bucket": "idle",
+      "line": -1,
+      "pctOfSamples": 99.6
+    },
+    {
+      "hits": 12,
+      "name": "(garbage collector)",
+      "url": "",
+      "bucket": "GC",
+      "line": -1,
+      "pctOfSamples": 0.07
+    },
+    {
+      "hits": 4,
+      "name": "parseSource",
+      "url": "node:internal/deps/cjs-module-lexer/lexer",
+      "bucket": "node-internals",
+      "line": 84,
+      "pctOfSamples": 0.02
+    },
+    {
+      "hits": 4,
+      "name": "receiveMessageOnPort",
+      "url": "node:internal/worker/io",
+      "bucket": "node-internals",
+      "line": 341,
+      "pctOfSamples": 0.02
+    },
+    {
+      "hits": 3,
+      "name": "compileSourceTextModule",
+      "url": "node:internal/modules/esm/utils",
+      "bucket": "v8-jit",
+      "line": 343,
+      "pctOfSamples": 0.02
+    },
+    {
+      "hits": 2,
+      "name": "parseCJS",
+      "url": "node:internal/deps/cjs-module-lexer/lexer",
+      "bucket": "node-internals",
+      "line": 39,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "(program)",
+      "url": "",
+      "bucket": "program(native)",
+      "line": -1,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "(anonymous)",
+      "url": "node:internal/bootstrap/node",
+      "bucket": "loader-ts",
+      "line": 0,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "internalBinding",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "loader-ts",
+      "line": 184,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "wrapConsole",
+      "url": "node:internal/util/inspector",
+      "bucket": "node-internals",
+      "line": 83,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "(anonymous)",
+      "url": "node:internal/abort_controller",
+      "bucket": "node-internals",
+      "line": 0,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "patchProcessObject",
+      "url": "node:internal/process/pre_execution",
+      "bucket": "loader-ts",
+      "line": 247,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "initializeESM",
+      "url": "node:internal/modules/esm/utils",
+      "bucket": "loader-ts",
+      "line": 282,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "wrapModuleLoad",
+      "url": "node:internal/modules/cjs/loader",
+      "bucket": "loader-ts",
+      "line": 229,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "nextPart",
+      "url": "node:fs",
+      "bucket": "other",
+      "line": 2703,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "resolve",
+      "url": "node:internal/modules/esm/loader",
+      "bucket": "loader-ts",
+      "line": 698,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "pushAsyncContext",
+      "url": "node:internal/async_hooks",
+      "bucket": "node-internals",
+      "line": 546,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "wrappedFn",
+      "url": "node:internal/errors",
+      "bucket": "node-internals",
+      "line": 534,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "detectModuleFormat",
+      "url": "node:internal/modules/esm/get_format",
+      "bucket": "loader-ts",
+      "line": 35,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "resolve",
+      "url": "node:internal/modules/esm/loader",
+      "bucket": "loader-ts",
+      "line": 698,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "finalizeResolution",
+      "url": "node:internal/modules/esm/resolve",
+      "bucket": "loader-ts",
+      "line": 228,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "parse",
+      "url": "node:internal/url",
+      "bucket": "node-internals",
+      "line": 831,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "(anonymous)",
+      "url": "node:internal/crypto/keys",
+      "bucket": "node-internals",
+      "line": 0,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "internalBinding",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "loader-ts",
+      "line": 184,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "syncExports",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "loader-ts",
+      "line": 372,
+      "pctOfSamples": 0.01
+    }
+  ]
+}

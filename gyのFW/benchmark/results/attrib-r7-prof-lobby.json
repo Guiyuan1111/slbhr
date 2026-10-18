@@ -1,0 +1,263 @@
+{
+  "meta": {
+    "file": "TEMP/perfopt7/prof/attrib-r7-prof-lobby.cpuprofile",
+    "date": "2026-10-18T13:50:15.602Z",
+    "samplesTotal": 11228,
+    "hitsTotal": 11227,
+    "wallMs": 17498,
+    "note": "份额=hitCount/总 hitCount；SIGPROF 自代价在案（r6b：stime +7.5% 量级），只作构成判读"
+  },
+  "buckets": {
+    "idle": 99.27,
+    "loader-ts": 0.25,
+    "node-internals": 0.19,
+    "v8-jit": 0.11,
+    "GC": 0.1,
+    "other": 0.04,
+    "program(native)": 0.03,
+    "net-ws": 0.01,
+    "timers": 0.01
+  },
+  "top30": [
+    {
+      "hits": 11145,
+      "name": "(idle)",
+      "url": "",
+      "bucket": "idle",
+      "line": -1,
+      "pctOfSamples": 99.27
+    },
+    {
+      "hits": 11,
+      "name": "(garbage collector)",
+      "url": "",
+      "bucket": "GC",
+      "line": -1,
+      "pctOfSamples": 0.1
+    },
+    {
+      "hits": 4,
+      "name": "compileSourceTextModule",
+      "url": "node:internal/modules/esm/utils",
+      "bucket": "v8-jit",
+      "line": 343,
+      "pctOfSamples": 0.04
+    },
+    {
+      "hits": 4,
+      "name": "parseCJS",
+      "url": "node:internal/deps/cjs-module-lexer/lexer",
+      "bucket": "node-internals",
+      "line": 39,
+      "pctOfSamples": 0.04
+    },
+    {
+      "hits": 3,
+      "name": "(program)",
+      "url": "",
+      "bucket": "program(native)",
+      "line": -1,
+      "pctOfSamples": 0.03
+    },
+    {
+      "hits": 2,
+      "name": "(anonymous)",
+      "url": "node:internal/main/worker_thread",
+      "bucket": "node-internals",
+      "line": 94,
+      "pctOfSamples": 0.02
+    },
+    {
+      "hits": 2,
+      "name": "(anonymous)",
+      "url": "nm/tsx/dist/register-nyXW-TH3.mjs",
+      "bucket": "loader-ts",
+      "line": 1,
+      "pctOfSamples": 0.02
+    },
+    {
+      "hits": 1,
+      "name": "(anonymous)",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "loader-ts",
+      "line": 0,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "makeNodeErrorForHideStackFrame",
+      "url": "node:internal/errors",
+      "bucket": "node-internals",
+      "line": 404,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "(anonymous)",
+      "url": "node:internal/util/inspect",
+      "bucket": "node-internals",
+      "line": 213,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "set",
+      "url": "node:diagnostics_channel",
+      "bucket": "other",
+      "line": 44,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "(anonymous)",
+      "url": "node:buffer",
+      "bucket": "other",
+      "line": 0,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "defineEventHandler",
+      "url": "node:internal/event_target",
+      "bucket": "node-internals",
+      "line": 1133,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "prepareExecution",
+      "url": "node:internal/process/pre_execution",
+      "bucket": "loader-ts",
+      "line": 95,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "Readable",
+      "url": "node:internal/streams/readable",
+      "bucket": "node-internals",
+      "line": 319,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "init",
+      "url": "node:internal/util/debuglog",
+      "bucket": "node-internals",
+      "line": 463,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "(anonymous)",
+      "url": "node:internal/fs/utils",
+      "bucket": "node-internals",
+      "line": 707,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "getModuleJobForImport",
+      "url": "node:internal/modules/esm/loader",
+      "bucket": "loader-ts",
+      "line": 308,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "#createModuleJob",
+      "url": "node:internal/modules/esm/loader",
+      "bucket": "loader-ts",
+      "line": 615,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "defaultLoad",
+      "url": "node:internal/modules/esm/load",
+      "bucket": "loader-ts",
+      "line": 61,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "detectModuleFormat",
+      "url": "node:internal/modules/esm/get_format",
+      "bucket": "loader-ts",
+      "line": 35,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "moduleStrategy",
+      "url": "node:internal/modules/esm/translators",
+      "bucket": "loader-ts",
+      "line": 100,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "(anonymous)",
+      "url": "node:internal/crypto/pbkdf2",
+      "bucket": "node-internals",
+      "line": 0,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    },
+    {
+      "hits": 1,
+      "name": "compileForInternalLoader",
+      "url": "node:internal/bootstrap/realm",
+      "bucket": "v8-jit",
+      "line": 384,
+      "pctOfSamples": 0.01
+    }
+  ]
+}

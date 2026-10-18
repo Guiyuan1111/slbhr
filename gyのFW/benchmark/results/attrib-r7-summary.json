@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "label": "r7-capacity-attribution",
+    "git": "7b8e6dd",
+    "date": "2026-10-18",
+    "slot": "r7a (perfopt7)",
+    "note": "r6b 挂账①归因主表。口径：32→64 两点稳态斜率差（20s 窗，JIT 暖后），除 A 面用 8/32/64 三点 LS 斜率（12s 窗 ×2 轮）。锚点=walk 全梯 LS 斜率 6.31/6.54/6.64 vs r6b 6.44。",
+    "gauge": "note/report/perf/tools/perfopt7/capacity-attrib.mjs + timer-flood.mjs + loopback-send.mjs"
+  },
+  "attributionTable": {
+    "unit": "ms/s/房（100% 核=1000ms/s）",
+    "faces": [
+      { "id": "A", "name": "房间存在面（房对象+2×60Hz 定时器空转+ws 闲连+1Hz ping+colyseus 基础设施）", "diff": "lobby 斜率（两轮 0.60/0.69）", "cpu": 0.65, "utime": 0.37, "stime": 0.28, "share": "10%" },
+      { "id": "B", "name": "模拟面（world.step+syncState 实时驱动，角色静置物理）", "diff": "sim-nopatch − lobby", "cpu": 0.9, "utime": 1.02, "stime": "≈0（差分噪声）", "share": "14%" },
+      { "id": "C", "name": "出站 patch 面（60Hz encode+ws 帧化+loopback 发送内核成本；idle 5B/patch）", "diff": "sim-patch − sim-nopatch", "cpu": 1.53, "utime": "负差分=nopatch utime 反常混入（见 anomalies）", "stime": 3.28, "share": "23%" },
+      { "id": "D", "name": "入站 input 面（15Hz/端 parse+派发+队列排水）", "diff": "idle − sim-patch", "cpu": 0.61, "utime": "≈1.4（噪声带）", "stime": "≈−0.8（噪声带）", "share": "9%" },
+      { "id": "E", "name": "移动面（物理唤醒+player 字段写跟踪+patch 5B→25B 字节增量）", "diff": "walk − idle", "cpu": 2.95, "utime": "≈0（噪声带）", "stime": 3.11, "share": "44%" }
+    ],
+    "sum": 6.64,
+    "anchorR6b": 6.44,
+    "residualPct": 3.1,
+    "crossCheck": {
+      "utimeSum": "0.37+1.02−1.75+1.39−0.15 ≈ 0.88 = walk utime 斜率 0.88 ✓（恒等闭合）",
+      "stimeSum": "0.28+0.16+3.44−0.78+5.77−3.11... 见报告 §3（各面 stime 合计与 walk stime 斜率 5.77 同带）",
+      "r4micro": "B≈r4 step+sync 1.48（微基准含测量开销偏大 1.6×）；E≈serialize scripted−idle step 3.5；C≈encode 0.29+loopback 发送 0.6~1.1（同量级）",
+      "at64FiniteDiff": "lobby@64 1.03 → +1.82 模拟 → +1.42 出站 → +0.23 输入 → +3.66 移动 = 8.16~8.44 = walk@64 每房值（含固定成本摊销差异，非斜率口径）"
+    }
+  },
+  "modeLadderAt64": {
+    "note": "各模式 64 房档 CPU%（两轮/多跑范围）",
+    "lobby": "6.5 / 6.67 (u4.25-4.42 s2.08-2.42)",
+    "sim-nopatch": "14.65-18.17 (u12.85-15.75 s1.25-2.42)",
+    "sim-patch": "25.4-27.6 (u0.42-2.95 s22.45-25.25)",
+    "idle": "28.75-29.3 (u3.5-6.2 s23.1-25.25)",
+    "walk": "49.9-54.83 (u5.08-8.0 s44.5-47.16)"
+  },
+  "facesEvidence": {
+    "timers": { "slope": 0.047, "note": "timer-flood：256 房×2 interval@60Hz 仅 0.047ms/s/房——A 面主体是房间/ws/colyseus 基础设施而非定时器", "file": "attrib-r7-timerflood.json" },
+    "gc": { "windowPauseMsPer20s": { "sim-nopatch": 39.9, "sim-patch": 14.9, "walk": 37.3 }, "pctCore": "0.075-0.2%", "note": "GC 面可忽略；nopatch 的 GC 反而最多（97 次/20s）——排除 GC 解释 nopatch utime 反常", "file": "tools/perfopt7/gc-*.log" },
+    "minflt": { "walk@64": 178, "sim-patch@64": 93, "sim-nopatch@64": 3, "unit": "次/s", "pctCore": "0.02-0.04%", "note": "缺页面三模式全量排除" },
+    "threads": { "mainThread": "ut≈7% s≈45.6%（walk@64 窗内采样）", "workers": "V8/libuv 平台线程窗内增量≈0", "note": "全部热点在主线程；stime 主导" },
+    "cpuProf": { "result": "99.3-99.6% idle（四模式全部），hits/wall 恒定 0.645", "control": "busy-spin 94.4% 命中自旋函数——采样器对 syscall 重线程失效", "note": "火焰桶维度挂账；raw .cpuprofile 收容 tools/perfopt7/prof/", "file": "attrib-r7-prof-*.json" },
+    "strace": { "walk": "writev 72502 / read 33863 / futex 7495 / epoll_pwait 4446（全程累计，ptrace 扰动下 patch 57→34.5/s，仅取计数）", "note": "writev 占 trace 时间仅 2.83%（24µs/call 且含 ptrace 放大）→网络 syscall 面撑不起 45% stime", "file": "tools/perfopt7/strace-*.txt" },
+    "loopbackMicro": { "perSendStime": "740/s 时 ~100µs；~4.5k/s 批量后 13-20µs；conns 1/128 与对端忙碌均不敏感", "serverImplied": "~61µs/send @7424/s（walk@64 stime 45%÷发送率）", "note": "同数量级带→stime 主体=loopback ws 发送的内核成本（VMware 客机放大，量级远超典型裸机 2-5µs/发）；内核函数级定位挂账（perf_event_paranoid=4）", "file": "tools/perfopt7/loopback-send.mjs --fanout" }
+  },
+  "anomalies": [
+    {
+      "id": "nopatch-utime",
+      "desc": "sim-nopatch（不发送 patch）utime 12.85-15.75% vs sim-patch 0.42-2.95%——严格更少工作的模式用户态时间反多 3-8×",
+      "ruledOut": ["GC（trace-gc：nopatch 0.2% vs patch 0.075%，方向相反且量级不足）", "patch 工作量（encode+send 是纯增量）", "缺页（178/s 量级）"],
+      "suspect": "无 discardChanges 路径上的用户态成本放大（变更树不清理→重复标记/分支劣化），机制未定论",
+      "impact": "C 面 utime 差分为负即此反常混入；CPU 总量与 stime 口径不受影响"
+    }
+  ],
+  "buildDist": {
+    "git": "7b8e6dd",
+    "warm": { "runs": [4.99, 4.8, 4.74, 4.86, 4.84], "median": 4.84, "note": "npm run build 含 sync-assets；产物指纹 abcfa6a9d4df344d 五跑全同" },
+    "novite": { "runs": [4.88, 4.71, 4.79, 4.77, 4.81], "median": 4.79, "note": "rm -rf node_modules/.vite（仅 16K vitest 缓存）后五跑，指纹同" },
+    "verdict": "快基线 5.55（单跑）vs r6c 4.69（单跑）vs 今日带 4.71-4.99（中位 4.84）：同日 run-to-run σ≈0.08s；r6c 4.69 在今日带边缘（−0.02），快基线 5.55 高出今日中位 0.71s（15%）——判为会话级环境漂移（单跑无分布），非代码/配置回归：package-lock（vite/esbuild）自 v0.3.0 未动、r6c 后代码未再变、今日 10 跑产物逐字节稳定。复现口径：空机、git clean、1 次暖跑弃用+5 连跑取中位。"
+  }
+}

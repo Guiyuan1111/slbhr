@@ -1,0 +1,165 @@
+{
+  "meta": {
+    "git": "7b8e6dd",
+    "date": "2026-10-18T13:29:42.054Z",
+    "node": "v22.22.1",
+    "level": "forest_01",
+    "secsPerTier": 12,
+    "port": 3697,
+    "clkTck": 100,
+    "cores": 8,
+    "host": "127.0.0.1"
+  },
+  "runs": [
+    {
+      "mode": "sim-nopatch",
+      "repeat": 1,
+      "ladder": [
+        8,
+        32,
+        64
+      ],
+      "idleBaseline": {
+        "utimePct": 0,
+        "stimePct": 0.33,
+        "serverCpuPct": 0.33,
+        "serverRssKB": 130736
+      },
+      "tiers": [
+        {
+          "roomsTotal": 8,
+          "deaths": 0,
+          "restarts": 0,
+          "serverCpuPct": 4.25,
+          "utimePct": 3.33,
+          "stimePct": 0.92,
+          "cpuMsPerRoom": 5.31,
+          "utimeMsPerRoom": 4.16,
+          "stimeMsPerRoom": 1.15,
+          "serverRssKB": 124636,
+          "patchPerSecP50": 0.08,
+          "downKBsP50": 0,
+          "upKBsP50": 0,
+          "driftMaxPct": null,
+          "loadgenCpuPct": 0.2
+        },
+        {
+          "roomsTotal": 32,
+          "deaths": 0,
+          "restarts": 0,
+          "serverCpuPct": 9.92,
+          "utimePct": 8.75,
+          "stimePct": 1.17,
+          "cpuMsPerRoom": 3.1,
+          "utimeMsPerRoom": 2.73,
+          "stimeMsPerRoom": 0.37,
+          "serverRssKB": 144840,
+          "patchPerSecP50": 0.08,
+          "downKBsP50": 0,
+          "upKBsP50": 0,
+          "driftMaxPct": null,
+          "loadgenCpuPct": 0.2
+        },
+        {
+          "roomsTotal": 64,
+          "deaths": 0,
+          "restarts": 0,
+          "serverCpuPct": 18.17,
+          "utimePct": 15.75,
+          "stimePct": 2.42,
+          "cpuMsPerRoom": 2.84,
+          "utimeMsPerRoom": 2.46,
+          "stimeMsPerRoom": 0.38,
+          "serverRssKB": 167708,
+          "patchPerSecP50": 0.08,
+          "downKBsP50": 0,
+          "upKBsP50": 0,
+          "driftMaxPct": null,
+          "loadgenCpuPct": 0.5
+        }
+      ],
+      "crashed": true,
+      "slope": {
+        "cpuMsPerRoom": 2.49,
+        "utimeMsPerRoom": 2.22,
+        "stimeMsPerRoom": 0.27,
+        "interceptCpuPct": 2.15
+      }
+    },
+    {
+      "mode": "sim-nopatch",
+      "repeat": 2,
+      "ladder": [
+        8,
+        32,
+        64
+      ],
+      "idleBaseline": {
+        "utimePct": 0,
+        "stimePct": 0,
+        "serverCpuPct": 0,
+        "serverRssKB": 127904
+      },
+      "tiers": [
+        {
+          "roomsTotal": 8,
+          "deaths": 0,
+          "restarts": 0,
+          "serverCpuPct": 4,
+          "utimePct": 3.33,
+          "stimePct": 0.67,
+          "cpuMsPerRoom": 5,
+          "utimeMsPerRoom": 4.16,
+          "stimeMsPerRoom": 0.84,
+          "serverRssKB": 122096,
+          "patchPerSecP50": 0.08,
+          "downKBsP50": 0,
+          "upKBsP50": 0,
+          "driftMaxPct": null,
+          "loadgenCpuPct": 0.2
+        },
+        {
+          "roomsTotal": 32,
+          "deaths": 0,
+          "restarts": 0,
+          "serverCpuPct": 9.67,
+          "utimePct": 8.25,
+          "stimePct": 1.42,
+          "cpuMsPerRoom": 3.02,
+          "utimeMsPerRoom": 2.58,
+          "stimeMsPerRoom": 0.44,
+          "serverRssKB": 146532,
+          "patchPerSecP50": 0.08,
+          "downKBsP50": 0,
+          "upKBsP50": 0,
+          "driftMaxPct": null,
+          "loadgenCpuPct": 0.3
+        },
+        {
+          "roomsTotal": 64,
+          "deaths": 0,
+          "restarts": 0,
+          "serverCpuPct": 16,
+          "utimePct": 14.08,
+          "stimePct": 1.92,
+          "cpuMsPerRoom": 2.5,
+          "utimeMsPerRoom": 2.2,
+          "stimeMsPerRoom": 0.3,
+          "serverRssKB": 168428,
+          "patchPerSecP50": 0.08,
+          "downKBsP50": 0,
+          "upKBsP50": 0,
+          "driftMaxPct": null,
+          "loadgenCpuPct": 0.3
+        }
+      ],
+      "crashed": true,
+      "slope": {
+        "cpuMsPerRoom": 2.13,
+        "utimeMsPerRoom": 1.91,
+        "stimeMsPerRoom": 0.22,
+        "interceptCpuPct": 2.49
+      }
+    }
+  ]
+}

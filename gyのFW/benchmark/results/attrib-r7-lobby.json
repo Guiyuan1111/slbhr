@@ -1,0 +1,165 @@
+{
+  "meta": {
+    "git": "7b8e6dd",
+    "date": "2026-10-18T13:29:42.054Z",
+    "node": "v22.22.1",
+    "level": "forest_01",
+    "secsPerTier": 12,
+    "port": 3697,
+    "clkTck": 100,
+    "cores": 8,
+    "host": "127.0.0.1"
+  },
+  "runs": [
+    {
+      "mode": "lobby",
+      "repeat": 1,
+      "ladder": [
+        8,
+        32,
+        64
+      ],
+      "idleBaseline": {
+        "utimePct": 0.33,
+        "stimePct": 0,
+        "serverCpuPct": 0.33,
+        "serverRssKB": 134504
+      },
+      "tiers": [
+        {
+          "roomsTotal": 8,
+          "deaths": 0,
+          "restarts": 0,
+          "serverCpuPct": 3.25,
+          "utimePct": 2.5,
+          "stimePct": 0.75,
+          "cpuMsPerRoom": 4.06,
+          "utimeMsPerRoom": 3.13,
+          "stimeMsPerRoom": 0.94,
+          "serverRssKB": 123068,
+          "patchPerSecP50": 0,
+          "downKBsP50": 0.006,
+          "upKBsP50": 0,
+          "driftMaxPct": null,
+          "loadgenCpuPct": 0.8
+        },
+        {
+          "roomsTotal": 32,
+          "deaths": 0,
+          "restarts": 0,
+          "serverCpuPct": 3.75,
+          "utimePct": 2.42,
+          "stimePct": 1.33,
+          "cpuMsPerRoom": 1.17,
+          "utimeMsPerRoom": 0.76,
+          "stimeMsPerRoom": 0.42,
+          "serverRssKB": 142608,
+          "patchPerSecP50": 0,
+          "downKBsP50": 0.006,
+          "upKBsP50": 0,
+          "driftMaxPct": null,
+          "loadgenCpuPct": 0.7
+        },
+        {
+          "roomsTotal": 64,
+          "deaths": 0,
+          "restarts": 0,
+          "serverCpuPct": 6.5,
+          "utimePct": 4.42,
+          "stimePct": 2.08,
+          "cpuMsPerRoom": 1.02,
+          "utimeMsPerRoom": 0.69,
+          "stimeMsPerRoom": 0.33,
+          "serverRssKB": 167700,
+          "patchPerSecP50": 0,
+          "downKBsP50": 0.006,
+          "upKBsP50": 0,
+          "driftMaxPct": null,
+          "loadgenCpuPct": 1.3
+        }
+      ],
+      "crashed": true,
+      "slope": {
+        "cpuMsPerRoom": 0.6,
+        "utimeMsPerRoom": 0.36,
+        "stimeMsPerRoom": 0.24,
+        "interceptCpuPct": 2.44
+      }
+    },
+    {
+      "mode": "lobby",
+      "repeat": 2,
+      "ladder": [
+        8,
+        32,
+        64
+      ],
+      "idleBaseline": {
+        "utimePct": 0.33,
+        "stimePct": 0,
+        "serverCpuPct": 0.33,
+        "serverRssKB": 124556
+      },
+      "tiers": [
+        {
+          "roomsTotal": 8,
+          "deaths": 0,
+          "restarts": 0,
+          "serverCpuPct": 2.84,
+          "utimePct": 2.17,
+          "stimePct": 0.67,
+          "cpuMsPerRoom": 3.55,
+          "utimeMsPerRoom": 2.71,
+          "stimeMsPerRoom": 0.84,
+          "serverRssKB": 113368,
+          "patchPerSecP50": 0,
+          "downKBsP50": 0.006,
+          "upKBsP50": 0,
+          "driftMaxPct": null,
+          "loadgenCpuPct": 0.3
+        },
+        {
+          "roomsTotal": 32,
+          "deaths": 0,
+          "restarts": 0,
+          "serverCpuPct": 3.91,
+          "utimePct": 2.58,
+          "stimePct": 1.33,
+          "cpuMsPerRoom": 1.22,
+          "utimeMsPerRoom": 0.81,
+          "stimeMsPerRoom": 0.42,
+          "serverRssKB": 131016,
+          "patchPerSecP50": 0,
+          "downKBsP50": 0.006,
+          "upKBsP50": 0,
+          "driftMaxPct": null,
+          "loadgenCpuPct": 1.7
+        },
+        {
+          "roomsTotal": 64,
+          "deaths": 0,
+          "restarts": 0,
+          "serverCpuPct": 6.67,
+          "utimePct": 4.25,
+          "stimePct": 2.42,
+          "cpuMsPerRoom": 1.04,
+          "utimeMsPerRoom": 0.66,
+          "stimeMsPerRoom": 0.38,
+          "serverRssKB": 157384,
+          "patchPerSecP50": 0,
+          "downKBsP50": 0.006,
+          "upKBsP50": 0,
+          "driftMaxPct": null,
+          "loadgenCpuPct": 1.4
+        }
+      ],
+      "crashed": true,
+      "slope": {
+        "cpuMsPerRoom": 0.69,
+        "utimeMsPerRoom": 0.38,
+        "stimeMsPerRoom": 0.31,
+        "interceptCpuPct": 2.07
+      }
+    }
+  ]
+}

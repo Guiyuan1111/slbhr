@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "git": "7b8e6dd",
+    "date": "2026-10-18T13:58:34.475Z",
+    "node": "v22.22.1",
+    "clkTck": 100,
+    "cores": 8,
+    "note": "纯定时器面：K 房 ×(sim 60Hz + patch 60Hz) 原生 setInterval 最小工作量，无 ws 无 colyseus"
+  },
+  "tiers": [
+    {
+      "rooms": 0,
+      "serverCpuPct": 0.2,
+      "utimePct": 0.1,
+      "stimePct": 0.1
+    },
+    {
+      "rooms": 64,
+      "serverCpuPct": 1.1,
+      "utimePct": 0.8,
+      "stimePct": 0.3
+    },
+    {
+      "rooms": 128,
+      "serverCpuPct": 1.3,
+      "utimePct": 1,
+      "stimePct": 0.3
+    },
+    {
+      "rooms": 192,
+      "serverCpuPct": 1.5,
+      "utimePct": 1.1,
+      "stimePct": 0.4
+    },
+    {
+      "rooms": 256,
+      "serverCpuPct": 1.5,
+      "utimePct": 1.2,
+      "stimePct": 0.3
+    }
+  ],
+  "slope": {
+    "cpuMsPerRoom": 0.047,
+    "interceptCpuPct": 0.52
+  }
+}

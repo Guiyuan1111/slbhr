@@ -1,0 +1,72 @@
+{
+  "meta": {
+    "git": "7b8e6dd",
+    "date": "2026-10-18T14:09:38.086Z",
+    "node": "v22.22.1",
+    "level": "forest_01",
+    "secsPerTier": 20,
+    "port": 3697,
+    "clkTck": 100,
+    "cores": 8,
+    "host": "127.0.0.1"
+  },
+  "runs": [
+    {
+      "mode": "sim-nopatch",
+      "repeat": 1,
+      "ladder": [
+        32,
+        64
+      ],
+      "idleBaseline": {
+        "utimePct": 0.33,
+        "stimePct": 0,
+        "serverCpuPct": 0.33,
+        "serverRssKB": 131400
+      },
+      "tiers": [
+        {
+          "roomsTotal": 32,
+          "deaths": 0,
+          "restarts": 0,
+          "serverCpuPct": 9.7,
+          "utimePct": 8.4,
+          "stimePct": 1.3,
+          "cpuMsPerRoom": 3.03,
+          "utimeMsPerRoom": 2.63,
+          "stimeMsPerRoom": 0.41,
+          "serverRssKB": 145688,
+          "patchPerSecP50": 0.1,
+          "downKBsP50": 0,
+          "upKBsP50": 0,
+          "driftMaxPct": null,
+          "loadgenCpuPct": 0.4
+        },
+        {
+          "roomsTotal": 64,
+          "deaths": 0,
+          "restarts": 0,
+          "serverCpuPct": 14.65,
+          "utimePct": 12.85,
+          "stimePct": 1.8,
+          "cpuMsPerRoom": 2.29,
+          "utimeMsPerRoom": 2.01,
+          "stimeMsPerRoom": 0.28,
+          "serverRssKB": 173628,
+          "patchPerSecP50": 0.1,
+          "downKBsP50": 0,
+          "upKBsP50": 0,
+          "driftMaxPct": null,
+          "loadgenCpuPct": 0.4
+        }
+      ],
+      "crashed": true,
+      "slope": {
+        "cpuMsPerRoom": 1.55,
+        "utimeMsPerRoom": 1.39,
+        "stimeMsPerRoom": 0.16,
+        "interceptCpuPct": 4.75
+      }
+    }
+  ]
+}
