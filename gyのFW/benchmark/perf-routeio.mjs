@@ -3,8 +3,9 @@
  * 与 validate/门禁 runner 同一条产线）。机器探索（autosearch 等）的供给面量化。
  *
  * 三个口径：
- * - runKernel 整关回放：expandFlat 输入展开 + makeWorld + 逐帧 step + 双角色快照死亡/胜利
- *   判定（含提前终止）——门禁/validate 的真实路径。产出 回放耗时分布、整关回放数/秒、帧/秒。
+ * - runKernel 整关回放：expandFlat 输入展开 + makeWorld + 逐帧 step + 双角色死亡/胜利
+ *   判定（r1 件4 起缺省路径直读角色状态，免逐帧快照；含提前终止）——门禁/validate 的
+ *   真实路径。产出 回放耗时分布、整关回放数/秒、帧/秒。
  * - 纯 step 环：输入预展开、无快照/判定开销，跑满 totalFrames——物理裸吞吐（每帧 µs）。
  * - makeWorld 构建吞吐：世界创建/销毁（探索线每次试验一个实例）。
  *

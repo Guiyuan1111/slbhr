@@ -78,17 +78,31 @@ export function expandFlat(fbEvs, wgEvs, totalFrames) {
 /**
  * 内核回跑一条路线：WIN/死亡帧/超时，可选逐帧位置 trace（诊断用）。
  * opts: { traceTo: string[] | null } 传入数组则逐帧追加 {f, fb:[x,y], wg:[x,y], ph}。
+ *
+ * r1 perf 件4（2026-10-18）：无 trace 需求（缺省）时死亡判定直读角色状态
+ * （snapshotPlayer 的 dying/dead 即 Character 同名字段直读，语义逐位相同），
+ * 免逐帧两次 snapshotPlayer 分配——r0 实测该 harness 溢价对纯 step +3.9%~+153%
+ * （高溢价关 forest_02/03/12 机关多、快照条目多）。traceTo 路径保持原快照口径
+ * （validate/dtsweep/vtdiff 的全量轨迹语义不变）。
  */
 export function runKernel(level, routeDoc, opts = {}) {
   const total = routeDoc.totalFrames;
   const ins = expandFlat(routeDoc.fb, routeDoc.wg, total);
   const w = makeWorld(level);
+  const traceTo = opts.traceTo ?? null;
+  const fbC = w.players.fireboy;
+  const wgC = w.players.watergirl;
   for (let f = 0; f < total; f++) {
     w.step(1 / 60, { fireboy: ins.fb[f], watergirl: ins.wg[f] });
-    const fb = w.snapshotPlayer("fireboy"), wg = w.snapshotPlayer("watergirl");
-    opts.traceTo?.push({ f, fb: [fb.x, fb.y], wg: [wg.x, wg.y], ph: w.phase });
-    if (fb.dead || wg.dead || fb.dying || wg.dying) return { won: false, deathF: f };
-    if (w.phase === "won") return { won: true, deathF: -1, winF: f };
+    if (traceTo) {
+      const fb = w.snapshotPlayer("fireboy"), wg = w.snapshotPlayer("watergirl");
+      traceTo.push({ f, fb: [fb.x, fb.y], wg: [wg.x, wg.y], ph: w.phase });
+      if (fb.dead || wg.dead || fb.dying || wg.dying) return { won: false, deathF: f };
+      if (w.phase === "won") return { won: true, deathF: -1, winF: f };
+    } else {
+      if (fbC.dead || wgC.dead || fbC.dying || wgC.dying) return { won: false, deathF: f };
+      if (w.phase === "won") return { won: true, deathF: -1, winF: f };
+    }
   }
   return { won: false, deathF: -1 };
 }
