@@ -52,10 +52,22 @@ export function loadLevelDoc(level) {
   return locateLevel(level).doc;
 }
 
+/** 逐关卡解析产物缓存（r2 perf 件6，2026-10-18）：locateLevel 每次调用重新
+ * readFileSync+JSON.parse（关卡+图块集）再全量 parseLevel，占 makeWorld 剩余
+ * 成本 ~15%（0.3~0.5ms）。LevelData 为纯定义数据（kernel 只读、World.reset 重建
+ * 即复用同实例——不变式既有；服务端 loadLevel 缓存同款论证），同关卡重复建世界
+ * （autosearch/scan/optimize 单进程逐次试验、routeio build 计量）免重复解析。 */
+const levelDataCache = new Map();
+
 /** 每次调用新建 World（物理状态不可复用，一次回跑一个实例） */
 export function makeWorld(level) {
-  const { dir, doc } = locateLevel(level);
-  return new World(parseLevel(level, doc, makeProvider(dir)));
+  let data = levelDataCache.get(level);
+  if (!data) {
+    const { dir, doc } = locateLevel(level);
+    data = parseLevel(level, doc, makeProvider(dir));
+    levelDataCache.set(level, data);
+  }
+  return new World(data);
 }
 
 /** 平坦事件表 → 逐帧输入（同帧先 up 后 down，与门禁/导出链一致） */
