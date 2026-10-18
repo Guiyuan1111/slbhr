@@ -144,6 +144,41 @@ function fastPolygonShapeDispatch(ns: Box2DNamespace): void {
   };
 }
 
+/**
+ * b2CircleShape 构造/Copy 快速分派（r2 perf 件4，2026-10-18）：与件2 同款——机关构建段
+ * （buildMechanisms，bonus_2 类重关占构建 80%）剩余 goog.base 主力即此两调用点
+ * （构造 13.1% + Copy 7.3%）；每个圆形 fixture（球/滑轮/角色圆件）走构造×2（本体+Clone）。
+ * 构造器转写：`goog.base(this, e_circleShape, a || 0)` ≡ `b2Shape.call(this,
+ * e_circleShape, a || 0)`（无参透传——注意 a||0 求值保持原序）+ m_p 初始化照抄。
+ * Copy 转写：`goog.base(this, "Copy", a)` ≡ `b2Shape.prototype.Copy.call(this, a)`
+ * + ENABLE_ASSERTS（恒 false）断言 + m_p.Copy 照抄。复用原 prototype、静态成员全量随迁。
+ * 位级中性由 det 48/48（vs r0-baseline）+ fixtures 6/6 实测背书。
+ */
+function fastCircleShapeDispatch(ns: Box2DNamespace): void {
+  const OriginalCircleShape = ns.b2CircleShape as new (a: number) => any;
+  const b2ShapeCtor = ns.b2Shape as (a: number, b: number) => void;
+  const b2ShapeCopy = ns.b2Shape.prototype.Copy as (a: any) => any;
+
+  function FastCircleShape(this: any, a: number): void {
+    b2ShapeCtor.call(this, ns.b2ShapeType.e_circleShape, a || 0);
+    this.m_p = new ns.b2Vec2();
+  }
+  FastCircleShape.prototype = OriginalCircleShape.prototype;
+  // 静态成员全量随迁（跳过严格模式毒属性 caller/callee/arguments）
+  for (const key of Object.getOwnPropertyNames(OriginalCircleShape)) {
+    if (key === "prototype" || key === "length" || key === "name" || key === "caller" || key === "callee" || key === "arguments") continue;
+    (FastCircleShape as any)[key] = (OriginalCircleShape as any)[key];
+  }
+  ns.b2CircleShape = FastCircleShape as any;
+
+  ns.b2CircleShape.prototype.Copy = function (this: any, a: any): any {
+    b2ShapeCopy.call(this, a);
+    ns.ENABLE_ASSERTS && ns.b2Assert(a instanceof ns.b2CircleShape);
+    this.m_p.Copy(a.m_p);
+    return this;
+  };
+}
+
 export function loadBox2d(): Box2DNamespace {
   if (cached) return cached;
   const src = readFileSync(VENDOR, "latin1");
@@ -191,6 +226,7 @@ export function loadBox2d(): Box2DNamespace {
   if (!ns) throw new Error("box2d bundle 求值完成但未见 this.box2d 导出");
   lazyContactPoolPrefill(ns);
   fastPolygonShapeDispatch(ns);
+  fastCircleShapeDispatch(ns);
   cached = ns as Box2DNamespace;
   return cached;
 }
