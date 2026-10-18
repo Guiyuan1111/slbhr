@@ -20,6 +20,11 @@
  *   compareVelocities=false        只比位置 x/y（±1 帧落地相位使速度叶 atol 不可公度）。
  *   outcomeWindowF=N               outcome.frame 允 ±N 帧（status 恒精确）——oracle 与内核
  *                                  存在行为性时长偏移（forest_01 同 dt 下 2367 vs 2463）。
+ *   alignShift=N（缺省 0=原行为）  采样对齐偏移（netopt 槽 11 号档）：oracle 采样器=物理 Step
+ *                                  前采样 → oracle sample[k]≡kernel frame[k−1]，即内核帧 k 应对
+ *                                  expected 帧 k+alignShift（N=1）。expected 头部 N 帧（Step 前的
+ *                                  初值样本）无内核对应帧，跳过；尾部 oracle 独有帧（行为性时长
+ *                                  偏移）由 outcomeWindowF 语义承认，帧流长度差不另报。
  *   source="oracle" 的 case 禁用 --update（防内核回放覆盖金输出；重录走 goldcollect）。
  *
  * 用法（node 直跑，无新依赖；不接 CI、无 npm script）：
@@ -184,6 +189,11 @@ function compare(replayed, expected, tol, meta = {}) {
   const problems = [];
   const acc = { maxDev: 0, maxDevPath: "" };
   const windowF = meta.outcomeWindowF > 0 ? meta.outcomeWindowF : 0;
+  // 采样对齐（meta.alignShift，缺省 0=原行为）：内核帧 k ↔ expected 帧 k+alignShift。
+  // 配对按帧号 Map 精确检索（expected 流缺该帧即协议错误）；配对成立即帧号"恒精确比对"
+  // 在对齐语义下成立，diff 前把 expected 视图的 f 重标为内核帧号（f 是逻辑索引不是测量量）。
+  const alignShift = meta.alignShift ?? 0;
+  if (!Number.isInteger(alignShift) || alignShift < 0) throw new Error(`meta.alignShift 须为 ≥0 整数，got ${alignShift}`);
   const outcomeOk = expected.outcome.status === replayed.outcome.status
     && (windowF > 0
       ? Math.abs(expected.outcome.frame - replayed.outcome.frame) <= windowF
@@ -192,17 +202,35 @@ function compare(replayed, expected, tol, meta = {}) {
     problems.push(`结局不一致: 期望 ${expected.outcome.status}@f${expected.outcome.frame} 实际 ${replayed.outcome.status}@f${replayed.outcome.frame}${windowF > 0 ? `（窗口 ±${windowF} 帧）` : ""}`);
   }
   const exp = stripFrames(expected.frames, meta), act = stripFrames(replayed.frames, meta);
-  const n = Math.min(exp.length, act.length);
   let firstDivergence = -1, leaves = [];
-  for (let i = 0; i < n; i++) {
-    const e = exp[i], a = act[i];
-    if (e.f !== a.f) { problems.push(`抽样帧号错位 @idx${i}: 期望 f${e.f} 实际 f${a.f}`); break; }
-    const out = [];
-    diffInto(`frames[${i}]`, e, a, tol, out, acc);
-    if (out.length) { firstDivergence = e.f; leaves = out; break; }
-  }
-  if (!problems.length && firstDivergence < 0 && exp.length !== act.length && !outcomeOk) {
-    problems.push(`帧流长度不一致: 期望 ${exp.length} 实际 ${act.length}（结局帧前内容一致）`);
+  if (alignShift > 0) {
+    const expByF = new Map(exp.map((e) => [e.f, e]));
+    // 终端帧对不比：内核终态帧（won/dead 即回放终点）在对齐下其 expected 对应帧 k+alignShift
+    // 已越过 oracle 终幕边界（win 后门内收拢动画帧，内核不回放该段；11 号档 forest_01 实证
+    // f2368 起 expected tuck=(1056,196) 恒值）。终端态已在 k−1↔s(k) 对中比对过，结局本身由
+    // 上面的 outcome 断言。timeout 结局无终幕边界，不跳。
+    const skipTerminal = replayed.outcome.status !== "timeout" ? replayed.outcome.frame : -1;
+    for (const a of act) {
+      if (a.f === skipTerminal) continue;
+      const e = expByF.get(a.f + alignShift);
+      if (!e) continue; // 头部 N 帧（内核无 Step 前对应）/尾部 oracle 独有帧（行为性时长偏移）
+      const out = [];
+      diffInto(`frames[f${a.f}]`, { ...e, f: a.f }, a, tol, out, acc);
+      if (out.length) { firstDivergence = a.f; leaves = out; break; }
+    }
+    // 对齐模式不另报帧流长度差：头部跳过是采样约定固有，尾部错位已被 outcome 窗口语义承认
+  } else {
+    const n = Math.min(exp.length, act.length);
+    for (let i = 0; i < n; i++) {
+      const e = exp[i], a = act[i];
+      if (e.f !== a.f) { problems.push(`抽样帧号错位 @idx${i}: 期望 f${e.f} 实际 f${a.f}`); break; }
+      const out = [];
+      diffInto(`frames[${i}]`, e, a, tol, out, acc);
+      if (out.length) { firstDivergence = e.f; leaves = out; break; }
+    }
+    if (!problems.length && firstDivergence < 0 && exp.length !== act.length && !outcomeOk) {
+      problems.push(`帧流长度不一致: 期望 ${exp.length} 实际 ${act.length}（结局帧前内容一致）`);
+    }
   }
   if (firstDivergence >= 0) {
     problems.push(`首个发散帧 f${firstDivergence}（${leaves.length} 处不匹配）:\n${fmtLeaves(leaves)}`);

@@ -126,43 +126,59 @@ if (hasFlag("--capture")) {
 
 if (hasFlag("--compare")) {
   const goldPath = resolve(argVal("--gold", ""));
+  // 采样对齐偏移（netopt 槽 11 号档）：oracle 采样器=物理 Step 前采样（lib.mjs attachSampler
+  // 包 StateManager.update，场景更新后/Step 前）→ oracle sample[k] = k 步后的状态；内核
+  // w.step 后采样 → kernel frame[k] = k+1 步后的状态。正确对齐 = oracle[k+1] ≡ kernel[k]
+  // （10 号档 §3 probe-tele 逐位实证）。--align-shift 1 即内核帧 k 对 oracle 样本 k+1 比对；
+  // 缺省 0 = 朴素帧对齐（含一帧系统性错位，06/09 号档 tolerance 按此口径定值）。
+  const ALIGN_SHIFT = Math.max(0, Math.floor(Number(argVal("--align-shift", "0")) || 0));
   const gold = JSON.parse(readFileSync(goldPath, "utf8"));
   const routeDoc = JSON.parse(readFileSync(join(ROUTES_DIR, `${gold.route}.json`), "utf8"));
   const samples = gold.samples;
   // dt 序列：实录 e → 秒（与 oracle world.Step(min(0.04, elapsed/1000)) 同一浮点算式）
   const dtSeq = samples.map((s) => s.e / 1000);
-  log(`compare ${gold.route} level=${gold.level} oracle 采样=${samples.length} marks=${JSON.stringify(gold.marks)}`);
+  log(`compare ${gold.route} level=${gold.level} oracle 采样=${samples.length} marks=${JSON.stringify(gold.marks)} alignShift=${ALIGN_SHIFT}`);
   log(`dt 序列头：${dtSeq.slice(0, 6).map((d) => d.toFixed(6)).join(", ")} …（e0 钳制帧=${samples[0].e === 1000 / 60}）`);
 
   const ins = expandFlat(routeDoc.fb, routeDoc.wg, routeDoc.totalFrames);
   const w = makeWorld(gold.level);
   const devs = []; // 每帧 max 分量 |Δ|
   const NAMES = ["fb.x", "fb.y", "fb.vx", "fb.vy", "wg.x", "wg.y", "wg.vx", "wg.vy"];
+  const devsByLeaf = Object.fromEntries(NAMES.map((n) => [n, []]));
   let firstDiff = -1, firstDiffDetail = null;
   let bitExact = true;
   const kernelEvents = [];
   let kernelEnd = null;
 
-  for (let k = 0; k < samples.length; k++) {
-    const os = samples[k];
+  for (let k = 0; k + ALIGN_SHIFT < samples.length; k++) {
+    const os = samples[k + ALIGN_SHIFT];
     const evs = w.step(dtSeq[k], { fireboy: ins.fb[k], watergirl: ins.wg[k] });
     for (const e of evs) kernelEvents.push({ f: k, type: e.type });
     const fb = w.snapshotPlayer("fireboy");
     const wg = w.snapshotPlayer("watergirl");
-    const d = [fb.x - os.fb[0], fb.y - os.fb[1], fb.vx - os.fb[2], fb.vy - os.fb[3], wg.x - os.wg[0], wg.y - os.wg[1], wg.vx - os.wg[2], wg.vy - os.wg[3]];
-    const mx = Math.max(...d.map(Math.abs));
-    devs.push(mx);
-    if (mx !== 0) bitExact = false;
-    if (mx > 0 && firstDiff === -1) {
-      firstDiff = k;
-      firstDiffDetail = {
-        kernel: { fb: [fb.x, fb.y, fb.vx, fb.vy], wg: [wg.x, wg.y, wg.vx, wg.vy], ph: w.phase },
-        oracle: { s: os.s, n: os.n, e: os.e, fb: os.fb, wg: os.wg },
-        comp: Object.fromEntries(NAMES.map((n, i) => [n, d[i]])),
-      };
+    const dying = fb.dying || fb.dead || wg.dying || wg.dead;
+    const won = w.phase === "won";
+    // 对齐模式跳过终端帧对（alignShift>0 且本帧即内核终态）：其 oracle 对应帧 k+1 已越过
+    // oracle 终幕边界（win 后门内收拢动画帧，11 号档 f2368 起 tuck=(1056,196) 实证），内核不
+    // 回放该段；终端态本身已在 k−1↔s(k) 对中比对过，结局另由 marks/结局窗口断言。
+    // 缺省 shift=0 保持原行为（终端对照常记录）。
+    if (!(ALIGN_SHIFT > 0 && (dying || won))) {
+      const d = [fb.x - os.fb[0], fb.y - os.fb[1], fb.vx - os.fb[2], fb.vy - os.fb[3], wg.x - os.wg[0], wg.y - os.wg[1], wg.vx - os.wg[2], wg.vy - os.wg[3]];
+      const mx = Math.max(...d.map(Math.abs));
+      devs.push(mx);
+      for (let i = 0; i < 8; i++) devsByLeaf[NAMES[i]].push(Math.abs(d[i]));
+      if (mx !== 0) bitExact = false;
+      if (mx > 0 && firstDiff === -1) {
+        firstDiff = k;
+        firstDiffDetail = {
+          kernel: { fb: [fb.x, fb.y, fb.vx, fb.vy], wg: [wg.x, wg.y, wg.vx, wg.vy], ph: w.phase },
+          oracle: { s: os.s, n: os.n, e: os.e, fb: os.fb, wg: os.wg },
+          comp: Object.fromEntries(NAMES.map((n, i) => [n, d[i]])),
+        };
+      }
     }
-    if (fb.dying || fb.dead || wg.dying || wg.dead) { kernelEnd = { status: "dead", frame: k }; break; }
-    if (w.phase === "won") { kernelEnd = { status: "won", frame: k }; break; }
+    if (dying) { kernelEnd = { status: "dead", frame: k }; break; }
+    if (won) { kernelEnd = { status: "won", frame: k }; break; }
   }
   if (!kernelEnd) kernelEnd = { status: "samples-exhausted", frame: devs.length - 1 };
 
@@ -172,6 +188,14 @@ if (hasFlag("--compare")) {
   const maxDev = sorted.at(-1);
   const maxAt = devs.indexOf(maxDev);
   const nonzero = devs.filter((d) => d > 0);
+  // 逐叶统计（tolerance 定值口径=位置叶 max：fixture compareVelocities=false 只比 x/y）
+  const leafStat = (arr) => {
+    const s = [...arr].sort((a, b) => a - b);
+    return { median: +s[Math.floor(s.length / 2)].toFixed(4), p99: +s[Math.min(s.length - 1, Math.floor(0.99 * s.length))].toFixed(4), max: +s[s.length - 1].toFixed(6), maxAt: arr.indexOf(s[s.length - 1]) };
+  };
+  const residualByLeaf = Object.fromEntries(NAMES.map((n) => [n, leafStat(devsByLeaf[n])]));
+  const posLeaves = ["fb.x", "fb.y", "wg.x", "wg.y"];
+  const posMaxLeaf = posLeaves.reduce((best, n) => (residualByLeaf[n].max > residualByLeaf[best].max ? n : best), "fb.x");
   // 接触面收敛观察：超 0.1px 后又回到 ≤0.02px 的往返次数
   let excursions = 0, inExcursion = false, reconverged = 0;
   for (const d of devs) {
@@ -191,6 +215,7 @@ if (hasFlag("--compare")) {
 
   const summary = {
     gold: goldPath,
+    alignShift: ALIGN_SHIFT,
     oracle: { samples: samples.length, marks: gold.marks, ended: gold.ended },
     kernel: { end: kernelEnd, events: kernelEvents.length, eventsByType: evByType, firstEventF: kernelEvents[0]?.f ?? null },
     winAlign: { oracleWinF: gold.marks?.win ?? null, kernelWinF: kernelEnd.status === "won" ? kernelEnd.frame : null },
@@ -204,11 +229,15 @@ if (hasFlag("--compare")) {
       maxDev: +maxDev.toFixed(6), maxAt,
       excursionsOver01px: excursions, reconvergedTo002px: reconverged,
     },
+    residualByLeaf,
+    posMaxLeaf,
     curve,
   };
   log(`内核终态=${kernelEnd.status}@f${kernelEnd.frame} vs oracle marks=${JSON.stringify(gold.marks)}`);
   log(`逐位=${bitExact ? "是" : "否"} 首发散=${firstDiff} 零偏差帧=${devs.length - nonzero.length}/${devs.length}`);
   log(`残差：中位 ${q(0.5).toPrecision(3)} p90 ${q(0.9).toFixed(4)} p99 ${q(0.99).toFixed(4)} max ${maxDev.toPrecision(6)}@f${maxAt}`);
+  log(`位置叶（tolerance 定值口径）：${posLeaves.map((n) => `${n} max ${residualByLeaf[n].max}@f${residualByLeaf[n].maxAt}`).join(" / ")}`);
+  log(`位置叶 max=${residualByLeaf[posMaxLeaf].max}px（${posMaxLeaf}）→ ×1.24 = ${Math.round(residualByLeaf[posMaxLeaf].max * 1.24)}`);
   log(`发作/收敛：>0.1px 发作 ${excursions} 次，其中回收到 ≤0.02px ${reconverged} 次`);
   log(`内核事件流：${kernelEvents.length} 个（${JSON.stringify(evByType)}）首帧 f${kernelEvents[0]?.f ?? "-"}`);
   writeFileSync(goldPath.replace(/\.json$/, "-cmp.json"), JSON.stringify(summary, null, 1));
@@ -272,5 +301,5 @@ if (hasFlag("--build-fixture")) {
 }
 
 console.log("用法：goldcollect.mjs --capture --route <名> [--runs N] [--frames N] [--out DIR]");
-console.log("      goldcollect.mjs --compare --gold <gold json>");
+console.log("      goldcollect.mjs --compare --gold <gold json> [--align-shift N]（缺省 0=朴素帧对齐；1=oracle[k+1]≡kernel[k] 采样对齐，11 号档）");
 process.exit(1);
