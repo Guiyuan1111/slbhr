@@ -26,6 +26,11 @@ interface JoinOptions {
 }
 
 const STEP_MS = 1000 / 60;
+/** 出站 patch 率：state 增量广播间隔。缺省 1000/60（60Hz，与模拟同频）——Colyseus 出厂默认
+ *  1e3/20（@colyseus/core Room.js DEFAULT_PATCH_RATE）会让客户端只能 20Hz 阶梯地看到 60Hz 仿真
+ *  （10 号档 §4 表现层根因之一，netopt 槽 11 号档把出站升到与模拟同频）。FW_PATCH_MS 仅
+ *  取证对照/回退用（如 FW_PATCH_MS=50 复现旧 20Hz 出站，带宽 A/B 见 11 号档 §2）。 */
+const PATCH_MS = process.env.FW_PATCH_MS !== undefined ? Number(process.env.FW_PATCH_MS) : 1000 / 60;
 /** 断线重连等待；FW_RECONNECT_SECONDS 仅供 e2e 缩短窗口（默认 60s 不变） */
 const RECONNECT_SECONDS = Number(process.env.FW_RECONNECT_SECONDS ?? 60);
 /** 原版 startLevel：_.delay(1600)+_.delay(400) → 2.0s 开钟 */
@@ -182,6 +187,9 @@ export class ForestRoom extends Room<RoomState> {
     // （实测 setInterval(4) 实际均值 16.8ms、p95 24.7ms）。输入应用的帧精度不靠唤醒密度，
     // 靠 inputQueue 的意图跨度排水（见 tick/inputQueue 注释）。
     this.setSimulationInterval((dtMs) => this.tick(dtMs));
+    // 出站 patch 率（step 后置即可：Colyseus 0.16 的 setPatchRate→patchRate 访问器会清旧
+    // 50ms interval 重建，__init 在 onCreate 前已跑）。广播按 patch 网格发增量，无变化不发包。
+    this.setPatchRate(PATCH_MS);
   }
 
   /** 世界构建（onCreate 与 advance 换关共用）。
