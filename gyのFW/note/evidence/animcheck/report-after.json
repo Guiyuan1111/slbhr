@@ -1,0 +1,298 @@
+{
+ "forest_01": {
+  "oracle": null,
+  "client": {
+   "settle": {
+    "fireboy": {
+     "head": "fire_head_idle@f-1",
+     "mainFam": "fire_head_idle",
+     "fps": 35.6,
+     "loopPeriods": [
+      1
+     ],
+     "legs": [
+      "P:fire_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f-1",
+     "mainFam": "water_head_idle",
+     "fps": null,
+     "loopPeriods": [],
+     "legs": [
+      "P:water_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   },
+   "idle": {
+    "fireboy": {
+     "head": "fire_head_idle@f28",
+     "mainFam": "fire_head_idle",
+     "fps": 29.2,
+     "loopPeriods": [
+      1,
+      1,
+      1,
+      1,
+      1
+     ],
+     "legs": [
+      "P:fire_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f28",
+     "mainFam": "water_head_idle",
+     "fps": 29.5,
+     "loopPeriods": [
+      1,
+      1,
+      1
+     ],
+     "legs": [
+      "P:water_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   },
+   "walk": {
+    "fireboy": {
+     "head": "fire_head_idle@f208 → fire_head_jumping@f214 → fire_head_idle@f272",
+     "mainFam": "fire_head_jumping",
+     "fps": 30,
+     "loopPeriods": [
+      1,
+      1
+     ],
+     "legs": [
+      "P:fire_legs_idle#0",
+      "P:fire_legs_running#0",
+      "P:fire_legs_running#1",
+      "P:fire_legs_running#2",
+      "P:fire_legs_running#3",
+      "P:fire_legs_running#4"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f208",
+     "mainFam": "water_head_idle",
+     "fps": 56.3,
+     "loopPeriods": [
+      1
+     ],
+     "legs": [
+      "P:water_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   },
+   "coast": {
+    "fireboy": {
+     "head": "fire_head_jumping@f268 → fire_head_idle@f272",
+     "mainFam": "fire_head_idle",
+     "fps": null,
+     "loopPeriods": [],
+     "legs": [
+      "P:fire_legs_running#2",
+      "P:fire_legs_running#3",
+      "P:fire_legs_running#4",
+      "P:fire_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f268",
+     "mainFam": "water_head_idle",
+     "fps": 56.3,
+     "loopPeriods": [
+      1
+     ],
+     "legs": [
+      "P:water_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   },
+   "jump": {
+    "fireboy": {
+     "head": "fire_head_idle@f297 → fire_head_rising@f305 → fire_head_idle@f309 → fire_head_falling@f315 → fire_head_idle@f326",
+     "mainFam": "fire_head_idle",
+     "fps": 29.2,
+     "loopPeriods": [
+      1
+     ],
+     "legs": [
+      "P:fire_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f297",
+     "mainFam": "water_head_idle",
+     "fps": 30,
+     "loopPeriods": [
+      1,
+      1
+     ],
+     "legs": [
+      "P:water_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   }
+  },
+  "oracleMarks": null,
+  "clientTailPhase": "started",
+  "clientSamples": 705
+ },
+ "forest_02": {
+  "oracle": null,
+  "client": {
+   "settle": {
+    "fireboy": {
+     "head": "fire_head_idle@f0",
+     "mainFam": "fire_head_idle",
+     "fps": 36.8,
+     "loopPeriods": [
+      1
+     ],
+     "legs": [
+      "P:fire_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f0 → water_head_jumping@f32",
+     "mainFam": "water_head_idle",
+     "fps": null,
+     "loopPeriods": [],
+     "legs": [
+      "P:water_legs_idle#0",
+      "P:water_legs_running#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    }
+   },
+   "death": {
+    "fireboy": {
+     "head": "fire_head_idle@f27",
+     "mainFam": "fire_head_idle",
+     "fps": 30,
+     "loopPeriods": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+     ],
+     "legs": [
+      "P:fire_legs_idle#0"
+     ],
+     "smoke": "death_smoke#0..0 play[-..-1]",
+     "dying": 0,
+     "dead": 0,
+     "dyingHidden": 0,
+     "hidden": 0,
+     "ice": 0
+    },
+    "watergirl": {
+     "head": "water_head_idle@f27 → water_head_jumping@f32",
+     "mainFam": "water_head_jumping",
+     "fps": 30,
+     "loopPeriods": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+     ],
+     "legs": [
+      "P:water_legs_idle#0",
+      "P:water_legs_running#0",
+      "P:water_legs_running#1",
+      "P:water_legs_running#2",
+      "P:water_legs_running#3",
+      "P:water_legs_running#4"
+     ],
+     "smoke": "death_smoke#0..44 play[37..128]",
+     "dying": 195,
+     "dead": 103,
+     "dyingHidden": 195,
+     "hidden": 195,
+     "ice": 0
+    }
+   }
+  },
+  "oracleMarks": null,
+  "clientTailPhase": "gameover",
+  "clientSamples": 259
+ }
+}
