@@ -55,6 +55,7 @@ node --import tsx benchmark/perf-serialize.mjs --save <label>   # 真实 RoomSta
 node --import tsx benchmark/perf-routeio.mjs --save <label>     # 路线回放/纯 step/世界构建吞吐
 node --expose-gc --import tsx benchmark/perf-mem.mjs --save <label>  # World 常驻/创建销毁/并发峰值
 node benchmark/perf-client.mjs --save <label>                   # 客户端帧预算（r3 起；双渲染器）
+node benchmark/perf-client.mjs --cdp http://宿主IP:9222 --host 本机IP --save <label>  # 远程真机 GPU（渲染段真口径）
 ```
 
 - `perf-step`：每关预热 90 步 + 600 步计时（`PERF_STEPS`/`PERF_LEVELS` 可覆盖），

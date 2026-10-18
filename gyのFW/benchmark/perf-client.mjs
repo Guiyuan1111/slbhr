@@ -14,6 +14,9 @@
  * 用法：
  *   node benchmark/perf-client.mjs [--level forest_01] [--secs 8] --save <label>
  *   node benchmark/perf-client.mjs --compare <label>          # 与快照对比打印前后表
+ *   node benchmark/perf-client.mjs --cdp http://<宿主IP>:9222 --host <本机对宿主可达IP> --save r7-realgpu
+ *                              # 真机口径：渲染跑在远程 Chrome 的真实 GPU 上（宿主 Windows 先开
+ *                              # chrome --remote-debugging-port=9222 --remote-allow-origins=*）
  * 产物：benchmark/results/client-<label>.json
  */
 import { spawn, execSync } from "node:child_process";
@@ -21,6 +24,7 @@ import { writeFileSync, readFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { networkInterfaces } from "node:os";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const RESULTS = join(ROOT, "benchmark", "results");
@@ -31,13 +35,24 @@ const LEVEL = argOf("level", "forest_01");
 const SECS = Number(argOf("secs", "8"));
 const argSave = argOf("save", undefined);
 const argCompare = argOf("compare", undefined);
+const argCdp = argOf("cdp", undefined); // 远程真机模式：playwright connectOverCDP 目标
+const argHost = argOf("host", undefined); // cdp 模式下本机对远程可达的地址（默认自动取第一个非 lo IPv4）
 const log = (...a) => console.log("[client]", ...a);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function localIp() {
+  for (const list of Object.values(networkInterfaces())) {
+    for (const ni of list || []) if (ni.family === "IPv4" && !ni.internal) return ni.address;
+  }
+  throw new Error("未找到非 lo IPv4 地址（--host 手动指定）");
+}
+const HOST_BIND = argCdp ? "0.0.0.0" : "127.0.0.1";
+const BASE = `http://${argCdp ? (argHost ?? localIp()) : "127.0.0.1"}:${PORT}`;
 
 function startServer() {
   const child = spawn(process.execPath, ["--import", "tsx", join(ROOT, "packages", "server", "src", "index.ts")], {
     cwd: ROOT,
-    env: { ...process.env, PORT: String(PORT), FW_HOST: "127.0.0.1", FW_WIND_PHASE: "0" },
+    env: { ...process.env, PORT: String(PORT), FW_HOST: HOST_BIND, FW_WIND_PHASE: "0" },
     stdio: ["ignore", "pipe", "pipe"],
   });
   return new Promise((resolve, reject) => {
@@ -54,7 +69,6 @@ function startServer() {
 }
 
 async function enterAs(page, mode, roomCode) {
-  const BASE = `http://127.0.0.1:${PORT}`;
   await page.goto(`${BASE}/?level=${LEVEL}`, { waitUntil: "domcontentloaded" });
   await page.fill("#password", "client-pw");
   if (mode === "join") await page.fill("#roomcode", roomCode);
@@ -89,7 +103,14 @@ const HOOK = `(() => {
     P.frames.push(f);
     f = null;
   });
-  return { renderer: g.renderer.type === 2 ? "webgl" : "canvas", children: scene.children.length };
+  let gpu = "";
+  try {
+    const c = document.createElement("canvas");
+    const gl = c.getContext("webgl2") || c.getContext("webgl");
+    const dbg = gl && gl.getExtension("WEBGL_debug_renderer_info");
+    if (dbg && gl) gpu = String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL));
+  } catch {}
+  return { renderer: g.renderer.type === 2 ? "webgl" : "canvas", children: scene.children.length, gpu };
 })()`;
 
 const COLLECT = `(() => {
@@ -146,17 +167,26 @@ async function runOnce(server, browser, rendererMode) {
   await ctx.close();
   r.pageErrors = errs;
   r.sceneChildren = meta.children;
+  r.gpu = meta.gpu || "";
+  if (!remoteGpu && meta.gpu) remoteGpu = meta.gpu;
   log(`${rendererMode}: fps=${r.effectiveFps} 帧总 p50=${r.totalP50}/avg=${r.totalP50 && r.totalAvg}ms update p50=${r.updateP50}ms 分配=${r.allocKBs}KB/s gc=${r.gcDrops} setDepth=${r.setDepth}`);
   if (errs.length) log(`${rendererMode} 页面错误:`, errs.join("; "));
   return r;
 }
 
 const server = await startServer();
-const browser = await chromium.launch({
-  channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined),
-  headless: true,
-  args: ["--mute-audio", "--enable-precise-memory-info", "--disable-background-timer-throttling", "--disable-renderer-backgrounding"],
-});
+let browser;
+let remoteGpu = "";
+if (argCdp) {
+  browser = await chromium.connectOverCDP(argCdp);
+  log(`CDP 远程模式: ${argCdp}（游戏服 ${BASE}，渲染跑在远程浏览器真机 GPU）`);
+} else {
+  browser = await chromium.launch({
+    channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined),
+    headless: true,
+    args: ["--mute-audio", "--enable-precise-memory-info", "--disable-background-timer-throttling", "--disable-renderer-backgrounding"],
+  });
+}
 let webgl, canvas;
 try {
   webgl = await runOnce(server, browser, "webgl");
@@ -177,6 +207,8 @@ const results = {
     date: new Date().toISOString(),
     node: process.version,
     note: "WebGL=headless SwiftShader（present 阻塞为环境项，JS 面可比）；Canvas=软光栅全主线程（渲染段可比）",
+    mode: argCdp ? `remote-cdp ${argCdp}` : "local-headless",
+    remoteGpu: remoteGpu || undefined,
   },
   webgl,
   canvas,
