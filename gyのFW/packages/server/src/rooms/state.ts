@@ -11,7 +11,7 @@
  * phase 词汇：lobby | ready | started | paused | won | gameover
  * （原版：双人就绪后延时开钟；任一人死整关重开；门扫帧 21 帧到位双门→won）
  */
-import { Schema, MapSchema, defineTypes } from "../colyseus.cjs.js";
+import { Schema, MapSchema, defineTypes, $filter } from "../colyseus.cjs.js";
 import type { MapSchema as MapSchemaType } from "@colyseus/schema";
 
 export class PlayerState extends Schema {
@@ -244,3 +244,19 @@ defineTypes(RoomState, {
   romans: { map: BodyState },
   doors: DoorState,
 });
+
+/**
+ * r4 perf 件2（2026-10-18）：声明侧遮蔽 Schema[$filter]。
+ * @colyseus/schema Encoder.encode 对每个待编码字段都调 `ctor[$filter]`（缺省继承
+ * Schema 基类静态：查 metadata[index].tag 再比较）——本状态树无任何 @view/@filter
+ * 标签（filter(ref, index, undefined) 恒返回 tag===undefined 即 true），逐字段调用
+ * 是纯开销（60Hz 出站下轻关 encode 段 ~10%，剖析见 r4 报告）。给各类定义自身静态
+ * （own property = undefined）后 `filter && !filter(...)` 短路跳过调用，vendor 零改动。
+ * 字节等价：filter 恒真 ⇒ 跳过与否不改变编码决策，出站字节逐字不变（TEMP 件
+ * ab-filter.mjs：4 关×600 帧双路径 patch+encodeAll 逐字节相等 + det 48/48 + fixtures 6/6）。
+ * hasFilters 不受影响（由 metadata view 标签驱动，TypeContext.discoverTypes），无
+ * StateView/encodeView 路径被触及。
+ */
+for (const cls of [RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState, DoorState]) {
+  (cls as unknown as Record<string, unknown>)[$filter as string] = undefined;
+}

@@ -13,5 +13,5 @@ import { createRequire } from "node:module";
 const nodeRequire = createRequire(import.meta.url);
 
 export const { Server, Room, ServerError, matchMaker } = nodeRequire("colyseus") as typeof import("colyseus");
-export const { Schema, MapSchema, defineTypes } = nodeRequire("@colyseus/schema") as typeof import("@colyseus/schema");
+export const { Schema, MapSchema, defineTypes, $filter } = nodeRequire("@colyseus/schema") as typeof import("@colyseus/schema");
 export const { WebSocketTransport } = nodeRequire("@colyseus/ws-transport") as typeof import("@colyseus/ws-transport");
