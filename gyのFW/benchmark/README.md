@@ -70,8 +70,11 @@ node --expose-gc --import tsx benchmark/perf-mem.mjs --save <label>  # World 常
   `results/serialize-<label>.json`。
 - `perf-routeio`：12 正式路线整关回放（runKernel 门禁路径）/纯 step 环/世界构建三口径
   （`PERF_ROUTES`/`PERF_RR_RUNS` 可覆盖）；快照 `results/routeio-<label>.json`。
+  r2 起 makeWorld 内含逐关卡解析缓存（55d580b）：build 计量为**缓存命中态**（首个预热调用
+  已填缓存）——对比 r1 及更早快照的 build 列时注意口径差（旧值含 0.3~0.5ms/次的 IO+解析）。
 - `perf-mem`：World 常驻斜率、创建销毁吞吐、50 并发峰值差分（需 --expose-gc）；
-  快照 `results/mem-<label>.json`。
+  快照 `results/mem-<label>.json`。r2 起接触池懒填（c3661b0）后每 World 常驻含按需接触，
+  与 r0 快照（预填 1792 接触对象口径）不可直列。
 
 ## 快照索引
 
@@ -115,6 +118,11 @@ git 列以快照 JSON `meta.git`（存档时脚本记录）为准；visual 系�
 | load-baseline / load-r3-load | 9f0155c | — | — | 客户端加载前/后（冷启动 6909→4858KB） |
 | sync-r0-sync → sync-r1-sync | e477f9c→8d2b6d5 | — | — | sync 段 forest_01 0.0210→0.0096ms（patch 字节不变） |
 | routeio-r0-routeio → routeio-r1-routeio | 269d83d→8d2b6d5 | — | — | 整关回放 10.34→12.14 关/s |
+| routeio-r2-routeio | 55d580b | — | — | r2 六件后：整关回放 13.35 关/s、**世界构建 110→1166/s**（build 1.0~2.0ms，缓存命中口径） |
+| perf-r2-step | 55d580b | 0.0188ms | 0.3405ms | r2 后空载综合（接触按需构造连带收益 -3~-6%） |
+| sync-r2-sync | 55d580b | — | — | patch 347/2646B 逐字不变（锚仍可 --compare r1-sync） |
+| mem-r2-mem | 55d580b | — | — | 每 World 常驻 01 0.69/bonus_2 2.88MB、创建销毁 251.6/s、50 并发 Δ35/151MB |
+| load-r2-load | 55d580b | — | — | 冷启硬口径与 r0 逐字一致（4862KB/22req、reload 3KB） |
 
 ## 注意
 

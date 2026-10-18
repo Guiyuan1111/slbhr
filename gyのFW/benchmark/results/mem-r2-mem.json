@@ -1,0 +1,95 @@
+{
+  "meta": {
+    "label": "r2-mem",
+    "git": "55d580b",
+    "date": "2026-10-18T03:51:44.341Z",
+    "node": "v22.22.1",
+    "cpu": "13th Gen Intel(R) Core(TM) i5-13400F",
+    "loadavg": [
+      0.94,
+      0.8,
+      0.84
+    ],
+    "exposeGc": true,
+    "steps": 60,
+    "method": "global.gc×2 后 heapUsed 差分；常驻=20 实例斜率中位；吞吐=150 循环中位；并发=50 世界峰值"
+  },
+  "baseline": {
+    "heapUsedMB": 19.64,
+    "rssMB": 289.55,
+    "heapRaw": 20589344
+  },
+  "slope": [
+    {
+      "levelId": "forest_01",
+      "k": 20,
+      "steps": 60,
+      "perWorldHeapMB": 0.69,
+      "samplesMB": [
+        0.97,
+        0.69,
+        0.67
+      ]
+    },
+    {
+      "levelId": "forest_bonus_2",
+      "k": 20,
+      "steps": 60,
+      "perWorldHeapMB": 2.88,
+      "samplesMB": [
+        3.03,
+        2.88,
+        2.85
+      ]
+    }
+  ],
+  "cycles": {
+    "n": 150,
+    "median": {
+      "msPerWorld": 3.97,
+      "worldsPerSec": 251.6,
+      "heapDriftMB": 0.05
+    },
+    "rounds": [
+      {
+        "msPerWorld": 4.03,
+        "worldsPerSec": 248.4,
+        "heapDriftMB": 0.74
+      },
+      {
+        "msPerWorld": 3.93,
+        "worldsPerSec": 254.3,
+        "heapDriftMB": 0
+      },
+      {
+        "msPerWorld": 3.97,
+        "worldsPerSec": 251.6,
+        "heapDriftMB": 0.05
+      }
+    ]
+  },
+  "concurrent": [
+    {
+      "levelId": "forest_01",
+      "n": 50,
+      "steps": 60,
+      "peakHeapMB": 51.62,
+      "peakDeltaMB": 35.2,
+      "perWorldHeapMB": 0.704,
+      "peakRssMB": 206.72,
+      "buildMs": 201,
+      "afterReleaseHeapMB": 17.04
+    },
+    {
+      "levelId": "forest_bonus_2",
+      "n": 50,
+      "steps": 60,
+      "peakHeapMB": 168.12,
+      "peakDeltaMB": 151.08,
+      "perWorldHeapMB": 3.022,
+      "peakRssMB": 288.65,
+      "buildMs": 7107,
+      "afterReleaseHeapMB": 19.58
+    }
+  ]
+}
