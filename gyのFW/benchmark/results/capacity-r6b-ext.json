@@ -1,0 +1,130 @@
+{
+  "meta": {
+    "label": "r6b-ext",
+    "git": "567b2d3",
+    "date": "2026-10-18T12:53:03.256Z",
+    "node": "v22.22.1",
+    "level": "forest_01",
+    "secsPerTier": 12,
+    "pattern": "walk",
+    "ladder": [
+      64,
+      96,
+      128
+    ],
+    "host": "127.0.0.1",
+    "port": 3673,
+    "clkTck": 100,
+    "cores": 8,
+    "uplinkModel": "colyseus.js 66ms 强制重发（≈15Hz/客户端，input.ts RESEND_MS 生产同款）",
+    "r4BandwidthLineKBs": 5.36,
+    "idleBaseline": {
+      "serverCpuPct": 0,
+      "serverRssKB": 131904
+    }
+  },
+  "tiers": [
+    {
+      "roomsTotal": 64,
+      "roomsClean": 64,
+      "deathsTier": 0,
+      "restartsTotal": 0,
+      "serverCpuPct": 54.6,
+      "cpuMsPerRoomPerSec": 8.53,
+      "serverRssKB": 229212,
+      "memDeltaKBPerRoom": 1520,
+      "downKBsClientAvg": 1.411,
+      "downKBsClientP50": 1.412,
+      "upKBsClientAvg": 0.513,
+      "patchPerSecP50": 56.58,
+      "driftMaxPct": 0.15,
+      "loadgenCpuPct": 20.4,
+      "alarms": {
+        "cpuSat": false,
+        "driftBad": false,
+        "patchLow": false,
+        "loadgenSat": false
+      },
+      "degraded": false,
+      "joinMs": 2604
+    },
+    {
+      "roomsTotal": 96,
+      "roomsClean": 96,
+      "deathsTier": 0,
+      "restartsTotal": 0,
+      "serverCpuPct": 72.9,
+      "cpuMsPerRoomPerSec": 7.59,
+      "serverRssKB": 299592,
+      "memDeltaKBPerRoom": 2199,
+      "downKBsClientAvg": 1.356,
+      "downKBsClientP50": 1.356,
+      "upKBsClientAvg": 0.526,
+      "patchPerSecP50": 53.5,
+      "driftMaxPct": 0.14,
+      "loadgenCpuPct": 29,
+      "alarms": {
+        "cpuSat": false,
+        "driftBad": false,
+        "patchLow": true,
+        "loadgenSat": false
+      },
+      "degraded": true,
+      "joinMs": 2432
+    },
+    {
+      "roomsTotal": 128,
+      "roomsClean": 128,
+      "deathsTier": 0,
+      "restartsTotal": 0,
+      "serverCpuPct": 84.8,
+      "cpuMsPerRoomPerSec": 6.63,
+      "serverRssKB": 389084,
+      "memDeltaKBPerRoom": 2797,
+      "downKBsClientAvg": 1.185,
+      "downKBsClientP50": 1.185,
+      "upKBsClientAvg": 0.545,
+      "patchPerSecP50": 46.58,
+      "driftMaxPct": 0.14,
+      "loadgenCpuPct": 36,
+      "alarms": {
+        "cpuSat": false,
+        "driftBad": false,
+        "patchLow": true,
+        "loadgenSat": false
+      },
+      "degraded": true,
+      "joinMs": 2452
+    }
+  ],
+  "summary": {
+    "firstInflectionRooms": 96,
+    "inflectionAt": "96,128",
+    "cpuModel": {
+      "cpuMsPerRoom": 8.53,
+      "cpuFit": {
+        "interceptPct": 25.47,
+        "slopePctPerRoom": 0.472
+      },
+      "estMaxRoomsOneCoreFit": 157,
+      "estMaxClientsOneCoreFit": 314,
+      "estMaxRoomsOneCoreAvg": 117,
+      "note": "斜率拟合为准（低档噪声/截距混入均值）；estMax 为单核算术上限，非可用容量（时漂/patch 判据优先）"
+    },
+    "rssModel": {
+      "baselineKB": 66155,
+      "perRoomKB": 2498,
+      "estRoomsAt2GB": 813
+    },
+    "memPerRoomMedianKB": 2199,
+    "bandwidth": {
+      "downKBsClientP50AtTop": 1.185,
+      "r4LineKBs": 5.36,
+      "ratioVsR4": 0.22
+    },
+    "ladderObservedWithin": [
+      64,
+      128
+    ]
+  }
+}
