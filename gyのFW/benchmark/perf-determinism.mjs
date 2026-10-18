@@ -7,8 +7,10 @@
  * - 链式哈希：step i 的哈希包含 step i−1 的哈希（即使状态后来巧合重合，分叉也会被发现）；
  * - 输入脚本：纯 step 序号的确定性函数（无 RNG），两种模式均跑：
  *   idle（全空输入）+ scripted（周期走/跳，驱动角色力/TOI/机关路径）。
- * - 并行（r6 工具链轮）：关间 worker_threads 池并行（缺省 min(8, CPU-1) 线程，一关一发
- *   动态负载均衡）。判据零变化：每关哈希只依赖 关卡数据×输入脚本×步数，World 间无共享态
+ * - 并行（r6 工具链轮）：关间 worker_threads 池并行（缺省 cap 4 线程，一关一发动态负载
+ *   均衡+逆序派发。cap 4 为本机 4C/8T 实测碗底：W=2/3/4/5/6/7 → 2.5/2.1/2.1/2.3/2.5/2.8s，
+ *   每 worker 需独立 tsx+esbuild 启动，过订阅得不偿失；DET_WORKERS 可覆盖）。判据零变化：
+ *   每关哈希只依赖 关卡数据×输入脚本×步数，World 间无共享态
  *   （每线程独立 ESM 模块注册表 → b2.ts/load.ts 的 cached box2d 单例每线程一份独立实例），
  *   哈希值、行序（按 id sort）、综合链 sha、JSON rows、--save/--compare/--exit 码语义逐字
  *   不变；meta 仅新增 workers 字段（--compare 不读取，快照对比不受影响）。DET_WORKERS=0/1
@@ -39,12 +41,12 @@ let loadLevel, listLevelIds, World;
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const RESULTS = join(ROOT, "benchmark", "results");
 const STEPS = Number(process.env.DET_STEPS ?? 600);
-/** worker 线程数；0/1=单进程内联（旧串行路径）。缺省 min(8, CPU-1)。
+/** worker 线程数；0/1=单进程内联（旧串行路径）。缺省 cap 4（4C/8T 实测碗底，见头注）。
  *  非有限/负值直接抛错——NaN 若流入并行分支会得到零 worker 零行，
  *  --compare 下即"0 关位级一致"静默绿门禁，属门禁红线，必须在此拦死。 */
 function resolveWorkers() {
   const raw = process.env.DET_WORKERS;
-  if (raw === undefined) return Math.min(8, availableParallelism() - 1);
+  if (raw === undefined) return Math.min(4, Math.max(1, availableParallelism() - 1));
   const n = Number(raw);
   if (!Number.isFinite(n) || n < 0) throw new Error(`DET_WORKERS 非法: "${raw}"（需非负数；0/1=单进程串行）`);
   return n;
@@ -133,18 +135,22 @@ async function main() {
   if (WORKERS <= 1) {
     for (const id of ids) pushRow(runLevel(id));
   } else {
+    // 派发序=sort 序的逆序（重关 forest_bonus_* 在 sort 序末尾，先上车消除单关尾延迟；
+    // 严重度来自 r0 快照实测：bonus_2 ≈0.9s vs 其余关 ≈0.05s）。行序最终仍按 id sort
+    // 归一（下方 rows.sort），判据不受派发序影响。
+    const queue = [...ids].reverse();
     let next = 0;
     const run = () => new Promise((resolve, reject) => {
       const w = new Worker(new URL(import.meta.url));
       w.on("message", (row) => {
         pushRow(row);
-        w.postMessage(next < ids.length ? ids[next++] : null); // 取完即发 null 收工（线程 clean close）
+        w.postMessage(next < queue.length ? queue[next++] : null); // 取完即发 null 收工（线程 clean close）
       });
       w.on("error", reject);
       w.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`det worker 异常退出 code=${code}`))));
-      w.postMessage(ids[next++]);
+      w.postMessage(queue[next++]);
     });
-    await Promise.all(Array.from({ length: Math.min(WORKERS, ids.length) }, run));
+    await Promise.all(Array.from({ length: Math.min(WORKERS, queue.length) }, run));
   }
   rows.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)); // 行序=旧串行版（ids sort 序）
   console.log(`（本次 ${ids.length} 关合计 ${((Date.now() - t0) / 1000).toFixed(1)}s）`);
