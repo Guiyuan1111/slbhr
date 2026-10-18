@@ -50,6 +50,10 @@ const DIAMOND_FRAME: Record<string, string> = {
 /** 角色贴图前缀（动画键/帧名用 fire|water，角色标识用 fireboy|watergirl） */
 const PREFIX: Record<Role, string> = { fireboy: "fire", watergirl: "water" };
 
+/** 相机最小可视格子（updateCamTarget 每帧取用；r3 起模块级常量，免逐帧对象分配） */
+const TILES_DESKTOP = { w: 40, h: 30 };
+const TILES_SMALL = { w: 20, h: 15 };
+
 interface PlayerView {
   glow: Phaser.GameObjects.Image;
   legs: Phaser.GameObjects.Sprite;
@@ -107,6 +111,21 @@ interface WindView {
   on: boolean;
   effect: Phaser.GameObjects.Sprite;
 }
+
+/**
+ * 快照键 → 视图解析缓存条目（r3 客户端帧预算）：快照按数组下标/"kind:idx"/"u<i><a|b>"
+ * 键下发，视图按 LevelData id 键建。此前每帧现场做模板串拼接 / propViewKey 切片 /
+ * 滑轮正则解析——现首见时解析一次缓存（v=null 表示该键无视图，跳过并记忆），
+ * k 为 mechSm 平滑键（取视图 id，全类前缀互不冲突）。
+ */
+interface LeverSnap { v: LeverView; k: string }
+interface PusherSnap { v: PusherView; k: string }
+interface PlatformSnap { v: Phaser.GameObjects.Container; k: string; lv: { img: Phaser.GameObjects.Image; state: number } | null }
+interface PropSnap { v: Phaser.GameObjects.Image | null; k: string }
+interface WindSnap { v: WindView; k: string }
+interface HangingSnap { v: HangingView; k: string }
+interface PulleySnap { v: PulleyView; idx: number; k: string }
+interface RomanSnap { v: RomanView; k: string }
 
 /** Navies 单只光点（原版 States/Common/Navies @1116883：极坐标正弦漂移） */
 interface NavyItem {
@@ -215,6 +234,37 @@ export class GameScene extends Phaser.Scene {
   private waterPlaying = false;
   private platformPrev = new Map<string, { x: number; y: number }>();
   private platformMoving = new Set<string>();
+  // ---- r3 客户端帧预算：update 路径零稳态分配 ----
+  /** 快照键解析缓存（首见填入；场景重启清空） */
+  private leverSnaps = new Map<string, LeverSnap | null>();
+  private pusherSnaps = new Map<string, PusherSnap | null>();
+  private platformSnaps = new Map<string, PlatformSnap | null>();
+  private propSnaps = new Map<string, PropSnap>();
+  private windSnaps = new Map<string, WindSnap | null>();
+  private hangingSnaps = new Map<string, HangingSnap | null>();
+  private pulleySnaps = new Map<string, PulleySnap | null>();
+  private romanSnaps = new Map<string, RomanSnap | null>();
+  /** mechTarget 复用输出对象（调用方即读即弃不持有，全仓唯一消费者=updateMechs 各步） */
+  private mechOut = { x: 0, y: 0, a: 0 };
+  /** 每帧快照上下文（供提升后的 forEach 回调读取，免逐帧闭包捕获） */
+  private curNow = 0;
+  private curDelta = 0;
+  /** 每帧取一次的角色快照引用（update/updatePlayers/updateCamTarget 共用，替代每帧 6 次 map get） */
+  private pFb: any = null;
+  private pWg: any = null;
+  /** 时钟秒缓存（整秒不变则连字符串都不重算） */
+  private lastClockSec = -1;
+  /** 机关快照消费回调（create 时绑定一次；st.levers.forEach 等直接传函数引用） */
+  private cbLevers!: (s: { state: number; angle: number }, id: string) => void;
+  private cbPushers!: (s: { state: number; x: number; y: number }, id: string) => void;
+  private cbPlatforms!: (b: { x: number; y: number; angle: number; state?: number }, id: string) => void;
+  private cbProps!: (b: { x: number; y: number; angle: number }, key: string) => void;
+  private cbWinds!: (wd: { state: number }, id: string) => void;
+  private cbHangings!: (s: { x: number; y: number; angle: number }, id: string) => void;
+  private cbPulleys!: (s: { x: number; y: number; angle: number }, key: string) => void;
+  private cbRomans!: (s: { x: number; y: number; angle: number }, id: string) => void;
+  private cbDiamonds!: (ds: { collected: boolean }, id: string) => void;
+  private cbPlatSnd!: (b: { x: number; y: number }, id: string) => void;
 
   constructor() {
     super("Game");
@@ -259,6 +309,17 @@ export class GameScene extends Phaser.Scene {
     this.waterPlaying = false;
     this.platformPrev.clear();
     this.platformMoving.clear();
+    this.leverSnaps.clear();
+    this.pusherSnaps.clear();
+    this.platformSnaps.clear();
+    this.propSnaps.clear();
+    this.windSnaps.clear();
+    this.hangingSnaps.clear();
+    this.pulleySnaps.clear();
+    this.romanSnaps.clear();
+    this.lastClockSec = -1;
+    this.pFb = null;
+    this.pWg = null;
     this.myRole = this.d.net.myRole ?? this.myRole;
   }
 
@@ -269,6 +330,18 @@ export class GameScene extends Phaser.Scene {
     // settled 口径不变：双角色同屏时自动适配 h=1 → 边界钳制居中 → scroll(16,16)
     // （关卡 1248×928 vs 画布 1280×960，2026-10-09 帧探针实测 stage=level+(16,16)）。
     this.setupCameraManager(level);
+
+    // 机关/钻石快照消费回调（r3：绑定一次，消除每帧 forEach 现场闭包分配）
+    this.cbLevers = this.stepLevers.bind(this);
+    this.cbPushers = this.stepPushers.bind(this);
+    this.cbPlatforms = this.stepPlatforms.bind(this);
+    this.cbProps = this.stepProps.bind(this);
+    this.cbWinds = this.stepWinds.bind(this);
+    this.cbHangings = this.stepHangings.bind(this);
+    this.cbPulleys = this.stepPulleys.bind(this);
+    this.cbRomans = this.stepRomans.bind(this);
+    this.cbDiamonds = this.stepDiamonds.bind(this);
+    this.cbPlatSnd = this.stepPlatSnd.bind(this);
 
     for (const d of level.diamonds) {
       this.diamondKinds.set(d.id, d.kind);
@@ -978,10 +1051,8 @@ export class GameScene extends Phaser.Scene {
   /** 每帧目标：焦点=双角色中点（userCenter 覆盖），缩放=自动适配（userScale/wheelScale 覆盖） */
   private updateCamTarget(): void {
     const { level } = this.d;
-    const st = this.d.net.room?.state;
-    if (!st) return;
-    const fb = st.players?.get?.("fireboy");
-    const wg = st.players?.get?.("watergirl");
+    const fb = this.pFb;
+    const wg = this.pWg;
     if (!fb || !wg) return;
     const fx = Number(fb.x) || 0;
     const fy = Number(fb.y) || 0;
@@ -997,9 +1068,9 @@ export class GameScene extends Phaser.Scene {
     const i = c > vw ? vw / c : 1;
     const j = d > vh ? vh / d : 1;
     let h = i < 1 || j < 1 ? Math.min(i, j) : 1;
-    // 最小可视 40×30 格（窄屏/移动 20×15；mpx=32）
+    // 最小可视 40×30 格（窄屏/移动 20×15；mpx=32；r3 模块级常量免逐帧分配）
     const small = !this.sys.game.device.os.desktop || rw <= 780 || rh <= 480;
-    const tiles = small ? { w: 20, h: 15 } : { w: 40, h: 30 };
+    const tiles = small ? TILES_SMALL : TILES_DESKTOP;
     if (h * tiles.w * 32 > rw) h = rw / (tiles.w * 32);
     if (h * tiles.h * 32 > rh) h = rh / (tiles.h * 32);
     if (this.camUserScale != null) h = this.camUserScale;
@@ -1090,12 +1161,14 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** 教学渐显判定：原版=任一角色进矩形，组内全部文本 400ms 淡入/淡出（updateTutorial 双角色坐标） */
-  private updateTutorial(...points: Array<{ x: number; y: number }>): void {
+  /** 教学渐显判定：原版=任一角色进矩形，组内全部文本 400ms 淡入/淡出（双角色坐标；r3 标量直传零分配） */
+  private updateTutorial(x1: number, y1: number, ok1: boolean, x2: number, y2: number, ok2: boolean): void {
     for (const item of this.tutorialItems) {
       const r = item.trigger;
       if (!r) continue;
-      const inside = points.some((p) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h);
+      const inside =
+        (ok1 && x1 >= r.x && x1 <= r.x + r.w && y1 >= r.y && y1 <= r.y + r.h) ||
+        (ok2 && x2 >= r.x && x2 <= r.x + r.w && y2 >= r.y && y2 <= r.y + r.h);
       if (inside && !item.shown) {
         item.shown = true;
         for (const t of item.texts) {
@@ -1200,9 +1273,18 @@ export class GameScene extends Phaser.Scene {
     if (!st) return;
     const nowMs = Number(time) || 0;
 
-    // 时钟：真实正计时秒（服务端只在 started 步进内累计，won/gameover 天然冻结）
-    const clockStr = mmss((Number(st.timerMs) || 0) / 1000);
-    if (clockStr !== this.lastClock) { this.clockText.setText(clockStr); this.lastClock = clockStr; }
+    // 每帧取一次双角色引用（下游 updatePlayers/updateCamTarget/tutorial 复用）
+    this.pFb = st.players?.get?.("fireboy") ?? null;
+    this.pWg = st.players?.get?.("watergirl") ?? null;
+
+    // 时钟：真实正计时秒（服务端只在 started 步进内累计，won/gameover 天然冻结）。
+    // r3：整秒不变跳过字符串重算（mmss 每帧 3 个模板串分配消除）
+    const clockSec = Math.max(0, Math.floor((Number(st.timerMs) || 0) / 1000));
+    if (clockSec !== this.lastClockSec) {
+      this.lastClockSec = clockSec;
+      const clockStr = mmss(clockSec);
+      if (clockStr !== this.lastClock) { this.clockText.setText(clockStr); this.lastClock = clockStr; }
+    }
 
     // phase 差分（won 演出、ready 瞬移与整轮复位都挂在这里）
     const phase = String(st.phase ?? "");
@@ -1221,12 +1303,11 @@ export class GameScene extends Phaser.Scene {
 
     // 教学渐显判定：原版=任一角色进矩形（双方同用关卡坐标），组内全部文本 400ms 淡入/淡出。
     // 快照 ps.x/ps.y 本就是关卡坐标，与触发矩形同域直比（此前误加 PAD 形成 32px 迟触发死区）。
-    const pts: Array<{ x: number; y: number }> = [];
-    for (const role of ["fireboy", "watergirl"] as const) {
-      const ps = st.players?.get?.(role);
-      if (ps && ps.dying !== true) pts.push({ x: Number(ps.x) || 0, y: Number(ps.y) || 0 });
-    }
-    if (pts.length > 0 && !this.tutorialFrozen) this.updateTutorial(...pts);
+    // r3：标量直传（pts 数组/对象/闭包分配消除）
+    let ok1 = false, ok2 = false, tx1 = 0, ty1 = 0, tx2 = 0, ty2 = 0;
+    if (this.pFb && this.pFb.dying !== true) { ok1 = true; tx1 = Number(this.pFb.x) || 0; ty1 = Number(this.pFb.y) || 0; }
+    if (this.pWg && this.pWg.dying !== true) { ok2 = true; tx2 = Number(this.pWg.x) || 0; ty2 = Number(this.pWg.y) || 0; }
+    if ((ok1 || ok2) && !this.tutorialFrozen) this.updateTutorial(tx1, ty1, ok1, tx2, ty2, ok2);
 
     // 相机管理：解冻后每帧目标适配 + 弹簧逼近（原版 Level.update → camManager.update()）
     if (!this.camFrozen) {
@@ -1346,7 +1427,7 @@ export class GameScene extends Phaser.Scene {
     for (const role of ROLES) {
       const view = this.views.get(role);
       if (!view) continue;
-      const ps = st.players?.get?.(role);
+      const ps = role === "fireboy" ? this.pFb : this.pWg; // r3：每帧一次取（update 顶部）
       if (!ps) {
         view.glow.visible = view.legs.visible = view.head.visible = false;
         continue;
@@ -1473,16 +1554,18 @@ export class GameScene extends Phaser.Scene {
 
   /** 钻石双向差分（隐藏 + 音效；整关重开 collected=false 时复位可见，E1）。原版局内无计数 UI，钻石只在结算面板出现 */
   private updateDiamonds(st: any): void {
-    st.diamonds?.forEach?.((ds: { collected: boolean }, id: string) => {
-      const img = this.diamondSprites.get(id);
-      if (!img) return;
-      if (ds.collected && img.visible) {
-        img.setVisible(false);
-        this.sfx("sfx_diamond");
-      } else if (!ds.collected && !img.visible) {
-        img.setVisible(true);
-      }
-    });
+    st.diamonds?.forEach?.(this.cbDiamonds);
+  }
+
+  private stepDiamonds(ds: { collected: boolean }, id: string): void {
+    const img = this.diamondSprites.get(id);
+    if (!img) return;
+    if (ds.collected && img.visible) {
+      img.setVisible(false);
+      this.sfx("sfx_diamond");
+    } else if (!ds.collected && !img.visible) {
+      img.setVisible(true);
+    }
   }
 
   /**
@@ -1497,189 +1580,278 @@ export class GameScene extends Phaser.Scene {
    */
   private mechSm = new Map<string, { x: number; y: number; a: number; vx: number; vy: number; va: number; t: number; rx: number; ry: number; ra: number; init: boolean }>();
 
-  /** 取 key 的平滑后位姿（快照域数值，转换与 PAD 由各视图块自理）。snapPending 帧=瞬移直贴。 */
-  private mechTarget(key: string, x: number, y: number, a: number, nowMs: number, deltaMs: number): { x: number; y: number; a: number } {
+  /** 取 key 的平滑后位姿（快照域数值，转换与 PAD 由各视图块自理）。snapPending 帧=瞬移直贴。
+   *  r3：输出复用 this.mechOut（调用方即读即弃，全仓唯一消费者=step 机关方法）；
+   *  now/delta 走 curNow/curDelta（updateMechs 每帧先置）。 */
+  private mechTarget(key: string, x: number, y: number, a: number): { x: number; y: number; a: number } {
     let m = this.mechSm.get(key);
     if (!m) {
-      m = { x, y, a, vx: 0, vy: 0, va: 0, t: nowMs, rx: x, ry: y, ra: a, init: false };
+      m = { x, y, a, vx: 0, vy: 0, va: 0, t: this.curNow, rx: x, ry: y, ra: a, init: false };
       this.mechSm.set(key, m);
     }
     if (!m.init || this.snapPending) {
-      m.x = x; m.y = y; m.a = a; m.rx = x; m.ry = y; m.ra = a; m.t = nowMs; m.init = true;
-      return { x, y, a };
+      m.x = x; m.y = y; m.a = a; m.rx = x; m.ry = y; m.ra = a; m.t = this.curNow; m.init = true;
+      this.mechOut.x = x; this.mechOut.y = y; this.mechOut.a = a;
+      return this.mechOut;
     }
     if (x !== m.x || y !== m.y || a !== m.a) {
-      const dt = Math.min(0.2, Math.max(1 / 120, (nowMs - m.t) / 1000));
+      const dt = Math.min(0.2, Math.max(1 / 120, (this.curNow - m.t) / 1000));
       m.vx = (x - m.x) / dt;
       m.vy = (y - m.y) / dt;
       let da = a - m.a;
       da = ((da + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI; // 最短弧，防整圈翻卷
       m.va = da / dt;
-      m.x = x; m.y = y; m.a = a; m.t = nowMs;
+      m.x = x; m.y = y; m.a = a; m.t = this.curNow;
     }
     const lead = 25; // ms，≈半个快照周期
     const ex = m.x + (m.vx * lead) / 1000;
     const ey = m.y + (m.vy * lead) / 1000;
     const ea = m.a + (m.va * lead) / 1000;
-    const k = 1 - Math.exp((-30 * deltaMs) / 1000);
+    const k = 1 - Math.exp((-30 * this.curDelta) / 1000);
     m.rx += (ex - m.rx) * k;
     m.ry += (ey - m.ry) * k;
     let dra = ea - m.ra;
     dra = ((dra + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
     m.ra += dra * k;
-    return { x: m.rx, y: m.ry, a: m.ra };
+    this.mechOut.x = m.rx; this.mechOut.y = m.ry; this.mechOut.a = m.ra;
+    return this.mechOut;
   }
 
-  /** 机关快照消费（E13）：lever 角度+灯、pusher 压下、平台/箱/球位姿、风区显隐 */
+  /** 机关快照消费（E13）：lever 角度+灯、pusher 压下、平台/箱/球位姿、风区显隐。
+   *  r3：遍历回调改为 create 期绑定的 cbXxx（消除每帧 ~10 个现场闭包），
+   *  快照键→视图解析首见缓存（消除逐帧模板串/propViewKey 切片/滑轮正则）。 */
   private updateMechs(st: any, nowMs: number, deltaMs: number): void {
-    st.levers?.forEach?.((s: { state: number; angle: number }, id: string) => {
-      const v = this.leverViews.get(`l${id}`);
-      if (!v) return;
-      // 屏幕角 = +Box2D 体角（phys 两轴同负 = 180° 旋转保手性，原版实证 sprite.angle = +body.angle，
-      // forest_05 拉杆原版精灵 +30.66° 与内核沉降角同号同侧；旧版取负致贴图与碰撞体绕枢点镜像分离）
-      const deg = this.mechTarget(`l${id}`, 0, 0, Number(s.angle) || 0, nowMs, deltaMs).a * (180 / Math.PI);
-      {
-        v.angle = deg;
-        // 杆贴图中心 = body origin，绕支点半径 4.8px 公转（与 create 段初始公式同源）
-        const rad = (deg * Math.PI) / 180;
-        const sx = v.pivotX + 4.8 * Math.sin(rad);
-        const sy = v.pivotY - 4.8 * Math.cos(rad);
-        v.stick.setAngle(deg);
-        v.stick.setPosition(sx, sy);
-        v.stickLight.setAngle(deg);
-        v.stickLight.setPosition(sx, sy);
-      }
-      const on = Number(s.state) === 1;
-      if (on !== v.lightOn) {
-        v.lightOn = on;
-        v.light.setFrame(`lever_base_light_${on ? "on" : "off"}0000`);
-      }
-    });
-    st.pushers?.forEach?.((s: { state: number; x: number; y: number }, id: string) => {
-      const v = this.pusherViews.get(`b${id}`);
-      if (!v) return;
-      // 块体随 prismatic 连续下沉，贴图跟体（快照 x/y 平滑后），state 仅用于灯光语义
-      const pt = this.mechTarget(`b${id}`, Number(s.x) || 0, Number(s.y) || 0, 0, nowMs, deltaMs);
-      const bx = pt.x + PAD;
-      const by = pt.y + PAD;
-      if (bx !== v.block.x || by !== v.block.y) {
-        v.block.setPosition(bx, by);
-        v.light.setPosition(bx, by);
-      }
-      v.state = Number(s.state) === 1 ? 1 : 0;
-    });
-    st.platforms?.forEach?.((b: { x: number; y: number; angle: number; state?: number }, id: string) => {
-      const v = this.platformViews.get(`p${id}`);
-      if (!v) return;
-      const pt = this.mechTarget(`p${id}`, Number(b.x) || 0, Number(b.y) || 0, Number(b.angle) || 0, nowMs, deltaMs);
-      const px2 = pt.x + PAD;
-      const py2 = pt.y + PAD;
-      const pa = -pt.a * (180 / Math.PI);
-      v.setPosition(px2, py2);
-      v.setAngle(pa);
-      const lv = this.platformLights.get(`p${id}`);
-      const ns = Number(b.state) === 1 ? 1 : 0;
-      if (lv && ns !== lv.state) {
-        lv.state = ns;
-        lv.img.setTexture(ATLAS_MECH, ns === 1 ? "moving_platform_light_on0000" : "moving_platform_light_off0000");
-      }
-    });
-    st.props?.forEach?.((b: { x: number; y: number; angle: number }, key: string) => {
-      const v = this.bodyViews.get(this.propViewKey(key) ?? "");
-      if (!v) return;
-      const pt = this.mechTarget(`x${key}`, Number(b.x) || 0, Number(b.y) || 0, Number(b.angle) || 0, nowMs, deltaMs);
-      const qx = pt.x + PAD;
-      const qy = pt.y + PAD;
-      const qa = -pt.a * (180 / Math.PI);
-      v.setPosition(qx, qy);
-      v.setAngle(qa); // 球必转，angle 必吃
-    });
-    st.winds?.forEach?.((wd: { state: number }, id: string) => {
-      const v = this.windViews.get(`f${id}`);
-      if (!v) return;
-      const on = Number(wd.state) !== 0;
-      if (on === v.on) return;
-      v.on = on;
-      v.effect.setVisible(on);
-      if (on) {
-        v.base.play("wind_base");
-        v.effect.play("wind_effect");
-      } else {
-        v.base.stop().setFrame("wind_base0000");
-        v.effect.stop().setFrame("wind_effect0000");
-      }
-      // 原版 Wind.updateState：激活 playInstance 循环、失活停止（森林 14 关有风区）
-      const anyOn = [...this.windViews.values()].some((w) => w.on);
-      if (anyOn && !this.sound.isPlaying("sfx_wind")) this.sfx("sfx_wind", { loop: true, volume: 0.2 }); // 原版显式 0.2（bundle:1968490 附近）
-      if (!anyOn) this.sound.stopByKey("sfx_wind");
-    });
-    // 吊挂/滑轮/罗马杆位姿消费（+体角口径，同 lever）：板/杠跟体（位姿平滑），绳逐帧重指
-    st.hangings?.forEach?.((s: { x: number; y: number; angle: number }, id: string) => {
-      const v = this.hangingViews.get(`h${id}`);
-      if (!v) return;
-      const pt = this.mechTarget(`h${id}`, Number(s.x) || 0, Number(s.y) || 0, Number(s.angle) || 0, nowMs, deltaMs);
-      const x = pt.x + PAD;
-      const y = pt.y + PAD;
-      v.plank.setPosition(x, y);
-      v.plank.setAngle(pt.a * (180 / Math.PI));
-      const dx = x - v.anchorX;
-      const dy = y - v.anchorY;
-      v.rope.setPosition(v.anchorX, v.anchorY);
-      v.rope.width = Math.max(1, Math.hypot(dx, dy));
-      v.rope.setRotation(Math.atan2(dy, dx));
-    });
-    st.pulleys?.forEach?.((s: { x: number; y: number; angle: number }, key: string) => {
+    this.curNow = nowMs;
+    this.curDelta = deltaMs;
+    st.levers?.forEach?.(this.cbLevers);
+    st.pushers?.forEach?.(this.cbPushers);
+    st.platforms?.forEach?.(this.cbPlatforms);
+    st.props?.forEach?.(this.cbProps);
+    st.winds?.forEach?.(this.cbWinds);
+    st.hangings?.forEach?.(this.cbHangings);
+    st.pulleys?.forEach?.(this.cbPulleys);
+    st.romans?.forEach?.(this.cbRomans);
+  }
+
+  private stepLevers(s: { state: number; angle: number }, id: string): void {
+    let e = this.leverSnaps.get(id);
+    if (e === undefined) {
+      const k = `l${id}`;
+      const v = this.leverViews.get(k) ?? null;
+      e = v ? { v, k } : null;
+      this.leverSnaps.set(id, e);
+    }
+    if (!e) return;
+    const v = e.v;
+    // 屏幕角 = +Box2D 体角（phys 两轴同负 = 180° 旋转保手性，原版实证 sprite.angle = +body.angle，
+    // forest_05 拉杆原版精灵 +30.66° 与内核沉降角同号同侧；旧版取负致贴图与碰撞体绕枢点镜像分离）
+    const deg = this.mechTarget(e.k, 0, 0, Number(s.angle) || 0).a * (180 / Math.PI);
+    v.angle = deg;
+    // 杆贴图中心 = body origin，绕支点半径 4.8px 公转（与 create 段初始公式同源）
+    const rad = (deg * Math.PI) / 180;
+    const sx = v.pivotX + 4.8 * Math.sin(rad);
+    const sy = v.pivotY - 4.8 * Math.cos(rad);
+    v.stick.setAngle(deg);
+    v.stick.setPosition(sx, sy);
+    v.stickLight.setAngle(deg);
+    v.stickLight.setPosition(sx, sy);
+    const on = Number(s.state) === 1;
+    if (on !== v.lightOn) {
+      v.lightOn = on;
+      v.light.setFrame(`lever_base_light_${on ? "on" : "off"}0000`);
+    }
+  }
+
+  private stepPushers(s: { state: number; x: number; y: number }, id: string): void {
+    let e = this.pusherSnaps.get(id);
+    if (e === undefined) {
+      const k = `b${id}`;
+      const v = this.pusherViews.get(k) ?? null;
+      e = v ? { v, k } : null;
+      this.pusherSnaps.set(id, e);
+    }
+    if (!e) return;
+    const v = e.v;
+    // 块体随 prismatic 连续下沉，贴图跟体（快照 x/y 平滑后），state 仅用于灯光语义
+    const pt = this.mechTarget(e.k, Number(s.x) || 0, Number(s.y) || 0, 0);
+    const bx = pt.x + PAD;
+    const by = pt.y + PAD;
+    if (bx !== v.block.x || by !== v.block.y) {
+      v.block.setPosition(bx, by);
+      v.light.setPosition(bx, by);
+    }
+    v.state = Number(s.state) === 1 ? 1 : 0;
+  }
+
+  private stepPlatforms(b: { x: number; y: number; angle: number; state?: number }, id: string): void {
+    let e = this.platformSnaps.get(id);
+    if (e === undefined) {
+      const k = `p${id}`;
+      const v = this.platformViews.get(k) ?? null;
+      const lv = v ? this.platformLights.get(k) ?? null : null;
+      e = v ? { v, k, lv } : null;
+      this.platformSnaps.set(id, e);
+    }
+    if (!e) return;
+    const pt = this.mechTarget(e.k, Number(b.x) || 0, Number(b.y) || 0, Number(b.angle) || 0);
+    const px2 = pt.x + PAD;
+    const py2 = pt.y + PAD;
+    const pa = -pt.a * (180 / Math.PI);
+    e.v.setPosition(px2, py2);
+    e.v.setAngle(pa);
+    const ns = Number(b.state) === 1 ? 1 : 0;
+    if (e.lv && ns !== e.lv.state) {
+      e.lv.state = ns;
+      e.lv.img.setTexture(ATLAS_MECH, ns === 1 ? "moving_platform_light_on0000" : "moving_platform_light_off0000");
+    }
+  }
+
+  private stepProps(b: { x: number; y: number; angle: number }, key: string): void {
+    let e = this.propSnaps.get(key);
+    if (e === undefined) {
+      const vk = this.propViewKey(key) ?? "";
+      const v = vk ? this.bodyViews.get(vk) ?? null : null;
+      e = { v, k: vk };
+      this.propSnaps.set(key, e);
+    }
+    if (!e.v) return;
+    const pt = this.mechTarget(e.k, Number(b.x) || 0, Number(b.y) || 0, Number(b.angle) || 0);
+    e.v.setPosition(pt.x + PAD, pt.y + PAD);
+    e.v.setAngle(-pt.a * (180 / Math.PI)); // 球必转，angle 必吃
+  }
+
+  private stepWinds(wd: { state: number }, id: string): void {
+    let e = this.windSnaps.get(id);
+    if (e === undefined) {
+      const k = `f${id}`;
+      const v = this.windViews.get(k) ?? null;
+      e = v ? { v, k } : null;
+      this.windSnaps.set(id, e);
+    }
+    if (!e) return;
+    const v = e.v;
+    const on = Number(wd.state) !== 0;
+    if (on === v.on) return;
+    v.on = on;
+    v.effect.setVisible(on);
+    if (on) {
+      v.base.play("wind_base");
+      v.effect.play("wind_effect");
+    } else {
+      v.base.stop().setFrame("wind_base0000");
+      v.effect.stop().setFrame("wind_effect0000");
+    }
+    // 原版 Wind.updateState：激活 playInstance 循环、失活停止（森林 14 关有风区）
+    const anyOn = [...this.windViews.values()].some((w) => w.on);
+    if (anyOn && !this.sound.isPlaying("sfx_wind")) this.sfx("sfx_wind", { loop: true, volume: 0.2 }); // 原版显式 0.2（bundle:1968490 附近）
+    if (!anyOn) this.sound.stopByKey("sfx_wind");
+  }
+
+  // 吊挂/滑轮/罗马杆位姿消费（+体角口径，同 lever）：板/杠跟体（位姿平滑），绳逐帧重指
+  private stepHangings(s: { x: number; y: number; angle: number }, id: string): void {
+    let e = this.hangingSnaps.get(id);
+    if (e === undefined) {
+      const k = `h${id}`;
+      const v = this.hangingViews.get(k) ?? null;
+      e = v ? { v, k } : null;
+      this.hangingSnaps.set(id, e);
+    }
+    if (!e) return;
+    const v = e.v;
+    const pt = this.mechTarget(e.k, Number(s.x) || 0, Number(s.y) || 0, Number(s.angle) || 0);
+    const x = pt.x + PAD;
+    const y = pt.y + PAD;
+    v.plank.setPosition(x, y);
+    v.plank.setAngle(pt.a * (180 / Math.PI));
+    const dx = x - v.anchorX;
+    const dy = y - v.anchorY;
+    v.rope.setPosition(v.anchorX, v.anchorY);
+    v.rope.width = Math.max(1, Math.hypot(dx, dy));
+    v.rope.setRotation(Math.atan2(dy, dx));
+  }
+
+  private stepPulleys(s: { x: number; y: number; angle: number }, key: string): void {
+    let e = this.pulleySnaps.get(key);
+    if (e === undefined) {
       const m = /^u(\d+)([ab])$/.exec(String(key));
-      if (!m) return;
-      const v = this.pulleyViews.get(`u${m[1]}`);
-      if (!v) return;
-      const idx = m[2] === "a" ? 0 : 1;
-      const pt = this.mechTarget(`u${m[1]}${m[2]}`, Number(s.x) || 0, Number(s.y) || 0, Number(s.angle) || 0, nowMs, deltaMs);
-      const x = pt.x + PAD;
-      const y = pt.y + PAD;
-      v.planks[idx].setPosition(x, y);
-      v.planks[idx].setAngle(pt.a * (180 / Math.PI));
-      const [b1, b2] = [v.planks[0], v.planks[1]];
-      const seg = (r: Phaser.GameObjects.TileSprite, fx: number, fy: number, tx: number, ty: number) => {
-        r.setPosition(fx, fy);
-        r.width = Math.max(1, Math.hypot(tx - fx, ty - fy));
-        r.setRotation(Math.atan2(ty - fy, tx - fx));
-      };
-      seg(v.ropes[0], v.anchor1.x, v.anchor1.y, b1.x, b1.y);
-      seg(v.ropes[1], b1.x, b1.y, b2.x, b2.y);
-      seg(v.ropes[2], b2.x, b2.y, v.anchor2.x, v.anchor2.y);
-      // 轮转角 = 绳总长/π/10（原版装饰语义）
-      const total =
-        Math.hypot(b1.x - v.anchor1.x, b1.y - v.anchor1.y) +
-        Math.hypot(b2.x - b1.x, b2.y - b1.y) +
-        Math.hypot(v.anchor2.x - b2.x, v.anchor2.y - b2.y);
-      const turn = total / (Math.PI * 10);
-      v.wheels[0].setRotation(turn);
-      v.wheels[1].setRotation(turn);
-    });
-    st.romans?.forEach?.((s: { x: number; y: number; angle: number }, id: string) => {
-      const v = this.romanViews.get(`r${id}`);
-      if (!v) return;
-      const pt = this.mechTarget(`r${id}`, Number(s.x) || 0, Number(s.y) || 0, Number(s.angle) || 0, nowMs, deltaMs);
-      v.bar.setPosition(pt.x + PAD, pt.y + PAD);
-      v.bar.setAngle(pt.a * (180 / Math.PI));
-    });
+      if (m) {
+        const v = this.pulleyViews.get(`u${m[1]}`) ?? null;
+        e = v ? { v, idx: m[2] === "a" ? 0 : 1, k: `u${m[1]}${m[2]}` } : null;
+      } else {
+        e = null;
+      }
+      this.pulleySnaps.set(key, e);
+    }
+    if (!e) return;
+    const v = e.v;
+    const idx = e.idx;
+    const pt = this.mechTarget(e.k, Number(s.x) || 0, Number(s.y) || 0, Number(s.angle) || 0);
+    const x = pt.x + PAD;
+    const y = pt.y + PAD;
+    v.planks[idx].setPosition(x, y);
+    v.planks[idx].setAngle(pt.a * (180 / Math.PI));
+    const b1 = v.planks[0];
+    const b2 = v.planks[1];
+    // 三段绳逐段重指（r3：内联展开，消除每帧 seg 闭包与 [b1,b2] 解构数组）
+    const r0 = v.ropes[0];
+    r0.setPosition(v.anchor1.x, v.anchor1.y);
+    r0.width = Math.max(1, Math.hypot(b1.x - v.anchor1.x, b1.y - v.anchor1.y));
+    r0.setRotation(Math.atan2(b1.y - v.anchor1.y, b1.x - v.anchor1.x));
+    const r1 = v.ropes[1];
+    r1.setPosition(b1.x, b1.y);
+    r1.width = Math.max(1, Math.hypot(b2.x - b1.x, b2.y - b1.y));
+    r1.setRotation(Math.atan2(b2.y - b1.y, b2.x - b1.x));
+    const r2 = v.ropes[2];
+    r2.setPosition(b2.x, b2.y);
+    r2.width = Math.max(1, Math.hypot(v.anchor2.x - b2.x, v.anchor2.y - b2.y));
+    r2.setRotation(Math.atan2(v.anchor2.y - b2.y, v.anchor2.x - b2.x));
+    // 轮转角 = 绳总长/π/10（原版装饰语义）
+    const total =
+      Math.hypot(b1.x - v.anchor1.x, b1.y - v.anchor1.y) +
+      Math.hypot(b2.x - b1.x, b2.y - b1.y) +
+      Math.hypot(v.anchor2.x - b2.x, v.anchor2.y - b2.y);
+    const turn = total / (Math.PI * 10);
+    v.wheels[0].setRotation(turn);
+    v.wheels[1].setRotation(turn);
+  }
+
+  private stepRomans(s: { x: number; y: number; angle: number }, id: string): void {
+    let e = this.romanSnaps.get(id);
+    if (e === undefined) {
+      const k = `r${id}`;
+      const v = this.romanViews.get(k) ?? null;
+      e = v ? { v, k } : null;
+      this.romanSnaps.set(id, e);
+    }
+    if (!e) return;
+    const pt = this.mechTarget(e.k, Number(s.x) || 0, Number(s.y) || 0, Number(s.angle) || 0);
+    e.v.bar.setPosition(pt.x + PAD, pt.y + PAD);
+    e.v.bar.setAngle(pt.a * (180 / Math.PI));
   }
 
   /** 平台电机声（原版 updateState 激活时 playInstance @1719824；无事件通道，按位移自检） */
   private updatePlatformSound(st: any): void {
-    let anyStart = false;
-    st.platforms?.forEach?.((b: { x: number; y: number }, id: string) => {
-      const x = Number(b.x) || 0;
-      const y = Number(b.y) || 0;
-      const prev = this.platformPrev.get(id);
-      const moved = prev ? Math.abs(prev.x - x) + Math.abs(prev.y - y) > 0.5 : false;
-      if (moved && !this.platformMoving.has(id)) anyStart = true;
-      if (moved) this.platformMoving.add(id);
-      else this.platformMoving.delete(id);
-      this.platformPrev.set(id, { x, y });
-    });
-    if (anyStart) this.sfx("sfx_platform");
+    this.platAnyStart = false;
+    st.platforms?.forEach?.(this.cbPlatSnd);
+    if (this.platAnyStart) this.sfx("sfx_platform");
+  }
+
+  private platAnyStart = false;
+
+  private stepPlatSnd(b: { x: number; y: number }, id: string): void {
+    const x = Number(b.x) || 0;
+    const y = Number(b.y) || 0;
+    let prev = this.platformPrev.get(id);
+    if (prev === undefined) {
+      prev = { x, y };
+      this.platformPrev.set(id, prev);
+    }
+    const moved = Math.abs(prev.x - x) + Math.abs(prev.y - y) > 0.5;
+    if (moved && !this.platformMoving.has(id)) this.platAnyStart = true;
+    if (moved) this.platformMoving.add(id);
+    else this.platformMoving.delete(id);
+    prev.x = x;
+    prev.y = y;
   }
 
   /** Navies 漂移（原版每帧：r′+=speed.r → pos.r=offset.r·sin r′ → 极坐标转直角坐标） */
