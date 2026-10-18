@@ -66,9 +66,11 @@ node benchmark/perf-client.mjs --save <label>                   # 客户端帧�
   reload 缓存命中；页面错误非空即失败。快照 `results/load-<label>.json`。
 - `perf-sync`：快照路径成本拆解，buildState/syncState 与 ForestRoom.syncState 逐字段同构
   （r1 起机关位姿走 mechanisms 直读，镜像同构）；20Hz 编码；快照 `results/sync-<label>.json`。
+  **r4 起生产语义**：encode 后 discardChanges（applyPatches 同款），patch=本网格真增量；
+  r0/r1/r2 快照的 347/2646B 为累积并集伪影，绝对值不可再比（r4 报告勘误节）。
 - `perf-serialize`：真实 RoomState+Encoder+客户端 Reflection/Decoder 全管线（含等价校验
   exit 1 守门），20Hz vs 60Hz 出站对比（patch 尺寸与出站率无关，60Hz=3×包数）；快照
-  `results/serialize-<label>.json`。
+  `results/serialize-<label>.json`。r4 起同上生产语义修正（旧 370/450/2685B 档→50/58/91B 档）。
 - `perf-routeio`：12 正式路线整关回放（runKernel 门禁路径）/纯 step 环/世界构建三口径
   （`PERF_ROUTES`/`PERF_RR_RUNS` 可覆盖）；快照 `results/routeio-<label>.json`。
   r2 起 makeWorld 内含逐关卡解析缓存（55d580b）：build 计量为**缓存命中态**（首个预热调用
@@ -131,6 +133,7 @@ git 列以快照 JSON `meta.git`（存档时脚本记录）为准；visual 系�
 | load-r2-load | 55d580b | — | — | 冷启硬口径与 r0 逐字一致（4862KB/22req、reload 3KB） |
 | client-r3-client-before / -before2 | bb3b4ab | — | — | r3 前基线×2（canvas 分配 1374/1372KB/s、setDepth 968/966/8s、updateAvg 0.199/0.176ms） |
 | client-r3-client | be3d964 | — | — | r3 三件后：canvas 分配 **1114KB/s（-19%）**、setDepth **968→0**、updateAvg 0.146ms；WebGL 分配 776KB/s 带内 |
+| serialize-r4-encode / sync-r4-encode | f0118d3 | — | — | r4 两件后（生产语义）：60Hz scripted patch 50/58/91B、encCPU 0.29/0.11/0.27ms/仿真秒、线路 2.93/3.39/5.36KB/s/客户端；idle 20Hz patch 4/12B；**旧 serialize/sync 快照为累积伪影口径不可比** |
 
 ## 注意
 

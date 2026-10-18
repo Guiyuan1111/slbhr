@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "label": "r4-encode",
+    "git": "f0118d3",
+    "date": "2026-10-18T09:50:59.735Z",
+    "note": "buildState/syncState 与 ForestRoom.syncState 同构（含 0.3.25 hangings/pulleys/romans）；编码 20Hz；r4 起 encode 后 discardChanges（生产 applyPatches 同款，patch=本网格真增量）",
+    "node": "v22.22.1"
+  },
+  "rows": [
+    {
+      "levelId": "forest_01",
+      "entities": {
+        "players": 2,
+        "diamonds": 7,
+        "levers": 1,
+        "pushers": 2,
+        "platforms": 2,
+        "props": 1,
+        "winds": 0,
+        "hangings": 0,
+        "pulleys": 0,
+        "romans": 0
+      },
+      "stepMs": 0.0163,
+      "syncMs": 0.0074,
+      "enc20HzMs": 0.0021,
+      "avgPatchBytes": 4,
+      "encNonEmptyRate": 1
+    },
+    {
+      "levelId": "forest_bonus_2",
+      "entities": {
+        "players": 2,
+        "diamonds": 4,
+        "levers": 2,
+        "pushers": 12,
+        "platforms": 47,
+        "props": 35,
+        "winds": 0,
+        "hangings": 0,
+        "pulleys": 4,
+        "romans": 0
+      },
+      "stepMs": 0.2915,
+      "syncMs": 0.0206,
+      "enc20HzMs": 0.0068,
+      "avgPatchBytes": 12,
+      "encNonEmptyRate": 1
+    }
+  ]
+}
