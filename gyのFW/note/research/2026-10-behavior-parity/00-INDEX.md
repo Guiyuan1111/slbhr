@@ -17,7 +17,7 @@
 | 08 | [08-round2.md](08-round2.md) 二轮综合+状态板 | 行动项 1（风阻尼）✅、3（风相位）✅、2（oracle 金）首例落册全网 6/6 PASS、4（路线库补全）⏸ 与机器探索线决策联动；状态板=本索引 §3 挂账的上游 | ✅ fff8338+8845c5b |
 | 09 | [09-wind-phase.md](09-wind-phase.md) 风 sin 相位对拍 | 时钟源裁定：oracle 风钟=game.time.now=本帧 rAF ts 取整（引文 L14653/L25938/L24247）；与内核 simTimeS 恒差 16.333ms=读点区间端点约定差+首 dt 钳残差，力公式 1010 笔 float64 闭环（max 3.55e-14）；forest_26/oracle-gold 落册（风关首例）；内核锚定改时未采纳留作可逆后续（§3 挂账 4） | ✅ c53d0e0+252c967+49185bc+3282ac0 |
 | 10 | [10-rotation-system.md](10-rotation-system.md) 旋转体系全链路仲裁 | 用户「旋转没原版好」终审=物理面位级同源（对拍 max\|Δθ\|≤1.9e-4°，采样器单 tick 约定修正后），根因在表现层：Colyseus 默认 20Hz patch×客户端直贴=阶梯渲染 → 客户端 mechTarget 平滑已修（7903c57，rms 0.308°→0.232°、冻结 9→0 帧）；后续 1/2 转交 netopt（已落地，见 §3 挂账 5） | ✅ f660a41 |
-| 11 | [11-network-and-alignment.md](11-network-and-alignment.md) 网络同步与量具收紧 | netopt 槽：patch 20→60Hz（4ba8478，带宽 ×2.8-3.0≈+1.3-1.9KB/s 可忽略）、self 角色 dead-reckoning lead 50→17ms（3e72433，rms 5.85→0.16px）、oracle-gold 采样对齐 alignShift=1（9ff9c1d，中位归零；win 帧 +96f 归因修正=oracle 终幕 tuck 动画）、tolerance 无偏重定 25→30/173→177。**本档文件在写未提交（代码面已入库）** | 🔄 netopt 槽 |
+| 11 | [11-network-and-alignment.md](11-network-and-alignment.md) 网络同步与量具收紧 | netopt 槽：patch 20→60Hz（4ba8478，带宽 ×2.8-3.0≈+1.3-1.9KB/s 可忽略）、self 角色 dead-reckoning lead 50→17ms（3e72433，rms 5.85→0.16px）、oracle-gold 采样对齐 alignShift=1（9ff9c1d，中位归零；win 帧 +96f 归因修正=oracle 终幕 tuck 动画）、tolerance 无偏重定 25→30/173→177；e2e 三门禁全绿 | ✅ 269d83d |
 | 12 | [12-animation-audit.md](12-animation-audit.md) 动画保真度排查 | 状态级对拍（文字模型禁像素判读）：注册面 0 实义差异（getFrameIndexes 过滤字证）、切换序列逐事件同构、主家族双侧 30fps、循环长度 11/19/30/8/5 双侧一致、烟雾 ±2f；唯一实质差异=dying 即藏身已修（5b783e7，hidden 104/195→195/195 vs oracle 187/188）；大件挂账见 §3 挂账 3 | ✅ 623b372+5b783e7+e477f9c |
 
 ## §2 工具链速查
@@ -54,13 +54,13 @@
 2. **机器探索线三选一**（05 号档 §3，决策呈用户待裁）：auto-build 产线复活不只是通关供给，是 48 关 dt 谱与 fixture 行为网的路线供给方，复活=同时补齐行为复刻覆盖率瓶颈。
 3. **表现层大件**（12 号档 §5）：①液体冻结/冰面演出族（机制+表现一体、工作量档大；森林 48 关无用例，大庙开荒随机制一并做）②Portal 渲染族（中档；森林/教学关数据 0 用例）。TOP3 结算楼梯已实现、仅剩 <1 帧级微差，不需要做。
 4. **风相位内核锚定改时未采纳**（08 状态板 #3、09 号档）：WorldOptions.windClockS+16.333ms 修正入口已内建，未采纳——动风钟漂 det 基线、生产固定 dt 下玩家不可见，留作可逆后续。存疑待核：其收益数字（oracle-gold 容差收紧 173→~120px）系 alignShift 重定前口径，11 号档 tolerance 已改 177，若启动需按新口径重估。
-5. **已完成销账**（原 10 号档 §5 后续 1/2，netopt 槽落地，代码提交可核）：+1 采样对齐收紧 → 9ff9c1d（alignShift=1+两关 tolerance 重定）；服务器 setPatchRate(1000/60) → 4ba8478。11 号档文档收尾后本条可并入对应档行。
+5. **已完成销账**（原 10 号档 §5 后续 1/2，netopt 槽落地，代码+档卷提交可核）：+1 采样对齐收紧 → 9ff9c1d（alignShift=1+两关 tolerance 重定，档卷 269d83d）；服务器 setPatchRate(1000/60) → 4ba8478（档卷同上）。
 
 ## 附录 · 文档盘点记录（docsync 槽，2026-10-18）
 
 | 项 | 盘点结论 | 处置 |
 |---|---|---|
-| 本目录 01–12 号档 | 11 号档 netopt 在写（未跟踪），其余 11 档均已收官入库 | 建本索引 |
+| 本目录 01–12 号档 | 12/12 全部收官入库（11 号档由 netopt 槽于本次盘点进行中提交，269d83d，索引已随之更新状态） | 建本索引 |
 | gyのFW/README.md | 版本横幅停在 0.3.28（缺 0.3.29-31 与发版后行为复刻线）；无验证/量具章节 | 已更新：横幅更至 0.3.31+行为复刻线概述，新增「验证与量具」节指向本索引 |
 | 根 README.md | det 基线示例 `--compare r30` 过期（现役 **r32**，det-r32.json，24c5e0f 定版；风阻尼修复位级中性故不 bump）；文档入口缺 research 档卷；关卡账目缺 forest_25 豁免候选待追认注记 | 已更新三处 |
 | note/ubuntu-server-profile.md | 2026-10-15 接管日快照，逐项核对当下实态（22/80/443/3389/8787/11010/15888/23107 监听在、EasyTier/1Panel/RDP 描述相符、3700 游玩服为可起停运行态非档案项） | 相符，未改 |
