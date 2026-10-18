@@ -1357,10 +1357,14 @@ export class GameScene extends Phaser.Scene {
         view.cx = tx;
         view.cy = ty;
       } else {
-        // 速度外推（dead reckoning）+ 高收敛率：服务端 20Hz 快照阶梯位 + 纯指数平滑会产生
-        // 持续滞后的"阻尼感"（实玩反馈）。先按快照速度前推半个快照周期，再向目标强收敛——
-        // 本机角色近乎贴手，对方也明显跟脚。
-        const lead = role === this.myRole ? 50 : 25; // ms 外推（≈半个快照周期）
+        // 速度外推（dead reckoning）+ 高收敛率：先按快照速度前推 lead，再向目标强收敛——
+        // 本机角色近乎贴手，对方也明显跟脚。lead 的职责随出站 patch 率而变（netopt 11 号档）：
+        // 60Hz patch（现役）下快照零陈旧，lead 只需抵消本档收敛滞后 16.67·(1−k)/k
+        // （self rate40 k=0.487 → 17.6ms；other rate20 k=0.283 → 42ms，对方留 25ms 少量
+        // 跟随滞后防超车感，60Hz 实测不劣化故不调）；20Hz patch（FW_PATCH_MS=50 回退口径）
+        // 下还需抵消半个快照周期的陈旧锯齿，原 self lead50 即为此设——60Hz 下反而前冲震荡
+        // （A/B 网格扫描：self rms 5.85→0.16px、maxAbs 9.49→1.93；对 20Hz 回退 3.0→3.3px 同级）。
+        const lead = role === this.myRole ? 17 : 25; // ms 外推
         const ex = tx + ((Number(ps.vx) || 0) * lead) / 1000;
         const ey = ty + ((Number(ps.vy) || 0) * lead) / 1000;
         const rate = role === this.myRole ? 40 : 20;
