@@ -35,6 +35,60 @@ const VENDOR = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "vendor
 
 let cached: Box2DNamespace | undefined;
 
+/**
+ * 接触池懒填（r2 perf 件1，2026-10-18）：vendor 的 b2ContactFactory.AddType 在每个工厂
+ * （= 每个 b2World）构造时 `b2MakeArray(256, …)` 预填 7 类接触各 256 个——1792 次构造器
+ * + goog.base 父类分派（`arguments.callee.caller` 慢路径），占世界构建 CPU ~64%
+ * （r2 剖析：note/report/perf/2026-10-18-r2-optimization.md §一）；而关卡全期真实接触
+ * 创建远低于此量，createFcn 本就有池耗尽回退（`e.length > 0 ? e.pop() : a(alloc)`）。
+ *
+ * 求值后覆写 AddType（vendor 字节不动），与 vendor 实现逐语句同构——唯一差异是预填
+ * 256→0：接触对象改为首次需要时现场构造（走同一条回退路径），destroy→push 回池复用
+ * 语义不变；register.pool 字段全仓库只在 AddType 内写入、无其它读者。覆写发生在
+ * loadBox2d 返回前——早于任何 b2World/工厂构造，装载顺序安全。
+ *
+ * 数值零依赖论证（对象构造时机后移、状态同值）：
+ * - createFcn 两条来源（预填 pop / 回退构造）产出的对象都经同一入口 Reset(fixtureA,
+ *   indexA, fixtureB, indexB) 进入使用：m_flags = e_enabledFlag（清 toi/filter 位）、
+ *   m_manifold.pointCount = 0、m_nodeA/B 全清、friction/restitution 由 fixture 重混；
+ * - 首次 Update 的换位（old↔current）把 Reset 后的 pointCount=0 流形挪入 old 槽 →
+ *   warm-start 循环读 oldManifold.pointCount=0，与构造器新对象完全同值——回用对象
+ *   携带的旧流形在被读之前必已被换位+Evaluate 覆写；
+ * - m_toi 仅在 e_toiFlag 置位（伴随重写，@7836）后才被读（@7810），Reset 清位；
+ * - SetTangentSpeed 全仓库无调用方，m_tangentSpeed 恒原型值 0；
+ * - 池回用（destroy→pop）本就是 vendor 运行期既有路径（钻石体销毁→接触销毁→回池），
+ *   r0/r1 det 基线即含此行为。位级中性由 det 48/48 + fixtures 6/6 实测背书。
+ */
+function lazyContactPoolPrefill(ns: Box2DNamespace): void {
+  ns.b2ContactFactory.prototype.AddType = function (
+    this: {
+      m_registers: Array<Array<{ pool: unknown; createFcn: (a: unknown) => any; destroyFcn: (a: any, b: unknown) => void; primary: boolean }>>;
+    },
+    create: (a: unknown) => any,
+    _destroy: (a: any, b: unknown) => void,
+    type1: number,
+    type2: number,
+  ): void {
+    const pool: any[] = []; // 与 vendor 唯一差异：不预填 256
+    const createFcn = (alloc: unknown) => (pool.length > 0 ? pool.pop() : create(alloc));
+    const destroyFcn = (contact: any, _alloc: unknown) => {
+      pool.push(contact);
+    };
+    const forward = this.m_registers[type1][type2];
+    forward.pool = pool;
+    forward.createFcn = createFcn;
+    forward.destroyFcn = destroyFcn;
+    forward.primary = true;
+    if (type1 !== type2) {
+      const reverse = this.m_registers[type2][type1];
+      reverse.pool = pool;
+      reverse.createFcn = createFcn;
+      reverse.destroyFcn = destroyFcn;
+      reverse.primary = false;
+    }
+  };
+}
+
 export function loadBox2d(): Box2DNamespace {
   if (cached) return cached;
   const src = readFileSync(VENDOR, "latin1");
@@ -80,6 +134,7 @@ export function loadBox2d(): Box2DNamespace {
     globalThis,
   );
   if (!ns) throw new Error("box2d bundle 求值完成但未见 this.box2d 导出");
+  lazyContactPoolPrefill(ns);
   cached = ns as Box2DNamespace;
   return cached;
 }
