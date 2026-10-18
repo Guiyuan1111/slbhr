@@ -3,8 +3,11 @@
  *
  * 原版游戏音频全集按【首个使用场景】分两批：
  * - menu 批：开始/选关/设置/制作名单/全通关彩带界面需要的键（仅 bgm_menu）；
- * - game 批：游戏内音效与关卡音乐（跳跃/拾取/死亡/开门/拉杆/平台/BGM 共 18 键 ≈2.8MB）——
- *   由 GameScene.preload 装载，Menu 冷启动不再为其付出传输。
+ * - game 批：游戏内音效与关卡音乐（跳跃/拾取/死亡/开门/拉杆/平台/BGM 共 18 键，
+ *   磁盘实测 2,058,151B ≈ 2.0MB，LevelMusic.mp3 占 1.29MB）——Menu 冷启动不为其付出
+ *   传输：0.3.21 起由 GameScene.preload 懒装载（建房握手期并行下载），r6 起提前到
+ *   MenuScene 驻留期后台暖装（BootScene.startBgWarm 同批），GameScene.preload 保留为
+ *   兜底声明（已入 cache.audio 的键由 Phaser Loader 静默跳过）。
  *
  * 装载方式沿用 BootScene 既有约定：
  * - 无扩展名流式路由 /assets/audio/s/<name>（防 IDM 等按扩展名劫持媒体请求的工具）；

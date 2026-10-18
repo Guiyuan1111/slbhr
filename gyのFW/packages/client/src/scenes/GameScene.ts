@@ -286,9 +286,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload(): void {
-    // 游戏内音频懒装载（0.3.21 加载性能优化）：18 键 ≈2.8MB 从 Boot 挪到此处，
-    // Menu/选关冷启动不再为其付出传输；建房（网络握手）期间并行下载。
-    // 场景重启时 Loader 对已入缓存的键自动跳过，不会重复下载。
+    // 游戏内音频兜底装载（0.3.21 从 Boot 挪出；r6 起 MenuScene 驻留期已后台暖装，
+    // 常规路径此处全部命中 cache.audio 静默跳过零传输）；暖装未启动/被打断的路径
+    // （邀请深链直进等）在此补齐。场景重启时同样不会重复下载。
     loadAudioPack(this, AUDIO_GAME);
     // 游戏内四图集（r5 冷启动装载序整形）：Boot 不再装载（Menu 首帧用不到），
     // MenuScene 后台暖装通常已就绪（此处静默跳过）；暖装被提前打断（快速建房/

@@ -120,8 +120,9 @@ export class MenuScene extends Phaser.Scene {
       this.sound.play("bgm_menu", { loop: true });
     }
 
-    // 后台暖装游戏内四图集（r5 冷启动装载序整形）：利用玩家在开始界面的驻留把
-    // ground/mech/temple/popup 提前拉齐，进 Game 时 GameScene.preload 只剩音频。
+    // 后台暖装游戏内四图集+音频批（r5 冷启动装载序整形；r6 并入音频）：利用玩家在
+    // 开始界面的驻留把 ground/mech/temple/popup 与游戏内 18 音频键提前拉齐，进 Game 时
+    // GameScene.preload 通常全命中缓存零装载。
     // 延迟 120ms：先让 Menu 首帧独占渲染/解码，再开始后台拉取（不与首帧抢线程）；
     // 立刻建房时 enterGame 会等暖装落定再切 Game（BootScene.bgWarmSettled），
     // 不与 GameScene 兜底装载形成双载竞态。
