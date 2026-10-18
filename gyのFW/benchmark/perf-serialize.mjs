@@ -8,6 +8,11 @@
  *   @colyseus/core SchemaSerializer.applyPatches 的无 filter 路径同一调用（RoomState 无
  *   @filter → 单份 patch 全客户端广播；生产在此之后是 client.raw(bytes) 的 ws 出站，本基准
  *   不含 ws/网络层，带宽按 bytes×客户端数换算）。
+ *   r4（2026-10-18）生产语义修正：encode 后补 encoder.discardChanges()（生产 applyPatches
+ *   发送后即 discard）。r0 原版缺这一步——变更集自起点累积，patch 实为「自始变更字段并集
+ *   按最新值重编码」（370/450/2685B 档），非生产每网格真增量（同负载实测 50/58/91B 档，
+ *   bonus_2 达 29.5×）；enc/dec CPU 与线路 KB/s 同受此伪影放大。旧快照绝对值不可再比，
+ *   修正披露见 note/report/perf/2026-10-18-r4-encode.md。
  * - 客户端侧：Reflection.encode/decode 构造反射态（colyseus.js SchemaSerializer.handshake
  *   同款）+ Decoder.decode(patch)，即真实浏览器解码路径的 CPU 部分。
  * - 负载：真实关卡 World（@fw/shared/kernel）+ 确定性 scripted 输入（perf-determinism 同款
@@ -171,10 +176,11 @@ function makePair(levelId) {
   return { world, state, encoder, clientDec, fullStateBytes: full.length };
 }
 
-/** 生产 applyPatches 同款：[0]=协议字节 + encode({offset:1}) + 客户端 offset 1 解码 */
+/** 生产 applyPatches 同款：[0]=协议字节 + encode({offset:1}) + discardChanges + 客户端 offset 1 解码 */
 function encodePatch(encoder, clientDec) {
   encoder.sharedBuffer[0] = 0; // Protocol.ROOM_STATE_PATCH 的占位（值不影响字节计账）
   const bytes = encoder.encode({ offset: 1 });
+  encoder.discardChanges(); // 生产 applyPatches 发送后即 discard——patch 只含本网格增量
   clientDec.decode(bytes, { offset: 1 });
   return bytes;
 }
@@ -239,6 +245,7 @@ function measure(levelId, grid) {
       t = performance.now();
       encoder.sharedBuffer[0] = 0;
       const bytes = encoder.encode({ offset: 1 });
+      encoder.discardChanges();
       encMs.push(performance.now() - t);
       t = performance.now();
       clientDec.decode(bytes, { offset: 1 });
@@ -289,7 +296,7 @@ const payload = {
     loadavg: os.loadavg().map((v) => +v.toFixed(2)),
     inputs: INPUT_MODE,
     ticks: TICKS,
-    method: "服务端 encoder.encode({offset:1})（SchemaSerializer.applyPatches 无 filter 同款调用，不含 ws 出站）+ 客户端 Reflection/Decoder.decode；字段写入与 ForestRoom.syncState 同构",
+    method: "服务端 encoder.encode({offset:1})+discardChanges（SchemaSerializer.applyPatches 无 filter 同款，patch=本网格真增量；不含 ws 出站）+ 客户端 Reflection/Decoder.decode；字段写入与 ForestRoom.syncState 同构",
   },
   rows,
 };

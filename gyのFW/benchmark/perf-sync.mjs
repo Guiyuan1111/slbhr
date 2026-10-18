@@ -8,6 +8,13 @@
  * 编码率维持头部声明的 20Hz（历史可比）；20Hz vs 60Hz 出站对比另见 perf-serialize.mjs。
  * 新增 --save/--compare 快照（与其余 perf 系同款），产物 benchmark/results/sync-<label>.json。
  *
+ * 2026-10-18（perfopt4 槽 r4）生产语义修正：原实现 encode 后不调 encoder.discardChanges()，
+ * 变更集自房间起点累积——量出的 patch 是「自始变更字段的并集按最新值重编码」，非生产
+ * 每 patch 网格的真增量（生产 @colyseus/core SchemaSerializer.applyPatches 发送后即
+ * discardChanges）。r0/r1 存档的 patch 347B/2646B 即此伪影（生产口径实测 idle 仅 5B、
+ * scripted 50~91B 量级）。现每次 encode 后 discard，与生产同构；旧快照绝对值不可再比，
+ * 详见 note/report/perf/2026-10-18-r4-encode.md。
+ *
  * 用法：
  *   node --import tsx benchmark/perf-sync.mjs                     # 跑分打印
  *   node --import tsx benchmark/perf-sync.mjs --save <label>      # 存快照
@@ -159,8 +166,8 @@ for (const levelId of LEVELS) {
     pushers: state.pushers.size, platforms: state.platforms.size, props: state.props.size,
     winds: state.winds.size, hangings: state.hangings.size, pulleys: state.pulleys.size, romans: state.romans.size,
   };
-  // 预热
-  for (let i = 0; i < 120; i++) { world.step(1 / 60, inputs); syncState(world, state); encoder.encode(); }
+  // 预热（encode 后 discard=生产 applyPatches 同款，patch 只含本网格增量）
+  for (let i = 0; i < 120; i++) { world.step(1 / 60, inputs); syncState(world, state); encoder.encode(); encoder.discardChanges(); }
   const N = 600;
   let tStep = 0, tSync = 0, tEnc = 0, encBytes = 0, encNonEmpty = 0;
   // 20Hz 编码（每 3 tick 一次），历史口径与 2026-10-08 报告可比
@@ -174,6 +181,7 @@ for (const levelId of LEVELS) {
     if (i % 3 === 2) {
       t = performance.now();
       const bytes = encoder.encode();
+      encoder.discardChanges();
       tEnc += performance.now() - t;
       if (bytes) { encBytes += bytes.length; encNonEmpty++; }
     }
@@ -197,7 +205,7 @@ const payload = {
     label: argSave ?? argCompare ?? "(run)",
     git: execSync("git rev-parse --short HEAD", { cwd: ROOT }).toString().trim(),
     date: new Date().toISOString(),
-    note: "buildState/syncState 与 ForestRoom.syncState 同构（含 0.3.25 hangings/pulleys/romans）；编码 20Hz",
+    note: "buildState/syncState 与 ForestRoom.syncState 同构（含 0.3.25 hangings/pulleys/romans）；编码 20Hz；r4 起 encode 后 discardChanges（生产 applyPatches 同款，patch=本网格真增量）",
     node: process.version,
   },
   rows,
