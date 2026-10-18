@@ -15,8 +15,42 @@ export type B2 = ReturnType<typeof loadBox2d>;
 
 let cached: B2 | undefined;
 
+/**
+ * b2Timer 恒零遥测桩（r1 perf 件2，2026-10-18）：vendor 的 b2Timer 是纯遥测——
+ * m_profile 只写不读（8 处赋值 + 2 处累加，GetProfile 全仓库无调用方）、
+ * b2_toiTime/b2_toiCalls/b2_toiMaxTime 纯计数器，均不进任何物理分支（静态审计见
+ * note/research/2026-10-18-perf-hotspot/01-hotspot.md §2.2/§3 #1）；而每步 12~13 次
+ * `new Date().getTime()` + 等量时钟系统调用是剖析面最大免费项（idle self 13.4%、
+ * replay 5.8%）。
+ *
+ * 求值后覆写（vendor 文件字节不动）：
+ * - 原型方法 Reset/GetMilliseconds 恒零——vendor 求值期已创建的静态计时器
+ *   （b2TimeOfImpact.s_timer / b2Island.s_timer）与此原型共享，一并覆盖；
+ * - 构造器替换为免 new Date 的零桩，复用原原型（instanceof 语义不变）。
+ *
+ * 数值零依赖由实测背书：perf-determinism 48/48 位级一致 + fixture-runner 6/6。
+ */
+function stubB2TimerTelemetry(ns: B2): void {
+  const proto = ns.b2Timer.prototype;
+  proto.Reset = function (this: { m_start: number }) {
+    this.m_start = 0;
+    return this;
+  };
+  proto.GetMilliseconds = function () {
+    return 0;
+  };
+  function ZeroTimer(this: { m_start: number }) {
+    this.m_start = 0;
+  }
+  ZeroTimer.prototype = proto;
+  ns.b2Timer = ZeroTimer;
+}
+
 export function b2(): B2 {
-  if (!cached) cached = loadBox2d();
+  if (!cached) {
+    cached = loadBox2d();
+    stubB2TimerTelemetry(cached);
+  }
   return cached;
 }
 
