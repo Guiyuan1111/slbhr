@@ -54,6 +54,7 @@ node --import tsx benchmark/perf-sync.mjs --save <label>        # tick 链拆解
 node --import tsx benchmark/perf-serialize.mjs --save <label>   # 真实 RoomState 出站 20 vs 60Hz 价签
 node --import tsx benchmark/perf-routeio.mjs --save <label>     # 路线回放/纯 step/世界构建吞吐
 node --expose-gc --import tsx benchmark/perf-mem.mjs --save <label>  # World 常驻/创建销毁/并发峰值
+node benchmark/perf-client.mjs --save <label>                   # 客户端帧预算（r3 起；双渲染器）
 ```
 
 - `perf-step`：每关预热 90 步 + 600 步计时（`PERF_STEPS`/`PERF_LEVELS` 可覆盖），
@@ -75,6 +76,11 @@ node --expose-gc --import tsx benchmark/perf-mem.mjs --save <label>  # World 常
 - `perf-mem`：World 常驻斜率、创建销毁吞吐、50 并发峰值差分（需 --expose-gc）；
   快照 `results/mem-<label>.json`。r2 起接触池懒填（c3661b0）后每 World 常驻含按需接触，
   与 r0 快照（预填 1792 接触对象口径）不可直列。
+- `perf-client`：客户端帧预算（r3 起）——headless chromium + 真服 + 双页入房，页内打点
+  PRE_STEP→POST_STEP（update 段）/POST_RENDER（帧总）+ performance.memory 正增量累计（分配速率近似）
+  + mechTarget/setDepth 计数；每轮双渲染器：WebGL（headless SwiftShader 的 present 阻塞为环境项，
+  JS 面可比）与 Canvas（stub WebGL，软光栅全主线程，渲染段可比）。快照 `results/client-<label>.json`。
+  同带复跑波动参考：canvas 分配 ±1%、帧总 p50 ±0.6ms。
 
 ## 快照索引
 
@@ -123,6 +129,8 @@ git 列以快照 JSON `meta.git`（存档时脚本记录）为准；visual 系�
 | sync-r2-sync | 55d580b | — | — | patch 347/2646B 逐字不变（锚仍可 --compare r1-sync） |
 | mem-r2-mem | 55d580b | — | — | 每 World 常驻 01 0.69/bonus_2 2.88MB、创建销毁 251.6/s、50 并发 Δ35/151MB |
 | load-r2-load | 55d580b | — | — | 冷启硬口径与 r0 逐字一致（4862KB/22req、reload 3KB） |
+| client-r3-client-before / -before2 | bb3b4ab | — | — | r3 前基线×2（canvas 分配 1374/1372KB/s、setDepth 968/966/8s、updateAvg 0.199/0.176ms） |
+| client-r3-client | be3d964 | — | — | r3 三件后：canvas 分配 **1114KB/s（-19%）**、setDepth **968→0**、updateAvg 0.146ms；WebGL 分配 776KB/s 带内 |
 
 ## 注意
 

@@ -1,0 +1,53 @@
+{
+  "meta": {
+    "label": "r3-client-before2",
+    "level": "forest_01",
+    "secs": 8,
+    "git": "bb3b4ab",
+    "date": "2026-10-18T05:07:41.811Z",
+    "node": "v22.22.1",
+    "note": "WebGL=headless SwiftShader（present 阻塞为环境项，JS 面可比）；Canvas=软光栅全主线程（渲染段可比）"
+  },
+  "webgl": {
+    "frames": 121,
+    "secs": 8,
+    "effectiveFps": 15.1,
+    "rawP50": 67.5,
+    "rawP95": 90,
+    "totalP50": 0.7,
+    "totalP95": 1.6,
+    "totalAvg": 0.811,
+    "updateP50": 0.3,
+    "updateP95": 1.1,
+    "updateAvg": 0.377,
+    "renderAvg": 0.434,
+    "allocKBs": 860,
+    "gcDrops": 6,
+    "mechCalls": 726,
+    "setDepth": 242,
+    "renderer": "webgl",
+    "pageErrors": [],
+    "sceneChildren": 104
+  },
+  "canvas": {
+    "frames": 483,
+    "secs": 8,
+    "effectiveFps": 60.4,
+    "rawP50": 16.6,
+    "rawP95": 17.2,
+    "totalP50": 5.3,
+    "totalP95": 6.9,
+    "totalAvg": 5.485,
+    "updateP50": 0.2,
+    "updateP95": 0.3,
+    "updateAvg": 0.176,
+    "renderAvg": 5.309,
+    "allocKBs": 1372,
+    "gcDrops": 6,
+    "mechCalls": 2898,
+    "setDepth": 966,
+    "renderer": "canvas",
+    "pageErrors": [],
+    "sceneChildren": 104
+  }
+}
