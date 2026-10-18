@@ -26,7 +26,7 @@ npm run build                   # vite 构建（含素材同步）
 # 关卡验收门禁（真实服务器 + 双浏览器回放）
 node scripts/e2e/route.mjs --level forest_01 --repeat 3 --offset -15
 # 全 48 关位级确定性基线
-node --import tsx benchmark/perf-determinism.mjs --compare r30
+node --import tsx benchmark/perf-determinism.mjs --compare r32
 
 # 常驻服务器（游玩服 3700 + oracle 只读伺服 8787）
 scripts/dev/servers.sh start|stop|status|restart [play|oracle|all]
@@ -42,8 +42,9 @@ A 标签建房选火人（方向键），B 标签房码加入选水女孩（WASD
 - **当前状态/交接**：`gyのFW/note/handoff.md`（顶部最新条目）+ `gyのFW/note/handoff/`（历次交接简报）
 - **版本说明**：`gyのFW/note/release/<版本号>.md`
 - **关卡取证档卷**：`gyのFW/note/evidence/forest_XX/`
+- **研究档卷**：`gyのFW/note/research/`（保真审计 2026-10-fidelity/00-36 号档、行为复刻 2026-10-behavior-parity/00-INDEX.md 总索引、autoplay 等）
 - **性能/环境报告**：`gyのFW/note/report/`
 
 ## 关卡账目（48 关）
 
-绿关 8（01/03/04/06/06_1/07/12/26）+ 豁免 15 + 挂起 2（02/32）= 终态 25/48；其余按生产线逐关推进。
+绿关 8（01/03/04/06/06_1/07/12/26）+ 豁免 15 + 挂起 2（02/32）= 终态 25/48；另有 forest_25 保原样豁免候选（第 16，oracle 实机 ORACLE_UNSOLVED）自主执行待用户追认，若追认则 26/48；其余按生产线逐关推进。
