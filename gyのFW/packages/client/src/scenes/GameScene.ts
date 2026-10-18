@@ -64,6 +64,12 @@ interface PlayerView {
   anim: string;
   legsKey: string;
   dying: boolean;
+  /** r3 脏守卫：上次写入的渲染状态（值未变跳过 setter，免无谓 dirty 标记/排序请求） */
+  lx: number; // 上次写入的组中心 x
+  ly: number;
+  legsDepth: number; // 上次 legs 深度（rising 5.1 / 其余 4.9）
+  flip: boolean; // 上次水平翻转
+  tilt: number; // 上次头部倾角
 }
 
 interface LeverView {
@@ -99,6 +105,11 @@ interface PulleyView {
   wheels: [Phaser.GameObjects.Image, Phaser.GameObjects.Image];
   anchor1: { x: number; y: number };
   anchor2: { x: number; y: number };
+  /** r3 脏守卫：三段绳/轮上次重指时的双板位置（任一板变位才重算绳段与轮转） */
+  segX1: number;
+  segY1: number;
+  segX2: number;
+  segY2: number;
 }
 
 /** 罗马杠（原版 §10）：杠容器（杠面+两端）随 bar 体位姿，中轴/底座静态 */
@@ -205,6 +216,10 @@ export class GameScene extends Phaser.Scene {
   private camVX = 0;
   private camVY = 0;
   private camVScale = 0;
+  /** r3：上次 applyCam 实际应用的相机三值（NaN 起步保证首帧强制应用） */
+  private camLastX = NaN;
+  private camLastY = NaN;
+  private camLastScale = NaN;
   private pinchState: { startDist: number; startScale: number } | null = null;
   private panState: { cx: number; cy: number; px: number; py: number } | null = null;
   /** HUD 反缩放登记（zoom≠1 时逐帧补偿，见 buildHud 头注） */
@@ -694,7 +709,7 @@ export class GameScene extends Phaser.Scene {
       ];
       planks[0].displayWidth = 1.3 * bw;
       planks[1].displayWidth = 1.3 * bw;
-      this.pulleyViews.set(p.id, { planks, ropes, wheels, anchor1: a1, anchor2: a2 });
+      this.pulleyViews.set(p.id, { planks, ropes, wheels, anchor1: a1, anchor2: a2, segX1: NaN, segY1: NaN, segX2: NaN, segY2: NaN });
     }
 
     // 罗马杠（原版 §10 Roman @1748214）：杠容器（roman_bar0000 宽 2·|Δx| + 两端 roman_end0000
@@ -860,7 +875,7 @@ export class GameScene extends Phaser.Scene {
       smoke.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => smoke.setVisible(false));
       legs.play(`${p}_legs_idle`);
       head.play(`${p}_idle`);
-      this.views.set(role, { glow, legs, head, smoke, cx, cy, anim: "idle", legsKey: `${p}_legs_idle`, dying: false });
+      this.views.set(role, { glow, legs, head, smoke, cx, cy, anim: "idle", legsKey: `${p}_legs_idle`, dying: false, lx: NaN, ly: NaN, legsDepth: 4.9, flip: false, tilt: 0 });
     }
   }
 
@@ -996,7 +1011,7 @@ export class GameScene extends Phaser.Scene {
     this.camX = this.camTX = level.widthPx / 2 + PAD;
     this.camY = this.camTY = level.heightPx / 2 + PAD;
     this.camTScale = this.camMinScale;
-    this.applyCam();
+    this.applyCam(true);
     this.input.on("wheel", (_p: unknown, _ov: unknown, _dx: number, dy: number) => this.onCamWheel(dy));
     this.input.on("pointermove", (p: Phaser.Input.Pointer) => this.onCamPointerMove(p));
     this.input.on("pointerup", (p: Phaser.Input.Pointer) => this.onCamPointerUp(p));
@@ -1099,10 +1114,17 @@ export class GameScene extends Phaser.Scene {
     this.camX += this.camVX;
     this.camY += this.camVY;
     this.camScale += this.camVScale;
-    this.applyCam();
+    this.applyCam(true);
   }
 
-  private applyCam(): void {
+  private applyCam(force = false): void {
+    // r3 脏守卫：弹簧静止（camX/camY/camScale 三值与上次应用一致）跳过——
+    // setZoom/centerOn 无条件置 camera dirty 并重走 HUD 补偿循环；写同值无视觉差。
+    // force=true 供 HUD 重建/相机复位等需强制补偿的调用方。
+    if (!force && this.camX === this.camLastX && this.camY === this.camLastY && this.camScale === this.camLastScale) return;
+    this.camLastX = this.camX;
+    this.camLastY = this.camY;
+    this.camLastScale = this.camScale;
     const cam = this.cameras.main;
     cam.setZoom(this.camScale);
     cam.centerOn(this.camX, this.camY);
@@ -1261,7 +1283,7 @@ export class GameScene extends Phaser.Scene {
       { obj: pauseBtn, x: 1265, y: 15 },
       { obj: this.clockText, x: clockX, y: 56 },
     ];
-    this.applyCam(); // 建好后立即补一次 HUD 补偿（冻结期 minScale 视图下 HUD 也不缩）
+    this.applyCam(true); // 建好后立即补一次 HUD 补偿（冻结期 minScale 视图下 HUD 也不缩）
   }
 
   setMyRole(role: Role): void {
@@ -1453,10 +1475,16 @@ export class GameScene extends Phaser.Scene {
         view.cx += (ex - view.cx) * k;
         view.cy += (ey - view.cy) * k;
       }
-      view.glow.setPosition(view.cx, view.cy);
-      view.legs.setPosition(view.cx, view.cy);
-      view.head.setPosition(view.cx, view.cy);
-      view.smoke.setPosition(view.cx, view.cy - 21);
+      // r3 脏守卫：位置/翻转/倾角值未变跳过 setter（静止收敛后零写入；写同值本无视觉差，
+      // 仅省 setter/dirty 开销与 smoke 越界写）
+      if (view.cx !== view.lx || view.cy !== view.ly) {
+        view.lx = view.cx;
+        view.ly = view.cy;
+        view.glow.setPosition(view.cx, view.cy);
+        view.legs.setPosition(view.cx, view.cy);
+        view.head.setPosition(view.cx, view.cy);
+        view.smoke.setPosition(view.cx, view.cy - 21);
+      }
       // isDead（烟雾 onComplete）后原版 sprite.visible=false；dying 期间仍可见
       // dying 即藏身（animcheck 12 号档对拍：原版 update 首行 dying 分支每帧
       // bodySprite/legs/head 全 invisible，烟雾独行；此前 dying 期间身体可见直到 isDead，
@@ -1464,10 +1492,17 @@ export class GameScene extends Phaser.Scene {
       const visible = ps.isDead !== true && ps.dying !== true;
       view.glow.visible = view.legs.visible = view.head.visible = visible;
       const flip = Number(ps.facing) < 0;
-      view.legs.setFlipX(flip);
-      view.head.setFlipX(flip);
+      if (flip !== view.flip) {
+        view.flip = flip;
+        view.legs.setFlipX(flip);
+        view.head.setFlipX(flip);
+      }
       // 头部倾角（原版 head.rotation = a：坡面接触法线/空中速度方向，内核逐帧算好）
-      view.head.setRotation(Number(ps.headTilt) || 0);
+      const tilt = Number(ps.headTilt) || 0;
+      if (tilt !== view.tilt) {
+        view.tilt = tilt;
+        view.head.setRotation(tilt);
+      }
 
       // 死亡烟雾（dying 触发，45 帧@30fps 一次性；原版 _doKill：death 音 + 烟随初速镜像）
       if (!view.dying && ps.dying === true) {
@@ -1493,7 +1528,13 @@ export class GameScene extends Phaser.Scene {
       // 层序按状态："rising" 时 legs 提到 head 之上，其余 head 在上（removeChild+addChild 的
       // Phaser3 等效 = setDepth）。⚠ 深度必须错开而不能同为 5：rising 后归位的等深度经稳定
       // 排序会保留交换后的列表序 → legs 永久压过 head（用户实测 2026-10-13：跳跃后静立脖子接缝异常）
-      view.legs.setDepth(anim === "rising" ? 5.1 : 4.9);
+      // r3 脏守卫：目标深度不变不调 setDepth——depth setter 无条件 queueDepthSort，
+      // 旧代码每帧两调 → 显示列表每帧全量 StableSort（new Array(104)+O(n log n)）白付
+      const wantDepth = anim === "rising" ? 5.1 : 4.9;
+      if (wantDepth !== view.legsDepth) {
+        view.legsDepth = wantDepth;
+        view.legs.setDepth(wantDepth);
+      }
       if (view.anim !== anim) {
         view.anim = anim;
         switch (anim) {
@@ -1646,15 +1687,18 @@ export class GameScene extends Phaser.Scene {
     // 屏幕角 = +Box2D 体角（phys 两轴同负 = 180° 旋转保手性，原版实证 sprite.angle = +body.angle，
     // forest_05 拉杆原版精灵 +30.66° 与内核沉降角同号同侧；旧版取负致贴图与碰撞体绕枢点镜像分离）
     const deg = this.mechTarget(e.k, 0, 0, Number(s.angle) || 0).a * (180 / Math.PI);
-    v.angle = deg;
-    // 杆贴图中心 = body origin，绕支点半径 4.8px 公转（与 create 段初始公式同源）
-    const rad = (deg * Math.PI) / 180;
-    const sx = v.pivotX + 4.8 * Math.sin(rad);
-    const sy = v.pivotY - 4.8 * Math.cos(rad);
-    v.stick.setAngle(deg);
-    v.stick.setPosition(sx, sy);
-    v.stickLight.setAngle(deg);
-    v.stickLight.setPosition(sx, sy);
+    // r3 脏守卫：角度未变跳过（杆位由支点+角唯一决定）
+    if (deg !== v.angle) {
+      v.angle = deg;
+      // 杆贴图中心 = body origin，绕支点半径 4.8px 公转（与 create 段初始公式同源）
+      const rad = (deg * Math.PI) / 180;
+      const sx = v.pivotX + 4.8 * Math.sin(rad);
+      const sy = v.pivotY - 4.8 * Math.cos(rad);
+      v.stick.setAngle(deg);
+      v.stick.setPosition(sx, sy);
+      v.stickLight.setAngle(deg);
+      v.stickLight.setPosition(sx, sy);
+    }
     const on = Number(s.state) === 1;
     if (on !== v.lightOn) {
       v.lightOn = on;
@@ -1697,8 +1741,9 @@ export class GameScene extends Phaser.Scene {
     const px2 = pt.x + PAD;
     const py2 = pt.y + PAD;
     const pa = -pt.a * (180 / Math.PI);
-    e.v.setPosition(px2, py2);
-    e.v.setAngle(pa);
+    // r3 脏守卫：静止收敛后零写入
+    if (e.v.x !== px2 || e.v.y !== py2) e.v.setPosition(px2, py2);
+    if (e.v.angle !== pa) e.v.setAngle(pa);
     const ns = Number(b.state) === 1 ? 1 : 0;
     if (e.lv && ns !== e.lv.state) {
       e.lv.state = ns;
@@ -1716,8 +1761,10 @@ export class GameScene extends Phaser.Scene {
     }
     if (!e.v) return;
     const pt = this.mechTarget(e.k, Number(b.x) || 0, Number(b.y) || 0, Number(b.angle) || 0);
-    e.v.setPosition(pt.x + PAD, pt.y + PAD);
-    e.v.setAngle(-pt.a * (180 / Math.PI)); // 球必转，angle 必吃
+    // r3 脏守卫：静止收敛后零写入（球/箱位姿快照驱动）
+    if (e.v.x !== pt.x + PAD || e.v.y !== pt.y + PAD) e.v.setPosition(pt.x + PAD, pt.y + PAD);
+    const qa = -pt.a * (180 / Math.PI);
+    if (e.v.angle !== qa) e.v.setAngle(qa); // 球必转，angle 必吃
   }
 
   private stepWinds(wd: { state: number }, id: string): void {
@@ -1761,13 +1808,17 @@ export class GameScene extends Phaser.Scene {
     const pt = this.mechTarget(e.k, Number(s.x) || 0, Number(s.y) || 0, Number(s.angle) || 0);
     const x = pt.x + PAD;
     const y = pt.y + PAD;
-    v.plank.setPosition(x, y);
-    v.plank.setAngle(pt.a * (180 / Math.PI));
-    const dx = x - v.anchorX;
-    const dy = y - v.anchorY;
-    v.rope.setPosition(v.anchorX, v.anchorY);
-    v.rope.width = Math.max(1, Math.hypot(dx, dy));
-    v.rope.setRotation(Math.atan2(dy, dx));
+    // r3 脏守卫：板位/角与绳形（绳形由板位唯一决定）变位才写
+    const deg = pt.a * (180 / Math.PI);
+    if (x !== v.plank.x || y !== v.plank.y) {
+      v.plank.setPosition(x, y);
+      const dx = x - v.anchorX;
+      const dy = y - v.anchorY;
+      v.rope.setPosition(v.anchorX, v.anchorY);
+      v.rope.width = Math.max(1, Math.hypot(dx, dy));
+      v.rope.setRotation(Math.atan2(dy, dx));
+    }
+    if (deg !== v.plank.angle) v.plank.setAngle(deg);
   }
 
   private stepPulleys(s: { x: number; y: number; angle: number }, key: string): void {
@@ -1788,31 +1839,39 @@ export class GameScene extends Phaser.Scene {
     const pt = this.mechTarget(e.k, Number(s.x) || 0, Number(s.y) || 0, Number(s.angle) || 0);
     const x = pt.x + PAD;
     const y = pt.y + PAD;
-    v.planks[idx].setPosition(x, y);
-    v.planks[idx].setAngle(pt.a * (180 / Math.PI));
+    if (x !== v.planks[idx].x || y !== v.planks[idx].y) v.planks[idx].setPosition(x, y);
+    const deg = pt.a * (180 / Math.PI);
+    if (deg !== v.planks[idx].angle) v.planks[idx].setAngle(deg);
     const b1 = v.planks[0];
     const b2 = v.planks[1];
-    // 三段绳逐段重指（r3：内联展开，消除每帧 seg 闭包与 [b1,b2] 解构数组）
-    const r0 = v.ropes[0];
-    r0.setPosition(v.anchor1.x, v.anchor1.y);
-    r0.width = Math.max(1, Math.hypot(b1.x - v.anchor1.x, b1.y - v.anchor1.y));
-    r0.setRotation(Math.atan2(b1.y - v.anchor1.y, b1.x - v.anchor1.x));
-    const r1 = v.ropes[1];
-    r1.setPosition(b1.x, b1.y);
-    r1.width = Math.max(1, Math.hypot(b2.x - b1.x, b2.y - b1.y));
-    r1.setRotation(Math.atan2(b2.y - b1.y, b2.x - b1.x));
-    const r2 = v.ropes[2];
-    r2.setPosition(b2.x, b2.y);
-    r2.width = Math.max(1, Math.hypot(v.anchor2.x - b2.x, v.anchor2.y - b2.y));
-    r2.setRotation(Math.atan2(v.anchor2.y - b2.y, v.anchor2.x - b2.x));
-    // 轮转角 = 绳总长/π/10（原版装饰语义）
-    const total =
-      Math.hypot(b1.x - v.anchor1.x, b1.y - v.anchor1.y) +
-      Math.hypot(b2.x - b1.x, b2.y - b1.y) +
-      Math.hypot(v.anchor2.x - b2.x, v.anchor2.y - b2.y);
-    const turn = total / (Math.PI * 10);
-    v.wheels[0].setRotation(turn);
-    v.wheels[1].setRotation(turn);
+    // r3 脏守卫：三段绳+轮转角只依赖双板位置——任一板变位才重指
+    //（绳段内联展开，消除每帧 seg 闭包与解构数组）
+    if (b1.x !== v.segX1 || b1.y !== v.segY1 || b2.x !== v.segX2 || b2.y !== v.segY2) {
+      v.segX1 = b1.x;
+      v.segY1 = b1.y;
+      v.segX2 = b2.x;
+      v.segY2 = b2.y;
+      const r0 = v.ropes[0];
+      r0.setPosition(v.anchor1.x, v.anchor1.y);
+      r0.width = Math.max(1, Math.hypot(b1.x - v.anchor1.x, b1.y - v.anchor1.y));
+      r0.setRotation(Math.atan2(b1.y - v.anchor1.y, b1.x - v.anchor1.x));
+      const r1 = v.ropes[1];
+      r1.setPosition(b1.x, b1.y);
+      r1.width = Math.max(1, Math.hypot(b2.x - b1.x, b2.y - b1.y));
+      r1.setRotation(Math.atan2(b2.y - b1.y, b2.x - b1.x));
+      const r2 = v.ropes[2];
+      r2.setPosition(b2.x, b2.y);
+      r2.width = Math.max(1, Math.hypot(v.anchor2.x - b2.x, v.anchor2.y - b2.y));
+      r2.setRotation(Math.atan2(v.anchor2.y - b2.y, v.anchor2.x - b2.x));
+      // 轮转角 = 绳总长/π/10（原版装饰语义）
+      const total =
+        Math.hypot(b1.x - v.anchor1.x, b1.y - v.anchor1.y) +
+        Math.hypot(b2.x - b1.x, b2.y - b1.y) +
+        Math.hypot(v.anchor2.x - b2.x, v.anchor2.y - b2.y);
+      const turn = total / (Math.PI * 10);
+      v.wheels[0].setRotation(turn);
+      v.wheels[1].setRotation(turn);
+    }
   }
 
   private stepRomans(s: { x: number; y: number; angle: number }, id: string): void {
@@ -1825,8 +1884,10 @@ export class GameScene extends Phaser.Scene {
     }
     if (!e) return;
     const pt = this.mechTarget(e.k, Number(s.x) || 0, Number(s.y) || 0, Number(s.angle) || 0);
-    e.v.bar.setPosition(pt.x + PAD, pt.y + PAD);
-    e.v.bar.setAngle(pt.a * (180 / Math.PI));
+    // r3 脏守卫：静止收敛后零写入
+    if (e.v.bar.x !== pt.x + PAD || e.v.bar.y !== pt.y + PAD) e.v.bar.setPosition(pt.x + PAD, pt.y + PAD);
+    const deg = pt.a * (180 / Math.PI);
+    if (e.v.bar.angle !== deg) e.v.bar.setAngle(deg);
   }
 
   /** 平台电机声（原版 updateState 激活时 playInstance @1719824；无事件通道，按位移自检） */
