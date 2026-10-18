@@ -1196,9 +1196,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    void time;
     const st = this.d.net.room?.state;
     if (!st) return;
+    const nowMs = Number(time) || 0;
 
     // 时钟：真实正计时秒（服务端只在 started 步进内累计，won/gameover 天然冻结）
     const clockStr = mmss((Number(st.timerMs) || 0) / 1000);
@@ -1216,7 +1216,7 @@ export class GameScene extends Phaser.Scene {
 
     this.updatePlayers(st, delta);
     this.updateDiamonds(st);
-    this.updateMechs(st);
+    this.updateMechs(st, nowMs, delta);
     this.updatePlatformSound(st);
 
     // 教学渐显判定：原版=任一角色进矩形（双方同用关卡坐标），组内全部文本 400ms 淡入/淡出。
@@ -1270,6 +1270,7 @@ export class GameScene extends Phaser.Scene {
   /** 整轮复位（重开=ready）：瞬移标记 + 清演出/门帧/烟，跨图平滑会把角色滑回出生点 */
   private resetRound(prev: string): void {
     this.snapPending = true;
+    this.mechSm.clear(); // 机关位姿平滑态一并作废（重开=整关重载，快照域瞬移）
     this.resetCamera(this.d.level); // 相机回冻结全图（原版整关 reload 重建 CameraManager）
     this.stairsPlayed = false;
     this.tutorialFrozen = false; // 新一轮恢复教学判定（原版 retry=整状态重载重建 tutorialTexts）
@@ -1477,15 +1478,60 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * 机关位姿平滑（rotcheck 10 号档，E13 二轮）：服务端 60Hz 仿真写 schema，但 Colyseus patch
+   * 按 patchRate=50ms（@colyseus/core Room.js:49 DEFAULT_PATCH_RATE=1e3/20，ForestRoom 未覆写）
+   * 出站 → 客户端所见机关位姿是 20Hz 阶梯。角色层已有"速度外推+强收敛"（updatePlayers），
+   * 机关（拉杆/推杆/平台/箱球/吊板/滑轮/罗马杠）此前直吃快照——快转吊板 ≈11°/步的阶梯感
+   * 即用户"旋转体系没原版好"的表现层根因（原版单机每帧直读 body.angle 渲染，60fps 平滑）。
+   * 处置与角色层同构：每键存最近快照，有限差分估速（角度走最短弧防 ±π 翻卷；快照量化
+   * 0.1px/0.001rad → 速度噪声 ≤2px/s、0.02rad/s，对真实速度可忽略）→ 目标=最新快照+v·lead
+   * （lead 25ms≈半个快照周期）→ 渲染值向目标指数收敛（rate 30/s；lead/rate 由 final-b 风车实录 A/B 扫描选定，rms/max 双优）。纯表现层，零物理/det 影响。
+   */
+  private mechSm = new Map<string, { x: number; y: number; a: number; vx: number; vy: number; va: number; t: number; rx: number; ry: number; ra: number; init: boolean }>();
+
+  /** 取 key 的平滑后位姿（快照域数值，转换与 PAD 由各视图块自理）。snapPending 帧=瞬移直贴。 */
+  private mechTarget(key: string, x: number, y: number, a: number, nowMs: number, deltaMs: number): { x: number; y: number; a: number } {
+    let m = this.mechSm.get(key);
+    if (!m) {
+      m = { x, y, a, vx: 0, vy: 0, va: 0, t: nowMs, rx: x, ry: y, ra: a, init: false };
+      this.mechSm.set(key, m);
+    }
+    if (!m.init || this.snapPending) {
+      m.x = x; m.y = y; m.a = a; m.rx = x; m.ry = y; m.ra = a; m.t = nowMs; m.init = true;
+      return { x, y, a };
+    }
+    if (x !== m.x || y !== m.y || a !== m.a) {
+      const dt = Math.min(0.2, Math.max(1 / 120, (nowMs - m.t) / 1000));
+      m.vx = (x - m.x) / dt;
+      m.vy = (y - m.y) / dt;
+      let da = a - m.a;
+      da = ((da + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI; // 最短弧，防整圈翻卷
+      m.va = da / dt;
+      m.x = x; m.y = y; m.a = a; m.t = nowMs;
+    }
+    const lead = 25; // ms，≈半个快照周期
+    const ex = m.x + (m.vx * lead) / 1000;
+    const ey = m.y + (m.vy * lead) / 1000;
+    const ea = m.a + (m.va * lead) / 1000;
+    const k = 1 - Math.exp((-30 * deltaMs) / 1000);
+    m.rx += (ex - m.rx) * k;
+    m.ry += (ey - m.ry) * k;
+    let dra = ea - m.ra;
+    dra = ((dra + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+    m.ra += dra * k;
+    return { x: m.rx, y: m.ry, a: m.ra };
+  }
+
   /** 机关快照消费（E13）：lever 角度+灯、pusher 压下、平台/箱/球位姿、风区显隐 */
-  private updateMechs(st: any): void {
+  private updateMechs(st: any, nowMs: number, deltaMs: number): void {
     st.levers?.forEach?.((s: { state: number; angle: number }, id: string) => {
       const v = this.leverViews.get(`l${id}`);
       if (!v) return;
       // 屏幕角 = +Box2D 体角（phys 两轴同负 = 180° 旋转保手性，原版实证 sprite.angle = +body.angle，
       // forest_05 拉杆原版精灵 +30.66° 与内核沉降角同号同侧；旧版取负致贴图与碰撞体绕枢点镜像分离）
-      const deg = (Number(s.angle) || 0) * (180 / Math.PI);
-      if (Math.abs(deg - v.angle) > 0.25) {
+      const deg = this.mechTarget(`l${id}`, 0, 0, Number(s.angle) || 0, nowMs, deltaMs).a * (180 / Math.PI);
+      {
         v.angle = deg;
         // 杆贴图中心 = body origin，绕支点半径 4.8px 公转（与 create 段初始公式同源）
         const rad = (deg * Math.PI) / 180;
@@ -1505,9 +1551,10 @@ export class GameScene extends Phaser.Scene {
     st.pushers?.forEach?.((s: { state: number; x: number; y: number }, id: string) => {
       const v = this.pusherViews.get(`b${id}`);
       if (!v) return;
-      // 块体随 prismatic 连续下沉，贴图跟体（快照 x/y），state 仅用于灯光语义
-      const bx = (Number(s.x) || 0) + PAD;
-      const by = (Number(s.y) || 0) + PAD;
+      // 块体随 prismatic 连续下沉，贴图跟体（快照 x/y 平滑后），state 仅用于灯光语义
+      const pt = this.mechTarget(`b${id}`, Number(s.x) || 0, Number(s.y) || 0, 0, nowMs, deltaMs);
+      const bx = pt.x + PAD;
+      const by = pt.y + PAD;
       if (bx !== v.block.x || by !== v.block.y) {
         v.block.setPosition(bx, by);
         v.light.setPosition(bx, by);
@@ -1517,13 +1564,12 @@ export class GameScene extends Phaser.Scene {
     st.platforms?.forEach?.((b: { x: number; y: number; angle: number; state?: number }, id: string) => {
       const v = this.platformViews.get(`p${id}`);
       if (!v) return;
-      const px2 = (Number(b.x) || 0) + PAD;
-      const py2 = (Number(b.y) || 0) + PAD;
-      const pa = -(Number(b.angle) || 0) * (180 / Math.PI);
-      if (px2 !== v.x || py2 !== v.y || pa !== v.angle) {
-        v.setPosition(px2, py2);
-        v.setAngle(pa);
-      }
+      const pt = this.mechTarget(`p${id}`, Number(b.x) || 0, Number(b.y) || 0, Number(b.angle) || 0, nowMs, deltaMs);
+      const px2 = pt.x + PAD;
+      const py2 = pt.y + PAD;
+      const pa = -pt.a * (180 / Math.PI);
+      v.setPosition(px2, py2);
+      v.setAngle(pa);
       const lv = this.platformLights.get(`p${id}`);
       const ns = Number(b.state) === 1 ? 1 : 0;
       if (lv && ns !== lv.state) {
@@ -1534,13 +1580,12 @@ export class GameScene extends Phaser.Scene {
     st.props?.forEach?.((b: { x: number; y: number; angle: number }, key: string) => {
       const v = this.bodyViews.get(this.propViewKey(key) ?? "");
       if (!v) return;
-      const qx = (Number(b.x) || 0) + PAD;
-      const qy = (Number(b.y) || 0) + PAD;
-      const qa = -(Number(b.angle) || 0) * (180 / Math.PI);
-      if (qx !== v.x || qy !== v.y || qa !== v.angle) {
-        v.setPosition(qx, qy);
-        v.setAngle(qa); // 球必转，angle 必吃
-      }
+      const pt = this.mechTarget(`x${key}`, Number(b.x) || 0, Number(b.y) || 0, Number(b.angle) || 0, nowMs, deltaMs);
+      const qx = pt.x + PAD;
+      const qy = pt.y + PAD;
+      const qa = -pt.a * (180 / Math.PI);
+      v.setPosition(qx, qy);
+      v.setAngle(qa); // 球必转，angle 必吃
     });
     st.winds?.forEach?.((wd: { state: number }, id: string) => {
       const v = this.windViews.get(`f${id}`);
@@ -1561,14 +1606,15 @@ export class GameScene extends Phaser.Scene {
       if (anyOn && !this.sound.isPlaying("sfx_wind")) this.sfx("sfx_wind", { loop: true, volume: 0.2 }); // 原版显式 0.2（bundle:1968490 附近）
       if (!anyOn) this.sound.stopByKey("sfx_wind");
     });
-    // 吊挂/滑轮/罗马杆位姿消费（+体角口径，同 lever）：板/杠跟体，绳逐 tick 重指
+    // 吊挂/滑轮/罗马杆位姿消费（+体角口径，同 lever）：板/杠跟体（位姿平滑），绳逐帧重指
     st.hangings?.forEach?.((s: { x: number; y: number; angle: number }, id: string) => {
       const v = this.hangingViews.get(`h${id}`);
       if (!v) return;
-      const x = (Number(s.x) || 0) + PAD;
-      const y = (Number(s.y) || 0) + PAD;
+      const pt = this.mechTarget(`h${id}`, Number(s.x) || 0, Number(s.y) || 0, Number(s.angle) || 0, nowMs, deltaMs);
+      const x = pt.x + PAD;
+      const y = pt.y + PAD;
       v.plank.setPosition(x, y);
-      v.plank.setAngle((Number(s.angle) || 0) * (180 / Math.PI));
+      v.plank.setAngle(pt.a * (180 / Math.PI));
       const dx = x - v.anchorX;
       const dy = y - v.anchorY;
       v.rope.setPosition(v.anchorX, v.anchorY);
@@ -1581,10 +1627,11 @@ export class GameScene extends Phaser.Scene {
       const v = this.pulleyViews.get(`u${m[1]}`);
       if (!v) return;
       const idx = m[2] === "a" ? 0 : 1;
-      const x = (Number(s.x) || 0) + PAD;
-      const y = (Number(s.y) || 0) + PAD;
+      const pt = this.mechTarget(`u${m[1]}${m[2]}`, Number(s.x) || 0, Number(s.y) || 0, Number(s.angle) || 0, nowMs, deltaMs);
+      const x = pt.x + PAD;
+      const y = pt.y + PAD;
       v.planks[idx].setPosition(x, y);
-      v.planks[idx].setAngle((Number(s.angle) || 0) * (180 / Math.PI));
+      v.planks[idx].setAngle(pt.a * (180 / Math.PI));
       const [b1, b2] = [v.planks[0], v.planks[1]];
       const seg = (r: Phaser.GameObjects.TileSprite, fx: number, fy: number, tx: number, ty: number) => {
         r.setPosition(fx, fy);
@@ -1606,8 +1653,9 @@ export class GameScene extends Phaser.Scene {
     st.romans?.forEach?.((s: { x: number; y: number; angle: number }, id: string) => {
       const v = this.romanViews.get(`r${id}`);
       if (!v) return;
-      v.bar.setPosition((Number(s.x) || 0) + PAD, (Number(s.y) || 0) + PAD);
-      v.bar.setAngle((Number(s.angle) || 0) * (180 / Math.PI));
+      const pt = this.mechTarget(`r${id}`, Number(s.x) || 0, Number(s.y) || 0, Number(s.angle) || 0, nowMs, deltaMs);
+      v.bar.setPosition(pt.x + PAD, pt.y + PAD);
+      v.bar.setAngle(pt.a * (180 / Math.PI));
     });
   }
 
