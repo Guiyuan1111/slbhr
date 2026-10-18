@@ -1377,7 +1377,10 @@ export class GameScene extends Phaser.Scene {
       view.head.setPosition(view.cx, view.cy);
       view.smoke.setPosition(view.cx, view.cy - 21);
       // isDead（烟雾 onComplete）后原版 sprite.visible=false；dying 期间仍可见
-      const visible = ps.isDead !== true;
+      // dying 即藏身（animcheck 12 号档对拍：原版 update 首行 dying 分支每帧
+      // bodySprite/legs/head 全 invisible，烟雾独行；此前 dying 期间身体可见直到 isDead，
+      // 与原版「触液即化烟、本体消失」观感不符——playwright A/B：dyingHidden 104/195 → 全覆盖）
+      const visible = ps.isDead !== true && ps.dying !== true;
       view.glow.visible = view.legs.visible = view.head.visible = visible;
       const flip = Number(ps.facing) < 0;
       view.legs.setFlipX(flip);
