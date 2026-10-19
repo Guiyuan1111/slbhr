@@ -1,10 +1,12 @@
 /**
  * 选关界面（原版 States/LevelMenu/LevelMenu 复刻；tree 型神庙走 LevelMenuTree≡LevelMenuButtons）。
  * temple.json 图结构：48 关卡节点（0~1 归一化 x/y）+ 47 条 edges 连线。
- * 树渲染两层平色近似原版三张 canvas 纹理（考古证据与 bundle 字节偏移见 create() 内注释与
- * note/research/2026-10-fidelity/37-temple-tree-branches.md）：底层=全树恒绘（temple 色），
- * 上层=已通关侧金色叠绘（#FFD620 调域）。
+ * 树渲染：CPU 烘焙 oracle 三张 canvas 纹理（templeTreeBake.ts，字节级滤镜复刻：Bevel+ColorMatrix
+ * +Outline，GLSL fp32 语义+SwiftShader unorm 实证），层序 imageAllBig→imageAll→imageDone（bundle
+ * 层序同原版）。首入分帧烘焙，期间以平色 Graphics 回退；同参数结果缓存后零开销。
  * 布局：k=0.9H、C=min(1.2k, 0.9W)；节点 = (x·C − C/2, y·k − k/2)（居中系→这里直接用视口系）。
+ * ★ 边端点引用 temple.json 的 _id（连续 1..48），非稀疏 level.id——原版 i=_find(levels, b._id===a)
+ *   （bundle:1916140）；解锁传播同用 _id 邻接。
  * 进度：localStorage（progress.ts）；解锁 = initial 或相邻已通关（tree 传播）。
  * 点可玩关卡 → registry "onLevelPicked"(levelId, filename) → main.ts 弹出联机面板。
  */
@@ -12,9 +14,11 @@ import Phaser from "phaser";
 import { ATLAS_MENU, ATLAS_TEMPLE, FONT_MAIN } from "./BootScene";
 import { loadProgress, starsOf } from "../progress";
 import { getSettings } from "../settings";
+import { peekTreeBake, startTreeBake, stepTreeBake, type MaskFrame, type TreeBakeParams, type TreeBakeResult } from "./templeTreeBake";
 
 interface TempleLevel {
   id: number;
+  _id: number; // 边端点引用键（连续 1..48）
   x: number;
   y: number;
   filename: string;
@@ -31,10 +35,14 @@ interface TempleData {
   edges: Array<{ id: string; source: number; target: number }>;
 }
 
+const TREE_TEX = { big: "tree-big", all: "tree-all", done: "tree-done" } as const;
+
 export class TempleScene extends Phaser.Scene {
   private data_!: TempleData;
   private showNumbers = true;
   private numberTexts: Phaser.GameObjects.BitmapText[] = [];
+  private flatFallbacks: Array<Phaser.GameObjects.Graphics | Phaser.GameObjects.Image> = [];
+  private bakeHandler?: () => void;
 
   constructor() {
     super("Temple");
@@ -54,8 +62,8 @@ export class TempleScene extends Phaser.Scene {
     if (getSettings().music && !this.sound.isPlaying("bgm_menu")) this.sound.play("bgm_menu", { loop: true });
     this.data_ = this.cache.json.get("templeData") as TempleData;
 
-    // 背景：MenuBackground0000 平铺
-    this.add.tileSprite(W / 2, H / 2, W, H, ATLAS_TEMPLE, "MenuBackground0000");
+    // 背景：MenuBackground0000 平铺（最底）
+    this.add.tileSprite(W / 2, H / 2, W, H, ATLAS_TEMPLE, "MenuBackground0000").setDepth(-10);
 
     // 布局（原版：k=0.9H，C=min(1.2k, 0.9W)，缩放 x = min(k,C)<800 ? 0.5 : 0.6）
     const k = 0.9 * H;
@@ -63,10 +71,11 @@ export class TempleScene extends Phaser.Scene {
     const scale = Math.min(k, C) < 800 ? 0.5 : 0.6;
     const px = (lv: TempleLevel): number => (lv.x * C - C / 2) + W / 2;
     const py = (lv: TempleLevel): number => (lv.y * k - k / 2) + H / 2;
-    const byId = new Map<number, TempleLevel>();
-    for (const lv of this.data_.levels) byId.set(lv.id, lv);
+    // ★ 边端点/传播邻接用 _id（连续 1..48），非稀疏 level.id（bundle:1916140 实证）
+    const byOid = new Map<number, TempleLevel>();
+    for (const lv of this.data_.levels) byOid.set(lv._id, lv);
 
-    // 解锁传播：initial 恒通；与已通关节点相邻者可玩
+    // 进度态（原版 state 语义：0=锁定 / 1=可玩未通 / 2..4=星数+1，bundle:2150431）
     const done = new Set<string>();
     for (const lv of this.data_.levels) if (starsOf(lv.filename) > 0) done.add(lv.filename);
     const playable = new Set<string>();
@@ -75,63 +84,76 @@ export class TempleScene extends Phaser.Scene {
     while (grew) {
       grew = false;
       for (const e of this.data_.edges) {
-        const s = byId.get(e.source), t = byId.get(e.target);
+        const s = byOid.get(e.source), t = byOid.get(e.target);
         if (!s || !t) continue;
         if (done.has(s.filename) && !playable.has(t.filename)) { playable.add(t.filename); grew = true; }
         if (done.has(t.filename) && !playable.has(s.filename)) { playable.add(s.filename); grew = true; }
       }
     }
+    const stateOf = (filename: string): number => {
+      const s = starsOf(filename);
+      return s > 0 ? s + 1 : playable.has(filename) ? 1 : 0;
+    };
 
-    // —— 树纹理复刻（原版 LevelMenuButtons.addContent 的 h(b,c) 一次性把「边线 + 节点 _Bkg_Mask 底座」
-    // 画进 canvas 纹理，产三张叠加：imageAllBig=h(!0,1.2) 1.2 倍浮雕底影 bundle:1917745、
-    // imageAll=h(!0) 全树 bundle:1917713、imageDone=h(!1) 已通关侧 bundle:1917785，自下而上 addChild。
-    // 绘制条件：b=true 边全画；b=false 仅 source.state+target.state>2 才画（bundle:1917030）；
-    // 节点底座同理（全画 / l.state>0 才画，bundle:1917244）。线样式：strokeStyle=temple.color
-    // （bundle:1916856）、lineWidth=16*x（bundle:1916896，x=0.5/0.6 同我们 scale）。
-    // 三张纹理各过 BevelFilter（rgb 强制 0.5 灰度浮雕，bundle:1779406）+ ColorMatrix(1.7×tint，
-    // bundle:1782424) → 平色近似最终色 = 0.85×tint。全树/底影 tint=temple.color；已通关侧
-    // tint=16766496=#FFD620 金（bundle:1918127）。原版节点 state=星数+1（ProgressModel.setStates
-    // tree 分支 bundle:2150431），>2 判据与我方「至少一端 ≥1 星」在传播语义下逐真值表等价
-    // （≥1 星节点的相邻节点经 setStates 必为 state≥1，见档卷 37 §2.3）。
+    const prefixOf = (type: string): string =>
+      type === "speed" ? "DiamondSpeed" : type === "puzzle" ? "DiamondPuzzle" : type === "dark" ? "DiamondDark" : "Diamond";
+    // _Bkg_Mask 帧素色实测 (255,203,0)（MenuAssets 帧像素采样，PNG 与 oracle 逐字节一致）——
+    // setTint 是乘法，按帧色反推 tint 使乘积 ≈ 目标平色（蓝通道帧色为 0，弃）
     const flat = (tint: number): number => {
       const c = Phaser.Display.Color.IntegerToColor(tint);
       return Phaser.Display.Color.GetColor(Math.round(c.red * 0.85), Math.round(c.green * 0.85), Math.round(c.blue * 0.85));
     };
     const baseColor = flat(Phaser.Display.Color.HexStringToColor(this.data_.color).color);
     const goldColor = flat(0xffd620);
-    const prefixOf = (type: string): string =>
-      type === "speed" ? "DiamondSpeed" : type === "puzzle" ? "DiamondPuzzle" : type === "dark" ? "DiamondDark" : "Diamond";
-    // _Bkg_Mask 帧素色实测 (255,203,0)（MenuAssets 帧像素采样，PNG 与 oracle 逐字节一致）——
-    // setTint 是乘法，按帧色反推 tint 使乘积 ≈ 目标平色（蓝通道帧色为 0，弃）
     const maskTint = (target: number): number => {
       const c = Phaser.Display.Color.IntegerToColor(target);
       return Phaser.Display.Color.GetColor(c.red, Math.round(c.green / (203 / 255)), 0);
     };
 
-    // 底层（imageAll 平色近似）：47 条边全画 + 48 节点底座全画——用户可见的"枝"
-    const gAll = this.add.graphics();
-    gAll.lineStyle(16 * scale, baseColor, 1);
-    for (const e of this.data_.edges) {
-      const s = byId.get(e.source), t = byId.get(e.target);
-      if (!s || !t) continue;
-      gAll.lineBetween(px(s), py(s), px(t), py(t));
-    }
-    for (const lv of this.data_.levels) {
-      this.add.image(px(lv), py(lv), ATLAS_MENU, `${prefixOf(lv.type)}_Bkg_Mask0000`).setScale(scale).setTint(maskTint(baseColor));
-    }
+    // —— 烘焙参数（oracle h() 内容 + Bevel/CM/Outline 滤镜链，见 templeTreeBake.ts 头注）
+    const menuTex = this.textures.get(ATLAS_MENU);
+    const maskFrame = (prefix: string): MaskFrame => {
+      const f = menuTex.get(`${prefix}_Bkg_Mask0000`);
+      return { img: menuTex.getSourceImage() as CanvasImageSource, x: f.cutX, y: f.cutY, w: f.cutWidth, h: f.cutHeight };
+    };
+    const bakeParams: TreeBakeParams = {
+      levels: this.data_.levels.map((lv) => ({ oid: lv._id, x: lv.x, y: lv.y, maskKey: prefixOf(lv.type), filename: lv.filename })),
+      edges: this.data_.edges.map((e) => ({ source: e.source, target: e.target })),
+      color: this.data_.color,
+      scale,
+      canvasW: Math.floor(C),
+      canvasH: Math.floor(k),
+      Cf: C,
+      Kf: k,
+      masks: new Map(
+        (["Diamond", "DiamondSpeed", "DiamondPuzzle", "DiamondDark"] as const).map((p) => [p, maskFrame(p)]),
+      ),
+      stateOf,
+    };
 
-    // 上层（imageDone 平色近似）：已通关侧金色叠绘（判据=至少一端 ≥1 星）+ 已解锁节点金色底座
-    const gDone = this.add.graphics();
-    gDone.lineStyle(16 * scale, goldColor, 1);
-    for (const e of this.data_.edges) {
-      const s = byId.get(e.source), t = byId.get(e.target);
-      if (!s || !t) continue;
-      if (!(done.has(s.filename) || done.has(t.filename))) continue;
-      gDone.lineBetween(px(s), py(s), px(t), py(t));
-    }
-    for (const lv of this.data_.levels) {
-      if (!playable.has(lv.filename) && starsOf(lv.filename) === 0) continue;
-      this.add.image(px(lv), py(lv), ATLAS_MENU, `${prefixOf(lv.type)}_Bkg_Mask0000`).setScale(scale).setTint(maskTint(goldColor));
+    // 首入：平色回退 + 分帧烘焙；命中缓存：直接贴图
+    const cached = peekTreeBake(bakeParams);
+    if (cached) {
+      this.applyTreeTextures(cached, W, H);
+    } else {
+      this.buildFlatFallback(scale, baseColor, goldColor, byOid, px, py, done, playable);
+      const key = startTreeBake(bakeParams);
+      this.bakeHandler = (): void => {
+        const r = stepTreeBake(key, 8);
+        if (r) {
+          this.events.off("postupdate", this.bakeHandler);
+          this.bakeHandler = undefined;
+          this.applyTreeTextures(r, W, H);
+          for (const o of this.flatFallbacks) o.destroy();
+          this.flatFallbacks = [];
+        }
+      };
+      this.events.on("postupdate", this.bakeHandler);
+      // 离场摘除步进（任务保留在模块级，重进 startTreeBake 同键续接）
+      this.events.once("shutdown", () => {
+        if (this.bakeHandler) this.events.off("postupdate", this.bakeHandler);
+        this.bakeHandler = undefined;
+      });
     }
 
     // 节点按钮
@@ -187,5 +209,65 @@ export class TempleScene extends Phaser.Scene {
       this.showNumbers = !this.showNumbers;
       for (const t of this.numberTexts) t.setVisible(this.showNumbers);
     });
+  }
+
+  /** 平色回退（烘焙期间短暂可见；结构与 oracle h() 同集合：全树边+全底座 / done 边+金底座） */
+  private buildFlatFallback(
+    scale: number,
+    baseColor: number,
+    goldColor: number,
+    byOid: Map<number, TempleLevel>,
+    px: (lv: TempleLevel) => number,
+    py: (lv: TempleLevel) => number,
+    done: Set<string>,
+    playable: Set<string>,
+  ): void {
+    const maskTint = (target: number): number => {
+      const c = Phaser.Display.Color.IntegerToColor(target);
+      return Phaser.Display.Color.GetColor(c.red, Math.round(c.green / (203 / 255)), 0);
+    };
+    const prefixOf = (type: string): string =>
+      type === "speed" ? "DiamondSpeed" : type === "puzzle" ? "DiamondPuzzle" : type === "dark" ? "DiamondDark" : "Diamond";
+    const gAll = this.add.graphics().setDepth(-4);
+    gAll.lineStyle(16 * scale, baseColor, 1);
+    for (const e of this.data_.edges) {
+      const s = byOid.get(e.source), t = byOid.get(e.target);
+      if (!s || !t) continue;
+      gAll.lineBetween(px(s), py(s), px(t), py(t));
+    }
+    this.flatFallbacks.push(gAll);
+    for (const lv of this.data_.levels) {
+      this.flatFallbacks.push(
+        this.add.image(px(lv), py(lv), ATLAS_MENU, `${prefixOf(lv.type)}_Bkg_Mask0000`).setScale(scale).setTint(maskTint(baseColor)).setDepth(-4),
+      );
+    }
+    const gDone = this.add.graphics().setDepth(-4);
+    gDone.lineStyle(16 * scale, goldColor, 1);
+    for (const e of this.data_.edges) {
+      const s = byOid.get(e.source), t = byOid.get(e.target);
+      if (!s || !t) continue;
+      if (!(done.has(s.filename) || done.has(t.filename))) continue;
+      gDone.lineBetween(px(s), py(s), px(t), py(t));
+    }
+    this.flatFallbacks.push(gDone);
+    for (const lv of this.data_.levels) {
+      if (!playable.has(lv.filename) && starsOf(lv.filename) === 0) continue;
+      this.flatFallbacks.push(
+        this.add.image(px(lv), py(lv), ATLAS_MENU, `${prefixOf(lv.type)}_Bkg_Mask0000`).setScale(scale).setTint(maskTint(goldColor)).setDepth(-4),
+      );
+    }
+  }
+
+  /** 烘焙产物入纹理系统并按 oracle 层序铺放（底影→全树→进度，全部低于节点按钮） */
+  private applyTreeTextures(r: TreeBakeResult, W: number, H: number): void {
+    for (const key of Object.values(TREE_TEX)) {
+      if (this.textures.exists(key)) this.textures.remove(key);
+    }
+    this.textures.addCanvas(TREE_TEX.big, r.canvases.big);
+    this.textures.addCanvas(TREE_TEX.all, r.canvases.all);
+    this.textures.addCanvas(TREE_TEX.done, r.canvases.done);
+    this.add.image(W / 2, H / 2, TREE_TEX.big).setDepth(-7);
+    this.add.image(W / 2, H / 2, TREE_TEX.all).setDepth(-6);
+    this.add.image(W / 2, H / 2, TREE_TEX.done).setDepth(-5);
   }
 }
