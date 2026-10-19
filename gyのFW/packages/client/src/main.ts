@@ -129,7 +129,16 @@ async function reloadLevel(levelId: string): Promise<void> {
 }
 
 function show(err?: string): void {
-  $("#menu-error").textContent = err ?? "";
+  const el = $("#menu-error");
+  el.classList.remove("busy");
+  el.textContent = err ?? "";
+}
+
+/** 连接忙态（P3 防双击）：#menu-error 挂 spinner、双按钮禁用；任何出路（入房/报错/回面板）必须解除 */
+function setBusy(busy: boolean): void {
+  $("#menu-error").classList.toggle("busy", busy);
+  $<HTMLButtonElement>("#btn-create").disabled = busy;
+  $<HTMLButtonElement>("#btn-join").disabled = busy;
 }
 
 function updateHud(): void {
@@ -247,6 +256,7 @@ async function start(mode: "create" | "join"): Promise<void> {
     if (mode === "join" && !code.trim()) return show("请输入房间码");
 
     show("连接中…");
+    setBusy(true);
     net = await Net.connect(
       {
         mode,
@@ -330,7 +340,12 @@ async function start(mode: "create" | "join"): Promise<void> {
       },
     );
     const codeShown = net.room.roomId;
-    $("#hud-room").textContent = `房间码 ${codeShown}（密码已校验）`;
+    // 房间码琥珀高亮（textContent 串不变——perf/e2e 按 /房间码 ([^（\s]+)/ 提取）
+    $("#hud-room").replaceChildren(
+      "房间码 ",
+      Object.assign(document.createElement("b"), { textContent: codeShown }),
+      "（密码已校验）",
+    );
     // 创建者：一键复制邀请链接（对方打开自动填房间码/密码并加入；pw 随链接即视为已授权）
     if (mode === "create") {
       const invite = `${location.origin}${location.pathname}?level=${encodeURIComponent(
@@ -340,8 +355,7 @@ async function start(mode: "create" | "join"): Promise<void> {
       btn.id = "btn-invite";
       btn.type = "button";
       btn.textContent = "复制邀请链接";
-      btn.style.cssText =
-        "margin-left:8px;font-size:12px;padding:2px 8px;cursor:pointer;background:#2b3a2b;color:#cfe3c3;border:1px solid #556b4f;border-radius:4px;pointer-events:auto"; // #hud 整层 none 防挡画布，按钮单点恢复可点
+      // 样式统一在 index.html #btn-invite（#hud 整层 none 防挡画布，按钮 pointer-events:auto 单点恢复可点）
       btn.addEventListener("click", () => {
         void navigator.clipboard
           .writeText(invite)
@@ -363,6 +377,7 @@ async function start(mode: "create" | "join"): Promise<void> {
     await enterGame();
   } catch (e: any) {
     // 进房成功但进游戏失败（关卡缺失等）→ 退回菜单并释放房间
+    setBusy(false);
     if (net && !gameStarted) {
       net.leave();
       net = null;
@@ -403,6 +418,7 @@ function bootPhaser(): void {
     selectedLevel = levelId;
     const el = document.querySelector("#menu-level");
     if (el) el.textContent = `已选关卡：${levelId}`;
+    setBusy(false); // 换关回面板：上一局的忙态禁用不得残留（否则 journey 二次建房 click 卡死）
     $("#menu").classList.remove("hidden");
   });
   if (selectedLevel) {

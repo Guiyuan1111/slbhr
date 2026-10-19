@@ -7,11 +7,14 @@
     <style>
       :root {
         color-scheme: dark;
-        --panel: rgba(10, 18, 6, 0.86);
-        --line: rgba(255, 255, 255, 0.14);
-        --accent: #ffb64c;
-        --water: #4cc2ff;
-        --fire: #ff7a4c;
+        /* 石板大厅配色（note/research/2026-10-19-connect-ui 方向 A） */
+        --amber: #ffb64c;
+        --fire: #ff7a3d;
+        --water: #3fb9ff;
+        --engrave: #f7e8c8;
+        --label: #cfc2a4;
+        --panel: rgba(22, 16, 8, 0.82);
+        --line: rgba(255, 182, 76, 0.35);
       }
       * { box-sizing: border-box; }
       html, body {
@@ -66,62 +69,261 @@
       #game-root canvas { image-rendering: auto; }
       .hidden { display: none !important; }
 
-      /* ---- 菜单 ---- */
+      /* ---- 菜单（方向 A「石板大厅」）----
+         #menu = 半透幕布：透出身后 MenuScene 大厅（背景/光柱/角色/蜡烛照常活着）；
+         .menu-fit = 与 Phaser 画布（1280×960 FIT）同因子的缩放壳——面板与画布内官方
+         弹窗逐像素同几何；.panel = PopupBackground0000 原生帧石板。 */
       #menu {
         position: fixed;
         inset: 0;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: radial-gradient(ellipse at center, #14300f 0%, #0a1206 70%);
+        background: rgba(5, 11, 4, 0.42);
         z-index: 10;
       }
+      @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+        #menu { backdrop-filter: blur(1.5px); -webkit-backdrop-filter: blur(1.5px); }
+      }
+      .menu-fit {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        /* 回落定值（不支持 CSS Values 4 三角函数的老引擎）；下方 @supports 给精确 FIT 因子 */
+        transform: scale(0.72);
+      }
+      @supports (top: calc(tan(atan2(1px, 1px)) * 1px)) {
+        .menu-fit {
+          transform: scale(min(tan(atan2(100vw, 1280px)), tan(atan2(100vh, 960px))));
+        }
+      }
+      .menu-logo {
+        width: 460px;
+        margin-bottom: -18px;
+        z-index: 1;
+        pointer-events: none;
+        user-select: none;
+        filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.55));
+        animation: menu-floaty 4s ease-in-out infinite;
+      }
+      @keyframes menu-floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+      @media (prefers-reduced-motion: reduce) {
+        .menu-logo { animation: none; }
+        #menu-error.busy::before { animation: none; }
+      }
+
+      /* 石板：PopupBackground0000 帧 = atlas (0,205) 1082×642。整帧按盒拉伸铺底
+         （background-size/position 百分比推导：2048/1082、205/1406），四角再盖 74px
+         原生帧裁片（.panel/.sub 的四 pseudo）——角部零变形；窄屏回流皮时边中段随
+         比例拉伸，与调研 mockup 的 border-image 同级折衷。 */
       .panel {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 28px 32px;
-        width: min(420px, 92vw);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-      }
-      .panel h1 {
-        margin: 0 0 6px;
-        font-size: 22px;
+        position: relative;
+        width: 1082px;
+        height: 642px;
+        padding: 56px 60px 48px;
+        background: url(/assets/atlasses/PopupAssets.png) no-repeat;
+        background-size: calc(100% * 2048 / 1082) calc(100% * 2048 / 642);
+        background-position: 0 calc(100% * 205 / 1406);
+        color: var(--engrave);
+        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
         text-align: center;
-        letter-spacing: 2px;
       }
+      .panel::before, .panel::after, .sub::before, .sub::after {
+        content: "";
+        position: absolute;
+        width: 74px;
+        height: 74px;
+        pointer-events: none;
+        background: url(/assets/atlasses/PopupAssets.png) no-repeat;
+        background-size: 2048px 2048px;
+      }
+      .panel::before { left: 0; top: 0; background-position: 0 -205px; }
+      .panel::after { right: 0; top: 0; background-position: -1008px -205px; }
+      .sub::before { left: 0; bottom: 0; background-position: 0 -773px; }
+      .sub::after { right: 0; bottom: 0; background-position: -1008px -773px; }
+
+      #menu-level {
+        position: absolute;
+        right: -34px;
+        top: -58px;
+        font-size: 13px;
+        letter-spacing: 1px;
+        color: #ffd479;
+        background: rgba(24, 18, 8, 0.82);
+        border: 1px solid rgba(255, 182, 76, 0.4);
+        border-radius: 999px;
+        padding: 5px 14px;
+        text-shadow: none;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+        pointer-events: none;
+      }
+      /* 装饰一律走伪元素（不产生 textContent——journey 对 #menu-level 做 textContent 严格相等断言） */
+      #menu-level::before { content: "◈ "; color: var(--amber); }
+
+      .panel h1 { margin: 0 0 2px; font-size: 26px; font-weight: 700; letter-spacing: 6px; }
       .panel h1 .fire { color: var(--fire); }
       .panel h1 .water { color: var(--water); }
-      .panel .sub { text-align: center; color: #9aa892; font-size: 13px; margin-bottom: 20px; }
-      label { display: block; font-size: 13px; color: #b9c6b2; margin: 12px 0 4px; }
-      input {
-        width: 100%;
-        padding: 10px 12px;
-        border-radius: 8px;
-        border: 1px solid var(--line);
-        background: rgba(255, 255, 255, 0.06);
-        color: #fff;
-        font-size: 15px;
-        outline: none;
-      }
-      input:focus { border-color: var(--accent); }
-      .btn {
+      /* .sub 必须保持 static：它的两个伪元素是石板下角裁片（绝对定位锚到 .panel） */
+      .sub { color: var(--label); font-size: 13px; margin-bottom: 14px; letter-spacing: 2px; }
+
+      label {
         display: block;
-        width: 100%;
-        margin-top: 14px;
-        padding: 11px;
-        border: none;
-        border-radius: 8px;
-        font-size: 15px;
-        font-weight: 600;
-        cursor: pointer;
-        color: #20140a;
-        background: var(--accent);
+        width: 560px;
+        max-width: 100%;
+        margin: 12px auto 5px;
+        font-size: 13px;
+        color: var(--label);
+        letter-spacing: 0.5px;
+        text-align: left;
       }
-      .btn.blue { background: var(--water); color: #06202e; }
-      .btn:active { transform: translateY(1px); }
-      #menu-error { color: #ff8f8f; font-size: 13px; min-height: 18px; margin-top: 12px; text-align: center; }
-      .hint { font-size: 12px; color: #8a987f; margin-top: 14px; line-height: 1.6; }
+      input {
+        display: block;
+        width: 560px;
+        max-width: 100%;
+        height: 46px;
+        margin: 0 auto;
+        padding: 0 14px;
+        border-radius: 12px;
+        border: 2px solid #574a35;
+        background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.26));
+        box-shadow: inset 0 2px 7px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.07);
+        color: #ffeecb;
+        caret-color: var(--amber);
+        font-size: 17px;
+        letter-spacing: 1.5px;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      input:focus {
+        border-color: var(--amber);
+        box-shadow: inset 0 2px 7px rgba(0, 0, 0, 0.6), 0 0 0 3px rgba(255, 182, 76, 0.22);
+      }
+      input::placeholder { color: #9b8d70; letter-spacing: 0.5px; }
+
+      /* 按钮：StoneButton0000/0001 原生帧 252×117（与 overlays.ts stoneButton 同尺寸同 hover 换帧）；
+         帧坐标经 background-size/position 百分比换算（1024/252、256/772），定宽/回流拉伸两用 */
+      .btn {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        vertical-align: top;
+        width: 252px;
+        height: 117px;
+        margin: 18px 10px 0;
+        border: none;
+        border-radius: 20px;
+        padding: 0;
+        cursor: pointer;
+        background: url(/assets/atlasses/MenuAssets.png) no-repeat;
+        background-size: calc(100% * 1024 / 252) calc(100% * 1024 / 117);
+        background-position: 0 0;
+        font: 700 19px/1 "Microsoft YaHei", system-ui, sans-serif;
+        color: #ffeecb;
+        letter-spacing: 3px;
+        text-shadow: 0 2px 0 rgba(0, 0, 0, 0.65), 0 0 8px rgba(0, 0, 0, 0.4);
+        transition: transform 0.06s;
+      }
+      .btn:hover { background-position: calc(100% * 256 / 772) 0; }
+      .btn:active { transform: translateY(2px); }
+      .btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+      .btn:disabled { filter: brightness(0.75) saturate(0.7); cursor: default; }
+      .btn .av {
+        flex: 0 0 33px;
+        width: 33px;
+        height: 41px;
+        pointer-events: none;
+        background: url(/assets/atlasses/CharAssets.png) no-repeat;
+        background-size: calc(2048 / 130 * 33px) auto;
+      }
+      .av-fire { background-position: 0 calc(-862 / 130 * 33px); }
+      .av-water { background-position: calc(-1340 / 130 * 33px) calc(-468 / 130 * 33px); }
+      .btn > span { display: flex; flex-direction: column; align-items: center; gap: 5px; pointer-events: none; }
+      .btn small { font-size: 12px; font-weight: 400; letter-spacing: 1px; color: #e8d9b8; opacity: 0.85; }
+
+      /* #menu-error 三态（P3/P4）：空=零占位；连接中=busy spinner（main.ts setBusy）；
+         报错=横幅 + CrossIcon0000 帧图标（伪元素，不产生 textContent） */
+      #menu-error {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        width: 560px;
+        max-width: 100%;
+        min-height: 26px;
+        margin: 12px auto 0;
+        font-size: 13.5px;
+        line-height: 1.55;
+        color: #ffb3a6;
+        text-align: center;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        text-shadow: none;
+      }
+      #menu-error:not(:empty) {
+        background: rgba(70, 12, 9, 0.68);
+        border-color: rgba(255, 122, 100, 0.42);
+        padding: 8px 14px;
+      }
+      #menu-error:not(:empty)::before {
+        content: "";
+        flex: 0 0 18px;
+        width: 18px;
+        height: 18px;
+        background: url(/assets/atlasses/PopupAssets.png) no-repeat;
+        background-size: calc(2048 / 61 * 18px) auto;
+        background-position: calc(-1122 / 61 * 18px) calc(-205 / 61 * 18px);
+        filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+      }
+      #menu-error.busy { color: #ffd479; background: rgba(48, 38, 14, 0.6); border-color: rgba(255, 182, 76, 0.35); }
+      #menu-error.busy::before {
+        background: none;
+        border: 3px solid rgba(255, 182, 76, 0.28);
+        border-top-color: var(--amber);
+        border-radius: 50%;
+        animation: menu-spin 0.8s linear infinite;
+      }
+      @keyframes menu-spin { to { transform: rotate(360deg); } }
+
+      /* 操作提示：文案墙 → kbd 速查行（P6）；详细规则挪到 title 悬停提示 */
+      .hint {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 22px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+        font-size: 12px;
+        color: #a99c80;
+        text-shadow: none;
+      }
+      .hint b { color: #d8cba9; font-weight: 600; margin-right: 4px; }
+      kbd {
+        display: inline-block;
+        min-width: 20px;
+        text-align: center;
+        padding: 2px 5px;
+        margin: 0 1px;
+        background: rgba(0, 0, 0, 0.42);
+        border: 1px solid #574a35;
+        border-bottom-width: 2px;
+        border-radius: 5px;
+        font: 600 11px/1.4 system-ui, sans-serif;
+        color: #e8d9b8;
+      }
+      .hint .k-fire kbd { border-color: rgba(255, 122, 61, 0.55); }
+      .hint .k-water kbd { border-color: rgba(63, 185, 255, 0.55); }
+
+      /* 窄屏回流皮（手机竖屏/横屏矮窗）：板变流宽、按钮整行堆叠；四角裁片照常生效 */
+      @media (max-width: 559.9px), (max-height: 419.9px) {
+        .menu-fit { transform: none; }
+        .menu-logo { width: min(300px, 78vw); margin-bottom: -10px; }
+        .panel { width: min(560px, 94vw); height: auto; padding: 34px 44px 30px; }
+        label, input, #menu-error { width: 100%; }
+        .btn { display: flex; width: 100%; margin: 14px 0 0; }
+        .btn + .btn { margin-top: 10px; }
+      }
 
       /* ---- HUD ---- */
       #hud {
@@ -140,14 +342,36 @@
         align-items: center;
         background: var(--panel);
         border: 1px solid var(--line);
-        border-radius: 10px;
-        padding: 6px 14px;
+        border-radius: 12px;
+        padding: 9px 18px;
         font-size: 14px;
+        color: #d8cba9;
         white-space: nowrap;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
       }
       #hud-time { font-variant-numeric: tabular-nums; font-weight: 700; }
       #hud-role { font-size: 12.5px; color: #b9c6b2; }
-      #hud-room { font-size: 12px; color: #8a987f; }
+      #hud-room { font-size: 14px; color: #cfc2a4; }
+      #hud-room b {
+        color: var(--amber);
+        font-size: 16px;
+        letter-spacing: 2px;
+        font-variant-numeric: tabular-nums;
+        margin: 0 2px;
+      }
+      /* 邀请按钮（main.ts 动态 append）：#hud 整层 none 防挡画布，此钮单点恢复可点（契约） */
+      #btn-invite {
+        pointer-events: auto;
+        cursor: pointer;
+        font: 600 12px/1 "Microsoft YaHei", system-ui, sans-serif;
+        color: #2b1c0c;
+        background: linear-gradient(#ffcf7d, #f0a63c);
+        border: 1px solid #a86f1d;
+        border-radius: 8px;
+        padding: 6px 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+      }
+      #btn-invite:active { transform: translateY(1px); }
       #hud-status { font-size: 13px; color: #ffd479; }
       #hud-status.warn { color: #ff8f8f; font-weight: 700; }
 
@@ -174,23 +398,29 @@
     <div id="game-root"></div>
 
     <div id="menu">
-      <div class="panel">
-        <h1><span class="fire">森林</span>·<span class="water">冰火人</span></h1>
-        <div class="sub">双人联机 · 一人火人一人水女孩</div>
+      <div class="menu-fit">
+        <!-- 官方标题立绘（/assets/images/GameNameForest.png，MenuScene 同款；身后画布标题在幕布下与之叠合） -->
+        <img class="menu-logo" src="/assets/images/GameNameForest.png" alt="" />
+        <div class="panel">
+          <div id="menu-level" style="text-align:center;color:#ffd479;font-size:14px;min-height:18px"></div>
+          <h1><span class="fire">森林</span>·<span class="water">冰火人</span></h1>
+          <div class="sub">双人联机 · 一人火人 · 一人水女孩</div>
 
-        <div id="menu-level" style="text-align:center;color:#ffd479;font-size:14px;min-height:18px"></div>
-        <label for="password">房间密码（创建者设定，两人一致才能进同一房）</label>
-        <input id="password" type="text" maxlength="16" placeholder="例如 4321" />
+          <label for="password">房间密码（创建者设定，两人一致才能进同一房）</label>
+          <input id="password" type="text" maxlength="16" placeholder="例如 4321" />
 
-        <label for="roomcode">房间码（加入时填写）</label>
-        <input id="roomcode" type="text" maxlength="12" placeholder="创建后会显示房间码" />
+          <label for="roomcode">房间码（加入时填写）</label>
+          <input id="roomcode" type="text" maxlength="12" placeholder="创建后会显示房间码" />
 
-        <button class="btn" id="btn-create">创建房间（我当火人）</button>
-        <button class="btn blue" id="btn-join">加入房间（水女孩）</button>
-        <div id="menu-error"></div>
-        <div class="hint">
-          每台电脑控制本机角色：火人用方向键（↑←→），水女孩用 W/A/D（原版按角色分键；双人各用一台电脑）。碰到自己克制的液体没事，碰到对方的液体会化成烟。<br />
-          两人各自站进自己的门即可通关。创建房间时可在 URL 加 ?level=forest_02 选择关卡（默认 forest_01）；R 键在通关/失败后立即重开。
+          <button class="btn" id="btn-create" type="button"><i class="av av-fire" aria-hidden="true"></i><span>创建房间<small>我当火人 · 方向键</small></span></button>
+          <button class="btn" id="btn-join" type="button"><i class="av av-water" aria-hidden="true"></i><span>加入房间<small>水女孩 · W/A/D</small></span></button>
+          <div id="menu-error"></div>
+          <div class="hint" title="每台电脑控制本机角色：碰到自己克制的液体没事，碰到对方的液体会化成烟；两人各自站进自己的门即可通关。创建房间时可在 URL 加 ?level=forest_02 选择关卡（默认 forest_01）。">
+            <span class="k-fire"><b>火人</b><kbd>↑</kbd><kbd>←</kbd><kbd>→</kbd></span>
+            <span class="k-water"><b>水女孩</b><kbd>W</kbd><kbd>A</kbd><kbd>D</kbd></span>
+            <span><b>重开</b><kbd>R</kbd></span>
+            <span><b>暂停</b><kbd>P</kbd></span>
+          </div>
         </div>
       </div>
     </div>
