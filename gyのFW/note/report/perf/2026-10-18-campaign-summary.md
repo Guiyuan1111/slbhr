@@ -141,7 +141,7 @@ World 构建 **10.5×**、每 World 常驻 **-76%**（forest_01）、客户端 u
 | r6b 带宽口径归属澄清 | r4 的 5.36KB/s/客户端实为 **forest_bonus_2@60Hz** 档（91B/patch），forest_01 应为 2.93KB/s（50B）——r4 快照三档 f01/f12/bonus_2=2.93/3.39/5.36，引用单值时须带关卡归属 | r6b 实测 f01 walk 1.43KB/s 交叉印证；r4 报告原文无错，防误引 |
 | r6c 门禁本体红线漏洞 | det 并行化半成品曾存在 `DET_WORKERS=非数字`→NaN→零 worker→零行→compare 报「0 关位级一致」exit 0 **静默绿门禁**路径；且 worker 线程 tsx 钩子在本机 Node 22.22.1 必不自动注册（特性门 [[22,22,3]] 不满足） | 已修：非法值显式 exit 1；worker 分支显式 `tsx/esm/api register()`（探针实证）——门禁工具自身也须过「空跑≠绿」审查 |
 
-## 三、实施件清单（19 件全览，零回滚）
+## 三、实施件清单（21 件全览，零回滚）
 
 | 轮·件 | 改动一句话 | commit |
 |---|---|---|
@@ -165,6 +165,9 @@ World 构建 **10.5×**、每 World 常驻 **-76%**（forest_01）、客户端 u
 | r6·b | 容量基准量具 perf-capacity.mjs+全曲线（96 房拐点/CPU·RSS·带宽拟合/部署建议） | `8ba9507` |
 | r6·c | det 门禁并行化（cap 4 worker+逆序派发，-44%）+DET_WORKERS 堵漏+typecheck --incremental | `4a6eb60`+`10c6400` |
 | r6·主 | perf-client CDP 远程真机模式（--cdp/--host、connectOverCDP、GPU 串采集；渲染段真口径量具前置） | `ab68e0e` |
+| r7·a | 容量挂账归因：6.4ms/s/房拆面闭合（移动 44%/patch 23%/模拟 14%/房间 10%/input 9%）；stime 主导=loopback ws 发送内核成本（VMware 放大）——96 房口径偏保守，部署预算改收发字节加权 | `a21b178` |
+| r7·主 | VM 内真 GPU 口径勘误解锁（Chromium 黑名单非架构死路，--ignore-gpu-blocklist+vmwgfx 真显示）+perf-client --gpu 量化+_gpu 基线 | `aea9d69` |
+| r7·f | font 子集化普查收官=负结果关闭（-5.2%<20% 线未破线资产零改动；四源普查工具+清单+防护网 4 断言入库） | `278cbfb` |
 
 新增量具：perf-serialize/perf-routeio/perf-mem（r0）、perf-client（r3）、probe-step-load（r0）、
 **perf-capacity（r6b）**；量具强化：**perf-determinism 并行化（r6c，判据零变化三方对照）、
@@ -178,13 +181,13 @@ r5 3 脚本；r1/r2 无独立收容档，剖析产物随报告入档；hotspot 0
 | 候选 | 数据 | 前置/定性 |
 |---|---|---|
 | **客户端渲染段**（r3 TOP1，数据最厚） | Canvas 软光栅 renderAvg 5.31~5.88ms vs updateAvg 0.146ms（帧预算 ~97% 在渲染段）；残余分配 ~18.1KB/帧主体在 Phaser 渲染管线内部 | **前置已解除（r7 勘误解锁）**：gpu-vmwgfx 诊断 §8 推翻"架构死路"——真凶=Chromium GPU 黑名单，`--ignore-gpu-blocklist`+vmwgfx 真显示即得宿主 GPU（SVGA3D 实证）；**量具已固化 `perf-client --gpu`**，r7-vmgpu 基线在库（WebGL render 0.236ms@44fps，44fps 为虚拟显示刷新封顶）；裸机金标准 CDP（`ab68e0e`）降级为可选项；可直接开做渲染段 A/B |
-| **font.png 1.6MB 子集化**（r5 候选 TOP） | 冷启剩余大头=font.png 1.6MB/2048²（中文字库位图）+CharAssets 732KB 立绘；r5 装载序整形后首帧集内再无可挪项 | **前置=用户裁决破「资产内容红线」**（子集化/重排即改资产内容）——未裁决前不动 |
+| ~~font.png 子集化~~（r5 候选 TOP → **r7f 实测关闭**） | 四源普查并集 1082 字符 ∩ fnt 260 字形=保留 247/清零 13（面积占 4.07%）；方案 A 实测 **-5.2%**（1638701→1553047B）、B 面积上界 ≈-5%——远低 20% 停止线。勘误：图集实为 2191×1024 非 2048²，保留字形占声明面积 94.79%=图集本就致密，**无子集化空间** | 用户授权破线后按停止规则**未破线**（`278cbfb`：普查/再生工具+字符清单+防护网 4 断言入库，生产资产 md5 零改动）；冷启剩余杠杆只剩渲染段（r7r 进行中） |
 | ~~GameScene 音频批暖装~~ | **r6a 已做**（`567b2d3`，就绪点=Menu 驻留 +941ms） | 完结移入实施件 |
 | phaser 1.48MB 块拆分 | 脚本段 parse/eval ~120ms | r2 判拆分不值，r5 复核未推翻——维持不动 |
 | 50 并发 GC 拆账（r0 §八存疑） | 50×bonus_2 构建总耗时 ≈166ms/World vs 冷建 14ms，GC 暂停未拆账 | 仅多房间大并发场景相关，单人单房无关；拆账需每轮隔离 gc |
 | **vendor 必漂禁区清单（永挂账，除非用户特批）** | ①b2TimeOfImpact/SolveTOI 18%（r0 hotspot #6）②宽相代理插入链 b2DynamicTree.InsertLeaf 等 25~30%（r2 剩余热点）③goog.base 剩余（关节类 <5%，r2 §六）④关节求解序 7.2%（r0 hotspot #8） | 动则 det 位级基线必漂、fixtures/金轨迹全网重录——**永挂账不动** |
 
-弃件存档（数据支撑的放弃，防止重复立项）：timerMs 降频出站（r4：idle 线路 <3KB/s 不值协议变更）、
+弃件存档（数据支撑的放弃，防止重复立项）：**font.png 子集化**（r7f 实测 -5.2%/上界 -5% < 20% 停止线——图集本就致密；再生工具休眠入库，未来文案大改可一键重评）、timerMs 降频出站（r4：idle 线路 <3KB/s 不值协议变更）、
 imageLoadType=HTMLImageElement（r5：A/B 494.5 vs 471~533 带内无收益）、r0 候选 60Hz 分级出站
 （r4 勘误后带宽前提消失）。
 
