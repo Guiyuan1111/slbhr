@@ -65,8 +65,8 @@ Ubuntu resolute 的 xserver-xorg-video-vmware 构建依赖**缺 libxatracker-dev
   GPU 路径必须有真显示，Xvfb 也不行（GLX 软渲染）。
 - **量具已固化**：`benchmark/perf-client.mjs --gpu [--display :9]`；r7-vmgpu 基线
   （client-r7-vmgpu.json，meta.remoteGpu=SVGA3D 串）：WebGL fps 44.2/render 0.236ms，
-  Canvas 43.6/0.799ms——双渲染器同被 :9 虚拟显示 ~44Hz 刷新封顶（显示属性非代码项），
-  渲染段 A/B 相对比较以 ms 口径为准。
+  Canvas 43.6/0.799ms——〔r7r 勘误〕44fps 并非刷新封顶：xrandr 实证 :9 为 60.00Hz、静窗复测
+  61.0~61.1fps，44.2 系首跑时他槽基准窗负载污染（归因存疑挂账）；渲染段 A/B 相对比较以 ms 口径为准。
 - **口径定位**：vmwgfx=宿主 GPU 的命令级虚拟化转发，绝对值含虚拟化 present 开销；
   本项目渲染段优化的对象是 CPU 侧 JS/Phaser 批处理（与虚拟化无关），A/B 有效；
   裸机绝对金标准仍可走 Windows 远程 CDP（已降级为可选项，非必需）。
