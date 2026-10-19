@@ -89,7 +89,7 @@ this.imageDone = h(!1),           // @1917785 进度纹理（仅 state 和>2 的
 
 ### 3.1 相邻发现（记录不改，防后来者误判）
 
-- **imageAllBig（1.2 倍底影）与 OutlineFilter(3px)、BevelFilter 浮雕光效未复刻**：Phaser3 无对应内置滤镜，平色近似为其信息含量的超集（底影/描边只影响质感不影响信息）；已在代码注释与本档 §1.2 声明。
+- **imageAllBig（1.2 倍底影）与 OutlineFilter(3px)、BevelFilter 浮雕光效未复刻**：Phaser3 无对应内置滤镜，平色近似为其信息含量的超集（底影/描边只影响质感不影响信息）；已在代码注释与本档 §1.2 声明。（2026-10-20 更新：已由 §7 滤镜还原 CPU 精确烘焙落地 Bevel/Outline/CM 三层管线。）
 - **NewSign 未实现**：原版对"已解锁未玩过非 initial"节点画 NewSign0000；我方 progress.ts 无 played 字段，加注需动进度模型，超出本轮表现层边界。
 - **BackButton 细节**：原版 label "Back"（fontStone 28）画在按钮内 (x+40, y−textHeight/2−12)（bundle:1910630 段），且树型位置 y=H−92.25（79×123 帧的 3/4 公式，bundle:1933300 段）；我方按钮 (70,H−80)+下方独立"返回"字。属菜单族公共件，留待 UI 统一校准轮。
 - **softLock 弹窗**：原版 state=0 未锁节点点击弹 SoftLockMenu；forest 全关 required=0 → minRequired=0 → 永不触发，无需复刻。
@@ -117,3 +117,118 @@ this.imageDone = h(!1),           // @1917785 进度纹理（仅 state 和>2 的
 
 - BevelFilter/Outline/NewSign/BackButton 校准（§3.1）——待 UI 统一轮或用户裁量。
 - 若嫌全树暗橄榄仍不够醒目：oracle 框架内的合法旋钮只有 temple.json `color`（改色即偏离 oracle 数据，需用户裁量）；"破保真让全树高亮"属产品决策，不在复刻线内自作主张。
+
+## §7 滤镜还原（2026-10-20，滤镜移植槽 filterport——平色近似 → 原版浮雕质感）
+
+> 本节为 §1/§3.1 中"BevelFilter/Outline 未复刻"余项的落地记录，引用行号以
+> `output/A/js/init.eb02fbdab2aa1d24.js`（54323 行版）为准（此前档内 bundle:NNNN 为旧版行号）。
+
+### 7.1 oracle 管线实证（行号实测）
+
+**三层滤镜配方**（@45403-45405 verbatim）：
+```js
+f(this.imageAllBig, [u, a]),   // u=Bevel(200, outer=1, dir=1)   + a=ColorMatrix(temple.color)
+f(this.imageAll,    [n, a, v]),// n=Bevel(200, outer=0, dir=-1)  + a + v=OutlineFilter(3, 0)
+f(this.imageDone,   [m, j]),   // m=Bevel(180, outer=0, dir=1)   + j=ColorMatrix(16766496=0xFFD620)
+```
+滤镜构造 @45386-45396；烘焙 `RenderTexture.renderRawXY` + 贴回 sprite（e.x=−C/2, e.y=−k/2，@45400-45402）。
+PIXI2 管线实测（TEMP/filterport/probe-filterpipe.mjs 挂钩 WebGLFilterManager）：所有 filter pass 都是
+全屏 quad pass（uv [0..1]）；非末 pass 关 blend；FilterTexture 逻辑宽 1036.8、texel 宽实测 1037
+（GLsizei 上取整，readPixels w=1037 实证）；filterArea=(0,0,1036.8,864)。
+
+**BevelFilter GLSL**（@41899-41944 verbatim，关键行）：
+```glsl
+precision mediump float;
+varying vec2 vTextureCoord;
+uniform float outer; uniform float dir; uniform sampler2D uSampler;
+void main(void) {
+  vec2 onePixel = vec2(1.0);                    // 未使用
+  vec4 color = texture2D(uSampler, vTextureCoord);
+  float a1 = 0.0; float a2 = 0.0;
+  for (float step = 0.; step < {maxStep}; step += {maxStep/3}) {      // maxStep = 1/thickness，JS 字符串拼接
+    a1 = a1 + texture2D(uSampler, vec2(vTextureCoord.x + step, vTextureCoord.y + step)).a; }   // 原始 UV 加法（无 onePixel/texel 换算）
+  for (float step = 0.; step < {maxStep}; step += {maxStep/3}) {
+    a2 = a2 + texture2D(uSampler, vec2(vTextureCoord.x - step, vTextureCoord.y - step)).a; }
+  a1 = a1/{res.toFixed(4)}; a2 = a2/{res.toFixed(4)};                  // "3.0000"，res=3
+  color.rgb = vec3(0.5);
+  float alpha = texture2D(uSampler, vTextureCoord).a;
+  if (outer == 1.0) { alpha = a1 + a2;  color.rgb = vec3(0.5-dir*a1/6.0+dir*a2/6.0); }
+  else              { alpha = texture2D(uSampler, vTextureCoord).a;  color.rgb = vec3(0.5+dir*a1/6.0-dir*a2/6.0); }
+  if (alpha > 0.5) { alpha = 1.0; }
+  gl_FragColor = vec4(color.rgb * alpha, alpha);  // 预乘输出
+}
+```
+要点：`step` 循环上限/步长是 JS `String(1/thickness)` 与 `String((1/thickness)/3)` 拼进源码，
+GLSL 编译期按 fp32 解析字面量、fp32 累积——**t=200 → 3 次迭代，t=180 → 4 次迭代**（fp32 累积怪癖，
+node 逐位复算证实）。采样偏移是原始 UV 加法，等价像素偏移 o·(WTX/C)、o·(WTY/K)。
+
+**OutlineFilter GLSL**（@41732-41764 verbatim，关键行）：
+```glsl
+vec4 ownColor = texture2D(texture, vTextureCoord);
+float maxAlpha = 0.;
+for (float angle = -PI; angle <= PI; angle += 0.3142) {              // Math.PI/10 toFixed(4)，20 角
+  curColor = texture2D(texture, vec2(vTextureCoord.x - thickness*px.x*cos(angle), vTextureCoord.y - thickness*px.y*sin(angle)));
+  maxAlpha = max(maxAlpha, curColor.a); }
+float resultAlpha = max(maxAlpha, ownColor.a);
+if (ownColor.a < 0.1) gl_FragColor = vec4((ownColor.rgb + outlineColor.rgb*(1.-ownColor.a))*resultAlpha, resultAlpha);
+else gl_FragColor = vec4(ownColor.rgb, 1.);
+```
+（@41813 的 `min` 变体是未走到的另一份源码。）outlineColor=0 → 纯黑描边，半径 3·px。
+
+**ColorMatrix**：对角 1.7×(tint/255)，alpha 保原（bundle:1782424 旧引用）；灰 0.5 → 0.85×tint；
+灰 128 → 1.7·128/255×tint = temple (78,60,14)、gold (218,183,27)。
+
+**h() 与 _id**（@45363-45382 verbatim 要点）：`i = a => levels.find(b => b._id === a)`（@45363-45364）——
+**边端点按顺序号 `_id`（1..48）索引，不是 level.id**；strokeStyle=templeData.color、lineWidth=16·x、
+边条件 `b || q.state+r.state>2`、底座条件 `b || l.state>0`、底座前缀按 type、`scale.set(x*c)`、
+位置 `(x·C−w/2, y·k−h/2)`。**我方旧 TempleScene 按 byId(lv.id) 接线，47 条边错 41 条，本轮修复
+（byOid=Map by `_id`，解锁传播同步改）**。
+
+### 7.2 移植矩阵（→ packages/client/src/scenes/templeTreeBake.ts）
+
+| 层 | thickness | outer | dir | tint | 后置 | 底座倍率 | 迭代 |
+|---|---|---|---|---|---|---|---|
+| big（底影） | 200 | 1 | +1 | 0x5B4610 | — | 1.2 | 3 |
+| all（全树） | 200 | 0 | −1 | 0x5B4610 | Outline(3,0) | 1.0 | 3 |
+| done（进度） | 180 | 0 | +1 | 0xFFD620 | — | 1.0 | 4（fp32） |
+
+CPU 复刻语义（逐位对拍校准）：GL bilinear 半 texel（GL(t)=A(t−0.5)，图像索引约定）；SwiftShader
+unorm=round-half-up；fp32 逐操作残差（Math.fround 每操作）；输出预乘 (rgb·alpha, alpha) →
+`addCanvas(key, canvas)`（pma 上传预乘，与 oracle ±1 双舍入等价）；空盒 SAT 跳过加速。
+关键平色（字节实证）：全树内部 = CM(灰 128) = **(78,60,14)**；金纯内部 = CM(灰 128) = **(218,183,27)**
+（t=180 四次迭代 fp32 精确对消 rgb=0.5），近边负残差灰 127 → (216,181,27)——§4 的"金内部 216"
+实为近边采样，特此修正认知。
+
+### 7.3 对拍数据（tools/temple-tree/compare-temple.py；oracle-temple.png vs ours-temple.png，均 1280×960，1 星 forest_01）
+
+| 项 | 结果 |
+|---|---|
+| 对齐 | 全局仿射 x′=x+0.25+0.00150·(x−122)，拟合匹配率 97.59%；垂直 dy≡0（多窗口峰值均 0） |
+| 结构化边采样（47 边 × t∈{.35,.5,.65}，近节点 50px 跳过）中线 \|diff\|≤10/通道 | **49/49** |
+| 中线期望 0.85×tint ±2 窗 | 18 点未中（两侧同向 +3~+8，描边渐变亚像素相位；点间 ±10 门禁全过） |
+| 凹凸方向（±3.2px 法向亮度符号一致） | **50/50** |
+| 密集区 778,496 px（排除按钮盘 r=26/NEW!/返回/显示关卡数）| **97.56%** 全通道 ≤10；通道均差 (0.94, 0.75, 0.18) |
+| 失配 19,021 px 构成 | 18,722（98.4%）在 5×5 梯度>20 边缘带；远边 299 px（0.038%） |
+| 层级字节对拍（bake.js vs oracle RT 回读，1037 texel 模型） | big 94.80% 字节同（4ch 90.9% 精确同，>10 仅 1.34%）；all 97.02%；done 99.82% |
+| 性能 | 同算法 JS 全同步烘焙 big 204ms + all 689ms（含 Outline 20 角）+ done 172ms ≈ **1.07s** → 必须拆帧：create() 平色兜底 + postupdate `stepTreeBake(8ms)` 分帧，完成后换 tree-big/tree-all/tree-done 三张 CanvasTexture（深度 −7/−6/−5） |
+
+### 7.4 残余偏差
+
+1. **水平仿射差 ~1.5e-3 + 0.25px**：机理假说为 FilterTexture texel 宽 1037 与逻辑宽 1036.8 的回贴
+   映射 + texel 取整阶梯；未做机理级证明（不影响门禁，门禁按经验仿射对齐采样）。
+2. **边缘带 ~2.4% 像素 >10**：亚像素渐变相位差，双方同族色。最差样例 (614,837) oracle 金渐变
+   (134,111,18) vs 我方金满 (251,237,35)，均位于金带-底座环交界最陡处。
+3. **中线期望 ±2 窗 18 点未中**：同上亚像素相位；点间 ±10 门禁全过，期望窗只作信息性记录。
+4. **按钮层（非本槽）**：锁定节点锁图标视觉与 oracle 石钻观感差异、NewSign 未实现、返回按钮布局
+   差异——§3.1 已记录，维持不动。
+5. 密集区最差 12 点、结构化逐点明细、对齐系数：tools/temple-tree/compare-result.json。
+
+### 7.5 门禁与产物
+
+- `npm run typecheck` ✓；`npx vitest run` **95/95** ✓（新增 templeTreeBake 6 断言：loopOffsets fp32
+  迭代数、内部平色字节、alpha>0.5→1 语义、预乘往返）；`npm run build` ✓
+- `node scripts/e2e/route.mjs --level forest_01 --repeat 1` **PASS**（winAt=39472ms）
+- oracle 对拍如 §7.3（结构化 49/49、方向 50/50、密集 97.56%）
+- 产物：packages/client/src/scenes/templeTreeBake.ts、TempleScene.ts（_id 修复+分帧接入）、
+  templeTreeBake.test.ts；tools/temple-tree/{compare-temple.py, oracle-temple.png, ours-temple.png,
+  compare-result.json}
