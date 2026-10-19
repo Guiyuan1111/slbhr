@@ -160,3 +160,42 @@
 
 - `mockups/a-stone-hall.html` / `b-canvas-native.html` / `c-twin-gates.html`：自包含单文件（图集帧 base64 内嵌），浏览器 `file://` 直开，1280×960 自动缩放适配。右下 DEMO 控制台可切换：连接中 / 错误（短/长）/ 建房成功→HUD；B 另有幽灵层"真实视图"切换与弹入重播。页面内保留全部契约 ID（`#menu`/`#menu-level`/`#password`/`#roomcode`/`#btn-create`/`#btn-join`/`#menu-error`/`#hud-room`/`#btn-invite`），DEMO 之外无臆造交互。
 - 无头验证（2026-10-19，Playwright chromium，1280×960）：三份 mockup 均通过——零 console/page 错误；benchmark 同款动作（fill `#password`/`#roomcode`、click `#btn-create`/`#btn-join`、`waitForSelector("#menu", hidden)`、`#hud-room` 匹配 `/房间码 [^（\s]{4,}/`、`#menu-level` 精确串）全部成功；全部 `<img>` 解码成功；关键元素无舞台溢出。验证脚本属临时件，随 TEMP 清理，逻辑即上文第 2/7 节断言。
+
+---
+
+## §实施记录（2026-10-19 · 方向 A 实施槽）
+
+按本文方向 A 落地，commit `477cec0`（实现）+ `3808338`（census 清单）+ 档卷。只动 `packages/client/index.html`（主体）、`packages/client/src/main.ts`（最小接线）、根 `package.json` 0.3.32→0.3.33、`scripts/font-subset/used-chars.json`（测试防护网自述的刷新流程）、release note。
+
+### ID 契约自证（§2 逐条）
+九 ID 全部原名原元素类型原语义；装饰全部走伪元素（`#menu-level::before` "◈ "、`#menu-error::before` CrossIcon 帧——textContent 零污染）。探针实证（TEMP 探针，12/12）：`#menu-level` textContent 精确串、`.menu-fit` 在 1280×720 实测 `matrix(0.75,…)`（=min(1280/1280,720/960)，与画布 FIT 同因子，tan/atan2 在门禁 chromium 生效）、hover 换帧 `0px 0px → 33.1606% 0px`、fill/click 全视口（1280×720 / 1400×1000 / iPhone 13）可用、`?room=&pw=` 深链回填、忙态 spinner+双按钮禁用→失败回横幅+解锁、零 console/page 错误。
+
+### 与 mockup 的差异点（及理由）
+1. **资产**：mockup 用 base64 裁片 + border-image；生产按派发要求零新增资产——直引图集（PopupAssets/MenuAssets/CharAssets，画布 BootScene 已预载同 URL，CSS 引用零额外字节），帧坐标走 background-size/position 百分比换算（2048/1082、205/1406、1024/252、256/772、61/18 推导）。整图 border-image 不可行已证：PopupBackground0000 在 atlas (0,205)，非贴边，slice 无法隔离（CrossIcon 等帧会漏入角片）。
+2. **面板几何**：mockup 板外框 748px 流式；生产桌面为**原生 1082×642 整帧**（与 overlays.ts 画布弹窗逐像素同几何，经 `.menu-fit` 与画布同因子缩放），`<560px 宽或 <420px 高`回落流宽回流皮（四角 74px 原生裁片盖片在两皮共用，回流皮下边中段随比例拉伸，与 mockup border-image 同级折衷）。
+3. **按钮**：mockup 竖排整宽（600px 板所迫）；生产桌面双钮**并排原生 252×117**（同游戏内弹窗钮组语言），回流皮回到整宽堆叠。
+4. **保留 h1**（mockup 删除）：作为板内标题（同画布弹窗标题位），a11y 保留。
+5. **删去 mockup 的 DOM 蜡烛**：身后 MenuScene 画布本就有 4 支 Navy 蜡烛+角色 idle，DOM 再画一遍会重影——P2 的正确解就是幕布透出，不需 DOM 复刻。
+6. **画布自带标题**：GameName 在幕布后半透可见，与 DOM logo（460px）部分叠合属预期合成；kizi logo 顶部 50px 弱可见，接受。
+7. **错误长诊断折叠（.details/<small>）未做**：`show()` 保持 textContent 单一来源（避免 innerHTML 注入面），长文案由横幅 line-height 换行承载；三态（空/busy/错误）照搬。
+8. **输入框 height 46px、字号 17px**（≥16px，iOS 聚焦不触发视口缩放，较旧版 15px 改善）。
+
+### 门禁数字
+| 项 | 结果 |
+|---|---|
+| tsc（typecheck） | PASS |
+| vite build（仓库根） | PASS（dist/index.html 17.39KB） |
+| vitest 全量 | **89/89 PASS**（首跑 88/89：换肤新增文案触发 font census 防护网——按测试自述重跑 `census.ts` 刷新清单后全绿，client 源字符 395→527、fnt 交集 247→248） |
+| e2e route forest_01 repeat1 | **ALL PASS**（winAt=39559ms，房间 eqOX4nx-a） |
+| journey | **✗ 2 项——基线复跑同点同文失败，判定既有问题非本次回归**（见下） |
+| touch | **✗ 1 项——基线复跑同点同文失败，判定既有问题非本次回归**（见下） |
+| visual-diff | 91.97 / 92.8（两跑，方差 ~0.8pt；**只截 canvas 元素，DOM 换皮不入镜**；历史 95.2–95.8 为 10-13 win 环境数字，本槽未触 canvas 渲染路径，差值归环境/漂移面存疑待核） |
+| perf-client 本地冒烟 | 完成（建房→进房链路通；headless swiftshader webgl 13.3fps / canvas 60.6fps 属环境正常值） |
+
+### 既有问题（基线取证，未修——不在本槽文件边界内）
+- **journey「联机面板弹出并预选下一关」**：`__fwNextLevel` 现行走活房间 advance（0.3.12 语义，服务端仅 won 受理、双端留场换关），菜单不再弹出；journey.mjs 的该检查仍是旧 Continue 回大厅语义。基线（477cec0^）复跑：同两 ✗、detail 逐字同（`已选关卡：forest_01`）。journey.mjs 需按现语义改写场景。
+- **touch「tap 跳跃 → y 上抬」**：Δy=0.0px ×2（本槽）+ 基线 ×1 同值；右移/三键/零报错均绿。疑 Ubuntu 迁移（f804bc3）后 bundled chromium 触屏 tap 路径问题，待移植槽核。
+- **连接失败横幅显示 raw 错误串**（如 "[object ProgressEvent]"）：0.3.32 同款 catch 直通行为，非本次引入。
+
+### 遗留
+- `<560px` 回流皮的石纹边中段拉伸与 74px 固定角片的比例失配，小屏上不显眼；若后续立项可换 §3 方向 C 双门布局（同一套帧坐标资产可直接复用）。
