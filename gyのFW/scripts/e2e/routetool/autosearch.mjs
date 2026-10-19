@@ -381,7 +381,7 @@ const SEG = {
     recipe: {
       fb: [spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475), spec("ride", 0, 396, 412),
         spec("jumpDrift", -1, 0, 40), spec("walkTo", -1, 1000, 999), spec("jumpDrift", -1, 0, 25), spec("walkTo", -1, 970, 999)],
-      wg: [spec("waitPx", "fb", 1070, 1214), spec("walkTo", 1, 1060, 999), spec("sleep", 15)],
+      wg: [spec("waitPx", "fb", 1070, 1214), spec("walkTo", 1, 1020, 999), spec("sleep", 15)],
     },
     vocab: {
       // 实证（probe4，2026-10-15）：fb 廊上东行靠 P0 沉位西立面（x~1076，顶 480 高廊面 32px 为台）；
@@ -398,17 +398,35 @@ const SEG = {
     },
   },
   S5: {
-    maxDepth: 14, capFb: 8, capWg: 12,
+    maxDepth: 20, capFb: 8, capWg: 16, horizonF: 800, // r8b: 配方全程 entry+~690f（P0 降程 ~90f+乘升 ~175f+三段跳西），600 会先冻（断言窗不变）
+    // r8b 推翻 r8a（绿路线回放 explore-trace.json + board.mjs v6-v15 逐帧法证 2026-10-19）：
+    //   P0 真实行程 platY 400(起)↔496(沉)（沉顶=480 即档卷"顶480"✓；r8a 的 440 是 wg 头部
+    //   卡在板底下方把下降【顶停】的假沉位——wg 泊位必须 ≤1077 让降程走满）；
+    //   沉顶 480 与廊面只差 32px = 台阶，wg 从 ~1057 净位 jd(1,0,14) 小跳直上（v10 onboard@1636）；
+    //   "钉死区"= 身体探入 1088 立面柱 [1075,1087]（输入全废，须在下降角抵头前西撤）；
+    //   b0 按钮本体悬空 [960,1024]×[333,352] 截断满跳（v6 半跳根因）；跳跃冲量随足底法线
+    //   倾斜衰减（character.ts:225 sqrt√n.y 分支）。fb 压 b0 200f 保降程 → 西走 jd22 直接上
+    //   288 台（无需二次乘 P0）；wg 乘升至 ~350 跳西落板再 walkTo(820) 锚窗。
+    //   v15 离线终态 fb[691,253]G wg[804,253]G 双双命中 S5 窗。
+    recipe: {
+      // fb：原地压 b0 保 P0 降程走满（wg 台阶登乘）→ 西走离 b0（P0 载 wg 升）→ 跳西上 288 台 → 锚 700
+      fb: [spec("sleep", 200), spec("walkTo", -1, 905, 999), spec("jumpDrift", -1, 0, 22), spec("walkTo", -1, 700, 999)],
+      // wg：西撤出钉死带（降角抵头前）→ 等沉稳 496 → 小跳上台阶（14f 短漂防越 128px 板跨）
+      //   → 东行走深防滑坠 → 乘升（无需输入，绿路线同）→ 跳西落板 → 沉降 20f 防弹跳卡死 → 西行锚 820
+      wg: [spec("goTo", 1052, 8), spec("sleep", 120), spec("jumpDrift", 1, 0, 14), spec("walkTo", 1, 1160, 999),
+        spec("sleep", 180), spec("jumpDrift", -1, 0, 40), spec("sleep", 20), spec("walkTo", -1, 820, 999)],
+    },
     vocab: {
-      // fb：先走回 b0 上方再压站（种尾截断的 jd 会让 fb 多跳一步离箱，需回位）→ 候 wg 登 P0
-      //   （b0 已压）→ 离 b0 西跳上 288 块（P0 载 wg 升）→ 块顶西行（自然推箱随行）
+      // fb：waitPx 燃窗变体（1080 跨缘燃/1110-1140 落板后燃）+ 老登块件
       fb: [spec("goTo", 970, 10), spec("goTo", 992, 10), spec("sleep", 30), spec("waitPx", "wg", 1080, 1214),
+        spec("waitPx", "wg", 1120, 1216), spec("waitPx", "wg", 1140, 1216),
         spec("jumpDrift", -1, 0, 30), spec("jumpDrift", -1, 0, 50),
         spec("jumpOnto", -1, 290), spec("goTo", 740, 12), spec("goTo", 750, 12), spec("goTo", 700, 12), spec("goTo", 650, 12), spec("sleep", 15)],
-      // wg：东行靠 P0 沉位立面（go 1080 同 S4 fb 实证，1100 被立面顶住永不达）→ 立面跳登乘
-      //   → 骑乘唤醒升至顶 → 平台东端就位（launch 点远，跳西弧线才越过板立面 x1088，探针实证）
-      //   → 跳西上板 → 东缘步级跳上 288 块 → 西行就位
-      wg: [spec("goTo", 1080, 12), spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475), spec("ride", 0, 396, 412),
+      // wg：等 P0 泊沉（435-445）→ 泊位微调（净空窗内选起跳点）→ 立面跳登乘 → 骑乘升至顶
+      //   → 东端就位 → 跳西上板 → 上 288 块 → 西行
+      wg: [spec("waitPlat", 0, 430, 448), spec("goTo", 1060, 12), spec("walkTo", 1, 1065, 999),
+        spec("walkTo", 1, 1075, 999), spec("walkTo", 1, 1085, 999),
+        spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475), spec("ride", 0, 396, 412),
         spec("goTo", 1190, 12), spec("jumpDrift", -1, 0, 50), spec("runJump", -1, 1100),
         spec("jumpDrift", -1, 0, 70), spec("goTo", 950, 10), spec("jumpDrift", -1, 0, 30),
         spec("jumpDrift", -1, 0, 50), spec("jumpOnto", -1, 290), spec("goTo", 800, 12), spec("sleep", 15)],
