@@ -240,3 +240,20 @@ node scripts/e2e/route.mjs --level forest_01 --repeat 3 --offset -15    # e2e（
 ——战役最大遗产除数字外是方法论：测量先行（四次假设翻案+两处主会话勘误自纠）、基准镜像生产语义
 （29.5× 伪影教训）、四层位级门禁+抖动 A/B 归因、门禁工具防静默绿、断点续作，以及「负结论也是结论，
 不硬凑优化」。**
+
+## 八、r8–r11 增补（2026-10-20，四轮续账）
+
+> 续作四轮（方法论沿用；报告 `2026-10-20-r{8,9,10,11}-*.md`，版本 0.3.34 收账）。
+
+| 轮 | 焦点 | commit | 关键数字（同机同口径） | 门禁 |
+|---|---|---|---|---|
+| r8 | 客户端场景切换链（点击→Game） | `3313403`(量具)+`9799145`(件1-4) | **驻留配对 551.1→490.6ms（-11.0%；8 轮 -7.3%）**：ws+state -49.5%/level 拉取 -76.5%/menu 隐 -93.3%；**换肤幕布性能税归档 +364ms/55%**（pre-skin worktree A/B+CSS 注入 A/B）；两勘误（驻留判定洞/wake 唤醒税位置） | det 48/48+fixtures 6/6+vitest 89+e2e repeat3 静窗 ALL PASS+visual-diff 同带+perf-client 不变量 |
+| r9 | 空闲 CPU/功耗（负结论轮） | `78c2d30` | 量具 perf-idle 六态：**JS 面地板（script% 0.7-1.8%）**、task% 77-95%=软栅环境项、bg=headless 伪影；**帧率上限弃件**（fps.limit 慢机砍帧 67→48/4s=视觉回归红线、_target 无效）；幕布驻留税挂账真 GPU 口径（sudo 被禁 xorg9 不可复现，披露） | 零生产 diff；量具 4 跑通+0 页面错误 |
+| r10 | 工具链第三面 | `cc5d6b4` | **vitest threads 池 -12%（3557→3110ms）**、**build 去 npm 嵌套层 -6.8%（5491→5118ms，dist md5 逐字节不变）**；判负两件（sync-assets 增量=勘误 330ms 是 npm 层非拷贝、vite gzip 报表无增益）；勘误：npm run 层 ~330ms 污染短命令计时 | dist md5 同值+vitest 89/89+sync 零 diff |
+| r11 | 容量 GC 拆账（r0 §八挂账收口） | `a57532e` | **GC 份额 0-0.4% 三场景全非因素；无并发膨胀**（bonus_2 持有 158≈冷跑 170ms/建零爬坡）；**r0「166 vs 14」勘误=跨关伪影**；bonus_2 158ms/建=前 60 步固有收敛（构建仅 3.96ms，vendor 永挂账同源）；量具哑火勘误（观察者同步块不投递） | 零生产 diff；阳性对照+复跑 |
+
+r8-r11 累计：**点击→Game -11% + 连接窗三段 -49/-77/-93%、vitest -12%、build -6.8%、
+挂账两笔收口（GC 拆账/50 并发膨胀）、负结论三件防重复立项（帧率上限/sync-assets 增量/gzip 报表）**；
+位级三门（det/fixtures/patch 字节）全绿贯穿，dist 逐字节不变；新增量具 4 件
+（perf-scene/perf-idle/perf-toolchain/perf-gc）。剩余挂账：幕布驻留税（前置真 GPU 口径）、
+matchmake 点击派发管线成本（两态共有，低优先）、temple 态 heap 58MB（非每帧成本）。

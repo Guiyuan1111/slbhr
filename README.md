@@ -1,6 +1,6 @@
 # slbhr
 
-森林冰火人（Fireboy & Watergirl 森林神庙）完全复刻：服务端权威在线双人版。当前版本 **0.3.31**（版本史见 `gyのFW/note/release/`）。
+森林冰火人（Fireboy & Watergirl 森林神庙）完全复刻：服务端权威在线双人版。当前版本 **0.3.34**（版本史见 `gyのFW/note/release/`）。
 
 私有仓库，禁止公开分发；官方素材仅限私用。
 
