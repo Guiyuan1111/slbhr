@@ -59,6 +59,7 @@ node benchmark/perf-client.mjs --cdp http://宿主IP:9222 --host 本机IP --save
 node benchmark/perf-client.mjs --gpu --save <label>             # VM 内真 GPU（vmwgfx SVGA3D，需先起 xorg9 真显示）
 node --import tsx benchmark/perf-scene.mjs [--runs 5] --save <label>   # 场景切换链（r8）
 node --import tsx benchmark/perf-scene.mjs --cold --no-build --compare <label>
+node --import tsx benchmark/perf-idle.mjs [--secs 8] [--modes ...] --save <label>  # 空闲 CPU（r9）
 ```
 
 - `perf-step`：每关预热 90 步 + 600 步计时（`PERF_STEPS`/`PERF_LEVELS` 可覆盖），
@@ -90,6 +91,12 @@ node --import tsx benchmark/perf-scene.mjs --cold --no-build --compare <label>
   末轮附 CDP CPU 剖析（TEMP/scene-prof.cpuprofile）。matchmake 段读数含 Playwright
   点击派发/输入管线成本且双峰波动大（±100ms），跨变体对比以 ws+state/level/menuHidden
   三段与总时长中位为准（r8 报告 §四.2）。快照 `results/scene-<label>.json`。
+- `perf-idle`：空闲 CPU/功耗（r9 起）——六驻留态（menu/temple/game-idle/game-paused/
+  bg-game/bg-menu）8s 窗 CDP Performance.getMetrics：taskPct（主线程任务占比）+scriptPct+heap。
+  bg 态走默认旗标独立 context（headless 无遮挡不节流=环境伪影，快照行按 r9 报告 §四.1 判读）；
+  `--noblur` 幕布归因、`--gpu` xorg9 真 GPU 口径（需 sudo，见 r9 §4.3）。**注意 stepLimitFPS
+  模式下 loop.actualFps 计 tick 非渲染帧**（r9 §4.2），渲染帧率用 POST_RENDER 计数
+  （tools/perfopt9/cap-verify.mjs）。快照 `results/idle-<label>.json`。
 - `perf-client`：客户端帧预算（r3 起）——headless chromium + 真服 + 双页入房，页内打点
   PRE_STEP→POST_STEP（update 段）/POST_RENDER（帧总）+ performance.memory 正增量累计（分配速率近似）
   + mechTarget/setDepth 计数；每轮双渲染器：WebGL（headless SwiftShader 的 present 阻塞为环境项，
