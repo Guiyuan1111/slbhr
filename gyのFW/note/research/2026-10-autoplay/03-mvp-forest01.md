@@ -99,3 +99,5 @@
       --segs 6-8 --forcestart 6 --out TEMP/<新>/r.route.json --report TEMP/<新>/r.search.json
     ```
     下一步候选（按证据强度排序）：① ride 改开环组合——waitPlat(0,455,465) 乘升中段门控 + 定时 jd40，绕开振荡相位耦合（需先证短程无输入段在降程满 496 后不触发 r5a 型打滑）；② wg[47] 前插对冲脉冲（left-down 1f + right-down 1f），把缝上 ±1f 敏感点推入自恢复区（S0b 吸收头同思路）；③ B 方案绿迹提取 S5 跨度（explore-trace.json 已有采样，**需授权**，全自动降半自动）。
+
+28. **r8c 续攻槽记录（2026-10-19，死于宿主二次重启）**：派单任务=线索①ride 改 `waitPlat(0,455,465)` 相位门控+定时 jd40 开环、②wg[47] 前插对冲脉冲、副任务断崖 x MAP 扫描+ride 相位定量表；预算 ≤8 轮/2.5h；B 方案仍禁。**槽体于开工 ~20 分钟后随宿主重启阵亡**：未及首轮 commit（git 面 68b1b06 后无新增），唯一遗物=取证台 `tools/probe8c.mjs`（gate/trace/cliff/phase 四模式，头注自带 recipe 格式说明；**未验跑，复活时先 `node probe8c.mjs cliff` 与 `phase` 各跑一遍自证**），已由主会话收容至 tools/。S5 攻坚断点仍=tools/r5.search.json（68b1b06 版），线索①②原封未试，续攻派单可直接引用本条。
