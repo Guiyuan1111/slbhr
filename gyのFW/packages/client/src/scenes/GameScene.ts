@@ -25,6 +25,7 @@ import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
 import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_MAIN, PLAYER_SCALE, buildGameAnims, loadGameAtlases } from "./BootScene";
 import { getSettings } from "../settings";
+import { loadTempleLevels } from "../templeData";
 
 export interface GameInit {
   net: Net;
@@ -416,19 +417,15 @@ export class GameScene extends Phaser.Scene {
     this.sound.play(key, opts);
   }
 
-  /** 原版限时（E17：EndMenu TimeIcon 的 limit 来自 temple.json 的 time 字段） */
+  /** 原版限时（E17：EndMenu TimeIcon 的 limit 来自 temple.json 的 time 字段）。
+   *  r8 件3：走页面级单例（此前每次 create 各自 fetch+parse 同一文件）。 */
   private fetchTempleTime(levelId: string): void {
-    fetch("/data/forest/temple.json")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j: { levels?: Array<{ filename?: string; time?: number; type?: string }> } | null) => {
-        const entry = (j?.levels ?? []).find((lv) => String(lv?.filename ?? "").endsWith(`/${levelId}.json`));
-        const t = Number(entry?.time);
-        this.templeTimeSec = Number.isFinite(t) && t > 0 ? t : null;
-        this.templeType = String(entry?.type ?? "general");
-      })
-      .catch(() => {
-        this.templeTimeSec = null;
-      });
+    loadTempleLevels().then((levels) => {
+      const entry = levels.find((lv) => String(lv?.filename ?? "").endsWith(`/${levelId}.json`));
+      const t = Number(entry?.time);
+      this.templeTimeSec = Number.isFinite(t) && t > 0 ? t : null;
+      this.templeType = String(entry?.type ?? "general");
+    });
   }
 
   /** 地面合成缓存（性能审计 #5：重开重进整段重付 ≈20.8MB 像素缓冲；键=levelId，单槽够用） */

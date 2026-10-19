@@ -18,6 +18,7 @@ import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
 import { PauseMenu, EndMenu, GameOverMenu } from "./scenes/overlays";
 import { SettingsScene, CreditsScene, CompleteScene } from "./scenes/menus";
+import { loadTempleLevels } from "./templeData";
 import { saveBest } from "./progress";
 import { getSettings } from "./settings";
 
@@ -95,6 +96,21 @@ async function fetchLevel(id: string): Promise<LevelData> {
   });
 }
 
+/** 关卡数据客户端缓存（r8 perf 件4）：LevelData 只读（场景构建遍历读，不改写），
+ *  同关重进（离房再建/邀请深链重复进出）零重复拉取；失败逐出保证可重试。 */
+const levelCache = new Map<string, Promise<LevelData>>();
+
+/** fetchLevel 带缓存（异常不缓存） */
+function fetchLevelCached(id: string): Promise<LevelData> {
+  let p = levelCache.get(id);
+  if (!p) {
+    p = fetchLevel(id);
+    p.catch(() => levelCache.delete(id));
+    levelCache.set(id, p);
+  }
+  return p;
+}
+
 /** 图块集 source → 根相对 URL（去掉前导 ".."，见 fetchLevel 注释） */
 function tilesetUrl(source: string): string {
   const parts = source.split("/");
@@ -113,7 +129,7 @@ function findTempleEntry(levelId: string): { filename: string; time: number; typ
 async function reloadLevel(levelId: string): Promise<void> {
   if (!net || !gameStarted) return;
   try {
-    currentLevel = await fetchLevel(levelId);
+    currentLevel = await fetchLevelCached(levelId);
   } catch (e) {
     console.error("[fw] 换关失败:", e);
     return;
@@ -139,6 +155,14 @@ function setBusy(busy: boolean): void {
   $("#menu-error").classList.toggle("busy", busy);
   $<HTMLButtonElement>("#btn-create").disabled = busy;
   $<HTMLButtonElement>("#btn-join").disabled = busy;
+  // r8 件1：连接忙期冻结合成放大器。石板大厅幕布 backdrop-filter 盖在 60fps 动画的
+  // Phaser 画布上，无 GPU 合成环境逐帧重算模糊会拥塞主线程、拖慢连接窗内的 fetch
+  // 派发（实测 +364ms/55%，CSS A/B：blur ~256ms+floaty ~100ms，见 r8 报告）。
+  // sleep 停 update+render（画布静止），DOM spinner 不受影响；唤醒双路兜底
+  // （enterGame 顶部 + setBusy(false)），wake 幂等。
+  document.body.classList.toggle("fw-busy", busy);
+  if (busy && !gameStarted) phaser?.loop.sleep();
+  else if (!busy) phaser?.loop.wake();
 }
 
 function updateHud(): void {
@@ -169,7 +193,7 @@ async function enterGame(): Promise<void> {
   if (!net) throw new Error("未连接房间");
   // join 方以房间的真实关卡为准（修 E14 双端路径分裂的最后一环）；拿不到回退 URL/默认
   const levelId = (await net.waitForLevelId()) || selectedLevel || urlLevel || DEFAULT_LEVEL_ID;
-  const level = await fetchLevel(levelId);
+  const level = await fetchLevelCached(levelId);
   show();
 
   // 返场重进时旧实例的监听与 15Hz 重发定时器会残留——先销毁（曾随房间叠加）
@@ -183,11 +207,9 @@ async function enterGame(): Promise<void> {
   currentLevel = level;
   // temple.json 条目（time/type/filename）：EndMenu 限时、星级口径、进度存档键都出自这里
   currentTempleEntry = null;
-  try {
-    const tj = await (await fetch("/data/forest/temple.json")).json();
-    templeRaw = (tj.levels ?? []) as typeof templeRaw;
-    templeLevels = templeRaw.map((lv) => ({ id: Number(lv.id ?? 0), filename: String(lv.filename ?? "") }));
-  } catch { /* 缺省 general/无限时，结算仍可用 */ }
+  // r8 件3：temple.json 单例（bindUi 已预取，此处 await 恒命中已完成态）
+  templeRaw = await loadTempleLevels();
+  templeLevels = templeRaw.map((lv) => ({ id: Number(lv.id ?? 0), filename: String(lv.filename ?? "") }));
   currentTempleEntry = findTempleEntry(levelId);
   (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level, keyboard };
   (globalThis as unknown as Record<string, unknown>).__fwRestart = () => net?.restart();
@@ -239,6 +261,11 @@ async function enterGame(): Promise<void> {
   $("#hud").classList.remove("hidden");
   // r5 装载序：等 MenuScene 后台暖装落定（已完成零等待；仍在飞时等它而非让
   // GameScene 重复拉同一批文件）。未启动暖装的路径（邀请深链直进等）立即返回。
+  // r8 件1：唤醒放此处（而非连接窗内任意早的位置）——waitForLevelId/fetchLevel 均
+  // 网络任务驱动不依赖帧循环，睡眠可覆盖整个 fetch 段；而 bgWarmSettled 的 Loader
+  // 队列处理与场景切换都挂在帧循环上，必须先醒。wake() 在合成侧的"补账"（积压
+  // 的一帧重合成）随场景切换一并发生，不再插进 fetch 段（实测早醒会拖慢 fetch）。
+  phaser?.loop.wake();
   await bgWarmSettled();
   // 切入游戏场景（Game 若已在跑则重启以载入关卡数据）
   const sceneMgr = phaser!.scene;
@@ -450,6 +477,8 @@ function bindUi(): void {
   // HUD 轮询刷新（4Hz 足够，DOM 开销可忽略；模块级单例，重入不叠加）
   setInterval(updateHud, 250);
   bootPhaser();
+  // r8 件3：temple.json 预取（enterGame 关键路径 await 恒命中）
+  void loadTempleLevels();
   // R 键请求整关重开（E1；服务端按 phase 把关：won/gameover 才受理）
   window.addEventListener("keydown", (e) => {
     if (e.code === "KeyP" && gameStarted) togglePause();

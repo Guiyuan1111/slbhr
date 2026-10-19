@@ -72,6 +72,8 @@ export class Net {
   private client!: Client;
   private prevPhase = "";
   private prevLevelId = "";
+  /** r8 件2：waitForLevelId 等待者（onStateChange 首个 levelId 即时唤醒，替代 50ms 轮询） */
+  private levelIdWaiters: Array<(id: string) => void> = [];
 
   /** 服务器地址：开发直连 2567，生产同源自适应 ws/wss */
   static serverUrl(): string {
@@ -128,6 +130,12 @@ export class Net {
         const prev = this.prevLevelId;
         this.prevLevelId = levelId;
         cb.onLevelId?.(levelId, prev);
+        // r8 件2：首见 levelId 即时放行等待者（旧 50ms 轮询平均 +25ms、最坏 +50ms）
+        if (this.levelIdWaiters.length > 0) {
+          const waiters = this.levelIdWaiters;
+          this.levelIdWaiters = [];
+          for (const w of waiters) w(levelId);
+        }
       }
     });
 
@@ -156,13 +164,20 @@ export class Net {
    * 超时返回 ""（调用方回退 URL 参数/默认关）。
    */
   async waitForLevelId(timeoutMs = 3000): Promise<string> {
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() < deadline) {
-      const id = String(this.room.state?.levelId ?? "");
-      if (id) return id;
-      await new Promise((r) => setTimeout(r, 50));
-    }
-    return "";
+    const id = String(this.room.state?.levelId ?? "");
+    if (id) return id;
+    // r8 件2：事件驱动等待（onStateChange 首见 levelId 放行；超时返回 "" 语义不变）
+    return new Promise<string>((resolve) => {
+      const timer = setTimeout(() => {
+        this.levelIdWaiters = this.levelIdWaiters.filter((w) => w !== waiter);
+        resolve("");
+      }, timeoutMs);
+      const waiter = (lv: string) => {
+        clearTimeout(timer);
+        resolve(lv);
+      };
+      this.levelIdWaiters.push(waiter);
+    });
   }
 
   sendInput(input: InputMessage | InputState): void {

@@ -107,6 +107,9 @@
         animation: menu-floaty 4s ease-in-out infinite;
       }
       @keyframes menu-floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+      /* r8 件1：连接忙期暂停浮动动画（spinner 保留活动指示；与画布冻结配合，
+         幕布 backdrop-filter 区域整帧静止，连接窗零逐帧重算） */
+      body.fw-busy .menu-logo { animation-play-state: paused; }
       @media (prefers-reduced-motion: reduce) {
         .menu-logo { animation: none; }
         #menu-error.busy::before { animation: none; }
