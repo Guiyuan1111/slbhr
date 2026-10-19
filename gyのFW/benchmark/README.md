@@ -60,6 +60,7 @@ node benchmark/perf-client.mjs --gpu --save <label>             # VM 内真 GPU�
 node --import tsx benchmark/perf-scene.mjs [--runs 5] --save <label>   # 场景切换链（r8）
 node --import tsx benchmark/perf-scene.mjs --cold --no-build --compare <label>
 node --import tsx benchmark/perf-idle.mjs [--secs 8] [--modes ...] --save <label>  # 空闲 CPU（r9）
+node benchmark/perf-toolchain.mjs --save <label>                                    # 工具链（r10）
 ```
 
 - `perf-step`：每关预热 90 步 + 600 步计时（`PERF_STEPS`/`PERF_LEVELS` 可覆盖），
@@ -97,6 +98,10 @@ node --import tsx benchmark/perf-idle.mjs [--secs 8] [--modes ...] --save <label
   `--noblur` 幕布归因、`--gpu` xorg9 真 GPU 口径（需 sudo，见 r9 §4.3）。**注意 stepLimitFPS
   模式下 loop.actualFps 计 tick 非渲染帧**（r9 §4.2），渲染帧率用 POST_RENDER 计数
   （tools/perfopt9/cap-verify.mjs）。快照 `results/idle-<label>.json`。
+- `perf-toolchain`：开发工具链（r10 起）——npm test / sync-assets / build(全) / typecheck
+  四命令 3 轮中位墙钟；build 拆 sync 与纯 vite 段（差值口径）。注意读数含 npm 包装层与
+  并行在飞文件扰动（r10 报告 §勘误：sync-assets 432ms 中 ~330ms 是 npm 层非拷贝——
+  裸 node 全量拷贝仅 0.10s）。快照 `results/toolchain-<label>.json`。
 - `perf-client`：客户端帧预算（r3 起）——headless chromium + 真服 + 双页入房，页内打点
   PRE_STEP→POST_STEP（update 段）/POST_RENDER（帧总）+ performance.memory 正增量累计（分配速率近似）
   + mechTarget/setDepth 计数；每轮双渲染器：WebGL（headless SwiftShader 的 present 阻塞为环境项，
