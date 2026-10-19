@@ -57,6 +57,8 @@ node --expose-gc --import tsx benchmark/perf-mem.mjs --save <label>  # World 常
 node benchmark/perf-client.mjs --save <label>                   # 客户端帧预算（r3 起；双渲染器）
 node benchmark/perf-client.mjs --cdp http://宿主IP:9222 --host 本机IP --save <label>  # 远程真机 GPU（裸机金标准）
 node benchmark/perf-client.mjs --gpu --save <label>             # VM 内真 GPU（vmwgfx SVGA3D，需先起 xorg9 真显示）
+node --import tsx benchmark/perf-scene.mjs [--runs 5] --save <label>   # 场景切换链（r8）
+node --import tsx benchmark/perf-scene.mjs --cold --no-build --compare <label>
 ```
 
 - `perf-step`：每关预热 90 步 + 600 步计时（`PERF_STEPS`/`PERF_LEVELS` 可覆盖），
@@ -80,6 +82,14 @@ node benchmark/perf-client.mjs --gpu --save <label>             # VM 内真 GPU�
 - `perf-mem`：World 常驻斜率、创建销毁吞吐、50 并发峰值差分（需 --expose-gc）；
   快照 `results/mem-<label>.json`。r2 起接触池懒填（c3661b0）后每 World 常驻含按需接触，
   与 r0 快照（预填 1792 接触对象口径）不可直列。
+- `perf-scene`：场景切换链（r8 起）——点击「创建」→ GameScene 激活分段计时（页内
+  performance.now 里程碑：click→matchmake→level 拉→menu 隐→Game 激活；2ms 轮询粒度）。
+  缺省**驻留档**：等暖装落定（`textures.exists("ground")`+300ms 静默双条件——r8 勘误：
+  仅"300ms 无新资源完成"会把暖装启动后首个资源完成前的静默窗误判为落定，暖装尾巴
+  混进 create 段）后点击；`--cold` 冷路径档（Menu active 即点，深链/极速建房）。`--prof`
+  末轮附 CDP CPU 剖析（TEMP/scene-prof.cpuprofile）。matchmake 段读数含 Playwright
+  点击派发/输入管线成本且双峰波动大（±100ms），跨变体对比以 ws+state/level/menuHidden
+  三段与总时长中位为准（r8 报告 §四.2）。快照 `results/scene-<label>.json`。
 - `perf-client`：客户端帧预算（r3 起）——headless chromium + 真服 + 双页入房，页内打点
   PRE_STEP→POST_STEP（update 段）/POST_RENDER（帧总）+ performance.memory 正增量累计（分配速率近似）
   + mechTarget/setDepth 计数；每轮双渲染器：WebGL（headless SwiftShader 的 present 阻塞为环境项，
