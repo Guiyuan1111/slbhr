@@ -1,0 +1,453 @@
+{
+ "level": "forest_01",
+ "chain": "/home/gy/桌面/dev/slbhr/gyのFW/note/research/2026-10-autoplay/tools/checkpoints-forest_01.json",
+ "beam": 24,
+ "budget": 6000,
+ "samples": 10,
+ "startedAt": "2026-10-19T04:32:42.634Z",
+ "segs": [
+  {
+   "id": "S4",
+   "title": "P0 下行 fb 登乘→升顶→跳西 352 板→压 b0（P0 再降候 wg）",
+   "solved": true,
+   "exhausted": false,
+   "evals": 10,
+   "wallS": 8.7,
+   "layers": [
+    {
+     "depth": 1,
+     "evals": 10,
+     "best": 8066,
+     "unlocked": 3,
+     "met": true,
+     "rob": "0/6",
+     "entryF": 1188,
+     "endF": 1370,
+     "fb": [
+      1020,
+      317
+     ],
+     "wg": [
+      1044,
+      477
+     ],
+     "path": "runJump(1,780,25) runJump(1,1052,25) runJump(-1,1172,20) hold(-1,1040) sleep(15) runJump(-1,950,20) hold(-1,540) edgeDrop(-1,20) hold(-1,470) sleep(15) waitPlat | sleep(60) runJump(1,490) runJump(1,1104,26) sleep(24) runJump(-1,1185,24) runJump(-1,975,26) hold(-1,540) edgeDrop(-1,20) hold(-1,520) sleep(15) goTo(280,10) ju"
+    }
+   ],
+   "bestEver": {
+    "score": 8066,
+    "unlocked": 3,
+    "met": true,
+    "entryF": 1188,
+    "endF": 1370,
+    "fb": [
+     1020,
+     317
+    ],
+    "wg": [
+     1044,
+     477
+    ]
+   },
+   "final": {
+    "sf": [
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       780,
+       25
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       1052,
+       25
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       -1,
+       1172,
+       20
+      ]
+     },
+     {
+      "n": "hold",
+      "a": [
+       -1,
+       1040
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       15
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       -1,
+       950,
+       20
+      ]
+     },
+     {
+      "n": "hold",
+      "a": [
+       -1,
+       540
+      ]
+     },
+     {
+      "n": "edgeDrop",
+      "a": [
+       -1,
+       20
+      ]
+     },
+     {
+      "n": "hold",
+      "a": [
+       -1,
+       470
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       15
+      ]
+     },
+     {
+      "n": "waitPlat",
+      "a": [
+       1,
+       586,
+       600
+      ]
+     },
+     {
+      "n": "goTo",
+      "a": [
+       330,
+       10
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       35
+      ]
+     },
+     {
+      "n": "goTo",
+      "a": [
+       180,
+       10
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       28
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       -1,
+       78
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       1,
+       0,
+       90
+      ]
+     },
+     {
+      "n": "goTo",
+      "a": [
+       220,
+       10
+      ]
+     },
+     {
+      "n": "goTo",
+      "a": [
+       600,
+       12
+      ]
+     },
+     {
+      "n": "walkTo",
+      "a": [
+       1,
+       1070,
+       999
+      ]
+     },
+     {
+      "n": "jumpOnto",
+      "a": [
+       1,
+       455
+      ]
+     },
+     {
+      "n": "jumpOnto",
+      "a": [
+       1,
+       475
+      ]
+     },
+     {
+      "n": "ride",
+      "a": [
+       0,
+       396,
+       412
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "walkTo",
+      "a": [
+       -1,
+       1000,
+       999
+      ]
+     }
+    ],
+    "sw": [
+     {
+      "n": "sleep",
+      "a": [
+       60
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       490
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       1104,
+       26
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       24
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       -1,
+       1185,
+       24
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       -1,
+       975,
+       26
+      ]
+     },
+     {
+      "n": "hold",
+      "a": [
+       -1,
+       540
+      ]
+     },
+     {
+      "n": "edgeDrop",
+      "a": [
+       -1,
+       20
+      ]
+     },
+     {
+      "n": "hold",
+      "a": [
+       -1,
+       520
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       15
+      ]
+     },
+     {
+      "n": "goTo",
+      "a": [
+       280,
+       10
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       35
+      ]
+     },
+     {
+      "n": "goTo",
+      "a": [
+       200,
+       12
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       15
+      ]
+     },
+     {
+      "n": "waitPx",
+      "a": [
+       "fb",
+       24,
+       72
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       60
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       24
+      ]
+     },
+     {
+      "n": "hold",
+      "a": [
+       -1,
+       60
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       15
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       20
+      ]
+     },
+     {
+      "n": "runJump",
+      "a": [
+       1,
+       0,
+       18
+      ]
+     },
+     {
+      "n": "walkTo",
+      "a": [
+       1,
+       341,
+       999
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       15
+      ]
+     },
+     {
+      "n": "waitPx",
+      "a": [
+       "fb",
+       1070,
+       1214
+      ]
+     },
+     {
+      "n": "walkTo",
+      "a": [
+       1,
+       1060,
+       999
+      ]
+     }
+    ],
+    "score": 8066,
+    "score2": 8066,
+    "entryF": 1188,
+    "endF": 1370,
+    "metAt": 182,
+    "inlineFatal": 0,
+    "inlineGroups": [],
+    "trimDepth": [
+     25,
+     25
+    ],
+    "seamEntryF": 1367,
+    "prog": {
+     "fb": "runJump(1,780,25) runJump(1,1052,25) runJump(-1,1172,20) hold(-1,1040) sleep(15) runJump(-1,950,20) hold(-1,540) edgeDrop(-1,20) hold(-1,470) sleep(15) waitPlat(1,586,600) goTo(330,10) jumpDrift(-1,0,35) goTo(180,10) jumpDrift(-1,0,28) runJump(-1,78) jumpDrift(1,0,90) goTo(220,10) goTo(600,12) walkTo(1,1070,999) jumpOnto(1,455) jumpOnto(1,475) ride(0,396,412) jumpDrift(-1,0,40) walkTo(-1,1000,999)",
+     "wg": "sleep(60) runJump(1,490) runJump(1,1104,26) sleep(24) runJump(-1,1185,24) runJump(-1,975,26) hold(-1,540) edgeDrop(-1,20) hold(-1,520) sleep(15) goTo(280,10) jumpDrift(-1,0,35) goTo(200,12) sleep(15) waitPx(fb,24,72) sleep(60) jumpDrift(-1,0,24) hold(-1,60) sleep(15) sleep(20) runJump(1,0,18) walkTo(1,341,999) sleep(15) waitPx(fb,1070,1214) walkTo(1,1060,999)"
+    }
+   },
+   "seam": {
+    "ok": true,
+    "entryF": 1367,
+    "grace": 0
+   }
+  }
+ ],
+ "totals": {
+  "segsSolved": 1,
+  "segsTotal": 1,
+  "evals": 10,
+  "wallS": 13.1,
+  "fullAuto": false
+ },
+ "robust": null,
+ "export": null,
+ "greenCompare": null
+}

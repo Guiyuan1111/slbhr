@@ -368,6 +368,21 @@ const SEG = {
   },
   S4: {
     maxDepth: 14, capFb: 12, capWg: 5,
+    // r8a 宏（dbg29 离线实证 2026-10-19，种子=full14b S3 终稿：met@1379，本段跨度 ±1f 穷举 86/86 fails=0）：
+    //   四跳阶梯末端两级 walkTo 校位锚——append-only beam 在 met 后无法往 jd40/jd25 之间插件
+    //   （met 家系 ±1f 穷举恒 fatal：fb[74]−1→板东停偏 1025 压不到 b0；fb[77]+1→跌穿落 512 廊
+    //   fb[777,477]，板面回拉均不可救，r1 定稿梯逐档打点实证），故整组宏 d1 注入一次：
+    //   jd40 落 384 台后 walkTo(-1,1000) 归一化 jd25 起跳位（±1f 相位差被吸收，跌穿根除）；
+    //   jd25 落板后 walkTo(-1,970) 过线反刹停驻 b0 足迹 [928,992] 压板（停偏根除）。
+    //   锚件必须 walkTo 不能 goTo：goTo(970,10) 在 slick 板刹车振荡不排干（r1 not-drained
+    //   idx=28/29 实证）；walkTo 主动反刹 |vx|≤20 收敛（S3 板面 68/68 同款正解）。
+    //   wg：waitPx(fb,1070,1214) 即燃（fb S3 墙锚 1078 开局在窗）→ 东行 1060 离 b1 放 P0
+    //   载 fb 升 + 自泊 S5 entry 窗 [1030,1120]。
+    recipe: {
+      fb: [spec("jumpOnto", 1, 455), spec("jumpOnto", 1, 475), spec("ride", 0, 396, 412),
+        spec("jumpDrift", -1, 0, 40), spec("walkTo", -1, 1000, 999), spec("jumpDrift", -1, 0, 25), spec("walkTo", -1, 970, 999)],
+      wg: [spec("waitPx", "fb", 1070, 1214), spec("walkTo", 1, 1060, 999), spec("sleep", 15)],
+    },
     vocab: {
       // 实证（probe4，2026-10-15）：fb 廊上东行靠 P0 沉位西立面（x~1076，顶 480 高廊面 32px 为台）；
       //   板下台阶 y[384,416] 把净空压到 29px → 登乘只能立面垂直跳（jo 顶头截断+下落东漂上 P0）；

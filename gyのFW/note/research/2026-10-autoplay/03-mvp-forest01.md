@@ -4,8 +4,8 @@
 
 | 态 | 范围 | 依据 |
 | --- | --- | --- |
-| **全自动（搜索解 + 段级 ±1f 穷举 Fatal=0）** | S0a、S0b、S1、S2、S3（5/9 段） | 各段定稿 `穷举Fatal=0`，seam 全绿；S3 end@f1188（fb20/wg23 原语累积） |
-| **半自动（搜索解 met，定稿门未过）** | S4 | 搜索内 wp4/4 met=true、inline rob=0/6（fb[972,317] wg[1031,477]），但 finalize ±1f 穷举仍 fatal≥1（根因见 §3） |
+| **全自动（搜索解 + 段级 ±1f 穷举 Fatal=0）** | S0a、S0b、S1、S2、S3、**S4（r8a 轮过门）** | 各段定稿 `穷举Fatal=0`，seam 全绿；S4 end@f1370（fb25/wg25 原语累积），seam→S5 entry@1367 grace 0 |
+| **半自动（搜索解 met，定稿门未过）** | ~~S4~~（已升级全自动，见 §3-10~14） | r1 轮（r8a 前身）定稿梯仍 fatal≥1，根因解剖见 §3-10~13；r2 轮 recipe 宏 d1 注入即过 |
 | **未竟（未在新 wrapper 下重搜）** | S5、S6、S7 | 旧配方为旧 wrapper 语义所写，未验证 |
 
 **验收门现状：未达成。** 整关导出件 `scripts/e2e/inputs/routes/forest_01.autosearch.json` 仍为前槽 s7j 产物（runKernel WIN@f1977，但 ±1f 365/614 脆——不符 fatal=0）。本轮未产出新的整关导出（链条止于 S4 定稿门）。
@@ -46,7 +46,22 @@
 6. **吸收头模式**：配方首部 sleep(15~30) 吸收 finalizer 对种子尾段 settle 的修剪（full8 S2 trim 17/18 砍 sleep(15) → S3 rj 提前 15f 发射落井底）。
 7. **角色墙锚位移会打破下段 waitPx 契约**（fb 锚 1076 后 waitPx(fb,1080,1214) 永不燃）——改配方时须连带审查所有跨角色 waitPx 窗。
 8. **窗界人工边界 vs 语义门**：S4 fb 目标窗 [955,1012] 东缘距搜索停位仅 2px，而真语义门是 `pushers[0].state===1`（压板 ⟺ 在板上）；窗放宽到 [940,1030] 去掉人工边界（checkpoints 已改）。
-9. **S4 四跳阶梯（jo→ride→jd40→jd25 落板）无位置反馈**：上游 ±1f 相位差被放大成 ±10~70px 落点差——当前唯一未过门根因。板面回拉词表件（goTo970/992）在泊位剪下常被剪掉，保它进定稿是下轮关键。
+9. **S4 四跳阶梯（jo→ride→jd40→jd25 落板）无位置反馈**：上游 ±1f 相位差被放大成 ±10~70px 落点差——当前唯一未过门根因。板面回拉词表件（goTo970/992）在泊位剪下常被剪掉，保它进定稿是下轮关键。（r8a 轮已解，见 10~14）
+
+### 3a. r8a 轮新证机制（2026-10-19，S4 定稿攻坚）
+
+10. **定稿修剪梯是"对角梯"有盲区**：finalizeSegment 的 depthTries 只试 `[mi.fb+k, mi.wg+k]` 同步加保留——存活组合常需**非对称保留**（r1 实证：try[27,25]/[28,26] 系蒸发、非对角组合如 [27,24] 从未被试）。本轮未改工具（recipe 宏路径绕过）；后续段若复现此形态，改法=双侧保留深度独立扫描。
+11. **finalize 家族去重键塌缩**：pool 去重键=`progNames(sf.slice(0,3))|sw…`——链式种子下所有候选前 3 原语相同（S0a 头），定稿池**恒塌缩为 1 家族**，beam 里的回拉/校位变体（同分并列、插入序靠后）永远进不了定稿梯（r1 全程 fin 只见单家族佐证）。改法=键改全程序签名。
+12. **append-only beam 的结构性死路**：程序只能在尾部追加原语——met 后无法在 jd40 与 jd25 之间插校位件；凡"中间落点需归一化"的阶梯，必须 **recipe 宏 d1 整组注入**（S0b~S4 四段同款模式实证）或把段切片。
+13. **板面停驻锚=walkTo 而非 goTo**：goTo(970,10) 在 slick 板刹车振荡不排干（r1 fin not-drained idx=28/29 实证），walkTo(d,x,999) 过线反刹 |vx|≤20 必收敛（S3 wg 板 68/68、S4 板 86/86 双实证）。板面锚件一律 walkTo。
+14. **跌穿型 vs 停偏型 ±1f fatal**：阶梯放大产生两类——停偏（落板面但压不到钮，如 fb[1025,317]，落点后回拉可救）、跌穿（掉下台层级，如 fb[777,477] 落回 512 廊，回拉不可救）。后者必须在**起跳前**归一化（jd 前 walkTo 校位）——S4 宏的 walkTo(-1,1000) 即此用途。
+15. **S4 定稿真相（trim[25,25] 释义）**：jd40 从 P0 顶（body 349）跳弧直接落 352 板 x~985-1000（**不经 384 台阶、jd25 不再执行**），落点即压 b0 足迹 [928,992] 东缘；walkTo(-1,1000,999) 过线反刹停驻即锚（walking 落点 ±1f→±10px 全在足迹内）。jd25/walkTo(-1,970) 为扰动保险件，被泊位剪裁掉仍 86/86 过门（full15a final fb 尾=jo455+jo475+ride+jd40+walkTo(-1,1000)）。
+16. **r8a 轮断点**：`tools/full15a.search.json`（S3+S4 定稿链，fb25/wg25 原语、前缀 1370f）。续搜命令：
+    ```
+    node --import tsx scripts/e2e/routetool/autosearch.mjs \
+      --resume note/research/2026-10-autoplay/tools/full15a.search.json \
+      --segs 6-8 --forcestart 6 --out TEMP/autoplay8/<新>.route.json --report TEMP/autoplay8/<新>.search.json
+    ```
 
 ## 4. 工具与产物路径
 
