@@ -56,9 +56,9 @@
 4. **风相位内核锚定改时未采纳**（08 状态板 #3、09 号档）：WorldOptions.windClockS+16.333ms 修正入口已内建，未采纳——动风钟漂 det 基线、生产固定 dt 下玩家不可见，留作可逆后续。存疑待核：其收益数字（oracle-gold 容差收紧 173→~120px）系 alignShift 重定前口径，11 号档 tolerance 已改 177，若启动需按新口径重估。
 5. **已完成销账**（原 10 号档 §5 后续 1/2，netopt 槽落地，代码+档卷提交可核）：+1 采样对齐收紧 → 9ff9c1d（alignShift=1+两关 tolerance 重定，档卷 269d83d）；服务器 setPatchRate(1000/60) → 4ba8478（档卷同上）。
 
-## §4 性能优化战役速查（2026-10-18/19 七轮，perfsum 槽补录·主会话续记）
+## §4 性能优化战役速查（2026-10-18/19 七轮 + 2026-10-20 r8–r11 续账，perfsum 槽补录·主会话续记）
 
-> 行为复刻战役之外的姊妹战役：七轮 22 件（含两件负结论测量件）全部位级中性（det 48/48 锚=det-r0-baseline + fixtures 6/6 + patch 字节逐字不变贯穿），本节只做导航，数字以各轮报告与 `benchmark/results/` 快照为准。总账：[note/report/perf/2026-10-18-campaign-summary.md](../../report/perf/2026-10-18-campaign-summary.md)。
+> 行为复刻战役之外的姊妹战役：七轮 22 件（含两件负结论测量件）全部位级中性（det 48/48 锚=det-r0-baseline + fixtures 6/6 + patch 字节逐字不变贯穿），r8–r11 四轮续账（0.3.34 收账，零生产 diff 面）同纪律，本节只做导航，数字以各轮报告与 `benchmark/results/` 快照为准。总账：[note/report/perf/2026-10-18-campaign-summary.md](../../report/perf/2026-10-18-campaign-summary.md)。
 
 | 轮 | 报告 | 一句话 | 终态 commit |
 |---|---|---|---|
@@ -70,6 +70,10 @@
 | r5 冷启动 | [2026-10-18-r5-coldstart.md](../../report/perf/2026-10-18-r5-coldstart.md) | 瓶颈翻案（网络/base64 非瓶颈，真凶=图片装载串行段+首帧渲染）；装载序整形冷启 Menu -32%、传输 -1.19MB/-8req | `71f4cff` |
 | r6 音频/容量/工具链 | [r6-audio-warmup](../../report/perf/2026-10-18-r6-audio-warmup.md) / [r6-capacity](../../report/perf/2026-10-18-r6-capacity.md) / [r6-toolchain](../../report/perf/2026-10-18-r6-toolchain.md) | 三槽并行（重启断点续作）：音频就绪点提前至 Menu 驻留+941ms；容量拐点 96 房/192 客户端（建议 ≤64 房/实例）；det 门禁 -44%+typecheck -38%+堵 DET_WORKERS 静默绿漏洞 | `10c6400` |
 | r7 负结论轮 | [r7-capacity-attribution](../../report/perf/2026-10-19-r7-capacity-attribution.md) / [r7-font-subset](../../report/perf/2026-10-19-r7-font-subset.md) / [r7-render](../../report/perf/2026-10-19-r7-render.md) | GPU 黑名单勘误解锁（--gpu 量具 SVGA3D 实证）；容量 6.4ms/s/房拆面闭合（stime 主导）；font 实测关闭（-5.2%，授权未动用）；渲染段 JS 面理论地板 | `535abb6` |
+| r8 场景切换链 | [2026-10-20-r8-scene-switch](../../report/perf/2026-10-20-r8-scene-switch.md) | 点击→Game 驻留配对 -11.0%（连接窗三段 -49.5/-76.5/-93.3%：连接忙期画布冻结/事件驱动/temple.json 单例/关卡缓存）；换肤幕布性能税 +364ms 归档并连接期回收 | `9799145` |
+| r9 空闲 CPU | [2026-10-20-r9-idle-power](../../report/perf/2026-10-20-r9-idle-power.md) | 负结论轮：JS 面 script%<2% 地板、task%=软栅环境项；帧率上限弃件（慢机砍帧 67→48=视觉回归红线）；幕布驻留税挂账真 GPU 口径 | `78c2d30` |
+| r10 工具链 | [2026-10-20-r10-toolchain](../../report/perf/2026-10-20-r10-toolchain.md) | vitest threads 池 -12%、build 去 npm 嵌套层 -6.8%（dist md5 逐字节不变）；判负 sync-assets 增量/gzip 报表 | `cc5d6b4` |
+| r11 GC 拆账 | [2026-10-20-r11-gc-attribution](../../report/perf/2026-10-20-r11-gc-attribution.md) | GC 份额 0-0.4% 三场景非因素、无并发膨胀；r0「166 vs 14」勘误=跨关伪影；bonus_2 158ms/建=前 60 步固有收敛 | `a57532e` |
 
 遗留候选与 vendor 必漂禁区清单（SolveTOI/InsertLeaf/goog.base/关节求解序——永挂账不动）见总账报告 §四。
 
