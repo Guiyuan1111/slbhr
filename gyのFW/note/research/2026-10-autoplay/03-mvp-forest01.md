@@ -5,8 +5,8 @@
 | 态 | 范围 | 依据 |
 | --- | --- | --- |
 | **全自动（搜索解 + 段级 ±1f 穷举 Fatal=0）** | S0a、S0b、S1、S2、S3、**S4（r8a 轮过门）** | 各段定稿 `穷举Fatal=0`，seam 全绿；S4 end@f1370（fb25/wg25 原语累积），seam→S5 entry@1367 grace 0 |
-| **半自动（搜索解 met，定稿门未过）** | ~~S4~~（已升级全自动，见 §3-10~14） | r1 轮（r8a 前身）定稿梯仍 fatal≥1，根因解剖见 §3-10~13；r2 轮 recipe 宏 d1 注入即过 |
-| **未竟（未在新 wrapper 下重搜）** | S5、S6、S7 | 旧配方为旧 wrapper 语义所写，未验证 |
+| **半自动（搜索解 met，定稿门未过）** | ~~S4~~（已升级全自动，见 §3-10~14）、**S5（r8b，见 §3b-25）** | r1 轮（r8a 前身）定稿梯仍 fatal≥1，根因解剖见 §3-10~13；r2 轮 recipe 宏 d1 注入即过。S5：d1 met（entry+690f 双窗命中）但 ±1f 穷举恒 1 fatal |
+| **未竟（未在新 wrapper 下重搜）** | S6、S7 | 旧配方为旧 wrapper 语义所写，未验证 |
 
 **验收门现状：未达成。** 整关导出件 `scripts/e2e/inputs/routes/forest_01.autosearch.json` 仍为前槽 s7j 产物（runKernel WIN@f1977，但 ±1f 365/614 脆——不符 fatal=0）。本轮未产出新的整关导出（链条止于 S4 定稿门）。
 
@@ -90,3 +90,12 @@
 22. **S5 配方真相（r8b）**：fb 原地压 b0 200f 保 P0 降程走满（wg 台阶登乘）→ walkTo(-1,905) 离钮 → jd22 直接上 288 台 → 锚 700（**无需二次乘 P0**，绿路线 fb f1590-1630 同款）；wg goTo(1052) 西撤出钉死带 → sleep120 等沉稳 496 → jd(1,0,14) 台阶小跳 → walkTo(1160) 走深防滑坠 → sleep180 无输入乘升（绿路线 wg v=0 乘升实证）→ jd40 跳西落板 → sleep20 沉降 → walkTo(820) 锚窗。v15 离线终态 **fb[691,253]G wg[804,253]G 双双命中 S5 窗**（board.mjs 逐帧取证，TEMP/autoplay8/v15.log）。
 23. **SEG.S5.horizonF 600→800**：配方全程 entry+~690f（600 会先冻结）；纯搜索参数，断言窗未动。取证台 board.mjs（TEMP/autoplay8，drive+expandFlat 唯一事实源 + APEX/MAP 扫描模式）本轮新增，收尾随 TEMP 清理。
 24. **r8b 轮断点**：iteration 5（autosearch --segs 6-8 --forcestart 6，resume full15a）断点落 `TEMP/autoplay8/r5.search.json`，配方已固化进 autosearch.mjs S5 块。
+25. **S5 exFatal 刀锋（r5a-e 五轮同源，止损未解）：wg[47] left-down@1375 的 -1f 平移级联**——autosearch 口径 S5 d1 met=true（entry+690f，fb[691,253]/wg[804,253] 双窗、双侧存活）但 wp3/3 rob 0/6，±1f 穷举恒剩恰 1 fatal：S4→S5 缝上 wg 首个 S5 输入 -1f 后全程级联，终态 wg[709,477]（坠坡西端断崖，见 26）。ev47 事件平移探针（TEMP/autoplay8，随 TEMP 清理）复现机理分两型：goTo(1052,8) 修正版在 ~1005 slick 面振荡不收敛、卡队列不排干（西走永不启动）；walkTo 系变体登乘落点缘差。**v20-v24 五种变体（walkTo 1050/1070 泊位、waitPlat(0,494,498) 状态门控、jd14→20 漂移加长、goTo(790,25) 闭环锚）base 全过双窗，唯 idx47 -1f 全败、+1f 全过**——刀锋在乘升 ride 振荡相位与缝差的耦合（-1f 使 ride 激活相位平移 1f，振荡净漂移差 ~10-20px，落坡点偏西即触发 26 的断崖），锚点层不可解。预算（≤4h）已超，按止损条款收容。
+26. **板面→台面结构真相（r8b 终）**：板面 317→台面 253 之间为**连续西升斜坡**（v15/v18/v24 轨迹实证 wg 1040→804 行进中连续爬升无洞；doc 泥池 [800,992] 在此行走层不存在）；靠行进动量爬坡，中途 walkTo 停步则静止重启抓不住地、滑回坡底死循环（r5b/c exFatal 根因，fb v18 单程 walkTo(-1,700) 解）；斜坡**西端 ~710-715 即断崖**落回底层 477（-1f 扰动终态 [709,477] + walkTo(820) done 后锁存 left 滑行 10-15px 终态 804 的代数反推；精确 x 存疑待核）。S5 wg 窗 [750,900] 西界距断崖仅 ~35px——v24 终锚改 **goTo(790,25) 闭环驻留**（done 即零输入不漂移），base 稳定 [809,253]。
+27. **r8b 收容断点**：iteration-5 断点已收容至 `tools/r5.search.json`；S5 最优种子（v24）已固化 autosearch.mjs（fb `[sleep 200, walkTo -1 700 999]` / wg `[walkTo -1 1070 999, waitPlat 0 494 498, jd 1 0 20, walkTo 1 1160 999, ride 0 396 412, jd -1 0 40, sleep 20, goTo 790 25]`）。续攻命令：
+    ```
+    node --import tsx scripts/e2e/routetool/autosearch.mjs \
+      --resume note/research/2026-10-autoplay/tools/full15a.search.json \
+      --segs 6-8 --forcestart 6 --out TEMP/<新>/r.route.json --report TEMP/<新>/r.search.json
+    ```
+    下一步候选（按证据强度排序）：① ride 改开环组合——waitPlat(0,455,465) 乘升中段门控 + 定时 jd40，绕开振荡相位耦合（需先证短程无输入段在降程满 496 后不触发 r5a 型打滑）；② wg[47] 前插对冲脉冲（left-down 1f + right-down 1f），把缝上 ±1f 敏感点推入自恢复区（S0b 吸收头同思路）；③ B 方案绿迹提取 S5 跨度（explore-trace.json 已有采样，**需授权**，全自动降半自动）。

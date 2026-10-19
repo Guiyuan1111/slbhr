@@ -409,12 +409,19 @@ const SEG = {
     //   288 台（无需二次乘 P0）；wg 乘升至 ~350 跳西落板再 walkTo(820) 锚窗。
     //   v15 离线终态 fb[691,253]G wg[804,253]G 双双命中 S5 窗。
     recipe: {
-      // fb：原地压 b0 保 P0 降程走满（wg 台阶登乘）→ 西走离 b0（P0 载 wg 升）→ 跳西上 288 台 → 锚 700
-      fb: [spec("sleep", 200), spec("walkTo", -1, 905, 999), spec("jumpDrift", -1, 0, 22), spec("walkTo", -1, 700, 999)],
-      // wg：西撤出钉死带（降角抵头前）→ 等沉稳 496 → 小跳上台阶（14f 短漂防越 128px 板跨）
-      //   → 东行走深防滑坠 → 乘升（无需输入，绿路线同）→ 跳西落板 → 沉降 20f 防弹跳卡死 → 西行锚 820
-      wg: [spec("goTo", 1052, 8), spec("sleep", 120), spec("jumpDrift", 1, 0, 14), spec("walkTo", 1, 1160, 999),
-        spec("sleep", 180), spec("jumpDrift", -1, 0, 40), spec("sleep", 20), spec("walkTo", -1, 820, 999)],
+      // fb：原地压 b0 保 P0 降程走满（wg 台阶登乘）→ 单程连续 walkTo(-1,700)（v18：板面 317→台面
+      //   253 之间是斜坡非立面，靠行进动量爬坡；中途 walkTo 停在坡上则静止重启抓不住地、滑回坡底
+      //   死循环——r5b/c exFatal 根因；jd22 坡基起跳同为刀锋 ±1f 即弹）
+      fb: [spec("sleep", 200), spec("walkTo", -1, 700, 999)],
+      // wg：西撤出钉死带（walkTo 单程，goTo 修正版 slick 振荡卡队列=r5d exFatal 根因）→ waitPlat
+      //   等沉稳 496（状态门控，解耦 fb 离钮时序 ±1f）→ jd20 台阶小跳（漂移加长防登乘落点缘差）
+      //   → 东行走深防滑坠 → ride 振荡乘升（无输入乘升 175f 会 slick 打滑坠板=r5a exFatal 根因）
+      //   → 跳西落坡 → 沉降 20f 防弹跳卡死 → goTo 闭环锚（v24：坡西端 ~710 即断崖落底层 477，
+      //     walkTo done 后锁存 left 滑行 10-15px 是常态，落地偏西即滑坠断崖 [-1f 扰动终态 709,477
+      //     实证]；goTo done 即驻留零输入）。注意：idx47 -1f 刀锋未解（v20-v24 五变体同败，乘升
+      //     振荡相位与缝差耦合），此为离线最优种子，base 双窗 fb[689]/wg[809,253] 稳。
+      wg: [spec("walkTo", -1, 1070, 999), spec("waitPlat", 0, 494, 498), spec("jumpDrift", 1, 0, 20), spec("walkTo", 1, 1160, 999),
+        spec("ride", 0, 396, 412), spec("jumpDrift", -1, 0, 40), spec("sleep", 20), spec("goTo", 790, 25)],
     },
     vocab: {
       // fb：waitPx 燃窗变体（1080 跨缘燃/1110-1140 落板后燃）+ 老登块件
