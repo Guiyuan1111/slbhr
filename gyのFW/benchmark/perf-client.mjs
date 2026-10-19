@@ -17,6 +17,13 @@
  *   node benchmark/perf-client.mjs --cdp http://<宿主IP>:9222 --host <本机对宿主可达IP> --save r7-realgpu
  *                              # 真机口径：渲染跑在远程 Chrome 的真实 GPU 上（宿主 Windows 先开
  *                              # chrome --remote-debugging-port=9222 --remote-allow-origins=*）
+ *   node benchmark/perf-client.mjs --gpu [--display :9] --save <label>
+ *                              # VM 内真 GPU：有头跑在 vmwgfx Xorg（sudo systemd-run --unit=xorg9
+ *                              # Xorg :9 -noreset 起显示）+ --ignore-gpu-blocklist——实测 renderer=
+ *                              # SVGA3D（宿主 GPU 经 VMware 虚拟化转发）。headless（含 new headless
+ *                              # channel=chromium）恒 SwiftShader，GPU 路径必须有真显示；Xvfb 也不行
+ *                              # （GLX 软渲染）。绝对值含虚拟化 present 开销，A/B 相对比较有效；
+ *                              # 裸机金标准仍走 --cdp。
  * 产物：benchmark/results/client-<label>.json
  */
 import { spawn, execSync } from "node:child_process";
@@ -37,6 +44,8 @@ const argSave = argOf("save", undefined);
 const argCompare = argOf("compare", undefined);
 const argCdp = argOf("cdp", undefined); // 远程真机模式：playwright connectOverCDP 目标
 const argHost = argOf("host", undefined); // cdp 模式下本机对远程可达的地址（默认自动取第一个非 lo IPv4）
+const argGpu = args.includes("--gpu"); // VM 内真 GPU：有头 + --ignore-gpu-blocklist（vmwgfx SVGA3D）
+const argDisplay = argOf("display", ":9"); // gpu 模式的 X display（vmwgfx 真显示）
 const log = (...a) => console.log("[client]", ...a);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -183,9 +192,19 @@ if (argCdp) {
 } else {
   browser = await chromium.launch({
     channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined),
-    headless: true,
-    args: ["--mute-audio", "--enable-precise-memory-info", "--disable-background-timer-throttling", "--disable-renderer-backgrounding"],
+    headless: !argGpu,
+    args: [
+      "--mute-audio",
+      "--enable-precise-memory-info",
+      "--disable-background-timer-throttling",
+      "--disable-renderer-backgrounding",
+      // vmwgfx(SVGA3D) 在 Chromium GPU 黑名单内——不解除则恒落 SwiftShader；
+      // gpu-rasterization 让栅格化也走 GPU 路径
+      ...(argGpu ? ["--ignore-gpu-blocklist", "--enable-gpu-rasterization"] : []),
+    ],
+    ...(argGpu ? { env: { ...process.env, DISPLAY: argDisplay } } : {}),
   });
+  if (argGpu) log(`VM 内真 GPU 模式: DISPLAY=${argDisplay} 有头 + ignore-gpu-blocklist（期待 renderer=SVGA3D）`);
 }
 let webgl, canvas;
 try {
@@ -206,8 +225,10 @@ const results = {
     git: execSync("git rev-parse --short HEAD", { cwd: ROOT }).toString().trim(),
     date: new Date().toISOString(),
     node: process.version,
-    note: "WebGL=headless SwiftShader（present 阻塞为环境项，JS 面可比）；Canvas=软光栅全主线程（渲染段可比）",
-    mode: argCdp ? `remote-cdp ${argCdp}` : "local-headless",
+    note: argGpu
+      ? "VM 内真 GPU 口径：vmwgfx SVGA3D（宿主 GPU 虚拟化），绝对值含虚拟化 present 开销，A/B 相对可比"
+      : "WebGL=headless SwiftShader（present 阻塞为环境项，JS 面可比）；Canvas=软光栅全主线程（渲染段可比）",
+    mode: argCdp ? `remote-cdp ${argCdp}` : argGpu ? `local-xorg-gpu ${argDisplay}` : "local-headless",
     remoteGpu: remoteGpu || undefined,
   },
   webgl,

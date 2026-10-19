@@ -177,7 +177,7 @@ r5 3 脚本；r1/r2 无独立收容档，剖析产物随报告入档；hotspot 0
 
 | 候选 | 数据 | 前置/定性 |
 |---|---|---|
-| **客户端渲染段**（r3 TOP1，数据最厚） | Canvas 软光栅 renderAvg 5.31~5.88ms vs updateAvg 0.146ms（帧预算 ~97% 在渲染段）；残余分配 ~18.1KB/帧主体在 Phaser 渲染管线内部 | **前置=真机口径校准**：本机无硬件 GL（headless WebGL=SwiftShader present 阻塞为环境项、Canvas=软光栅；VMware 路径终判=Chromium GLES/EGL 架构级死路，见 gpu-vmwgfx 诊断）；**CDP 量具已就绪**（`ab68e0e`：宿主 Windows 开 `chrome --remote-debugging-port=9222` 即测），待真机 A/B 校准后动手；剖析工具已收容（cdp-prof/alloc 族） |
+| **客户端渲染段**（r3 TOP1，数据最厚） | Canvas 软光栅 renderAvg 5.31~5.88ms vs updateAvg 0.146ms（帧预算 ~97% 在渲染段）；残余分配 ~18.1KB/帧主体在 Phaser 渲染管线内部 | **前置已解除（r7 勘误解锁）**：gpu-vmwgfx 诊断 §8 推翻"架构死路"——真凶=Chromium GPU 黑名单，`--ignore-gpu-blocklist`+vmwgfx 真显示即得宿主 GPU（SVGA3D 实证）；**量具已固化 `perf-client --gpu`**，r7-vmgpu 基线在库（WebGL render 0.236ms@44fps，44fps 为虚拟显示刷新封顶）；裸机金标准 CDP（`ab68e0e`）降级为可选项；可直接开做渲染段 A/B |
 | **font.png 1.6MB 子集化**（r5 候选 TOP） | 冷启剩余大头=font.png 1.6MB/2048²（中文字库位图）+CharAssets 732KB 立绘；r5 装载序整形后首帧集内再无可挪项 | **前置=用户裁决破「资产内容红线」**（子集化/重排即改资产内容）——未裁决前不动 |
 | ~~GameScene 音频批暖装~~ | **r6a 已做**（`567b2d3`，就绪点=Menu 驻留 +941ms） | 完结移入实施件 |
 | phaser 1.48MB 块拆分 | 脚本段 parse/eval ~120ms | r2 判拆分不值，r5 复核未推翻——维持不动 |

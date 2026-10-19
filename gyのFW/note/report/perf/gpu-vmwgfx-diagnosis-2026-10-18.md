@@ -47,3 +47,29 @@ Ubuntu resolute 的 xserver-xorg-video-vmware 构建依赖**缺 libxatracker-dev
 1. 误判"3D 加速没开"（dmesg 未及细查即归因）——用户纠正后实测推翻
 2. grep 模式错（`svga|vmware` 漏掉 `vmwgfx_dri.so`）二次查实存在
 3. 一次 nohup 会话回收导致 Xorg 假死（改 systemd-run 解决）
+
+## §8 重大勘误（2026-10-19，本档终判"架构死路"被实测推翻）
+
+用户质询"为什么需要宿主机，你自己无法实现吗"触发复核，**§4 的 Chromium 终判错误**：
+
+- **真凶不是架构，是 Chromium GPU 黑名单**：vmwgfx(SVGA3D) 在 blocklist 内，默认启动被强制
+  落 SwiftShader（Vulkan lavapipe），看起来像"无后端"。加 **`--ignore-gpu-blocklist`** 后
+  ANGLE 走桌面 GL→vmwgfx→宿主 GPU，实测 renderer =
+  `ANGLE (VMware Inc., SVGA3D; build: RELEASE; LLVM;, OpenGL ES 3.1)`——mesa svga 的
+  GLES 面本就存在，"svga 无 GLES/EGL 后端"说法作废。
+- **有效配方（VM 内自足，零宿主配合）**：真 X 显示（`sudo systemd-run --unit=xorg9 Xorg :9
+  -noreset`，vmwgfx DDX）+ 有头 Chromium + `--ignore-gpu-blocklist --enable-gpu-rasterization`。
+  四模式矩阵实证：default(headed)=SwiftShader；`--use-angle=gl`/`--use-angle=vulkan` 单独给
+  反而 webgl:null（黑名单仍在，GPU 全禁）；**unblock 组合=SVGA3D**；
+  headless=new（channel=chromium）+unblock 仍 SwiftShader（无头不做 GPU 初始化）——
+  GPU 路径必须有真显示，Xvfb 也不行（GLX 软渲染）。
+- **量具已固化**：`benchmark/perf-client.mjs --gpu [--display :9]`；r7-vmgpu 基线
+  （client-r7-vmgpu.json，meta.remoteGpu=SVGA3D 串）：WebGL fps 44.2/render 0.236ms，
+  Canvas 43.6/0.799ms——双渲染器同被 :9 虚拟显示 ~44Hz 刷新封顶（显示属性非代码项），
+  渲染段 A/B 相对比较以 ms 口径为准。
+- **口径定位**：vmwgfx=宿主 GPU 的命令级虚拟化转发，绝对值含虚拟化 present 开销；
+  本项目渲染段优化的对象是 CPU 侧 JS/Phaser 批处理（与虚拟化无关），A/B 有效；
+  裸机绝对金标准仍可走 Windows 远程 CDP（已降级为可选项，非必需）。
+- 探针收容：`note/report/perf/tools/gpu-vmgpu-probe.mjs`（四模式矩阵可复跑）。
+- 过程教训（第 4 条自纠）：**"终判"级结论必须把对手的配置面（黑名单/开关）穷尽后才可下**，
+  本次 §4 在未测 --ignore-gpu-blocklist 的情况下写了"架构级死路"，被用户一句质询戳破。
