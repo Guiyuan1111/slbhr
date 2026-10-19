@@ -61,6 +61,7 @@ node --import tsx benchmark/perf-scene.mjs [--runs 5] --save <label>   # 场景�
 node --import tsx benchmark/perf-scene.mjs --cold --no-build --compare <label>
 node --import tsx benchmark/perf-idle.mjs [--secs 8] [--modes ...] --save <label>  # 空闲 CPU（r9）
 node benchmark/perf-toolchain.mjs --save <label>                                    # 工具链（r10）
+node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>                  # GC 拆账（r11）
 ```
 
 - `perf-step`：每关预热 90 步 + 600 步计时（`PERF_STEPS`/`PERF_LEVELS` 可覆盖），
@@ -102,6 +103,10 @@ node benchmark/perf-toolchain.mjs --save <label>                                
   四命令 3 轮中位墙钟；build 拆 sync 与纯 vite 段（差值口径）。注意读数含 npm 包装层与
   并行在飞文件扰动（r10 报告 §勘误：sync-assets 432ms 中 ~330ms 是 npm 层非拷贝——
   裸 node 全量拷贝仅 0.10s）。快照 `results/toolchain-<label>.json`。
+- `perf-gc`：GC 拆账（r11 起）——冷跑/持有 50 世界两场景的 GC 暂停按构建窗口归账
+  （major/minor 分计、前后半程爬坡判定）。结论已收口：GC 份额 0-0.4%、无并发膨胀
+  （r0 §八 166vs14 为跨关伪影）、bonus_2 158ms/建=新世界前 60 步固有收敛（vendor 面）。
+  观察者投递需同步块后冲刷（量具哑火勘误见 r11 §一）。快照 `results/gc-<label>.json`。
 - `perf-client`：客户端帧预算（r3 起）——headless chromium + 真服 + 双页入房，页内打点
   PRE_STEP→POST_STEP（update 段）/POST_RENDER（帧总）+ performance.memory 正增量累计（分配速率近似）
   + mechTarget/setDepth 计数；每轮双渲染器：WebGL（headless SwiftShader 的 present 阻塞为环境项，
