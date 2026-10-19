@@ -84,7 +84,10 @@ node benchmark/perf-client.mjs --gpu --save <label>             # VM 内真 GPU�
   PRE_STEP→POST_STEP（update 段）/POST_RENDER（帧总）+ performance.memory 正增量累计（分配速率近似）
   + mechTarget/setDepth 计数；每轮双渲染器：WebGL（headless SwiftShader 的 present 阻塞为环境项，
   JS 面可比）与 Canvas（stub WebGL，软光栅全主线程，渲染段可比）。快照 `results/client-<label>.json`。
-  同带复跑波动参考：canvas 分配 ±1%、帧总 p50 ±0.6ms。
+  同带复跑波动参考：canvas 分配 ±1%、帧总 p50 ±0.6ms；--gpu 口径 renderAvg 复跑带 ±15%、Canvas ±6%（r7r 实测）。
+  r7r 起渲染段细分探针（缺省开，零分配定长包装）：gl.drawArrays 计数+顶点数、gl.bindTexture、
+  gl.blendFunc(Separate)（=混合实切换）、WebGLPipeline.flush/bind、Canvas batchSprite；旧快照无对应字段
+  （--compare 打 "-" 兼容）。`--dumpdl` 增打印一次性显示清单分解（depth/type/texture 聚合，剖析用）。
 
 ## 快照索引
 

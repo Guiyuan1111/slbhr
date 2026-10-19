@@ -8,6 +8,13 @@
  *   - performance.memory（--enable-precise-memory-info）40ms 采样正增量累计 = 分配速率近似
  *     （负跳变≤-200KB 记一次 GC drop）。
  *   - mechTarget 调用计数（机关平滑路径）。
+ *   - 渲染段细分探针（r7r 起，缺省开，零分配定长包装仅计数器自增；旧快照无对应字段，
+ *     --compare 打 "-" 兼容）：
+ *     · gl.drawArrays 计数+顶点数累计（drawcall 数/quad 数≈verts/6，Phaser 3.90 flush 逐 batch entry 走 drawArrays）
+ *     · gl.bindTexture 计数（纹理绑定频次）
+ *     · gl.blendFunc/blendFuncSeparate 计数（=setBlendMode 实际切换，Phaser 仅在混合模式真变时调）
+ *     · WebGLPipeline.flush/bind 计数（批次 flush 数/pipeline 绑定数）
+ *     · Canvas 渲染器 batchSprite 计数（软光栅逐精灵绘制数；gl=null 自动走此支）
  *   - 双渲染器各跑一轮：WebGL（真机主路径；headless SwiftShader 的 present 阻塞为环境项，
  *     见报告归因）与 Canvas（stub WebGL；软光栅全在主线程，渲染段可比）。
  *
@@ -46,6 +53,7 @@ const argCdp = argOf("cdp", undefined); // 远程真机模式：playwright conne
 const argHost = argOf("host", undefined); // cdp 模式下本机对远程可达的地址（默认自动取第一个非 lo IPv4）
 const argGpu = args.includes("--gpu"); // VM 内真 GPU：有头 + --ignore-gpu-blocklist（vmwgfx SVGA3D）
 const argDisplay = argOf("display", ":9"); // gpu 模式的 X display（vmwgfx 真显示）
+const argDumpDl = args.includes("--dumpdl"); // 采样后一次性显示清单分解（depth/type/texture 聚合，剖析用，正常跑零成本）
 const log = (...a) => console.log("[client]", ...a);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -98,6 +106,30 @@ const HOOK = `(() => {
     const p = Phaser.GameObjects[cls]?.prototype;
     if (p?.setDepth) { const o = p.setDepth; p.setDepth = function (...a) { P.setDepth++; return o.apply(this, a); }; }
   }
+  // r7r 渲染段细分探针（零分配：定长签名包装，仅计数器自增；采样窗内累计，COLLECT 汇总）
+  P.draws = 0; P.verts = 0; P.texBinds = 0; P.blendSets = 0; P.flushes = 0; P.pipeBinds = 0; P.batchSprites = 0;
+  if (g.renderer.gl) {
+    const gl = g.renderer.gl;
+    const origDA = gl.drawArrays.bind(gl);
+    gl.drawArrays = function (mode, first, count) { P.draws++; P.verts += count; return origDA(mode, first, count); };
+    const origBT = gl.bindTexture.bind(gl);
+    gl.bindTexture = function (target, tex) { P.texBinds++; return origBT(target, tex); };
+    const origBF = gl.blendFunc.bind(gl);
+    gl.blendFunc = function (s, d) { P.blendSets++; return origBF(s, d); };
+    const origBFS = gl.blendFuncSeparate.bind(gl);
+    gl.blendFuncSeparate = function (s, d, sa, da) { P.blendSets++; return origBFS(s, d, sa, da); };
+    const PL = Phaser.Renderer.WebGL.WebGLPipeline.prototype;
+    const origFlush = PL.flush;
+    PL.flush = function (isPostFlush) { P.flushes++; return origFlush.call(this, isPostFlush); };
+    const origBind = PL.bind;
+    PL.bind = function (currentShader) { P.pipeBinds++; return origBind.call(this, currentShader); };
+  } else {
+    const CR = Phaser.Renderer.Canvas?.CanvasRenderer?.prototype;
+    if (CR?.batchSprite) {
+      const origBS = CR.batchSprite;
+      CR.batchSprite = function (sprite, frame, camera, ptm) { P.batchSprites++; return origBS.call(this, sprite, frame, camera, ptm); };
+    }
+  }
   let f = null;
   g.events.on("prestep", (time) => {
     f = { t: time, raw: g.loop.rawDelta, _t0: performance.now() };
@@ -146,8 +178,29 @@ const COLLECT = `(() => {
     gcDrops,
     mechCalls: P.mechCalls,
     setDepth: P.setDepth,
+    draws: P.draws, verts: P.verts, texBinds: P.texBinds, blendSets: P.blendSets,
+    flushes: P.flushes, pipeBinds: P.pipeBinds, batchSprites: P.batchSprites,
     renderer: window.__fw.renderer.type === 2 ? "webgl" : "canvas",
   };
+})()`;
+
+/** 显示清单一次性分解（--dumpdl 才跑）：按 depth|type|texture 聚合对象数，热点表输入 */
+const DUMPDL = `(() => {
+  const scene = window.__fw.scene.getScene("Game");
+  const agg = new Map();
+  const walk = (list, inherited) => {
+    for (const ch of list) {
+      const tex = ch.texture?.key ?? (ch.type === "Container" ? "" : "?");
+      const d = ch.depth !== 0 ? ch.depth : inherited;
+      const k = d + "|" + ch.type + "|" + tex;
+      const e = agg.get(k) ?? { n: 0, visible: 0 };
+      e.n++; if (ch.visible) e.visible++;
+      agg.set(k, e);
+      if (ch.type === "Container" || ch.type === "Layer") walk(ch.list ?? [], d);
+    }
+  };
+  walk(scene.children.list, 0);
+  return [...agg.entries()].map(([k, v]) => { const [depth, type, tex] = k.split("|"); return { depth: +depth, type, tex, n: v.n, vis: v.visible }; }).sort((a, b) => a.depth - b.depth || b.n - a.n);
 })()`;
 
 async function runOnce(server, browser, rendererMode) {
@@ -173,12 +226,18 @@ async function runOnce(server, browser, rendererMode) {
   const meta = await a.evaluate(HOOK);
   await sleep(SECS * 1000);
   const r = await a.evaluate(COLLECT);
+  if (argDumpDl) {
+    const dl = await a.evaluate(DUMPDL);
+    let tot = 0;
+    for (const d of dl) { tot += d.n; console.log(`  [dl] depth=${String(d.depth).padEnd(5)} ${d.type.padEnd(12)} ${String(d.tex).padEnd(14)} n=${d.n} vis=${d.vis}`); }
+    console.log(`  [dl] 合计 ${tot} 对象`);
+  }
   await ctx.close();
   r.pageErrors = errs;
   r.sceneChildren = meta.children;
   r.gpu = meta.gpu || "";
   if (!remoteGpu && meta.gpu) remoteGpu = meta.gpu;
-  log(`${rendererMode}: fps=${r.effectiveFps} 帧总 p50=${r.totalP50}/avg=${r.totalP50 && r.totalAvg}ms update p50=${r.updateP50}ms 分配=${r.allocKBs}KB/s gc=${r.gcDrops} setDepth=${r.setDepth}`);
+  log(`${rendererMode}: fps=${r.effectiveFps} 帧总 p50=${r.totalP50}/avg=${r.totalP50 && r.totalAvg}ms update p50=${r.updateP50}ms 分配=${r.allocKBs}KB/s gc=${r.gcDrops} setDepth=${r.setDepth} draws=${r.draws}(${r.verts}v) tex=${r.texBinds} blend=${r.blendSets} flush=${r.flushes} pipe=${r.pipeBinds}${r.batchSprites ? ` bspr=${r.batchSprites}` : ""}`);
   if (errs.length) log(`${rendererMode} 页面错误:`, errs.join("; "));
   return r;
 }
@@ -235,7 +294,7 @@ const results = {
   canvas,
 };
 
-const line = (name, b, c) => console.log(`${name.padEnd(26)} ${String(b).padStart(10)} → ${String(c).padStart(10)}`);
+const line = (name, b, c) => console.log(`${name.padEnd(26)} ${String(b ?? "-").padStart(10)} → ${String(c ?? "-").padStart(10)}`);
 console.log("\n=== 汇总 ===");
 console.log(`            WebGL: fps=${webgl.effectiveFps} 帧总avg=${webgl.totalAvg}ms (update ${webgl.updateAvg}/render ${webgl.renderAvg}) 分配=${webgl.allocKBs}KB/s gc=${webgl.gcDrops} setDepth=${webgl.setDepth}`);
 console.log(`            Canvas: fps=${canvas.effectiveFps} 帧总avg=${canvas.totalAvg}ms (update ${canvas.updateAvg}/render ${canvas.renderAvg}) 分配=${canvas.allocKBs}KB/s gc=${canvas.gcDrops} setDepth=${canvas.setDepth}`);
@@ -252,7 +311,7 @@ if (argCompare) {
   console.log(`\n===== 对比：${argCompare}（${base.meta.git}）→ 当前（${results.meta.git}）=====`);
   for (const key of ["webgl", "canvas"]) {
     console.log(`--- ${key} ---`);
-    for (const m of ["effectiveFps", "totalP50", "totalAvg", "updateP50", "updateAvg", "renderAvg", "allocKBs", "gcDrops", "setDepth", "mechCalls"]) {
+    for (const m of ["effectiveFps", "totalP50", "totalAvg", "updateP50", "updateAvg", "renderAvg", "allocKBs", "gcDrops", "setDepth", "mechCalls", "draws", "verts", "texBinds", "blendSets", "flushes", "pipeBinds", "batchSprites"]) {
       line(m, base[key][m], results[key][m]);
     }
   }
