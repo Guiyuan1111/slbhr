@@ -14,7 +14,7 @@ import Phaser from "phaser";
 import { ATLAS_MENU, ATLAS_TEMPLE, FONT_MAIN } from "./BootScene";
 import { clickSfx } from "./overlays";
 import { fadeSwitch } from "./transition";
-import { loadProgress, starsOf } from "../progress";
+import { loadPlayed, loadProgress, starsOf } from "../progress";
 import { getSettings } from "../settings";
 import { peekTreeBake, startTreeBake, stepTreeBake, type MaskFrame, type TreeBakeParams, type TreeBakeResult } from "./templeTreeBake";
 
@@ -159,6 +159,7 @@ export class TempleScene extends Phaser.Scene {
     }
 
     // 节点按钮
+    const played = loadPlayed();
     for (const lv of this.data_.levels) {
       const x = px(lv), y = py(lv);
       const stars = starsOf(lv.filename);
@@ -173,6 +174,14 @@ export class TempleScene extends Phaser.Scene {
         .image(x, y, ATLAS_MENU, frame)
         .setScale(scale)
         .setInteractive({ useHandCursor: true });
+      // NewSign 静态贴片（13 号档 #13，0.3.39）：oracle `p.state>0 && p.isNew` →
+      // Sprite("NewSign0000") 位置 (节点+40,节点−20)、scale=布局尺（偏移不乘尺）、
+      // anchor 0.5、无 tween 无弹跳（bundle:1920491 原文复核）；isNew=!played&&!initial
+      // （:2150010 区；tree 型 locked 并入 state=0），played 于进关置位（:1935016），
+      // 徽标随下次重建消失=oracle 回 levelMenu 重建同构。层序 btn→贴片→数字=内容组同序。
+      if (!lv.initial && !played.has(lv.filename)) {
+        this.add.image(x + 40, y - 20, ATLAS_MENU, "NewSign0000").setScale(scale).setOrigin(0.5);
+      }
       const num = this.add
         .bitmapText(x, y + 3, FONT_MAIN, String(lv.id), 28)
         .setOrigin(0.5)

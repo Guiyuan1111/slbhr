@@ -20,7 +20,7 @@ import { PauseMenu, EndMenu, GameOverMenu } from "./scenes/overlays";
 import { SettingsScene, CreditsScene, CompleteScene } from "./scenes/menus";
 import { FadeScene, fadeSwitch } from "./scenes/transition";
 import { loadTempleLevels } from "./templeData";
-import { saveBest } from "./progress";
+import { markPlayed, saveBest } from "./progress";
 import { getSettings } from "./settings";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => {
@@ -136,6 +136,9 @@ async function reloadLevel(levelId: string): Promise<void> {
     return;
   }
   currentTempleEntry = findTempleEntry(levelId);
+  // NewSign played 标记（13 号档 #13，0.3.39）：oracle setPlayed 于 startLevel 进关即置
+  // （bundle:1935016）；换关亦属进关（advance 回声同达）。
+  if (currentTempleEntry) markPlayed(currentTempleEntry.filename);
   (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level: currentLevel, keyboard };
   // 换关黑幕（oracle LevelMenu.startLevel fade("level") :1935281；EndMenu Continue→advance 回声双侧同达）
   const sm = phaser!.scene;
@@ -215,6 +218,10 @@ async function enterGame(): Promise<void> {
   templeRaw = await loadTempleLevels();
   templeLevels = templeRaw.map((lv) => ({ id: Number(lv.id ?? 0), filename: String(lv.filename ?? "") }));
   currentTempleEntry = findTempleEntry(levelId);
+  // NewSign played 标记（13 号档 #13，0.3.39）：oracle setPlayed 于 startLevel 进关即置
+  // （bundle:1935016）。时点注记：oracle 单机=点击节点直进；我方联机=此处真进关
+  // （弹面板间隔不计），语义取「进过这关」。
+  if (currentTempleEntry) markPlayed(currentTempleEntry.filename);
   (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level, keyboard };
   (globalThis as unknown as Record<string, unknown>).__fwRestart = () => net?.restart();
   (globalThis as unknown as Record<string, unknown>).__fwPauseKeyboard = (b: boolean) => keyboard?.setPaused(b);
