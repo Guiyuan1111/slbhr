@@ -819,12 +819,25 @@ export class GameScene extends Phaser.Scene {
     return `x${idx}`; // box / boxheavy 同数组（level.boxes 顺序）
   }
 
-  /** 液体：LiquidRun 行段 Left/中/Right 三类精灵 30fps 同相位；整体下移 2px */
+  /**
+   * 液体：LiquidRun 行段 Left/中/Right 三类精灵 30fps 同相位；整体下移 2px。
+   * 水体（kind=water）另建冰膜覆盖层（oracle Liquid.createIceGraphics @1666474 字证）：
+   * 仅 type5 水体建 iceGraphics 子组（组 y=+4、Left/中(IceBox)/Right 三段 0000 静帧无动画、
+   * addChild 序在 liquidGraphics 之上），建时 `iceGraphics.visible=false`，只有 startFrozen
+   * （55 型瓦片 Liquid 构造 @1661093 重映射）/光束冻结（initialFreeze/freeze @1667800）才置
+   * visible（且同时 liquidGraphics 隐、冰带 fixture mask 换 16）。森林 58 份地图 0 个 55 型
+   * 瓦片（含 flip 位全量重扫）+ 0 beamer（14 号档 §1.4）⇒ oracle 森林该层恒不可见——38 号档
+   * F1「冰膜缺失致带水关像素抬升」系其对拍器只记子精灵自身 visible、未合成祖先组可见性的
+   * 仪器伪差（与 F5 pulley_rope TileSprite 帧名丢失同族；forest_01 水区无热块、IceBox 记录
+   * 坐标 y=行心+4 与 iceGraphics.position.y=4 同源佐证）。此处按字节语义补齐隐藏覆盖层：
+   * 像素零影响、显示列表对齐，未来庙域冻结机制可在该容器上接线。
+   */
   private buildLiquids(level: LevelData): void {
     const { tile } = level;
     for (const run of level.liquidRuns) {
       const fam = LIQUID_ATLAS[run.kind] ?? "WaterBox";
       const single = run.col0 === run.col1;
+      const ice = run.kind === "water" ? this.add.container(0, 0).setDepth(7.05).setVisible(false) : null;
       for (let k = run.col0; k <= run.col1; k++) {
         const pos = k === run.col0 ? (single ? "Left" : "Left") : k === run.col1 ? "Right" : "";
         const s = this.add
@@ -833,12 +846,26 @@ export class GameScene extends Phaser.Scene {
           .setDepth(7);
         // 原版三段液体同相位播放（bundle:38988-39006 无随机延迟）；width=1 时 Left/Right 同格叠放
         s.play(`liquid_${run.kind}${pos ? `_${pos.toLowerCase()}` : ""}`);
+        if (ice) {
+          const ipos = pos; // Left/中(裸 IceBox)/Right 与水面三段同格同规则
+          ice.add(
+            this.add
+              .image(k * tile + tile / 2 + PAD, run.row * tile + tile / 2 + 4 + PAD, ATLAS_GROUND, `IceBox${ipos}0000`)
+              .setOrigin(0.5)
+          );
+        }
         if (single) {
           const cap = this.add
             .sprite(k * tile + tile / 2 + PAD, run.row * tile + tile / 2 + 2 + PAD, ATLAS_GROUND, `${fam}Right0000`)
             .setOrigin(0.5)
             .setDepth(7);
           cap.play(`liquid_${run.kind}_right`);
+          // width=1 冰膜同格补 Right（oracle createIceGraphics 无条件建 Left+Right 两枚）
+          if (ice) {
+            ice.add(
+              this.add.image(k * tile + tile / 2 + PAD, run.row * tile + tile / 2 + 4 + PAD, ATLAS_GROUND, "IceBoxRight0000").setOrigin(0.5)
+            );
+          }
         }
       }
     }
