@@ -8,7 +8,7 @@ if errorlevel 1 (
   exit /b 1
 )
 echo [启动服务器] http://127.0.0.1:2567  （Ctrl+C 停止，关闭此窗口=停服）
-call npx tsx packages/server/src/index.ts
+call node --import tsx packages/server/src/index.ts
 echo.
 echo 服务器已退出。若上方有报错，请把报错内容截图反馈。
 pause
