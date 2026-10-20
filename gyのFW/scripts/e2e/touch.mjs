@@ -3,12 +3,22 @@
  *
  * 验证点：
  * 1. iPhone 描述符（hasTouch + coarse pointer）：进房后 started 阶段三键可见；
- * 2. 真实触摸路径：touchscreen.tap 跳跃键 → 角色 y 明显上抬；
+ * 2. 真实触摸路径：CDP 触摸 tap 跳跃键（人手量级按压 90ms）→ 角色 y 明显上抬；
  * 3. 按住路径：pointer 按住右键 1.5s → 角色 x 右移 >100px（服务端权威位移）;
  * 4. 桌面 context：按钮不存在（仅粗指针/?touch=1 创建）；
  * 5. 全程零页面错误。
  *
  * 用法：node scripts/e2e/touch.mjs [--port 3558]
+ *
+ * ── 为什么不用 page.touchscreen.tap（2026-10-20 取证，TEMP/journeytouch-fix/）──
+ * Playwright 1.63 touchscreen.tap 把 touchStart+touchEnd 两条 CDP 并发齐发
+ * （coreBundle.js Promise.all），Chromium 同一输入任务合成完毕 → 按钮 pointerdown/
+ * pointerup 同帧触发 → 两条 input WS 消息 1ms 内先后到达服务端 → tick 意图跨度排水
+ * （ForestRoom.ts:348-353）同一步消费 down+up，物理步采样到的是 up=false——
+ * FW_DUMP 字证：`step=50 at=821ms up=true` / `step=50 at=822ms up=false` 同步内对消，
+ * Δy=0。真人 tap 按压 60-150ms（≥4 tick），不会对消。修复=改用 CDP
+ * Input.dispatchTouchEvent 顺序注入（Playwright 内部同款原语）+人手量级 90ms 按压；
+ * touchStart/End 仍走浏览器真实触屏合成路径（pointer 事件/capture/compat 事件全真）。
  */
 import { spawn } from "node:child_process";
 import { dirname, join } from "node:path";
@@ -46,6 +56,15 @@ const playerPos = (page, role) => page.evaluate((r) => {
   const v = scene.views.get(r);
   return { x: v.legs.x, y: v.legs.y };
 }, role);
+
+/** 真实触屏 tap（人手量级按压）：CDP 顺序 touchStart → holdMs → touchEnd。
+ *  见头注「为什么不用 page.touchscreen.tap」——并发齐发的机器 tap 会在服务端
+ *  同 tick 内对消（Δy=0），90ms≈5-6 个物理步，等价真人快速点按。 */
+async function touchTap(cdp, x, y, holdMs = 90) {
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] });
+  await sleep(holdMs);
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+}
 
 const server = await startServer();
 let failures = 0;
@@ -91,13 +110,14 @@ try {
   });
   check("触摸端三键可见", visible.exists && !visible.hidden && visible.n === 3 && visible.inViewport, `n=${visible.n}`);
 
-  // 2) 真实触摸 tap 跳跃 → y 上抬
+  // 2) 真实触摸 tap 跳跃 → y 上抬（CDP 人手量级按压，见头注取证）
+  const cdp = await iphone.newCDPSession(t);
   const before = await playerPos(t, "fireboy");
   const jumpBtn = await t.$(".touch-btn.jump");
   const jb = await jumpBtn.boundingBox();
-  await t.touchscreen.tap(jb.x + jb.width / 2, jb.y + jb.height / 2);
+  await touchTap(cdp, jb.x + jb.width / 2, jb.y + jb.height / 2);
   let minY = before.y;
-  for (let i = 0; i < 20; i++) { await sleep(50); const p = await playerPos(t, "fireboy"); minY = Math.min(minY, p.y); }
+  for (let i = 0; i < 30; i++) { await sleep(40); const p = await playerPos(t, "fireboy"); minY = Math.min(minY, p.y); }
   check("tap 跳跃 → y 上抬 >30px", before.y - minY > 30, `Δy=${(before.y - minY).toFixed(1)}px`);
 
   // 3) 按住右键 1.5s → x 右移（真实 pointer 序列：down → 悬停 → up）
