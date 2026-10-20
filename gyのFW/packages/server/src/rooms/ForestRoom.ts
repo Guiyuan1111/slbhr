@@ -274,7 +274,12 @@ export class ForestRoom extends Room<RoomState> {
     this.syncFreezeClock();
     try {
       await this.allowReconnection(client, RECONNECT_SECONDS);
-      if (this.state.phase === "paused") this.state.phase = prevPhase;
+      if (this.state.phase === "paused") {
+        this.state.phase = prevPhase;
+        // H-02：ready 期断线回来——旧 ready 钟大概率已被守卫拦掉（断线期 phase=paused），
+        // 重排一轮（beginReady 自带 clearTimeout，不会叠加）
+        if (prevPhase === "ready") this.beginReady();
+      }
       this.syncFreezeClock();
       this.syncState();
       // 重连端错过了 pause-changed 广播：仍处玩家暂停则补发一条，让它恢复暂停画面
@@ -329,11 +334,18 @@ export class ForestRoom extends Room<RoomState> {
 
   /** 双人到齐：ready 2.0s → started（原版 1600+400ms 开钟） */
   private beginReady() {
+    // H-02（#3）：先清旧钟防叠加——补位/重连重排/连发 restart 时旧 timer 还挂着，
+    // 两钟并存会先到者开钟、后到者再开一次（相位机错乱）
+    if (this.readyTimer) clearTimeout(this.readyTimer);
     this.state.phase = "ready";
     this.syncState();
     // 纯观测时间戳（e2e 路由回放的 t0 锚点）：不参与任何逻辑分支
     console.log(`[phase] ready @${Date.now()}`);
     this.readyTimer = setTimeout(() => {
+      // H-02 相位/人数守卫：ready 期有人断线（phase 已被 onLeave 置 paused）或席位不齐时
+      // 不得开钟——否则缺一开跑，缺席角色被残留输入带进液体/机关；缺席者重连后相位已
+      // started 也回不去 ready。重连成功路径对 prevPhase=ready 会重排 beginReady。
+      if (this.state.phase !== "ready" || this.roles.size !== 2) return;
       this.startedOnce = true;
       this.state.phase = "started";
       // 输入队列时基零点：清掉 ready 期残留，第 k 步跨度以此为基准
@@ -349,6 +361,7 @@ export class ForestRoom extends Room<RoomState> {
 
   /** 整关重开（原版 retry：整状态重载） */
   private restartLevel() {
+    if (this.readyTimer) clearTimeout(this.readyTimer); // H-02：同 beginReady，防钟叠加
     this.world.reset();
     // 玩家暂停不跨重开（原版 retry 走完整 startLevel，game.paused 归 false）
     this.userPaused = false;
@@ -356,6 +369,7 @@ export class ForestRoom extends Room<RoomState> {
     this.state.phase = "ready";
     this.syncState();
     this.readyTimer = setTimeout(() => {
+      if (this.state.phase !== "ready" || this.roles.size !== 2) return; // H-02 守卫，同 beginReady
       this.state.phase = "started";
       this.startedWall = Date.now();
       this.stepIndex = 0;
