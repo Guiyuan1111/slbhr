@@ -143,6 +143,16 @@ export class PauseMenu extends Phaser.Scene {
     super("PauseMenu");
   }
   create(): void {
+    // V17（15 号档 Top3）：oracle togglePause=game.paused 引擎级冻结（:416750 区——paused
+    // 分支不跑 stage.update ⇒ 液面/钻石/海军/风效全部静帧，仅面板经 pauseUpdate 继续）。
+    // Phaser 3 同构：pause("Game") 停其 update/tweens/anims/时钟（渲染照常 → 末帧画面保留，
+    // SceneManager.render 对 PAUSED 状态仍出图）；解除统一走本场景 SHUTDOWN 钩子 resume——
+    // 覆盖 requestClose/再试/返回菜单/换关全部停面板路径（含先停 Game 的序列：此时 Game
+    // 已非 PAUSED，isPaused 守卫跳过，无僵尸复活）。
+    if (!this.scene.isPaused("Game")) this.scene.pause("Game");
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      if (this.scene.isPaused("Game")) this.scene.resume("Game");
+    });
     this.board = buildBoard(this);
     const board = this.board;
     board.add(this.add.bitmapText(CX, 40, FONT_MAIN, "暫停", 36).setOrigin(0.5, 0.5));
