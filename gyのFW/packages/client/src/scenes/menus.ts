@@ -30,11 +30,13 @@ export class SettingsScene extends Phaser.Scene {
     const applyMusic = (): void => {
       const st = getSettings();
       if (st.music) {
-        // 菜单态即时恢复 BGM（Game 态由下次 bgmKey 播放时自然生效）
+        // 菜单态即时恢复 BGM（menus 域）；Game 态即时起播交 GameScene.applyMusicSetting（T6）
         const act = this.game.scene.getScenes(true).map((s) => s.scene.key);
         if ((act.includes("Menu") || act.includes("Temple")) && !this.sound.isPlaying("bgm_menu")) {
           this.sound.play("bgm_menu", { loop: true });
         }
+        const gs = this.game.scene.getScene("Game") as unknown as { applyMusicSetting?: () => void } | null;
+        gs?.applyMusicSetting?.();
       } else {
         this.sound.stopByKey("bgm_menu");
         this.sound.stopByKey("bgm_level");
@@ -52,6 +54,8 @@ export class SettingsScene extends Phaser.Scene {
         const next = setSettings({ [key]: !getSettings()[key] });
         img.setFrame(`${label}Button${next[key] ? "0000" : "0001"}`);
         if (key === "music") applyMusic();
+        // T5（14 号档）：fx 开关=全局总静音（含 BGM，oracle fx 信号 sound.mute=!fx :2209677）
+        else this.game.sound.mute = !next.fx;
       });
       board.add([img, txt]);
     };

@@ -464,8 +464,10 @@ function bootPhaser(): void {
     scene: [BootScene, MenuScene, TempleScene, GameScene, PauseMenu, EndMenu, GameOverMenu, SettingsScene, CreditsScene, CompleteScene, FadeScene],
   });
   // 响度对齐原版：game.sound.volume=0.1 全局主音量（bundle 实测），逐键默认 1.0，
-  // 仅 waterSteps 0.5 / wind 0.2 / portalLoop 0.3（原版显式覆写）相对生效
+  // 仅 waterSteps 0.5 / wind 0.2 / portalLoop 0.3（原版显式覆写）相对生效。
+  // T5（14 号档）：fx 开关=全局总静音含 BGM（oracle Boot sound.mute=!settings.fx :2162295）
   phaser.sound.volume = 0.1;
+  phaser.sound.mute = !getSettings().fx;
   (globalThis as unknown as Record<string, unknown>).__fw = phaser; // 调试句柄（验收自动化用）
   // 选关 → 弹出联机面板（?level= 深链时面板直接可见，跳过画布选关）
   phaser.registry.set("onLevelPicked", (levelId: string) => {

@@ -1,6 +1,9 @@
 /**
  * 用户设置（原版 settings{controls,music,fx,vibrate} 的联机版子集：music/fx 持久化）。
- * 消费点：GameScene.sfx（fx 门控，bgm 走 music）、MenuScene/TempleScene bgm（music 门控）。
+ * 消费点（T5/T6 后，14 号档口径）：fx=全局总静音（game.sound.mute，含 BGM——bootPhaser/
+ * SettingsScene/GameScene create 三处同步）；music 只 gate BGM 起停（sfx()/menus/
+ * GameScene.applyMusicSetting）。一次性曲（bgm_over/bgm_finish）仍受 music 门=与 oracle
+ * 的无门偏差保留（14 号档 T7，忠实向改动待用户裁决）。
  */
 export interface FwSettings {
   music: boolean;

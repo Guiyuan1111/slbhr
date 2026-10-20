@@ -402,9 +402,40 @@ export class GameScene extends Phaser.Scene {
 
     this.sound.stopByKey("bgm_level");
     this.sound.stopByKey("bgm_level_speed");
-    this.sound.stopByKey("bgm_menu");
+    // T8（14 号档）：menuMusic 退场=fadeOut(500)+完停（oracle LevelMenu.startLevel :1935104），
+    // 非硬停；未播/未装载时退回幂等 stop。（cast：BaseSound 类型缺 volume 声明，
+    // WebAudio/HTML5Audio 两实现同 surface，运行时鸭子类型安全。）
+    const menuBgm = this.sound.get("bgm_menu") as Phaser.Sound.WebAudioSound | null;
+    if (menuBgm && menuBgm.isPlaying) {
+      this.tweens.add({
+        targets: menuBgm,
+        volume: 0,
+        duration: 500,
+        onComplete: () => {
+          menuBgm.stop();
+          menuBgm.volume = 1;
+        },
+      });
+    } else {
+      this.sound.stopByKey("bgm_menu");
+    }
     this.sound.stopByKey("bgm_over");
+    // T5（14 号档）：fx 开关=全局总静音（含 BGM，oracle Level init sound.mute=!fx :1886199；
+    // Boot :2162295 / fx 信号 :2209677 同式——settings.ts 分轨语义仅保留 music 侧）
+    this.sound.mute = !getSettings().fx;
     this.sfx(this.bgmKey(), { loop: true });
+
+    // T4（14 号档）：退场统一停音。Phaser 3 场景共享全局 sound manager（InjectionMap
+    // sound:'sound'，scene.stop 不停音）——quit/换关/重开路径都过本场景 SHUTDOWN，在此
+    // 停掉本场景全部键（BGM 族+循环音 wind/water/door），对齐 oracle quit/retry 显式
+    // levelMusic.stop（:1909660/:1910022）。restart 的 SHUTDOWN→create 重播链不受影响
+    // （oracle retry 同样重起 BGM）。
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.stopWater();
+      for (const k of ["bgm_menu", "bgm_level", "bgm_level_speed", "bgm_over", "bgm_finish", "bgm_finish_speed", "sfx_wind", "sfx_door"]) {
+        this.sound.stopByKey(k);
+      }
+    });
 
     // 场景晚于 phase 启动（如重连进 won 房）：补一次演出
     this.prevPhase = String(this.d.net.room?.state?.phase ?? "");
@@ -414,6 +445,30 @@ export class GameScene extends Phaser.Scene {
   /** 关卡 BGM 键：speed 关用专属曲（原版 preloadAudioFiles 按 levelData.type 换曲） */
   private bgmKey(): string {
     return this.templeType === "speed" ? "bgm_level_speed" : "bgm_level";
+  }
+
+  /** 终局曲键：speed 关用 _speed 变体（oracle animateFinish @1906276 按 type 选曲；T2——
+   *  bgm_finish_speed 此前装载 0 播）。templeType 在 create 即异步填充，won 时必已就绪。 */
+  private finishKey(): string {
+    return this.templeType === "speed" ? "bgm_finish_speed" : "bgm_finish";
+  }
+
+  /** T6（14 号档）：music 开关 Game 态即时生效（oracle settingsSignal→updateMusic :1905636）。
+   *  off=停两支关卡 BGM；on=仅 started 进行中且无 BGM 在播时补起。won/ready 态不自动起乐
+   *  ——oracle 死亡/终局停曲后再开 music 会重播 levelMusic 与 Over/Finish 叠播，该 quirk
+   *  不移植（记 14 号档 §实施记录偏差项）。 */
+  applyMusicSetting(): void {
+    if (!this.d) return;
+    if (!getSettings().music) {
+      this.sound.stopByKey("bgm_level");
+      this.sound.stopByKey("bgm_level_speed");
+      return;
+    }
+    const phase = String(this.d.net.room?.state?.phase ?? "");
+    if (phase !== "started" || this.stairsPlayed) return;
+    if (!this.sound.isPlaying("bgm_level") && !this.sound.isPlaying("bgm_level_speed")) {
+      this.sfx(this.bgmKey(), { loop: true });
+    }
   }
 
   /** 播音频（键未入缓存时静默跳过：音频缺失不应炸掉整个场景更新循环） */
@@ -1473,8 +1528,10 @@ export class GameScene extends Phaser.Scene {
   /** 通关演出（原版 animateFinish @1951222：停 BGM → levelMusicFinish → 双 animateStairs → 1600ms → 结算） */
   private playStairsSequence(): void {
     this.stairsPlayed = true;
+    // T3（14 号档）：speed 关同停 _speed 变体（oracle levelMusic.stop :1906226 不分变体）
     this.sound.stopByKey("bgm_level");
-    this.sfx("bgm_finish");
+    this.sound.stopByKey("bgm_level_speed");
+    this.sfx(this.finishKey()); // T2：按 temple.json type 选终局曲（oracle :1906276）
     for (const role of ROLES) {
       const view = this.views.get(role);
       const door = this.d.level.doors[role];
