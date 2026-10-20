@@ -13,6 +13,7 @@
 import Phaser from "phaser";
 import { ATLAS_CHARS, ATLAS_MENU, FONT_MAIN, startBgWarm } from "./BootScene";
 import { clickSfx } from "./overlays";
+import { fadeSwitch } from "./transition";
 import { getSettings } from "../settings";
 
 /** 光柱动态态（oracle :1094049 创建期随机相位/速度） */
@@ -97,7 +98,8 @@ export class MenuScene extends Phaser.Scene {
       .on("pointerup", () => {
         playTxt.setScale(1);
         clickSfx(this);
-        this.scene.start("Temple");
+        // 进选关黑幕（oracle Menu.startTemple fade("levelMenu") :1941847）
+        fadeSwitch(this.game, () => this.scene.start("Temple"));
       })
       .on("pointerupoutside", () => playTxt.setScale(1));
 

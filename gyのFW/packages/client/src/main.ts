@@ -18,6 +18,7 @@ import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
 import { PauseMenu, EndMenu, GameOverMenu } from "./scenes/overlays";
 import { SettingsScene, CreditsScene, CompleteScene } from "./scenes/menus";
+import { FadeScene, fadeSwitch } from "./scenes/transition";
 import { loadTempleLevels } from "./templeData";
 import { saveBest } from "./progress";
 import { getSettings } from "./settings";
@@ -136,12 +137,15 @@ async function reloadLevel(levelId: string): Promise<void> {
   }
   currentTempleEntry = findTempleEntry(levelId);
   (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level: currentLevel, keyboard };
+  // 换关黑幕（oracle LevelMenu.startLevel fade("level") :1935281；EndMenu Continue→advance 回声双侧同达）
   const sm = phaser!.scene;
-  sm.stop("EndMenu");
-  sm.stop("GameOverMenu");
-  sm.stop("PauseMenu");
-  sm.stop("Game");
-  sm.start("Game");
+  fadeSwitch(phaser!, () => {
+    sm.stop("EndMenu");
+    sm.stop("GameOverMenu");
+    sm.stop("PauseMenu");
+    sm.stop("Game");
+    sm.start("Game");
+  });
 }
 
 function show(err?: string): void {
@@ -221,25 +225,38 @@ async function enterGame(): Promise<void> {
     const gs = phaser?.scene.getScene("Game") as unknown as { sfx?: (k: string) => void } | null;
     gs?.sfx?.(name);
   };
-  /** 离房回选关树（EndMenu「继续」/各菜单「返回菜单」共用） */
+  /** 离房回选关树（EndMenu「继续」/各菜单「返回菜单」共用）。整包入黑幕 ops
+   *  （oracle EndMenu :1878226 fade("levelMenu")）——转场进行中重复触发整体丢弃。 */
   const leaveToMenu = (): void => {
-    net?.leave();
-    net = null;
-    gameStarted = false;
-    pausedByUser = false;
-    keyboard?.setPaused(true);
-    touch?.setActive(false);
-    const sm = phaser!.scene;
-    sm.stop("Game");
-    sm.stop("EndMenu");
-    sm.stop("GameOverMenu");
-    sm.stop("PauseMenu");
-    sm.start("Temple");
-    const hud = document.querySelector("#hud");
-    if (hud) hud.classList.add("hidden");
-    updateHud();
+    fadeSwitch(phaser!, () => {
+      net?.leave();
+      net = null;
+      gameStarted = false;
+      pausedByUser = false;
+      keyboard?.setPaused(true);
+      touch?.setActive(false);
+      const sm = phaser!.scene;
+      sm.stop("Game");
+      sm.stop("EndMenu");
+      sm.stop("GameOverMenu");
+      sm.stop("PauseMenu");
+      sm.start("Temple");
+      const hud = document.querySelector("#hud");
+      if (hud) hud.classList.add("hidden");
+      updateHud();
+    });
   };
   (globalThis as unknown as Record<string, unknown>).__fwLeaveToMenu = leaveToMenu;
+  // 重开（GameOver「再试一次」/暂停菜单「再试一次」；oracle retry fade("level") :1909660）：
+  // 黑幕包络下停面板+发 restart，服务端重置回声链不变。R 键保持裸 restart（键盘路径非 UI 面）。
+  (globalThis as unknown as Record<string, unknown>).__fwRestart = () => {
+    fadeSwitch(phaser!, () => {
+      const sm = phaser!.scene;
+      sm.stop("GameOverMenu");
+      sm.stop("PauseMenu");
+      net?.restart();
+    });
+  };
   // 结算「继续」：原版 Continue 直进下一关（bundle EndMenu 44360 区段）。联机形态
   // = 活房间内 advance 换关（席位保留、双端同跳，2026-10-12 实玩反馈：不再回大厅
   // 重建房间）；无后继或已离房 → 回选关树（原版最后一关无 Continue 后继）。
@@ -267,12 +284,15 @@ async function enterGame(): Promise<void> {
   // 的一帧重合成）随场景切换一并发生，不再插进 fetch 段（实测早醒会拖慢 fetch）。
   phaser?.loop.wake();
   await bgWarmSettled();
-  // 切入游戏场景（Game 若已在跑则重启以载入关卡数据）
+  // 切入游戏场景（Game 若已在跑则重启以载入关卡数据）；黑幕包络
+  // （oracle LevelMenu.startLevel fade("level") :1935281——选关进关同族）
   const sceneMgr = phaser!.scene;
-  sceneMgr.stop("Menu");
-  sceneMgr.stop("Temple");
-  sceneMgr.stop("Game");
-  sceneMgr.start("Game");
+  fadeSwitch(phaser!, () => {
+    sceneMgr.stop("Menu");
+    sceneMgr.stop("Temple");
+    sceneMgr.stop("Game");
+    sceneMgr.start("Game");
+  });
 }
 
 async function start(mode: "create" | "join"): Promise<void> {
@@ -312,7 +332,13 @@ async function start(mode: "create" | "join"): Promise<void> {
           // 原版暂停期按住的键在恢复瞬间生效（服务端冻结期输入照常入队，恢复即归帧）
           pausedByUser = paused;
           if (paused) phaser?.scene.start("PauseMenu");
-          else phaser?.scene.stop("PauseMenu");
+          else {
+            // 解除暂停走面板弹簧滑出（oracle PauseMenu 继续钮 hide()——:1851068）；
+            // 面板未活动（实例未 create，无该方法）则直接停，幂等
+            const pm = phaser?.scene.getScene("PauseMenu") as unknown as { requestClose?: () => void } | null;
+            if (pm?.requestClose) pm.requestClose();
+            else phaser?.scene.stop("PauseMenu");
+          }
         },
         onPhase: (phase) => {
           updateHud();
@@ -434,7 +460,8 @@ function bootPhaser(): void {
     // setTimeout 驱动：窗口被遮挡/后台时 rAF 会被浏览器完全冻结（场景队列停摆），此模式保活
     fps: { forceSetTimeOut: true, target: 60 },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-    scene: [BootScene, MenuScene, TempleScene, GameScene, PauseMenu, EndMenu, GameOverMenu, SettingsScene, CreditsScene, CompleteScene],
+    // FadeScene 恒居末位=顶景（换屏黑幕，scenes/transition.ts）
+    scene: [BootScene, MenuScene, TempleScene, GameScene, PauseMenu, EndMenu, GameOverMenu, SettingsScene, CreditsScene, CompleteScene, FadeScene],
   });
   // 响度对齐原版：game.sound.volume=0.1 全局主音量（bundle 实测），逐键默认 1.0，
   // 仅 waterSteps 0.5 / wind 0.2 / portalLoop 0.3（原版显式覆写）相对生效

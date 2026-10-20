@@ -13,6 +13,7 @@
 import Phaser from "phaser";
 import { ATLAS_MENU, ATLAS_TEMPLE, FONT_MAIN } from "./BootScene";
 import { clickSfx } from "./overlays";
+import { fadeSwitch } from "./transition";
 import { loadProgress, starsOf } from "../progress";
 import { getSettings } from "../settings";
 import { peekTreeBake, startTreeBake, stepTreeBake, type MaskFrame, type TreeBakeParams, type TreeBakeResult } from "./templeTreeBake";
@@ -204,7 +205,8 @@ export class TempleScene extends Phaser.Scene {
       back.setFrame("BackButton0000");
       backLabel.setScale(1);
       clickSfx(this);
-      this.scene.start("Menu");
+      // 返主菜单黑幕（oracle goBack fade("menu") :1935440）
+      fadeSwitch(this.game, () => this.scene.start("Menu"));
     });
     back.on("pointerupoutside", () => {
       back.setFrame("BackButton0000");

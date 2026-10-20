@@ -146,12 +146,11 @@ export class PauseMenu extends Phaser.Scene {
     this.board = buildBoard(this);
     const board = this.board;
     board.add(this.add.bitmapText(CX, 40, FONT_MAIN, "暫停", 36).setOrigin(0.5, 0.5));
+    // 再试/返回：oracle 为 fade 包络（:1909660/:1910067），面板由黑幕 ops 统一停，本地不抢停
     stoneButton(this, board, CX + HALF_W / 3, 108, "再试一次", () => {
-      this.scene.stop();
       handle().__fwRestart?.();
     });
     stoneButton(this, board, CX - HALF_W / 3, 108, "返回菜单", () => {
-      this.scene.stop();
       handle().__fwLeaveToMenu?.();
     });
     stoneButton(this, board, CX, 241, "继续", () => {
@@ -263,7 +262,9 @@ export class EndMenu extends Phaser.Scene {
       stone.play(stoneKey);
       enabled = true;
     });
-    // Continue（与星碑同拍启用）：原版直进下一关；联机形态=活房间 advance 换关（main.ts __fwNextLevel）
+    // Continue（与星碑同拍启用）：原版直进下一关；联机形态=活房间 advance 换关（main.ts __fwNextLevel）。
+    // 面板由黑幕 ops 统一停（oracle fade("levelMenu") :1878226）；leaving 门防黑幕窗内双击重触发。
+    let leaving = false;
     stoneButton(
       this,
       board,
@@ -271,12 +272,13 @@ export class EndMenu extends Phaser.Scene {
       502,
       "继续",
       () => {
-        this.scene.stop();
+        if (leaving) return;
+        leaving = true;
         const h = handle() as unknown as { __fwNextLevel?: () => void; __fwLeaveToMenu?: () => void };
         if (h.__fwNextLevel) h.__fwNextLevel();
         else h.__fwLeaveToMenu?.();
       },
-      { disabled: () => !enabled },
+      { disabled: () => !enabled || leaving },
     );
   }
 }
@@ -289,12 +291,11 @@ export class GameOverMenu extends Phaser.Scene {
   create(): void {
     const board = buildBoard(this);
     board.add(this.add.bitmapText(CX, 40, FONT_MAIN, "游戏结束", 36).setOrigin(0.5, 0.5));
+    // 双钮：oracle 为 fade 包络（:1880672 Menu / :1909660 Retry），面板由黑幕 ops 统一停
     stoneButton(this, board, CX - 0.4 * HALF_W, 254, "返回菜单", () => {
-      this.scene.stop();
       handle().__fwLeaveToMenu?.();
     });
     stoneButton(this, board, CX + 0.4 * HALF_W, 254, "再试一次", () => {
-      this.scene.stop();
       handle().__fwRestart?.();
     });
   }
