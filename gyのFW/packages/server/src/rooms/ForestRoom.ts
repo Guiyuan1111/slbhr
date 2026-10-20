@@ -121,6 +121,15 @@ export class ForestRoom extends Room<RoomState> {
       // won/gameover 阶段任意客户端可重开（原版 GameOverMenu/EndMenu Retry 的联机化映射）
       if (this.state.phase === "won" || this.state.phase === "gameover") {
         this.restartLevel();
+      } else if (this.userPaused && this.state.phase === "started") {
+        // M-06（#11）：暂停菜单「再试一次」——玩家暂停不占用 phase（仍是 started），上面的
+        // won/gameover 守卫会把它忽略掉，客户端已停面板而服务端不重开，游戏冻在原地。
+        // 先解除暂停并广播（发起端面板已自行停掉，这里让对端面板关闭），再整关重开。
+        this.userPaused = false;
+        this.userPausedBy = null;
+        this.syncFreezeClock();
+        this.broadcast("pause-changed", { paused: false, by: null });
+        this.restartLevel();
       }
     });
 
