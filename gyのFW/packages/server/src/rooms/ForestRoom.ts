@@ -162,7 +162,13 @@ export class ForestRoom extends Room<RoomState> {
       this.broadcast("pause-changed", { paused: true, by: role });
     });
     this.onMessage("resume", () => {
-      if (!this.userPaused) return;
+      if (!this.userPaused) {
+        // M-01（#6）：幂等回声——余端的暂停面板若错过了解除广播（断线超时/离场清场瞬间
+        // 正停在菜单里），点「继续」只发 resume 且被这里无视的话菜单永远关不上；
+        // 无论是否处于暂停，resume 一律回一条 paused:false 关闭陈旧面板（幂等无害）
+        this.broadcast("pause-changed", { paused: false, by: null });
+        return;
+      }
       this.userPaused = false;
       const by = this.userPausedBy;
       this.userPausedBy = null;
