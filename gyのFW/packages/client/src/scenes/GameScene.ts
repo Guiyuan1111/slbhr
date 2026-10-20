@@ -1758,6 +1758,10 @@ export class GameScene extends Phaser.Scene {
     if (on !== v.lightOn) {
       v.lightOn = on;
       v.light.setFrame(`lever_base_light_${on ? "on" : "off"}0000`);
+      // F3d：杆灯换帧（oracle Lever @1653884：stick_light 入 lights 列表 → updateLight 随
+      // state 换 on/off 帧；其"不随杆旋转"系 38 号档对拍器只记局部角 a 的仪器语义——
+      // 字节面 n=lever_stick_light 是旋转体 m 的子精灵 @1653790，随杆公转自转均同原版）
+      v.stickLight.setFrame(`lever_stick_light_${on ? "on" : "off"}0000`);
     }
   }
 
