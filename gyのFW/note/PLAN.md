@@ -3,7 +3,9 @@
 # 森林冰火人联机版（fireboy-online）开发计划书
 
 > **⚠ 历史文档（2026-09-30 v1.0）**：本文是立项时的执行规范。其中 **D4「自写轻量 2D 物理」决策已于
-> 2026-10-04 被保真重写推翻**（现为提取原版 box2d.js 的服务端权威内核），M1 关卡/机关范围等亦已调整。
+> 2026-10-04 被保真重写推翻**（现为提取原版 box2d.js 的服务端权威内核），**D3 同步模型亦已改版**
+> （20Hz 补丁+100ms 插值缓冲 → 60Hz patch+客户端 dead reckoning，行内注见 D3 与 §5.2；§5.5 的
+> 2KB/30msg/s/5min 为未实装规划值），M1 关卡/机关范围等亦已调整。
 > 现行事实以 [handoff.md](handoff.md)「2026-10-04 使命调整与调研纠偏」及
 > [handoff/2026-10-04-fidelity-rewrite.md](handoff/2026-10-04-fidelity-rewrite.md) 为准；
 > 本文保留作为决策沿革记录，勿据其开工。
@@ -74,7 +76,7 @@
 |---|---|---|
 | D1 | 语言 | TypeScript 全栈（strict 模式）。服务端 Node ≥18 + Colyseus；客户端 Phaser 3。单一语言便于共享代码 |
 | D2 | 架构 | **服务端权威**：服务端独占运行物理与全部机关逻辑（60Hz 固定步长），客户端只做输入上行 + 快照渲染。M1 阶段客户端**不做**任何本地物理与预测（M5 可选加自己角色的预测） |
-| D3 | 同步 | Colyseus Schema 状态同步，20Hz 下发增量补丁；客户端维护 100ms 插值缓冲渲染远端实体。**不做帧同步**（跨设备 JS 引擎的浮点/超越函数差异是真实风险，且合作游戏无带宽压力） |
+| D3 | 同步 | Colyseus Schema 状态同步，20Hz 下发增量补丁；客户端维护 100ms 插值缓冲渲染远端实体。**不做帧同步**（跨设备 JS 引擎的浮点/超越函数差异是真实风险，且合作游戏无带宽压力）。**【2026-10-20 注：前半句为历史方案。现役=60Hz patch（`ForestRoom.setPatchRate(1000/60)`，缺省覆写 Colyseus 的 20Hz，`FW_PATCH_MS` 仅取证回退用）+ 客户端 dead reckoning（快照位置+速度外推+指数收敛，无插值缓冲，GameScene `updatePlayers`/`mechTarget`；netopt 11 号档）。「不做帧同步」仍然有效】** |
 | D4 | 物理 | **自写轻量 2D 物理**（AABB 碰撞 + 瓦片地形 + 液体区域判定），不引入 p2.js/Box2D/Matter。参数从官方版本提取（见第 8 节），但实现自己写——新手可控、无依赖黑盒 |
 | D5 | 关卡 | **关卡即数据**：直接加载官方 Tiled JSON。服务端读碰撞层与机关实体，客户端读渲染层。加关卡 = 放一个 JSON 文件 |
 | D6 | 素材 | 官方图集（TexturePacker JSON+PNG，Phaser 3 原生支持）、官方音频 mp3。来源为本地旧仓库（第 5 节），无需联网下载 |
@@ -100,8 +102,8 @@
 
 - 服务端固定步长 `dt = 1/60`，与渲染帧率完全解耦（旧开源实现 pavel-skala 裸用 rAF 导致 144Hz 下 2.4 倍速，是必须规避的反面教材）；
 - 输入：客户端上行 `InputState { up: boolean; left: boolean; right: boolean }`，变化即发 + 至少 15Hz 重发（防丢包），带单调递增 seq；
-- 快照：Colyseus Schema，20Hz；
-- 客户端渲染：远端角色按 100ms 延迟的插值缓冲平滑绘制；自己角色在 M1 也直接绘制服务端状态（低速平台跳跃 50ms 级 RTT 下无感）。
+- 快照：Colyseus Schema，20Hz；【2026-10-20 注：历史口径。现役出站 patch=60Hz（`setPatchRate(1000/60)`，`FW_PATCH_MS=50` 可回退复现 20Hz），取证与带宽 A/B 见 research/2026-10-behavior-parity/11-network-and-alignment.md】
+- 客户端渲染：远端角色按 100ms 延迟的插值缓冲平滑绘制；自己角色在 M1 也直接绘制服务端状态（低速平台跳跃 50ms 级 RTT 下无感）。【2026-10-20 注：历史口径。现役=dead reckoning：无 100ms 插值缓冲，快照位置按速度外推（lead 本机 17ms/对方 25ms）后指数收敛（rate 本机 40/s/对方 20/s）；机关位姿平滑 lead 25ms/rate 30/s——均在 GameScene `updatePlayers`/`mechTarget`，纯表现层】
 
 ### 5.3 房间状态（Colyseus Schema 草案）
 
@@ -131,7 +133,7 @@ InputSource（接口）→ KeyboardSource（M1）→ TouchSource（M2，左/右/
 ### 5.5 鉴权与安全
 
 - 房间创建时设置 4 位以上房间密码（`config.json` 可改默认值）；加入需 `roomCode + password`；
-- 服务端限制：每房 2 人、单消息 ≤2KB、单连接 >30msg/s 丢弃、空房 5 分钟回收；
+- 服务端限制：每房 2 人、单消息 ≤2KB、单连接 >30msg/s 丢弃、空房 5 分钟回收；【2026-10-20 注：实装核对——每房 2 人（`maxClients = 2`）与房间密码 4-64 位（onCreate 校验 + onAuth 比对）已实装；**单消息 ≤2KB 与 >30msg/s 丢弃未实装**（服务端无对应代码）；空房回收=Colyseus `disposeOnDisconnect` 缺省（双方断开即回收，非 5 分钟 idle 计时）】
 - 服务器只监听 `127.0.0.1`，公网暴露完全依赖樱花隧道。
 
 ### 5.6 存档（M4）

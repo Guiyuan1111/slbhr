@@ -1731,14 +1731,17 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * 机关位姿平滑（rotcheck 10 号档，E13 二轮）：服务端 60Hz 仿真写 schema，但 Colyseus patch
-   * 按 patchRate=50ms（@colyseus/core Room.js:49 DEFAULT_PATCH_RATE=1e3/20，ForestRoom 未覆写）
-   * 出站 → 客户端所见机关位姿是 20Hz 阶梯。角色层已有"速度外推+强收敛"（updatePlayers），
+   * 机关位姿平滑（rotcheck 10 号档，E13 二轮）：服务端 60Hz 仿真写 schema，Colyseus patch 出站
+   * 现役同为 60Hz——ForestRoom onCreate 里 setPatchRate(PATCH_MS)=1000/60 已覆写
+   * @colyseus/core Room.js:49 缺省 DEFAULT_PATCH_RATE=1e3/20（FW_PATCH_MS 仅取证回退用，
+   * netopt 11 号档；10 号档写作时点 patch 确为缺省 20Hz/50ms，"20Hz 阶梯"是当期语境）。
+   * 角色层已有"速度外推+强收敛"（updatePlayers），
    * 机关（拉杆/推杆/平台/箱球/吊板/滑轮/罗马杠）此前直吃快照——快转吊板 ≈11°/步的阶梯感
    * 即用户"旋转体系没原版好"的表现层根因（原版单机每帧直读 body.angle 渲染，60fps 平滑）。
    * 处置与角色层同构：每键存最近快照，有限差分估速（角度走最短弧防 ±π 翻卷；快照量化
    * 0.1px/0.001rad → 速度噪声 ≤2px/s、0.02rad/s，对真实速度可忽略）→ 目标=最新快照+v·lead
-   * （lead 25ms≈半个快照周期）→ 渲染值向目标指数收敛（rate 30/s；lead/rate 由 final-b 风车实录 A/B 扫描选定，rms/max 双优）。纯表现层，零物理/det 影响。
+   * → 渲染值向目标指数收敛（lead 25ms/rate 30/s；final-b 风车实录 A/B 扫描选定，rms/max 双优；
+   * 60Hz patch 落地后 netopt 11 号档 §2.2 复检全面改善、参数不动）。纯表现层，零物理/det 影响。
    */
   private mechSm = new Map<string, { x: number; y: number; a: number; vx: number; vy: number; va: number; t: number; rx: number; ry: number; ra: number; init: boolean }>();
 
@@ -1765,7 +1768,7 @@ export class GameScene extends Phaser.Scene {
       m.va = da / dt;
       m.x = x; m.y = y; m.a = a; m.t = this.curNow;
     }
-    const lead = 25; // ms，≈半个快照周期
+    const lead = 25; // ms（final-b A/B 扫描选定；"≈半个快照周期"是 20Hz 期语境，60Hz 下按 netopt 11 号档 §2.2 复检保留）
     const ex = m.x + (m.vx * lead) / 1000;
     const ey = m.y + (m.vy * lead) / 1000;
     const ea = m.a + (m.va * lead) / 1000;
