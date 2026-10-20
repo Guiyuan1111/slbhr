@@ -452,6 +452,8 @@ async function start(mode: "create" | "join"): Promise<void> {
   try {
     const password = $<HTMLInputElement>("#password").value;
     if (!password) return show("请输入房间密码");
+    // issue #15 L-04 客户端半：最低 4 位与服务端建房门槛（4-64）同口径，短密码在本地即拦
+    if (password.length < 4) return show("密码至少 4 位（与对方约定一致即可）");
     const code = $<HTMLInputElement>("#roomcode").value;
     if (mode === "join" && !code.trim()) return show("请输入房间码");
 
@@ -570,6 +572,15 @@ function togglePause(): void {
 function bindUi(): void {
   $("#btn-create").addEventListener("click", () => start("create"));
   $("#btn-join").addEventListener("click", () => start("join"));
+  // 密码明文切换（issue #15 L-04）：type=password 防旁人偷窥，小钮按需回显自查
+  $("#pw-toggle").addEventListener("click", () => {
+    const pw = $<HTMLInputElement>("#password");
+    const showPw = pw.type === "password";
+    pw.type = showPw ? "text" : "password";
+    const btn = $("#pw-toggle");
+    btn.classList.toggle("shown", showPw);
+    btn.setAttribute("aria-pressed", String(showPw));
+  });
   // 邀请深链（issue #16 L-05）：房间码回填即用；旧链接带 ?pw= 时才自动加入（延迟一拍让
   // Phaser 初始化先走；失败回落面板可手改）。无深链 → 尝试刷新回座（issue #5 H-04）
   if (inviteRoom) {

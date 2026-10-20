@@ -246,6 +246,30 @@
          取同族 #948a76（仍较旧值 #9b8d70 深一档），实测 4.7+:1（精修档卷对比度表） */
       input::placeholder { color: #948a76; letter-spacing: 0.5px; }
 
+      /* 密码输入行（issue #15 L-04）：type=password + 行内明文切换小钮（石板同族：透明底、
+         暖灰字、hover 提亮；文案走 ::before 不进 textContent，ID 契约零污染） */
+      .pw-wrap { position: relative; width: 560px; max-width: 100%; margin: 0 auto; }
+      .pw-wrap input { width: 100%; padding-right: 72px; }
+      #pw-toggle {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: transparent;
+        padding: 8px 10px;
+        cursor: pointer;
+        font-size: 12px;
+        letter-spacing: 1px;
+        color: #948a76;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      #pw-toggle::before { content: "显示"; }
+      #pw-toggle.shown::before { content: "隐藏"; }
+      #pw-toggle:hover { color: var(--ink); }
+      #pw-toggle:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; border-radius: 6px; }
+
       /* 房间码仪式感：有值且未聚焦（深链回填 / 回面板带码）→ 22px 琥珀码呈示。
          纯 CSS（:not(:placeholder-shown)），零 main.ts 接线；聚焦打字时回到 17px 防跳字。 */
       #roomcode:not(:placeholder-shown):not(:focus) {
@@ -520,7 +544,10 @@
           <div class="divider" aria-hidden="true"></div>
 
           <label for="password">房间密码（创建者设定，两人一致才能进同一房）</label>
-          <input id="password" type="text" maxlength="16" placeholder="例如 4321" />
+          <div class="pw-wrap">
+            <input id="password" type="password" minlength="4" maxlength="16" placeholder="例如 4321" autocomplete="off" />
+            <button id="pw-toggle" type="button" aria-label="显示或隐藏密码" aria-pressed="false"></button>
+          </div>
 
           <label for="roomcode">房间码（加入时填写）</label>
           <input id="roomcode" type="text" maxlength="12" placeholder="创建后会显示房间码" />
