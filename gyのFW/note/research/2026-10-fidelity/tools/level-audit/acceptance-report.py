@@ -34,8 +34,9 @@ TARGET_FAMS = [
     "pulley_base", "lever_stick_light_on", "lever_stick_light_off",
     "moving_platform_light_on", "moving_platform_light_off",
 ]
-# 面板框（PauseMenu board 弹簧落位中心区；outside 判定用，非精确板缘，见 40 号档口径注）
-BOX = (280, 160, 1000, 800)
+# 面板框（PauseMenu board：PopupBackground0000 1082×642 @ board(99,159) origin(0,0) →
+# 99..1181 × 159..801；外扩 20px 余量。outside 判定=框外全画面，双侧同口径）
+BOX = (79, 139, 1201, 821)
 
 
 def famof(e):
