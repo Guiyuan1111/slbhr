@@ -145,3 +145,31 @@ python3 note/research/2026-10-fidelity/tools/level-audit/compare.py <ours_dir> <
 
 - 详细证据：`tools/level-audit/evidence/report48b.json`（48 关逐关 dl+px 全量）、`data-audit.json`（第 1 层）、`noise.json`（噪声底）、`table48.md`（§2 同源）。
 - 纪律记录：跑批期间临时截图/dump（约 110MB）已按 TEMP 纪律清理；本目录证据为小型 JSON/MD 快照。
+
+## §6 实施记录（2026-10-20，auditfix 槽）
+
+### F1 复核：前提被 oracle 字节推翻，按修正语义落地（fa27b8b）
+
+- **推翻证据**：Liquid 构造 `iceGraphics.visible = !1`（@1666560）；仅 55 型瓦片触发 `f.type=5, f.startFrozen=!0`（@1661093）；可见唯一路径=initialFreeze（@1667800，`iceGraphics.visible=!0` 且 `liquidGraphics.visible=!1`）或光束 freeze。森林 58 份地图（含 tutorials）55 型瓦片 **0 用例**（Ground.json localId 14=type55，全量 gid 扫两轮含 flip 位掩码）+ beamer 0 用例（14 号档 §1.4）⇒ **oracle 森林冰膜恒不可见**。
+- **伪差机理**：本档对拍器 DUMP_ORACLE 记 `v: o.visible !== false` 只看子精灵自身 visible、未合成祖先组可见性（Phaser 2 组隐藏不改子 flag）——IceBox 精灵自身 visible=true 但整组隐藏 → 被判 missing(v:true)。与 §3 F5 pulley_rope TileSprite 帧名丢失同族仪器伪差。旁证：forest_01 像素差分水区（row28 x848-976）无热块；IceBox 记录坐标 y=行心+4 与 iceGraphics.position.y=4 精确同源。
+- **落地**：buildLiquids 每水体格补 IceBoxLeft/IceBox/IceBoxRight 0000 静帧隐藏覆盖层（容器 +4px、水面之上、visible=false，单宽格 Left+Right 同格叠放与 createIceGraphics 无条件双建一致）——像素零影响、显示列表对齐，庙域冻结机制（55 型解析+冻结物理）未接线随开荒。委托方「落地后水体关分数上行」预期按此修正为「不变化」，实测确认。
+- 修正表：§2 旗标「IceBox水面层×N」31 关全部由「缺失」改判「仪器伪差（隐藏层）」；§3 F1 根因归因改写如上。
+
+### F3 四件落地
+
+- F3a hanging_base（8ad63f6）：@1646952 字证吊板容器=platform+base 同位双精灵（base 自然宽、后 addChild 盖 platform、随板位姿）——已补，7 关 20 精灵。
+- F3b wind 灯层（4cc9886）：Device 基类 lightFrame 机制（@1620378 子精灵、setupLight 双帧组色 tint @1620676、updateLight 先于 updateState @1622404）——已补 on/off 换帧+组色 tint，14 关 33 精灵。
+- F3c pulley_base（e6111e5）：@1699887 字证 base1/base2 为 platform1/2 动板容器首子精灵（随板动、板底衬、underGround 层序 绳→平台[base,plat]→轮）——锚点由静态轮锚改双板位。本档「错位约 20–40px」修正为「板与锚点全距」（forest_04 oracle (79.6,875.9) vs 旧我方 (80,114)）；10 关 19 精灵。轮体 ±10 镜像差维持 F5 不动。
+- F3d lever_stick_light（64b099d）：@1653884 字证 stick_light 入 lights 列表随 state 换 on/off 帧——换帧已补。**本档「不随杆旋转（a=0 覆盖层）」系对拍器只记局部角的仪器语义**：字节面 stick_light 为旋转体 m 的子精灵（@1653790 addChild），随杆旋转；我方随杆 setAngle 行为保持。
+
+### F2 落地（83a8bef）
+
+- checkBounds @1845100 字证：钳制域=关卡矩形 [0,W]×[0,H]（屏域全 realW/realH、无 PAD）；W·h<realW → root 钉 realW/2−W·h/2（关卡居中、与焦点无关——W·h<realW 时 left/right 旗恒有一真）；否则钳 F=mid·h∈[W·h−realW/2, realW/2]。我方世界域等价式已注释进 updateCamTarget。
+- 落地实测（visual-diff forest_01 idle@60，39 号档新口径）：最优平移 (5,−6)→(0,0)、零偏移项 80.7→92.0；det 48/48、census 18,446 PASS、e2e f01/f12 PASS（相机纯渲染面零物理交集实证）。§3 F2 结案。
+- 44/48 关 settled shift 直方（§2 旗标「相机shift」）随本修全部归零（标准关 settled 恒 (16,16)）。
+
+### 门禁与 commit 链
+
+- 每批 tsc 0 / det 48/48 @r0-baseline / census 18,446 PASS / vitest 95/95；行为批 e2e f01+f12 repeat1 PASS、journey pause 9/9、visual-diff 90.77→92.84→92.01→92.03（带内）。
+- commit：fa27b8b(F1)→8ad63f6(F3a)→4cc9886(F3b)→e6111e5(F3c)→64b099d(F3d)→04005a5(V13)→6884ba8(V9/V10)→3477519(V17)→83a8bef(F2)→884457a(音效)。
+- 本档 F4（地砖变体 RNG）未动，维持 §3 原判（成本 L 风险高）；F5 不动。

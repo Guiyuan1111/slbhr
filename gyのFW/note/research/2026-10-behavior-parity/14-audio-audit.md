@@ -119,3 +119,29 @@ oracle 33 键 vs 我方 19 键。我方未装载 14 键：charToggle1、charTogg
 | 6 | T17 十二键机制族+T16 单模式族 | 随机制批次 | 大庙开荒时逐键补 |
 
 ——审计完毕。证据中间件（oracle sounds.* 全量上下文转储、pristine har 计数比对）在 `TEMP/flashp-audio/`（收尾清理，结论已全部入档）。
+
+## §6 实施记录（2026-10-20，auditfix 槽；先对 0.3.37 HEAD 复核再动码）
+
+### 划销（复核发现已被覆盖）
+
+- **T1 UI 按钮点击音**：0.3.36 C 批（6e395b0）已落——MenuScene Play/?/齿轮 ×3、TempleScene ×3、overlays.stoneButton 全接 `clickSfx`（fx 门控 pusher 键）；menu 态 pusher 键由 MenuScene 驻留期暖装供给（极早点击缺键仅警告，overlays.ts clickSfx 注）。本档 §3.1 T1 结案。
+- **T9 endPass 拍数**：0.3.37 D 批（283d976）已落——隐藏行保留空拍音照发、拍链按 oracle delay 实参精确配对（general 700/1400/2100/2800、twoRows 700/1400/1400/2100，overlays.ts 现行码逐字核）。本档 §3.1 T9 结案（§0 计数「触发不一致 9」中相应减 2）。
+
+### 落地（884457a，单 commit 六件）
+
+- **T2**：`finishKey()` 仿 bgmKey 按 temple.json type 选 `bgm_finish_speed`（:1906276 选曲 :1887100 同构）——装载 0 播面补上；playStairsSequence 用之（forest_12=speed 关 e2e won 路径实测无错）。
+- **T3**：playStairsSequence 补 `stopByKey("bgm_level_speed")`（oracle :1906226 levelMusic.stop 不分变体）。
+- **T4**：GameScene create 注册 `events.once(SHUTDOWN)` 统一 stopByKey（bgm_menu/level/_speed/over/finish/finish_speed + sfx_wind/sfx_door + stopWater()）——Phaser 3 全局 sound manager 泄漏面收口；quit/换关/重开全路径覆盖，restart 的 SHUTDOWN→create 重播链保持（oracle retry 同构）。**实测注意**：0.3.37 A 批已把面板钮即时 stop 改由黑幕 ops 统一停，本钩子与其正交（黑幕 ops sm.stop("Game") 触发本钩子）。
+- **T5**：fx=全局总静音——bootPhaser `sound.mute=!fx`（Boot :2162295）+ GameScene create（Level init :1886199）+ SettingsScene fx 钮即时（信号 :2209677）三处同步。
+- **T6**：music 开关 Game 态即时——GameScene.applyMusicSetting()（off 停两支关卡 BGM；on 仅 started 进行中且无 BGM 在播时补起）。**有意偏差**：oracle 死亡/终局停曲后再开 music 会重播 levelMusic 与 Over/Finish 叠播（updateMusic 无状态守卫），该 quirk 不移植。
+- **T8**：menuMusic 退场 fadeOut(500)+完停替硬停（:1935104；Phaser 3 无 BaseSound.fadeOut，tween volume→0 500ms 等价，完停后 volume 复位 1）。
+
+### 未实施（维持原判）
+
+- **T7 one-shot 曲免门**：bgm_over/bgm_finish 仍受 music 门——忠实向改动需用户取舍（本档 §5 优先 4 注）。
+- **T10 平台音实例管理**（S-M）、T17 十二键机制族、T16 单模式族：随机制批。
+- settings.ts 头注已改写为本档口径（fx 总静音/music 只 gate BGM/T7 偏差保留声明）。
+
+### 门禁
+
+- tsc 0 / vitest 95/95 / det 48/48 @r0-baseline / build 3.9s / journey pause 9/9 / e2e f01+f12 repeat1 PASS / visual-diff 92.03（音频零画面交集，带内）。

@@ -151,3 +151,21 @@
 - MenuScene/TempleHall idle（光柱相位/y 摆/蜡烛利萨如/角色立绘 glow）修复中，本档跳过；UI 转场/面板/按钮/结算时序归 13 号档；角色与设备动画注册归 12 号档；风力学公式（1.2+0.2sin 时变推力/0.975 阻尼/15 上限）归 07/09 号档内核域——本档只收**视觉演出**面。
 - 本档零代码改动；Top 建议均为**待立项**，落地须另开生产槽并过既有门禁（tsc/vitest/build/e2e+det 位级锚）。
 - oracle 一切证据只读未动；审计过程件（模块级 dd 转储）存放于 TEMP/ 已按纪律清理，需要复验时按 §1/§2 的 bundle:偏移用 `dd if=bundle bs=1 skip=<偏移> count=<长度>` 即可一键重转储（模块边界=oracle-modules.txt 同法可得）。
+
+## §7 实施记录（2026-10-20，auditfix 槽）
+
+### Top3 全部落地
+
+- **Top1/V13 平台灯组色 tint**（04005a5）：`light.setTint(GROUP_COLORS[p.group] ?? 0xffffff)`（GROUP_COLORS 与 @1623002 groupColors 逐色一致）——森林 221 台面五色生效。
+- **Top2/V9+V10 风机关演出两件**（6884ba8）：off 分支 `time.delayedCall(400)` 后 `base.stop()+setFrame 0000`（@1737260 `_.delay(…,400)` 直译，**无取消机制、400ms 窗内再 on 被滞后回调复位**的 quirk 按字节原样保留）；effect 改建时一次性 play+随机相位（GameScene 原本已建时播+setProgress），on/off 只 `setVisible`——相位常驻不重启（@1735078）；light 即时换帧（updateLight 先于 updateState @1622404）。
+- **Top3/V17 暂停全画面静帧**（3477519）：PauseMenu create 时 `scene.pause("Game")`+SHUTDOWN 钩子 `isPaused` 守卫 resume。Phaser 3 语义核实（node_modules 源读）：PAUSED 状态仍出图（SceneManager.render `status < SLEEPING` 放行）只停 step——与 §4 存疑项「暂停时是否重绘最后帧」的答案=末帧画面保留，oracle game.paused 观感等价。resume 覆盖 requestClose/再试/返回菜单/换关全停面板路径（含先停 Game 的序列，守卫防僵尸复活）。journey pause 9/9（暂停冻结/时钟停摆/anim 静帧/恢复推进/时钟续走全过）+e2e f01/f12 不破。
+
+### 交叉与遗留
+
+- **C17/F2 已结**：38 号档 F2 同源件落地（83a8bef）——checkBounds @1845100 改关卡矩形语义，settled scroll ±16px 系统差归零；本档 §4 C17 存疑项随之关闭。39 号档 §3.3 口径桥（settled zoom 双侧=1.0）核对无误，0.9231 冻结瞬态未追。
+- Top4/C19 低帧降级、Top5/C6/C10/C11 触屏三件：未实施，维持原档建议（殿后/需触屏实测）。
+- V14-V16 休眠件、C18 debug、其余 ✅ 项零触碰。
+
+### 门禁
+
+- 每批 tsc 0 / det 48/48 @r0-baseline / census 18,446 PASS / vitest 95/95；e2e f01+f12 repeat1 PASS；visual-diff 92.84（V17 后）/92.01（F2 后，最优平移 (0,0)）。

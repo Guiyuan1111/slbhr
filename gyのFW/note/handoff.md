@@ -24,6 +24,15 @@
 
 ## 条目
 
+**更新**：2026-10-20（**🔨 审计遗留大批实施（0.3.38）——38/15/14 三档 10 commit，F1 前提复核被推翻系对拍器伪差**）。
+①F1 冰膜复核修正：oracle iceGraphics 建时 visible=false（@1666560）、仅 55 型瓦片/光束冻结可点亮，森林 58 图 0 用例 ⇒ 恒不可见；38 号档「423 精灵缺失致像素差」判为对拍器未合成祖先组可见性的仪器伪差（与 F5 同族）——按字节语义落隐藏覆盖层，像素零影响，水体关分数上行预期作废。
+②F3 四件逐 commit：hanging_base 同位第二精灵/wind_base_light 灯层(组色 tint)/pulley_base 改挂双板位(forest_04 实证 762px 错位)/lever_stick_light 换帧（「不随杆旋转」亦系对拍器局部角伪语义，旋转行为保持）。
+③F2 相机 settled scroll 改 oracle 关卡矩形语义（checkBounds @1845100）：W·h<realW 钉关卡中心——44/48 关 ±16px 系统差归零，visual-diff 最优平移 (5,−6)→(0,0)、零偏移项 80.7→92.0。
+④15 号档 Top3：平台灯组色 tint（221 台面五色）/风机关 base 400ms 延迟停帧+effect 相位常驻（oracle 400ms 窗 quirk 原样保留）/暂停全画面静帧（scene.pause("Game")+SHUTDOWN 钩子 resume，journey pause 9/9）。
+⑤14 号档：T1/T9 复核划销（0.3.36/0.3.37 已覆盖）；落地 T2+T3（finishKey 选 bgm_finish_speed+终局补停 _speed）、T4（GameScene SHUTDOWN 统一停音收泄漏）、T5（fx=总静音三处同步）、T6（music Game 态即时，oracle 叠播 quirk 不移植记偏差）、T8（menuMusic fadeOut 500）；T7 待用户、T10 随机制批。
+⑥门禁逐批全绿：tsc 0/vitest 95/95/det 48/48@r0-baseline/census 18446 PASS（F1/F3 纯精灵层物理零交集）/e2e f01+f12 PASS/journey pause 9/9/visual-diff 90.77→92.84→92.01→92.03 带内。
+⑦commit 链：fa27b8b→8ad63f6→4cc9886→e6111e5→64b099d→04005a5→6884ba8→3477519→83a8bef→884457a+文档发版；档卷 38/15/14 各 §实施记录；TEMP/auditfix 已清。
+
 **更新**：2026-10-20（**🎬 UI 转场动画保真修复落地（0.3.37）——13 号档五批 25 项，等 38 号档完工信号后实施**）。
 ①换屏黑幕 state.fade（缺失 Top1）：新增 transition.ts FadeScene 顶景（500ms Linear 入/出+Loading 字 800ms/300ms 点循环+重入丢弃门，bundle 字节复刻），接线六换屏点，面板钮去即时 stop 由黑幕统一停；EndMenu/GameOver 出现保持裸切（oracle 同构非遗漏）。
 ②面板弹簧滑入（Top2）：buildBoard 去 Back.easeOut 改逐帧弹簧（2.3/0.7/1.5H/dt 钳 0.04）+黑幕跟板动态，六面同享；关闭滑出+Complete +1000ms 收尾+暂停解除 requestClose。
