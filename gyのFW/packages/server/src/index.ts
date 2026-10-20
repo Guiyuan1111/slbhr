@@ -4,14 +4,13 @@
  * - Colyseus 同端口接管 WebSocket（upgrade）与 /matchmake 路由
  * - 只绑定 127.0.0.1，公网访问一律走樱花穿透隧道
  */
-import fs from "node:fs";
-import zlib from "node:zlib";
 import http from "node:http";
 import os from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
 import { Server, WebSocketTransport } from "./colyseus.cjs.js";
+import { staticGz } from "./staticGz.js";
 import { ForestRoom } from "./rooms/ForestRoom.js";
 import { levelExists, listLevelIds, loadLevel } from "./levels.js";
 
@@ -23,103 +22,8 @@ const HOST = process.env.FW_HOST ?? "127.0.0.1";
 const app = express();
 app.disable("x-powered-by");
 
-// 静态资源压缩 + 缓存策略（0.3.14 起 gzip；0.3.21 升级 brotli 协商 + 分级缓存）。
-// - 压缩：文本类扩展名 + ≥1KB ≤8MB；客户端支持 br 优先 brotli（比 gzip 再省 ~15%），
-//   否则 gzip；产物按 路径+mtime+编码 内存缓存；异常回退 express.static。
-// - 缓存（perf-load 基准优化项）：
-//   · Vite 内容哈希产物（*.[-8hex].js 等）→ immutable 1 年（版本升级换文件名自然失效）；
-//   · index.html → no-cache（必须回源校验，才能拿到新哈希引用）；
-//   · 其余（图集/音频/数据）→ public 1 天（内容随版本可能原地更新，不可 immutable）。
-//   · 压缩响应带 Vary: Accept-Encoding（经代理/隧道缓存时的协商正确性）。
-const GZ_EXT = /.(js|mjs|json|html|css|svg|fnt|txt|xml)$/;
-const HASHED_EXT = /-[0-9a-f]{8}.(js|mjs|css)$/;
-
-function cachePolicy(urlPath: string): string {
-  if (urlPath.endsWith(".html")) return "no-cache";
-  if (HASHED_EXT.test(urlPath)) return "public, max-age=31536000, immutable";
-  return "public, max-age=86400";
-}
-
-interface CompCacheEntry {
-  mtimeMs: number;
-  br?: Buffer;
-  gz?: Buffer;
-}
-const compCache = new Map<string, CompCacheEntry>();
-
-function staticGz(root: string) {
-  const fallback = express.static(root);
-  return (req: express.Request, res: express.Response, next: express.NextFunction): void => {
-    const enc = String(req.headers["accept-encoding"] ?? "");
-    let urlPath = "";
-    try {
-      urlPath = decodeURIComponent((req.url ?? "").split("?")[0]);
-    } catch {
-      urlPath = req.url ?? "";
-    }
-    const wantBr = enc.includes("br");
-    if ((!wantBr && !enc.includes("gzip")) || !GZ_EXT.test(urlPath)) {
-      fallback(req, res, next);
-      return;
-    }
-    const fp = join(root, urlPath);
-    let st: fs.Stats;
-    try {
-      st = fs.statSync(fp);
-      if (!st.isFile() || st.size < 1024 || st.size > 8 << 20) {
-        fallback(req, res, next);
-        return;
-      }
-    } catch {
-      fallback(req, res, next);
-      return;
-    }
-    const isHtml = urlPath.endsWith(".html");
-    // html 走 no-cache + 原样（体量小，压缩收益低于协商成本）
-    if (isHtml) {
-      res.setHeader("Cache-Control", "no-cache");
-      fallback(req, res, next);
-      return;
-    }
-    let cached = compCache.get(fp);
-    if (!cached || cached.mtimeMs !== st.mtimeMs) {
-      cached = { mtimeMs: st.mtimeMs };
-      compCache.set(fp, cached);
-    }
-    const ctype = urlPath.endsWith(".js") || urlPath.endsWith(".mjs")
-      ? "application/javascript"
-      : urlPath.endsWith(".json")
-        ? "application/json"
-        : urlPath.endsWith(".css")
-          ? "text/css"
-          : urlPath.endsWith(".svg")
-            ? "image/svg+xml"
-            : urlPath.endsWith(".fnt")
-              ? "text/plain"
-              : "application/octet-stream";
-    res.setHeader("Content-Type", ctype);
-    res.setHeader("Cache-Control", cachePolicy(urlPath));
-    res.setHeader("Vary", "Accept-Encoding");
-    try {
-      if (wantBr) {
-        if (!cached.br) cached.br = zlib.brotliCompressSync(fs.readFileSync(fp), { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 5 } });
-        res.setHeader("Content-Encoding", "br");
-        res.setHeader("Content-Length", String(cached.br.length));
-        res.status(200).end(cached.br);
-      } else {
-        if (!cached.gz) cached.gz = zlib.gzipSync(fs.readFileSync(fp), { level: 6 });
-        res.setHeader("Content-Encoding", "gzip");
-        res.setHeader("Content-Length", String(cached.gz.length));
-        res.status(200).end(cached.gz);
-      }
-    } catch {
-      fallback(req, res, next);
-      return;
-    }
-  };
-}
-
 // 静态资源：构建产物 + 官方素材/关卡数据（与开发时 Vite public 同布局）
+// 压缩协商/缓存策略/根前缀校验实现见 ./staticGz.ts
 app.use(staticGz(join(ROOT, "packages/client/dist")));
 app.use("/assets", staticGz(join(ROOT, "assets")));
 app.use("/data", staticGz(join(ROOT, "data")));

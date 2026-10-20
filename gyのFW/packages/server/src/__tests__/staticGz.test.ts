@@ -1,0 +1,112 @@
+/**
+ * staticGz 根前缀校验回归（M-02）：
+ * 修复前 `join(root, urlPath)` 不消解 `..`，`/..%2f` 可穿越到仓库其它目录读取
+ * 满足扩展名/大小条件的 JSON/HTML。修复后 resolve 归一化 + 根前缀白名单，
+ * 越界请求一律走 fallback（404）。
+ *
+ * 用原生 http.request 发原始路径（不归一化 `%2f`），等价 `curl --path-as-is`。
+ */
+import http from "node:http";
+import zlib from "node:zlib";
+import os from "node:os";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import type { AddressInfo } from "node:net";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import express from "express";
+import { staticGz } from "../staticGz.js";
+
+let server: http.Server;
+let port = 0;
+let root = "";
+let secretName = "";
+let secretPath = "";
+const DATA_JSON = JSON.stringify({ pad: "x".repeat(2048) });
+const SECRET_JSON = JSON.stringify({ secret: "top" });
+
+beforeAll(async () => {
+  root = mkdtempSync(join(tmpdir(), "fw-staticgz-root-"));
+  mkdirSync(join(root, "dist"));
+  writeFileSync(join(root, "dist", "data.json"), DATA_JSON);
+  writeFileSync(join(root, "dist", "tiny.json"), "x"); // <1KB 走 fallback
+  // 穿越目标：根目录的兄弟文件（模拟仓库内 package.json 等越界文件）
+  secretName = `fw-staticgz-secret-${Date.now()}.json`;
+  secretPath = join(root, "..", secretName);
+  writeFileSync(secretPath, SECRET_JSON);
+
+  const app = express();
+  app.use(staticGz(root)); // 根挂载（同 packages/client/dist）
+  app.use("/assets", staticGz(join(root, "dist"))); // 前缀挂载（同 /assets /data）
+  server = http.createServer(app);
+  await new Promise<void>((res) => server.listen(0, "127.0.0.1", res));
+  port = (server.address() as AddressInfo).port;
+});
+
+afterAll(() => {
+  server.close();
+  rmSync(root, { recursive: true, force: true });
+  rmSync(secretPath, { force: true });
+});
+
+function rawGet(path: string, acceptEncoding = "gzip"): Promise<{ status: number; headers: http.IncomingHttpHeaders; body: Buffer }> {
+  return new Promise((res, rej) => {
+    const req = http.request(
+      { host: "127.0.0.1", port, path, headers: { "accept-encoding": acceptEncoding } },
+      (r) => {
+        const chunks: Buffer[] = [];
+        r.on("data", (c) => chunks.push(c as Buffer));
+        r.on("end", () => res({ status: r.statusCode!, headers: r.headers, body: Buffer.concat(chunks) }));
+      },
+    );
+    req.on("error", rej);
+    req.end();
+  });
+}
+
+describe("staticGz 根前缀校验（M-02）", () => {
+  it("根内文件正常 gzip 响应（不误伤）", async () => {
+    const r = await rawGet("/dist/data.json");
+    expect(r.status).toBe(200);
+    expect(r.headers["content-encoding"]).toBe("gzip");
+    expect(zlib.gunzipSync(r.body).toString("utf8")).toBe(DATA_JSON);
+  });
+
+  it("不压缩客户端走 fallback 正常拿到原文件", async () => {
+    const r = await rawGet("/dist/data.json", "identity");
+    expect(r.status).toBe(200);
+    expect(r.headers["content-encoding"]).toBeUndefined();
+    expect(r.body.toString("utf8")).toBe(DATA_JSON);
+  });
+
+  it("<1KB 文件走 fallback 原样响应", async () => {
+    const r = await rawGet("/dist/tiny.json");
+    expect(r.status).toBe(200);
+    expect(r.body.toString("utf8")).toBe("x");
+  });
+
+  it("前缀挂载下根内文件正常（不误伤）", async () => {
+    const r = await rawGet("/assets/data.json");
+    expect(r.status).toBe(200);
+    expect(r.headers["content-encoding"]).toBe("gzip");
+  });
+
+  it.each([
+    ["/..%2f" + secretName, "单层 .. 穿越到根外"],
+    ["/..%2f..%2f" + secretName, "双层 .. 穿越到根外"],
+    ["/dist%2f..%2f..%2f" + secretName, "先入子目录再 .. 回穿"],
+    ["/dist/%2e%2e/%2e%2e/" + secretName, "点号编码 .. 回穿"],
+    ["/assets/..%2f..%2f" + secretName, "前缀挂载下穿越"],
+    ["/..%5c..%5c" + secretName, "反斜杠编码变体"],
+  ])("越界请求被拒（%s，%s）", async (path) => {
+    const r = await rawGet(path);
+    expect(r.status).toBe(404);
+    expect(r.body.toString("utf8")).not.toContain("top");
+  });
+
+  it("根内点段路径（/../ 不出根）不受影响", async () => {
+    const r = await rawGet("/dist/../dist/data.json");
+    expect(r.status).toBe(200);
+    expect(r.headers["content-encoding"]).toBe("gzip");
+  });
+});
