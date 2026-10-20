@@ -22,6 +22,12 @@ const HOST = process.env.FW_HOST ?? "127.0.0.1";
 const app = express();
 app.disable("x-powered-by");
 
+// 健康探针（I-01）：systemd/反代/隧道探活用——进程活着且事件循环在跑即 200。
+// 挂在静态与 WS 之前，零依赖零鉴权；不反映房间数（私用场景无此需求）。
+app.get("/healthz", (_req, res) => {
+  res.json({ ok: true, uptime: Math.round(process.uptime()) });
+});
+
 // 静态资源：构建产物 + 官方素材/关卡数据（与开发时 Vite public 同布局）
 // 压缩协商/缓存策略/根前缀校验实现见 ./staticGz.ts
 app.use(staticGz(join(ROOT, "packages/client/dist")));
@@ -71,6 +77,14 @@ const gameServer = new Server({
   transport: new WebSocketTransport({ server: httpServer }),
 });
 gameServer.define("forest", ForestRoom);
+
+// SIGTERM/SIGINT 优雅停机（M-05 复核：colyseus 0.16 Server 默认 gracefullyShutdown=true
+// 已注册 SIGINT/SIGTERM/SIGUSR2 → matchMaker 回收房间（触发各房 onDispose）→ transport
+// shutdown 关 httpServer → process.exit，实测端口随退随释放。这里只挂 onShutdown 钩子
+// 留停机完成日志供 journald/运维观测，不重复注册信号处理器。
+gameServer.onShutdown(() => {
+  console.log("[fw] 优雅停机完成（房间已回收，端口即将释放）");
+});
 
 // gameServer.listen 会驱动内部 httpServer 监听（matchmake 路由 + express + ws 同端口）
 gameServer

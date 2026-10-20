@@ -1,0 +1,37 @@
+# systemd 单元样例（I-01）。**可选，按需部署**——本项目定位两人私下游玩，
+# 默认 start.bat/start.sh 直跑即可；只有需要开机自启/崩溃自动拉起/标准停机语义时才用。
+#
+# 安装（按实际用户/路径/Node 位置修改后）：
+#   sudo cp deploy/fw.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now fw
+# 查看日志：journalctl -u fw -f     停止：sudo systemctl stop fw
+#
+# 前置一次性：npm ci && npm run build（静态产物）；npm ci --omit=dev 亦可
+# （tsx 已在 dependencies，M-05）。路径含中文时 WorkingDirectory 原样写即可（UTF-8）。
+
+[Unit]
+Description=gy-fw multiplayer server (Fireboy & Watergirl fan remake)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=gy
+WorkingDirectory=/home/gy/桌面/dev/slbhr/gyのFW
+# npm start = tsx packages/server/src/index.ts（tsx 为运行时依赖，omit=dev 可用）
+ExecStart=/usr/bin/npm start
+Environment=PORT=2567
+# 私用默认只绑本机；局域网真机改 0.0.0.0（手机可连，勿暴露公网）
+Environment=FW_HOST=127.0.0.1
+Restart=always
+RestartSec=3
+# SIGTERM → colyseus 优雅停机（房间 onDispose 回收 + 端口释放，实测秒级完成）
+KillSignal=SIGTERM
+TimeoutStopSec=15
+# 日志走 journald，轮转由 journald 系统配置自动处理（无需 logrotate）
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
