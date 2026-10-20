@@ -66,62 +66,57 @@ const shotEl = async (page, path) => {
   return { el: true };
 };
 
-// ================= 我方侧 dump（38 号档 DUMP_OURS 扩展 ev/tint） =================
-const DUMP_OURS_SCENE = (sceneKey) => {
+// ================= 我方侧 dump（38 号档 DUMP_OURS 扩展 ev/tint；自包含——evaluate 序列化后
+// 浏览器内只能引用 window 与本函数体内标识符，不得引用 Node 侧函数） =================
+const DUMP_OURS_BODY = () => {
   const r2 = (v) => Math.round(v * 100) / 100;
   const game = window.__fw;
-  const scene = game.scene.getScene(sceneKey);
-  if (!scene) return null;
-  const out = [];
-  const walk = (list, depthPath, parentEv) => {
-    for (const go of list) {
-      if (!go || go.type === "Graphics") continue;
-      let wx = go.x, wy = go.y, sx = go.scaleX, sy = go.scaleY;
-      try {
-        const m = go.getWorldTransformMatrix();
-        wx = m.tx; wy = m.ty;
-        sx = Math.sqrt(m.a * m.a + m.b * m.b) || 1;
-        sy = Math.sqrt(m.c * m.c + m.d * m.d) || 1;
-      } catch {}
-      const ev = parentEv && go.visible !== false;
-      const e = {
-        t: go.type,
-        tex: go.texture && go.texture.key !== "__MISSING" ? String(go.texture.key) : undefined,
-        f: typeof go.frame?.name === "string" ? go.frame.name : undefined,
-        x: r2(wx), y: r2(wy),
-        z: go.depth, ox: go.originX, oy: go.originY,
-        sx: r2(sx), sy: r2(sy),
-        a: r2(go.angle), fx: !!go.flipX, fy: !!go.flipY,
-        al: r2(go.alpha), v: go.visible, ev,
-        tint: typeof go.tintTopLeft === "number" ? go.tintTopLeft : undefined,
-        w: go.width, h: go.height,
-        path: depthPath,
-      };
-      out.push(e);
-      if (go.type === "Container" && go.list?.length) walk(go.list, depthPath + ">" + (go.name || go.type), ev);
-    }
+  const walkScene = (sceneKey) => {
+    const scene = game.scene.getScene(sceneKey);
+    if (!scene) return null;
+    const out = [];
+    const walk = (list, depthPath, parentEv) => {
+      for (const go of list) {
+        if (!go || go.type === "Graphics") continue;
+        let wx = go.x, wy = go.y, sx = go.scaleX, sy = go.scaleY;
+        try {
+          const m = go.getWorldTransformMatrix();
+          wx = m.tx; wy = m.ty;
+          sx = Math.sqrt(m.a * m.a + m.b * m.b) || 1;
+          sy = Math.sqrt(m.c * m.c + m.d * m.d) || 1;
+        } catch {}
+        const ev = parentEv && go.visible !== false;
+        out.push({
+          t: go.type,
+          tex: go.texture && go.texture.key !== "__MISSING" ? String(go.texture.key) : undefined,
+          f: typeof go.frame?.name === "string" ? go.frame.name : undefined,
+          x: r2(wx), y: r2(wy),
+          z: go.depth, ox: go.originX, oy: go.originY,
+          sx: r2(sx), sy: r2(sy),
+          a: r2(go.angle), fx: !!go.flipX, fy: !!go.flipY,
+          al: r2(go.alpha), v: go.visible, ev,
+          tint: typeof go.tintTopLeft === "number" ? go.tintTopLeft : undefined,
+          w: go.width, h: go.height,
+          path: depthPath,
+        });
+        if (go.type === "Container" && go.list?.length) walk(go.list, depthPath + ">" + (go.name || go.type), ev);
+      }
+    };
+    walk(scene.children.list, "", true);
+    return { dl: out };
   };
-  walk(scene.children.list, "", true);
-  return { dl: out };
-};
-
-const DUMP_OURS = () => {
-  const scene = window.__fw.scene.getScene("Game");
-  const cam = scene.cameras.main;
-  const base = DUMP_OURS_SCENE("Game");
+  const camScene = game.scene.getScene("Game");
+  const cam = camScene.cameras.main;
   return {
-    ...base,
-    cam: { x: Math.round(cam.scrollX * 100) / 100, y: Math.round(cam.scrollY * 100) / 100, zoom: Math.round(cam.zoom * 10000) / 10000 },
-    frozen: scene.camFrozen,
-    levelId: scene.d?.level?.id,
-    scenes: window.__fw.scene.scenes.map((s) => ({ key: s.scene.key, status: s.scene.status, paused: s.scene.isPaused?.() ?? null })),
+    game: walkScene("Game"),
+    pauseMenu: walkScene("PauseMenu"),
+    cam: { x: r2(cam.scrollX), y: r2(cam.scrollY), zoom: r2(cam.zoom) },
+    frozen: camScene.camFrozen,
+    levelId: camScene.d?.level?.id,
+    scenes: game.scene.scenes.map((s) => ({ key: s.scene.key, status: s.scene.status, paused: s.scene.isPaused?.() ?? null })),
   };
 };
-
-const DUMP_OURS_PAUSE = () => {
-  const pm = DUMP_OURS_SCENE("PauseMenu");
-  return { pauseMenu: pm, flags: DUMP_OURS().scenes };
-};
+// （Node 侧整形：static 用 {dl: raw.game.dl, cam, frozen, levelId, scenes}；pause 用 {pauseMenu, flags: scenes}）
 
 // ================= oracle 侧 dump（38 号档 DUMP_ORACLE 扩展 ev/tint） =================
 const DUMP_ORACLE = () => {
@@ -401,8 +396,8 @@ async function runOurs() {
           await a.waitForTimeout(700);
           const cvB = await shot(a, join(OUT, `${lv.id}-b.png`));
           await a.evaluate(() => window.__fw.loop.sleep());
-          const dump = await a.evaluate(DUMP_OURS);
-          dump.camStable = stable;
+          const raw = await a.evaluate(DUMP_OURS_BODY);
+          const dump = { dl: raw.game.dl, cam: raw.cam, frozen: raw.frozen, levelId: raw.levelId, scenes: raw.scenes, camStable: stable };
           writeFileSync(join(OUT, `${lv.id}.dl.json`), JSON.stringify(dump));
           writeFileSync(join(OUT, `${lv.id}.meta.json`), JSON.stringify({ side: "ours", level: lv, canvas: [cvA, cvB], camPre, pageErrors: errs.slice(0, 3) }));
           log(lv.id, "static ok dl=" + dump.dl.length, "stable=" + stable, `cam=(${camPre.x.toFixed(1)},${camPre.y.toFixed(1)},${camPre.z.toFixed(4)})`);
@@ -416,7 +411,8 @@ async function runOurs() {
           await a.waitForTimeout(700);
           const cvPb = await shot(a, join(OUT, `${lv.id}-pb.png`));
           await a.evaluate(() => window.__fw.loop.sleep());
-          const dump = await a.evaluate(DUMP_OURS_PAUSE);
+          const raw = await a.evaluate(DUMP_OURS_BODY);
+          const dump = { pauseMenu: raw.pauseMenu, flags: raw.scenes };
           writeFileSync(join(OUT, `${lv.id}.dl.pause.json`), JSON.stringify(dump));
           writeFileSync(join(OUT, `${lv.id}.meta.pause.json`), JSON.stringify({ side: "ours", level: lv, mode: "pause", flags: dump.flags, pageErrors: errs.slice(0, 3) }));
           log(lv.id, "pause ok flags=" + JSON.stringify(dump.flags));
