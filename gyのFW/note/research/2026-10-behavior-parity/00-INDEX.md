@@ -3,7 +3,7 @@
 > 维护：docsync 槽 2026-10-18 首建。口径：每号档一行（档名+一句话结论+状态），底部工具链速查与挂账清单；一切结论以各档原文与 git log 为准，本索引只做导航与现状摘要。
 > 状态图例：✅ 收官（档卷+对应代码提交已入库）｜🔄 进行中（槽位在写）｜⏸ 挂账（有明确遗留动作）。
 
-## §1 档卷一览（01–15）
+## §1 档卷一览（01–16）
 
 | # | 档卷 | 一句话结论 | 状态 |
 |---|---|---|---|
@@ -19,9 +19,10 @@
 | 10 | [10-rotation-system.md](10-rotation-system.md) 旋转体系全链路仲裁 | 用户「旋转没原版好」终审=物理面位级同源（对拍 max\|Δθ\|≤1.9e-4°，采样器单 tick 约定修正后），根因在表现层：Colyseus 默认 20Hz patch×客户端直贴=阶梯渲染 → 客户端 mechTarget 平滑已修（7903c57，rms 0.308°→0.232°、冻结 9→0 帧）；后续 1/2 转交 netopt（已落地，见 §3 挂账 5） | ✅ f660a41 |
 | 11 | [11-network-and-alignment.md](11-network-and-alignment.md) 网络同步与量具收紧 | netopt 槽：patch 20→60Hz（4ba8478，带宽 ×2.8-3.0≈+1.3-1.9KB/s 可忽略）、self 角色 dead-reckoning lead 50→17ms（3e72433，rms 5.85→0.16px）、oracle-gold 采样对齐 alignShift=1（9ff9c1d，中位归零；win 帧 +96f 归因修正=oracle 终幕 tuck 动画）、tolerance 无偏重定 25→30/173→177；e2e 三门禁全绿 | ✅ 269d83d |
 | 12 | [12-animation-audit.md](12-animation-audit.md) 动画保真度排查 | 状态级对拍（文字模型禁像素判读）：注册面 0 实义差异（getFrameIndexes 过滤字证）、切换序列逐事件同构、主家族双侧 30fps、循环长度 11/19/30/8/5 双侧一致、烟雾 ±2f；唯一实质差异=dying 即藏身已修（5b783e7，hidden 104/195→195/195 vs oracle 187/188）；大件挂账见 §3 挂账 3 | ✅ 623b372+5b783e7+e477f9c |
-| 13 | [13-ui-transition-audit.md](13-ui-transition-audit.md) UI 转场动画保真审计（只读考古） | oracle 换屏全走自建 state.fade 黑幕（500+500ms+Loading 点循环 800/300ms，bundle:2213815；camera.fade/flash 0 命中），我方全裸切；面板滑入=弹簧（force 2.3/friction 0.7/起点 1.5H）非 Back.easeOut 420ms、黑幕跟板动态；popupArrow 系末拍单帧恒亮非 2fps 闪烁、星碑分段 to_N 非累计播放、按钮换帧=按压语义非 hover——41 项盘点（LevelMenu 无 stagger、NewSign 无弹跳两假设证伪）：已复刻 10/偏差 18/缺失 10/不适用 3，Top6 建议在档 | ⏸ 挂账（Top 建议待立项） |
-| 14 | [14-audio-audit.md](14-audio-audit.md) 音效保真度审计（只读考古） | oracle 33 键全景（Boot 全载+menu 态 2 键+level 态 18+按图追加；主音量 0.1、**fx=总静音含 BGM**、music 只 gate BGM 起停而 one-shot 曲目无门、endFail 双方同死资产）；我方 19 键：适用面参数全一致（0.1/0.5/0.2/loop），缺失触发 1 类=**UI 按钮点击音全缺**（oracle 每钮播 pusher）、触发不一致 9（速度关终局曲错装+底噪叠播、**退场 scene.stop 不停音泄漏进菜单**、门控语义、fadeOut、puzzle 空拍、平台音粒度）、资产缺 14 键经 58 份森林地图字证除 charToggle（单模式）外全 0 用例；Top3 建议在档 | ⏸ 挂账（Top 建议待立项） |
-| 15 | [15-camera-vfx-audit.md](15-camera-vfx-audit.md) 镜头行为与场景环境 VFX 审计（只读考古） | oracle 真相机=自建 CameraManager（root 容器双角色适配+弹簧 1/15·阻尼 0.5+滚轮 0.8/1.2+捏合+关卡矩形钳边；Phaser camera 游戏侧 0 操作、GameConfig.zooming 0.9/0.97/1.5、40×30 格钳 id=forest 恒桌面），我方 0.3.29-F4 参数面 14 项全对齐、行为面 7 偏差（focusOn 取整/pan 除数/捏合平移补偿/wheel 监听面/移动判定/cursors 闸/16px 钳边域差=38 号档 settled scroll 同源）；ambient VFX 侧 Navies/液体/钻石/decor/层序全一致，实质缺口 4=风 off 400ms 延迟停帧+effect 相位常驻缺、平台灯组色 tint 缺、暂停非全画面静帧（game.paused 语义），休眠件 3 族（尘埃/dark/雪面森林 0 用例双侧等价）——缺失 8（可见 5+休眠 3）/偏差 7/一致 16，Top3（均 S）在档 | ⏸ 挂账（Top 建议待立项） |
+| 13 | [13-ui-transition-audit.md](13-ui-transition-audit.md) UI 转场动画保真审计（只读考古） | oracle 换屏全走自建 state.fade 黑幕（500+500ms+Loading 点循环 800/300ms，bundle:2213815；camera.fade/flash 0 命中），我方全裸切；面板滑入=弹簧（force 2.3/friction 0.7/起点 1.5H）非 Back.easeOut 420ms、黑幕跟板动态；popupArrow 系末拍单帧恒亮非 2fps 闪烁、星碑分段 to_N 非累计播放、按钮换帧=按压语义非 hover——41 项盘点（LevelMenu 无 stagger、NewSign 无弹跳两假设证伪）：已复刻 10/偏差 18/缺失 10/不适用 3，Top6 建议在档 | ✅ 大批已实施（0.3.37 二十五项 B–E 批+0.3.39 遗留四件/两划销，逐项见档卷 §实施记录；#34→16 号档 P-02 已裁按原版） |
+| 14 | [14-audio-audit.md](14-audio-audit.md) 音效保真度审计（只读考古） | oracle 33 键全景（Boot 全载+menu 态 2 键+level 态 18+按图追加；主音量 0.1、**fx=总静音含 BGM**、music 只 gate BGM 起停而 one-shot 曲目无门、endFail 双方同死资产）；我方 19 键：适用面参数全一致（0.1/0.5/0.2/loop），缺失触发 1 类=**UI 按钮点击音全缺**（oracle 每钮播 pusher）、触发不一致 9（速度关终局曲错装+底噪叠播、**退场 scene.stop 不停音泄漏进菜单**、门控语义、fadeOut、puzzle 空拍、平台音粒度）、资产缺 14 键经 58 份森林地图字证除 charToggle（单模式）外全 0 用例；Top3 建议在档 | ✅ 大批已实施（0.3.38 音效六件 T2-T6/T8；T1/T9 被 0.3.36/37 覆盖划销；T7 用户裁保留全静；T10 随机制批） |
+| 15 | [15-camera-vfx-audit.md](15-camera-vfx-audit.md) 镜头行为与场景环境 VFX 审计（只读考古） | oracle 真相机=自建 CameraManager（root 容器双角色适配+弹簧 1/15·阻尼 0.5+滚轮 0.8/1.2+捏合+关卡矩形钳边；Phaser camera 游戏侧 0 操作、GameConfig.zooming 0.9/0.97/1.5、40×30 格钳 id=forest 恒桌面），我方 0.3.29-F4 参数面 14 项全对齐、行为面 7 偏差（focusOn 取整/pan 除数/捏合平移补偿/wheel 监听面/移动判定/cursors 闸/16px 钳边域差=38 号档 settled scroll 同源）；ambient VFX 侧 Navies/液体/钻石/decor/层序全一致，实质缺口 4=风 off 400ms 延迟停帧+effect 相位常驻缺、平台灯组色 tint 缺、暂停非全画面静帧（game.paused 语义），休眠件 3 族（尘埃/dark/雪面森林 0 用例双侧等价）——缺失 8（可见 5+休眠 3）/偏差 7/一致 16，Top3（均 S）在档 | ✅ Top3 已实施（0.3.38 V13 灯 tint/V9-V10 风停帧/V17 暂停静帧）；行为面 7 偏差中 16px 钳边随 F2 相机修复归零（0.3.38） |
+| 16 | [16-original-improve-proposals.md](16-original-improve-proposals.md) 原版不合理优化提案池（方针档） | 2026-10-20 用户立线：此类优化须先审后行；流程=提案卡→用户审→批准派槽→回验收。已裁 #0 T7 关音乐全静（保留我方）、P-02 CompleteScene 已实施并终裁按原版（字节真相=firstComplete 系全 48 关 3 星 100% 一次性庆典，非单关首通）；待审 P-01 隐藏行静音/P-03 缺陷关重设计；P-04 征集机制常开（issue 带 original-optimize 入池） | 🔄 常开 |
 
 ## §2 工具链速查
 
@@ -65,15 +66,17 @@
 | 4 | **风相位内核锚定未采纳**：WorldOptions.windClockS+16.333ms 修正入口已内建，未采纳——动风钟漂 det 基线、生产固定 dt 下玩家不可见，留作可逆后续；存疑待核：收益数字 173→~120px 系 alignShift 重定前口径，11 号档 tolerance 已改 177，若启动须按新口径重估 | 09 号档（2026-10-18）+11 号档 177 重定（档卷 269d83d）；最近验证=10-19/10-20 无新提及（2026-10-20 复查） | 待用户裁决（默认不做） |
 | 5 | **r8–r11 战役剩余挂账**：①幕布驻留税——石板大厅 backdrop-filter 驻留期成本待真 GPU 口径复测（前置：本机 sudo/su 均被禁、xorg9 不可复现）②matchmake 点击派发管线成本（两态共有，低优先）③temple 态 heap 58MB（非每帧成本，披露性记账） | 总账 §八「剩余挂账」（[2026-10-18-campaign-summary.md](../../report/perf/2026-10-18-campaign-summary.md)）+handoff 2026-10-20 r8–r11 条目；挂账落点 r9 `78c2d30` | ①待核 ②待实施（低优先） |
 | 6 | ~~e2e 场景脚本未跟版本（基线同败 3 项）~~ **已收口（2026-10-20，销账迁移 §3.2；编号保留防引用断裂）** | §3.2 销账区对应行 | 已销账（`3caa1cf`+`ac1ee09`） |
-| 7 | **visual-diff 分数带漂移待核**：10-19 双跑 91.97/92.8、r8–r11 门禁带 88.66-90.17，对 10-13 的 95.2-95.8 差值未归因——量具只截 canvas、DOM 换皮不入镜，先后两槽均未触 canvas 渲染路径，判环境/漂移面；核销前该量具只宜作同带比较 | connect-ui README 门禁表（`31a277d`）+handoff 2026-10-19 ④+r8 门禁（`9570d49` 归档 88.66/90.08，2026-10-20） | 待核 |
+| 7 | ~~visual-diff 分数带漂移待核~~ **已收口（2026-10-20，迁移 §3.2；编号保留）**：39 号档定谳=量具 bug（#hud 子树入镜净扣 3.35-4.1），截帧口径已修+新带 90.55-92.86 入配置（`d98f19b`+`37fbd2b`） | fidelity/00-INDEX §2 行 39+39 号档 §7 | 已销账 |
 | 8 | **选关树滤镜残余四处**（0.3.35 落地余项）：①水平仿射 ~1.5e-3+0.25px＝FilterTexture texel 1037 vs 逻辑 1036.8 回贴映射假说，未做机理级证明（不影响门禁，门禁按经验仿射对齐）②边缘带 ~2.4% 像素 >10 亚像素相位（双方同族色）③中线 ±2 窗 18 点未中（±10 门禁全过，信息性）④金层近边采样认知已修正（记录性） | 37 号档 §7.3-7.4（`fa17e12`）+handoff 2026-10-20 滤镜条目 ③ | 待核（低优先，门禁已过） |
-| 9 | **选关树按钮层三小件**：锁图标视觉与 oracle 石钻观感差异、NewSign 未实现（需 progress.played 字段）、BackButton 微位——37 号档记录「维持不动」，是否立项 UI 校准轮待裁 | 37 号档 §3.1/§7.4-4（`fa17e12`）+handoff 2026-10-19 ② | 待用户裁决 |
+| 9 | **选关树按钮层三小件**：锁图标视觉与 oracle 石钻观感差异、NewSign **已实现（0.3.39 `985914a`，fw-played-v1+markPlayed，oracle setPlayed :1935016 同语义）**、BackButton 微位——37 号档记录「维持不动」，是否立项 UI 校准轮待裁 | 37 号档 §3.1/§7.4-4（`fa17e12`）+handoff 2026-10-19 ② | 待用户裁决 |
 | 10 | **连接面板方向 A 遗留小件**：①连接失败横幅 raw 错误串直通（如 "[object ProgressEvent]"，0.3.32 同款 catch 行为，非回归）②<560px 回流皮石纹边中段拉伸与 74px 角片比例失配（小屏不显眼；若立项可换方向 C 双门布局，同套帧坐标资产直接复用） | connect-ui README §既有问题/§遗留（`31a277d`）+handoff 2026-10-19 ⑤；最近验证=10-20 无后续收口（2026-10-20 复查） | ①待实施（低优先）②待用户裁决 |
 
 ### 3.2 销账区（旧条目/查核项已收口，保可追溯）
 
 | 原条目/查核项 | 销账事实 | 销账 commit |
 |---|---|---|
+| §3-7 visual-diff 分数带漂移待核 | 39 号档定谳=量具 bug（"DOM 不入镜"被证伪：#hud 木牌化后入镜净扣 3.35-4.1 分），截帧口径修复+repeat5 重定带 90.55-92.86 中位 91.44 入量具配置；水体关同带佐证 F1 冰膜伪差定谳 | `d98f19b`+`37fbd2b` |
+| §3-9 选关树按钮层三小件之 NewSign | 0.3.39 收尾批实现：TempleScene 静态贴片+fw-played-v1 played 集+进关 markPlayed（oracle setPlayed :1935016 同语义）；余锁图标观感/BackButton 微位仍挂 | `985914a` |
 | 原 §3-6 e2e 场景脚本未跟版本（journey 回面板预选 ×2+touch tap Δy=0 ×1，基线同败 3 项） | 两件三查全收口（2026-10-20 journey/touch 修复槽）：①journey 场景 1 按 0.3.12 活房间 advance 语义改写——旧「联机面板弹出并预选下一关」×2 随语义退役，新 7 项断言（phase=won 权威闸/双端 levelId 回声同房留场/面板不弹出+EndMenu 关+Game 重建（0.3.37 黑幕包络状态轮询零 sleep）/ready→started/席位保留×2/权威时钟续走）双跑 7/7 ALL PASS（self-acceptance §三 L3 行同步改写）；②touch tap 定谳=Playwright 1.63 touchscreen.tap 并发齐发 touchStart/End（coreBundle.js Promise.all），按钮同帧 down/up→两条 input WS 1ms 内到达→服务端 tick 意图跨度排水同一步消费对消（ForestRoom.ts:348-353；FW_DUMP 字证 step=50 at=821ms up=true/at=822ms up=false 同步对消，物理步采样 up=false）——非内核开关/坐标换算问题（纯页 tap 三路径取证+真实应用三层隔离+CDP hold 扫描 0-150ms 全过）；探针改 CDP Input.dispatchTouchEvent 顺序注入+人手量级 90ms 按压，Δy 0.0→30.7/32.5px，双跑 6/6 PASS | journey `3caa1cf`+touch `ac1ee09`（connect-ui README §既有问题两行已注收口） |
 | 旧 §3-5（原 10 号档 §5 后续 1/2：+1 采样对齐收紧、服务器 setPatchRate(1000/60)） | netopt 槽 2026-10-18 落地：alignShift=1+两 oracle-gold tolerance 无偏重定 25→30/173→177；setPatchRate(1000/60)+FW_PATCH_MS 回退钩子，带宽实测 ×2.8-3.0 可忽略；档卷 11 号档 | 代码 `9ff9c1d`+`4ba8478`（档卷 `269d83d`） |
 | census 防护网首跑 88/89（2026-10-20 重提取查核项，原疑挂账） | 非挂账：换肤新文案按设计触发 font census 防护网，按 census.ts 自述刷新 used-chars 247→248 即绿（client 源字符 395→527、fnt 交集 247→248） | `3808338` |

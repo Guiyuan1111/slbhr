@@ -10,14 +10,16 @@
 | 项目现状/当前版本 | [../README.md](../README.md) 版本段 |
 | 最新开发动态（开工现状源） | [handoff.md](handoff.md) |
 | 当前挂账（待办/待核/待裁决） | [research/2026-10-behavior-parity/00-INDEX.md §3](research/2026-10-behavior-parity/00-INDEX.md) |
+| 原版不合理优化提案池（须先审后行） | [research/2026-10-behavior-parity/16-original-improve-proposals.md](research/2026-10-behavior-parity/16-original-improve-proposals.md) |
 | 逐版改动 | [release/](release/)（`0.3.X.md`） |
 
 ## 研究域（详情进各域 00-INDEX）
 
 | 域 | 索引 | 一句话 |
 |---|---|---|
-| 行为复刻战役（主） | [research/2026-10-behavior-parity/00-INDEX.md](research/2026-10-behavior-parity/00-INDEX.md) | 01–12 号档+工具链速查+挂账 §3+性能战役速查 §4 |
-| 保真修复档卷 | [research/2026-10-fidelity/00-INDEX.md](research/2026-10-fidelity/00-INDEX.md) | 01–37 号档：关卡/表现/物理保真修复与 oracle 考古全记录 |
+| 行为复刻战役（主） | [research/2026-10-behavior-parity/00-INDEX.md](research/2026-10-behavior-parity/00-INDEX.md) | 01–16 号档（含原版优化提案池）+工具链速查+挂账 §3+性能战役速查 §4 |
+| 保真修复档卷 | [research/2026-10-fidelity/00-INDEX.md](research/2026-10-fidelity/00-INDEX.md) | 01–40 号档：关卡/表现/物理保真修复、全 48 关视觉审计、量具核查与验收取证 |
+| Issue 处置档案（2026-10-20 批次） | [issues-2026-10-20/00-INDEX.md](issues-2026-10-20/00-INDEX.md) | 20 条 GitHub issue 处置收官（17 修+3 证伪），0.3.40 发版 |
 | 机器探索线 | [research/2026-10-autoplay/00-INDEX.md](research/2026-10-autoplay/00-INDEX.md) | 自动通关路线搜索（S1–S5，断点 tools/ 收容） |
 | 早期性能剖析 | [research/2026-10-18-perf-hotspot/00-INDEX.md](research/2026-10-18-perf-hotspot/00-INDEX.md) | 性能战役前身的热点剖析 |
 | 连接界面调研 | [research/2026-10-19-connect-ui/00-INDEX.md](research/2026-10-19-connect-ui/00-INDEX.md) | 石板大厅方向调研+三份可开 mockup |
