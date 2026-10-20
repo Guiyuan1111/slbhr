@@ -49,6 +49,7 @@
 | 35 | [35-simplification-root-cause.md](35-simplification-root-cause.md) "简化掉原版自由度"根因分析 | 四个已实证结构性简化样本解剖（hanging 锚点零惯量丢绳摆自由度/转臂无限位/风柱宽度缺省覆盖/旋转箱中心偏 32px，全部已修）+同构风险面排查状态与防线盘点 | ✅ |
 | 36 | [36-parity-collision-matrix.md](36-parity-collision-matrix.md) 碰撞矩阵全谱对齐（rcm） | oracle 侧 47 个 b2FixtureDef 定义点逐位提取完毕；我方活跃设备 18,446 条逐 fixture 断言全部 PASS（0 FAIL），P0=P1=0——"碰撞与原版不一样"不来自定义层，差异只能在行为面残差；未改内核 | ✅ 8606444 |
 | 37 | [37-temple-tree-branches.md](37-temple-tree-branches.md) 选关树"枝"不可见修复+滤镜还原 | 考古证原版=全树恒绘打底+已通关金色叠绘两层，我方只画 done 侧且暗橄榄平色双偏差，已修（f366e02：TempleScene 双层平色近似+星帧映射兼修）；§7（2026-10-20 filterport）CPU 精确烘焙 Bevel/Outline/CM 三层管线还原浮雕质感，对拍结构化 49/49、方向 50/50、密集 97.56%（fa17e12） | ✅ f366e02+fa17e12 |
+| 38 | [38-level-visual-audit.md](38-level-visual-audit.md) 全 48 关视觉元素三层审计 | 数据层 canonical 全同（掉层疑虑排除）；运行时显示列表 6 组缺失 family 共 524 精灵（F1 水体冰膜 423/31 关、F3 机构子精灵 82/24 关：hanging_base 20·wind 灯层 33·pulley_base 错锚 19·lever 杆灯永不换帧 10）+ 相机 settled scroll 系统差 44/48（F2，冻结 zoom 0.9231 vs 1.0，疑 0.3.29-F4 引入待核）；像素结构差 inner 均值 6.89% vs oracle 自噪声底 1.35-2.06%；分布：缺元素 42/错位 4（07/13/13_1/15）/轻微 2/干净 0；只审计未改码，F1-F3 修复待立项 | 🔍 5de0524 |
 
 ## §3 tools/ 目录速查
 
