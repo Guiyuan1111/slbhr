@@ -225,8 +225,6 @@ def main():
                                             "struct_gt8_pct": diff_stats(A, B)}
         # --- 拼图 ---
         try:
-            if os.path.exists(o_path) or os.path.exists(os.path.join(a.oracle, f"{lid}-a.png")):
-                pass
             oa, ua = os.path.join(a.oracle, f"{lid}-a.png"), os.path.join(a.ours, f"{lid}-a.png")
             if os.path.exists(oa) and os.path.exists(ua):
                 stitch([(oa, f"oracle {lid} static-a"), (ua, f"ours {lid} static-a")],
