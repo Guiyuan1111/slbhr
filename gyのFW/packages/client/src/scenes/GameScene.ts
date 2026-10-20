@@ -91,10 +91,13 @@ interface PusherView {
   state: number;
 }
 
-/** 吊挂（原版 §8）：绳 tileSprite 从锚点指向板，板随快照位姿 */
+/** 吊挂（原版 §8）：绳 tileSprite 从锚点指向板，板随快照位姿。
+ *  base=hanging_base0000（F3a：oracle 吊板容器=platform+base 同位双精灵 @1646952，
+ *  base 后 addChild → 盖在 platform 上、自然宽不缩放、随板同位姿）。 */
 interface HangingView {
   rope: Phaser.GameObjects.TileSprite;
   plank: Phaser.GameObjects.Image;
+  base: Phaser.GameObjects.Image;
   anchorX: number;
   anchorY: number;
 }
@@ -679,7 +682,9 @@ export class GameScene extends Phaser.Scene {
       rope.setRotation(Math.atan2(by - ay, bx - ax));
       const plank = this.add.image(bx, by, ATLAS_MECH, "hanging_platform0000").setOrigin(0.5).setDepth(1.3);
       plank.displayWidth = 1.15 * bw;
-      this.hangingViews.set(h.id, { rope, plank, anchorX: ax, anchorY: ay });
+      // F3a：oracle 吊板容器第二精灵（@1647088 自然宽、anchor 0.5、后 addChild 盖 platform）
+      const base = this.add.image(bx, by, ATLAS_MECH, "hanging_base0000").setOrigin(0.5).setDepth(1.31);
+      this.hangingViews.set(h.id, { rope, plank, base, anchorX: ax, anchorY: ay });
     }
 
     // 滑轮（原版 §9 Pulley @1737345）：座/轮静态（轮锚点=轮点下方 2m，kernel 同式），
@@ -1843,13 +1848,17 @@ export class GameScene extends Phaser.Scene {
     const deg = pt.a * (180 / Math.PI);
     if (x !== v.plank.x || y !== v.plank.y) {
       v.plank.setPosition(x, y);
+      v.base.setPosition(x, y); // F3a：base 为板容器第二精灵，同位姿
       const dx = x - v.anchorX;
       const dy = y - v.anchorY;
       v.rope.setPosition(v.anchorX, v.anchorY);
       v.rope.width = Math.max(1, Math.hypot(dx, dy));
       v.rope.setRotation(Math.atan2(dy, dx));
     }
-    if (deg !== v.plank.angle) v.plank.setAngle(deg);
+    if (deg !== v.plank.angle) {
+      v.plank.setAngle(deg);
+      v.base.setAngle(deg);
+    }
   }
 
   private stepPulleys(s: { x: number; y: number; angle: number }, key: string): void {
