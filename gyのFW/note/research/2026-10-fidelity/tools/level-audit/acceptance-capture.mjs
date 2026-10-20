@@ -216,7 +216,10 @@ const FIND_PAUSE_SPRITE = () => {
     if (o.children) for (const c of o.children) walk(c, d + 1);
   };
   const root = lv.root ?? lv.group ?? g.world;
-  for (const c of root.children ?? []) walk(c, 1);
+  const tops = [root];
+  // 暂停钮挂 game.layers.ui（LevelUI 基类 @1870814 区字证），可能不在 lv.root 子树——world 兜底同扫
+  if (g.world && g.world !== root) tops.push(g.world);
+  for (const top of tops) for (const c of top.children ?? []) walk(c, 1);
   return hits;
 };
 
@@ -300,7 +303,8 @@ async function runOracle() {
             };
             const acc = [];
             const root = lv.root ?? lv.group ?? g.world;
-            for (const c of root.children ?? []) walk(c, 1, acc);
+            const tops = (g.world && g.world !== root) ? [root, g.world] : [root];
+            for (const top of tops) for (const c of top.children ?? []) walk(c, 1, acc);
             let n = 0;
             for (const o of acc) { try { o.events.onInputUp.dispatch(o, g.input.activePointer); n++; } catch (e) {} }
             return n;
