@@ -199,3 +199,68 @@
 
 ### 遗留
 - `<560px` 回流皮的石纹边中段拉伸与 74px 固定角片的比例失配，小屏上不显眼；若后续立项可换 §3 方向 C 双门布局（同一套帧坐标资产可直接复用）。
+
+---
+
+## §精修记录（2026-10-20 · 连接界面精修槽）
+
+在方向 A 实现上视觉精修（非推倒重来）。只动 `packages/client/index.html`（CSS 主体 + 新增一枚装饰 `<div class="divider" aria-hidden>`）；`main.ts` **零改动**（比派发允许的"房间码 class 接线"更省——用纯 CSS 达成）。版本 0.3.35→0.3.36。
+
+### 关键发现与对策
+1. **灰板根因**：PopupBackground0000 原帧程序化解码实测为中灰石板（内容区均值 RGB(150,150,150)，atlas 内 1:1 无缩放）——A 槽奶油/暖灰文字直接压在灰板上，对比仅 1.6~2.5:1，"灰、扁平"观感的根源。对策：面板与四角 74px 裁片统一叠平铺暖黑罩 `--tint: rgba(24,16,8,.66)`（石纹 34% 透出；罩层为平面色，任意拼缝不可见），暖色底同时奠基火/水主题色系。
+2. **placeholder 建议值触红线**：派发建议 #8a8070 对凹槽实测底色仅 4.0:1（<4.5）——按可访问性红线优先，取同族 #948a76（仍较旧值 #9b8d70 深一档），实测 4.69:1。
+3. **房间码大字零接线**：`:not(:placeholder-shown):not(:focus)` 即可表达"有值且未聚焦"（深链回填/带码回面板呈现 22px tabular-nums 琥珀码；聚焦打字回落 17px 防跳字），main.ts 不必动。
+
+### 对比度实算表（Playwright dsf=2 渲染像素；底色=元素旁/内干净补丁逐通道中位数；字形=盒内最亮/最暗 2% 像素均值，方向由计算色明暗决定；抗锯齿使核均值略低于纯色，故实测≤计算）
+
+| 目标 | 实测底色 | 字形核(实测) | 实测比 | 纯色计算比 | 判定 |
+|---|---|---|---|---|---|
+| H1 基色「·」26px bold | #443e39 | （像素混样无独立意义） | — | **8.81** | ✓ |
+| H1 火字 26px bold | #443e39 | #ff7a3d | **4.06** | 4.06 | ✓ 大文本 ≥3:1（≥18.66px bold 口径） |
+| H1 水字 26px bold | #443e39 | #3fb9ff | **4.81** | 4.81 | ✓ 大文本 |
+| 副标题 13px | #443e39 | #c0b499 | **5.13** | 5.65 | ✓ ≥4.5 |
+| 标签-房间密码 13px | #443e39 | #c9bda0 | **5.65** | 5.65 | ✓ |
+| 标签-房间码 13px | #443e39 | #c7bb9f | **5.56** | 5.65 | ✓ |
+| 输入正文 17px | #24211f | #ffbb54 | **9.52** | 11.39 | ✓ |
+| placeholder 17px | #24211f | #948a76 | **4.69** | （伪元素色 getComputedStyle 不直读） | ✓ |
+| 房间码正文 17px 聚焦 | #24211f | #febf5a | **9.79** | 11.39 | ✓ |
+| 房间码大字 22px 失焦 | #24211f | #cb9446 | **6.01** | 9.18 | ✓ |
+| 按钮创建·主字 19px bold | #412d25（ember 罩石） | #fff3d8 | **11.72** | 11.72 | ✓ |
+| 按钮加入·主字 19px bold | #30353e（aqua 罩石） | #e5dbc6 | **8.96** | 10.21 | ✓ |
+| kbd 键帽字 11px/600 | #1b1815（键帽暗底） | #e8d9b8 | **12.68** | — | ✓ |
+| 提示行 b 12px | #443e39 | #d8cba9 | **6.54** | 6.54 | ✓ |
+
+角片拼缝检查：74px 裁片右缘列剖面阶跃 0.97/255（邻域自然梯度 0.12/255）——绝对值约 1/255，远低于可感知阈（~3/255），判定无可见拼缝。
+
+### ID 契约探针 12/12（复跑 2026-10-20，本档 TEMP 探针，随清理移除；逻辑即下述断言）
+T1 八 ID 在场+元素类型（div,input,input,button,button,div,div,span）；T2 `#menu-level` textContent 精确串 `已选关卡：forest_02`；T3 `.menu-fit` @1280×720 scale=0.75（与画布 FIT 同因子）；T4 hover 帧切换 `0px 0px → 33.1606% 0px` + `translateY(-2px)`；T5 创建流 @1280×720（fill→click→`#menu` hidden→`#hud-room` 正则）；T6 创建+加入对 @1400×1000；T7 回流皮 join @390×844；T8 深链 `?room=&pw=` 回填（自动加入失败回落面板后值保留）；T9 busy：ws 挂起页 spinner+双按钮 disabled+`::before` animationName=menu-spin；T10 失败→横幅+解锁（等待条件须排除 busy 期"连接中…"4 字——首轮探针在此误判过一次）；T11 失败后输入可编辑；T12 真实流页面零 console/page 错误。
+- **伪影注记**：ws 人为挂起页出现 pageerror `protocols[0]: expected string, got object`——colyseus.js 0.16 `WebSocketTransport.connect` 浏览器路径先按 Node 签名 `new WebSocket(url,{headers,protocols})` 构造（抛 SyntaxError 被 try 捕获后回落合法签名）；正常连接窗内不冒出，仅探针挂死握手走重试路径时以 pageerror 可见。本次改动纯 CSS/静态 DOM，不可能引入 JS 异常，归探针伪影单列。
+
+### 门禁数字
+| 项 | 结果 |
+|---|---|
+| tsc（typecheck） | PASS |
+| vite build（仓库根） | PASS（3.7s） |
+| vitest 全量 | **95/95 PASS**（本次零新增文案字符，font census 防护网未触发） |
+| e2e route forest_01 repeat1 | **ALL PASS**（winAt=39477ms） |
+| visual-diff | 92.45 / 91.36（两跑，方差 ~1.1pt；只截 canvas，DOM 不入镜；与 §实施记录 91.97/92.8 同带） |
+| 契约探针 | **12/12**（上节） |
+
+### 五态截图（用户浏览器直看验收）
+`polish-2026-10-20/`（1280×960，`?level=forest_01` 深链直达面板；busy 态经 routeWebSocket 挂起握手真实点击进入，错误横幅为真实 join 不存在房间的服务端 404）：
+`1-default.png`（默认）/ `2-hover-primary.png`（主钮 hover：换帧+提亮+上浮+ember 光晕）/ `3-input-focus.png`（密码聚焦：琥珀光环+caret）/ `4-busy.png`（spinner+双钮压暗禁用+幕布冻结）/ `5-error-banner.png`（错误横幅）/ `6-roomcode-stamped.png`（加拍：房间码 22px 琥珀大字仪式态）。
+
+### 精修映射（派发设计语言八条 → 落点）
+1. 8pt 阶梯：面板 padding 48/56/40、label 24/8、divider 24、按钮组 32（组间）与 16（组内）、error 16、hint 32、hint gap 24、回流皮 32/40/16/24——组间距>组内间距。
+2. 层级三档：H1 26px/#f5ead0/letter-spacing 2px；标签 13px #c9bda0；输入正文 17px #ffd479（--ink）。每档只靠字号/颜色/字重。
+3. 主次梯度：创建=252×117+ember 内环 `inset 0 0 0 2px rgba(255,122,60,.55)`+顶 1px 高光+文字暖光；加入=240×108+aqua 环 `rgba(80,180,255,.5)`+opacity .92；hover 换帧（瞬时，background-position 不参与 transition）+brightness(1.07)+translateY(-2px)+阴影扩散 150ms ease-out；active 压平回落 rest 阴影；busy=既有 disabled 压暗+`#menu-error` spinner。头像帧保留。
+4. 主题色贯穿：`label[for]::before` 8px 圆点（火/水+同色 glow）；kbd 火/水 `border-bottom:3px` 主题色条。
+5. 凹槽：inset 0 3px 8px rgba(0,0,0,.72)（加深一档）+`inset 0 -1px 0 rgba(255,244,214,.09)`（下缘内高光，上暗下亮）；focus 琥珀光环 150ms；placeholder #948a76（见对策 2）。
+6. 房间码仪式感：纯 CSS（对策 3）。
+7. 雕刻分隔：`.divider` 双线（上 1px rgba(0,0,0,.55)+下 1px rgba(255,240,200,.13)，560px 对齐表单列）；hint 上方 32px。
+8. 对比度红线：上表全 ≥4.5（H1 主题字 26px bold 按大文本 ≥3:1 口径）；`:focus-visible` 琥珀 outline 保留。
+9. 性能红线：零新增 backdrop-filter/blur/无限动画（幕布 1.5px blur 与 floaty/spin 均既有；floaty 忙期暂停、reduced-motion 停用均既有保留）；box-shadow 全静态层，hover 过渡仅为一次性 150ms。
+
+### 遗留
+- H1「·」的实测像素混样无意义（'·' 像素数少于 2% 窗口），以纯色计算比 8.81 记录——方法局限，非视觉问题。
+- 次钮 opacity .92 与 240×108 的主次差在窄屏回流皮保留色环/高度差、恢复同宽（`#btn-join{width:100%}`）——窄屏并排不可行下的折衷。
