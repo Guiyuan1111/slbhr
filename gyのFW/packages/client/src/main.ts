@@ -33,7 +33,7 @@ const DEFAULT_LEVEL_ID = "forest_01";
 const urlParams = new URLSearchParams(location.search);
 /** URL ?level= 选关（冻结需求 #12；合法性由服务端校验，非法 id 返回 4404 文案） */
 const urlLevel = urlParams.get("level") ?? "";
-/** 邀请深链 ?room=<房间码>&pw=<密码>：创建者 HUD 一键复制生成，对方打开自动填入并加入 */
+/** 邀请深链 ?room=<房间码>（旧链接兼容 ?pw=）：打开后自动回填房间码；带 pw 才自动加入 */
 const inviteRoom = urlParams.get("room") ?? "";
 const invitePw = urlParams.get("pw") ?? "";
 /** 关卡四周的岩壁边距（原版 groundTexture 1312×992 = 关卡 +32 边距） */
@@ -469,15 +469,18 @@ async function start(mode: "create" | "join"): Promise<void> {
       netHandlers(),
     );
     fillHudRoom(net.room.roomId);
-    // 创建者：一键复制邀请链接（对方打开自动填房间码/密码并加入；pw 随链接即视为已授权）
+    // 创建者：一键复制邀请链接（issue #16 L-05：不再把密码拼进 URL——链接会进剪贴板/
+    // 历史/聊天记录与截图，密码随之泄露。对方打开后房间码已回填，手动输入同一密码加入；
+    // ?pw= 深链仍兼容读取，旧书签/脚本不受影响）
     if (mode === "create") {
       const invite = `${location.origin}${location.pathname}?level=${encodeURIComponent(
         selectedLevel || urlLevel || DEFAULT_LEVEL_ID,
-      )}&room=${encodeURIComponent(net.room.roomId)}&pw=${encodeURIComponent(password)}`;
+      )}&room=${encodeURIComponent(net.room.roomId)}`;
       const btn = document.createElement("button");
       btn.id = "btn-invite";
       btn.type = "button";
       btn.textContent = "复制邀请链接";
+      btn.title = "链接只含房间码不含密码：对方打开后填入同一密码加入";
       // 样式统一在 index.html #btn-invite（#hud 整层 none 防挡画布，按钮 pointer-events:auto 单点恢复可点）
       btn.addEventListener("click", () => {
         void navigator.clipboard
@@ -567,12 +570,14 @@ function togglePause(): void {
 function bindUi(): void {
   $("#btn-create").addEventListener("click", () => start("create"));
   $("#btn-join").addEventListener("click", () => start("join"));
-  // 邀请深链：房间码/密码已带全时自动加入（延迟一拍让 Phaser 初始化先走；失败回落面板可手改）。
-  // 无深链 → 尝试刷新回座（issue #5 H-04：sessionStorage 重连令牌）
-  if (inviteRoom && invitePw) {
+  // 邀请深链（issue #16 L-05）：房间码回填即用；旧链接带 ?pw= 时才自动加入（延迟一拍让
+  // Phaser 初始化先走；失败回落面板可手改）。无深链 → 尝试刷新回座（issue #5 H-04）
+  if (inviteRoom) {
     $<HTMLInputElement>("#roomcode").value = inviteRoom;
-    $<HTMLInputElement>("#password").value = invitePw;
-    window.setTimeout(() => void start("join"), 300);
+    if (invitePw) {
+      $<HTMLInputElement>("#password").value = invitePw;
+      window.setTimeout(() => void start("join"), 300);
+    }
   } else {
     void tryResume();
   }
