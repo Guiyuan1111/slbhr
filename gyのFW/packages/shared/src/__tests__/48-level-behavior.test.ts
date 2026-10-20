@@ -17,9 +17,9 @@
  *     - 机关体（lever/pusher/platform/prop）位置有限、距原位 ≤ 30m（=960px，超出记飞出）
  *     - 世界刚体总数不增长（0 帧 vs 600 帧；钻石被拾取只会减少，记 info）
  *
- * 运行模式：收集+报告（STRICT=false）——行为异常不置红，仅打印清单并落 JSON 到
- * os.tmpdir()；待主线修复/决策后再把 STRICT 翻为 true 即成严格断言。
- * 基建异常（构建/步进抛错）同样只收集——冒烟的职责是如实上报，不阻塞套件。
+ * 运行模式：严格断言（STRICT=true，2026-10-20 M-03 置红，issue #8）——行为异常直接 fail。
+ * 仅「档卷留痕的已知/接受差异」可经文件内 ALLOWLIST 豁免（条目必须带档卷出处；当前为空）。
+ * 基建异常（构建/步进抛错）同样 fail——冒烟如实上报即门禁。
  */
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -29,8 +29,19 @@ import { afterAll, describe, expect, it } from "vitest";
 import { parseLevel, type LevelData } from "../level2.js";
 import { World } from "../kernel/world.js";
 
-/** 收集+报告模式开关：true = 行为异常直接 fail（主线修复后启用） */
-const STRICT = false;
+/** 严格断言开关（2026-10-20 M-03 由 false 置 true，issue #8）：行为异常直接 fail。
+ *  置红依据：收集模式全量复核 48/48 PASS、异常 0（本 HEAD=0.3.39 实跑，
+ *  /tmp/fw-smoke-48-results.json 快照）；与 2026-10-05 冻结日档卷
+ *  note/research/2026-10-fidelity/06-48-level-behavior-smoke.md（48/48 异常 0）一致。 */
+const STRICT = true;
+
+/**
+ * 已知差异 allowlist：仅收录「档卷留痕的已知/接受差异」。键=关卡 id；值=允许的异常
+ * 前缀清单（problems 条目按前缀匹配）+ 档卷出处。当前为空（2026-10-20 复核零异常）——
+ * 此后 STRICT 置红的新异常一律先查档卷：确认属已知差异时凭出处增补条目并注明 issue，
+ * 无档可查的真异常不豁免、不擅自修，另立行为修复项。
+ */
+const ALLOWLIST: Record<string, { prefixes: string[]; source: string }> = {};
 
 const SOAK_STEPS = 600; // 10s @ 1/60
 const DT = 1 / 60;
@@ -345,7 +356,14 @@ describe("48 关行为级冒烟（无输入浸泡，标准冻结 2026-10-05）",
     it(`${id}：站稳 + 10s 浸泡（边界/NaN/机关/刚体数）`, () => {
       const rec = collectLevel(id);
       results.push(rec);
-      if (STRICT) expect(rec.problems, `${id}: ${rec.problems.join("; ")}`).toEqual([]);
+      if (STRICT) {
+        // 断言语义不变：problems 必须为空；ALLOWLIST 仅按档卷出处豁免已知差异
+        const allow = ALLOWLIST[id];
+        const real = allow
+          ? rec.problems.filter((p) => !allow.prefixes.some((pre) => p.startsWith(pre)))
+          : rec.problems;
+        expect(real, `${id}: ${real.join("; ")}`).toEqual([]);
+      }
     }, 120000);
   }
 
