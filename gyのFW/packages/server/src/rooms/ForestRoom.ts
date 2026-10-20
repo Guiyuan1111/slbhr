@@ -255,7 +255,14 @@ export class ForestRoom extends Room<RoomState> {
     const role = this.roles.get(client.sessionId);
     if (!role) return;
 
-    // 一律冻结等待重连 60s；真人不回来超时后才释放角色。
+    // H-01（#2）：主动退出（客户端 room.leave(true) → consented=true）不占用断线重连窗——
+    // 立即释放席位，剩余端秒回 lobby 可补位，而不是被「对方断线」冻结满 60s。
+    if (consented) {
+      this.releaseSeat(client, role);
+      return;
+    }
+
+    // 断线冻结等待重连；真人不回来超时后才释放席位。
     const prevPhase = this.state.phase;
     this.state.phase = "paused";
     this.syncFreezeClock();
@@ -267,20 +274,30 @@ export class ForestRoom extends Room<RoomState> {
       // 重连端错过了 pause-changed 广播：仍处玩家暂停则补发一条，让它恢复暂停画面
       if (this.userPaused) client.send("pause-changed", { paused: true, by: this.userPausedBy });
     } catch {
-      this.roles.delete(client.sessionId);
-      this.state.players.delete(role);
-      this.currentInputs[role] = { ...EMPTY_INPUT };
-      // 超时踢出：玩家暂停一并解除（剩余端回 lobby；若不解除，补位新对会被冻在开局前）
-      this.userPaused = false;
-      this.userPausedBy = null;
-      // 仍有一人在场 → 相位回 lobby 允许补位；补位 join 走 restartLevel 整关重开
-      // （原版 retry 语义）。不回 lobby 的话 phase 永久卡 paused，tick 停转成死房。
-      if (this.roles.size > 0) {
-        this.state.phase = "lobby";
-        this.syncState();
-      }
-      // 两人都走了 → Colyseus 自动回收空房（默认 disposeOnDisconnect）
+      this.releaseSeat(client, role);
     }
+  }
+
+  /** 释放席位（H-01 主动退出 / 断线超时共用）：删角色与输入、解除玩家暂停、余员回 lobby。
+   *  离场者可能是暂停发起者——解除必须同时广播 paused:false，否则余端的暂停菜单
+   *  点「继续」只发 resume、无回声关不上（M-01 的超时路径同源）。 */
+  private releaseSeat(client: Client, role: Role): void {
+    this.roles.delete(client.sessionId);
+    this.state.players.delete(role);
+    this.currentInputs[role] = { ...EMPTY_INPUT };
+    // 超时踢出/离场：玩家暂停一并解除（剩余端回 lobby；若不解除，补位新对会被冻在开局前）
+    const hadPause = this.userPaused;
+    this.userPaused = false;
+    this.userPausedBy = null;
+    // 仍有一人在场 → 相位回 lobby 允许补位；补位 join 走 restartLevel 整关重开
+    // （原版 retry 语义）。不回 lobby 的话 phase 永久卡 paused，tick 停转成死房。
+    if (this.roles.size > 0) {
+      this.state.phase = "lobby";
+      if (hadPause) this.broadcast("pause-changed", { paused: false, by: null });
+      this.syncFreezeClock();
+      this.syncState();
+    }
+    // 两人都走了 → Colyseus 自动回收空房（默认 disposeOnDisconnect）
   }
 
   onDispose() {
