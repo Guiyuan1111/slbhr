@@ -2,7 +2,7 @@
  * e2e 行为层·自验收场景（note/self-acceptance.md L3）——每个场景复现一类「实玩才暴露」的用户旅程。
  *
  * 用法（Git Bash，先注入便携 Node PATH；构建产物由调用方保证）：
- *   node scripts/e2e/journey.mjs journey [--port 3571]   # 通关→继续→forest_02 新房开局（全旅程，需 FW_DEBUG_FORCE_DOORS 加速到门）
+ *   node scripts/e2e/journey.mjs journey [--port 3571]   # 通关→继续→活房间 advance 同房换关 forest_02（全旅程，需 FW_DEBUG_FORCE_DOORS 加速到门）
  *   node scripts/e2e/journey.mjs pause   [--port 3572]   # KeyP 暂停：服务端权威全场物理冻结+时钟停摆，恢复推进（F3 翻转回归）
  *   node scripts/e2e/journey.mjs rejoin  [--port 3573]   # 断线超时→补位重进：房间整关重开而非死房（0.3.27 onLeave 修复回归；用 FW_RECONNECT_SECONDS 缩窗）
  *   node scripts/e2e/journey.mjs deathretry [--port 3574] # 死亡→gameover 静置（原版无自动重开）→Retry 整关重开（F2 翻转回归）
@@ -33,7 +33,10 @@ try {
   const browser = await chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true, args: ["--mute-audio"] });
 
   if (MODE === "journey") {
-    // ── 场景 1：全旅程 —— forest_01 通关 → EndMenu「继续」→ 预选 forest_02 → 弹联机面板 → 新房开局
+    // ── 场景 1：全旅程 —— forest_01 通关 → EndMenu「继续」→ 活房间 advance 同房换关
+    // forest_02（0.3.12 语义：服务端仅 won 受理，席位保留、双端按 levelId 回声各自
+    // 重建 Game；不再回大厅弹联机面板重建房——旧断言「面板弹出并预选下一关」随该
+    // 语义退役。0.3.37 换关走黑幕包络（FadeScene 500ms×2），等待全部状态轮询不写死）。
     const ctxA = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
     const ctxB = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
     const a = await ctxA.newPage();
@@ -43,38 +46,43 @@ try {
     await waitForStarted(a);
     await waitForStarted(b);
     log(`[journey] 房间 ${code} 开局，等待 FORCE_DOORS 通关`);
+    // 通关判定读权威 phase（DOM 文本轮询有 250ms 假空窗，且 updateHud 4Hz 慢一拍）
+    const stateGate = (expr) => `(() => { try { const s = window.__fwInit.net.room.state; return (${expr}); } catch { return false; } })()`;
     let won = false;
-    for (let i = 0; i < 30; i++) {
-      await a.waitForTimeout(1000);
-      if ((await a.textContent("#hud-status")) === "通关！") { won = true; break; }
-    }
-    check("forest_01 通关（HUD 通关！）", won);
-    await a.waitForTimeout(3200); // 楼梯 1600ms + 星动画 + 继续钮启用 2.9s
-
-    // 双方各自点「继续」（EndMenu 按钮 handler = __fwNextLevel，此处直调排除像素点击抖动）
-    for (const [tag, page] of [["A", a], ["B", b]]) {
+    try { await a.waitForFunction(stateGate(`s.phase === "won"`), null, { timeout: 45000 }); won = true; } catch { /* 超时按失败记 */ }
+    check("forest_01 通关（phase=won）", won);
+    // 双方各自点「继续」（EndMenu 按钮 handler = __fwNextLevel，直调排除像素点击抖动；
+    // 活房间 advance 仅 won 受理，双端各发一次时第二发在 ready 相位被服务端天然忽略）
+    for (const page of [a, b]) {
       await page.evaluate(() => window.__fwNextLevel());
-      const menuVisible = await page.evaluate(() => !document.querySelector("#menu")?.classList.contains("hidden"));
-      const levelText = await page.textContent("#menu-level");
-      check(`${tag} 联机面板弹出并预选下一关`, menuVisible && levelText === "已选关卡：forest_02", levelText ?? "");
     }
-    // 房主创建 forest_02 新房，加入方按码进入
-    await a.fill("#password", PASSWORD);
-    await a.click("#btn-create");
-    await a.waitForSelector("#menu", { state: "hidden", timeout: 15000 });
-    const roomText = await a.textContent("#hud-room");
-    const code2 = (roomText.match(/房间码 ([^（\s]+)/) || [])[1] ?? "";
-    check("forest_02 新房创建", Boolean(code2), code2);
-    await b.fill("#password", PASSWORD);
-    await b.fill("#roomcode", code2);
-    await b.click("#btn-join");
-    await b.waitForSelector("#menu", { state: "hidden", timeout: 15000 });
+    // 双端 levelId 回声（onLevelId 差分 → reloadLevel 黑幕换关）
+    await a.waitForFunction(stateGate(`s.levelId === "forest_02"`), null, { timeout: 15000 });
+    await b.waitForFunction(stateGate(`s.levelId === "forest_02"`), null, { timeout: 15000 });
+    const codeA = ((await a.textContent("#hud-room")).match(/房间码 ([^（\s]+)/) || [])[1] ?? "";
+    check("A/B 双端 advance 换关 forest_02（同房留场，房间码不变）", codeA === code, `${code}→${codeA}`);
+    // 换关不回大厅：联机面板保持隐藏，EndMenu 已关、Game 已重建（黑幕包络完成后轮询到位）
+    await a.waitForFunction(
+      `(() => { try { const g = window.__fw.scene; return !g.isActive("EndMenu") && g.isActive("Game"); } catch { return false; } })()`,
+      null, { timeout: 15000 },
+    );
+    const menuHiddenA = await a.evaluate(() => document.querySelector("#menu")?.classList.contains("hidden") ?? false);
+    const menuHiddenB = await b.evaluate(() => document.querySelector("#menu")?.classList.contains("hidden") ?? false);
+    check("换关不回大厅（联机面板不弹出，EndMenu 关、Game 重建）", menuHiddenA && menuHiddenB, `menuHidden A=${menuHiddenA} B=${menuHiddenB}`);
     await waitForStarted(a);
     await waitForStarted(b);
     const lvl = await roomState(a, `String(s.levelId)`);
     const phase = await roomState(a, `String(s.phase)`);
-    check("forest_02 新房 ready→started 且 levelId 正确", lvl === "forest_02" && phase === "started", `levelId=${lvl} phase=${phase}`);
-    check("新局角色分配（A=火人）", (await readRole(a)).includes("火人"), await readRole(a));
+    check("forest_02 ready→started 且 levelId 正确", lvl === "forest_02" && phase === "started", `levelId=${lvl} phase=${phase}`);
+    check("席位保留（A=火人）", (await readRole(a)).includes("火人"), await readRole(a));
+    check("席位保留（B=水女孩）", (await readRole(b)).includes("水女孩"), await readRole(b));
+    // 新关活局：权威时钟续走（旧场景「新房创建/按码加入」半段随 0.3.12 语义退役——
+    // 建/加入房链路由其余四场景入场段常态覆盖）
+    const t1 = await roomState(a, `Number(s.timerMs)`);
+    let ticked = false;
+    try { await a.waitForFunction(stateGate(`Number(s.timerMs) > ${t1}`), null, { timeout: 5000 }); ticked = true; } catch { /* 超时按失败记 */ }
+    const t2 = await roomState(a, `Number(s.timerMs)`);
+    check("forest_02 新关活局（权威时钟续走）", ticked && t2 > t1, `t ${t1}→${t2}`);
     await a.screenshot({ path: join(OUT, "journey-forest02-a.png") });
     await b.screenshot({ path: join(OUT, "journey-forest02-b.png") });
     results.pass = results.checks.every((c) => c.ok);

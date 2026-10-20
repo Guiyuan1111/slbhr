@@ -35,7 +35,7 @@
 | soak 浸泡 | `regression.mjs`（无脚本） | 30s 零页面错误 + 存活 | 物理崩溃/异常外泄 |
 | 强制通关 | `FW_DEBUG_FORCE_DOORS=1 regression.mjs --script movements.json --expect-win` | win→phase→HUD 通关！全链 | 相位机/结算链回归（**加速器**，覆盖面由下一行兜底） |
 | **真实走位通关** | `regression.mjs --level zz_probe --script inputs/walkin-doors.json --expect-win` | 真实接触→开门→win，无任何钩子 | 0.3.27 门卡摆本体；未来任何门感应回归 |
-| **全旅程续关** | `journey.mjs journey` | 通关→继续→预选 forest_02→弹面板→新房 ready→started→角色重分配 | 0.3.24 续关链 + 0.3.27 全旅程级验收 |
+| **全旅程续关** | `journey.mjs journey` | 通关→继续→活房间 advance 同房换关 forest_02（0.3.12 语义：房间码不变、席位保留、面板不弹出、EndMenu 关/Game 重建）→ready→started→权威时钟续走 | 0.3.12 活房间 advance + 0.3.37 黑幕包络状态轮询口径（2026-10-20 改写，旧「弹面板预选」断言随语义退役） |
 | **暂停全场冻结** | `journey.mjs pause` | 双方各按行进键→一端 KeyP：双端位置/timerMs 位级停摆（anim 停在 jumping 非全松回 idle）；phase 仍 started；再按 P 恢复推进（暂停期按住的键生效=原版键掩码语义）（F3 翻转后口径） | F3 翻转（服务端权威 userPaused）；未来暂停/输入闸回归 |
 | **断线超时补位** | `journey.mjs rejoin`（FW_RECONNECT_SECONDS=4 缩窗） | 超时后 phase 回 lobby；补位→整关重开→started；补位者获水女孩席位 | 0.3.27 onLeave 死房修复；未来重连/补位回归 |
 | **sync 字段探针** | 内嵌于 regression 所有模式 | 页面内直读权威 state：全部机关映射的 state 字段、doors 六字段、levelId 必须真实到达 | 0.3.25 defineTypes 漏注册类缺陷——**客户端视角**的字段存在性 |
@@ -60,7 +60,7 @@
    （批次计划见 note/plans/level-batches.md）；产出后将「48 关全部可真实通关」整体纳入 L3 必过清单。
 2. 其余关卡的机关级旅程用例（拉杆/推箱/风区/摆绳在体交互）目前依赖 L1+L2，未逐一在体。
 3. 音频层（播放与否/音量）无自动化断言，仅实玩抽检。
-4. 触屏（Touch* 虚拟键）无 e2e 覆盖。
+4. 触屏（Touch* 虚拟键）`touch.mjs` 已覆盖三键/ tap/按住/桌面豁免（自动化侧）；真机多点与 iOS Safari 实机手感仍靠人工抽检。
 
 ## 六、配套基建（2026-10-10 落地）
 
