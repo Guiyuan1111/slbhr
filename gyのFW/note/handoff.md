@@ -24,6 +24,8 @@
 
 ## 条目
 
+**更新**：2026-10-20（**⚖️ 新工作线开启+首裁：原版不合理优化线（用户令"关音乐就该全静…优化之前原版不合理的地方，必须经过我的审核"）**。①方针：此类优化正式立线，**任何一项必须先经用户审核批准才可实施**；流程=提案卡（证据/改法/影响/成本）→用户审→批准派槽→回验收；基线关系=保真为默认、优化为例外且逐条裁定。②首裁 **T7**：关音乐即全静，保留我方 music 门覆盖胜负短曲，不做 oracle 免门忠实向（14 号档 §未实施 已改"已裁保留偏差"）。③提案池开张：`note/research/2026-10-behavior-parity/16-original-improve-proposals.md`——P-01 twoRows 隐藏行照发音（S）/P-02 CompleteScene 触发语义（原 #34 并入，S）/P-03 缺陷关批量重设计（15 豁免+02/32 挂起，L×N 须裁范围）/P-04 征集机制（issue 带 original-optimize 即入池）；全部待审未动码。④issue 批进度：L-07 关（17/20）→M-03 关（18/20；STRICT=true 置红+allowlist 空【48/48 收集零异常，"假绿"机制成立但无真异常藏匿】+房间集成测试 13 例，vitest 119/119）；开放仅余 L-03（待 0.3.39 槽交还 GameScene）/L-06（0.3.40 发版时协调方收口）。）
+
 **更新**：2026-10-20（**🧩 13 号档遗留八项收尾（0.3.39）——四修两划销，两划销系复核证伪**）。
 ①**复核证伪划销**（用户批复照准，证据链全文见 13 号档 §实施记录(flashp1)）：**#22 MuteButton=oracle 死代码**——全 bundle 0 实例化（UIState/LevelUI 两处 import 均被 IIFE 形参遮蔽，this.muteButton 3 处纯读零赋值），oracle 实际从不渲染静音钮，补件=背离 oracle；**#17 TempleSelector=multi 形态专属**——仅 MultiHall/MultiMenu 实例化（:1956494/:1961502），单机形态 startTemple 直 fade("levelMenu")（:1941847），我方单神庙形态本就该无此件。
 ②#13 NewSign（985914a）：TempleScene 节点静态贴片（+40/−20 布局尺无 tween）+progress played 集（fw-played-v1）+进关 markPlayed（oracle setPlayed :1935016 同语义，联机时点注记在案）。
