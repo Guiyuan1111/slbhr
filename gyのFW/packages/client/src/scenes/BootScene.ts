@@ -24,6 +24,7 @@ export const ATLAS_MECH = "mech";
 export const ATLAS_TEMPLE = "temple";
 export const ATLAS_POPUP = "popup";
 export const ATLAS_MENU = "menu";
+export const ATLAS_PRELOADER = "preloader";
 export const FONT_MAIN = "font";
 
 /**
@@ -74,6 +75,9 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
+    // LoaderBar 贴图首位装载（13 号档 #41，0.3.39：oracle Boot 态预装 PreloaderAssets
+    // bundle:2160057 区 → Load 态全程有条；单场景镜像=本队列尽早可用，见 buildLoaderBar）
+    this.load.atlas(ATLAS_PRELOADER, "/assets/atlasses/PreloaderAssets.png", "/assets/atlasses/PreloaderAssets.json");
     // Menu 首帧必需：角色立绘（MenuScene 双角色 + idle 动画）/菜单图集/位图字/四张独立图
     this.load.atlas(ATLAS_CHARS, "/assets/atlasses/CharAssets.png", "/assets/atlasses/CharAssets.json");
     this.load.atlas(ATLAS_MENU, "/assets/atlasses/MenuAssets.png", "/assets/atlasses/MenuAssets.json");
@@ -90,12 +94,46 @@ export class BootScene extends Phaser.Scene {
     // 沿用无扩展名流式路由 + 显式 type=mp3 的 IDM 防劫持约定，见 audio.ts。
     loadAudioPack(this, AUDIO_MENU);
     // ground/mech/temple/popup 不在 Boot 关键路径（r5 冷启动装载序整形，见文件头注释）
+    this.buildLoaderBar();
   }
 
   create(): void {
     this.buildMenuAnims();
     // 先进开始界面（原版 load → menu 流）；GameScene 由入房后 scene.start 切入
     this.scene.start("Menu");
+  }
+
+  /**
+   * 加载条（13 号档 #41，0.3.39；oracle LoaderBar 组 bundle:2164711 字证逐参复刻）：
+   * LoaderBar0000 置 (−100,−10)（屏心系→我方 (cx−100, cy−10)，默认 (0,0) 锚）自左
+   * crop `Rectangle(0,0,0,20)`；LoaderHolder0000 居中 anchor 0.5；LoaderTitle0000
+   * (0,−80) anchor 0.47（双轴）；组内层序 bar→holder→title。进度=装载完成度百分比
+   * （Phaser3 progress 0..1 ≡ oracle onFileComplete a/100 同一数据源，:2164711 区
+   * `j.width=(a/100)*200; crop`）；onLoadComplete 销毁（oracle 同构）。oracle
+   * h5api.progress 为发牌平台 API，无对应物，不移植（档注明）。
+   */
+  private buildLoaderBar(): void {
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
+    const BAR_W = 200; // oracle 常量 i=200（:2164711 区）
+    const BAR_H = 20; // oracle 常量 g=20
+    let bar: Phaser.GameObjects.Image | null = null;
+    const cropTo = (frac: number): void => {
+      bar?.setCrop(0, 0, BAR_W * frac, BAR_H);
+    };
+    const build = (): void => {
+      bar = this.add.image(cx - BAR_W / 2, cy - BAR_H / 2, ATLAS_PRELOADER, "LoaderBar0000");
+      cropTo(this.load.progress);
+      this.add.image(cx, cy, ATLAS_PRELOADER, "LoaderHolder0000").setOrigin(0.5, 0.5);
+      this.add.image(cx, cy - 80, ATLAS_PRELOADER, "LoaderTitle0000").setOrigin(0.47, 0.47);
+    };
+    if (this.textures.exists(ATLAS_PRELOADER)) build();
+    else this.load.once("filecomplete-atlas-" + ATLAS_PRELOADER, build);
+    this.load.on("progress", cropTo);
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+      this.load.off("progress", cropTo);
+      if (bar) bar.destroy(); // holder/title 随场景切换整体回收；bar 显式销毁=oracle destroy 语义
+    });
   }
 
   /** Menu 阶段就需要的动画（全部 CharAssets 帧与 MenuScene 立绘共用同一图集） */
