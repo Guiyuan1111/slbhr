@@ -70,6 +70,10 @@ export class ForestRoom extends Room<RoomState> {
   /** 玩家暂停（F3：服务端权威，任一端可置/解除；tick 见 userPaused 早退） */
   private userPaused = false;
   private userPausedBy: Role | null = null;
+  /** 冻结起始墙钟（B-01，#1）：userPaused 或断线等待 phase=paused 期间步进钟停摆而墙钟继续走，
+   *  恢复后到达的输入时间戳会永远大于排水 deadline（startedWall+stepIndex·STEP_MS+4），队列
+   *  只进不出、角色永久失灵。进入冻结记锚点，退出把冻结时长加回开钟零点（syncFreezeClock）。 */
+  private freezeStartWall = 0;
   /** 风力时基零点（页面级语义：跨整关重开/换关延续，原版 Continue 直进下一关不刷新页面） */
   private worldEpochMs = 0;
 
@@ -154,6 +158,7 @@ export class ForestRoom extends Room<RoomState> {
       if (!role || this.userPaused || this.state.phase !== "started") return;
       this.userPaused = true;
       this.userPausedBy = role;
+      this.syncFreezeClock();
       this.broadcast("pause-changed", { paused: true, by: role });
     });
     this.onMessage("resume", () => {
@@ -161,6 +166,7 @@ export class ForestRoom extends Room<RoomState> {
       this.userPaused = false;
       const by = this.userPausedBy;
       this.userPausedBy = null;
+      this.syncFreezeClock();
       this.broadcast("pause-changed", { paused: false, by });
     });
 
@@ -252,9 +258,11 @@ export class ForestRoom extends Room<RoomState> {
     // 一律冻结等待重连 60s；真人不回来超时后才释放角色。
     const prevPhase = this.state.phase;
     this.state.phase = "paused";
+    this.syncFreezeClock();
     try {
       await this.allowReconnection(client, RECONNECT_SECONDS);
       if (this.state.phase === "paused") this.state.phase = prevPhase;
+      this.syncFreezeClock();
       this.syncState();
       // 重连端错过了 pause-changed 广播：仍处玩家暂停则补发一条，让它恢复暂停画面
       if (this.userPaused) client.send("pause-changed", { paused: true, by: this.userPausedBy });
@@ -279,6 +287,23 @@ export class ForestRoom extends Room<RoomState> {
     if (this.readyTimer) clearTimeout(this.readyTimer);
   }
 
+  /** 冻结态 = 玩家暂停 ∪ 断线等待（两种冻结都停 tick，共享同一时基补偿——B-01） */
+  private isFrozen(): boolean {
+    return this.userPaused || this.state.phase === "paused";
+  }
+
+  /** 冻结进出时同步补偿 startedWall（B-01）：进入记锚点；退出把冻结时长加回开钟零点，
+   *  使「意图跨度排水」的 deadline 跟着墙钟前移——恢复后按住的键立即生效（原版键掩码语义）。
+   *  两种冻结可叠加（A 暂停中 B 断线），以最外层进出为准，补偿量=实际冻结时长。 */
+  private syncFreezeClock(): void {
+    if (this.isFrozen()) {
+      if (this.freezeStartWall === 0) this.freezeStartWall = Date.now();
+    } else if (this.freezeStartWall !== 0) {
+      if (this.startedWall !== 0) this.startedWall += Date.now() - this.freezeStartWall;
+      this.freezeStartWall = 0;
+    }
+  }
+
   /** 双人到齐：ready 2.0s → started（原版 1600+400ms 开钟） */
   private beginReady() {
     this.state.phase = "ready";
@@ -292,6 +317,7 @@ export class ForestRoom extends Room<RoomState> {
       this.startedWall = Date.now();
       this.stepIndex = 0;
       this.inputQueue = [];
+      this.freezeStartWall = 0;
       this.dumpReset();
       this.syncState();
       console.log(`[phase] started @${Date.now()}`);
@@ -311,6 +337,7 @@ export class ForestRoom extends Room<RoomState> {
       this.startedWall = Date.now();
       this.stepIndex = 0;
       this.inputQueue = [];
+      this.freezeStartWall = 0;
       this.dumpReset();
       this.syncState();
     }, READY_MS);
@@ -341,6 +368,13 @@ export class ForestRoom extends Room<RoomState> {
       }
       return;
     }
+    // B-01 卡顿重锚定：acc 被 Math.min(dtMs,100) 截断后，步进钟（startedWall+stepIndex·STEP_MS）
+    // 落后墙钟且永不追回——此后到达的输入时间戳全部大于排水 deadline，队列只进不出（与暂停
+    // 漂移同族）。落后超 200ms（健康运行 ≤~25ms）时把开钟零点重锚到现在：意图跨度整体平移，
+    // 卡顿期排队的输入按「按住恢复」语义归入当前步，行为面不变。
+    const now = Date.now();
+    const behind = now - (this.startedWall + this.stepIndex * STEP_MS);
+    if (behind > 200) this.startedWall = now - this.stepIndex * STEP_MS;
     this.acc += Math.min(dtMs, 100);
     let steps = 0;
     while (this.acc >= STEP_MS && steps < 6) {
