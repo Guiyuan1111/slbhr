@@ -9,7 +9,7 @@
 import Phaser from "phaser";
 import { type Role } from "@fw/shared";
 import { parseLevel, type LevelData } from "@fw/shared/level2";
-import { Net } from "./net";
+import { Net, type NetCallbacks } from "./net";
 import { KeyboardInput } from "./input";
 import { TouchControls } from "./touch";
 import { BootScene, bgWarmSettled } from "./scenes/BootScene";
@@ -174,6 +174,17 @@ function show(err?: string): void {
   el.textContent = err ?? "";
 }
 
+/**
+ * 断线横幅（issue #5 H-04）：独立于 #hud-status 的常驻元素——updateHud 每 250ms 会用
+ * 相位文本无条件覆写 #hud-status（started 相位是空串），断线提示曾在 ≤250ms 内被冲掉。
+ * 横幅只在 setNetLost 显式清空前保持，任何轮询都不碰它。
+ */
+function setNetLost(msg: string | null): void {
+  const el = $("#net-lost");
+  el.textContent = msg ?? "";
+  el.classList.toggle("hidden", !msg);
+}
+
 /** 连接忙态（P3 防双击）：#menu-error 挂 spinner、双按钮禁用；任何出路（入房/报错/回面板）必须解除 */
 function setBusy(busy: boolean): void {
   $("#menu-error").classList.toggle("busy", busy);
@@ -259,6 +270,7 @@ async function enterGame(): Promise<void> {
       pausedByUser = false;
       keyboard?.setPaused(true);
       touch?.setActive(false);
+      setNetLost(null);
       const sm = phaser!.scene;
       sm.stop("Game");
       sm.stop("EndMenu");
@@ -313,6 +325,129 @@ async function enterGame(): Promise<void> {
   });
 }
 
+/** 联机栏房间码（start() 与刷新恢复共用）。房间码琥珀高亮（textContent 串不变——perf/e2e 按 /房间码 ([^（\s]+)/ 提取） */
+function fillHudRoom(codeShown: string): void {
+  $("#hud-room").replaceChildren(
+    "房间码 ",
+    Object.assign(document.createElement("b"), { textContent: codeShown }),
+    "（密码已校验）",
+  );
+}
+
+/**
+ * 刷新后回座尝试（issue #5 H-04）：sessionStorage 有重连令牌时尝试原席恢复，
+ * 成功直进游戏（角色从快照还原——服务端 allowReconnection 不重发 role）；令牌失效
+ * 则把联机面板带出来并给明确提示（面板默认藏在画布选关流后面，不主动弹出的话
+ * #menu-error 里的提示没人看得见）。
+ */
+async function tryResume(): Promise<void> {
+  const { net: resumed, hadToken } = await Net.tryResume(netHandlers());
+  if (!resumed) {
+    if (hadToken) {
+      if (!selectedLevel) selectedLevel = DEFAULT_LEVEL_ID;
+      $("#menu-level").textContent = `已选关卡：${selectedLevel}`;
+      $("#menu").classList.remove("hidden");
+      show("上次连接已失效，请重新创建或加入房间");
+    }
+    return;
+  }
+  net = resumed;
+  myRole = resumed.myRole;
+  if (myRole) $("#hud-role").textContent = myRole === "fireboy" ? "你扮演：火人" : "你扮演：水女孩";
+  fillHudRoom(resumed.room.roomId);
+  await enterGame();
+}
+
+/** Net 事件回调（start() 与刷新恢复 tryResume 共用；全部只依赖模块级状态） */
+function netHandlers(): NetCallbacks {
+  return {
+    onRole: (role: Role) => {
+      $("#hud-role").textContent = role === "fireboy" ? "你扮演：火人" : "你扮演：水女孩";
+      myRole = role;
+      keyboard?.setRole(role); // 键盘分键（F1）：fb=方向键，wg=W/A/D
+      // 场景可能已启动（角色消息晚到），同步给渲染层
+      const scene = phaser?.scene.getScene("Game") as import("./scenes/GameScene").GameScene | null;
+      scene?.setMyRole(role);
+    },
+    onDeath: ({ role }) => {
+      const name = role === "fireboy" ? "火人" : "水女孩";
+      $("#toast").textContent = `${name}化烟了！点「再试一次」重开`;
+      setTimeout(() => ($("#toast").textContent = ""), 2000);
+    },
+    onPauseChanged: ({ paused }) => {
+      // F3：服务端权威回声（本端发起也走广播回来）。phase 仍是 started（服务端
+      // 玩家暂停不占用 phase=paused——那是断线等待专用词），HUD/键盘暂停闸门不动：
+      // 原版暂停期按住的键在恢复瞬间生效（服务端冻结期输入照常入队，恢复即归帧）
+      pausedByUser = paused;
+      if (paused) phaser?.scene.start("PauseMenu");
+      else {
+        // 解除暂停走面板弹簧滑出（oracle PauseMenu 继续钮 hide()——:1851068）；
+        // 面板未活动（实例未 create，无该方法）则直接停，幂等
+        const pm = phaser?.scene.getScene("PauseMenu") as unknown as { requestClose?: () => void } | null;
+        if (pm?.requestClose) pm.requestClose();
+        else phaser?.scene.stop("PauseMenu");
+      }
+    },
+    onPhase: (phase) => {
+      updateHud();
+      if (phase === "won") {
+        keyboard?.setPaused(true);
+        const f = net?.lastFinish;
+        const diaTotal = currentLevel ? currentLevel.diamonds.filter((d) => d.kind !== "silver").length : 0;
+        const diaGot = (f?.fbDiamonds ?? 0) + (f?.wgDiamonds ?? 0);
+        const timeSec = Math.round((f?.timeMs ?? 0) / 1000);
+        const limit = currentTempleEntry?.time ?? 0;
+        const type = currentTempleEntry?.type ?? "general";
+        // 原版 ProgressModel.update 星级口径：puzzle=银钻>0?3:0（不收=未通过）；general=1+钻石+限时
+        let stars: number;
+        let passed: boolean;
+        if (type === "puzzle") {
+          passed = (f?.silver ?? 0) > 0;
+          stars = passed ? 3 : 0;
+        } else {
+          const diaFull = diaTotal > 0 && diaGot >= diaTotal;
+          const timeOk = limit > 0 && timeSec <= limit;
+          stars = 1 + (diaFull ? 1 : 0) + (timeOk ? 1 : 0);
+          passed = true;
+        }
+        lastResult = { stars, passed };
+        if (passed && currentTempleEntry) saveBest(currentTempleEntry.filename, stars, timeSec);
+        phaser?.scene.start("EndMenu", {
+          diamonds: diaGot,
+          diamondsTotal: diaTotal,
+          silver: f?.silver ?? 0,
+          timeSec,
+          timeLimitSec: limit,
+          type,
+          stars,
+        });
+      } else if (phase === "ready") {
+        // 重开（自动/对方 R）时关闭残留结算/失败面板，否则盖住新一轮
+        phaser?.scene.stop("EndMenu");
+        phaser?.scene.stop("GameOverMenu");
+      } else if (phase === "gameover") {
+        if (!pausedByUser) phaser?.scene.start("GameOverMenu");
+      }
+    },
+    onLevelId: (levelId) => {
+      void reloadLevel(levelId);
+    },
+    // 断线面走独立横幅（issue #5 H-04）：#hud-status 由 updateHud 250ms 轮询覆写，
+    // 断线提示写在上面会在半秒内被冲掉；横幅只在显式清空时消失
+    onReconnecting: (attempt, max) => {
+      setNetLost(`连接已断开，正在重连（${attempt}/${max}）…`);
+    },
+    onDisconnect: (recovered) => {
+      if (recovered) {
+        setNetLost(null);
+        return;
+      }
+      setNetLost("连接已断开，请刷新页面重新加入");
+      show("连接已断开，请刷新页面重新加入");
+    },
+  };
+}
+
 async function start(mode: "create" | "join"): Promise<void> {
   try {
     const password = $<HTMLInputElement>("#password").value;
@@ -321,6 +456,7 @@ async function start(mode: "create" | "join"): Promise<void> {
     if (mode === "join" && !code.trim()) return show("请输入房间码");
 
     show("连接中…");
+    setNetLost(null);
     setBusy(true);
     net = await Net.connect(
       {
@@ -330,98 +466,14 @@ async function start(mode: "create" | "join"): Promise<void> {
         // join 也带上（服务端 join 不读，房间以已加载关卡为准）
         levelId: selectedLevel || urlLevel || DEFAULT_LEVEL_ID,
       },
-      {
-        onRole: (role: Role) => {
-          $("#hud-role").textContent = role === "fireboy" ? "你扮演：火人" : "你扮演：水女孩";
-          myRole = role;
-          keyboard?.setRole(role); // 键盘分键（F1）：fb=方向键，wg=W/A/D
-          // 场景可能已启动（角色消息晚到），同步给渲染层
-          const scene = phaser?.scene.getScene("Game") as import("./scenes/GameScene").GameScene | null;
-          scene?.setMyRole(role);
-        },
-        onDeath: ({ role }) => {
-          const name = role === "fireboy" ? "火人" : "水女孩";
-          $("#toast").textContent = `${name}化烟了！点「再试一次」重开`;
-          setTimeout(() => ($("#toast").textContent = ""), 2000);
-        },
-        onPauseChanged: ({ paused }) => {
-          // F3：服务端权威回声（本端发起也走广播回来）。phase 仍是 started（服务端
-          // 玩家暂停不占用 phase=paused——那是断线等待专用词），HUD/键盘暂停闸门不动：
-          // 原版暂停期按住的键在恢复瞬间生效（服务端冻结期输入照常入队，恢复即归帧）
-          pausedByUser = paused;
-          if (paused) phaser?.scene.start("PauseMenu");
-          else {
-            // 解除暂停走面板弹簧滑出（oracle PauseMenu 继续钮 hide()——:1851068）；
-            // 面板未活动（实例未 create，无该方法）则直接停，幂等
-            const pm = phaser?.scene.getScene("PauseMenu") as unknown as { requestClose?: () => void } | null;
-            if (pm?.requestClose) pm.requestClose();
-            else phaser?.scene.stop("PauseMenu");
-          }
-        },
-        onPhase: (phase) => {
-          updateHud();
-          if (phase === "won") {
-            keyboard?.setPaused(true);
-            const f = net?.lastFinish;
-            const diaTotal = currentLevel ? currentLevel.diamonds.filter((d) => d.kind !== "silver").length : 0;
-            const diaGot = (f?.fbDiamonds ?? 0) + (f?.wgDiamonds ?? 0);
-            const timeSec = Math.round((f?.timeMs ?? 0) / 1000);
-            const limit = currentTempleEntry?.time ?? 0;
-            const type = currentTempleEntry?.type ?? "general";
-            // 原版 ProgressModel.update 星级口径：puzzle=银钻>0?3:0（不收=未通过）；general=1+钻石+限时
-            let stars: number;
-            let passed: boolean;
-            if (type === "puzzle") {
-              passed = (f?.silver ?? 0) > 0;
-              stars = passed ? 3 : 0;
-            } else {
-              const diaFull = diaTotal > 0 && diaGot >= diaTotal;
-              const timeOk = limit > 0 && timeSec <= limit;
-              stars = 1 + (diaFull ? 1 : 0) + (timeOk ? 1 : 0);
-              passed = true;
-            }
-            lastResult = { stars, passed };
-            if (passed && currentTempleEntry) saveBest(currentTempleEntry.filename, stars, timeSec);
-            phaser?.scene.start("EndMenu", {
-              diamonds: diaGot,
-              diamondsTotal: diaTotal,
-              silver: f?.silver ?? 0,
-              timeSec,
-              timeLimitSec: limit,
-              type,
-              stars,
-            });
-          } else if (phase === "ready") {
-            // 重开（自动/对方 R）时关闭残留结算/失败面板，否则盖住新一轮
-            phaser?.scene.stop("EndMenu");
-            phaser?.scene.stop("GameOverMenu");
-          } else if (phase === "gameover") {
-            if (!pausedByUser) phaser?.scene.start("GameOverMenu");
-          }
-        },
-        onLevelId: (levelId) => {
-          void reloadLevel(levelId);
-        },
-        onDisconnect: (recovered) => {
-          if (!recovered) {
-            show("连接已断开，请刷新页面重新加入");
-            $("#hud-status").textContent = "连接已断开";
-          }
-        },
-      },
+      netHandlers(),
     );
-    const codeShown = net.room.roomId;
-    // 房间码琥珀高亮（textContent 串不变——perf/e2e 按 /房间码 ([^（\s]+)/ 提取）
-    $("#hud-room").replaceChildren(
-      "房间码 ",
-      Object.assign(document.createElement("b"), { textContent: codeShown }),
-      "（密码已校验）",
-    );
+    fillHudRoom(net.room.roomId);
     // 创建者：一键复制邀请链接（对方打开自动填房间码/密码并加入；pw 随链接即视为已授权）
     if (mode === "create") {
       const invite = `${location.origin}${location.pathname}?level=${encodeURIComponent(
         selectedLevel || urlLevel || DEFAULT_LEVEL_ID,
-      )}&room=${encodeURIComponent(codeShown)}&pw=${encodeURIComponent(password)}`;
+      )}&room=${encodeURIComponent(net.room.roomId)}&pw=${encodeURIComponent(password)}`;
       const btn = document.createElement("button");
       btn.id = "btn-invite";
       btn.type = "button";
@@ -515,11 +567,14 @@ function togglePause(): void {
 function bindUi(): void {
   $("#btn-create").addEventListener("click", () => start("create"));
   $("#btn-join").addEventListener("click", () => start("join"));
-  // 邀请深链：房间码/密码已带全时自动加入（延迟一拍让 Phaser 初始化先走；失败回落面板可手改）
+  // 邀请深链：房间码/密码已带全时自动加入（延迟一拍让 Phaser 初始化先走；失败回落面板可手改）。
+  // 无深链 → 尝试刷新回座（issue #5 H-04：sessionStorage 重连令牌）
   if (inviteRoom && invitePw) {
     $<HTMLInputElement>("#roomcode").value = inviteRoom;
     $<HTMLInputElement>("#password").value = invitePw;
     window.setTimeout(() => void start("join"), 300);
+  } else {
+    void tryResume();
   }
   // HUD 轮询刷新（4Hz 足够，DOM 开销可忽略；模块级单例，重入不叠加）
   setInterval(updateHud, 250);

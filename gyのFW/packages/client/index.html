@@ -477,6 +477,27 @@
         font-size: 14px;
       }
       #toast:empty { display: none; }
+
+      /* 断线横幅（issue #5 H-04）：独立于 #hud-status 的常驻指示——updateHud 250ms 轮询
+         会用相位文本覆写 #hud-status（started 是空串），断线提示曾瞬间被冲掉。本元素只
+         听 setNetLost 的；置于 #hud 子树（pointer-events:none，量具隐蔽口径同享） */
+      #net-lost {
+        position: absolute;
+        top: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        max-width: 90vw;
+        background: var(--panel);
+        border: 1px solid rgba(255, 122, 100, 0.55);
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #ff8f8f;
+        text-align: center;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+        white-space: nowrap;
+      }
     </style>
   </head>
   <body>
@@ -524,6 +545,7 @@
         <span id="hud-status"></span>
       </div>
       <div id="toast"></div>
+      <div id="net-lost" class="hidden"></div>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

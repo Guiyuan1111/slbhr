@@ -3,7 +3,9 @@
  *
  * - 开发模式直连 2567 端口（Vite 代理只负责静态资源）
  * - 生产模式同源（http→ws、https→wss，隧道场景天然成立）
- * - 断线时尝试 room.reconnect() 自动重连（配合服务端 allowReconnection）
+ * - 断线时用重连令牌自动回座（配合服务端 allowReconnection）：有限次退避重试
+ *   （issue #5 H-04，原实现只试一次且令牌缺失误报恢复成功）；令牌+角色落
+ *   sessionStorage，同标签页刷新后可经 Net.tryResume 尝试恢复（自用可接受）
  *
  * 0.3.0 消息面（与 server ForestRoom 对齐）：
  * - 私发 "role"；广播 "death" {role} / "finish" {fbDiamonds,wgDiamonds,silver,timeMs} /
@@ -57,9 +59,17 @@ export interface NetCallbacks {
   onPhase?: (phase: string, prev: string) => void;
   /** 关卡切换（onStateChange 差分；活房间 advance 换关回声，双端同触发） */
   onLevelId?: (levelId: string, prev: string) => void;
-  /** 连接断开（已自动尝试重连）；参数=是否重连成功 */
+  /** 连接断开（已自动尝试重连）；参数=是否重连成功（含自己主动离开 code 1000） */
   onDisconnect: (recovered: boolean) => void;
+  /** 断线重连进行中（attempt 从 1 计，共 max 次）——UI 挂常驻横幅用（issue #5 H-04） */
+  onReconnecting?: (attempt: number, max: number) => void;
 }
+
+/** 重连令牌+角色持久化键（sessionStorage：同标签页刷新存活，关标签即弃；issue #5 H-04） */
+const RESUME_KEY = "fw-resume";
+
+/** 断线重连退避序列（毫秒）：首试 +3 次重试，总窗 ~7s+尝试耗时（服务端席位窗默认 60s） */
+const RECONNECT_DELAYS_MS = [0, 1000, 2000, 4000];
 
 export class Net {
   room!: Room<any>;
@@ -74,6 +84,8 @@ export class Net {
   private prevLevelId = "";
   /** r8 件2：waitForLevelId 等待者（onStateChange 首个 levelId 即时唤醒，替代 50ms 轮询） */
   private levelIdWaiters: Array<(id: string) => void> = [];
+  /** 最近一次绑定的回调（重连重试/恢复路径复用；bindRoom 时更新） */
+  private cb: NetCallbacks | null = null;
 
   /** 服务器地址：开发直连 2567，生产同源自适应 ws/wss */
   static serverUrl(): string {
@@ -98,8 +110,12 @@ export class Net {
   /** 绑定本房间的全部消息/状态监听。重连拿到新 Room 实例后必须重绑，否则一切回调静默失效 */
   private bindRoom(cb: NetCallbacks): void {
     const room = this.room;
+    this.cb = cb;
     room.onMessage("role", (role: Role) => {
       this.myRole = role;
+      // role 到位即补写恢复令牌快照（刷新恢复需要角色——allowReconnection 不重跑 onJoin，
+      // 服务端不会重发 role，刷新后只能本地还原）
+      this.saveResume();
       cb.onRole(role);
     });
     room.onMessage("death", (payload: { role: Role }) => cb.onDeath(payload));
@@ -140,23 +156,92 @@ export class Net {
     });
 
     room.onLeave(async (code) => {
-      // 1000 = 自己主动离开；否则用重连令牌自动重连（服务端冻结等待中）
+      // 1000 = 自己主动离开：清恢复令牌，不留任何回座预期
       if (code === 1000) {
+        this.clearResume();
         cb.onDisconnect(true);
         return;
       }
-      try {
-        const token = (room as unknown as { reconnectionToken?: string }).reconnectionToken;
-        if (token) {
+      // issue #5 H-04：令牌缺失按失败处理（原实现会穿透到 onDisconnect(true) 误报恢复成功）
+      const token = (room as unknown as { reconnectionToken?: string }).reconnectionToken;
+      if (!token) {
+        this.clearResume();
+        cb.onDisconnect(false);
+        return;
+      }
+      // 有限次退避重试（原实现只试一次，短抖动/服务重启即永久断开）
+      const max = RECONNECT_DELAYS_MS.length;
+      for (let attempt = 1; attempt <= max; attempt++) {
+        if (RECONNECT_DELAYS_MS[attempt - 1] > 0) {
+          await new Promise((r) => setTimeout(r, RECONNECT_DELAYS_MS[attempt - 1]));
+        }
+        cb.onReconnecting?.(attempt, max);
+        try {
           // reconnect 返回的是新 Room 实例：必须换绑 net.room 并重挂全部监听
           this.room = await this.client.reconnect(token);
           this.bindRoom(cb);
+          cb.onDisconnect(true);
+          return;
+        } catch {
+          /* 服务重启/令牌失效/网络未恢复 → 退避后重试 */
         }
-        cb.onDisconnect(true);
-      } catch {
-        cb.onDisconnect(false);
       }
+      // 重试耗尽：令牌已无回座价值，清存储
+      this.clearResume();
+      cb.onDisconnect(false);
     });
+  }
+
+  // ---- 重连令牌持久化（issue #5 H-04：同标签页刷新后可尝试回座）----
+
+  private saveResume(): void {
+    const token = (this.room as unknown as { reconnectionToken?: string }).reconnectionToken;
+    if (!token) return;
+    try {
+      sessionStorage.setItem(RESUME_KEY, JSON.stringify({ token, role: this.myRole }));
+    } catch {
+      /* 隐身模式等存储不可用：静默降级为仅内存令牌（原行为） */
+    }
+  }
+
+  private clearResume(): void {
+    try {
+      sessionStorage.removeItem(RESUME_KEY);
+    } catch {
+      /* 存储不可用时无持久化可言 */
+    }
+  }
+
+  /**
+   * 页面刷新后的回座尝试：读 sessionStorage 快照（令牌+角色）重连。
+   * - 有快照且重连成功 → 绑好回调的 Net（myRole 已本地还原；服务端 allowReconnection
+   *   不重跑 onJoin、不重发 role，只能靠快照）。
+   * - 无快照 → { net: null, hadToken: false }（调用方走正常进房面板）。
+   * - 有快照但重连失败/超时 → { net: null, hadToken: true }（调用方给明确提示）。
+   */
+  static async tryResume(cb: NetCallbacks, timeoutMs = 8000): Promise<{ net: Net | null; hadToken: boolean }> {
+    let saved: { token?: string; role?: Role | null } = {};
+    try {
+      saved = JSON.parse(sessionStorage.getItem(RESUME_KEY) ?? "{}") as { token?: string; role?: Role | null };
+    } catch {
+      return { net: null, hadToken: false };
+    }
+    if (!saved.token) return { net: null, hadToken: false };
+    const client = new Client(Net.serverUrl());
+    const net = new Net();
+    net.client = client;
+    try {
+      net.room = await Promise.race([
+        client.reconnect(saved.token),
+        new Promise<never>((_, rej) => setTimeout(() => rej(new Error("重连超时")), timeoutMs)),
+      ]);
+    } catch {
+      sessionStorage.removeItem(RESUME_KEY);
+      return { net: null, hadToken: true };
+    }
+    net.myRole = saved.role ?? null;
+    net.bindRoom(cb);
+    return { net, hadToken: true };
   }
 
   /**
