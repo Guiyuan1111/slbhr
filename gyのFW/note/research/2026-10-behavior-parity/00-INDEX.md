@@ -20,6 +20,7 @@
 | 11 | [11-network-and-alignment.md](11-network-and-alignment.md) 网络同步与量具收紧 | netopt 槽：patch 20→60Hz（4ba8478，带宽 ×2.8-3.0≈+1.3-1.9KB/s 可忽略）、self 角色 dead-reckoning lead 50→17ms（3e72433，rms 5.85→0.16px）、oracle-gold 采样对齐 alignShift=1（9ff9c1d，中位归零；win 帧 +96f 归因修正=oracle 终幕 tuck 动画）、tolerance 无偏重定 25→30/173→177；e2e 三门禁全绿 | ✅ 269d83d |
 | 12 | [12-animation-audit.md](12-animation-audit.md) 动画保真度排查 | 状态级对拍（文字模型禁像素判读）：注册面 0 实义差异（getFrameIndexes 过滤字证）、切换序列逐事件同构、主家族双侧 30fps、循环长度 11/19/30/8/5 双侧一致、烟雾 ±2f；唯一实质差异=dying 即藏身已修（5b783e7，hidden 104/195→195/195 vs oracle 187/188）；大件挂账见 §3 挂账 3 | ✅ 623b372+5b783e7+e477f9c |
 | 13 | [13-ui-transition-audit.md](13-ui-transition-audit.md) UI 转场动画保真审计（只读考古） | oracle 换屏全走自建 state.fade 黑幕（500+500ms+Loading 点循环 800/300ms，bundle:2213815；camera.fade/flash 0 命中），我方全裸切；面板滑入=弹簧（force 2.3/friction 0.7/起点 1.5H）非 Back.easeOut 420ms、黑幕跟板动态；popupArrow 系末拍单帧恒亮非 2fps 闪烁、星碑分段 to_N 非累计播放、按钮换帧=按压语义非 hover——41 项盘点（LevelMenu 无 stagger、NewSign 无弹跳两假设证伪）：已复刻 10/偏差 18/缺失 10/不适用 3，Top6 建议在档 | ⏸ 挂账（Top 建议待立项） |
+| 14 | [14-audio-audit.md](14-audio-audit.md) 音效保真度审计（只读考古） | oracle 33 键全景（Boot 全载+menu 态 2 键+level 态 18+按图追加；主音量 0.1、**fx=总静音含 BGM**、music 只 gate BGM 起停而 one-shot 曲目无门、endFail 双方同死资产）；我方 19 键：适用面参数全一致（0.1/0.5/0.2/loop），缺失触发 1 类=**UI 按钮点击音全缺**（oracle 每钮播 pusher）、触发不一致 9（速度关终局曲错装+底噪叠播、**退场 scene.stop 不停音泄漏进菜单**、门控语义、fadeOut、puzzle 空拍、平台音粒度）、资产缺 14 键经 58 份森林地图字证除 charToggle（单模式）外全 0 用例；Top3 建议在档 | ⏸ 挂账（Top 建议待立项） |
 
 ## §2 工具链速查
 
