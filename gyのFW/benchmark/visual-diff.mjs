@@ -4,11 +4,21 @@
 //   export PATH="$PWD/TEMP/node:$PATH"
 //   node --import tsx benchmark/visual-diff.mjs                 # 跑分打印
 //   node --import tsx benchmark/visual-diff.mjs --save visual-v0.3.6
+//   端口被占时可换口：VD_STATIC_PORT=8787 VD_OURS_PORT=2567（缺省不变；
+//   改 ours 口时须换，static 口换后 route 拦截白名单自动跟随）
+//
+// 口径（2026-10-20 修，量具 bug 定谳=note/research/2026-10-fidelity/39-visual-diff-drift.md §3.2）：
+//   我方侧截帧前以 display:none!important 隐藏 #hud/#menu/#toast DOM 覆盖层，双 rAF 后
+//   对 canvas 截图，随即移除样式恢复原页——Playwright 元素截图语义=页面合成结果，
+//   0.3.33 HUD 木牌化起 #hud 子树入镜净扣 3.35–4.1 分，此修恢复"canvas 截图比对"设计本义；
+//   新口径带与旧带不可直列：历史 95.2–95.8（旧轻量 HUD 文本仍入镜）、漂移期 88.5–93.0
+//   （方案二过渡带），带演变链见 benchmark/README.md「视觉差分基准」节。
 //
 // 原理：
 //   原版侧：capture.mjs 同款基建（8787 静态服 + route 拦截 + temple 跳关 + 物理步计数钩子），
 //           forest_01 就绪后第 60 物理帧对 canvas 元素截图（无输入，角色 idle）。
-//   我方侧：2567 服务器 + 双浏览器入房（e2e 同款流程），phase=started 后 ~1s 对 canvas 截图。
+//   我方侧：2567 服务器 + 双浏览器入房（e2e 同款流程），phase=started 后 ~1s 对 canvas 截图
+//           （截图瞬间 #hud/#menu/#toast 已按上口径隐藏，流程语义不变）。
 //   差分：页内把两张 PNG 归一化到 480×360 灰度，±48px 平移搜索取最优对齐，
 //         报告容差 24/48 匹配率与平均绝对差；顶部 64px（原版画布内 HUD 区）单列。
 import { chromium } from "playwright";
@@ -21,8 +31,12 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const OUT_A_DIR = path.resolve(ROOT, "../Fireboy-and-Watergirl/output/A");
+const STATIC_PORT = Number(process.env.VD_STATIC_PORT || 8787); // 原版站静态服端口
+const OURS_PORT = Number(process.env.VD_OURS_PORT || 2567); // 我方服务器端口（改时两处 URL 跟随）
 const FRAME_TARGET = 60; // 就绪后第 60 物理帧采样
 const OURS_WAIT_MS = 1000; // started 后等待（对齐采样时刻）
+const HIDE_DOM_STYLE_ID = "__vd_hide_dom"; // 截帧期 DOM 覆盖层隐藏样式（用后即移除）
+const HIDE_DOM_SELECTORS = "#menu,#hud,#toast"; // 39号档 §3.2：入镜净扣 3.35–4.1 分的三层
 const argv = process.argv.slice(2);
 const saveIdx = argv.indexOf("--save");
 
@@ -51,12 +65,12 @@ function serveStatic(rootDir, port) {
 async function spawnOurs() {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, ["--import", "tsx", "packages/server/src/index.ts"], {
-      cwd: ROOT, env: { ...process.env, PORT: "2567" }, stdio: ["ignore", "pipe", "pipe"],
+      cwd: ROOT, env: { ...process.env, PORT: String(OURS_PORT) }, stdio: ["ignore", "pipe", "pipe"],
     });
     const timer = setTimeout(() => reject(new Error("ours server timeout")), 30000);
     const ondata = (s) => {
       process.stderr.write("[ours] " + s);
-      if (String(s).includes("http+ws") || String(s).includes("2567")) {
+      if (String(s).includes("http+ws") || String(s).includes(String(OURS_PORT))) {
         clearTimeout(timer); resolve(child);
       }
     };
@@ -109,11 +123,11 @@ async function shootOriginal(browser) {
   const page = await ctx.newPage();
   await page.route("**/*", (route) => {
     const u = route.request().url();
-    if (!u.startsWith("http://127.0.0.1:8787")) return route.abort();
+    if (!u.startsWith(`http://127.0.0.1:${STATIC_PORT}`)) return route.abort();
     if (/\.mp3(\?|$)/.test(u)) return route.abort();
     return route.continue();
   });
-  await page.goto("http://127.0.0.1:8787/gameIndex.html", { waitUntil: "domcontentloaded", timeout: 60000 });
+  await page.goto(`http://127.0.0.1:${STATIC_PORT}/gameIndex.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
   console.log("[visual][orig] 等待 progress…");
   await page.waitForFunction(READY_PROG, null, { timeout: 60000 });
   const fname = await page.evaluate(RESOLVE);
@@ -139,7 +153,7 @@ async function shootOriginal(browser) {
 
 // ---------- 我方侧 ----------
 async function enterAs(page, mode, roomCode) {
-  await page.goto(`http://127.0.0.1:2567/?level=forest_01`, { waitUntil: "domcontentloaded" });
+  await page.goto(`http://127.0.0.1:${OURS_PORT}/?level=forest_01`, { waitUntil: "domcontentloaded" });
   await page.fill("#password", "vw");
   if (mode === "join") await page.fill("#roomcode", roomCode);
   await page.click(mode === "create" ? "#btn-create" : "#btn-join");
@@ -195,8 +209,15 @@ async function shootOurs(browser) {
   }
   await a.waitForFunction(() => document.querySelector("#hud-status")?.textContent === "", null, { timeout: 25000 });
   await a.waitForTimeout(OURS_WAIT_MS);
+  // [口径修复 39号档 §3.2] Playwright 元素截图=页面合成结果，#hud 子树（0.3.33 HUD 木牌化起）
+  // 入镜净扣 3.35–4.1 分。截帧前隐藏 #hud/#menu/#toast，双 rAF 等合成落定后截 canvas，
+  // 随即移除样式恢复原页——仅瞬时显隐 DOM 覆盖层，不触碰客户端代码/画布/网络流程语义。
+  await a.evaluate(`(() => { const st = document.createElement("style"); st.id = ${JSON.stringify(HIDE_DOM_STYLE_ID)}; st.textContent = ${JSON.stringify(HIDE_DOM_SELECTORS)} + "{display:none !important}"; document.head.appendChild(st); return true; })()`);
+  await a.evaluate(`(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))))()`);
   const canvas = a.locator("#game-root canvas").first();
   const shot = await canvas.screenshot();
+  await a.evaluate(`(() => { document.getElementById(${JSON.stringify(HIDE_DOM_STYLE_ID)})?.remove(); return true; })()`).catch(() => {});
+  console.log("[visual][ours] 截帧已隐藏 #hud/#menu/#toast（39号档口径），样式已恢复");
   const meta = await a.evaluate(`(() => { var c = document.querySelector('#game-root canvas'); return { cw: c.width, ch: c.height, sw: c.style.width, sh: c.style.height }; })()`);
   await ctxA.close(); await ctxB.close();
   return { shot, meta };
@@ -278,7 +299,7 @@ const DIFF_PROG = async (bufA, bufB) => {
 // ---------- 主流程 ----------
 let globalScope = { ours: null, srv: null };
 (async () => {
-  const srv8787 = await serveStatic(OUT_A_DIR, 8787);
+  const srv8787 = await serveStatic(OUT_A_DIR, STATIC_PORT);
   globalScope.srv = srv8787;
   const ours = await spawnOurs();
   globalScope.ours = ours;
@@ -300,7 +321,11 @@ let globalScope = { ours: null, srv: null };
     diff = await DIFF_PROG(original.shot, oursShot.shot);
     const visualScore = +(diff.full.rate48 * 100).toFixed(2);
     const report = {
-      meta: { generatedAt: new Date().toISOString(), frameTarget: FRAME_TARGET, note: "forest_01 就绪后第60物理帧，无输入 idle" },
+      meta: {
+        generatedAt: new Date().toISOString(), frameTarget: FRAME_TARGET,
+        note: "forest_01 就绪后第60物理帧，无输入 idle",
+        captureMethodology: "截帧前 display:none!important 隐藏 #hud/#menu/#toast，双 rAF 后截 canvas，截后恢复（39号档 §3.2 口径修复，2026-10-20）",
+      },
       originalCanvas: original.meta, oursCanvas: oursShot.meta,
       diff, visualScore,
     };

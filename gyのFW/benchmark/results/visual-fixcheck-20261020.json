@@ -1,0 +1,92 @@
+{
+ "meta": {
+  "generatedAt": "2026-10-20T05:48:25.022Z",
+  "frameTarget": 60,
+  "note": "forest_01 就绪后第60物理帧，无输入 idle",
+  "captureMethodology": "截帧前 display:none!important 隐藏 #hud/#menu/#toast，双 rAF 后截 canvas，截后恢复（39号档 §3.2 口径修复，2026-10-20）"
+ },
+ "originalCanvas": {
+  "w": 1280,
+  "h": 960,
+  "cw": 1280,
+  "ch": 960
+ },
+ "oursCanvas": {
+  "cw": 1280,
+  "ch": 960,
+  "sw": "1280px",
+  "sh": "960px"
+ },
+ "diff": {
+  "bestOffset": {
+   "x": 5,
+   "y": -5
+  },
+  "full": {
+   "rate24": 0.8586,
+   "rate48": 0.9084,
+   "mad": 12.01
+  },
+  "zeroOffset": {
+   "rate24": 0.732,
+   "rate48": 0.809,
+   "mad": 21.6
+  },
+  "topBand": {
+   "rate24": 0.8407,
+   "rate48": 0.895,
+   "mad": 13.56
+  },
+  "worstGrid": [
+   {
+    "gx": 11,
+    "gy": 1,
+    "rate48": 0.625,
+    "mad": 36.4
+   },
+   {
+    "gx": 11,
+    "gy": 0,
+    "rate48": 0.651,
+    "mad": 35.1
+   },
+   {
+    "gx": 5,
+    "gy": 0,
+    "rate48": 0.704,
+    "mad": 35.3
+   },
+   {
+    "gx": 11,
+    "gy": 3,
+    "rate48": 0.704,
+    "mad": 30.2
+   },
+   {
+    "gx": 10,
+    "gy": 1,
+    "rate48": 0.715,
+    "mad": 29
+   },
+   {
+    "gx": 11,
+    "gy": 2,
+    "rate48": 0.734,
+    "mad": 25
+   },
+   {
+    "gx": 11,
+    "gy": 4,
+    "rate48": 0.746,
+    "mad": 23.8
+   },
+   {
+    "gx": 6,
+    "gy": 0,
+    "rate48": 0.749,
+    "mad": 29
+   }
+  ]
+ },
+ "visualScore": 90.84
+}

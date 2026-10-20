@@ -37,11 +37,20 @@ forest_01 就绪后第 60 物理帧（无输入 idle）对 canvas 元素截图�
 双浏览器入房。页内 480×360 灰度归一 + ±48px 平移搜索取最优对齐，报告容差
 24/48 匹配率。**视觉复刻度指数 = 容差48匹配率**。
 
-- 实测（0.3.6）：最优平移 (−1,−2)（镜头取景几乎一致）、全帧匹配率 86.63%、
+**捕获口径（2026-10-20 修）**：我方侧截帧前以 `display:none!important` 隐藏
+`#hud/#menu/#toast` DOM 覆盖层，双 rAF 后截 canvas，随即恢复——39 号档
+（note/research/2026-10-fidelity/39-visual-diff-drift.md §3.2）定谳 Playwright
+元素截图实为页面合成结果，0.3.33 HUD 木牌化起 `#hud` 子树入镜净扣 3.35–4.1 分，
+此修恢复"canvas 截图比对"设计本义。**跨口径带不可直列**，演变链：
+95.2–95.8（旧带，10-06–10-13；旧轻量 HUD 文本仍入镜）→ 88.5–93.0（漂移期过渡带，
+方案二=不修量具口径）→ 新口径带见下节复定档记录。
+
+- 实测（0.3.6，旧口径）：最优平移 (−1,−2)（镜头取景几乎一致）、全帧匹配率 86.63%、
   顶部 HUD 带 76.58%（原版画布内 HUD 为已知系统性差异）。
 - 原版侧注意：/multiplayer.js 在 output/ 父目录（静态服需父目录回退）；须等 menu
   资产加载空闲（load.isLoading===false）再跳关，否则 menu 残留 loader 回调会在
   level 加载完成时引爆并中断派发链。
+- 端口被占可换口：`VD_STATIC_PORT`/`VD_OURS_PORT` 环境变量（缺省 8787/2567 不变）。
 - 截图证据：results/visual-original.png / visual-ours.png。
 
 ## 性能基准（0.3.21 起；r0 七件基线与 r1 第一轮优化见 note/report/perf/2026-10-18-r0-baseline.md / 2026-10-18-r1-optimization.md）
