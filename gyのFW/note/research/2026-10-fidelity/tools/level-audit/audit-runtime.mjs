@@ -89,14 +89,21 @@ const DUMP_ORACLE = () => {
   const out = [];
   // 手动累积父变换（世界组含 camera scroll，不能用 worldTransform；本地链 =
   // root(−levelCenter·scale) → 层组 → …；角度顺时针度）
-  const walk = (o, d, path, px, py, ps, pr) => {
+  const walk = (o, d, path, M) => {
     if (!o || d > 6 || out.length > 4000) return;
-    const th = ((o.angle || 0) + pr) * Math.PI / 180;
-    const sx = (o.scale ? o.scale.x : 1) * ps;
-    const sy = (o.scale ? o.scale.y : 1) * ps;
-    const lx = o.x * ps, ly = o.y * ps;
-    const wx = px + lx * Math.cos(th) - ly * Math.sin(th);
-    const wy = py + lx * Math.sin(th) + ly * Math.cos(th);
+    // 2×2 仿射合成：M = M_parent · A(angle)·S(sx,sy)；world = M·local + t_parent
+    const th = (o.angle || 0) * Math.PI / 180;
+    const cs = Math.cos(th), sn = Math.sin(th);
+    const sx = o.scale ? o.scale.x : 1, sy = o.scale ? o.scale.y : 1;
+    const A = { a: cs * sx, b: sn * sx, c: -sn * sy, d: cs * sy };
+    const N = {
+      a: M.a * A.a + M.c * A.b,
+      b: M.b * A.a + M.d * A.b,
+      c: M.a * A.c + M.c * A.d,
+      d: M.b * A.c + M.d * A.d,
+    };
+    const wx = M.a * o.x + M.c * o.y + M.tx;
+    const wy = M.b * o.x + M.d * o.y + M.ty;
     const isContainer = !!o.children;
     const key = o.key && typeof o.key === "string" ? o.key : undefined;
     const frame = typeof o.frameName === "string" ? o.frameName : o.frame && typeof o.frame.name === "string" ? o.frame.name : undefined;
@@ -106,21 +113,33 @@ const DUMP_ORACLE = () => {
       f: frame,
       x: r2(wx), y: r2(wy), // level 系绝对坐标（含 root 偏移，compare 侧归一）
       ax: r2(o.anchor ? o.anchor.x : 0), ay: r2(o.anchor ? o.anchor.y : 0),
-      sx: r2(o.scale ? o.scale.x : 1), sy: r2(o.scale ? o.scale.y : 1),
-      a: r2(o.angle), fx: o.scale && o.scale.x < 0,
+      sx: r2(sx), sy: r2(sy),
+      a: r2(o.angle), fx: sx < 0,
       al: r2(o.alpha), v: o.visible !== false,
       w: o.width, h: o.height,
       path,
     });
-    if (isContainer) for (const c of o.children) walk(c, d + 1, path + ">" + (c.key || c.type), wx, wy, sx, ((o.angle || 0) + pr));
+    if (isContainer) {
+      const NM = {
+        a: M.a * A.a + M.c * A.b,
+        b: M.b * A.a + M.d * A.b,
+        c: M.a * A.c + M.c * A.d,
+        d: M.b * A.c + M.d * A.d,
+        tx: wx, ty: wy,
+      };
+      for (const c of o.children) walk(c, d + 1, path + ">" + (c.key || c.type), NM);
+    }
   };
   const root = lv.root ?? lv.group ?? g.world;
   // 根自身不入变换栈（其 −levelCenter·scale 由 rootXY 记录，compare 侧归一）；
-  // 子孙从根位姿起累积（walk 内含角度/缩放合成）。
+  // 子孙从根位姿起累积（2×2 矩阵合成，含负 scale 镜像）。
   {
-    const rs = root.scale ? root.scale.x : 1;
+    const rth = (root.angle || 0) * Math.PI / 180;
+    const rcs = Math.cos(rth), rsn = Math.sin(rth);
+    const rsx = root.scale ? root.scale.x : 1, rsy = root.scale ? root.scale.y : 1;
+    const RM = { a: rcs * rsx, b: rsn * rsx, c: -rsn * rsy, d: rcs * rsy, tx: root.x, ty: root.y };
     for (const c of root.children ?? []) {
-      walk(c, 1, ">" + (c.key || c.type), root.x, root.y, rs, root.angle || 0);
+      walk(c, 1, ">" + (c.key || c.type), RM);
     }
   }
   return {
