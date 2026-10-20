@@ -1,0 +1,5509 @@
+[
+ {
+  "id": "forest_04",
+  "cam_ours": {
+   "x": 16,
+   "y": 16,
+   "zoom": 0.97
+  },
+  "cam_oracle": {
+   "rootScale": 0.97,
+   "x": -640,
+   "y": -480,
+   "zoom": 1
+  },
+  "dl": {
+   "families": {
+    "BackGround": {
+     "oracle": 1,
+     "ours": 2,
+     "paired": 1,
+     "worst_d": 0
+    },
+    "BarCapLeft": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 4.0
+    },
+    "BarCapRight": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 3.6
+    },
+    "BarCenter": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 3.8
+    },
+    "Clock": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "FinishBoy": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 3.6
+    },
+    "FinishGirl": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 3.7
+    },
+    "FireBox": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 2.2
+    },
+    "FireBoxLeft": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 1.9
+    },
+    "FireBoxRight": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 2.3
+    },
+    "GreenBox": {
+     "oracle": 15,
+     "ours": 15,
+     "paired": 15,
+     "worst_d": 5.7
+    },
+    "GreenBoxLeft": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 4.4
+    },
+    "GreenBoxRight": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 5.8
+    },
+    "Navy": {
+     "oracle": 11,
+     "ours": 11,
+     "paired": 6,
+     "worst_d": 34.3
+    },
+    "PauseButton": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "TileSprite?": {
+     "oracle": 0,
+     "ours": 2,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "__decor_baked": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "__ground": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "death_smoke": {
+     "oracle": 0,
+     "ours": 2,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_A": {
+     "oracle": 0,
+     "ours": 3,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_O_": {
+     "oracle": 0,
+     "ours": 2,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_T_": {
+     "oracle": 0,
+     "ours": 25,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_X": {
+     "oracle": 0,
+     "ours": 9,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "diamond_fb": {
+     "oracle": 6,
+     "ours": 6,
+     "paired": 6,
+     "worst_d": 7.3
+    },
+    "diamond_wg": {
+     "oracle": 6,
+     "ours": 6,
+     "paired": 6,
+     "worst_d": 8.5
+    },
+    "fire_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "fire_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 4.1
+    },
+    "fire_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 4.1
+    },
+    "lever_base": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.9
+    },
+    "lever_base_light_off": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.9
+    },
+    "lever_stick": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.9
+    },
+    "lever_stick_light_off": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.9
+    },
+    "moving_platform_light_off": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 3.8
+    },
+    "movingbox": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 5.1
+    },
+    "pulley_anchor": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 24.2
+    },
+    "pulley_base": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 4.3
+    },
+    "pulley_platform": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 4.3
+    },
+    "pulley_rope": {
+     "oracle": 3,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "pusher_block": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 5.3
+    },
+    "pusher_block_light": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 5.3
+    },
+    "water_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "water_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 5.5
+    },
+    "water_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 5.5
+    },
+    "火": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    }
+   },
+   "missing": [
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "at": [
+      79.6,
+      53.8
+     ],
+     "v": true
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "at": [
+      79.6,
+      53.8
+     ],
+     "v": true
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "at": [
+      907.8,
+      53.8
+     ],
+     "v": true
+    }
+   ],
+   "extra": [
+    {
+     "fam": "BackGround",
+     "f": "__BASE",
+     "at": [
+      80,
+      880
+     ],
+     "v": true
+    }
+   ],
+   "extra_hidden": [],
+   "misaligned": [
+    {
+     "fam": "lever_stick_light_off",
+     "f": "lever_stick_light_off0000",
+     "kind": "attr",
+     "oracle": [
+      145.8,
+      128.1,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      146.4,
+      128.6,
+      29.99,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_anchor",
+     "f": "pulley_anchor0000",
+     "kind": "attr",
+     "oracle": [
+      89.6,
+      63.7,
+      145.9,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      70,
+      64,
+      -90.42,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_anchor",
+     "f": "pulley_anchor0000",
+     "kind": "attr",
+     "oracle": [
+      897.8,
+      63.7,
+      145.9,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      922,
+      64,
+      -90.42,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_platform",
+     "f": "pulley_platform0000",
+     "kind": "attr",
+     "oracle": [
+      79.6,
+      875.9,
+      0,
+      -1.02,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      80,
+      880,
+      0,
+      1.02,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_platform",
+     "f": "pulley_platform0000",
+     "kind": "attr",
+     "oracle": [
+      907.8,
+      193.1,
+      0,
+      -1.02,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      912,
+      194,
+      0,
+      1.02,
+      1,
+      false,
+      true
+     ]
+    }
+   ],
+   "static_pos_bad": 0
+  },
+  "px": {
+   "raw_gt8_pct": 9.461,
+   "raw_mean": 4.46,
+   "align": {
+    "dx": 0,
+    "dy": 0,
+    "mean_after": 4.46
+   },
+   "aligned_gt8_pct": 9.461,
+   "struct_pct": 7.862,
+   "struct_inner_pct": 9.076,
+   "struct_edge_pct": 1.829,
+   "hot_blocks": [
+    {
+     "xy": [
+      16,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      48,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      80,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      112,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      144,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      176,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      208,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      240,
+      16
+     ],
+     "cnt": 1024
+    }
+   ]
+  }
+ },
+ {
+  "id": "forest_09_1",
+  "cam_ours": {
+   "x": 16,
+   "y": 16,
+   "zoom": 1
+  },
+  "cam_oracle": {
+   "rootScale": 1,
+   "x": -640,
+   "y": -480,
+   "zoom": 1
+  },
+  "dl": {
+   "families": {
+    "BackGround": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0
+    },
+    "Clock": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "FinishBoy": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "FinishGirl": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "FireBox": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "FireBoxLeft": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "FireBoxRight": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "GreenBox": {
+     "oracle": 7,
+     "ours": 7,
+     "paired": 7,
+     "worst_d": 0.0
+    },
+    "GreenBoxLeft": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "GreenBoxRight": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "IceBox": {
+     "oracle": 14,
+     "ours": 10,
+     "paired": 10,
+     "worst_d": 0.0
+    },
+    "IceBoxLeft": {
+     "oracle": 7,
+     "ours": 7,
+     "paired": 7,
+     "worst_d": 0.0
+    },
+    "IceBoxRight": {
+     "oracle": 7,
+     "ours": 7,
+     "paired": 7,
+     "worst_d": 0.0
+    },
+    "Navy": {
+     "oracle": 11,
+     "ours": 11,
+     "paired": 3,
+     "worst_d": 37.0
+    },
+    "PauseButton": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "WaterBox": {
+     "oracle": 10,
+     "ours": 10,
+     "paired": 10,
+     "worst_d": 0.0
+    },
+    "WaterBoxLeft": {
+     "oracle": 7,
+     "ours": 7,
+     "paired": 7,
+     "worst_d": 0.0
+    },
+    "WaterBoxRight": {
+     "oracle": 7,
+     "ours": 7,
+     "paired": 7,
+     "worst_d": 0.0
+    },
+    "__decor_baked": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "__ground": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "death_smoke": {
+     "oracle": 0,
+     "ours": 2,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_A": {
+     "oracle": 0,
+     "ours": 9,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_O_": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_T_": {
+     "oracle": 0,
+     "ours": 25,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_V": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_X": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "diamond_fb": {
+     "oracle": 7,
+     "ours": 7,
+     "paired": 7,
+     "worst_d": 9.1
+    },
+    "diamond_wg": {
+     "oracle": 7,
+     "ours": 7,
+     "paired": 7,
+     "worst_d": 7.4
+    },
+    "fire_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "fire_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "fire_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "lever_base": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "lever_base_light_on": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "lever_stick": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.3
+    },
+    "lever_stick_light_on": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.3
+    },
+    "water_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "water_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "water_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "wind_base": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "wind_base_light_on": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "wind_effect": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "火": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    }
+   },
+   "missing": [
+    {
+     "fam": "IceBox",
+     "f": "IceBox0000",
+     "at": [
+      1104.0,
+      308.0
+     ],
+     "v": true
+    },
+    {
+     "fam": "IceBox",
+     "f": "IceBox0000",
+     "at": [
+      1072.0,
+      308.0
+     ],
+     "v": true
+    },
+    {
+     "fam": "IceBox",
+     "f": "IceBox0000",
+     "at": [
+      176.0,
+      436.0
+     ],
+     "v": true
+    },
+    {
+     "fam": "IceBox",
+     "f": "IceBox0000",
+     "at": [
+      144.0,
+      436.0
+     ],
+     "v": true
+    }
+   ],
+   "extra": [],
+   "extra_hidden": [],
+   "misaligned": [
+    {
+     "fam": "lever_stick",
+     "f": "lever_stick0000",
+     "kind": "attr",
+     "oracle": [
+      210.9,
+      609.0,
+      37.07,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      211.1,
+      609.2,
+      40.87,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "lever_stick",
+     "f": "lever_stick0000",
+     "kind": "attr",
+     "oracle": [
+      1021.1,
+      577.0,
+      -37.07,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      1020.9,
+      577.2,
+      -40.87,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "lever_stick_light_on",
+     "f": "lever_stick_light_on0000",
+     "kind": "attr",
+     "oracle": [
+      210.9,
+      609.0,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      211.1,
+      609.2,
+      40.87,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "lever_stick_light_on",
+     "f": "lever_stick_light_on0000",
+     "kind": "attr",
+     "oracle": [
+      1021.1,
+      577.0,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      1020.9,
+      577.2,
+      -40.87,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "wind_base_light_on",
+     "f": "wind_base_light_on0000",
+     "kind": "attr",
+     "oracle": [
+      898.0,
+      531.0,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      898,
+      531,
+      90,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "wind_base_light_on",
+     "f": "wind_base_light_on0000",
+     "kind": "attr",
+     "oracle": [
+      16.0,
+      304.0,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      16,
+      304,
+      90,
+      1,
+      1,
+      false,
+      true
+     ]
+    }
+   ],
+   "static_pos_bad": 0
+  },
+  "px": {
+   "raw_gt8_pct": 8.396,
+   "raw_mean": 3.72,
+   "align": {
+    "dx": 0,
+    "dy": 0,
+    "mean_after": 3.72
+   },
+   "aligned_gt8_pct": 8.396,
+   "struct_pct": 5.664,
+   "struct_inner_pct": 6.289,
+   "struct_edge_pct": 2.556,
+   "hot_blocks": [
+    {
+     "xy": [
+      16,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      48,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      80,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      112,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      144,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      176,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      208,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      240,
+      16
+     ],
+     "cnt": 1024
+    }
+   ]
+  }
+ },
+ {
+  "id": "forest_10",
+  "cam_ours": {
+   "x": 16,
+   "y": 16,
+   "zoom": 1
+  },
+  "cam_oracle": {
+   "rootScale": 1,
+   "x": -640,
+   "y": -480,
+   "zoom": 1
+  },
+  "dl": {
+   "families": {
+    "BackGround": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0
+    },
+    "BarCapLeft": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "BarCapRight": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "BarCenter": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "Clock": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "FinishBoy": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "FinishGirl": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "FireBox": {
+     "oracle": 4,
+     "ours": 4,
+     "paired": 4,
+     "worst_d": 0.0
+    },
+    "FireBoxLeft": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "FireBoxRight": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "GreenBox": {
+     "oracle": 32,
+     "ours": 32,
+     "paired": 32,
+     "worst_d": 0.0
+    },
+    "GreenBoxLeft": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "GreenBoxRight": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "IceBox": {
+     "oracle": 13,
+     "ours": 9,
+     "paired": 9,
+     "worst_d": 0.0
+    },
+    "IceBoxLeft": {
+     "oracle": 6,
+     "ours": 6,
+     "paired": 6,
+     "worst_d": 0.0
+    },
+    "IceBoxRight": {
+     "oracle": 6,
+     "ours": 6,
+     "paired": 6,
+     "worst_d": 0.0
+    },
+    "Navy": {
+     "oracle": 12,
+     "ours": 12,
+     "paired": 4,
+     "worst_d": 38.1
+    },
+    "PauseButton": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "WaterBox": {
+     "oracle": 9,
+     "ours": 9,
+     "paired": 9,
+     "worst_d": 0.0
+    },
+    "WaterBoxLeft": {
+     "oracle": 6,
+     "ours": 6,
+     "paired": 6,
+     "worst_d": 0.0
+    },
+    "WaterBoxRight": {
+     "oracle": 6,
+     "ours": 6,
+     "paired": 6,
+     "worst_d": 0.0
+    },
+    "__decor_baked": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "__ground": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "death_smoke": {
+     "oracle": 0,
+     "ours": 2,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_A": {
+     "oracle": 0,
+     "ours": 10,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_O_": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_T_": {
+     "oracle": 0,
+     "ours": 14,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_X": {
+     "oracle": 0,
+     "ours": 4,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "diamond_fb": {
+     "oracle": 6,
+     "ours": 6,
+     "paired": 6,
+     "worst_d": 8.2
+    },
+    "diamond_wg": {
+     "oracle": 6,
+     "ours": 6,
+     "paired": 6,
+     "worst_d": 9.0
+    },
+    "fire_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "fire_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "fire_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "lever_base": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "lever_base_light_off": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "lever_stick": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.1
+    },
+    "lever_stick_light_off": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.1
+    },
+    "moving_platform_light_off": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "water_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "water_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "water_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "火": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    }
+   },
+   "missing": [
+    {
+     "fam": "IceBox",
+     "f": "IceBox0000",
+     "at": [
+      656.0,
+      468.0
+     ],
+     "v": true
+    },
+    {
+     "fam": "IceBox",
+     "f": "IceBox0000",
+     "at": [
+      624.0,
+      468.0
+     ],
+     "v": true
+    },
+    {
+     "fam": "IceBox",
+     "f": "IceBox0000",
+     "at": [
+      240.0,
+      564.0
+     ],
+     "v": true
+    },
+    {
+     "fam": "IceBox",
+     "f": "IceBox0000",
+     "at": [
+      208.0,
+      564.0
+     ],
+     "v": true
+    }
+   ],
+   "extra": [],
+   "extra_hidden": [],
+   "misaligned": [
+    {
+     "fam": "lever_stick_light_off",
+     "f": "lever_stick_light_off0000",
+     "kind": "attr",
+     "oracle": [
+      1122.4,
+      192.7,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      1122.4,
+      192.6,
+      29.99,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "lever_stick_light_off",
+     "f": "lever_stick_light_off0000",
+     "kind": "attr",
+     "oracle": [
+      317.5,
+      384.7,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      317.6,
+      384.6,
+      -29.99,
+      1,
+      1,
+      false,
+      true
+     ]
+    }
+   ],
+   "static_pos_bad": 0
+  },
+  "px": {
+   "raw_gt8_pct": 7.487,
+   "raw_mean": 3.52,
+   "align": {
+    "dx": 0,
+    "dy": 0,
+    "mean_after": 3.52
+   },
+   "aligned_gt8_pct": 7.487,
+   "struct_pct": 4.993,
+   "struct_inner_pct": 5.637,
+   "struct_edge_pct": 1.794,
+   "hot_blocks": [
+    {
+     "xy": [
+      16,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      48,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      80,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      112,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      144,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      176,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      208,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      240,
+      16
+     ],
+     "cnt": 1024
+    }
+   ]
+  }
+ },
+ {
+  "id": "forest_12",
+  "cam_ours": {
+   "x": 16,
+   "y": 16,
+   "zoom": 1
+  },
+  "cam_oracle": {
+   "rootScale": 1,
+   "x": -640,
+   "y": -480,
+   "zoom": 1
+  },
+  "dl": {
+   "families": {
+    "BackGround": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0
+    },
+    "Clock": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "FinishBoy": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "FinishGirl": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "FireBox": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "FireBoxLeft": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "FireBoxRight": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "GreenBox": {
+     "oracle": 7,
+     "ours": 7,
+     "paired": 7,
+     "worst_d": 0.0
+    },
+    "GreenBoxLeft": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "GreenBoxRight": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "IceBox": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "IceBoxLeft": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "IceBoxRight": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "Navy": {
+     "oracle": 15,
+     "ours": 14,
+     "paired": 8,
+     "worst_d": 36.9
+    },
+    "PauseButton": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "WaterBox": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "WaterBoxLeft": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "WaterBoxRight": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "__decor_baked": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "__ground": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "death_smoke": {
+     "oracle": 0,
+     "ours": 2,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_A": {
+     "oracle": 0,
+     "ours": 16,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_O_": {
+     "oracle": 0,
+     "ours": 10,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_T_": {
+     "oracle": 0,
+     "ours": 11,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_V": {
+     "oracle": 0,
+     "ours": 3,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_X": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "diamond_fb": {
+     "oracle": 10,
+     "ours": 10,
+     "paired": 10,
+     "worst_d": 9.5
+    },
+    "diamond_wg": {
+     "oracle": 10,
+     "ours": 10,
+     "paired": 10,
+     "worst_d": 9.3
+    },
+    "fire_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "fire_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "fire_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "hanging_anchor": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "hanging_base": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "hanging_platform": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "pulley_rope": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "water_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "water_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.1
+    },
+    "water_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.1
+    },
+    "火": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    }
+   },
+   "missing": [],
+   "extra": [],
+   "extra_hidden": [],
+   "misaligned": [
+    {
+     "fam": "hanging_platform",
+     "f": "hanging_platform0000",
+     "kind": "attr",
+     "oracle": [
+      752.0,
+      736.0,
+      0,
+      -0.83,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      752,
+      736,
+      0,
+      0.83,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "hanging_platform",
+     "f": "hanging_platform0000",
+     "kind": "attr",
+     "oracle": [
+      496.0,
+      736.0,
+      0,
+      -0.83,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      496,
+      736,
+      0,
+      0.83,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "hanging_platform",
+     "f": "hanging_platform0000",
+     "kind": "attr",
+     "oracle": [
+      624.0,
+      704.0,
+      0,
+      -0.83,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      624,
+      704,
+      0,
+      0.83,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "kind": "attr",
+     "oracle": [
+      752.0,
+      560.0,
+      -90,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      752,
+      560,
+      90,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "kind": "attr",
+     "oracle": [
+      496.0,
+      560.0,
+      -90,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      496,
+      560,
+      90,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "kind": "attr",
+     "oracle": [
+      624.0,
+      528.0,
+      -90,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      624,
+      528,
+      90,
+      1,
+      1,
+      false,
+      true
+     ]
+    }
+   ],
+   "static_pos_bad": 0
+  },
+  "px": {
+   "raw_gt8_pct": 7.161,
+   "raw_mean": 3.47,
+   "align": {
+    "dx": 0,
+    "dy": 0,
+    "mean_after": 3.47
+   },
+   "aligned_gt8_pct": 7.161,
+   "struct_pct": 4.864,
+   "struct_inner_pct": 5.336,
+   "struct_edge_pct": 2.514,
+   "hot_blocks": [
+    {
+     "xy": [
+      16,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      48,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      80,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      112,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      144,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      176,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      208,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      240,
+      16
+     ],
+     "cnt": 1024
+    }
+   ]
+  }
+ },
+ {
+  "id": "forest_22",
+  "cam_ours": {
+   "x": 16,
+   "y": 16,
+   "zoom": 1
+  },
+  "cam_oracle": {
+   "rootScale": 1,
+   "x": -640,
+   "y": -480,
+   "zoom": 1
+  },
+  "dl": {
+   "families": {
+    "BackGround": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0
+    },
+    "BarCapLeft": {
+     "oracle": 5,
+     "ours": 5,
+     "paired": 5,
+     "worst_d": 0.0
+    },
+    "BarCapRight": {
+     "oracle": 5,
+     "ours": 5,
+     "paired": 5,
+     "worst_d": 0.0
+    },
+    "BarCenter": {
+     "oracle": 5,
+     "ours": 5,
+     "paired": 5,
+     "worst_d": 0.0
+    },
+    "Clock": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "FinishBoy": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "FinishGirl": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0
+    },
+    "Navy": {
+     "oracle": 13,
+     "ours": 14,
+     "paired": 8,
+     "worst_d": 39.5
+    },
+    "PauseButton": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "__decor_baked": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "__ground": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "death_smoke": {
+     "oracle": 0,
+     "ours": 2,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_A": {
+     "oracle": 0,
+     "ours": 12,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_O_": {
+     "oracle": 0,
+     "ours": 6,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_T_": {
+     "oracle": 0,
+     "ours": 18,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_V": {
+     "oracle": 0,
+     "ours": 7,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_X": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "diamond_fb": {
+     "oracle": 6,
+     "ours": 6,
+     "paired": 6,
+     "worst_d": 9.9
+    },
+    "diamond_wg": {
+     "oracle": 6,
+     "ours": 6,
+     "paired": 6,
+     "worst_d": 9.5
+    },
+    "fire_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "fire_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "fire_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "moving_platform_light_off": {
+     "oracle": 5,
+     "ours": 5,
+     "paired": 5,
+     "worst_d": 0.0
+    },
+    "pusher_block": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "pusher_block_light": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "water_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "water_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "water_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "wind_base": {
+     "oracle": 5,
+     "ours": 5,
+     "paired": 5,
+     "worst_d": 0.0
+    },
+    "wind_base_light_on": {
+     "oracle": 5,
+     "ours": 5,
+     "paired": 5,
+     "worst_d": 0.0
+    },
+    "wind_effect": {
+     "oracle": 5,
+     "ours": 5,
+     "paired": 5,
+     "worst_d": 0.0
+    },
+    "火": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    }
+   },
+   "missing": [],
+   "extra": [],
+   "extra_hidden": [],
+   "misaligned": [],
+   "static_pos_bad": 0
+  },
+  "px": {
+   "raw_gt8_pct": 9.815,
+   "raw_mean": 4.42,
+   "align": {
+    "dx": 0,
+    "dy": 0,
+    "mean_after": 4.42
+   },
+   "aligned_gt8_pct": 9.815,
+   "struct_pct": 6.751,
+   "struct_inner_pct": 7.364,
+   "struct_edge_pct": 3.702,
+   "hot_blocks": [
+    {
+     "xy": [
+      16,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      48,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      80,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      112,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      144,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      176,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      208,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      240,
+      16
+     ],
+     "cnt": 1024
+    }
+   ]
+  }
+ },
+ {
+  "id": "forest_25_1",
+  "cam_ours": {
+   "x": 16,
+   "y": 16,
+   "zoom": 1
+  },
+  "cam_oracle": {
+   "rootScale": 1,
+   "x": -640,
+   "y": -480,
+   "zoom": 1
+  },
+  "dl": {
+   "families": {
+    "BackGround": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0
+    },
+    "BarCapLeft": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "BarCapRight": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "BarCenter": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "Clock": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "FinishBoy": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "FinishGirl": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "GreenBox": {
+     "oracle": 16,
+     "ours": 16,
+     "paired": 16,
+     "worst_d": 0.0
+    },
+    "GreenBoxLeft": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "GreenBoxRight": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "IceBox": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "IceBoxLeft": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "IceBoxRight": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "Navy": {
+     "oracle": 11,
+     "ours": 11,
+     "paired": 2,
+     "worst_d": 37.7
+    },
+    "PauseButton": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "WaterBox": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "WaterBoxLeft": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "WaterBoxRight": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "__decor_baked": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "__ground": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "death_smoke": {
+     "oracle": 0,
+     "ours": 2,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_A": {
+     "oracle": 0,
+     "ours": 10,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_O_": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_T_": {
+     "oracle": 0,
+     "ours": 18,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_V": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_X": {
+     "oracle": 0,
+     "ours": 5,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "diamond_silver": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 8.5
+    },
+    "fire_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "fire_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.1
+    },
+    "fire_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.1
+    },
+    "hanging_anchor": {
+     "oracle": 7,
+     "ours": 7,
+     "paired": 7,
+     "worst_d": 0.0
+    },
+    "hanging_base": {
+     "oracle": 7,
+     "ours": 7,
+     "paired": 7,
+     "worst_d": 0.0
+    },
+    "hanging_platform": {
+     "oracle": 7,
+     "ours": 7,
+     "paired": 7,
+     "worst_d": 0.0
+    },
+    "lever_base": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "lever_base_light_off": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "lever_base_light_on": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "lever_stick": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.3
+    },
+    "lever_stick_light_off": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.1
+    },
+    "lever_stick_light_on": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.3
+    },
+    "moving_platform_light_off": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "pulley_rope": {
+     "oracle": 7,
+     "ours": 7,
+     "paired": 7,
+     "worst_d": 0.0
+    },
+    "pusher_block": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0
+    },
+    "pusher_block_light": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0
+    },
+    "water_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "water_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.1
+    },
+    "water_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.1
+    },
+    "wind_base": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "wind_base_light_on": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "wind_effect": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "火": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    }
+   },
+   "missing": [],
+   "extra": [],
+   "extra_hidden": [],
+   "misaligned": [
+    {
+     "fam": "hanging_platform",
+     "f": "hanging_platform0000",
+     "kind": "attr",
+     "oracle": [
+      800.0,
+      704.0,
+      0,
+      -0.78,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      800,
+      704,
+      0,
+      0.78,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "hanging_platform",
+     "f": "hanging_platform0000",
+     "kind": "attr",
+     "oracle": [
+      640.0,
+      680.0,
+      0,
+      -0.78,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      640,
+      680,
+      0,
+      0.78,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "hanging_platform",
+     "f": "hanging_platform0000",
+     "kind": "attr",
+     "oracle": [
+      416.0,
+      704.0,
+      0,
+      -0.78,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      416,
+      704,
+      0,
+      0.78,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "hanging_platform",
+     "f": "hanging_platform0000",
+     "kind": "attr",
+     "oracle": [
+      720.0,
+      576.0,
+      0,
+      -0.78,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      720,
+      576,
+      0,
+      0.78,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "hanging_platform",
+     "f": "hanging_platform0000",
+     "kind": "attr",
+     "oracle": [
+      896.0,
+      592.0,
+      0,
+      -0.78,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      896,
+      592,
+      0,
+      0.78,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "hanging_platform",
+     "f": "hanging_platform0000",
+     "kind": "attr",
+     "oracle": [
+      960.0,
+      512.0,
+      0,
+      -0.78,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      960,
+      512,
+      0,
+      0.78,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "hanging_platform",
+     "f": "hanging_platform0000",
+     "kind": "attr",
+     "oracle": [
+      928.0,
+      424.0,
+      0,
+      -0.78,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      928,
+      424,
+      0,
+      0.78,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "lever_stick",
+     "f": "lever_stick0000",
+     "kind": "attr",
+     "oracle": [
+      493.1,
+      448.9,
+      -36.87,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      492.9,
+      449.2,
+      -40.94,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "lever_stick_light_off",
+     "f": "lever_stick_light_off0000",
+     "kind": "attr",
+     "oracle": [
+      1149.5,
+      896.7,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      1149.6,
+      896.6,
+      -29.99,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "lever_stick_light_on",
+     "f": "lever_stick_light_on0000",
+     "kind": "attr",
+     "oracle": [
+      493.1,
+      448.9,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      492.9,
+      449.2,
+      -40.94,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "kind": "attr",
+     "oracle": [
+      800.0,
+      456.0,
+      -90,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      800,
+      456,
+      90,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "kind": "attr",
+     "oracle": [
+      640.0,
+      488.0,
+      -90,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      640,
+      488,
+      90,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "kind": "attr",
+     "oracle": [
+      416.0,
+      512.0,
+      -90,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      416,
+      512,
+      90,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "kind": "attr",
+     "oracle": [
+      720.0,
+      416.0,
+      -90,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      720,
+      416,
+      90,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "kind": "attr",
+     "oracle": [
+      896.0,
+      384.0,
+      -90,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      896,
+      384,
+      90,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "kind": "attr",
+     "oracle": [
+      960.0,
+      320.0,
+      -90,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      960,
+      320,
+      90,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "kind": "attr",
+     "oracle": [
+      928.0,
+      312.0,
+      -90,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      928,
+      312,
+      90,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "wind_base_light_on",
+     "f": "wind_base_light_on0000",
+     "kind": "attr",
+     "oracle": [
+      1216.0,
+      208.0,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      1216.0,
+      208.0,
+      -90.02,
+      1,
+      1,
+      false,
+      true
+     ]
+    }
+   ],
+   "static_pos_bad": 0
+  },
+  "px": {
+   "raw_gt8_pct": 7.314,
+   "raw_mean": 3.32,
+   "align": {
+    "dx": 0,
+    "dy": 0,
+    "mean_after": 3.32
+   },
+   "aligned_gt8_pct": 7.314,
+   "struct_pct": 5.823,
+   "struct_inner_pct": 6.508,
+   "struct_edge_pct": 2.421,
+   "hot_blocks": [
+    {
+     "xy": [
+      16,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      48,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      80,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      112,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      144,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      176,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      208,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      240,
+      16
+     ],
+     "cnt": 1024
+    }
+   ]
+  }
+ },
+ {
+  "id": "forest_27_1",
+  "cam_ours": {
+   "x": 16,
+   "y": 16,
+   "zoom": 1
+  },
+  "cam_oracle": {
+   "rootScale": 1,
+   "x": -640,
+   "y": -480,
+   "zoom": 1
+  },
+  "dl": {
+   "families": {
+    "BackGround": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0
+    },
+    "BarCapLeft": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "BarCapRight": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "BarCenter": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "Clock": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "FinishBoy": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "FinishGirl": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "IceBox": {
+     "oracle": 8,
+     "ours": 8,
+     "paired": 8,
+     "worst_d": 0.0
+    },
+    "IceBoxLeft": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "IceBoxRight": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "Navy": {
+     "oracle": 11,
+     "ours": 13,
+     "paired": 3,
+     "worst_d": 37.3
+    },
+    "PauseButton": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "WaterBox": {
+     "oracle": 8,
+     "ours": 8,
+     "paired": 8,
+     "worst_d": 0.0
+    },
+    "WaterBoxLeft": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "WaterBoxRight": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "__decor_baked": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "__ground": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "ball": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.2
+    },
+    "death_smoke": {
+     "oracle": 0,
+     "ours": 2,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_A": {
+     "oracle": 0,
+     "ours": 15,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_O_": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_T_": {
+     "oracle": 0,
+     "ours": 16,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_V": {
+     "oracle": 0,
+     "ours": 8,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "diamond_silver": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 9.8
+    },
+    "fire_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "fire_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.1
+    },
+    "fire_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.1
+    },
+    "lever_base": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "lever_base_light_off": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "lever_stick": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "lever_stick_light_off": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "moving_platform_light_off": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "pusher_block": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "pusher_block_light": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "water_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "water_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "water_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "wind_base": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "wind_base_light_off": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "wind_effect": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "火": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    }
+   },
+   "missing": [],
+   "extra": [],
+   "extra_hidden": [],
+   "misaligned": [
+    {
+     "fam": "lever_stick_light_off",
+     "f": "lever_stick_light_off0000",
+     "kind": "attr",
+     "oracle": [
+      1154.4,
+      192.7,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      1154.4,
+      192.6,
+      29.99,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "lever_stick_light_off",
+     "f": "lever_stick_light_off0000",
+     "kind": "attr",
+     "oracle": [
+      1042.4,
+      448.7,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      1042.4,
+      448.6,
+      29.99,
+      1,
+      1,
+      false,
+      true
+     ]
+    }
+   ],
+   "static_pos_bad": 0
+  },
+  "px": {
+   "raw_gt8_pct": 7.435,
+   "raw_mean": 3.31,
+   "align": {
+    "dx": 0,
+    "dy": 0,
+    "mean_after": 3.31
+   },
+   "aligned_gt8_pct": 7.435,
+   "struct_pct": 6.484,
+   "struct_inner_pct": 7.284,
+   "struct_edge_pct": 2.508,
+   "hot_blocks": [
+    {
+     "xy": [
+      16,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      48,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      80,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      112,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      144,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      176,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      208,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      240,
+      16
+     ],
+     "cnt": 1024
+    }
+   ]
+  }
+ },
+ {
+  "id": "forest_28",
+  "cam_ours": {
+   "x": 16,
+   "y": 16,
+   "zoom": 1
+  },
+  "cam_oracle": {
+   "rootScale": 1,
+   "x": -640,
+   "y": -480,
+   "zoom": 1
+  },
+  "dl": {
+   "families": {
+    "BackGround": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0
+    },
+    "BarCapLeft": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "BarCapRight": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "BarCenter": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "Clock": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "FinishBoy": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "FinishGirl": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "FireBox": {
+     "oracle": 14,
+     "ours": 14,
+     "paired": 14,
+     "worst_d": 0.0
+    },
+    "FireBoxLeft": {
+     "oracle": 4,
+     "ours": 4,
+     "paired": 4,
+     "worst_d": 0.0
+    },
+    "FireBoxRight": {
+     "oracle": 4,
+     "ours": 4,
+     "paired": 4,
+     "worst_d": 0.0
+    },
+    "IceBox": {
+     "oracle": 15,
+     "ours": 15,
+     "paired": 15,
+     "worst_d": 0.0
+    },
+    "IceBoxLeft": {
+     "oracle": 4,
+     "ours": 4,
+     "paired": 4,
+     "worst_d": 0.0
+    },
+    "IceBoxRight": {
+     "oracle": 4,
+     "ours": 4,
+     "paired": 4,
+     "worst_d": 0.0
+    },
+    "Navy": {
+     "oracle": 10,
+     "ours": 11,
+     "paired": 6,
+     "worst_d": 29.7
+    },
+    "PauseButton": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "WaterBox": {
+     "oracle": 15,
+     "ours": 15,
+     "paired": 15,
+     "worst_d": 0.0
+    },
+    "WaterBoxLeft": {
+     "oracle": 4,
+     "ours": 4,
+     "paired": 4,
+     "worst_d": 0.0
+    },
+    "WaterBoxRight": {
+     "oracle": 4,
+     "ours": 4,
+     "paired": 4,
+     "worst_d": 0.0
+    },
+    "__decor_baked": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "__ground": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "death_smoke": {
+     "oracle": 0,
+     "ours": 2,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_T_": {
+     "oracle": 0,
+     "ours": 28,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_V": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_X": {
+     "oracle": 0,
+     "ours": 5,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "diamond_fb": {
+     "oracle": 9,
+     "ours": 9,
+     "paired": 9,
+     "worst_d": 9.0
+    },
+    "diamond_wg": {
+     "oracle": 9,
+     "ours": 9,
+     "paired": 9,
+     "worst_d": 8.4
+    },
+    "fire_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "fire_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "fire_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "lever_base": {
+     "oracle": 4,
+     "ours": 4,
+     "paired": 4,
+     "worst_d": 0.0
+    },
+    "lever_base_light_off": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "lever_base_light_on": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "lever_stick": {
+     "oracle": 4,
+     "ours": 4,
+     "paired": 4,
+     "worst_d": 0.4
+    },
+    "lever_stick_light_off": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "lever_stick_light_on": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.4
+    },
+    "moving_platform_light_off": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "water_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "water_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "water_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "wind_base": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "wind_base_light_on": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "wind_effect": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "火": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    }
+   },
+   "missing": [],
+   "extra": [],
+   "extra_hidden": [],
+   "misaligned": [
+    {
+     "fam": "lever_stick",
+     "f": "lever_stick0000",
+     "kind": "attr",
+     "oracle": [
+      445.1,
+      896.9,
+      -36.87,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      444.9,
+      897.2,
+      -40.78,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "lever_stick",
+     "f": "lever_stick0000",
+     "kind": "attr",
+     "oracle": [
+      1154.8,
+      736.9,
+      36.87,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      1155.1,
+      737.2,
+      40.78,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "lever_stick_light_off",
+     "f": "lever_stick_light_off0000",
+     "kind": "attr",
+     "oracle": [
+      514.4,
+      384.7,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      514.4,
+      384.6,
+      29.99,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "lever_stick_light_off",
+     "f": "lever_stick_light_off0000",
+     "kind": "attr",
+     "oracle": [
+      114.4,
+      512.7,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      114.4,
+      512.6,
+      29.99,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "lever_stick_light_on",
+     "f": "lever_stick_light_on0000",
+     "kind": "attr",
+     "oracle": [
+      445.1,
+      896.9,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      444.9,
+      897.2,
+      -40.78,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "lever_stick_light_on",
+     "f": "lever_stick_light_on0000",
+     "kind": "attr",
+     "oracle": [
+      1154.8,
+      736.9,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      1155.1,
+      737.2,
+      40.78,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "wind_base_light_on",
+     "f": "wind_base_light_on0000",
+     "kind": "attr",
+     "oracle": [
+      384.0,
+      336.0,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      384,
+      336,
+      90,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "wind_base_light_on",
+     "f": "wind_base_light_on0000",
+     "kind": "attr",
+     "oracle": [
+      64.0,
+      848.0,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      64,
+      848,
+      90,
+      1,
+      1,
+      false,
+      true
+     ]
+    }
+   ],
+   "static_pos_bad": 0
+  },
+  "px": {
+   "raw_gt8_pct": 8.185,
+   "raw_mean": 3.81,
+   "align": {
+    "dx": 0,
+    "dy": 0,
+    "mean_after": 3.81
+   },
+   "aligned_gt8_pct": 8.185,
+   "struct_pct": 5.154,
+   "struct_inner_pct": 5.603,
+   "struct_edge_pct": 2.923,
+   "hot_blocks": [
+    {
+     "xy": [
+      16,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      48,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      80,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      112,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      144,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      176,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      208,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      240,
+      16
+     ],
+     "cnt": 1024
+    }
+   ]
+  }
+ },
+ {
+  "id": "forest_bonus_2",
+  "cam_ours": {
+   "x": 16,
+   "y": 192,
+   "zoom": 1
+  },
+  "cam_oracle": {
+   "rootScale": 1,
+   "x": -640,
+   "y": -480,
+   "zoom": 1
+  },
+  "dl": {
+   "families": {
+    "BackGround": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0
+    },
+    "BarCapLeft": {
+     "oracle": 47,
+     "ours": 47,
+     "paired": 47,
+     "worst_d": 21.4
+    },
+    "BarCapRight": {
+     "oracle": 47,
+     "ours": 47,
+     "paired": 47,
+     "worst_d": 21.4
+    },
+    "BarCenter": {
+     "oracle": 47,
+     "ours": 47,
+     "paired": 47,
+     "worst_d": 21.4
+    },
+    "Clock": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "FinishBoy": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "FinishGirl": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "Navy": {
+     "oracle": 11,
+     "ours": 12,
+     "paired": 2,
+     "worst_d": 33.6
+    },
+    "PauseButton": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "TileSprite?": {
+     "oracle": 0,
+     "ours": 5,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "__decor_baked": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "__ground": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "death_smoke": {
+     "oracle": 0,
+     "ours": 2,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_A": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_O_": {
+     "oracle": 0,
+     "ours": 5,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_T_": {
+     "oracle": 0,
+     "ours": 20,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_X": {
+     "oracle": 0,
+     "ours": 19,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "diamond_fb": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 6.4
+    },
+    "diamond_wg": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 1.7
+    },
+    "fire_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "fire_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "fire_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "lever_base": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.1
+    },
+    "lever_base_light_off": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.1
+    },
+    "lever_stick": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.1
+    },
+    "lever_stick_light_off": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.1
+    },
+    "moving_platform_light_off": {
+     "oracle": 47,
+     "ours": 47,
+     "paired": 47,
+     "worst_d": 21.4
+    },
+    "movingbox": {
+     "oracle": 35,
+     "ours": 35,
+     "paired": 35,
+     "worst_d": 0.7
+    },
+    "pulley_anchor": {
+     "oracle": 4,
+     "ours": 4,
+     "paired": 4,
+     "worst_d": 20.0
+    },
+    "pulley_base": {
+     "oracle": 4,
+     "ours": 4,
+     "paired": 4,
+     "worst_d": 21.5
+    },
+    "pulley_platform": {
+     "oracle": 4,
+     "ours": 4,
+     "paired": 4,
+     "worst_d": 21.5
+    },
+    "pulley_rope": {
+     "oracle": 6,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "pusher_block": {
+     "oracle": 12,
+     "ours": 12,
+     "paired": 12,
+     "worst_d": 0.0
+    },
+    "pusher_block_light": {
+     "oracle": 12,
+     "ours": 12,
+     "paired": 12,
+     "worst_d": 0.0
+    },
+    "roman_base": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "water_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "water_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "water_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "火": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    }
+   },
+   "missing": [
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "at": [
+      176.0,
+      20.0
+     ],
+     "v": true
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "at": [
+      176.0,
+      20.0
+     ],
+     "v": true
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "at": [
+      1072.0,
+      20.0
+     ],
+     "v": true
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "at": [
+      560.0,
+      20.0
+     ],
+     "v": true
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "at": [
+      560.0,
+      20.0
+     ],
+     "v": true
+    },
+    {
+     "fam": "pulley_rope",
+     "f": "pulley_rope0000",
+     "at": [
+      688.0,
+      20.0
+     ],
+     "v": true
+    }
+   ],
+   "extra": [
+    {
+     "fam": "roman_base",
+     "f": "__BASE",
+     "at": [
+      560,
+      803.4
+     ],
+     "v": true
+    }
+   ],
+   "extra_hidden": [],
+   "misaligned": [
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      272.0,
+      200.0,
+      0,
+      -0.17,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      272,
+      200,
+      0,
+      0.17,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      368.0,
+      200.0,
+      0,
+      -0.17,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      368,
+      200,
+      0,
+      0.17,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      464.0,
+      200.0,
+      0,
+      -0.17,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      464,
+      200,
+      0,
+      0.17,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      560.0,
+      200.0,
+      0,
+      -0.17,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      560,
+      200,
+      0,
+      0.17,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      976.0,
+      200.0,
+      0,
+      -0.17,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      976,
+      200,
+      0,
+      0.17,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      880.0,
+      200.0,
+      0,
+      -0.17,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      880,
+      200,
+      0,
+      0.17,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      784.0,
+      200.0,
+      0,
+      -0.17,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      784,
+      200,
+      0,
+      0.17,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      688.0,
+      200.0,
+      0,
+      -0.17,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      688,
+      200,
+      0,
+      0.17,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      976.0,
+      136.0,
+      0,
+      -0.17,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      976,
+      136,
+      0,
+      0.17,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      880.0,
+      136.0,
+      0,
+      -0.17,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      880,
+      136,
+      0,
+      0.17,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      784.0,
+      136.0,
+      0,
+      -0.17,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      784,
+      136,
+      0,
+      0.17,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      688.0,
+      136.0,
+      0,
+      -0.17,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      688,
+      136,
+      0,
+      0.17,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      1074.0,
+      848.0,
+      0,
+      -0.33,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      1074.0,
+      848,
+      0,
+      0.35,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      1041.2,
+      848.0,
+      0,
+      -0.33,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      1041.3,
+      848,
+      0,
+      0.35,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      1008.5,
+      848.0,
+      0,
+      -0.33,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      1008.5,
+      848,
+      0,
+      0.35,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      975.7,
+      848.0,
+      0,
+      -0.33,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      975.7,
+      848,
+      0,
+      0.35,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      174.0,
+      848.0,
+      0,
+      -0.33,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      174.0,
+      848,
+      0,
+      0.35,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      206.7,
+      848.0,
+      0,
+      -0.33,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      206.7,
+      848,
+      0,
+      0.35,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      239.5,
+      848.0,
+      0,
+      -0.33,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      239.5,
+      848,
+      0,
+      0.35,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      272.2,
+      848.0,
+      0,
+      -0.33,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      272.3,
+      848,
+      0,
+      0.35,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      272.0,
+      136.0,
+      0,
+      -0.17,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      272,
+      136,
+      0,
+      0.17,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      368.0,
+      136.0,
+      0,
+      -0.17,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      368,
+      136,
+      0,
+      0.17,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      464.0,
+      136.0,
+      0,
+      -0.17,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      464,
+      136,
+      0,
+      0.17,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "BarCenter",
+     "f": "BarCenter0000",
+     "kind": "attr",
+     "oracle": [
+      560.0,
+      136.0,
+      0,
+      -0.17,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      560,
+      136,
+      0,
+      0.17,
+      0.95,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "lever_stick_light_off",
+     "f": "lever_stick_light_off0000",
+     "kind": "attr",
+     "oracle": [
+      1165.5,
+      1088.6,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      1165.6,
+      1088.6,
+      -29.99,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "lever_stick_light_off",
+     "f": "lever_stick_light_off0000",
+     "kind": "attr",
+     "oracle": [
+      82.4,
+      1088.6,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      82.4,
+      1088.6,
+      29.99,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_anchor",
+     "f": "pulley_anchor0000",
+     "kind": "attr",
+     "oracle": [
+      186.0,
+      30.0,
+      168.63,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      166,
+      30,
+      -116.5,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_anchor",
+     "f": "pulley_anchor0000",
+     "kind": "attr",
+     "oracle": [
+      1062.0,
+      30.0,
+      168.63,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      1082,
+      30,
+      -116.5,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_anchor",
+     "f": "pulley_anchor0000",
+     "kind": "attr",
+     "oracle": [
+      570.0,
+      30.0,
+      131.81,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      550,
+      30,
+      -68.16,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_anchor",
+     "f": "pulley_anchor0000",
+     "kind": "attr",
+     "oracle": [
+      678.0,
+      30.0,
+      131.81,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      698,
+      30,
+      -68.16,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_platform",
+     "f": "pulley_platform0000",
+     "kind": "attr",
+     "oracle": [
+      176.0,
+      803.2,
+      0,
+      -1.1,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      176,
+      803.2,
+      0,
+      1.1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_platform",
+     "f": "pulley_platform0000",
+     "kind": "attr",
+     "oracle": [
+      1071.9,
+      764.7,
+      0,
+      -1.1,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      1072,
+      764.8,
+      0,
+      1.1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_platform",
+     "f": "pulley_platform0000",
+     "kind": "attr",
+     "oracle": [
+      560.0,
+      824.9,
+      0,
+      -1.1,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      560,
+      803.4,
+      0,
+      1.1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "pulley_platform",
+     "f": "pulley_platform0000",
+     "kind": "attr",
+     "oracle": [
+      687.9,
+      743.1,
+      0,
+      -1.1,
+      1,
+      true,
+      true
+     ],
+     "ours": [
+      688,
+      764.6,
+      0,
+      1.1,
+      1,
+      false,
+      true
+     ]
+    }
+   ],
+   "static_pos_bad": 0
+  },
+  "px": {
+   "raw_gt8_pct": 11.834,
+   "raw_mean": 6.27,
+   "align": {
+    "dx": 0,
+    "dy": 0,
+    "mean_after": 6.27
+   },
+   "aligned_gt8_pct": 11.834,
+   "struct_pct": 7.071,
+   "struct_inner_pct": 6.625,
+   "struct_edge_pct": 9.288,
+   "hot_blocks": [
+    {
+     "xy": [
+      16,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      48,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      80,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      112,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      144,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      176,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      208,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      240,
+      16
+     ],
+     "cnt": 1024
+    }
+   ]
+  }
+ },
+ {
+  "id": "forest_bonus_3",
+  "cam_ours": {
+   "x": 16,
+   "y": 16,
+   "zoom": 1
+  },
+  "cam_oracle": {
+   "rootScale": 1,
+   "x": -640,
+   "y": -480,
+   "zoom": 1
+  },
+  "dl": {
+   "families": {
+    "BackGround": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0
+    },
+    "BarCapLeft": {
+     "oracle": 6,
+     "ours": 6,
+     "paired": 6,
+     "worst_d": 44.4
+    },
+    "BarCapRight": {
+     "oracle": 6,
+     "ours": 6,
+     "paired": 6,
+     "worst_d": 44.4
+    },
+    "BarCenter": {
+     "oracle": 6,
+     "ours": 6,
+     "paired": 6,
+     "worst_d": 44.4
+    },
+    "Clock": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "FinishBoy": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "FinishGirl": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "GreenBox": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "GreenBoxLeft": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "GreenBoxRight": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "Navy": {
+     "oracle": 12,
+     "ours": 10,
+     "paired": 5,
+     "worst_d": 39.4
+    },
+    "PauseButton": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "__decor_baked": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "__ground": {
+     "oracle": 1,
+     "ours": 0,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "ball": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.1
+    },
+    "death_smoke": {
+     "oracle": 0,
+     "ours": 2,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_A": {
+     "oracle": 0,
+     "ours": 23,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_O_": {
+     "oracle": 0,
+     "ours": 2,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_T_": {
+     "oracle": 0,
+     "ours": 11,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_V": {
+     "oracle": 0,
+     "ours": 8,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "decor_X": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "diamond_fb": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 8.8
+    },
+    "diamond_wg": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 9.5
+    },
+    "fire_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "fire_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "fire_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "lever_base": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.0
+    },
+    "lever_base_light_off": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "lever_base_light_on": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "lever_stick": {
+     "oracle": 2,
+     "ours": 2,
+     "paired": 2,
+     "worst_d": 0.1
+    },
+    "lever_stick_light_off": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.1
+    },
+    "lever_stick_light_on": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.1
+    },
+    "moving_platform_light_off": {
+     "oracle": 5,
+     "ours": 5,
+     "paired": 5,
+     "worst_d": 0.0
+    },
+    "moving_platform_light_on": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 44.4
+    },
+    "pusher_block": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "pusher_block_light": {
+     "oracle": 3,
+     "ours": 3,
+     "paired": 3,
+     "worst_d": 0.0
+    },
+    "water_glow": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    },
+    "water_head_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "water_legs_idle": {
+     "oracle": 1,
+     "ours": 1,
+     "paired": 1,
+     "worst_d": 0.0
+    },
+    "火": {
+     "oracle": 0,
+     "ours": 1,
+     "paired": 0,
+     "worst_d": 0
+    }
+   },
+   "missing": [],
+   "extra": [],
+   "extra_hidden": [],
+   "misaligned": [
+    {
+     "fam": "lever_stick_light_off",
+     "f": "lever_stick_light_off0000",
+     "kind": "attr",
+     "oracle": [
+      469.5,
+      320.7,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      469.6,
+      320.6,
+      -29.99,
+      1,
+      1,
+      false,
+      true
+     ]
+    },
+    {
+     "fam": "lever_stick_light_on",
+     "f": "lever_stick_light_on0000",
+     "kind": "attr",
+     "oracle": [
+      1173.1,
+      896.9,
+      0,
+      1,
+      1,
+      false,
+      true
+     ],
+     "ours": [
+      1173.0,
+      897.0,
+      -38.31,
+      1,
+      1,
+      false,
+      true
+     ]
+    }
+   ],
+   "static_pos_bad": 0
+  },
+  "px": {
+   "raw_gt8_pct": 9.187,
+   "raw_mean": 4.48,
+   "align": {
+    "dx": 0,
+    "dy": 0,
+    "mean_after": 4.48
+   },
+   "aligned_gt8_pct": 9.187,
+   "struct_pct": 7.623,
+   "struct_inner_pct": 8.741,
+   "struct_edge_pct": 2.062,
+   "hot_blocks": [
+    {
+     "xy": [
+      16,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      48,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      80,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      112,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      144,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      176,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      208,
+      16
+     ],
+     "cnt": 1024
+    },
+    {
+     "xy": [
+      240,
+      16
+     ],
+     "cnt": 1024
+    }
+   ]
+  }
+ }
+]
