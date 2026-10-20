@@ -24,6 +24,15 @@
 
 ## 条目
 
+**更新**：2026-10-20（**🎬 UI 转场动画保真修复落地（0.3.37）——13 号档五批 25 项，等 38 号档完工信号后实施**）。
+①换屏黑幕 state.fade（缺失 Top1）：新增 transition.ts FadeScene 顶景（500ms Linear 入/出+Loading 字 800ms/300ms 点循环+重入丢弃门，bundle 字节复刻），接线六换屏点，面板钮去即时 stop 由黑幕统一停；EndMenu/GameOver 出现保持裸切（oracle 同构非遗漏）。
+②面板弹簧滑入（Top2）：buildBoard 去 Back.easeOut 改逐帧弹簧（2.3/0.7/1.5H/dt 钳 0.04）+黑幕跟板动态，六面同享；关闭滑出+Complete +1000ms 收尾+暂停解除 requestClose。
+③按钮按压包（Top3）：StoneButton hover→按压语义+label 0.95+pusher 音（fx 门控），Menu Play/?/齿轮/菱形节点/BackButton/显示关卡数同族；DOM CSS hover 未动。
+④结算面五件（Top4）：拍链 oracle 实参精确配对（twoRows 700/1400/1400/2100）、星碑分段 to_N 激活死代码键、popupArrow 末拍恒亮、Continue 同拍启用、时限 alpha 0.7；顺带修正 13 号档未察的 twoRows 隐藏行少一拍音偏差。
+⑤MenuScene idle（Top5，**字节真相超审计记录**）：oracle 光柱 8 根 x 全 0=屏心堆叠扇（旧「柱间均布」2026-10-06 校准无 bundle 支持，已废重写），蜡烛 ×4 组挂屏心 lissajous（旧 yoyo 废），glow 归 1，头注勘误——布局变更已档卷注明，建议后续实机并排目验。
+⑥门禁：tsc 0/build 3.80s/vitest 95/95/e2e f01+12 repeat1 PASS（winAt 39471/13461ms，f01 基线带零位移——黑幕不触服务端锚定时间线）/visual-diff 92.80 同带/det/fixtures 零物理交集。遗留 8 项（#13/#22/#35/#34/#41/#17/#9/R 键）逐项原因见 13 号档 §实施记录。
+⑦commit 链：ef68c96(B)→283d976(D)→6e395b0(C)→fe3353c(E)→057cf4c(A)+档卷/发版；TEMP/uitrans-fix 已清理。
+
 **更新**：2026-10-20（**🏗 文档结构优化（用户令"优化项目结构与 note 内容"）+ tag 缺口收敛始末**）。
 ①新增 `note/00-INDEX.md` 总导航（`38f8ffe`）：快速定位/五研究域/报告版本/规划方法逆向证据/归档导航；立规则——新研究域必带 00-INDEX 并登记、新挂账一律进行为复刻 INDEX §3。
 ②四研究域索引补齐（A 槽 `d5befc9`）：fidelity（35 档+tools 速查；27-29 缺号已注记）、autoplay（03 号档断点保留）、perf-hotspot、connect-ui 各得 00-INDEX；⚠ 已警示：fidelity 05 与 30-37 两期所用 bundle 版本不同（2,273,196B vs 2,218,873B），字节偏移不可互查。

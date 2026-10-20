@@ -157,3 +157,46 @@
 - 联机连接面板（DOM）动画归 connect-ui 槽域，本档未盘点。
 - 关卡内机关/角色动画（12 号档）、开局序列内核时序（02/06 号档）不重复。
 - 本档零代码改动；Top 建议均为**待立项**，落地须另开生产槽并过既有门禁（tsc/vitest/build/e2e）。
+
+## §实施记录（uitrans-fix 槽，2026-10-20）
+
+用户令修复。实施前逐点复核 bundle 原文（bytes 抽取脚本 TEMP/uitrans-fix/bytes.mjs，md5 d637cb8c… 与本档一致），§1/§2 全部常量与本档记录相符；等待 38 号档完工信号（5de0524，约 55 分钟）后分五批落地，版本 0.3.36→0.3.37。
+
+### 修复清单（commit · 复验）
+
+| 批 | 项 | commit | 要点与复验 |
+|---|---|---|---|
+| B | #7/#8/#10/#36 | ef68c96 | buildBoard 去 Back.easeOut → 逐帧弹簧（force 2.3/friction 0.7/起点 1.5H/dt 钳 0.04），黑幕 alpha=0.7·(1−Δy/全程) 每帧跟随，show/hide 翻 target（:1850938/:1851068 补证：show 置 visible=true、update 有 visible 门）；六面同享；PauseMenu 增 requestClose（滑出+1.5s 兜底强停）；Settings/Credits OK 滑出后停、Complete 依 oracle hide→1000ms→stop |
+| D | #28/#29/#30/#31/#32 | 283d976 | 拍链按 oracle 四级 delay 实参精确配对（j/j/g/m·visible&&f）⇒ general 700/1400/2100/2800、twoRows 700/1400/1400/2100；隐藏行不建图但音照拍（:1877004 拍回调不看可见性——修正本档 §2#33 未察的 twoRows 少一拍音偏差）；星碑播分段键（BootScene 补 puzzle/speed/dark 前缀三段，激活死代码）；popupArrow 删 2fps 闪烁改末拍 0001 恒亮；Continue 与星碑同拍启用（删+300ms）；时限文本 alpha 0.7 |
+| C | #14/#15/#16/#18/#19/#20/#21/#23 | 6e395b0 | StoneButton hover 换帧纠正为按压语义（down 0001+label 0.95 / up 复位+pusher 音，窗外松开只复位=oracle mouseup 无条件 setUp），disabled 访问器（禁用不换帧不回调，Continue 启用门迁入）；Menu Play/?/齿轮同族（齿轮保留 0002/0003=非 multi 分支，:1940071 复核）；菱形节点 scale·0.95/100ms 回尺；BackButton 帧换+label 缩放；显示关卡数 label 0.95；统一 fx 门控 pusher（sfx_pusher 在 AUDIO_GAME，Menu 暖装后可用，极早点击缺键仅 console 警告——不造音）。DOM 连接界面 CSS hover 未动 |
+| E | #24/#25/#26+头注 | fe3353c | **字节真相超出本档记录**：oracle 光柱 8 根全部 make.sprite(0,0)（组=root 中心=屏心 640，无任何 x 赋值，:1094049/:1097428 区穷举 .x 赋值仅 char1/char2）——旧「柱间均布 x=80..1200」2026-10-06 静态校准无 bundle 支持，已按字节真相重写为屏心堆叠扇（rotation=0.2·sin(t_offset+t·t_speed)、y=−480−528.75−\|sin\|·240、宽 0.6-1.0 脉冲、alpha=0.6+0.4rand、t+=0.003 帧驱动）；蜡烛 ×4 组挂屏心双频 lissajous（旧 yoyo tween/按钮组相对位同废）；glow alpha 0.85→1；头注自相矛盾勘误 |
+| A | #1/#4/#5/#15 退场半 | 057cf4c | transition.ts 新增（FadeScene 顶景：500ms Linear 入/出+Loading 字 800ms 后现+300ms 点循环+fading 门丢弃重入+黑幕吞输入加固）；接线六点：Menu Play→Temple、Temple back→Menu、enterGame→Game、leaveToMenu→Temple、reloadLevel(advance 回声双侧同达)→Game、__fwRestart→Game（GameOver/Pause 再试共Path）；EndMenu/GameOver/Pause 面板钮去即时 stop 由黑幕 ops 统一停；Continue leaving 门防黑幕窗双击；解除暂停走 requestClose 弹出 |
+
+**有意保持（oracle 同构，非遗漏）**：EndMenu/GameOverMenu 出现=裸切（#3 裁定）、Boot→Menu 首入链（#2）、PauseMenu 进出（#6）、CompleteScene launch（#34 待裁决不动）、R 键裸 restart（键盘路径非 UI 面）、onPhase ready 回声停面板（无黑幕，联机形态特有路径）。
+
+### 遗留表
+
+| # | 项 | 原因 |
+|---|---|---|
+| #13 | NewSign 静态贴片 | 静态件缺失非动画，INDEX §3 挂账 #9 在案 |
+| #22 | MuteButton | 新件添加非偏差修复，低观感收益 |
+| #35 | 彩带持续发射器 | M 成本，涉性能面（发射器 vs tween 波），单独立项 |
+| #34 | CompleteScene 触发语义 | 待用户裁决（联机 firstComplete 语义需重定义） |
+| #41 | LoaderBar | 仅冷载可见，低优先 |
+| #17 | TempleSelector 神庙轮盘 | 缺神庙族，挂账在案 |
+| #9 | 板缩放自适应 | 现视口（1280×960）与原生板等价，换自适应分辨率时补 |
+| — | R 键 restart 无黑幕 | oracle 键盘 retry 亦走 fade；我方 R 为裸 net.restart（速度跑便利，改动涉输入面未动） |
+
+### 门禁数字（版本 0.3.37）
+
+- tsc：0 error ｜ build：3.80s ✓ ｜ vitest：95/95（6 文件）
+- e2e route f01 repeat1：PASS，winAt=39471ms（基线带 39472-39477ms，**零位移**——黑幕 500ms 不触及服务端锚定的时间线）
+- e2e route f12 repeat1：PASS，winAt=13461ms
+- det/fixtures：**零物理交集**（改动面=客户端 UI 场景七件：overlays/menus/MenuScene/TempleScene/BootScene 仅动画注册/main.ts 接线/transition 新增；packages/shared 内核与关卡数据零触碰）
+- visual-diff：92.80（容差48）/87.80（容差24）——历史带 90.0-92.8 内同带（39 号档已谳量具含 DOM 污染口径）；Menu 光柱布局变更不在捕获流内（捕获不含 temple/菜单面），分数漂移属噪声
+- 语义验证注记：e2e 等待逻辑全锚服务端权威相位（__fwPhaseT/room.state），GameScene.create 延后 ~500ms 不触及任何等待；winAt 无常数级位移（实测如上）
+
+### 存疑待核
+
+- E 批光柱屏心堆叠扇为**视觉布局变更**（字节直证优先于旧静态校准）：与 oracle 实际渲染观感的最终一致性建议后续有机会时实机并排目验一次（本槽文字模型禁像素判读）。
+- Loading 文字在无广告环境下 oracle 亦仅理论可见（rAF 窗口 <300ms）；机制完整移植，若需「可见 Loading」需另议是否人为等待（非 oracle 行为，未做）。
