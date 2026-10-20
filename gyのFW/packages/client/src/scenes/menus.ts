@@ -1,7 +1,7 @@
 /**
  * 设置/制作人员/全通关三个弹窗（原版 SettingsMenu/CreditsMenu/GameCompleteMenu 复刻）。
  * 复用 overlays 的板与 StoneButton（IngameMenu 基类形制）；子元素一律板内局部坐标
- * （板 1082×642，容器 (64,159)，板内中心 (541,321)）。
+ * （板 1082×642，容器 (99,159)，板内中心 (541,321)）；进出为弹簧滑入/滑出（overlays.buildBoard）。
  * - SettingsScene：Music/Fx 双开关（原版 keyboard 模式布局，bundle:43824-43920），
  *   切换即时生效并持久化（settings.ts）。
  * - CreditsScene：右上"?"进入，制作名单按原版 ch 字典（bundle:45885-45925）。
@@ -57,7 +57,7 @@ export class SettingsScene extends Phaser.Scene {
     };
     toggleRow(CY0() - 60, "Music", "music", "音乐");
     toggleRow(CY0() + 60, "Fx", "fx", "音效");
-    stoneButton(this, board, CX, OK_Y, "好的", () => this.scene.stop());
+    stoneButton(this, board, CX, OK_Y, "好的", () => board.hide(() => this.scene.stop()));
   }
 }
 
@@ -83,7 +83,7 @@ export class CreditsScene extends Phaser.Scene {
           .setAlpha(i === 0 ? 0.7 : 1)
       );
     });
-    stoneButton(this, board, CX, OK_Y, "好的", () => this.scene.stop());
+    stoneButton(this, board, CX, OK_Y, "好的", () => board.hide(() => this.scene.stop()));
   }
 }
 
@@ -119,6 +119,11 @@ export class CompleteScene extends Phaser.Scene {
     this.time.delayedCall(1500, confetti);
     board.add(this.add.bitmapText(CX, TITLE_Y, FONT_MAIN, "恭喜！", 36).setOrigin(0.5, 0.5));
     board.add(this.add.bitmapText(CX, TITLE_Y + 70, FONT_MAIN, "你完成了全部挑战", 28).setOrigin(0.5, 0.5));
-    stoneButton(this, board, CX, OK_Y, "好的", () => this.scene.stop());
+    // 关闭时序（oracle GameCompleteMenu.close 行 45689：hide→1000ms→onClose 收尾）
+    stoneButton(this, board, CX, OK_Y, "好的", () =>
+      board.hide(() => {
+        this.time.delayedCall(1000, () => this.scene.stop());
+      }),
+    );
   }
 }

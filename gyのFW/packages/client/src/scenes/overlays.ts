@@ -13,6 +13,12 @@ import { ATLAS_MENU, ATLAS_POPUP, FONT_MAIN } from "./BootScene";
 
 const BOARD_X = 99;
 const BOARD_Y = 159;
+/** 板滑出目标（容器顶左口径）＝1.5H−321=1119：板心停 1440=1.5·realHeight（oracle :1852057） */
+const BOARD_OUT_Y = 1119;
+/** 弹簧三常量（bundle :1850446/:1850514/:1852409 直证） */
+const SPRING_FORCE = 2.3;
+const SPRING_FRICTION = 0.7;
+const SHADE_MAX = 0.7;
 /** 板内中心（板 1082×642 的一半） */
 const CX = 541;
 const CY = 321;
@@ -28,12 +34,57 @@ const HALF_W = 433;
 type Handle = Record<string, any>;
 const handle = (): Handle => (globalThis as unknown as Handle) ?? {};
 
-/** 板 + 黑幕 + 弹簧滑入（IngameMenu 基类复刻） */
-export function buildBoard(scene: Phaser.Scene): Phaser.GameObjects.Container {
-  const shade = scene.add.rectangle(640, 480, 1280, 960, 0x000000, 0.7).setDepth(0).setInteractive();
-  const board = scene.add.container(BOARD_X, 960).setDepth(1);
+/** 板句柄：Container + show/hide（oracle IngameMenu :1850938/:1851068——show 置 visible=true，
+ *  hide 仅翻 target=outside，visible 由 update 近 outside 判定收起） */
+export type Board = Phaser.GameObjects.Container & {
+  show(): void;
+  hide(onSettledOut?: () => void): void;
+};
+
+/**
+ * 板 + 动态黑幕 + 弹簧滑入/滑出（IngameMenu 基类复刻，六面同享）。
+ * 非 tween：逐帧弹簧积分（oracle :1852409 区），dt 钳 0.04；黑幕 alpha 跟板位动态
+ * `0.7·(1−(y−center)/(outside−center))`（:1852225），静止也每帧更新；静止门
+ * |y−target|<1 且 |vy|<1；|y−outside|<3 → visible=false。比例式以容器顶左口径恒等：
+ * (board.y−159)/960 ≡ (board.y+321−480)/(1440−480)。
+ */
+export function buildBoard(scene: Phaser.Scene): Board {
+  const shade = scene.add.rectangle(640, 480, 1280, 960, 0x000000, 1).setDepth(0).setInteractive();
+  shade.alpha = 0;
+  const board = scene.add.container(BOARD_X, BOARD_OUT_Y).setDepth(1) as Board;
   board.add(scene.add.image(0, 0, ATLAS_POPUP, "PopupBackground0000").setOrigin(0, 0));
-  scene.tweens.add({ targets: board, y: BOARD_Y, duration: 420, ease: "Back.easeOut" });
+  let vy = 0;
+  let target = BOARD_OUT_Y;
+  let settledOutCb: (() => void) | null = null;
+  const show = (): void => {
+    target = BOARD_Y;
+    board.setVisible(true);
+  };
+  const hide = (cb?: () => void): void => {
+    settledOutCb = cb ?? null;
+    target = BOARD_OUT_Y;
+  };
+  board.show = show;
+  board.hide = hide;
+  const tick = (): void => {
+    if (!board.visible) return;
+    shade.alpha = SHADE_MAX * (1 - (board.y - BOARD_Y) / (BOARD_OUT_Y - BOARD_Y));
+    if (Math.abs(board.y - target) < 1 && Math.abs(vy) < 1) return;
+    const dt = Math.min(0.04, scene.game.loop.delta / 1000);
+    vy = (vy + (target - board.y) * SPRING_FORCE * dt) * SPRING_FRICTION;
+    board.y += vy;
+    if (Math.abs(board.y - BOARD_OUT_Y) < 3) {
+      board.setVisible(false);
+      const cb = settledOutCb;
+      settledOutCb = null;
+      cb?.();
+    }
+  };
+  scene.events.on(Phaser.Scenes.Events.UPDATE, tick);
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+    scene.events.off(Phaser.Scenes.Events.UPDATE, tick);
+  });
+  show(); // 创建即自屏外弹簧入场（oracle init 置 outside，create 调 show）
   return board;
 }
 
@@ -61,11 +112,15 @@ export function stoneButton(
 
 /** 暂停菜单（P 键 / 画布暂停钮 → main togglePause 启动） */
 export class PauseMenu extends Phaser.Scene {
+  private board?: Board;
+  private closing = false;
+
   constructor() {
     super("PauseMenu");
   }
   create(): void {
-    const board = buildBoard(this);
+    this.board = buildBoard(this);
+    const board = this.board;
     board.add(this.add.bitmapText(CX, 40, FONT_MAIN, "暫停", 36).setOrigin(0.5, 0.5));
     stoneButton(this, board, CX + HALF_W / 3, 108, "再试一次", () => {
       this.scene.stop();
@@ -80,6 +135,14 @@ export class PauseMenu extends Phaser.Scene {
       // （本地不抢停——若对端已解除，回声早已关掉本面板，此钮不会存在）
       handle().__fwTogglePause?.();
     });
+  }
+  /** 弹簧滑出关闭（oracle hide()→target=outside，近 outside 自动隐）。main.ts pause-changed
+   *  回声路由至此；幂等，1.5s 兜底强停（防弹簧数值边缘不触发落位回调）。 */
+  requestClose(): void {
+    if (this.closing || !this.board) return;
+    this.closing = true;
+    this.board.hide(() => this.scene.stop());
+    this.time.delayedCall(1500, () => this.scene.stop());
   }
 }
 
