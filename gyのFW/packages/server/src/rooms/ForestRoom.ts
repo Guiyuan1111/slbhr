@@ -46,6 +46,9 @@ export class ForestRoom extends Room<RoomState> {
   private pingAcc = 0;
   private roomPassword = "";
   private readyTimer: NodeJS.Timeout | undefined;
+  /** 调试钩子 timer 句柄（FW_DEBUG_*，L-07）：onDispose 统一清理，防房间销毁后
+   *  定时器继续运行访问已销毁的 World/叠加堆积（仅调试环境变量开启时存在）。 */
+  private debugTimers: NodeJS.Timeout[] = [];
   /** 已就绪开钟标记（避免重复调度） */
   private startedOnce = false;
   /** FW_DUMP=1 诊断：内存缓冲、每 30 帧一次批量落盘（每步 appendFileSync 在 Windows
@@ -191,28 +194,28 @@ export class ForestRoom extends Room<RoomState> {
 
     // 调试钩子（FW_DEBUG_AUTO_WIN=1）：started 5s 后注入真实 win 事件，验证 win 下流全链
     if (process.env.FW_DEBUG_AUTO_WIN === "1") {
-      setTimeout(() => {
+      this.debugTimers.push(setTimeout(() => {
         if (this.state.phase === "started") {
           this.handleEvents([{ type: "win", data: { fbDiamonds: 3, wgDiamonds: 4, silver: 0, timeMs: 5000 } }]);
         }
-      }, 5000);
+      }, 5000));
     }
     // 调试钩子（FW_DEBUG_DOORS=1）：每 2s 打印内核门状态推进（isOpen/frac/isUp）
     if (process.env.FW_DEBUG_DOORS === "1") {
-      setInterval(() => {
+      this.debugTimers.push(setInterval(() => {
         if (this.state.phase !== "started") return;
         const d = this.world.doors;
         console.log("[doors] fb open=" + d.fireboy.isOpen + " frac=" + d.fireboy.frac.toFixed(1) + " up=" + d.fireboy.isUp + " | wg open=" + d.watergirl.isOpen + " frac=" + d.watergirl.frac.toFixed(1) + " up=" + d.watergirl.isUp);
-      }, 2000);
+      }, 2000));
     }
     // 调试钩子（FW_DEBUG_FORCE_DOORS=1）：每 500ms 置双门 isOpen=true（模拟双角色站门内），
     // 驱动真实的 25fps 扫帧 → isUp → win 判定路径（区别于 AUTO_WIN 直接注入 win 事件）
     if (process.env.FW_DEBUG_FORCE_DOORS === "1") {
-      setInterval(() => {
+      this.debugTimers.push(setInterval(() => {
         if (this.state.phase !== "started") return;
         this.world.doors.fireboy.isOpen = true;
         this.world.doors.watergirl.isOpen = true;
-      }, 500);
+      }, 500));
     }
     // 模拟唤醒保持默认 16.7ms：Windows 定时器分辨率 ~15.6ms，更密的 interval 会被钳制
     // （实测 setInterval(4) 实际均值 16.8ms、p95 24.7ms）。输入应用的帧精度不靠唤醒密度，
@@ -343,6 +346,12 @@ export class ForestRoom extends Room<RoomState> {
 
   onDispose() {
     if (this.readyTimer) clearTimeout(this.readyTimer);
+    // L-07：调试钩子 timer 一并清理，防销毁后继续访问已销毁的 World/多房间叠加
+    for (const t of this.debugTimers) {
+      clearTimeout(t);
+      clearInterval(t);
+    }
+    this.debugTimers = [];
   }
 
   /** 冻结态 = 玩家暂停 ∪ 断线等待（两种冻结都停 tick，共享同一时基补偿——B-01） */
