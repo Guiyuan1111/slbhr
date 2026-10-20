@@ -151,7 +151,7 @@
 3. `main.ts` 微改（推荐，各行独立可回滚）：`start()` 进连接即加 `#menu-error.busy` + 双按钮 `disabled`；`show()` 增加可选 `cls` 参数区分进度/错误；建房成功 `#hud-room` 改 `innerHTML` 高亮 code（textContent 串不变）。
 4. **回归（必须全绿）**：
    - `node benchmark/perf-client.mjs` —— `#password`/`#roomcode`/`#btn-*`/`#menu` hidden/`#hud-room` 正则，选择器零改动；
-   - `node scripts/e2e/journey.mjs` —— 含 `#menu-level === "已选关卡：forest_02"` 严格相等与换关回面板；
+   - `node scripts/e2e/journey.mjs` —— （2026-10-20 改写后不再读 `#menu-level`/回面板：0.3.12 活房间 advance 语义，断言全走权威 state 轮询）；
    - `node scripts/e2e/touch.mjs`、`benchmark/visual-diff.mjs`（后者读 `#hud-room`/`#menu-error` 文本；若其菜单截图纳入基线需重录）；
    - 手动：`?room=&pw=` 深链自动加入、窄窗（<420px）与移动端 Safari、F3 暂停/R 重开时面板不复活。
 5. **验收红线速查**：`#password`/`#roomcode` 为真 input 且恒可见；`#btn-create`/`#btn-join` 可点；`#menu.hidden` = display:none；`#menu-level` textContent 精确串；`#hud-room` 含连续 `房间码 <code>`；装饰一律 `::before/::after`。
@@ -187,14 +187,14 @@
 | vite build（仓库根） | PASS（dist/index.html 17.39KB） |
 | vitest 全量 | **89/89 PASS**（首跑 88/89：换肤新增文案触发 font census 防护网——按测试自述重跑 `census.ts` 刷新清单后全绿，client 源字符 395→527、fnt 交集 247→248） |
 | e2e route forest_01 repeat1 | **ALL PASS**（winAt=39559ms，房间 eqOX4nx-a） |
-| journey | **✗ 2 项——基线复跑同点同文失败，判定既有问题非本次回归**（见下） |
-| touch | **✗ 1 项——基线复跑同点同文失败，判定既有问题非本次回归**（见下） |
+| journey | **✗ 2 项——基线复跑同点同文失败，判定既有问题非本次回归**（见下；**2026-10-20 已收口**：场景按 0.3.12 advance 语义改写，双跑 7/7 ALL PASS，`3caa1cf`） |
+| touch | **✗ 1 项——基线复跑同点同文失败，判定既有问题非本次回归**（见下；**2026-10-20 已收口**：根因=Playwright tap 并发齐发致服务端同 tick 对消，探针改 CDP 90ms 按压，Δy 0.0→30.7/32.5px 双跑 6/6 PASS，`ac1ee09`） |
 | visual-diff | 91.97 / 92.8（两跑，方差 ~0.8pt；**只截 canvas 元素，DOM 换皮不入镜**；历史 95.2–95.8 为 10-13 win 环境数字，本槽未触 canvas 渲染路径，差值归环境/漂移面存疑待核） |
 | perf-client 本地冒烟 | 完成（建房→进房链路通；headless swiftshader webgl 13.3fps / canvas 60.6fps 属环境正常值） |
 
 ### 既有问题（基线取证，未修——不在本槽文件边界内）
-- **journey「联机面板弹出并预选下一关」**：`__fwNextLevel` 现行走活房间 advance（0.3.12 语义，服务端仅 won 受理、双端留场换关），菜单不再弹出；journey.mjs 的该检查仍是旧 Continue 回大厅语义。基线（477cec0^）复跑：同两 ✗、detail 逐字同（`已选关卡：forest_01`）。journey.mjs 需按现语义改写场景。
-- **touch「tap 跳跃 → y 上抬」**：Δy=0.0px ×2（本槽）+ 基线 ×1 同值；右移/三键/零报错均绿。疑 Ubuntu 迁移（f804bc3）后 bundled chromium 触屏 tap 路径问题，待移植槽核。
+- **journey「联机面板弹出并预选下一关」**：`__fwNextLevel` 现行走活房间 advance（0.3.12 语义，服务端仅 won 受理、双端留场换关），菜单不再弹出；journey.mjs 的该检查仍是旧 Continue 回大厅语义。基线（477cec0^）复跑：同两 ✗、detail 逐字同（`已选关卡：forest_01`）。→ **已收口（2026-10-20，`3caa1cf`）**：场景 1 按现语义改写（双端 advance 同房换关/面板不弹出/席位保留/时钟续走，7 项断言双跑 ALL PASS），旧断言随语义退役。
+- **touch「tap 跳跃 → y 上抬」**：Δy=0.0px ×2（本槽）+ 基线 ×1 同值；右移/三键/零报错均绿。→ **已收口（2026-10-20，`ac1ee09`）**：定谳非内核开关/坐标问题——Playwright 1.63 `touchscreen.tap` 并发齐发 touchStart/End，按钮同帧 down/up，两条 input WS 1ms 内到达，服务端 tick 意图跨度排水同一步消费对消（FW_DUMP 字证 step=50 at=821/822ms），物理步采样 up=false；探针改 CDP 顺序注入+人手量级 90ms 按压后 Δy 30.7/32.5px，双跑 6/6 PASS。
 - **连接失败横幅显示 raw 错误串**（如 "[object ProgressEvent]"）：0.3.32 同款 catch 直通行为，非本次引入。
 
 ### 遗留

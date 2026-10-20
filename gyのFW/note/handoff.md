@@ -33,6 +33,11 @@
 ⑥门禁逐批全绿：tsc 0/vitest 95/95/det 48/48@r0-baseline/census 18446 PASS（F1/F3 纯精灵层物理零交集）/e2e f01+f12 PASS/journey pause 9/9/visual-diff 90.77→92.84→92.01→92.03 带内。
 ⑦commit 链：fa27b8b→8ad63f6→4cc9886→e6111e5→64b099d→04005a5→6884ba8→3477519→83a8bef→884457a+文档发版；档卷 38/15/14 各 §实施记录；TEMP/auditfix 已清。
 
+**更新**：2026-10-20（**🔧 journey/touch 工具两件三查清账——挂账 §3-6 销账（`3caa1cf`+`ac1ee09`），新基线 journey 7/7、touch 6/6**）。
+①journey「联机面板弹出并预选下一关」×2：按 0.3.12 活房间 advance 语义改写场景 1——旧断言随语义退役（继续=net.advance 同房换关，不再回大厅弹面板），新 7 项：phase=won 权威闸/双端 levelId 回声同房留场（房间码不变）/面板不弹出+EndMenu 关+Game 重建（0.3.37 黑幕 500ms×2 包络，全程状态轮询零写死 sleep）/ready→started/席位保留×2/权威时钟续走；修复前=1/3 后 Crash（menu 填充超时），修复后双跑 7/7 ALL PASS；self-acceptance §三 L3 行同步改写。
+②touch「tap 跳跃 Δy=0」：定谳非内核开关/坐标换算——Playwright 1.63 `touchscreen.tap` 并发齐发 touchStart/End（coreBundle.js Promise.all），按钮同帧 down/up→两条 input WS 1ms 内到达→服务端 tick 意图跨度排水同一步消费对消（ForestRoom.ts:348-353；FW_DUMP 字证 `step=50 at=821ms up=true / at=822ms up=false` 同步对消，物理步采样 up=false）；纯页三路径+应用三层隔离+CDP hold 0-150ms 扫描全过佐证；探针改 CDP Input.dispatchTouchEvent 顺序注入+人手量级 90ms 按压（同款原语、touch 合成路径全真），Δy 0.0→30.7/32.5px 双跑 6/6 PASS。
+③账面：parity INDEX §3-6 已迁销账区（编号保留防引用断裂）；connect-ui README §门禁数字/§既有问题两行注收口；挂账三件（journey×2+touch×1）全清。取证脚本与 dump 属临时件已清，字节证据已固化进 touch.mjs 头注+INDEX 销账行。
+
 **更新**：2026-10-20（**🎬 UI 转场动画保真修复落地（0.3.37）——13 号档五批 25 项，等 38 号档完工信号后实施**）。
 ①换屏黑幕 state.fade（缺失 Top1）：新增 transition.ts FadeScene 顶景（500ms Linear 入/出+Loading 字 800ms/300ms 点循环+重入丢弃门，bundle 字节复刻），接线六换屏点，面板钮去即时 stop 由黑幕统一停；EndMenu/GameOver 出现保持裸切（oracle 同构非遗漏）。
 ②面板弹簧滑入（Top2）：buildBoard 去 Back.easeOut 改逐帧弹簧（2.3/0.7/1.5H/dt 钳 0.04）+黑幕跟板动态，六面同享；关闭滑出+Complete +1000ms 收尾+暂停解除 requestClose。
