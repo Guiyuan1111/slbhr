@@ -125,6 +125,22 @@ function findTempleEntry(levelId: string): { filename: string; time: number; typ
   return e ? { filename: String(e.filename), time: Number(e.time) || 0, type: String(e.type ?? "general") } : null;
 }
 
+/** 重开整关（黑幕包络；13 号档遗留销账，0.3.39）。oracle 对应语义=Level.retry 走 fade
+ *  （bundle:1909660 已复核：levelMusic.stop → state.add("level") → state.fade("level",!0,!1,levelData)
+ *  → killAll）。GameOver/Pause「再试一次」与 R 键共用（0.3.37 起 __fwRestart 即此信封；
+ *  R 键属我方 E1 速度跑扩展——oracle 键盘仅绑 P bundle:1896097 区，无 R——今键盘路径
+ *  对齐鼠标路径同信封）。转场进行中重复触发被 fading 门整体丢弃（oracle if(!this.fading) 同）；
+ *  服务端 phase 把关不变（R 无本地前置门槛，原语义）。 */
+function restartWithFade(): void {
+  if (!net || !phaser) return;
+  fadeSwitch(phaser, () => {
+    const sm = phaser.scene;
+    sm.stop("GameOverMenu");
+    sm.stop("PauseMenu");
+    net?.restart();
+  });
+}
+
 /** 活房间换关（服务端 advance 的 levelId 差分回声，双端同触发）：拉新关数据重建 Game
  *  场景；席位/键盘/触屏链路不动（仍绑在同一房间）。 */
 async function reloadLevel(levelId: string): Promise<void> {
@@ -254,16 +270,10 @@ async function enterGame(): Promise<void> {
     });
   };
   (globalThis as unknown as Record<string, unknown>).__fwLeaveToMenu = leaveToMenu;
-  // 重开（GameOver「再试一次」/暂停菜单「再试一次」；oracle retry fade("level") :1909660）：
-  // 黑幕包络下停面板+发 restart，服务端重置回声链不变。R 键保持裸 restart（键盘路径非 UI 面）。
-  (globalThis as unknown as Record<string, unknown>).__fwRestart = () => {
-    fadeSwitch(phaser!, () => {
-      const sm = phaser!.scene;
-      sm.stop("GameOverMenu");
-      sm.stop("PauseMenu");
-      net?.restart();
-    });
-  };
+  // 重开（GameOver「再试一次」/暂停菜单「再试一次」/R 键；oracle retry fade("level") :1909660）：
+  // 黑幕包络下停面板+发 restart，服务端重置回声链不变。0.3.39 R 键同走此信封（restartWithFade），
+  // 键盘/鼠标路径归一。
+  (globalThis as unknown as Record<string, unknown>).__fwRestart = restartWithFade;
   // 结算「继续」：原版 Continue 直进下一关（bundle EndMenu 44360 区段）。联机形态
   // = 活房间内 advance 换关（席位保留、双端同跳，2026-10-12 实玩反馈：不再回大厅
   // 重建房间）；无后继或已离房 → 回选关树（原版最后一关无 Continue 后继）。
@@ -518,7 +528,7 @@ function bindUi(): void {
   // R 键请求整关重开（E1；服务端按 phase 把关：won/gameover 才受理）
   window.addEventListener("keydown", (e) => {
     if (e.code === "KeyP" && gameStarted) togglePause();
-    if (e.code === "KeyR" && net) net.restart();
+    if (e.code === "KeyR" && net) restartWithFade();
   });
 }
 
