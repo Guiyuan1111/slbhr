@@ -181,7 +181,7 @@
 | #13 | NewSign 静态贴片 | ✅已修（985914a）：TempleScene 节点贴 NewSign0000（state>0&&!initial&&!played，位置 +40/−20 布局尺锚 0.5 无 tween=「弹跳」假设证伪后静态贴片本义）；progress.ts 增 played 集（fw-played-v1）+进关 markPlayed（oracle setPlayed :1935016 同语义）。证据链见 §实施记录(flashp1) |
 | #22 | MuteButton | ❌**划销（复核证伪）**：oracle 死代码——全 bundle 0 实例化（UIState/LevelUI 两处 import 均被 IIFE 形参遮蔽，this.muteButton 3 处纯读零赋值），oracle 实际从不渲染静音钮（右上=PauseButton+Clock）；补可见件=背离 oracle（字节真相优先，0.3.37 E 批先例）。完整证据链见 §实施记录(flashp1) |
 | #35 | 彩带持续发射器 | ⏸保留：M 成本涉性能面（发射器 vs tween 波），单独立项（本批范围外，挂账原样） |
-| #34 | CompleteScene 触发语义 | ⏸保留：待用户裁决（本批范围外，挂账原样） |
+| #34 | CompleteScene 触发语义 | ✅已修（P-02 批，0.3.40）：firstComplete 字节链对齐——置位前移至通关时刻、消费=Menu+Temple 双入口读即清、双旗与 played 分域；星门按字节证据保留（见 §实施记录(p02)） |
 | #41 | LoaderBar | ✅已修（2ae3a9b）：BootScene 首位装 PreloaderAssets（oracle Boot 预装 :2160057 区）+buildLoaderBar 逐参复刻 :2164711（Bar crop 200×20/Holder anchor.5/Title (0,−80) anchor.47 双轴，进度=load.progress≡onFileComplete a/100 同源，COMPLETE 销毁；h5api.progress 平台件不移植） |
 | #17 | TempleSelector 神庙轮盘 | ❌**划销（不适用）**：仅 MultiHall/MultiMenu（multi 形态）实例化（:1956494/:1961502），单机形态 Menu.startTemple 直 fade("levelMenu")（:1941847）无轮盘；我方=forest 单神庙树（LevelMenu 同构形态）本就该无此件。#13 之 TempleSelector 贴片（:1947823）随本件注记 multi 形态专属 |
 | #9 | 板缩放自适应 | ✅已修（c16e77e）：buildBoard 按 fixToCamera :1851667 公式 s=min(1,min(W/板帧宽,H/板帧高)) 纹理帧动态读+容器 setScale；1280×960 下 s=1 与旧固定值 99/159/1119 逐位恒等（「自适应公式落地+零视觉差实测」口径），行程恒等式 outY−Y=H 与 s 无关黑幕比例式不变形 |
@@ -240,3 +240,47 @@
 
 - NewSign 徽标消失时点=下次 TempleScene 重建（create 重读 played）；oracle 同为回 LevelMenu 重建消隐。联机形态「进关」时点取 enterGame/reloadLevel（advance 回声同达），与 oracle 点击直进的形态差已在代码注记。
 - f12 winAt 带较 0.3.38（13429-13485）整体左移 ~300ms（本批 13075/13151），f01 在带内——同机多槽负载下逐帧调度的跑间漂移，两树四跑全 PASS 佐证非系统性；后续批次如需严带建议静窗复测。
+
+## §实施记录（p02 槽，2026-10-20，#34 CompleteScene 触发语义·P-02）
+
+用户批（16 号档 P-02：对齐 oracle firstComplete）。实施前逐字节复核 oracle bundle（output/A/js/init.eb02fbdab2aa1d24.js，md5 d637cb8c…，bytes 抽取脚本 TEMP/p02/bytes.mjs，收尾清理）。
+
+### oracle 字证（全部字节级，无推测）
+
+- **置位**：`ProgressModel.process()`（:2149483-:2149538）：遍历 temples×levels，`b`=每关 `best.stars≥3`；`b && !this.get("gameComplete") && (this.firstComplete = !0), this.set("gameComplete", b)`（set 无条件落 b）。调用面一：`update()`（EndMenu.create success 分支 :1881953 → :2152850 区）**仅 best 刷新**（`stars>0 && (null==best || betterThan)` :2152850）才 merge+process——即**通关时刻置位**；调用面二：`setPlayed`（:2153050，进关时；因 b=true 与 gameComplete=true 同瞬成立，此面对 firstComplete 无可达增量，见下）。
+- **消费**：`Menu.afterAddContent`（:1939446 定义，:1939549 检查）与 `LevelMenu.afterAddContent`（:1932272 定义，:1932358 检查）首行：`firstComplete && ((firstComplete=!1), state.add("gameComplete", g), state.start("gameComplete", !1, !1, {success:!0}))`——**bare start**（无 fade；g=`States/Complete/Complete` 两模块各自 import）。
+- **⚠️ 字节真相修正提案卡前提**：`firstComplete` ≠「首次通关某关」，而是**全 48 关 3 星 100% 的首次达成**（`e.best==null || e.best.stars<3 → b=false` :2149490 区）。故**星门保留在置位侧**（提案卡「选项 B 移除三星门」的设想被字节证据否定——移除即背离 oracle）；「首通即庆」的 B 选项语义修正为「全 3 星首通一次性」。setPlayed 调用面对 firstComplete 无可达增量：b 首次为 true 的同一句 process 即落 gameComplete=true，此后 `!get("gameComplete")` 恒假——我方只在 best 刷新路径调 processWinResult 即覆盖全部可达态。
+- **呈现字节链**：Phaser2 core `clearCurrentState`（:357600-:357860）：`tweens.removeAll/camera.reset/input.reset/time.removeAll` 后 **`this._clearWorld && (world.shutdown(), …)`**——bare start 带 `clearWorld=!1` ⇒ 旧态显示表**不销毁**，庆典浮于选关画面之上、其下画面静止；菜单关闭 doKill（:1928175 区 menu.destroy→emitter 停→5200ms 空 shutdown）后即原画面。
+- **played 与 firstComplete 两旗独立**（ played=:1935016/:2153050 每关布尔 vs firstComplete=:2149507 全局瞬态）。
+
+### 落地（packages/client 四文件+单测）
+
+- **progress.ts**：`fw-gamecomplete-v1`（gameComplete 持久旗）+ 模块级 `firstComplete` 瞬态（进程内变量，不落盘=oracle 同构）；`processWinResult(allThreeStar)` 逐句对应置位段；`takeFirstComplete()` 读即清；`saveBest` 改返回 bool（=update betterThan 门）；旧键 `fw-complete-shown`（0.3.38 临时门）读时迁移为 gameComplete=1 后删除（防升级重播）。与 `fw-played-v1` 分键分域。
+- **main.ts** won 分支（=oracle EndMenu.create→update 时点）：`saveBest(...)` 返回 true（best 刷新）才 `processWinResult(templeLevels.every(starsOf===3))`。
+- **TempleScene.ts**（≡oracle LevelMenu）与 **MenuScene.ts**（≡oracle Menu）create 尾部消费点：`takeFirstComplete() && scene.launch("CompleteScene")`——先到先得。
+- **呈现=launch 并行景**（维持 0.3.37 A 批口径，本批复核维持）：oracle bare start clearWorld=!1 显示表保留 ⇒ 庆典为浮层；Phaser 3 `scene.start` 会清 Temple 显示表（庆典关闭后黑屏）⇔ oracle 相悖，launch 即其可观察等价物。无黑幕包络（oracle 裸切无 fade，FadeScene 零涉）。微差记档：launch 下 Temple 存活（其无 idle 动画，视觉无差）；Menu 消费时光柱 idle 继续动（oracle bare start 后冻结）——浮层黑幕之下不可辨，接受。
+- **联机形态等价性**（派发批准记档）：progress 存各端 localStorage——任一端达成全 3 星且 best 刷新即各自置位、回庙各自庆祝恰好一次；对方端进度独立不受感染（P1 实证：B 干净端仅写入自带 1 条）。
+- **progress.test.ts**（+7）：置位段/读即清/b=false 无条件落 0/gameComplete 已置不重播/旧键迁移/saveBest betterThan 门/两旗分域。
+
+### 门禁（全部实跑）
+
+| 项 | 结果 |
+|---|---|
+| tsc / build | PASS / 3.87s |
+| vitest | **126/126**（119+本批 7；119 口径含并行槽 m03 房间集成 13 例） |
+| det 48/48 | `--compare r0-baseline` **位级一致**（纯客户端 UI/进度面，内核零触碰） |
+| e2e route repeat1（--offset -15） | f01 PASS winAt=39468ms（0.3.38 带 39466-39477 内）；f12 PASS×2 winAt=13419ms（较 0.3.39 13075/13151 确定性右移 ~268ms——本批 diff 不触 pre-win 路径（det 位级一致+服务端零触碰佐证），判环境漂移，与上批 f12 左移同性质） |
+| journey 全套 | journey 7/7 + pause 9/9 + rejoin 3/3 + deathretry 4/4 + rolesplit 6/6 ALL PASS（回面板预选/rejoin/advance 流程零 CompleteScene 干扰——庆典仅在 100% 出现，自动化不触达） |
+| touch | 6/6 PASS |
+| visual-diff（新口径） | **92.54**（容差48）/87.46（容差24），带 90.55-92.86 内 |
+| ID 契约探针 | **14/14 PASS**（TEMP/p02/probe.mjs 按 connect-ui §T1-T12+C-client-dom 附加 2 项重建） |
+
+### 语义实证（TEMP/p02/semcheck.mjs，11/11 PASS，截图六张收容 note/evidence/p02-complete/）
+
+- **Part1 真实路线回放胜（dist，负对照+分域）**：A 端预置 47 关 3 星 + 真实胜 forest_01（2 星 41s）→ won@EndMenu 不播、回庙 A/B 均不播（星门未达，b=false）；progress 写入 {stars:2,time:41}、gameComplete="0"（无条件落 0 字节形）、played 集含胜出关；B 干净端 progress 仅自带 1 条（per-client 独立）。截图 p1-endmenu-a/p1-temple-a/p1-temple-b。
+- **Part2 正链全流程（vite dev 页面内 `import("/src/progress.ts")`=应用同模块实例，sameRef=true 实证）**：`processWinResult(true)`（=oracle process() b=true 置位瞬间的进度态模拟——现有 48 关路线均为抢门线不收钻，真实 3 星胜在路线库不可达，星门字节语义下正链必须模拟此一步；**其余全真实**：真实模块/真实场景接线/真实画布点击）→ 回庙庆典播放（p2-temple-celebrate）→ 真实点「好的」关闭（hide→1000ms→stop）→ 同会话 Menu/Temple 再入不重播（p2-reenter-temple）→ 刷新后 Menu/Temple 均不重播+gameComplete 持久（p2-reload-temple）。
+- 时序对齐结论：置位在通关时刻（won 即写，不待回菜单）、播放延迟到下一次菜单入口——与 oracle「EndMenu.create 置位、LevelMenu/Menu.afterAddContent 消费」两时刻一一对应。
+
+### 收尾
+
+- 16 号档 P-02 状态改已实施；版本 0.3.40 由协调方统一发（本槽禁 bump/禁动 README/release）。TEMP/p02 清理。
