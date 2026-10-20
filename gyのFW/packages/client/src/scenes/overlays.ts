@@ -4,18 +4,18 @@
  * （won/gameover 时服务端已停步；pause 为服务端权威全场物理冻结——F3 翻转 2026-10-11，
  * 原版 togglePause=game.paused 语义，任一端 P 键双端同冻结）。
  *
- * 板 = PopupBackground0000 1082×642，容器置于 (99,159)（水平 (1280-1082)/2=99、
- * 垂直 (960-642)/2=159 精确居中——oracle 实拍 2026-10-12 板心=视口中心，旧值 64 整板左偏 35px）。
- * 子元素一律用板内局部坐标（板中心 = (541,321)）；screen = local + (99,159)。
+ * 板 = PopupBackground0000 1082×642，容器精确居中（1280×960 视口下 (99,159)——
+ * oracle 实拍 2026-10-12 板心=视口中心，旧值 64 整板左偏 35px）。0.3.39 起整板随
+ * 视口自适应缩放（oracle fixToCamera :1851667 公式，buildBoard 内推导；现视口 =1 恒等）。
+ * 子元素一律用板内局部坐标（板中心 = (541,321)）；1280×960 下 screen = local + (99,159)。
  */
 import Phaser from "phaser";
 import { ATLAS_MENU, ATLAS_POPUP, FONT_MAIN } from "./BootScene";
 import { getSettings } from "../settings";
 
-const BOARD_X = 99;
-const BOARD_Y = 159;
-/** 板滑出目标（容器顶左口径）＝1.5H−321=1119：板心停 1440=1.5·realHeight（oracle :1852057） */
-const BOARD_OUT_Y = 1119;
+/** 板原生尺寸（PopupBackground0000 帧 1082×642，sourceSize 实测；运行时以纹理帧为准） */
+const BOARD_W = 1082;
+const BOARD_H = 642;
 /** 弹簧三常量（bundle :1850446/:1850514/:1852409 直证） */
 const SPRING_FORCE = 2.3;
 const SPRING_FRICTION = 0.7;
@@ -50,31 +50,43 @@ export type Board = Phaser.GameObjects.Container & {
  * (board.y−159)/960 ≡ (board.y+321−480)/(1440−480)。
  */
 export function buildBoard(scene: Phaser.Scene): Board {
-  const shade = scene.add.rectangle(640, 480, 1280, 960, 0x000000, 1).setDepth(0).setInteractive();
+  // —— 自适应几何（13 号档 #9，0.3.39；oracle fixToCamera :1851667 区逐式复刻：
+  //    a=Math.min(1, Math.min(realWidth/boardBg.texture.frame.width, realHeight/boardBg.texture.frame.height)); board.scale.set(a)。
+  //    现视口 1280×960 ⇒ a=1，boardX/Y=99/159、outY=1119、黑幕 1280×960——与旧固定值逐位恒等（零视觉差，档口径"自适应公式落地"）；
+  //    行程恒等式 outY−Y=H 与 a 无关，黑幕 alpha 比例式不变形。CX/CY/HALF_W 为板局部系，容器缩放自动生效。）
+  const W = scene.scale.width;
+  const H = scene.scale.height;
+  const popupFrame = scene.textures.get(ATLAS_POPUP).get("PopupBackground0000");
+  const boardScale = Math.min(1, Math.min(W / popupFrame.width, H / popupFrame.height));
+  const boardX = (W - BOARD_W * boardScale) / 2;
+  const boardY = (H - BOARD_H * boardScale) / 2;
+  /** 板滑出目标（容器顶左口径）：板心停 1.5H（oracle outside.y=1.5·realHeight :1852057） */
+  const boardOutY = 1.5 * H - CY * boardScale;
+  const shade = scene.add.rectangle(W / 2, H / 2, W, H, 0x000000, 1).setDepth(0).setInteractive();
   shade.alpha = 0;
-  const board = scene.add.container(BOARD_X, BOARD_OUT_Y).setDepth(1) as Board;
+  const board = scene.add.container(boardX, boardOutY).setDepth(1).setScale(boardScale) as Board;
   board.add(scene.add.image(0, 0, ATLAS_POPUP, "PopupBackground0000").setOrigin(0, 0));
   let vy = 0;
-  let target = BOARD_OUT_Y;
+  let target = boardOutY;
   let settledOutCb: (() => void) | null = null;
   const show = (): void => {
-    target = BOARD_Y;
+    target = boardY;
     board.setVisible(true);
   };
   const hide = (cb?: () => void): void => {
     settledOutCb = cb ?? null;
-    target = BOARD_OUT_Y;
+    target = boardOutY;
   };
   board.show = show;
   board.hide = hide;
   const tick = (): void => {
     if (!board.visible) return;
-    shade.alpha = SHADE_MAX * (1 - (board.y - BOARD_Y) / (BOARD_OUT_Y - BOARD_Y));
+    shade.alpha = SHADE_MAX * (1 - (board.y - boardY) / (boardOutY - boardY));
     if (Math.abs(board.y - target) < 1 && Math.abs(vy) < 1) return;
     const dt = Math.min(0.04, scene.game.loop.delta / 1000);
     vy = (vy + (target - board.y) * SPRING_FORCE * dt) * SPRING_FRICTION;
     board.y += vy;
-    if (Math.abs(board.y - BOARD_OUT_Y) < 3) {
+    if (Math.abs(board.y - boardOutY) < 3) {
       board.setVisible(false);
       const cb = settledOutCb;
       settledOutCb = null;
