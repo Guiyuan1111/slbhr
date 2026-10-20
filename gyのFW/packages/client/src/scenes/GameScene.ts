@@ -657,7 +657,13 @@ export class GameScene extends Phaser.Scene {
       const capR = this.add.image(wSw / 2 - 16, capY, ATLAS_MECH, "BarCapRight0000").setOrigin(0.5);
       const mid = this.add.image(0, 0, ATLAS_MECH, "BarCenter0000").setOrigin(0.5);
       mid.scaleX = (wSw / 32 - 2) / 3; // 原版 scale.x=(宽格-2)/3
-      const light = this.add.image(0, 0, ATLAS_MECH, "moving_platform_light_off0000").setOrigin(0.5);
+      // V13（15 号档 Top1）：设备灯组色 tint（Device.setupLight @1620676：on/off 双帧同 tint
+      // =groupColors[group 首位]，0/缺省白；平台灯此前恒白）。平台=森林最高频设备
+      // （221 台面，group 1-6 五色在用——14 号档 §1.4 数据字证）。
+      const light = this.add
+        .image(0, 0, ATLAS_MECH, "moving_platform_light_off0000")
+        .setOrigin(0.5)
+        .setTint(GROUP_COLORS[p.group] ?? 0xffffff);
       light.scaleX = (wSw / 32 - 1) / 3; // 原版 scale.x=(宽格-1)/3
       const inner = this.add.container(0, 0, [capL, capR, mid, light]);
       if (vert) inner.setAngle(-90); // 内组 n=−π/2 常驻（原版 shapeSprite.rotation）
