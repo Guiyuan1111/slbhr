@@ -1845,15 +1845,23 @@ export class GameScene extends Phaser.Scene {
     const on = Number(wd.state) !== 0;
     if (on === v.on) return;
     v.on = on;
-    v.effect.setVisible(on);
+    // V9/V10（15 号档 Top2，oracle updateState @1737222-1737260 字证）：
+    // on：effect 只切 visible（其动画建时即播+随机相位 @1735078，常驻不停→相位连续）、
+    //     base 立即 play；light 即时换帧（updateLight 先于 updateState @1622404）。
+    // off：effect 即隐（动画不停→相位保留）；base 立刻继续播、400ms _.delay 后 stop+复位
+    //     0000 帧（无取消机制：400ms 窗内再 on 会被滞后回调复位——oracle 原样保留该 quirk）；
+    //     light 同样即时换 off。
     if (on) {
+      v.effect.setVisible(true);
       v.base.play("wind_base");
-      v.effect.play("wind_effect");
       v.light.setFrame("wind_base_light_on0000");
     } else {
-      v.base.stop().setFrame("wind_base0000");
-      v.effect.stop().setFrame("wind_effect0000");
+      v.effect.setVisible(false);
       v.light.setFrame("wind_base_light_off0000");
+      this.time.delayedCall(400, () => {
+        v.base.stop();
+        v.base.setFrame("wind_base0000");
+      });
     }
     // 原版 Wind.updateState：激活 playInstance 循环、失活停止（森林 14 关有风区）
     const anyOn = [...this.windViews.values()].some((w) => w.on);
