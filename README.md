@@ -1,6 +1,6 @@
 # slbhr
 
-森林冰火人（Fireboy & Watergirl 森林神庙）完全复刻：服务端权威在线双人版。当前版本 **0.3.38**（0.3.37 UI 转场对齐；0.3.38 相机语义/机构子精灵/音效六件——相机 settled 关卡矩形语义 44 关系统差归零；版本史见 `gyのFW/note/release/`）。
+森林冰火人（Fireboy & Watergirl 森林神庙）完全复刻：服务端权威在线双人版。当前版本 **0.3.40**（0.3.39 转场遗留收尾；0.3.40 GitHub issue 批十七修（房间时基/路径穿越/重连/门禁真实化等）+ CompleteScene 全收集庆典对齐 oracle firstComplete；版本史见 `gyのFW/note/release/`）。
 
 私有仓库，禁止公开分发；官方素材仅限私用。
 
