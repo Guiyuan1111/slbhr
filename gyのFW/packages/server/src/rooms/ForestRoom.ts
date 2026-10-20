@@ -76,6 +76,10 @@ export class ForestRoom extends Room<RoomState> {
   private freezeStartWall = 0;
   /** 风力时基零点（页面级语义：跨整关重开/换关延续，原版 Continue 直进下一关不刷新页面） */
   private worldEpochMs = 0;
+  /** 最近一次 win 结算数据（L-02，#13）：finish 只广播不落任何状态，won 相位下断线重连
+   *  端错过广播后 lastFinish 为 null，客户端以 0 兜底算星级——general 关 timeOk=limit>0&&0<=limit
+   *  恒真，把 0 秒成绩写进本地最佳。restart/换关时清空；重连成功时补发（见 onLeave）。 */
+  private lastFinish: { fbDiamonds: number; wgDiamonds: number; silver: number; timeMs: number } | null = null;
 
   onCreate(options: JoinOptions) {
     this.roomPassword = String(options.password ?? "");
@@ -284,12 +288,29 @@ export class ForestRoom extends Room<RoomState> {
     try {
       await this.allowReconnection(client, RECONNECT_SECONDS);
       if (this.state.phase === "paused") {
-        this.state.phase = prevPhase;
-        // H-02：ready 期断线回来——旧 ready 钟大概率已被守卫拦掉（断线期 phase=paused），
-        // 重排一轮（beginReady 自带 clearTimeout，不会叠加）
-        if (prevPhase === "ready") this.beginReady();
+        if (prevPhase === "won" && this.lastFinish) {
+          // L-02：won 相位下重连，先补发 finish、延迟恢复相位——客户端 onPhase("won") 读
+          // lastFinish 计算星级/最佳，相位先到会用 0 兜底（0 秒最佳根因）。重连握手完成
+          // 后客户端立即重绑 onMessage（net.ts reconnect→bindRoom），120ms 足够落定，
+          // 补发必被接住；随后恢复相位触发 onPhase("won") 时 lastFinish 已就位。
+          // 不可直接发：allowReconnection resolve 发生在 core Room._onJoin 内部、早于
+          // JOIN_ROOM 载荷（Room.js:576），此刻发会被尚未重绑的客户端 Room 丢弃。
+          const finish = this.lastFinish;
+          setTimeout(() => {
+            if (this.state.phase !== "paused") return; // 期间已有迁移（另一路超时回 lobby 等）
+            client.send("finish", finish);
+            this.state.phase = prevPhase;
+            this.syncFreezeClock();
+            this.syncState();
+          }, 120);
+        } else {
+          this.state.phase = prevPhase;
+          // H-02：ready 期断线回来——旧 ready 钟大概率已被守卫拦掉（断线期 phase=paused），
+          // 重排一轮（beginReady 自带 clearTimeout，不会叠加）
+          if (prevPhase === "ready") this.beginReady();
+          this.syncFreezeClock();
+        }
       }
-      this.syncFreezeClock();
       this.syncState();
       // 重连端错过了 pause-changed 广播：仍处玩家暂停则补发一条，让它恢复暂停画面
       if (this.userPaused) client.send("pause-changed", { paused: true, by: this.userPausedBy });
@@ -372,6 +393,8 @@ export class ForestRoom extends Room<RoomState> {
   private restartLevel() {
     if (this.readyTimer) clearTimeout(this.readyTimer); // H-02：同 beginReady，防钟叠加
     this.world.reset();
+    // L-02：旧关结算不跨重开
+    this.lastFinish = null;
     // 玩家暂停不跨重开（原版 retry 走完整 startLevel，game.paused 归 false）
     this.userPaused = false;
     this.userPausedBy = null;
@@ -469,13 +492,15 @@ export class ForestRoom extends Room<RoomState> {
       if (ev.type === "win") {
         if (process.env.FW_DEBUG_DOORS === "1") console.log("[win] 事件触发，切 phase=won");
         this.state.phase = "won";
-        // 结算数据全量随消息下发（星级/用时由客户端按原版公式呈现）
-        this.broadcast("finish", {
+        // L-02：结算数据落服务端，won 相位下断线重连时可补发（广播仍为主通道）
+        this.lastFinish = {
           fbDiamonds: ev.data.fbDiamonds,
           wgDiamonds: ev.data.wgDiamonds,
           silver: ev.data.silver,
           timeMs: Math.round(ev.data.timeMs),
-        });
+        };
+        // 结算数据全量随消息下发（星级/用时由客户端按原版公式呈现）
+        this.broadcast("finish", this.lastFinish);
       } else if (ev.type === "death") {
         this.broadcast("death", { role: ev.role });
       } else if (ev.type === "gameover") {
