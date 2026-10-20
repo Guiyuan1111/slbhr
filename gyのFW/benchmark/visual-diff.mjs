@@ -154,7 +154,7 @@ async function shootOriginal(browser) {
 // ---------- 我方侧 ----------
 async function enterAs(page, mode, roomCode) {
   await page.goto(`http://127.0.0.1:${OURS_PORT}/?level=forest_01`, { waitUntil: "domcontentloaded" });
-  await page.fill("#password", "vw");
+  await page.fill("#password", "vw-pw"); // L-04：服务端拒 4 位以下，2 位不再可用
   if (mode === "join") await page.fill("#roomcode", roomCode);
   await page.click(mode === "create" ? "#btn-create" : "#btn-join");
   try { await page.waitForSelector("#menu", { state: "hidden", timeout: 12000 }); }

@@ -118,7 +118,7 @@ const client = new Client(`ws://127.0.0.1:${PORT}`);
 const recs = []; // { roomId, primary, secondary, stA, stB, phase, deaths, restarts, lastTrans, startedAt }
 
 async function joinPair() {
-  const opts = { password: "", levelId: LEVEL };
+  const opts = { password: "perf-pw", levelId: LEVEL }; // L-04：服务端拒 4 位以下，空密码不再可用
   const a = await client.create("forest", opts); // 创建者 = fireboy（onJoin 先到先得）
   const b = await client.joinById(a.roomId, opts); // 加入者 = watergirl
   const rec = {

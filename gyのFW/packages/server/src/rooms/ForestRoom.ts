@@ -75,6 +75,12 @@ export class ForestRoom extends Room<RoomState> {
 
   onCreate(options: JoinOptions) {
     this.roomPassword = String(options.password ?? "");
+    // L-04（服务端半）：私用场景最低门槛——建房时密码 4-64 位（note/PLAN.md「4 位以上」
+    // 落地；上限仅防异常巨串，不做复杂度策略）。加入侧走 onAuth 相等比较，短密码天然
+    // 不匹配无需另判；ServerError message 经 MatchMakeError 直达客户端提示。
+    if (this.roomPassword.length < 4 || this.roomPassword.length > 64) {
+      throw new ServerError(4400, "房间密码需 4-64 位");
+    }
     const levelId = String(options.levelId ?? "forest_01");
     if (!levelExists(levelId)) {
       throw new ServerError(4404, `关卡不存在: ${levelId}`);
