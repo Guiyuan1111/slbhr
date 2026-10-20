@@ -500,6 +500,10 @@ export class ForestRoom extends Room<RoomState> {
   private syncState() {
     const mechs = this.world.mechanisms;
     for (const role of ROLES) {
+      // L-01（#12）：席位已释放（超时/离场）的角色不写不建——否则上一行刚被 releaseSeat
+      // 删掉的 PlayerState 立刻在这里按 World 快照补建回来，余端看到离场角色的幽灵
+      // （冻结在最后位置）。World 侧角色仍在但不再映射进状态，补位重开 world.reset() 归位。
+      if (!this.hasSeat(role)) continue;
       const sim = this.world.snapshotPlayer(role);
       let ps = this.state.players.get(role);
       if (!ps) {
@@ -640,6 +644,13 @@ export class ForestRoom extends Room<RoomState> {
     bs.x = Math.round(m2px(pos.x) * 10) / 10;
     bs.y = Math.round(m2px(pos.y) * 10) / 10;
     bs.angle = Math.round(body.GetAngle() * 1000) / 1000;
+  }
+
+  /** 角色当前是否有人占席（roles 以 sessionId 为键，反查；每 tick 调用，零分配）。
+   *  断线等待期席位未释放（仍占席，冻结值照常下发），超时/主动退出释放后即缺席——L-01。 */
+  private hasSeat(role: Role): boolean {
+    for (const r of this.roles.values()) if (r === role) return true;
+    return false;
   }
 
   /** 每角色最近一次输入快照（input 消息全量语义） */
