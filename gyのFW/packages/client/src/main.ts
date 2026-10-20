@@ -133,8 +133,9 @@ function findTempleEntry(levelId: string): { filename: string; time: number; typ
  *  服务端 phase 把关不变（R 无本地前置门槛，原语义）。 */
 function restartWithFade(): void {
   if (!net || !phaser) return;
-  fadeSwitch(phaser, () => {
-    const sm = phaser.scene;
+  const game = phaser; // 守卫后取 const：模块级 let 的窄化不跨回调存活（TS18047）
+  fadeSwitch(game, () => {
+    const sm = game.scene;
     sm.stop("GameOverMenu");
     sm.stop("PauseMenu");
     net?.restart();
