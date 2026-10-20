@@ -174,18 +174,18 @@
 
 **有意保持（oracle 同构，非遗漏）**：EndMenu/GameOverMenu 出现=裸切（#3 裁定）、Boot→Menu 首入链（#2）、PauseMenu 进出（#6）、CompleteScene launch（#34 待裁决不动）、R 键裸 restart（键盘路径非 UI 面）、onPhase ready 回声停面板（无黑幕，联机形态特有路径）。
 
-### 遗留表
+### 遗留表（2026-10-20 flashp1 槽销账更新，版本 0.3.39）
 
-| # | 项 | 原因 |
+| # | 项 | 处置 |
 |---|---|---|
-| #13 | NewSign 静态贴片 | 静态件缺失非动画，INDEX §3 挂账 #9 在案 |
-| #22 | MuteButton | 新件添加非偏差修复，低观感收益 |
-| #35 | 彩带持续发射器 | M 成本，涉性能面（发射器 vs tween 波），单独立项 |
-| #34 | CompleteScene 触发语义 | 待用户裁决（联机 firstComplete 语义需重定义） |
-| #41 | LoaderBar | 仅冷载可见，低优先 |
-| #17 | TempleSelector 神庙轮盘 | 缺神庙族，挂账在案 |
-| #9 | 板缩放自适应 | 现视口（1280×960）与原生板等价，换自适应分辨率时补 |
-| — | R 键 restart 无黑幕 | oracle 键盘 retry 亦走 fade；我方 R 为裸 net.restart（速度跑便利，改动涉输入面未动） |
+| #13 | NewSign 静态贴片 | ✅已修（985914a）：TempleScene 节点贴 NewSign0000（state>0&&!initial&&!played，位置 +40/−20 布局尺锚 0.5 无 tween=「弹跳」假设证伪后静态贴片本义）；progress.ts 增 played 集（fw-played-v1）+进关 markPlayed（oracle setPlayed :1935016 同语义）。证据链见 §实施记录(flashp1) |
+| #22 | MuteButton | ❌**划销（复核证伪）**：oracle 死代码——全 bundle 0 实例化（UIState/LevelUI 两处 import 均被 IIFE 形参遮蔽，this.muteButton 3 处纯读零赋值），oracle 实际从不渲染静音钮（右上=PauseButton+Clock）；补可见件=背离 oracle（字节真相优先，0.3.37 E 批先例）。完整证据链见 §实施记录(flashp1) |
+| #35 | 彩带持续发射器 | ⏸保留：M 成本涉性能面（发射器 vs tween 波），单独立项（本批范围外，挂账原样） |
+| #34 | CompleteScene 触发语义 | ⏸保留：待用户裁决（本批范围外，挂账原样） |
+| #41 | LoaderBar | ✅已修（2ae3a9b）：BootScene 首位装 PreloaderAssets（oracle Boot 预装 :2160057 区）+buildLoaderBar 逐参复刻 :2164711（Bar crop 200×20/Holder anchor.5/Title (0,−80) anchor.47 双轴，进度=load.progress≡onFileComplete a/100 同源，COMPLETE 销毁；h5api.progress 平台件不移植） |
+| #17 | TempleSelector 神庙轮盘 | ❌**划销（不适用）**：仅 MultiHall/MultiMenu（multi 形态）实例化（:1956494/:1961502），单机形态 Menu.startTemple 直 fade("levelMenu")（:1941847）无轮盘；我方=forest 单神庙树（LevelMenu 同构形态）本就该无此件。#13 之 TempleSelector 贴片（:1947823）随本件注记 multi 形态专属 |
+| #9 | 板缩放自适应 | ✅已修（c16e77e）：buildBoard 按 fixToCamera :1851667 公式 s=min(1,min(W/板帧宽,H/板帧高)) 纹理帧动态读+容器 setScale；1280×960 下 s=1 与旧固定值 99/159/1119 逐位恒等（「自适应公式落地+零视觉差实测」口径），行程恒等式 outY−Y=H 与 s 无关黑幕比例式不变形 |
+| — | R 键 restart 无黑幕 | ✅已修（9d1fdb5+92eb6de）：restartWithFade 提为模块级信封，__fwRestart 与 KeyR 同走（键盘/鼠标路径归一）；oracle 键盘仅绑 P 无 R（:1896097 区），R 属我方 E1 速度跑扩展、oracle retry 本走 fade :1909660 |
 
 ### 门禁数字（版本 0.3.37）
 
@@ -200,3 +200,43 @@
 
 - E 批光柱屏心堆叠扇为**视觉布局变更**（字节直证优先于旧静态校准）：与 oracle 实际渲染观感的最终一致性建议后续有机会时实机并排目验一次（本槽文字模型禁像素判读）。
 - Loading 文字在无广告环境下 oracle 亦仅理论可见（rAF 窗口 <300ms）；机制完整移植，若需「可见 Loading」需另议是否人为等待（非 oracle 行为，未做）。
+
+## §实施记录（flashp1 槽，2026-10-20，版本 0.3.39——遗留表八项收尾批）
+
+阶段一只读复核（bytes 抽取脚本 TEMP/flashp1/bytes.mjs，bundle md5 d637cb8c… 与本档一致）逐件复核 §1/§2 字证后动码；动码前等待双门同开（40 号档取证收卷 a31915f + 39 号档重定带 ≥2 commit，15:27 同满足）。**两件复核证伪划销（用户批复照准）**，四件落地，逐件 commit。
+
+### 划销证据链（格式沿 38 号档 F1 伪差定谳先例）
+
+**#22 MuteButton = oracle 死代码，从不渲染**：
+1. `grep -ob 'MuteButton'` 全 bundle 恰 6 处——模块 define（:1099272）+帧串（:1099584/:1099952/:1099997，均在模块体内）+两处 import 路径串（UIState :1100490、LevelUI :1870321）；
+2. UIState（:1100440 窗口原文）：`define(…,["../Common/MuteButton","Phaser"],function(c){…(function(c){…})(Phaser.State))`——import `c` 被 IIFE 形参遮蔽，类 extends Phaser.State；layoutContent 引 `this.muteButton` 但 `grep -ob 'muteButton'` 全 bundle 恰 3 处（:1102886/:1102911/:1102958）全为 null 守卫读、**无任何赋值点**；
+3. LevelUI（:1870260 窗口原文）：4 依赖 3 形参（e=MuteButton，Phaser 未绑），IIFE `(function(e){…})(Phaser.Group)` 遮蔽，构造器仅 pauseButton+clock；
+4. 结论：0 实例化 ⇒ oracle 界面无静音钮。组件语义已存档（点击翻 sound.mute+updateState 换帧 0000/0001+sprite.anchor(1,0)，:1099952 窗口）备后续用户裁决，本批不补件。
+
+**#17 TempleSelector = multi 形态专属，我方形态本就该无**：define :1945002；引用全 5 处、实例化仅 MultiHall（:1956494 define 其 import j）/MultiMenu（:1961502）两态（gameConfig.type==="multi" 多神庙形态）；单机形态 Menu.startTemple（:1941847 窗口原文）直 `state.fade("levelMenu",!0,!1,a)`。我方复刻单神庙形态（Menu→TempleScene 树），oracle 单机形态同无此件 ⇒ 不适用划销；#13 之第二贴片（:1947823，scale 0.7/+60/−60 挂 icon）随本件注记。
+
+### 落地四件（commit · 要点）
+
+| 件 | commit | 要点 |
+|---|---|---|
+| #13 | 985914a | progress.ts `fw-played-v1`（loadPlayed/markPlayed，v1 结构不动）+TempleScene 节点循环贴片（紧跟 btn 后 add=内容组层序）+main enterGame/reloadLevel 进关即 markPlayed（oracle 单机=点击直进，我方联机=真进关时点，弹面板间隔不计，档注记）；isNew 门 `!initial&&!played`（state>0 由锁定分支 continue 隐含） |
+| #41 | 2ae3a9b | BootScene buildLoaderBar：`filecomplete-atlas-preloader` 建组（单场景镜像 oracle Boot→Load 两段；此刻以 load.progress 补初值）+progress 事件 crop+COMPLETE 销毁 bar（holder/title 随场景回收，档注明） |
+| #9 | c16e77e | buildBoard 自适应几何（W/H=scale.width/height、s 纹理帧动态读、boardX/Y/outY/shade 全推导）；现视口逐位恒等故 det/visual-diff/e2e 无涉；CX/CY/HALF_W 板局部系不动，六面板零改动 |
+| R 键 | 9d1fdb5+92eb6de | restartWithFade 模块级（守卫后 const 中转修 TS18047：模块级 let 窄化不跨回调）；__fwRestart 指向共用函数（全局 API 不变）；KeyR 改走同信封。e2e 不用 R（grep 证） |
+
+### 门禁数字（版本 0.3.39，主干工作树实测）
+
+- tsc：0 error（92eb6de 后复验）｜ build：3.98s ✓ ｜ vitest：**106/106**（7 文件——基线 95→106 系并行 B-infra 槽 2e74e54 vitest 3.1.4→5.0.5 升级所增，非本批）
+- e2e route f01 repeat1：PASS winAt=**39468ms**（0.3.38 带 39466-39477 内）；f12 repeat1：PASS winAt=**13075ms**。附注：f12 首跑 FAIL 系末段 KeyD 抬起 CDP 抖动（多槽并跑放大；停点 x=1177 vs 成功 1147），同树复跑即过、干净 worktree 复证 f01=39842/f12=13151 双 PASS——非代码回归
+- det/fixtures：**零物理交集**（改动面=progress.ts 持久化+TempleScene 贴片+BootScene 加载条+overlays 板几何+main.ts 键盘信封；packages/shared 内核、packages/server、GameScene 物理零触碰）
+- visual-diff：**92.11**（容差48）/86.73（容差24），最优平移 **(0,0)**——0.3.38 带 92.01-92.84 ±1.5-2 跑间噪声内同带；板缩放 s=1 恒等在 captures 无位移实证，NewSign/LoaderBar 不在捕获流（GameScene forest_01 idle 域外）
+
+### 并行槽冲突两起（处置入档）
+
+- 985914a 前身 d94093c 误将他槽 main.ts WIP 整文件带入 commit——reset 后基线重放法拆分重做（git show HEAD 基线+Edit 重放+选择性暂存），他槽 WIP 全数退还工作树，其后由其槽自行收编（24b5fb5）。
+- 92eb6de 前身 fe37321 误以 `git update-index --cacheinfo` 相对路径在仓库根新建错误路径文件——reset 未入史，改 hash-object+全路径重提；教训：update-index 路径按仓库根解析，不随 cwd。
+
+### 存疑待核
+
+- NewSign 徽标消失时点=下次 TempleScene 重建（create 重读 played）；oracle 同为回 LevelMenu 重建消隐。联机形态「进关」时点取 enterGame/reloadLevel（advance 回声同达），与 oracle 点击直进的形态差已在代码注记。
+- f12 winAt 带较 0.3.38（13429-13485）整体左移 ~300ms（本批 13075/13151），f01 在带内——同机多槽负载下逐帧调度的跑间漂移，两树四跑全 PASS 佐证非系统性；后续批次如需严带建议静窗复测。

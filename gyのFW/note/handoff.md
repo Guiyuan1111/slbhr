@@ -24,6 +24,15 @@
 
 ## 条目
 
+**更新**：2026-10-20（**🧩 13 号档遗留八项收尾（0.3.39）——四修两划销，两划销系复核证伪**）。
+①**复核证伪划销**（用户批复照准，证据链全文见 13 号档 §实施记录(flashp1)）：**#22 MuteButton=oracle 死代码**——全 bundle 0 实例化（UIState/LevelUI 两处 import 均被 IIFE 形参遮蔽，this.muteButton 3 处纯读零赋值），oracle 实际从不渲染静音钮，补件=背离 oracle；**#17 TempleSelector=multi 形态专属**——仅 MultiHall/MultiMenu 实例化（:1956494/:1961502），单机形态 startTemple 直 fade("levelMenu")（:1941847），我方单神庙形态本就该无此件。
+②#13 NewSign（985914a）：TempleScene 节点静态贴片（+40/−20 布局尺无 tween）+progress played 集（fw-played-v1）+进关 markPlayed（oracle setPlayed :1935016 同语义，联机时点注记在案）。
+③#41 LoaderBar（2ae3a9b）：BootScene buildLoaderBar 逐参复刻 :2164711（crop 200×20/Holder/Title anchor.47，进度≡onFileComplete 百分比同源，COMPLETE 销毁）；PreloaderAssets 两侧字节一致，+1 文件 ≈4KB。
+④#9 板缩放自适应（c16e77e）：buildBoard 按 fixToCamera :1851667 公式 s=min(1,min(W/帧宽,H/帧高))；现视口 s=1 与旧值逐位恒等（零视觉差口径），行程恒等式不变形。
+⑤R 键黑幕（9d1fdb5+92eb6de）：restartWithFade 模块级信封，__fwRestart/KeyR 键鼠同路归一（oracle 键盘仅 P 无 R，R 属我方 E1 扩展、retry 本走 fade）。
+⑥门禁：tsc 0/build 3.98s/vitest 106/106（基线 95→106 系并行 B-infra 2e74e54 vitest 升级）/e2e f01=39468+f12=13075 PASS（f12 首跑 FAIL=末段 CDP 抖动，复跑+干净 worktree 复证非回归）/visual-diff 92.11 最优平移 (0,0) 同带/det 零物理交集。
+⑦并行槽冲突两起处置入档（985914a 前身误入他槽 main.ts WIP 已拆分重做；update-index 相对路径教训）；#35/#34 范围外原样保留。
+
 **更新**：2026-10-20（**🔨 审计遗留大批实施（0.3.38）——38/15/14 三档 10 commit，F1 前提复核被推翻系对拍器伪差**）。
 ①F1 冰膜复核修正：oracle iceGraphics 建时 visible=false（@1666560）、仅 55 型瓦片/光束冻结可点亮，森林 58 图 0 用例 ⇒ 恒不可见；38 号档「423 精灵缺失致像素差」判为对拍器未合成祖先组可见性的仪器伪差（与 F5 同族）——按字节语义落隐藏覆盖层，像素零影响，水体关分数上行预期作废。
 ②F3 四件逐 commit：hanging_base 同位第二精灵/wind_base_light 灯层(组色 tint)/pulley_base 改挂双板位(forest_04 实证 762px 错位)/lever_stick_light 换帧（「不随杆旋转」亦系对拍器局部角伪语义，旋转行为保持）。
