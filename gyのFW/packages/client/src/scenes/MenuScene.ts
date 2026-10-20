@@ -1,10 +1,13 @@
 /**
- * 开始界面（原版 States/Menu/TempleHall 复刻；坐标经实机显示树二轮校准 2026-10-06）。
- * 实测：背景 TempleHallForest.jpg 1708×960 居中（大厅石柱是背景自带）；
- * 原版 8 根 Beam 光柱实际悬于屏幕外（y≈-1180，不可见）——不绘制；
+ * 开始界面（原版 States/Menu/TempleHall 复刻；静态件坐标经实机显示树二轮校准 2026-10-06，
+ * 动态件 2026-10-20 按 bundle 字节真相重写——13 号档 #24/#25/#26）。
+ * 背景 TempleHallForest.jpg 1708×960 居中（大厅石柱是背景自带）；
+ * 光柱 ×8：oracle 全部创建于组心（屏心 640），anchor(0.5,-0.5) 从顶垂入满屏高、SCREEN 混合，
+ *   update 帧驱动 t+=0.003：rotation=0.2·sin(t_offset+t·t_speed)、y 随 |sin| 摆、宽 0.6-1.0 脉冲
+ *   （:1094049/:1097040/:1097136/:1097166——旧「柱间均布」静态校准无 bundle 支持，已废）；
  * KiziLogo 207×94 @ (640,93)；标题 GameNameForest 860×270 @ (640,288)；
- * 角色 0.95 缩放 legs/head 同心叠放 @ (320,875)/(960,875)，glow 于中心下 40px；
- * 「开始游戏」251×76 @ (640,513)（无底板）+ Navy 蜡烛 ×4（按钮组相对位）；
+ * 角色 0.95 缩放 legs/head 同心叠放 @ (320,875)/(960,875)，glow 于中心下 40px（alpha=1）；
+ * 「开始游戏」251×76 @ (640,513)（无底板）+ Navy 蜡烛 ×4（Navies 组挂屏心，双频 lissajous 漂移）；
  * 左下设置齿轮 (100,860)、右上"?" (1240,40)。
  */
 import Phaser from "phaser";
@@ -12,8 +15,25 @@ import { ATLAS_CHARS, ATLAS_MENU, FONT_MAIN, startBgWarm } from "./BootScene";
 import { clickSfx } from "./overlays";
 import { getSettings } from "../settings";
 
+/** 光柱动态态（oracle :1094049 创建期随机相位/速度） */
+interface Beam extends Phaser.GameObjects.Image {
+  tOffset: number;
+  tSpeed: number;
+}
+/** 蜡烛动态态（oracle Navies :1091311-:1091971） */
+interface Navy extends Phaser.GameObjects.Image {
+  cart: { x: number; y: number };
+  offR: number;
+  rprime: number;
+  sR: number;
+  sT: number;
+  theta: number;
+  r: number;
+}
+
 export class MenuScene extends Phaser.Scene {
-  private beams: Phaser.GameObjects.Image[] = [];
+  private beams: Beam[] = [];
+  private navies: Navy[] = [];
   private t = 0;
 
   constructor() {
@@ -29,29 +49,21 @@ export class MenuScene extends Phaser.Scene {
     const cover = Math.max(W / hall.width, H / hall.height);
     this.add.image(W / 2, H / 2, "TempleHall").setScale(cover);
 
-    // 光柱 ×8（原版 TempleHall beams：anchor(0.5,-0.5) 使 y≈-1180 的柱体从顶部垂入画面约 887px，
-    // SCREEN 混合 + alpha 0.6-1.0 = 顶部亮带；宽/高按实机 dump，x 按大厅柱间均布）。
-    // update 里绕顶摆动（rotation = 0.2·sin）。
-    const beamSpec: Array<[number, number, number]> = [
-      // [x, y(center), width] —— 可视区均布（亮度带实测校准 2026-10-06）
-      [80, -1180, 154],
-      [240, -1230, 141],
-      [400, -1232, 154],
-      [560, -1021, 99],
-      [720, -1135, 129],
-      [880, -1154, 134],
-      [1040, -1159, 135],
-      [1200, -1079, 114],
-    ];
-    this.beams = beamSpec.map(([x, y, w], i) =>
-      this.add
-        .image(x, y, "Beam")
+    // 光柱 ×8（oracle TempleHall :1094049 区字节直证：8 根全部 make.sprite(0,0)——组=root 中心，
+    // 无任何 x 赋值，即全部位于屏心；anchor(0.5,-0.5) 从顶垂入；alpha=0.6+0.4·rand（创建期恒定）；
+    // t_offset=2π(i−k/2)/k−rand·π/6、t_speed=0.6·rand（k=8）；SCREEN 混合。Beam.png 159×846，
+    // y 尺 846×1.25=1057.5 满屏高。动态见 update。）
+    this.beams = Array.from({ length: 8 }, (_, i) => {
+      const b = this.add
+        .image(W / 2, 0, "Beam")
         .setOrigin(0.5, -0.5)
-        .setDisplaySize(w, 1058 * cover)
         .setBlendMode(Phaser.BlendModes.SCREEN)
-        .setAlpha(0.6 + 0.4 * ((i % 3) / 2))
-        .setDepth(1)
-    );
+        .setAlpha(0.6 + 0.4 * Math.random())
+        .setDepth(1) as Beam;
+      b.tOffset = (2 * Math.PI * (i - 4)) / 8 - (Math.random() * Math.PI) / 6;
+      b.tSpeed = 0.6 * Math.random();
+      return b;
+    });
 
     // 品牌 logo（原版 kizi 位，顶部中央）
     this.add.image(W / 2, 93, "KiziLogo").setOrigin(0.5);
@@ -63,7 +75,7 @@ export class MenuScene extends Phaser.Scene {
     for (const role of ["fire", "water"] as const) {
       const x = role === "fire" ? 320 : 960;
       const y = 875;
-      this.add.image(x, y + 40, ATLAS_CHARS, `${role}_glow0000`).setOrigin(0.5).setAlpha(0.85).setDepth(2);
+      this.add.image(x, y + 40, ATLAS_CHARS, `${role}_glow0000`).setOrigin(0.5).setDepth(2);
       this.add.image(x, y, ATLAS_CHARS, `${role}_legs_idle0000`).setOrigin(0.5).setScale(0.95).setDepth(3);
       const head = this.add
         .sprite(x, y, ATLAS_CHARS, `${role}_head_idle0000`)
@@ -89,24 +101,22 @@ export class MenuScene extends Phaser.Scene {
       })
       .on("pointerupoutside", () => playTxt.setScale(1));
 
-    // Navy 蜡烛/装饰 ×4（按钮组相对位 (145,-8)/(105,-63)/(63,-223)/(37,29) → 屏幕）
-    const navies: Array<[number, number]> = [
-      [785, 505],
-      [745, 450],
-      [703, 290],
-      [677, 542],
-    ];
-    navies.forEach(([nx, ny], i) => {
-      const dust = this.add.image(nx, ny, ATLAS_MENU, "Navy0000").setDepth(3).setAlpha(0.95);
-      this.tweens.add({
-        targets: dust,
-        y: ny - 14,
-        duration: 1500 + i * 280,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut",
-      });
-    });
+    // Navy 蜡烛 ×4（oracle Navies :1090834 区：组挂 TempleHall 原点=屏心，每根随机——
+    // scale=0.3+0.7·rand、offsetCart=(±100,±25)、offset.r=400·rand、speed.r=7e-4+5e-4·rand、
+    // speed.theta=3e-4+5e-4·(rand−.5)、pos.theta=rand·2π；update 见下。旧「按钮组相对位静态
+    // 摆位+yoyo tween」无 bundle 支持，按字节真相重写。）
+    for (let i = 0; i < 4; i++) {
+      const dust = this.add.image(W / 2, H / 2, ATLAS_MENU, "Navy0000").setDepth(3) as Navy;
+      dust.setScale(0.3 + 0.7 * Math.random());
+      dust.cart = { x: 200 * (Math.random() - 0.5), y: 50 * (Math.random() - 0.5) };
+      dust.offR = 400 * Math.random();
+      dust.rprime = 0;
+      dust.sR = 7e-4 + 5e-4 * Math.random();
+      dust.sT = 3e-4 + 5e-4 * (Math.random() - 0.5);
+      dust.theta = Math.random() * Math.PI * 2;
+      dust.r = Math.random();
+      this.navies.push(dust);
+    }
 
     // 左下设置齿轮 + 右上"?"（oracle :1940071 区：帧 0002/0003=非 multi 分支，按压换帧+pusher 音；
     // "?"=GoldButton 同族 label 0.95+pusher 音——按压语义，无 hover）
@@ -150,9 +160,23 @@ export class MenuScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     void _time;
-    this.t += delta / 1000;
-    this.beams.forEach((b, i) => {
-      b.rotation = 0.2 * Math.sin(this.t * 0.8 + i * 0.9);
-    });
+    void delta;
+    // oracle 帧驱动（:1097040 t+=0.003/帧、:1097136/:1097166 摆动/摆幅/宽脉冲；
+    // :1091591 区蜡烛双频 lissajous）
+    this.t += 0.003;
+    for (const b of this.beams) {
+      const phase = b.tOffset + this.t * b.tSpeed;
+      const s = Math.sin(phase);
+      b.rotation = 0.2 * s;
+      b.y = -480 - 528.75 - Math.abs(s) * 240; // −H/2 − 846·1.25/2 − |sin|·H/4
+      b.setScale(0.6 + 0.4 * Math.abs(s), 1.25); // 屏显宽 95..159 × 高 1057.5
+    }
+    for (const n of this.navies) {
+      n.rprime += n.sR;
+      n.r = n.offR * Math.sin(n.rprime);
+      n.theta += n.sT;
+      n.x = 640 + n.cart.x + n.r * Math.cos(n.theta);
+      n.y = 480 + n.cart.y + n.r * Math.sin(n.theta);
+    }
   }
 }
