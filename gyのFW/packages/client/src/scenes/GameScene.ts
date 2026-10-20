@@ -125,6 +125,9 @@ interface WindView {
   base: Phaser.GameObjects.Sprite;
   on: boolean;
   effect: Phaser.GameObjects.Sprite;
+  /** F3b：Device 基类灯层（wind_base_light_on/off0000，组色 tint，随 state 换帧；
+   *  oracle 为 base 精灵子精灵 @1620378 → 同位同角，updateLight 先于 updateState 即时切换） */
+  light: Phaser.GameObjects.Image;
 }
 
 /**
@@ -778,7 +781,15 @@ export class GameScene extends Phaser.Scene {
       effect.play("wind_effect");
       effect.anims.setProgress(Math.random());
       effect.setVisible(false);
-      this.windViews.set(w.id, { base, effect, on: false });
+      // F3b：灯层（oracle Device 基类 @1620378：lightFrame+"0001" 子精灵、off 帧起、
+      // setupLight 双帧 tint=组色；风 defaults lightFrame="wind_base_light" @1735654）
+      const light = this.add
+        .image(base.x, base.y, ATLAS_MECH, "wind_base_light_off0000")
+        .setOrigin(0.5)
+        .setDepth(7.1)
+        .setAngle(base.angle)
+        .setTint(GROUP_COLORS[w.group] ?? 0xffffff);
+      this.windViews.set(w.id, { base, light, effect, on: false });
     }
 
     // 窗框（仅 forest_bonus_1 两处，64×32 横窗）：oracle @1740286-1742086——主精灵
@@ -1820,9 +1831,11 @@ export class GameScene extends Phaser.Scene {
     if (on) {
       v.base.play("wind_base");
       v.effect.play("wind_effect");
+      v.light.setFrame("wind_base_light_on0000");
     } else {
       v.base.stop().setFrame("wind_base0000");
       v.effect.stop().setFrame("wind_effect0000");
+      v.light.setFrame("wind_base_light_off0000");
     }
     // 原版 Wind.updateState：激活 playInstance 循环、失活停止（森林 14 关有风区）
     const anyOn = [...this.windViews.values()].some((w) => w.on);
