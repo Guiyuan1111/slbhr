@@ -20,7 +20,7 @@ import { PauseMenu, EndMenu, GameOverMenu } from "./scenes/overlays";
 import { SettingsScene, CreditsScene, CompleteScene } from "./scenes/menus";
 import { FadeScene, fadeSwitch } from "./scenes/transition";
 import { loadTempleLevels } from "./templeData";
-import { markPlayed, saveBest } from "./progress";
+import { markPlayed, processWinResult, saveBest, starsOf } from "./progress";
 import { getSettings } from "./settings";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => {
@@ -411,7 +411,16 @@ function netHandlers(): NetCallbacks {
           passed = true;
         }
         lastResult = { stars, passed };
-        if (passed && currentTempleEntry) saveBest(currentTempleEntry.filename, stars, timeSec);
+        if (passed && currentTempleEntry) {
+          // 全通庆典置位（P-02 #34，0.3.40）：oracle EndMenu.create → progress.update
+          // （:1881953 success 分支），仅 best 刷新才 merge+process（:2152850 区）；
+          // process 置位段 :2149483-:2149538：b=全 48 关 3 星 && gameComplete 未置
+          // → firstComplete（瞬态），gameComplete=b 持久化。消费在 Menu/Temple 入口
+          // （takeFirstComplete），时点对齐 oracle「通关置位、回菜单才播」。
+          if (saveBest(currentTempleEntry.filename, stars, timeSec)) {
+            processWinResult(templeLevels.length > 0 && templeLevels.every((lv) => starsOf(lv.filename) === 3));
+          }
+        }
         phaser?.scene.start("EndMenu", {
           diamonds: diaGot,
           diamondsTotal: diaTotal,

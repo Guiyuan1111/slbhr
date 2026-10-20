@@ -14,7 +14,7 @@ import Phaser from "phaser";
 import { ATLAS_MENU, ATLAS_TEMPLE, FONT_MAIN } from "./BootScene";
 import { clickSfx } from "./overlays";
 import { fadeSwitch } from "./transition";
-import { loadPlayed, loadProgress, starsOf } from "../progress";
+import { loadPlayed, loadProgress, starsOf, takeFirstComplete } from "../progress";
 import { getSettings } from "../settings";
 import { peekTreeBake, startTreeBake, stepTreeBake, type MaskFrame, type TreeBakeParams, type TreeBakeResult } from "./templeTreeBake";
 
@@ -222,14 +222,15 @@ export class TempleScene extends Phaser.Scene {
       backLabel.setScale(1);
     });
 
-    // 全 3 星首通 → 彩带（原版 firstComplete：置位 ProgressModel.process bundle:2149507，
-    // 检查 LevelMenu.afterAddContent bundle:1932358）
-    if (this.data_.levels.length > 0 && this.data_.levels.every((lv) => starsOf(lv.filename) === 3)) {
-      if (!localStorage.getItem("fw-complete-shown")) {
-        localStorage.setItem("fw-complete-shown", "1");
-        this.scene.launch("CompleteScene");
-      }
-    }
+    // 全 3 星首通庆典·消费点 1/2（P-02 #34，0.3.40）：本场景≡oracle LevelMenu，
+    // afterAddContent（:1932272/:1932358）内容构建末检查 firstComplete——置位已前移至
+    // 通关时刻（main.ts won 分支 processWinResult，oracle EndMenu.create→update :1881953/
+    // :2149507 同构），此处读即清并起 CompleteScene。呈现=launch 并行景（无黑幕）：oracle
+    // bare start("gameComplete",!1,!1) 的 clearWorld=!1 保留旧态显示表（Phaser2 core
+    // :357600 区仅 clearWorld 才 world.shutdown）⇒ 庆典浮于选关画面之上；Phaser 3 语义下
+    // scene.start 会清掉 Temple（关掉庆典后黑屏）⇔ oracle 行为相悖，launch 即其等价物。
+    // 星门留在置位侧（全 48 关 3 星=:2149483 字节语义，非单关首通）。
+    if (takeFirstComplete()) this.scene.launch("CompleteScene");
 
     // 显示关卡数切换（右下，fontStone 20；oracle 同位 Button 按压 label 0.95+pusher 音）
     const toggle = this.add

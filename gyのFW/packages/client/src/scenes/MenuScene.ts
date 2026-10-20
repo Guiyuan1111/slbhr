@@ -15,6 +15,7 @@ import { ATLAS_CHARS, ATLAS_MENU, FONT_MAIN, startBgWarm } from "./BootScene";
 import { clickSfx } from "./overlays";
 import { fadeSwitch } from "./transition";
 import { getSettings } from "../settings";
+import { takeFirstComplete } from "../progress";
 
 /** 光柱动态态（oracle :1094049 创建期随机相位/速度） */
 interface Beam extends Phaser.GameObjects.Image {
@@ -150,6 +151,12 @@ export class MenuScene extends Phaser.Scene {
     if (getSettings().music && !this.sound.isPlaying("bgm_menu")) {
       this.sound.play("bgm_menu", { loop: true });
     }
+
+    // 全 3 星首通庆典·消费点 2/2（P-02 #34，0.3.40）：本场景≡oracle Menu，afterAddContent
+    // （:1939446/:1939549）与 LevelMenu 同款检查——通关时刻置位（main.ts won 分支），此处读即清。
+    // launch 并行景=oracle bare start clearWorld=!1 显示表保留的 Phaser 3 等价物（字节链详见
+    // TempleScene 消费点注）；先到先得，与 Temple 消费点共用同一瞬态旗。
+    if (takeFirstComplete()) this.scene.launch("CompleteScene");
 
     // 后台暖装游戏内四图集+音频批（r5 冷启动装载序整形；r6 并入音频）：利用玩家在
     // 开始界面的驻留把 ground/mech/temple/popup 与游戏内 18 音频键提前拉齐，进 Game 时
