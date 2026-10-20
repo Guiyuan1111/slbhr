@@ -75,26 +75,27 @@ def diff_stats(a, b, thr=8, box=None):
 
 
 def best_shift(A, B, rng=40, coarse=4):
-    """B 相对 A 的最优平移（compare.py 同法：1/coarse 降采样粗搜 mean abs diff）。"""
-    def mean_at(dx, dy):
-        box = (rng + dx, rng + dy, rng + dx + A.width, rng + dy + A.height)
-        if box[0] < 0 or box[1] < 0 or box[2] > B.width or box[3] > B.height:
-            return 255.0
-        d = ImageChops.difference(A, B.crop(box))
-        return ImageStat.Stat(d).mean[0]
-    best = (0, 0, mean_at(0, 0))
+    """compare.py 同法逐字移植：B 平移 (dx,dy) 后与 A 的平均差最小者，返回 (mean, dx, dy)。
+    粗搜在 1/4 缩图上做，细搜回全图 ±coarse；transform 填充法无 crop 边界伪差。"""
+    def mean_at(dx, dy, Ai=A, Bi=B):
+        BB = Bi.transform(Bi.size, Image.AFFINE, (1, 0, dx, 0, 1, dy))
+        h = ImageChops.difference(Ai, BB).histogram()
+        return sum(i * c for i, c in enumerate(h)) / (Ai.size[0] * Ai.size[1])
+    As = A.reduce(4)
+    Bs = B.reduce(4)
+    best = (mean_at(0, 0, As, Bs), 0, 0)
     for dy in range(-rng, rng + 1, coarse):
         for dx in range(-rng, rng + 1, coarse):
-            m = mean_at(dx, dy)
-            if m < best[2]:
-                best = (dx, dy, m)
-    # 细搜
-    bx, by, _ = best
-    for dy in range(by - coarse + 1, by + coarse, 2):
-        for dx in range(bx - coarse + 1, bx + coarse, 2):
-            m = mean_at(dx, dy)
-            if m < best[2]:
-                best = (dx, dy, m)
+            s = mean_at(dx / 4, dy / 4, As, Bs)
+            if s < best[0]:
+                best = (s, dx, dy)
+    _, bx, by = best
+    best = (mean_at(bx, by), bx, by)
+    for dy in range(by - coarse + 1, by + coarse):
+        for dx in range(bx - coarse + 1, bx + coarse):
+            s = mean_at(dx, dy)
+            if s < best[0]:
+                best = (s, dx, dy)
     return best
 
 
@@ -219,7 +220,7 @@ def main():
             entry["menu"]["ours_self_diff"] = diff_stats(gray(um_a), gray(um_b))
         if os.path.exists(om_a) and os.path.exists(um_a):
             A, B = gray(um_a), gray(om_a)
-            dx, dy, mean_after = best_shift(A, B)
+            mean_after, dx, dy = best_shift(A, B)
             entry["menu"]["cross_align"] = {"dx": dx, "dy": dy, "mean_after": round(mean_after, 2),
                                             "struct_gt8_pct": diff_stats(A, B)}
         # --- 拼图 ---
