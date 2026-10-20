@@ -7,12 +7,15 @@
     <style>
       :root {
         color-scheme: dark;
-        /* 石板大厅配色（note/research/2026-10-19-connect-ui 方向 A） */
+        /* 石板大厅配色（note/research/2026-10-19-connect-ui 方向 A + 2026-10-20 精修） */
         --amber: #ffb64c;
         --fire: #ff7a3d;
         --water: #3fb9ff;
-        --engrave: #f7e8c8;
-        --label: #cfc2a4;
+        --label: #c9bda0;
+        --ink: #ffd479;
+        /* 石板暖黑罩：PopupBackground0000 原帧实测中灰（均值 RGB150），不罩则奶油字
+           对比仅 1.6~2.5:1；罩后石纹 34% 透出、暖色底奠定火/水主题色系（精修档卷实测） */
+        --tint: rgba(24, 16, 8, 0.66);
         --panel: rgba(22, 16, 8, 0.82);
         --line: rgba(255, 182, 76, 0.35);
       }
@@ -99,7 +102,7 @@
       }
       .menu-logo {
         width: 460px;
-        margin-bottom: -18px;
+        margin-bottom: -16px;
         z-index: 1;
         pointer-events: none;
         user-select: none;
@@ -118,16 +121,20 @@
       /* 石板：PopupBackground0000 帧 = atlas (0,205) 1082×642。整帧按盒拉伸铺底
          （background-size/position 百分比推导：2048/1082、205/1406），四角再盖 74px
          原生帧裁片（.panel/.sub 的四 pseudo）——角部零变形；窄屏回流皮时边中段随
-         比例拉伸，与调研 mockup 的 border-image 同级折衷。 */
+         比例拉伸，与调研 mockup 的 border-image 同级折衷。
+         精修：首层叠平铺 --tint 暖黑罩（压灰石原帧提对比/奠基暖色系），四角裁片
+         同罩同值——罩层为平面色，任意位置拼缝不可见。 */
       .panel {
         position: relative;
         width: 1082px;
         height: 642px;
-        padding: 56px 60px 48px;
-        background: url(/assets/atlasses/PopupAssets.png) no-repeat;
-        background-size: calc(100% * 2048 / 1082) calc(100% * 2048 / 642);
-        background-position: 0 calc(100% * 205 / 1406);
-        color: var(--engrave);
+        padding: 48px 56px 40px;
+        background:
+          linear-gradient(var(--tint), var(--tint)),
+          url(/assets/atlasses/PopupAssets.png) no-repeat;
+        background-size: 100% 100%, calc(100% * 2048 / 1082) calc(100% * 2048 / 642);
+        background-position: 0 0, 0 calc(100% * 205 / 1406);
+        color: #f5ead0;
         text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
         text-align: center;
       }
@@ -137,8 +144,10 @@
         width: 74px;
         height: 74px;
         pointer-events: none;
-        background: url(/assets/atlasses/PopupAssets.png) no-repeat;
-        background-size: 2048px 2048px;
+        background:
+          linear-gradient(var(--tint), var(--tint)),
+          url(/assets/atlasses/PopupAssets.png) no-repeat;
+        background-size: 74px 74px, 2048px 2048px;
       }
       .panel::before { left: 0; top: 0; background-position: 0 -205px; }
       .panel::after { right: 0; top: 0; background-position: -1008px -205px; }
@@ -163,48 +172,95 @@
       /* 装饰一律走伪元素（不产生 textContent——journey 对 #menu-level 做 textContent 严格相等断言） */
       #menu-level::before { content: "◈ "; color: var(--amber); }
 
-      .panel h1 { margin: 0 0 2px; font-size: 26px; font-weight: 700; letter-spacing: 6px; }
+      /* 视觉层级三档（精修）：H1 暖白大标 / 标签 13px 暖灰 / 输入正文 17px 琥珀——
+         只靠字号颜色字重区分，不靠边框。 */
+      .panel h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 2px; color: #f5ead0; }
       .panel h1 .fire { color: var(--fire); }
       .panel h1 .water { color: var(--water); }
       /* .sub 必须保持 static：它的两个伪元素是石板下角裁片（绝对定位锚到 .panel） */
-      .sub { color: var(--label); font-size: 13px; margin-bottom: 14px; letter-spacing: 2px; }
+      .sub { color: var(--label); font-size: 13px; margin: 8px 0 0; letter-spacing: 2px; }
+
+      /* 标题区与表单区之间的雕刻分隔线：1px 暗线 + 1px 高光线（engraved 惯例），
+         独立装饰元素（aria-hidden，零 textContent，不触任何契约） */
+      .divider {
+        width: 560px;
+        max-width: 100%;
+        height: 2px;
+        margin: 24px auto 0;
+        pointer-events: none;
+        background: linear-gradient(rgba(0, 0, 0, 0.55) 0 1px, rgba(255, 240, 200, 0.13) 1px 2px);
+      }
 
       label {
         display: block;
         width: 560px;
         max-width: 100%;
-        margin: 12px auto 5px;
+        margin: 24px auto 8px;
         font-size: 13px;
         color: var(--label);
         letter-spacing: 0.5px;
         text-align: left;
       }
+      /* 火/水主题色点（CSS 圆点非 emoji）：密码=火（创建者）、房间码=水（加入者） */
+      label::before {
+        content: "";
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        margin-right: 8px;
+        border-radius: 50%;
+        vertical-align: 1px;
+      }
+      label[for="password"]::before { background: var(--fire); box-shadow: 0 0 6px rgba(255, 122, 60, 0.65); }
+      label[for="roomcode"]::before { background: var(--water); box-shadow: 0 0 6px rgba(63, 185, 255, 0.65); }
+
       input {
         display: block;
         width: 560px;
         max-width: 100%;
         height: 46px;
         margin: 0 auto;
-        padding: 0 14px;
+        padding: 0 16px;
         border-radius: 12px;
         border: 2px solid #574a35;
-        background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.26));
-        box-shadow: inset 0 2px 7px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.07);
-        color: #ffeecb;
+        background: linear-gradient(rgba(0, 0, 0, 0.52), rgba(0, 0, 0, 0.4));
+        box-shadow:
+          inset 0 3px 8px rgba(0, 0, 0, 0.72),
+          inset 0 -1px 0 rgba(255, 244, 214, 0.09),
+          0 1px 0 rgba(255, 255, 255, 0.07);
+        color: var(--ink);
         caret-color: var(--amber);
         font-size: 17px;
         letter-spacing: 1.5px;
         outline: none;
-        transition: border-color 0.15s, box-shadow 0.15s;
+        transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out;
       }
       input:focus {
         border-color: var(--amber);
-        box-shadow: inset 0 2px 7px rgba(0, 0, 0, 0.6), 0 0 0 3px rgba(255, 182, 76, 0.22);
+        box-shadow:
+          inset 0 3px 8px rgba(0, 0, 0, 0.72),
+          inset 0 -1px 0 rgba(255, 244, 214, 0.09),
+          0 0 0 3px rgba(255, 182, 76, 0.25);
       }
-      input::placeholder { color: #9b8d70; letter-spacing: 0.5px; }
+      /* placeholder #8a8070（派发建议值）实测对凹槽底仅 4.0:1，触可访问性红线（≥4.5）——
+         取同族 #948a76（仍较旧值 #9b8d70 深一档），实测 4.7+:1（精修档卷对比度表） */
+      input::placeholder { color: #948a76; letter-spacing: 0.5px; }
+
+      /* 房间码仪式感：有值且未聚焦（深链回填 / 回面板带码）→ 22px 琥珀码呈示。
+         纯 CSS（:not(:placeholder-shown)），零 main.ts 接线；聚焦打字时回到 17px 防跳字。 */
+      #roomcode:not(:placeholder-shown):not(:focus) {
+        font-size: 22px;
+        letter-spacing: 4px;
+        font-variant-numeric: tabular-nums;
+        color: var(--amber);
+      }
 
       /* 按钮：StoneButton0000/0001 原生帧 252×117（与 overlays.ts stoneButton 同尺寸同 hover 换帧）；
-         帧坐标经 background-size/position 百分比换算（1024/252、256/772），定宽/回流拉伸两用 */
+         帧坐标经 background-size/position 百分比换算（1024/252、256/772），定宽/回流拉伸两用。
+         精修主次梯度：首层主题暗罩（火/水）+ inset 主题色环 + 顶 1px 高光——创建=主钮
+         （满尺寸 + ember 环 + 文字暖光），加入=次钮（略小 + aqua 环 + 整体 opacity 略低）；
+         hover 换帧照旧（background-position 不参与 transition，帧切换保持瞬时），叠加
+         提亮 + 上浮 2px + 阴影扩散（150ms ease-out）；active 压平；busy（disabled）压暗。 */
       .btn {
         position: relative;
         display: inline-flex;
@@ -214,22 +270,49 @@
         vertical-align: top;
         width: 252px;
         height: 117px;
-        margin: 18px 10px 0;
+        margin: 32px 8px 0;
         border: none;
         border-radius: 20px;
         padding: 0;
         cursor: pointer;
-        background: url(/assets/atlasses/MenuAssets.png) no-repeat;
-        background-size: calc(100% * 1024 / 252) calc(100% * 1024 / 117);
-        background-position: 0 0;
+        background:
+          linear-gradient(var(--btint, rgba(0, 0, 0, 0)), var(--btint, rgba(0, 0, 0, 0))),
+          url(/assets/atlasses/MenuAssets.png) no-repeat;
+        background-size: 100% 100%, calc(100% * 1024 / 252) calc(100% * 1024 / 117);
+        background-position: 0 0, 0 0;
         font: 700 19px/1 "Microsoft YaHei", system-ui, sans-serif;
-        color: #ffeecb;
+        color: #fff3d8;
         letter-spacing: 3px;
         text-shadow: 0 2px 0 rgba(0, 0, 0, 0.65), 0 0 8px rgba(0, 0, 0, 0.4);
-        transition: transform 0.06s;
+        transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, filter 0.15s ease-out;
       }
-      .btn:hover { background-position: calc(100% * 256 / 772) 0; }
-      .btn:active { transform: translateY(2px); }
+      #btn-create { --btint: rgba(64, 20, 8, 0.42); box-shadow: inset 0 0 0 2px rgba(255, 122, 60, 0.55), inset 0 1px 0 rgba(255, 232, 190, 0.38); }
+      #btn-join {
+        --btint: rgba(18, 38, 72, 0.4);
+        width: 240px;
+        height: 108px;
+        opacity: 0.92;
+        color: #f3e9d2;
+        box-shadow: inset 0 0 0 2px rgba(80, 180, 255, 0.5), inset 0 1px 0 rgba(214, 240, 255, 0.3);
+      }
+      /* 主钮文字暖光（ember 记忆点）；次钮维持中性投影 */
+      #btn-create > span { text-shadow: 0 2px 0 rgba(0, 0, 0, 0.7), 0 0 12px rgba(255, 138, 74, 0.4); }
+      .btn:hover:not(:disabled) {
+        background-position: 0 0, calc(100% * 256 / 772) 0;
+        transform: translateY(-2px);
+        filter: brightness(1.07) saturate(1.06);
+      }
+      #btn-create:hover:not(:disabled) {
+        box-shadow: inset 0 0 0 2px rgba(255, 140, 84, 0.75), inset 0 1px 0 rgba(255, 240, 205, 0.5),
+          0 12px 26px rgba(0, 0, 0, 0.5), 0 5px 18px rgba(255, 122, 60, 0.3);
+      }
+      #btn-join:hover:not(:disabled) {
+        box-shadow: inset 0 0 0 2px rgba(112, 198, 255, 0.7), inset 0 1px 0 rgba(226, 246, 255, 0.45),
+          0 12px 26px rgba(0, 0, 0, 0.5), 0 5px 18px rgba(80, 180, 255, 0.26);
+      }
+      /* active 压平：回落的主题色环（rest 值），无升无光 */
+      #btn-create:active:not(:disabled) { transform: translateY(0); filter: brightness(0.98); box-shadow: inset 0 0 0 2px rgba(255, 122, 60, 0.55), inset 0 1px 0 rgba(255, 232, 190, 0.38); }
+      #btn-join:active:not(:disabled) { transform: translateY(0); filter: brightness(0.98); box-shadow: inset 0 0 0 2px rgba(80, 180, 255, 0.5), inset 0 1px 0 rgba(214, 240, 255, 0.3); }
       .btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
       .btn:disabled { filter: brightness(0.75) saturate(0.7); cursor: default; }
       .btn .av {
@@ -255,7 +338,7 @@
         width: 560px;
         max-width: 100%;
         min-height: 26px;
-        margin: 12px auto 0;
+        margin: 16px auto 0;
         font-size: 13.5px;
         line-height: 1.55;
         color: #ffb3a6;
@@ -289,16 +372,17 @@
       }
       @keyframes menu-spin { to { transform: rotate(360deg); } }
 
-      /* 操作提示：文案墙 → kbd 速查行（P6）；详细规则挪到 title 悬停提示 */
+      /* 操作提示：文案墙 → kbd 速查行（P6）；详细规则挪到 title 悬停提示。
+         与上方按钮组留 32px 呼吸（8pt 阶梯）；火/水键帽加 3px 主题色底条（手柄键帽惯例） */
       .hint {
         display: flex;
         justify-content: center;
         align-items: center;
-        gap: 22px;
+        gap: 24px;
         flex-wrap: wrap;
-        margin-top: 16px;
+        margin-top: 32px;
         font-size: 12px;
-        color: #a99c80;
+        color: #b5a88a;
         text-shadow: none;
       }
       .hint b { color: #d8cba9; font-weight: 600; margin-right: 4px; }
@@ -315,17 +399,21 @@
         font: 600 11px/1.4 system-ui, sans-serif;
         color: #e8d9b8;
       }
-      .hint .k-fire kbd { border-color: rgba(255, 122, 61, 0.55); }
-      .hint .k-water kbd { border-color: rgba(63, 185, 255, 0.55); }
+      .hint .k-fire kbd { border-color: rgba(255, 122, 61, 0.55); border-bottom: 3px solid rgba(255, 122, 61, 0.85); }
+      .hint .k-water kbd { border-color: rgba(63, 185, 255, 0.55); border-bottom: 3px solid rgba(63, 185, 255, 0.85); }
 
-      /* 窄屏回流皮（手机竖屏/横屏矮窗）：板变流宽、按钮整行堆叠；四角裁片照常生效 */
+      /* 窄屏回流皮（手机竖屏/横屏矮窗）：板变流宽、按钮整行堆叠；四角裁片照常生效；
+         主次钮同宽但色环/尺寸差保留（次钮 108px 高） */
       @media (max-width: 559.9px), (max-height: 419.9px) {
         .menu-fit { transform: none; }
-        .menu-logo { width: min(300px, 78vw); margin-bottom: -10px; }
-        .panel { width: min(560px, 94vw); height: auto; padding: 34px 44px 30px; }
+        .menu-logo { width: min(300px, 78vw); margin-bottom: -8px; }
+        .panel { width: min(560px, 94vw); height: auto; padding: 32px 40px; }
         label, input, #menu-error { width: 100%; }
-        .btn { display: flex; width: 100%; margin: 14px 0 0; }
-        .btn + .btn { margin-top: 10px; }
+        .divider { width: 100%; margin-top: 16px; }
+        .btn { display: flex; width: 100%; margin: 24px 0 0; }
+        #btn-join { width: 100%; }
+        .btn + .btn { margin-top: 16px; }
+        .hint { margin-top: 24px; }
       }
 
       /* ---- HUD ---- */
@@ -408,6 +496,7 @@
           <div id="menu-level" style="text-align:center;color:#ffd479;font-size:14px;min-height:18px"></div>
           <h1><span class="fire">森林</span>·<span class="water">冰火人</span></h1>
           <div class="sub">双人联机 · 一人火人 · 一人水女孩</div>
+          <div class="divider" aria-hidden="true"></div>
 
           <label for="password">房间密码（创建者设定，两人一致才能进同一房）</label>
           <input id="password" type="text" maxlength="16" placeholder="例如 4321" />
