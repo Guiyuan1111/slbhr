@@ -3,7 +3,7 @@
 > 维护：docsync 槽 2026-10-18 首建。口径：每号档一行（档名+一句话结论+状态），底部工具链速查与挂账清单；一切结论以各档原文与 git log 为准，本索引只做导航与现状摘要。
 > 状态图例：✅ 收官（档卷+对应代码提交已入库）｜🔄 进行中（槽位在写）｜⏸ 挂账（有明确遗留动作）。
 
-## §1 档卷一览（01–12）
+## §1 档卷一览（01–13）
 
 | # | 档卷 | 一句话结论 | 状态 |
 |---|---|---|---|
@@ -19,6 +19,7 @@
 | 10 | [10-rotation-system.md](10-rotation-system.md) 旋转体系全链路仲裁 | 用户「旋转没原版好」终审=物理面位级同源（对拍 max\|Δθ\|≤1.9e-4°，采样器单 tick 约定修正后），根因在表现层：Colyseus 默认 20Hz patch×客户端直贴=阶梯渲染 → 客户端 mechTarget 平滑已修（7903c57，rms 0.308°→0.232°、冻结 9→0 帧）；后续 1/2 转交 netopt（已落地，见 §3 挂账 5） | ✅ f660a41 |
 | 11 | [11-network-and-alignment.md](11-network-and-alignment.md) 网络同步与量具收紧 | netopt 槽：patch 20→60Hz（4ba8478，带宽 ×2.8-3.0≈+1.3-1.9KB/s 可忽略）、self 角色 dead-reckoning lead 50→17ms（3e72433，rms 5.85→0.16px）、oracle-gold 采样对齐 alignShift=1（9ff9c1d，中位归零；win 帧 +96f 归因修正=oracle 终幕 tuck 动画）、tolerance 无偏重定 25→30/173→177；e2e 三门禁全绿 | ✅ 269d83d |
 | 12 | [12-animation-audit.md](12-animation-audit.md) 动画保真度排查 | 状态级对拍（文字模型禁像素判读）：注册面 0 实义差异（getFrameIndexes 过滤字证）、切换序列逐事件同构、主家族双侧 30fps、循环长度 11/19/30/8/5 双侧一致、烟雾 ±2f；唯一实质差异=dying 即藏身已修（5b783e7，hidden 104/195→195/195 vs oracle 187/188）；大件挂账见 §3 挂账 3 | ✅ 623b372+5b783e7+e477f9c |
+| 13 | [13-ui-transition-audit.md](13-ui-transition-audit.md) UI 转场动画保真审计（只读考古） | oracle 换屏全走自建 state.fade 黑幕（500+500ms+Loading 点循环 800/300ms，bundle:2213815；camera.fade/flash 0 命中），我方全裸切；面板滑入=弹簧（force 2.3/friction 0.7/起点 1.5H）非 Back.easeOut 420ms、黑幕跟板动态；popupArrow 系末拍单帧恒亮非 2fps 闪烁、星碑分段 to_N 非累计播放、按钮换帧=按压语义非 hover——41 项盘点（LevelMenu 无 stagger、NewSign 无弹跳两假设证伪）：已复刻 10/偏差 18/缺失 10/不适用 3，Top6 建议在档 | ⏸ 挂账（Top 建议待立项） |
 
 ## §2 工具链速查
 
