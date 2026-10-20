@@ -58,6 +58,8 @@
 | visual-diff | **92.90 / 92.62 双跑**（新口径带 90.55-92.86 内~带顶噪声；#net-lost 在 #hud 子树随量具隐蔽口径，实证不入镜） |
 | census | used-chars.json 随文案提交刷新（保留集 247→248；自 10-19 起各槽漂移一并落盘，0.3.33 先例） |
 
+**终树复验**（并行槽服务端修复 H-02/M-01/M-06/L-01/L-02 落地后的 HEAD=115999a）：tsc PASS、build 3.95s、vitest 106/106、journey 7/7 ALL PASS、route f01 repeat1 ALL PASS（winAt=39644ms，跑间漂移带内）。
+
 ## 取证与归因记录（非本槽缺陷，如实记录）
 
 1. **e2e 误用归因**：`regression.mjs --level forest_01 --script inputs/walkin-doors.json` 必 FAIL（won=false，errors=0）——walkin 时间线仅 4 事件（右行 667ms），而 forest_01 门带在 (1024-1200, 192) 高台，该时间线为 regression.mjs 头注的 `zz_probe` fixture 设计。f01 门禁正确口径=**route.mjs**（回放整关路线）。本槽在此误用上耗两跑后定位，基线 A/B（checkout 92eb6de 三文件重建）同败，证实非本槽回归。
