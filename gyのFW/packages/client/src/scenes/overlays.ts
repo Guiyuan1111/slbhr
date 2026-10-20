@@ -179,75 +179,73 @@ export class EndMenu extends Phaser.Scene {
       { icon: "DiamondsIcon0000", ok: d.diamonds >= d.diamondsTotal, hide: twoRows },
       { icon: d.type === "puzzle" ? "SilverIcon0000" : "TimeIcon0000", ok: twoRows ? d.silver > 0 : d.timeLimitSec > 0 && d.timeSec <= d.timeLimitSec },
     ];
+    // 勾叉节拍链（oracle :1876767 起 f=700 四级 _.delay 嵌套；各拍实参精确配对：
+    // 拍0=j.visible&&f(:1876786)、拍1=j.visible&&f(:1877004)、拍2=g.visible&&f(:1877210)——g=钻石行
+    // twoRows 隐藏 ⇒ 拍2 串联 0、拍3=m.visible&&f(:1877517) ⇒ general 累计 700/1400/2100/2800、
+    // twoRows 700/1400/1400/2100。隐藏行不建图但音照拍（oracle 拍回调不看可见性 :1877004）。
+    const rowTicks: Array<() => void> = [];
     rows.forEach((row, i) => {
       const y = 321 - 160.5 + (twoRows ? [60, 140, 140][i] : [20, 100, 180][i]);
-      if (row.hide) return;
+      if (row.hide) {
+        rowTicks.push(() => handle().__fwSfx?.("sfx_end_pass"));
+        return;
+      }
       board.add(this.add.image(294.5, y, ATLAS_POPUP, row.icon).setOrigin(0.5));
       const tick = this.add
         .image(387.5, y, ATLAS_POPUP, row.ok ? "TickIcon0000" : "CrossIcon0000")
         .setOrigin(0.5)
         .setVisible(false);
       board.add(tick);
-      // 原版时序：每 700ms 逐行达成（f=700 起 _.delay 步进）
-      this.time.delayedCall(700 + i * 700, () => {
+      rowTicks.push(() => {
         tick.setVisible(true);
         handle().__fwSfx?.("sfx_end_pass");
       });
     });
+    {
+      const beatDelays = [700, 700, twoRows ? 0 : 700];
+      let at = 0;
+      beatDelays.forEach((d, i) => {
+        at += d;
+        this.time.delayedCall(at, rowTicks[i]);
+      });
+    }
     // 时间行时限文本（oracle 实拍：B1/4 位板心 (−244,+55) 中心锚定，内容=本关时限 mmss，静态）
     if (!twoRows && d.timeLimitSec > 0) {
       const m = Math.floor(d.timeLimitSec / 60);
       const s = d.timeLimitSec % 60;
       const limitStr = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
       board.add(
-        this.add.bitmapText(541 - 244, 321 + 55, FONT_MAIN, limitStr, 18).setOrigin(0.5, 0.5)
+        this.add.bitmapText(541 - 244, 321 + 55, FONT_MAIN, limitStr, 18).setOrigin(0.5, 0.5).setAlpha(0.7)
       );
     }
-    // 星数由 main 按关卡类型算好传入（puzzle=银钻口径；general=1+钻石+限时）；帧段 1-7/8-14/15-21
+    // 星数由 main 按关卡类型算好传入（puzzle=银钻口径；general=1+钻石+限时）
     const stars = Math.max(1, Math.min(3, d.stars || 1));
-    // 星碑贴图按关卡类型选变体（原版 44320-22：general/speed/puzzle/dark）
+    // 星碑贴图按关卡类型选变体（原版 44320-22：general/speed/puzzle/dark）；播分段键 to_N
+    // （oracle :1876428 注册 1-7/8-14/15-21 @30fps once、:1877727 play("to_"+stars)——键注册于 BootScene）
     const stonePrefix = d.type === "puzzle" ? "FinishStonePuzzle" : d.type === "speed" ? "FinishStoneSpeed" : d.type === "dark" ? "FinishStoneDark" : "FinishStone";
+    const stoneKey = stonePrefix === "FinishStone" ? `finish_stone_${stars}` : `finish_stone_${d.type}_${stars}`;
     const stone = this.add.sprite(721, 261, ATLAS_POPUP, stonePrefix + "0000").setOrigin(0.5);
     board.add(stone);
-    // 原版指示箭头 popupArrow (5,−60)：指向星碑；图集恰两帧 0000/0001，原版为闪烁指示（实拍 0001）
+    // 原版指示箭头 popupArrow (5,−60)：指向星碑；末拍单帧 0001 恒亮（:1877517，全 bundle 仅
+    // 生成/末拍两处引用、无动画注册——非闪烁，13 号档 #30）
     const arrow = this.add.sprite(546, 261, ATLAS_POPUP, "popupArrow0000").setOrigin(0.5);
     board.add(arrow);
-    if (!this.anims.exists("popup-arrow-blink")) {
-      this.anims.create({
-        key: "popup-arrow-blink",
-        frames: [
-          { key: ATLAS_POPUP, frame: "popupArrow0000" },
-          { key: ATLAS_POPUP, frame: "popupArrow0001" },
-        ],
-        frameRate: 2,
-        repeat: -1,
-      });
-    }
-    arrow.play("popup-arrow-blink");
-    const endF = stars === 3 ? 21 : stars === 2 ? 14 : 7;
-    this.anims.create({
-      key: `finish-stars-${stars}`,
-      frames: Array.from({ length: endF }, (_, n) => ({
-        key: ATLAS_POPUP,
-        frame: `${stonePrefix}${String(n + 1).padStart(4, "0")}`,
-      })),
-      frameRate: 30,
-    });
-    this.time.delayedCall(700 + 3 * 700, () => {
-      stone.play(`finish-stars-${stars}`);
-      handle().__fwSfx?.("sfx_end_diamond");
-    });
-    // Continue（星动画后启用）：原版直进下一关；联机形态=活房间 advance 换关（main.ts __fwNextLevel）
+    // 末拍同回调（oracle :1877700 内联序）：endDiamond 音 → 箭头 0001 → 星碑分段播放 → Continue 启用
+    const finalAt = 700 + 700 + (twoRows ? 0 : 700) + 700;
     let enabled = false;
+    this.time.delayedCall(finalAt, () => {
+      handle().__fwSfx?.("sfx_end_diamond");
+      arrow.setFrame("popupArrow0001");
+      stone.play(stoneKey);
+      enabled = true;
+    });
+    // Continue（与星碑同拍启用）：原版直进下一关；联机形态=活房间 advance 换关（main.ts __fwNextLevel）
     stoneButton(this, board, CX, 502, "继续", () => {
       if (!enabled) return;
       this.scene.stop();
       const h = handle() as unknown as { __fwNextLevel?: () => void; __fwLeaveToMenu?: () => void };
       if (h.__fwNextLevel) h.__fwNextLevel();
       else h.__fwLeaveToMenu?.();
-    });
-    this.time.delayedCall(700 + 3 * 700 + 300, () => {
-      enabled = true;
     });
   }
 }

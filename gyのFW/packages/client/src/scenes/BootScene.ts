@@ -147,9 +147,19 @@ export function buildGameAnims(a: Phaser.Animations.AnimationManager): void {
     seq(`liquid_${key}_left`, ATLAS_GROUND, `${base}Left`, 0, 14, 30, -1);
     seq(`liquid_${key}_right`, ATLAS_GROUND, `${base}Right`, 0, 14, 30, -1);
   }
-  // 结算星级石碑（to_1=1-7 / to_2=8-14 / to_3=15-21，30fps 一次性）
+  // 结算星级石碑分段（oracle EndMenu renderContent :1876428：to_1/2/3 = 帧 1-7/8-14/15-21 @30fps once，
+  // 前缀按关卡类型 FinishStone{,Puzzle,Speed,Dark}；13 号档 #29——此前累计播法使分段键成死代码）
   // 门动画键不再注册（E10：门改按快照 doorFrame 逐帧 setFrame，动画键会与帧驱动打架）
   seq("finish_stone_1", ATLAS_POPUP, "FinishStone", 1, 7, 30, 0);
   seq("finish_stone_2", ATLAS_POPUP, "FinishStone", 8, 14, 30, 0);
   seq("finish_stone_3", ATLAS_POPUP, "FinishStone", 15, 21, 30, 0);
+  for (const [tag, base] of [
+    ["puzzle", "FinishStonePuzzle"],
+    ["speed", "FinishStoneSpeed"],
+    ["dark", "FinishStoneDark"],
+  ] as const) {
+    seq(`finish_stone_${tag}_1`, ATLAS_POPUP, base, 1, 7, 30, 0);
+    seq(`finish_stone_${tag}_2`, ATLAS_POPUP, base, 8, 14, 30, 0);
+    seq(`finish_stone_${tag}_3`, ATLAS_POPUP, base, 15, 21, 30, 0);
+  }
 }
