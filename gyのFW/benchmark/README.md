@@ -51,6 +51,8 @@ forest_01 就绪后第 60 物理帧（无输入 idle）对 canvas 元素截图�
   资产加载空闲（load.isLoading===false）再跳关，否则 menu 残留 loader 回调会在
   level 加载完成时引爆并中断派发链。
 - 端口被占可换口：`VD_STATIC_PORT`/`VD_OURS_PORT` 环境变量（缺省 8787/2567 不变）。
+- 快照 JSON 含 `diff.grid`（12×9 全网格 rate48 遥测，gx,gy 升序；区域带分析用，如底部
+  水体带 gy≥6——forest_01 有 IceBox水面层×5，见 38 号档 §逐关表）。
 - 截图证据：results/visual-original.png / visual-ours.png。
 
 ## 性能基准（0.3.21 起；r0 七件基线与 r1 第一轮优化见 note/report/perf/2026-10-18-r0-baseline.md / 2026-10-18-r1-optimization.md）

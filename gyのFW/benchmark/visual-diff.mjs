@@ -284,12 +284,14 @@ const DIFF_PROG = async (bufA, bufB) => {
       grid.push({ gx, gy, rate48: +(1 - bad48 / n).toFixed(3), mad: +(sum / n).toFixed(1) });
     }
     grid.sort((a, b) => a.rate48 - b.rate48);
+    const gridFull = [...grid].sort((p, q) => p.gy - q.gy || p.gx - q.gx);
     return {
       bestOffset: { x: best.ox, y: best.oy },
       full: { rate24: +best.s.rate24.toFixed(4), rate48: +best.s.rate48.toFixed(4), mad: +best.s.mad.toFixed(2) },
       zeroOffset: { rate24: +zero.rate24.toFixed(4), rate48: +zero.rate48.toFixed(4), mad: +zero.mad.toFixed(2) },
       topBand: { rate24: +top.rate24.toFixed(4), rate48: +top.rate48.toFixed(4), mad: +top.mad.toFixed(2) },
       worstGrid: grid.slice(0, 8),
+      grid: gridFull, // 12×9 全网格遥测（gx,gy 升序；区域带分析用，如底部水体带 gy≥6）
     };
   }, { a64, b64 });
   await ctx.close();
