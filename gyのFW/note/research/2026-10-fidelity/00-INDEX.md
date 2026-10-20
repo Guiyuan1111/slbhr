@@ -50,6 +50,7 @@
 | 36 | [36-parity-collision-matrix.md](36-parity-collision-matrix.md) 碰撞矩阵全谱对齐（rcm） | oracle 侧 47 个 b2FixtureDef 定义点逐位提取完毕；我方活跃设备 18,446 条逐 fixture 断言全部 PASS（0 FAIL），P0=P1=0——"碰撞与原版不一样"不来自定义层，差异只能在行为面残差；未改内核 | ✅ 8606444 |
 | 37 | [37-temple-tree-branches.md](37-temple-tree-branches.md) 选关树"枝"不可见修复+滤镜还原 | 考古证原版=全树恒绘打底+已通关金色叠绘两层，我方只画 done 侧且暗橄榄平色双偏差，已修（f366e02：TempleScene 双层平色近似+星帧映射兼修）；§7（2026-10-20 filterport）CPU 精确烘焙 Bevel/Outline/CM 三层管线还原浮雕质感，对拍结构化 49/49、方向 50/50、密集 97.56%（fa17e12） | ✅ f366e02+fa17e12 |
 | 38 | [38-level-visual-audit.md](38-level-visual-audit.md) 全 48 关视觉元素三层审计 | 数据层 canonical 全同（掉层疑虑排除）；运行时显示列表 6 组缺失 family 共 524 精灵（F1 水体冰膜 423/31 关、F3 机构子精灵 82/24 关：hanging_base 20·wind 灯层 33·pulley_base 错锚 19·lever 杆灯永不换帧 10）+ 相机 settled scroll 系统差 44/48（F2，冻结 zoom 0.9231 vs 1.0，疑 0.3.29-F4 引入待核）；像素结构差 inner 均值 6.89% vs oracle 自噪声底 1.35-2.06%；分布：缺元素 42/错位 4（07/13/13_1/15）/轻微 2/干净 0；只审计未改码，F1-F3 修复待立项 | 🔍 5de0524 |
+| 39 | [39-visual-diff-drift.md](39-visual-diff-drift.md) visual-diff 门禁带内漂移核查（vdrift） | 88.66–92.8 vs 历史带 95.2–95.8 归因三分类定谳：(a) 0.3.35 选关树=0 帧（量具捕获流不含选关画面，oracle 直跳 level/我方深链）；(b) **量具 bug 定谳**——"DOM 不入镜"假设证伪，`#hud` 子树（0.3.33 HUD 木牌化批）入镜净扣 3.35–4.1 分；oracle zoom 轨迹恒 1.0 排除相机时变，多尺度"缩放差"系 DOM 污染对齐的伪象（两侧 settled zoom 实为 1.0，兼作 38 号档 0.9231 冻结瞬态的口径桥）；(c) 无定谳项（noDom 最差格与 10-13 逐格同型，残差 −1.4±1.5 在噪声带；6fec4a3 同窗 A/B 因停止门 5de0524 关门弃跑，程序留档其 §3.5）；建议新带 93.2–96.2（修量具后，待批准） | 🔍 vdrift |
 
 ## §3 tools/ 目录速查
 
@@ -59,3 +60,4 @@
 | collision-behavior-probe.mjs | 36 号档探针 B：5 个典型碰撞对行为基线（承载/坠落/液体致死/推箱/ball 冲撞），重跑应逐位一致 |
 | collision-behavior-probe-baseline.txt | 探针 B 的基线输出存档（供用户"碰撞差异"报告对照） |
 | temple-tree/ | 37 号档选关树取证与对拍件：shoot-temple.mjs（起服+种进度+截 canvas 冒烟）、probe-progress.mjs（localStorage 种子/星帧状态探针）、compare-temple.py（oracle vs 我方 1280×960 对拍门禁：47 边三点结构化采样）、compare-result.json 与 oracle/ours/probe 三 PNG 产物 |
+| visual-drift/ | 39 号档量具漂移核查件：probe1.mjs（visual-diff 诊断副本——oracle zoom 轨迹/我方 DOM 层清单/藏 DOM 双帧差分，ROOT 绝对路径）、probe1-result.json（normal 91.21 vs noDom 94.56）与 orig-pair/ours-nodom/ours-normal 三 PNG 证据 |
