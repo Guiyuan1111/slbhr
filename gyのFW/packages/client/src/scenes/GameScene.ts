@@ -359,8 +359,8 @@ export class GameScene extends Phaser.Scene {
     buildGameAnims(this.anims);
     // 相机管理（F4 翻转，原版 CameraManager @1881500）：此前固定全景（冻结偏离）。
     // 原版行为：加载期 camFreeze 在全图 minScale，started 解冻后每帧自动适配双角色。
-    // settled 口径不变：双角色同屏时自动适配 h=1 → 边界钳制居中 → scroll(16,16)
-    // （关卡 1248×928 vs 画布 1280×960，2026-10-09 帧探针实测 stage=level+(16,16)）。
+    // settled 口径（F2 后）：标准关 settled 恒钉关卡矩形中心 → scroll(16,16)
+    // （关卡 1248×928 vs 画布 1280×960；与焦点无关，38 号档 F2/39 号档 §3.3 口径桥）。
     this.setupCameraManager(level);
 
     // 机关/钻石快照消费回调（r3：绑定一次，消除每帧 forEach 现场闭包分配）
@@ -1056,8 +1056,8 @@ export class GameScene extends Phaser.Scene {
    * - 滚轮 ×0.8/×1.2 钳 [minScale,1.5]，1s 静置 lockAtMinScale 回弹（≤lockScale 停在 lockScale，否则复位）；
    * - 双指捏合缩放、单指拖拽 >10px 平移（panend/pinchend 复位）；
    *   原版以 cursors.active 闸（触屏光标激活禁用），本复刻触屏键为 DOM 按钮不占画布，无此闸。
-   * 边界=关卡矩形 (PAD,PAD,w,h)：Phaser 边界钳制/超界居中等价原版 checkBounds
-   * （关卡小于视口时 target 居中、大于时钳边），settled=scroll(16,16)。
+   * 边界（F2 翻转）=关卡矩形语义（oracle checkBounds @1845100）：W·h<视口 → 钉关卡中心、
+   * 否则按半视口钳进关卡矩形（全 realW/realH 屏域，无 PAD）；标准关 settled=scroll(16,16)。
    */
   private setupCameraManager(level: LevelData): void {
     const rw = this.scale.width;
@@ -1155,15 +1155,18 @@ export class GameScene extends Phaser.Scene {
     // 焦点：双角色中点（关卡坐标→世界 +PAD）；拖拽平移时 userCenter 覆盖
     this.camTX = (this.camUserCenter?.x ?? (fx + gx) / 2) + PAD;
     this.camTY = (this.camUserCenter?.y ?? (fy + gy) / 2) + PAD;
-    // 原版 checkBounds(@1889585)：钳弹簧目标而非每帧滚动——视口≥世界时钉在
-    // 居中位（我们的画布=关卡+2·16 边距，居中即 0.3.8 设计几何），视口<世界时
-    // 限制视口完全落在世界 [0, worldW/H] 内（世界=关卡四周 PAD 边距）。
-    const worldW = level.widthPx + PAD * 2;
-    const worldH = level.heightPx + PAD * 2;
-    const vwW = rw / h;
-    const vwH = rh / h;
-    this.camTX = vwW >= worldW ? worldW / 2 : Math.min(Math.max(this.camTX, vwW / 2), worldW - vwW / 2);
-    this.camTY = vwH >= worldH ? worldH / 2 : Math.min(Math.max(this.camTY, vwH / 2), worldH - vwH / 2);
+    // 原版 checkBounds(@1845100 字证，F2 翻转)：钳制域=【关卡矩形】[0,W]×[0,H]（屏域，
+    // 全 realW/realH、无 PAD；focus F=mid·h 缩放域）。W·h < realW → root 钉 realW/2−W·h/2
+    // （关卡居中，与焦点无关）；否则钳 F ∈ [W·h−realW/2, realW/2]（左右缘贴屏）。
+    // 世界域等价：camT = PAD+W/2（居中）或钳 [PAD+realW/(2h), PAD+W−realW/(2h)]。
+    // 0.3.29-F4 起旧版钳【关卡+2PAD 世界矩形】→ 标准关(1248×928) settled 与 oracle 恒差
+    // ±16px（38 号档 F2 44/48 关系统差根因：W·h<1280 时 oracle 恒钉关卡中心，旧版仍在
+    // [640,672] 域内随焦点游移）。39 号档 §3.3 口径桥：settled zoom 双侧=1.0 ⇒ 标准关
+    // settled scroll 钉 (16,16)，与出生点无关。
+    if (level.widthPx * h < rw) this.camTX = level.widthPx / 2 + PAD;
+    else this.camTX = Math.min(Math.max(this.camTX, PAD + rw / (2 * h)), PAD + level.widthPx - rw / (2 * h));
+    if (level.heightPx * h < rh) this.camTY = level.heightPx / 2 + PAD;
+    else this.camTY = Math.min(Math.max(this.camTY, PAD + rh / (2 * h)), PAD + level.heightPx - rh / (2 * h));
   }
 
   /** 弹簧逼近目标并应用（原版 animate @1887350：a=1/15 或 1/3，阻尼 0.5；目标轨迹同源） */
