@@ -102,9 +102,12 @@ interface HangingView {
   anchorY: number;
 }
 
-/** 滑轮（原版 §9）：两板 + 三段绳 + 两轮（轮转角=绳长/π/10 装饰） */
+/** 滑轮（原版 §9）：两板 + 三段绳 + 两轮（轮转角=绳长/π/10 装饰）。
+ *  bases=pulley_base0000（F3c：oracle 挂在两块动板容器内 @1699887——base 先 addChild 于
+ *  platform1/2 再加 plat → 板底衬、随板位姿；非静态轮锚点装饰） */
 interface PulleyView {
   planks: [Phaser.GameObjects.Image, Phaser.GameObjects.Image];
+  bases: [Phaser.GameObjects.Image, Phaser.GameObjects.Image];
   ropes: [Phaser.GameObjects.TileSprite, Phaser.GameObjects.TileSprite, Phaser.GameObjects.TileSprite];
   wheels: [Phaser.GameObjects.Image, Phaser.GameObjects.Image];
   anchor1: { x: number; y: number };
@@ -690,14 +693,19 @@ export class GameScene extends Phaser.Scene {
       this.hangingViews.set(h.id, { rope, plank, base, anchorX: ax, anchorY: ay });
     }
 
-    // 滑轮（原版 §9 Pulley @1737345）：座/轮静态（轮锚点=轮点下方 2m，kernel 同式），
-    // 两板 pulley_platform0000 宽 1.3·barWidth 随快照，三段绳（锚1↔板1、板1↔板2、板2↔锚2）
+    // 滑轮（原版 §9 Pulley @1737345）：轮静态（轮锚点=轮点下方 2m，kernel 同式），
+    // 两板 pulley_platform0000 宽 1.3·barWidth 随快照，三段绳（锚1↔板1、板1↔板2、板2↔锚2）。
+    // F3c：pulley_base0000 改挂两板位（oracle @1699887：base1/base2 为 platform1/2 容器内
+    // 首子精灵 → 板底衬、随板动；旧版误挂静态轮锚点=10 关 19 精灵系统错位）。层序按 oracle
+    // underGround addChild 序（绳 → 平台[base,plat] → 轮）：base 1.23 落绳上、轮下。
     for (const p of level.pulleys) {
       const bw = (p.barWidth ?? 2.7) * 32;
       const a1 = { x: p.pts[1].x + PAD, y: p.pts[1].y + 64 + PAD };
       const a2 = { x: p.pts[2].x + PAD, y: p.pts[2].y + 64 + PAD };
-      this.add.image(a1.x, a1.y, ATLAS_MECH, "pulley_base0000").setOrigin(0.5).setDepth(1.24);
-      this.add.image(a2.x, a2.y, ATLAS_MECH, "pulley_base0000").setOrigin(0.5).setDepth(1.24);
+      const bases: [Phaser.GameObjects.Image, Phaser.GameObjects.Image] = [
+        this.add.image(p.pts[0].x + PAD, p.pts[0].y + PAD, ATLAS_MECH, "pulley_base0000").setOrigin(0.5).setDepth(1.23),
+        this.add.image(p.pts[3].x + PAD, p.pts[3].y + PAD, ATLAS_MECH, "pulley_base0000").setOrigin(0.5).setDepth(1.23),
+      ];
       const wheels: [Phaser.GameObjects.Image, Phaser.GameObjects.Image] = [
         this.add.image(a1.x - 10, a1.y - 50, ATLAS_MECH, "pulley_anchor0000").setOrigin(0.5).setDepth(1.26),
         this.add.image(a2.x + 10, a2.y - 50, ATLAS_MECH, "pulley_anchor0000").setOrigin(0.5).setDepth(1.26),
@@ -721,7 +729,7 @@ export class GameScene extends Phaser.Scene {
       ];
       planks[0].displayWidth = 1.3 * bw;
       planks[1].displayWidth = 1.3 * bw;
-      this.pulleyViews.set(p.id, { planks, ropes, wheels, anchor1: a1, anchor2: a2, segX1: NaN, segY1: NaN, segX2: NaN, segY2: NaN });
+      this.pulleyViews.set(p.id, { planks, bases, ropes, wheels, anchor1: a1, anchor2: a2, segX1: NaN, segY1: NaN, segX2: NaN, segY2: NaN });
     }
 
     // 罗马杠（原版 §10 Roman @1748214）：杠容器（roman_bar0000 宽 2·|Δx| + 两端 roman_end0000
@@ -1892,9 +1900,15 @@ export class GameScene extends Phaser.Scene {
     const pt = this.mechTarget(e.k, Number(s.x) || 0, Number(s.y) || 0, Number(s.angle) || 0);
     const x = pt.x + PAD;
     const y = pt.y + PAD;
-    if (x !== v.planks[idx].x || y !== v.planks[idx].y) v.planks[idx].setPosition(x, y);
+    if (x !== v.planks[idx].x || y !== v.planks[idx].y) {
+      v.planks[idx].setPosition(x, y);
+      v.bases[idx].setPosition(x, y); // F3c：base 为板容器内衬精灵，同板位姿
+    }
     const deg = pt.a * (180 / Math.PI);
-    if (deg !== v.planks[idx].angle) v.planks[idx].setAngle(deg);
+    if (deg !== v.planks[idx].angle) {
+      v.planks[idx].setAngle(deg);
+      v.bases[idx].setAngle(deg);
+    }
     const b1 = v.planks[0];
     const b2 = v.planks[1];
     // r3 脏守卫：三段绳+轮转角只依赖双板位置——任一板变位才重指
