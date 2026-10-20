@@ -12,6 +12,7 @@
  */
 import Phaser from "phaser";
 import { ATLAS_MENU, ATLAS_TEMPLE, FONT_MAIN } from "./BootScene";
+import { clickSfx } from "./overlays";
 import { loadProgress, starsOf } from "../progress";
 import { getSettings } from "../settings";
 import { peekTreeBake, startTreeBake, stepTreeBake, type MaskFrame, type TreeBakeParams, type TreeBakeResult } from "./templeTreeBake";
@@ -176,20 +177,39 @@ export class TempleScene extends Phaser.Scene {
         .setOrigin(0.5)
         .setVisible(false);
       this.numberTexts.push(num);
+      // 菱形节点按压（oracle LevelButton :1105210/:1105414：down→scale 0.95（基尺 1 的相对 5% 缩，
+      // upFrame==downFrame 帧不变），up→100ms 后回尺+pusher 音；此处乘布局尺保相对语义）
+      btn.on("pointerdown", () => btn.setScale(scale * 0.95));
       btn.on("pointerup", () => {
+        this.time.delayedCall(100, () => btn.setScale(scale));
+        clickSfx(this);
         const levelId = lv.filename.split("/").pop()!.replace(".json", "");
         const cb = this.registry.get("onLevelPicked") as ((levelId: string, filename: string) => void) | undefined;
         cb?.(levelId, lv.filename);
       });
+      btn.on("pointerupoutside", () => this.time.delayedCall(100, () => btn.setScale(scale)));
     }
 
-    // 返回按钮（左下）
+    // 返回按钮（左下；oracle BackButton :1910728：帧 0000↔0001 按压换帧+label 0.95+pusher 音）
     const back = this.add
       .image(70, H - 80, ATLAS_MENU, "BackButton0000")
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
-    back.on("pointerup", () => this.scene.start("Menu"));
-    this.add.bitmapText(70, H - 12, FONT_MAIN, "返回", 20).setOrigin(0.5);
+    const backLabel = this.add.bitmapText(70, H - 12, FONT_MAIN, "返回", 20).setOrigin(0.5);
+    back.on("pointerdown", () => {
+      back.setFrame("BackButton0001");
+      backLabel.setScale(0.95);
+    });
+    back.on("pointerup", () => {
+      back.setFrame("BackButton0000");
+      backLabel.setScale(1);
+      clickSfx(this);
+      this.scene.start("Menu");
+    });
+    back.on("pointerupoutside", () => {
+      back.setFrame("BackButton0000");
+      backLabel.setScale(1);
+    });
 
     // 全 3 星首通 → 彩带（原版 firstComplete：置位 ProgressModel.process bundle:2149507，
     // 检查 LevelMenu.afterAddContent bundle:1932358）
@@ -200,15 +220,19 @@ export class TempleScene extends Phaser.Scene {
       }
     }
 
-    // 显示关卡数切换（右下，fontStone 20）
+    // 显示关卡数切换（右下，fontStone 20；oracle 同位 Button 按压 label 0.95+pusher 音）
     const toggle = this.add
       .bitmapText(W - 115, H - 51, FONT_MAIN, "显示关卡数", 20)
       .setOrigin(0, 0.5)
       .setInteractive({ useHandCursor: true });
+    toggle.on("pointerdown", () => toggle.setScale(0.95));
     toggle.on("pointerup", () => {
+      toggle.setScale(1);
+      clickSfx(this);
       this.showNumbers = !this.showNumbers;
       for (const t of this.numberTexts) t.setVisible(this.showNumbers);
     });
+    toggle.on("pointerupoutside", () => toggle.setScale(1));
   }
 
   /** 平色回退（烘焙期间短暂可见；结构与 oracle h() 同集合：全树边+全底座 / done 边+金底座） */

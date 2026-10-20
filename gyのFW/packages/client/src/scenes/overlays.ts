@@ -10,6 +10,7 @@
  */
 import Phaser from "phaser";
 import { ATLAS_MENU, ATLAS_POPUP, FONT_MAIN } from "./BootScene";
+import { getSettings } from "../settings";
 
 const BOARD_X = 99;
 const BOARD_Y = 159;
@@ -89,24 +90,47 @@ export function buildBoard(scene: Phaser.Scene): Board {
 }
 
 
-/** StoneButton（底图 + fontStone 文字，hover 换帧）；x/y = 板内局部坐标。
- *  oracle 实拍：标签 86×49、位于按钮中心上方 −14（2026-10-12）。 */
+/** pusher 点击音（oracle Button 基类统一 `settings.fx && currentSounds.pusher.play()`，
+ *  :1088100 区；键在 AUDIO_GAME 清单，Menu 暖装 120ms 后可用，极早点击缺键仅 console 警告） */
+export function clickSfx(scene: Phaser.Scene): void {
+  if (!getSettings().fx) return;
+  scene.sound.play("sfx_pusher");
+}
+
+/** StoneButton（底图 + fontStone 文字）；x/y = 板内局部坐标。
+ *  oracle 实拍：标签 86×49、位于按钮中心上方 −14（2026-10-12）。
+ *  按压语义（oracle Button :1088674 区——mousedown 换帧+label 0.95，mouseup 复位+fx 门控
+ *  pusher 音+回调，窗外松开只复位；无 hover 事件）：opts.disabled 为真时不换帧不回调（oracle 同）。 */
 export function stoneButton(
   scene: Phaser.Scene,
   board: Phaser.GameObjects.Container,
   x: number,
   y: number,
   label: string,
-  onClick: () => void
+  onClick: () => void,
+  opts?: { disabled?: () => boolean }
 ): void {
   const btn = scene.add
     .image(x, y, ATLAS_MENU, "StoneButton0000")
     .setDisplaySize(252, 117)
     .setInteractive({ useHandCursor: true });
   const txt = scene.add.bitmapText(x, y - 14, FONT_MAIN, label, 26).setOrigin(0.5, 0.5);
-  btn.on("pointerup", onClick);
-  btn.on("pointerover", () => btn.setFrame("StoneButton0001"));
-  btn.on("pointerout", () => btn.setFrame("StoneButton0000"));
+  btn.on("pointerdown", () => {
+    if (opts?.disabled?.()) return;
+    btn.setFrame("StoneButton0001");
+    txt.setScale(0.95);
+  });
+  btn.on("pointerup", () => {
+    btn.setFrame("StoneButton0000");
+    txt.setScale(1);
+    if (opts?.disabled?.()) return;
+    clickSfx(scene);
+    onClick();
+  });
+  btn.on("pointerupoutside", () => {
+    btn.setFrame("StoneButton0000");
+    txt.setScale(1);
+  });
   board.add([btn, txt]);
 }
 
@@ -240,13 +264,20 @@ export class EndMenu extends Phaser.Scene {
       enabled = true;
     });
     // Continue（与星碑同拍启用）：原版直进下一关；联机形态=活房间 advance 换关（main.ts __fwNextLevel）
-    stoneButton(this, board, CX, 502, "继续", () => {
-      if (!enabled) return;
-      this.scene.stop();
-      const h = handle() as unknown as { __fwNextLevel?: () => void; __fwLeaveToMenu?: () => void };
-      if (h.__fwNextLevel) h.__fwNextLevel();
-      else h.__fwLeaveToMenu?.();
-    });
+    stoneButton(
+      this,
+      board,
+      CX,
+      502,
+      "继续",
+      () => {
+        this.scene.stop();
+        const h = handle() as unknown as { __fwNextLevel?: () => void; __fwLeaveToMenu?: () => void };
+        if (h.__fwNextLevel) h.__fwNextLevel();
+        else h.__fwLeaveToMenu?.();
+      },
+      { disabled: () => !enabled },
+    );
   }
 }
 

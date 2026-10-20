@@ -9,6 +9,7 @@
  */
 import Phaser from "phaser";
 import { ATLAS_CHARS, ATLAS_MENU, FONT_MAIN, startBgWarm } from "./BootScene";
+import { clickSfx } from "./overlays";
 import { getSettings } from "../settings";
 
 export class MenuScene extends Phaser.Scene {
@@ -72,14 +73,21 @@ export class MenuScene extends Phaser.Scene {
       head.play(`${role}_idle`);
     }
 
-    // Play：72px 位图字（原版 251×76 无底板）+ 交互区
-    this.add.bitmapText(W / 2, 513, FONT_MAIN, "开始游戏", 72).setOrigin(0.5, 0.5).setDepth(4);
+    // Play：72px 位图字（原版 251×76 无底板）+ 交互区；GoldButton 按压语义（oracle :1089911：
+    // 无换帧、label 0.95 + pusher 音）
+    const playTxt = this.add.bitmapText(W / 2, 513, FONT_MAIN, "开始游戏", 72).setOrigin(0.5, 0.5).setDepth(4);
     this.add
       .zone(W / 2, 513, 300, 100)
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .setDepth(5)
-      .on("pointerup", () => this.scene.start("Temple"));
+      .on("pointerdown", () => playTxt.setScale(0.95))
+      .on("pointerup", () => {
+        playTxt.setScale(1);
+        clickSfx(this);
+        this.scene.start("Temple");
+      })
+      .on("pointerupoutside", () => playTxt.setScale(1));
 
     // Navy 蜡烛/装饰 ×4（按钮组相对位 (145,-8)/(105,-63)/(63,-223)/(37,29) → 屏幕）
     const navies: Array<[number, number]> = [
@@ -100,20 +108,31 @@ export class MenuScene extends Phaser.Scene {
       });
     });
 
-    // 左下设置齿轮 + 右上"?"
+    // 左下设置齿轮 + 右上"?"（oracle :1940071 区：帧 0002/0003=非 multi 分支，按压换帧+pusher 音；
+    // "?"=GoldButton 同族 label 0.95+pusher 音——按压语义，无 hover）
     const gear = this.add
       .image(100, 860, ATLAS_MENU, "SettingsButton0002")
       .setInteractive({ useHandCursor: true })
       .setDepth(5);
-    gear.on("pointerup", () => this.scene.launch("SettingsScene"));
-    gear.on("pointerover", () => gear.setFrame("SettingsButton0003"));
-    gear.on("pointerout", () => gear.setFrame("SettingsButton0002"));
-    this.add
+    gear.on("pointerdown", () => gear.setFrame("SettingsButton0003"));
+    gear.on("pointerup", () => {
+      gear.setFrame("SettingsButton0002");
+      clickSfx(this);
+      this.scene.launch("SettingsScene");
+    });
+    gear.on("pointerupoutside", () => gear.setFrame("SettingsButton0002"));
+    const creditsTxt = this.add
       .bitmapText(1240, 40, FONT_MAIN, "?", 30)
       .setOrigin(0.5)
       .setDepth(5)
-      .setInteractive({ useHandCursor: true })
-      .on("pointerup", () => this.scene.launch("CreditsScene"));
+      .setInteractive({ useHandCursor: true });
+    creditsTxt.on("pointerdown", () => creditsTxt.setScale(0.95));
+    creditsTxt.on("pointerup", () => {
+      creditsTxt.setScale(1);
+      clickSfx(this);
+      this.scene.launch("CreditsScene");
+    });
+    creditsTxt.on("pointerupoutside", () => creditsTxt.setScale(1));
 
     // 菜单 BGM（settings.music 门控）
     if (getSettings().music && !this.sound.isPlaying("bgm_menu")) {
