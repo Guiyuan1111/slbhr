@@ -353,9 +353,9 @@ async function measureRound(browser, round) {
     .reduce((s, i) => s + i.transferKB, 0).toFixed(0);
   cold.resourcesAfterGame.items.forEach((i) => { i.phase = menuUrls.has(i.url) ? "menu" : "game"; });
   // 非 Menu 段再按页钟点击时刻细分：warm=点击前的 Menu 驻留期暖装，post=点击后进房路径。
-  // r21：循环曲出落定门之后，快照时"仍在飞"成为常态。Resource Timing 对未完成请求
-  // 给 transferSize=0/responseEnd=0，因此这类条目既不能按大小与 clickPerf 比（0 ≤ 任何正数
-  // 会把它归进 warm），也不会贡献任何字节到上面的 KB——单列 pending 把"没下完"变成可见数量。
+  // r21 实测校准：音轨走 XHR，Resource Timing 对 XHR **只在请求完成时**才入表——所以"快照时仍在飞"
+  // 的音轨不是 pending 条目，而是**整条缺席**（r21-ab-4g-b 里 LevelMusic 零条目、pendingCount=0）。
+  // pending 列仍保留：img/script 等非 XHR 条目在飞时确实以 responseEnd=0 出现在表里。
   cold.resourcesAfterGame.items.forEach((i) => {
     if (i.phase === "menu") return;
     i.phase = i.endMs === 0 ? "pending" : i.endMs <= cold.clickPerfMs ? "warm" : "post";
@@ -365,6 +365,15 @@ async function measureRound(browser, round) {
   cold.resources.postClickKB = phaseKB("post");
   cold.resources.pendingCount = cold.resourcesAfterGame.items.filter((i) => i.phase === "pending").length;
   cold.resources.pendingUrls = cold.resourcesAfterGame.items.filter((i) => i.phase === "pending").map((i) => i.url.split("/").pop());
+  // 循环曲出闸判据（r21 件1 的通过条件）：本关类型的循环曲（LevelMusic / LevelMusic_speed，
+  // 锚定结尾故不会误取 Finish/Over）要么在进房快照里根本没有（还在飞），要么完成时刻晚于进房时刻。
+  // 进房页钟时刻 = clickPerfMs（页钟）+ gameActiveAfterClickMs（Node 跨度）：跨度只是时长不是绝对点，
+  // 两钟同速前进，误差只有 Playwright 观测延迟（实测几十 ms 级），比大小可用，逐点比较不可用。
+  const gameActivePerfMs = cold.clickPerfMs + cold.gameActiveAfterClickMs;
+  const loop = cold.resourcesAfterGame.items.filter((i) => /\/s\/LevelMusic(_speed)?$/.test(i.url));
+  cold.loopDeferred = loop.every((i) => i.endMs > gameActivePerfMs);
+  cold.loopArrivalAfterEntryMs = loop.length ? Math.round(Math.max(...loop.map((i) => i.endMs)) - gameActivePerfMs) : null;
+  cold.gameActivePerfMs = Math.round(gameActivePerfMs);
   cold.headers = [...headers.values()];
 
   // reload（同 context，浏览器有缓存）→ Menu active 与传输字节
@@ -457,6 +466,12 @@ results.summary = {
     postClickKB: avg2(r1.cold.resources.postClickKB, r2.cold.resources.postClickKB),
     pendingCount: Math.round((r1.cold.resources.pendingCount + r2.cold.resources.pendingCount) / 2),
     pendingUrlsRound1: r1.cold.resources.pendingUrls,
+    loopDeferred: r1.cold.loopDeferred && r2.cold.loopDeferred,
+    // 两轮都取到条目才有均值；任一轮"进房时还在飞"（无条目）就记 null，不做 0 补位（0 会被读成"同时到达"）
+    loopArrivalAfterEntryMs:
+      r1.cold.loopArrivalAfterEntryMs === null || r2.cold.loopArrivalAfterEntryMs === null
+        ? null
+        : avg2(r1.cold.loopArrivalAfterEntryMs, r2.cold.loopArrivalAfterEntryMs),
     audio: {
       count: Math.round((a1.count + a2.count) / 2),
       totalKB: avg2(a1.totalKB, a2.totalKB),
@@ -491,6 +506,9 @@ console.log("\n=== Menu 前 / 暖装（点击前）/ 进房（点击后）传输
 console.log(`Menu 前 ${results.summary.cold.menuPhaseKB}KB，暖装 ${results.summary.cold.warmPhaseKB}KB，点击→Game ${results.summary.cold.postClickKB}KB（round1 明细，≥1KB）`);
 // 快照时仍在飞的请求：transferSize 尚未落定（=0），不会进入上面任何 KB 列——只看这一行，别把"没下完"读成"没花字节"
 console.log(`快照时仍在飞 ${results.summary.cold.pendingCount} 条：${(results.summary.cold.pendingUrlsRound1 ?? []).join(",") || "无"}`);
+// r21 件1 的通过条件：循环曲不进落定门。null=进房快照时还在飞（连条目都没入表），同样是"门外"。
+const la = results.summary.cold.loopArrivalAfterEntryMs;
+console.log(`循环曲落点：${results.summary.cold.loopDeferred ? "门外（不挡进房）✓" : "门内（仍挡进房）✗"}  到齐时刻=进房后 ${la === null ? "快照时仍在飞" : `${la}ms`}（负=进房前已就绪）`);
 for (const i of table) {
   console.log(`  ${String(i.transferKB).padStart(7)}KB→${String(i.decodedKB).padStart(8)}KB  ${i.phase.padEnd(4)} ${i.type.padEnd(7)} @${String(i.startMs).padStart(5)}-${String(i.endMs).padStart(5)}ms  ${i.url}`);
 }
@@ -546,6 +564,7 @@ if (argCompare) {
   console.log(`其中暖装(点击前)    : ${p("warmPhaseKB")}`);
   console.log(`其中点击→Game 传输: ${p("postClickKB")}`);
   console.log(`快照时仍在飞(条)  : ${p("pendingCount")}`);
+  console.log(`循环曲是否出闸    : ${b.cold.loopDeferred === undefined ? "-" : `${b.cold.loopDeferred ? "门外" : "门内"}`} → ${c.cold.loopDeferred === undefined ? "-" : c.cold.loopDeferred ? "门外" : "门内"}`);
   console.log(`其中非 Menu 合计    : ${p("gamePhaseKB")}`);
   const bRv = b.cold.revalProbe;
   console.log(`条件复验探测      : ${bRv ? `${bRv.refetchKB}KB→${bRv.revalKB}KB` : "-"} → ${c.cold.revalProbe ? `${c.cold.revalProbe.refetchKB}KB→${c.cold.revalProbe.revalKB}KB` : "-"}`);
