@@ -118,12 +118,16 @@
         #menu-error.busy::before { animation: none; }
       }
 
-      /* 石板：PopupBackground0000 帧 = atlas (0,205) 1082×642。整帧按盒拉伸铺底
-         （background-size/position 百分比推导：2048/1082、205/1406），四角再盖 74px
+      /* 石板：DOM 合成贴图 dom-skin.png 的 panel 区 = PopupBackground0000 帧
+         （图集 (0,205) 1082×642，无损裁出、2px 透明隔离带），整帧按盒拉伸铺底。
+         合成图 1082×988、该帧左上角对齐原点，故横向 background-size=100% 即 1:1 映射、
+         纵向按 988/642 折算（整图缩放后取到帧区正好铺满盒）。四角再盖 74px
          原生帧裁片（.panel/.sub 的四 pseudo）——角部零变形；窄屏回流皮时边中段随
          比例拉伸，与调研 mockup 的 border-image 同级折衷。
          精修：首层叠平铺 --tint 暖黑罩（压灰石原帧提对比/奠基暖色系），四角裁片
-         同罩同值——罩层为平面色，任意位置拼缝不可见。 */
+         同罩同值——罩层为平面色，任意位置拼缝不可见。
+         r17 字节面：这里原先直引 PopupAssets.png 整图（334.4KB），HTML 解析即拉、与
+         phaser chunk 抢 HTTP/1.1 六连接；改指合成贴图后 DOM 皮肤合计只付 82.1KB。 */
       .panel {
         position: relative;
         width: 1082px;
@@ -131,9 +135,9 @@
         padding: 48px 56px 40px;
         background:
           linear-gradient(var(--tint), var(--tint)),
-          url(/assets/atlasses/PopupAssets.png) no-repeat;
-        background-size: 100% 100%, calc(100% * 2048 / 1082) calc(100% * 2048 / 642);
-        background-position: 0 0, 0 calc(100% * 205 / 1406);
+          url(/assets/dom/dom-skin.png) no-repeat;
+        background-size: 100% 100%, 100% calc(100% * 988 / 642);
+        background-position: 0 0, 0 0;
         color: #f5ead0;
         text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
         text-align: center;
@@ -146,13 +150,14 @@
         pointer-events: none;
         background:
           linear-gradient(var(--tint), var(--tint)),
-          url(/assets/atlasses/PopupAssets.png) no-repeat;
-        background-size: 74px 74px, 2048px 2048px;
+          url(/assets/dom/dom-skin.png) no-repeat;
+        background-size: 74px 74px, 1082px 988px;
       }
-      .panel::before { left: 0; top: 0; background-position: 0 -205px; }
-      .panel::after { right: 0; top: 0; background-position: -1008px -205px; }
-      .sub::before { left: 0; bottom: 0; background-position: 0 -773px; }
-      .sub::after { right: 0; bottom: 0; background-position: -1008px -773px; }
+      /* 角部 = 帧内相对坐标（原图集 y205/y773 → 合成图 y0/y568） */
+      .panel::before { left: 0; top: 0; background-position: 0 0; }
+      .panel::after { right: 0; top: 0; background-position: -1008px 0; }
+      .sub::before { left: 0; bottom: 0; background-position: 0 -568px; }
+      .sub::after { right: 0; bottom: 0; background-position: -1008px -568px; }
 
       #menu-level {
         position: absolute;
@@ -280,7 +285,8 @@
       }
 
       /* 按钮：StoneButton0000/0001 原生帧 252×117（与 overlays.ts stoneButton 同尺寸同 hover 换帧）；
-         帧坐标经 background-size/position 百分比换算（1024/252、256/772），定宽/回流拉伸两用。
+         两帧并排在 dom-skin.png 的 (0,808)/(254,808)，帧坐标经 background-size/position 百分比
+         换算（横 1082/252、纵 988/117；静止 y 位 808/871、hover x 位 254/830），定宽/回流拉伸两用。
          精修主次梯度：首层主题暗罩（火/水）+ inset 主题色环 + 顶 1px 高光——创建=主钮
          （满尺寸 + ember 环 + 文字暖光），加入=次钮（略小 + aqua 环 + 整体 opacity 略低）；
          hover 换帧照旧（background-position 不参与 transition，帧切换保持瞬时），叠加
@@ -301,9 +307,9 @@
         cursor: pointer;
         background:
           linear-gradient(var(--btint, rgba(0, 0, 0, 0)), var(--btint, rgba(0, 0, 0, 0))),
-          url(/assets/atlasses/MenuAssets.png) no-repeat;
-        background-size: 100% 100%, calc(100% * 1024 / 252) calc(100% * 1024 / 117);
-        background-position: 0 0, 0 0;
+          url(/assets/dom/dom-skin.png) no-repeat;
+        background-size: 100% 100%, calc(100% * 1082 / 252) calc(100% * 988 / 117);
+        background-position: 0 0, 0 calc(100% * 808 / 871);
         font: 700 19px/1 "Microsoft YaHei", system-ui, sans-serif;
         color: #fff3d8;
         letter-spacing: 3px;
@@ -322,7 +328,7 @@
       /* 主钮文字暖光（ember 记忆点）；次钮维持中性投影 */
       #btn-create > span { text-shadow: 0 2px 0 rgba(0, 0, 0, 0.7), 0 0 12px rgba(255, 138, 74, 0.4); }
       .btn:hover:not(:disabled) {
-        background-position: 0 0, calc(100% * 256 / 772) 0;
+        background-position: 0 0, calc(100% * 254 / 830) calc(100% * 808 / 871);
         transform: translateY(-2px);
         filter: brightness(1.07) saturate(1.06);
       }
@@ -348,12 +354,13 @@
            而本条特异性 (0,2,0) 高于下面的 `.av-fire/.av-water` (0,1,0)，复位因此赢过它们、
            让两枚头像自始显示图集左上角 water_head_falling0000 的裁片（火头从未生效）。
            由 domskin 逐像素门禁实测暴露（计算值 background-position: 0% 0%）。 */
-        background-image: url(/assets/atlasses/CharAssets.png);
+        background-image: url(/assets/dom/dom-skin.png);
         background-repeat: no-repeat;
-        background-size: calc(2048 / 130 * 33px) auto;
+        background-size: calc(1082 / 130 * 33px) auto;
       }
-      .av-fire { background-position: 0 calc(-862 / 130 * 33px); }
-      .av-water { background-position: calc(-1340 / 130 * 33px) calc(-468 / 130 * 33px); }
+      /* 头像两帧在 dom-skin.png 的 (0,644)/(132,644)，等比缩放 33/130 后取负坐标 */
+      .av-fire { background-position: 0 calc(-644 / 130 * 33px); }
+      .av-water { background-position: calc(-132 / 130 * 33px) calc(-644 / 130 * 33px); }
       .btn > span { display: flex; flex-direction: column; align-items: center; gap: 5px; pointer-events: none; }
       .btn small { font-size: 12px; font-weight: 400; letter-spacing: 1px; color: #e8d9b8; opacity: 0.85; }
 
@@ -386,9 +393,10 @@
         flex: 0 0 18px;
         width: 18px;
         height: 18px;
-        background: url(/assets/atlasses/PopupAssets.png) no-repeat;
-        background-size: calc(2048 / 61 * 18px) auto;
-        background-position: calc(-1122 / 61 * 18px) calc(-205 / 61 * 18px);
+        background-image: url(/assets/dom/dom-skin.png);
+        background-repeat: no-repeat;
+        background-size: calc(1082 / 61 * 18px) auto;
+        background-position: 0 calc(-927 / 61 * 18px);
         filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
       }
       #menu-error.busy { color: #ffd479; background: rgba(48, 38, 14, 0.6); border-color: rgba(255, 182, 76, 0.35); }
