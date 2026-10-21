@@ -1,11 +1,11 @@
 {
   "note": "前场画布逐像素基线（r18 门禁件）：只拍 #game-root canvas，DOM 覆盖层整层隐藏；五态编舞与不覆盖态（Boot 进度条/FadeScene Loading/游戏内）见 scripts/e2e/prephase-canvas.mjs 头注",
-  "provenance": "基线锚代=全量 font.png 一代（851f0a2 代 client 代码）：首捕产物 index-CJqW9TNF.js=b8f19d5a06d02ca3 查不到 \"font-prephase\" 引用、字体目录只有 font.png，装载路径=Boot 一次性取 assets/fonts/chinese/font.png 全量 2191×1024（font.fnt 声明 260 字），即 commit 851f0a2 的口径。判代不靠 HEAD 而靠产物指纹：两段化的 client 代码落在 commit 90fe319（BootScene 只装子集、全量走延迟通道），要重新构建进 dist 才改变本门禁读到的像素，而 client 代码在 851f0a2→90fe319~1 之间 diff 为空，故首捕那批 dist 的 client 面就是 851f0a2 代。本次生成（HEAD=0969558）所用产物：入口 chunk index-BEyFZ836.js=5a044a03cafbd0df 内**查到** \"font-prephase\" 引用，dist 字体目录=font-prephase.png/font.png ⇒ 本批 PNG 是两段化之后的像素；跨产物复现=与前批 SHA 逐态相同 ⇒ 这份产物在五态上复现了拆字前那批像素，正是本门禁要证的无损。用途：改动前场字体/装载序的一方必须让对拍逐字节复现本批 PNG——任何差异都是子集缺字框或空白化过切，不是画质折衷。页内口径：Math.random=mulberry32(seed 6221086)，Phaser 主循环自驱动封死、改由 16.666667ms 合成步时钟驱动 Game.step，视口 1280×960 deviceScaleFactor 1，DOM 覆盖层隐藏，只截 #game-root canvas。",
+  "provenance": "基线锚代=全量 font.png 一代（851f0a2 代 client 代码）：首捕产物 index-CJqW9TNF.js=b8f19d5a06d02ca3 查不到 \"font-prephase\" 引用、字体目录只有 font.png，装载路径=Boot 一次性取 assets/fonts/chinese/font.png 全量 2191×1024（font.fnt 声明 260 字），即 commit 851f0a2 的口径。判代不靠 HEAD 而靠产物指纹：两段化的 client 代码落在 commit 90fe319（BootScene 只装子集、全量走延迟通道），要重新构建进 dist 才改变本门禁读到的像素，而 client 代码在 851f0a2→90fe319~1 之间 diff 为空，故首捕那批 dist 的 client 面就是 851f0a2 代。本次生成（HEAD=fd4bcdb）所用产物：入口 chunk index-CM7A5OVz.js=522fb75aa7cdea46 内**查到** \"font-prephase\" 引用，dist 字体目录=font-prephase.png/font.png ⇒ 本批 PNG 是两段化之后的像素；跨产物复现=与前批 SHA 有差异，本批已换值。换代理由（--reason）：r19 件1 字体图集重排：font-prephase.png 由 2191x1024 换成 1006x378，改写后的坐标在配对的 font-prephase.fnt 里。每个保留字形的区域（帧 ∪ 4px 环带）逐字节搬源、度量面逐条不变，所以任一采样落点读到的 texel 与今日同一集合；剩余差异只可能来自换坐标后 UV 浮点重舍入。实测（scripts/e2e/pixel-forensics.mjs）：五态共 2,635 像素（0.018%），R/G/B 最大差均为 1、平均 0.3，100% 落在 3x3 有渐变的抗锯齿边缘、平坦区 0 个，无缺字/空白/错位。注意本批基线是浏览器截图 PNG（colour type 2，不含 α），透明度未在此证据内——它由资产层字节断言覆盖（区域含 α 逐字节等于源）。机制与逐态数字见 note/report/perf/2026-10-21-r19-font-atlas-reflow.md。用途：改动前场字体/装载序的一方必须让对拍逐字节复现本批 PNG——任何差异都是子集缺字框或空白化过切，不是画质折衷。页内口径：Math.random=mulberry32(seed 6221086)，Phaser 主循环自驱动封死、改由 16.666667ms 合成步时钟驱动 Game.step，视口 1280×960 deviceScaleFactor 1，DOM 覆盖层隐藏，只截 #game-root canvas。",
   "bundle": {
-    "chunk": "index-BEyFZ836.js",
-    "chunkSha": "5a044a03cafbd0df",
+    "chunk": "index-CM7A5OVz.js",
+    "chunkSha": "522fb75aa7cdea46",
     "fonts": {
-      "font-prephase.png": "c1309f00e18b2545",
+      "font-prephase.png": "b0fd54eb33c507dd",
       "font.png": "24800f35d619d57a"
     },
     "subsetReferenced": true,
@@ -22,17 +22,6 @@
       "role": "首捕：本批字节第一次产出的产物（全量 font.png 一代（851f0a2 代 client 代码））"
     },
     {
-      "chunk": "index-rlLaY6Dc.js",
-      "chunkSha": "665b79bcf5440636",
-      "fonts": {
-        "font-prephase.png": "c1309f00e18b2545",
-        "font.png": "24800f35d619d57a"
-      },
-      "subsetReferenced": true,
-      "fontEra": "两段化（子集先行，见 90fe319）",
-      "role": "上一批 manifest 登记的产物（与本批 SHA 逐态相同）"
-    },
-    {
       "chunk": "index-BEyFZ836.js",
       "chunkSha": "5a044a03cafbd0df",
       "fonts": {
@@ -41,47 +30,58 @@
       },
       "subsetReferenced": true,
       "fontEra": "两段化（子集先行，见 90fe319）",
-      "role": "本次 --save 所用产物（两段化（子集先行，见 90fe319），HEAD=0969558）"
+      "role": "上一批 manifest 登记的产物（与本批 SHA 有差异）"
+    },
+    {
+      "chunk": "index-CM7A5OVz.js",
+      "chunkSha": "522fb75aa7cdea46",
+      "fonts": {
+        "font-prephase.png": "b0fd54eb33c507dd",
+        "font.png": "24800f35d619d57a"
+      },
+      "subsetReferenced": true,
+      "fontEra": "两段化（子集先行，见 90fe319）",
+      "role": "本次 --save 所用产物（两段化（子集先行，见 90fe319），HEAD=fd4bcdb）"
     }
   ],
   "states": [
     {
       "id": "menu",
-      "sha256": "8b2819a9e62a2f5889fc75036dc89d7cf629930dec7e188ca574d5f4d2318578",
-      "bytes": 803825,
-      "uniqueColors": 62884,
+      "sha256": "e360cdbbd52110c9507ba5637fcfc0a885d2035fe9a83a06ccad6ac63bd423fb",
+      "bytes": 803760,
+      "uniqueColors": 62889,
       "profile": "首进档案",
       "desc": "Menu 场景：双角色 head_idle 帧 + 8 光柱 + 4 蜡烛 + 「开始游戏」72 号位图字"
     },
     {
       "id": "temple",
-      "sha256": "8019c8eb7ff8fd888092e6c96b8e72bad263765b332148cced0ca7f8a41b7279",
-      "bytes": 279822,
+      "sha256": "9d1bdcd6b156a20beab9591070ea06dea15fffd2d26c04d73bf5b89a2969cf87",
+      "bytes": 279816,
       "uniqueColors": 2697,
       "profile": "首进档案",
       "desc": "选关树（首进档案）：三层烘焙浮雕 + 可玩节点/锁链帧 + 「返回」「显示关卡数」"
     },
     {
       "id": "temple-numbers",
-      "sha256": "e94729ef97888f276584289f2e8fa24a5feea37aaf58048ac8058f8fdb3462c1",
-      "bytes": 448944,
-      "uniqueColors": 17655,
+      "sha256": "7a548385831a4f0c43ce5f12906402943a7f80037fe33a357b47f4573237fbdf",
+      "bytes": 448929,
+      "uniqueColors": 17651,
       "profile": "满通关档案",
       "desc": "选关树（满通关档案）+ 两次点按「显示关卡数」→ 48 枚 String(lv.id) 数字（0-9 全数码）"
     },
     {
       "id": "settings",
-      "sha256": "711e2d58e6b401c0fa3e6aa65baaeddf0c5aa579dfea140921f3f7eb4549e29a",
-      "bytes": 327029,
-      "uniqueColors": 14495,
+      "sha256": "01f9b6ea4d56929b0d0119f836ec9013746ea5ea81e7870bc88661f54eda1d3d",
+      "bytes": 327016,
+      "uniqueColors": 14493,
       "profile": "首进档案",
       "desc": "「设置」面板（叠 Menu）：标题 设置 + 音乐/音效 开关行 + 好的（StoneButton）"
     },
     {
       "id": "credits",
-      "sha256": "7a6fd5741b93bcf9dd54f0e7885d941b751ef061412ba7a8184490c0db9bf233",
-      "bytes": 378094,
-      "uniqueColors": 16404,
+      "sha256": "339fd69ed11da70a38992fda610b023350a5c765ea633f62eb6e5de9f560736a",
+      "bytes": 378067,
+      "uniqueColors": 16401,
       "profile": "首进档案",
       "desc": "「制作人员」面板（叠 Menu）：标题 + 5 行名单 + 好的"
     }
