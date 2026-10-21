@@ -1,19 +1,27 @@
 /**
- * 角色图集拆分（r22 件2）的静态防护网：两张派生图集的产物语义 + 代码里 ATLAS_CHARS/ATLAS_CHARS_GAME 的用法。
+ * 角色图集拆分（r22 件2 两张 → r23 件1 三张）的静态防护网：三张派生图集的产物语义
+ * + 代码里 ATLAS_CHARS / ATLAS_CHARS_ENTRY / ATLAS_CHARS_PLAY 的用法。
  *
- * 为什么需要它：官方 `CharAssets.png`（714.9KB / 239 帧）被拆成 Menu 张（53 帧，Boot 阻塞批）
- * 与 Game 张（186 帧，延迟批）两个纹理键。这条链最贵的失效模式是**帧与键配错**：
- * Phaser 的 `Texture.get` 遇到缺帧只 console.warn 并返回 `firstFrame`/`__BASE`
- * （Texture.js:246-255），于是那个角色不再画错——它把**整张图集**当成一帧贴上来：
- * 满屏花屏，但冷启动、像素门禁之外的路径一切照常。另一种错方向（Menu 张去画房内帧）
- * 同样静默。两类都只能靠"按调用点分类 + 逐像素回算"的静态断言挡住，与 r18/r19
- * 字体两段化的 FONT_MAIN/FONT_FULL 分类网同一形状。
+ * 为什么需要它：官方 `CharAssets.png`（714.9KB / 239 帧）被切成 Menu 张（53 帧，Boot 阻塞批）、
+ * Entry 张（7 帧，随 loadGameAtlases 进落定门）、Play 张（182 帧，房间可玩之后才取）三个纹理键。
+ * 这条链最贵的失效模式是**帧与键配错**：Phaser 的 `Texture.get` 遇到缺帧只 console.warn 并返回
+ * `firstFrame`/`__BASE`（Texture.js:246-255），于是那个角色不再画错——它把**整张图集**当成一帧贴上来：
+ * 满屏花屏，但冷启动、像素门禁之外的路径一切照常。r23 新增的失效模式是同一条的**时间版**：
+ * 动画注册（`anims.create → Animation.getFrames`，Animation.js:454 当场解析帧名）如果跑在 Play 张
+ * 落地之前，那 11 式的 163 个帧名就各自绑上一个 `__BASE`，而 `buildSeq` 的 exists 幂等卫禁止之后重建——
+ * 错帧会一路带着播。所以除了"帧属于哪张"，本测试还钉"注册点必须经 ensureCharAnims 走"。
+ * 三类都只能靠"按调用点分类 + 逐像素回算"的静态断言挡住，与 r18/r19 字体两段化的
+ * FONT_MAIN/FONT_FULL 分类网同一形状。
+ *
+ * 另一件只有拆三张才出现的事：Entry 与 Play **故意相交**（三个既是构造首帧又是动画第 0 帧的
+ * `0000`）。它是本轮的代价而不是 bug，所以这里把它钉成"恰等于白名单"——多一个交点就是漏算，
+ * 少一个交点就是某张缺第 0 帧（注册时照样落 `__BASE`）。
  *
  * 与生成器 scripts/split-char-atlas.mjs 的关系：本测试**不调用**它的任何装配代码，
- * 期望值全部由「官方 CharAssets.png/json 的字节与坐标」＋「两张产物 json 声明的坐标」独立回算，
+ * 期望值全部由「官方 CharAssets.png/json 的字节与坐标」＋「三张产物 json 声明的坐标」独立回算，
  * 生成器自己的断言若有口径错误，这里仍会独立发现。复现性（同输入必同输出）由 `--check` 门禁负责。
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { cropRaw, decodePng } from "../../../../scripts/png-raw.mjs";
@@ -34,10 +42,13 @@ const img = (f: string) => {
 
 const official = ATLAS("CharAssets.json");
 const menu = ATLAS("CharAssetsMenu.json");
-const game = ATLAS("CharAssetsGame.json");
+const entry = ATLAS("CharAssetsEntry.json");
+const play = ATLAS("CharAssetsPlay.json");
+const SHEETS = [menu, entry, play];
 const namesOf = (a: { frames: { filename: string }[] }) => new Set(a.frames.map((f) => f.filename));
 const menuNames = namesOf(menu);
-const gameNames = namesOf(game);
+const entryNames = namesOf(entry);
+const playNames = namesOf(play);
 const officialNames = namesOf(official);
 /** Menu 张的帧集合由两处消费点定义（见头注）；这里独立重算一份，与产物对照 */
 const seq = (prefix: string, start: number, end: number) =>
@@ -47,6 +58,11 @@ const EXPECTED_MENU = ["fire", "water"].flatMap((r) => [
   `${r}_legs_idle0000`,
   ...seq(`${r}_head_idle`, 0, r === "fire" ? 18 : 29),
 ]);
+/** Entry 张的帧集合同样由消费点独立重算：钻石四式（首帧可见，无任何动画引用它）
+ *  + 构造即解析的三个 0000 帧（烟雾/双角色楼梯，它们同时也在 Play 张的动画区间里） */
+const DIAMONDS = ["diamond_fb0000", "diamond_wg0000", "diamond_silver0000", "diamond_fbwg0000"];
+const CONSTRUCTION_SHARED = ["death_smoke0000", "fire_stairs0000", "water_stairs0000"];
+const EXPECTED_ENTRY = [...DIAMONDS, ...CONSTRUCTION_SHARED];
 
 const SCENES = [
   "packages/client/src/scenes/BootScene.ts",
@@ -55,7 +71,7 @@ const SCENES = [
 ];
 /** 动画键全集（拆前后都必须一模一样，拆的只是"在哪个图集取帧"） */
 const ANIM_KEYS = [...["fire", "water"].flatMap((r) => [`${r}_idle`, `${r}_legs_idle`, `${r}_legs_run`, `${r}_jump`, `${r}_fall`, `${r}_rising`, `${r}_stairs`]), "smoke"];
-/** 只服务开始界面的两式（其余 13 式随 Game 张注册） */
+/** 只服务开始界面的两式（其余十一式随 Play 张注册） */
 const MENU_ANIM_KEYS = ["fire_idle", "water_idle", "fire_legs_idle", "water_legs_idle"];
 /** 角色标识在源码里有 `role`/`p` 两种模板变量名，取值恒为这两个 */
 const ROLES = ["fire", "water"];
@@ -181,21 +197,43 @@ function keySites(file: string, keyConst: string) {
   return out;
 }
 
-describe("角色图集拆分产物语义（r22 件2）", () => {
-  it("切分唯一且完备：两张不相交、并集恰等于官方 239 帧", () => {
+/** 取某个顶层/类内函数的体（从签名起，到下一个同样缩进的 `\n}` 止）：装载序断言按"在哪条批里"分类 */
+function body(file: string, sig: string): string {
+  const src = stripComments(SRC(file));
+  const at = src.indexOf(sig);
+  expect(at, `${file} 里找不到 ${sig}`).toBeGreaterThan(-1);
+  const end = src.indexOf("\n}", at);
+  expect(end, `${sig} 没有闭合`).toBeGreaterThan(at);
+  return src.slice(at, end);
+}
+
+describe("角色图集拆分产物语义（r22 件2 → r23 件1 三张）", () => {
+  it("切分完备且交集受控：并集恰等于官方 239 帧，Entry∩Play 只剩三个故意重复的构造帧", () => {
     expect(menuNames.size).toBe(53);
-    expect(gameNames.size).toBe(186);
-    expect([...menuNames].filter((n) => gameNames.has(n))).toEqual([]);
-    expect([...menuNames].filter((n) => !officialNames.has(n))).toEqual([]);
-    expect([...gameNames].filter((n) => !officialNames.has(n))).toEqual([]);
-    expect(menuNames.size + gameNames.size).toBe(officialNames.size);
-    expect([...menuNames].sort()).toEqual([...EXPECTED_MENU].sort()); // 与消费点重算一致
+    expect(entryNames.size).toBe(7);
+    expect(playNames.size).toBe(182);
+    expect([...menuNames].filter((n) => entryNames.has(n) || playNames.has(n))).toEqual([]);
+    expect([...entryNames].filter((n) => playNames.has(n)).sort()).toEqual([...CONSTRUCTION_SHARED].sort());
+    expect([...entryNames].sort()).toEqual([...EXPECTED_ENTRY].sort()); // 与消费点重算一致
+    for (const set of [menuNames, entryNames, playNames]) {
+      expect([...set].filter((n) => !officialNames.has(n))).toEqual([]);
+    }
+    const union = new Set([...menuNames, ...entryNames, ...playNames]);
+    expect(union.size).toBe(officialNames.size); // 53+7+182-3=239：一帧不漏，也不无中生有
+    expect([...menuNames, ...playNames].filter((n) => !union.has(n))).toEqual([]);
+  });
+
+  it("派生产物只有三张（r22 的两张方案不留文件，官方整张仍在原地供回算）", () => {
+    expect(existsSync(path.join(ROOT, "assets/atlasses/CharAssetsGame.png"))).toBe(false);
+    expect(existsSync(path.join(ROOT, "assets/atlasses/CharAssetsGame.json"))).toBe(false);
+    expect(existsSync(path.join(ROOT, "assets/atlasses/CharAssets.png"))).toBe(true);
   });
 
   it("几何等价：每帧 w/h 与 sourceSize 照抄官方，meta.image 各指自己那张", () => {
+    const imageOf = new Map([[menu, "CharAssetsMenu.png"], [entry, "CharAssetsEntry.png"], [play, "CharAssetsPlay.png"]]);
     const byName = new Map<string, any>(official.frames.map((f: any) => [f.filename, f] as [string, any]));
-    for (const a of [menu, game]) {
-      expect(a.meta.image).toBe(`${a === menu ? "CharAssetsMenu" : "CharAssetsGame"}.png`);
+    for (const a of SHEETS) {
+      expect(a.meta.image).toBe(imageOf.get(a));
       expect(a.meta.size.w).toBeGreaterThanOrEqual(a.frames.reduce((m: number, f: any) => Math.max(m, f.frame.x + f.frame.w), 0));
       expect(a.meta.size.h).toBeGreaterThanOrEqual(a.frames.reduce((m: number, f: any) => Math.max(m, f.frame.y + f.frame.h), 0));
       for (const f of a.frames as any[]) {
@@ -211,7 +249,7 @@ describe("角色图集拆分产物语义（r22 件2）", () => {
     const src = img("CharAssets.png");
     const byName = new Map<string, any>(official.frames.map((f: any) => [f.filename, f] as [string, any]));
     const bad: string[] = [];
-    for (const a of [menu, game]) {
+    for (const a of SHEETS) {
       const sheet = img(`${a.meta.image}`);
       for (const f of a.frames as any[]) {
         const o = byName.get(f.filename);
@@ -225,7 +263,7 @@ describe("角色图集拆分产物语义（r22 件2）", () => {
 
   it("帧四周 1px 环带全透明：缩放采样核在边界只可能读到透明，与邻帧内容彻底解耦", () => {
     const bad: string[] = [];
-    for (const a of [menu, game]) {
+    for (const a of SHEETS) {
       const sheet = img(`${a.meta.image}`);
       for (const f of a.frames as any[]) {
         const { x, y, w, h } = f.frame;
@@ -245,34 +283,57 @@ describe("角色图集拆分产物语义（r22 件2）", () => {
     expect(bad, "存在贴边或非透明的隔离像素").toEqual([]);
   }, 180_000);
 
-  it("拆两张确实比整张便宜（这是拆而非加的立论，素材换版变大就该看见）", () => {
+  it("字节账：三张 png（连 json 一起算）都轻于整张；解码画布的增量被重复帧+隔离带吃掉的份额写死为预算", () => {
     const kb = (f: string) => readFileSync(path.join(ROOT, `assets/atlasses/${f}`)).length / 1024;
     const whole = kb("CharAssets.png");
+    const part = ["CharAssetsMenu", "CharAssetsEntry", "CharAssetsPlay"];
     expect(kb("CharAssetsMenu.png")).toBeLessThan(whole / 2);
-    expect(kb("CharAssetsMenu.png") + kb("CharAssetsGame.png")).toBeLessThan(whole);
-    // 解码驻留同向：两张画布像素之和不超过原 2048² 画布
+    expect(part.reduce((s, n) => s + kb(`${n}.png`), 0)).toBeLessThan(whole);
+    // 三个 json 也算进去仍然更便宜（json 还额外走 brotli，png 是 identity 直发）
+    expect(part.reduce((s, n) => s + kb(`${n}.png`) + kb(`${n}.json`), 0)).toBeLessThan(kb("CharAssets.png") + kb("CharAssets.json"));
+    // 反向代价必须可见：三张画布像素之和略高于原 2048²（3 帧重复 + 每帧隔离带），
+    // 拆得越多这块浪费越大——素材换版或再切一刀时这条会先响
     const px = (a: { meta: { size: { w: number; h: number } } }) => a.meta.size.w * a.meta.size.h;
-    expect(px(menu) + px(game)).toBeLessThanOrEqual(px(official));
+    const sum = px(menu) + px(entry) + px(play);
+    expect(sum).toBeGreaterThan(px(official));
+    expect(sum - px(official)).toBeLessThanOrEqual(Math.round(px(official) * 0.02));
   });
 });
 
-describe("r22 件2 拆分：调用点分类", () => {
-  it("Boot 阻塞批只装 Menu 张对，Game 张只在延迟通道里声明一次", () => {
-    const boot = SRC("packages/client/src/scenes/BootScene.ts");
-    expect(boot.includes('this.load.atlas(ATLAS_CHARS, "/assets/atlasses/CharAssetsMenu.png", "/assets/atlasses/CharAssetsMenu.json")')).toBe(true);
-    expect(boot.includes('load.atlas(ATLAS_CHARS_GAME, "/assets/atlasses/CharAssetsGame.png", "/assets/atlasses/CharAssetsGame.json")')).toBe(true);
-    const preload = boot.slice(boot.indexOf("preload(): void"), boot.indexOf("create(): void"));
-    expect(preload.includes("CharAssetsGame")).toBe(false); // 阻塞批不再碰 Game 张
-    expect(preload.includes("CharAssetsMenu")).toBe(true);
+describe("r23 件1 拆分：装载批与调用点分类", () => {
+  it("三张各自只在自己那条批里声明一次：Boot 阻塞批=Menu 张，落定门=Entry 张，延迟通道=Play 张", () => {
+    const boot = "packages/client/src/scenes/BootScene.ts";
+    const preload = body(boot, "preload(): void");
+    const gate = body(boot, "export function loadGameAtlases");
+    const deferred = body(boot, "export function loadCharsPlay");
+    expect(preload).toContain('this.load.atlas(ATLAS_CHARS, "/assets/atlasses/CharAssetsMenu.png", "/assets/atlasses/CharAssetsMenu.json")');
+    expect(gate).toContain('load.atlas(ATLAS_CHARS_ENTRY, "/assets/atlasses/CharAssetsEntry.png", "/assets/atlasses/CharAssetsEntry.json")');
+    expect(deferred).toContain('load.atlas(ATLAS_CHARS_PLAY, "/assets/atlasses/CharAssetsPlay.png", "/assets/atlasses/CharAssetsPlay.json")');
+    // 逐条批核对"谁不许出现在这里"：漏一条就是一次回退（阻塞批多字节 / 落定门多 442KB / 双载）
+    for (const ban of ["CharAssetsPlay", "CharAssetsEntry", "CharAssetsGame"]) expect(preload.includes(ban), `Boot 阻塞批出现 ${ban}`).toBe(false);
+    for (const ban of ["CharAssetsPlay", "CharAssetsGame"]) expect(gate.includes(ban), `落定门出现 ${ban}`).toBe(false);
+    for (const ban of ["CharAssetsMenu", "CharAssetsEntry", "CharAssetsGame"]) expect(deferred.includes(ban), `延迟通道出现 ${ban}`).toBe(false);
   });
 
-  it("官方整张 CharAssets.png/json 在场景源码里不再被引用（绕过拆分=第二下载源）", () => {
+  it("Play 张在门落定之后、循环曲之前入队；进房路径另有兜底声明且排在循环曲兜底之前", () => {
+    const boot = stripComments(SRC("packages/client/src/scenes/BootScene.ts"));
+    expect(boot.indexOf("loadCharsPlay(scene.load)")).toBeLessThan(boot.indexOf("scene.time.delayedCall(1500, thenLoop)"));
+    expect(boot).toContain("if (scene.sys.isActive()) {");
+    const game = stripComments(SRC("packages/client/src/scenes/GameScene.ts"));
+    const kick = body("packages/client/src/scenes/GameScene.ts", "private kickCharsPlay");
+    expect(kick).toContain("this.textures.exists(ATLAS_CHARS_PLAY)"); // 已缓存就零请求
+    expect(kick).toContain("loadCharsPlay(this.load)");
+    expect(game.indexOf("this.kickCharsPlay()")).toBeLessThan(game.indexOf("this.kickBgmLoop()"));
+  });
+
+  it("官方整张与 r22 旧键在场景源码里都不再被引用（绕过拆分=第二下载源，留旧名=静音的死引用）", () => {
     for (const f of SCENES) {
       expect(stripComments(SRC(f)).match(/CharAssets\.(png|json)/g), `${f} 仍引用官方整张`).toEqual(null);
+      expect(stripComments(SRC(f)).match(/CharAssetsGame|ATLAS_CHARS_GAME/g), `${f} 仍引用 r22 旧键`).toEqual(null);
     }
   });
 
-  it("画的每一帧都落在自己那张里：ATLAS_CHARS 站点全在 Menu 张，ATLAS_CHARS_GAME 站点全在 Game 张", () => {
+  it("画的每一帧都落在自己那张里：Menu 张 6 处、Entry 张 3 处，Play 张一处也不许被直接画", () => {
     const draws = (key: string, set: Set<string>) => {
       let sites = 0;
       for (const file of SCENES) {
@@ -286,10 +347,11 @@ describe("r22 件2 拆分：调用点分类", () => {
       return sites;
     };
     expect(draws("ATLAS_CHARS", menuNames)).toBe(6); // Menu 三处（glow/legs/head）+ 房内同款三处
-    expect(draws("ATLAS_CHARS_GAME", gameNames)).toBe(3); // 钻石 / 楼梯 / 烟雾
+    expect(draws("ATLAS_CHARS_ENTRY", entryNames)).toBe(3); // 钻石 / 楼梯首帧 / 烟雾首帧
+    expect(draws("ATLAS_CHARS_PLAY", playNames)).toBe(0); // 播放序列只经动画键消费
   });
 
-  it("动画键拆分：Menu 组只留两式（四键）取 Menu 张帧，Game 组补齐其余十一式取 Game 张帧", () => {
+  it("动画键拆分：Menu 组只留两式（四键）取 Menu 张帧，Play 组补齐其余十一式取 Play 张帧", () => {
     const anims = (key: string) => {
       const keys: string[] = [];
       const frames: string[] = [];
@@ -301,22 +363,35 @@ describe("r22 件2 拆分：调用点分类", () => {
       return { keys: keys.sort(), frames };
     };
     const m = anims("ATLAS_CHARS");
-    const g = anims("ATLAS_CHARS_GAME");
+    const g = anims("ATLAS_CHARS_PLAY");
     expect(m.keys).toEqual([...MENU_ANIM_KEYS].sort());
     expect(g.keys).toEqual(ANIM_KEYS.filter((k) => !MENU_ANIM_KEYS.includes(k)).sort());
     for (const n of m.frames) expect(menuNames.has(n), `Menu 动画帧 ${n} 不在 Menu 张`).toBe(true);
-    for (const n of g.frames) expect(gameNames.has(n), `Game 动画帧 ${n} 不在 Game 张`).toBe(true);
-    // 拆前拆后键集相同（少一式就是"进房后某个状态定格"的静默表现回归）
+    for (const n of g.frames) expect(playNames.has(n), `Play 动画帧 ${n} 不在 Play 张`).toBe(true);
+    // 拆前拆后键集相同（少一式就是"进房后某个状态定格"的静默回归）
     expect([...m.keys, ...g.keys].sort()).toEqual([...ANIM_KEYS].sort());
+    // 十一式的第 0 帧里有三个同时也是构造帧：它们必须**同时**在 Play 张（否则注册当场落 __BASE）
+    for (const n of CONSTRUCTION_SHARED) expect(playNames.has(n), `${n} 被从 Play 张里挤掉了`).toBe(true);
+    expect(g.frames.length).toBe(163); // 2×(8+11+5+5+30)+45，注册期解析的帧名总数即时间窗口的暴露面
   });
 
-  it("Game 组动画随房内装载序注册（与 buildGameAnims 同处，早一帧都没有）", () => {
+  it("注册时机：buildCharAnims 的唯一调用点在 ensureCharAnims 内，场景侧只许调 ensureCharAnims", () => {
+    const boot = stripComments(SRC("packages/client/src/scenes/BootScene.ts"));
+    const ensure = body("packages/client/src/scenes/BootScene.ts", "export function ensureCharAnims");
+    expect(boot.includes("export function buildCharAnims")).toBe(true);
+    expect([...boot.matchAll(/buildCharAnims\(/g)].length).toBe(3); // 1 处声明 + ensure 里 2 处（缓存命中/到达回调）
+    expect([...ensure.matchAll(/buildCharAnims\(/g)].length).toBe(2);
+    expect(ensure).toContain("scene.textures.exists(ATLAS_CHARS_PLAY)"); // 已在缓存就当场注册
+    expect(ensure).toContain("Phaser.Loader.Events.FILE_KEY_COMPLETE"); // 还在飞就等 atlasjson
+    expect(ensure).toContain("atlasjson-${ATLAS_CHARS_PLAY}");
+    expect(ensure.includes("scene.load.off(evt, arrive)")).toBe(true); // 跨场景复用 loader，不摘会回调旧场景
+    expect(boot.includes("buildCharAnims(this.anims)")).toBe(false); // Boot 侧只注册菜单两式
+    for (const f of ["packages/client/src/scenes/MenuScene.ts", "packages/client/src/scenes/GameScene.ts"]) {
+      expect(stripComments(SRC(f)).includes("buildCharAnims("), `${f} 抢跑注册`).toBe(false);
+    }
     const game = stripComments(SRC("packages/client/src/scenes/GameScene.ts"));
     const create = game.slice(game.indexOf("create(): void"));
-    expect(create.includes("buildCharAnims(this.anims)")).toBe(true);
-    expect(create.indexOf("buildCharAnims(this.anims)")).toBeLessThan(create.indexOf("setupCameraManager(level)")); // 角色在 create 后段才建
-    const boot = stripComments(SRC("packages/client/src/scenes/BootScene.ts"));
-    expect(boot.includes("export function buildCharAnims")).toBe(true);
-    expect(boot.includes("buildCharAnims(this.anims)")).toBe(false); // Boot 侧只注册菜单两式
+    expect(create).toContain("ensureCharAnims(this");
+    expect(create.indexOf("ensureCharAnims(this")).toBeLessThan(create.indexOf("setupCameraManager(level)")); // 角色在 create 后段才建
   });
 });
