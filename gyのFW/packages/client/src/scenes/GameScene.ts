@@ -23,7 +23,7 @@ import { AUDIO_BGM_OVER, AUDIO_SFX, bgmFamilyOf, bgmFinishOf, bgmLoopOf, loadAud
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
-import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_FULL, PLAYER_SCALE, buildGameAnims, loadGameAtlases } from "./BootScene";
+import { ATLAS_CHARS, ATLAS_CHARS_GAME, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_FULL, PLAYER_SCALE, buildCharAnims, buildGameAnims, loadGameAtlases } from "./BootScene";
 import { getSettings } from "../settings";
 import { loadTempleLevels } from "../templeData";
 import { validateSnapshot } from "../snapshotValidation";
@@ -410,6 +410,10 @@ export class GameScene extends Phaser.Scene {
     // 游戏内动画注册（r5 随装载序从 BootScene 迁来：wind/liquid/finish_stone 的帧在
     // ground/mech/popup 图集，Boot 阶段尚未装载；exists 幂等，重开/换关不重复建）
     buildGameAnims(this.anims);
+    // r22 件2：角色房内十一式（跑步/跳跃/坠落/上升/楼梯/烟雾）的帧在 CharAssetsGame，
+    // 那张随 loadGameAtlases 进缓存，故注册也只能在这里——早一帧就会踩 TextureManager.get
+    // 的缺键分支（整张图集当一帧）。菜单两式已由 Boot.create 注册，exists 幂等不冲突。
+    buildCharAnims(this.anims);
     // 相机管理（F4 翻转，原版 CameraManager @1881500）：此前固定全景（冻结偏离）。
     // 原版行为：加载期 camFreeze 在全图 minScale，started 解冻后每帧自动适配双角色。
     // settled 口径（F2 后）：标准关 settled 恒钉关卡矩形中心 → scroll(16,16)
@@ -722,7 +726,7 @@ export class GameScene extends Phaser.Scene {
   private buildDiamonds(level: LevelData): void {
     for (const d of level.diamonds) {
       const img = this.add
-        .image(d.x + PAD, d.y + PAD - 5, ATLAS_CHARS, DIAMOND_FRAME[d.kind])
+        .image(d.x + PAD, d.y + PAD - 5, ATLAS_CHARS_GAME, DIAMOND_FRAME[d.kind])
         .setOrigin(0.5)
         .setDepth(1);
       // 原版浮动带 = 中心 ±5px（38380-38393：sprite.y=-5 → tween y:+5）
@@ -1094,7 +1098,7 @@ export class GameScene extends Phaser.Scene {
       const glow = this.add.image(cx, cy, ATLAS_CHARS, `${p}_glow0000`).setOrigin(0.5).setScale(PLAYER_SCALE).setAlpha(0.9).setDepth(4);
       const legs = this.add.sprite(cx, cy, ATLAS_CHARS, `${p}_legs_idle0000`).setOrigin(0.5).setScale(PLAYER_SCALE).setDepth(4.9);
       const head = this.add.sprite(cx, cy, ATLAS_CHARS, `${p}_head_idle0000`).setOrigin(0.5).setScale(PLAYER_SCALE).setDepth(5);
-      const smoke = this.add.sprite(cx, cy + 21, ATLAS_CHARS, "death_smoke0000").setOrigin(0.5).setScale(PLAYER_SCALE).setDepth(5.5).setVisible(false);
+      const smoke = this.add.sprite(cx, cy + 21, ATLAS_CHARS_GAME, "death_smoke0000").setOrigin(0.5).setScale(PLAYER_SCALE).setDepth(5.5).setVisible(false);
       smoke.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => smoke.setVisible(false));
       legs.play(`${p}_legs_idle`);
       head.play(`${p}_idle`);
@@ -1677,7 +1681,7 @@ export class GameScene extends Phaser.Scene {
       }
       const p = PREFIX[role];
       const s = this.add
-        .sprite(door.x + door.w / 2 + PAD, door.y + door.h + 4 + PAD, ATLAS_CHARS, `${p}_stairs0000`)
+        .sprite(door.x + door.w / 2 + PAD, door.y + door.h + 4 + PAD, ATLAS_CHARS_GAME, `${p}_stairs0000`)
         .setOrigin(0.5, 1)
         .setScale(PLAYER_SCALE)
         .setDepth(5);

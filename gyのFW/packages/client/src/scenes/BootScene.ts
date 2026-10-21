@@ -8,9 +8,9 @@
  *   元数据 JSON），地面改为程序化绘制（见 GameScene.buildGround）。
  *
  * 冷启动装载序整形（r5 perf，2026-10-18）：Boot 只装开始界面首帧必需
- * （CharAssets 角色立绘/MenuAssets/位图字/四张独立图；r22 件1 起 menu 音频也移出）；
- * ground/mech/temple/popup
- * 四图集（≈1.35MB）移出关键路径——MenuScene.create 首帧后由本场景 loader 后台暖装，
+ * （CharAssetsMenu 角色 53 帧/MenuAssets/位图字/四张独立图；r22 件1 起 menu 音频也移出）；
+ * chars-game/ground/mech/temple/popup
+ * 五图集（png 合计 1642.1KB）移出关键路径——MenuScene.create 首帧后由本场景 loader 后台暖装，
  * GameScene.preload / TempleScene 等消费方照常声明装载（Phaser Loader 对已入纹理缓存
  * 的键静默跳过，见 LoaderPlugin.keyExists→File.hasCacheConflict），暖装被提前打断时
  * 由消费方补齐，任何进入路径都保证纹理就绪。剖析依据：DCL→Menu 大头是图片装载管线
@@ -21,6 +21,16 @@ import { AUDIO_BGM_OVER, AUDIO_MENU, AUDIO_SFX, bgmFamilyOf, bgmFinishOf, bgmLoo
 import { getSettings } from "../settings.js";
 
 export const ATLAS_CHARS = "chars";
+/** 角色图集的房内一半（r22 件2）：`CharAssets.png` 714.9KB/239 帧按消费点拆成两张——
+ *  本键 186 帧（head_jumping/falling/rising、legs_running、stairs、death_smoke、四类 diamond、
+ *  ice_legs、`_default`）随 `loadGameAtlases` 走延迟通道；`ATLAS_CHARS` 只剩 53 帧
+ *  （双角色 glow + legs_idle + head_idle 全序列），
+ *  留在 Boot 阻塞批。跨纹理键放动画是安全的：`AnimationState.setCurrentFrame` 逐帧做
+ *  `gameObject.texture = frame.texture`（AnimationState.js:1583），一个动画的帧可以来自不同纹理。
+ *  反过来说配错也**不报错**：`Texture.get` 缺帧只 console.warn 并返回 `firstFrame`/`__BASE`
+ *  （Texture.js:248-253），于是那个对象把整张图集当一帧贴满屏——故由 char-atlas-split.test.ts
+ *  按调用点分类＋逐像素回算钉死（同 r18/r19 字体两段化的 FONT_MAIN/FONT_FULL 网）。 */
+export const ATLAS_CHARS_GAME = "chars-game";
 export const ATLAS_GROUND = "ground";
 export const ATLAS_MECH = "mech";
 export const ATLAS_TEMPLE = "temple";
@@ -64,8 +74,10 @@ export function loadFontFull(load: Phaser.Loader.LoaderPlugin): void {
   load.bitmapFont(FONT_FULL, "/assets/fonts/chinese/font.png", "/assets/fonts/chinese/font.fnt");
 }
 
-/** 游戏内四图集（Menu 首帧用不到）：进阶装载共用入口——已缓存的键 Phaser 自动跳过 */
+/** 游戏内图集（Menu 首帧用不到）：进阶装载共用入口——已缓存的键 Phaser 自动跳过 */
 export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
+  // r22 件2：角色图集的房内一半（461.9KB）从 Boot 阻塞批挪到这里，Menu 段不再为它付字节
+  load.atlas(ATLAS_CHARS_GAME, "/assets/atlasses/CharAssetsGame.png", "/assets/atlasses/CharAssetsGame.json");
   load.atlas(ATLAS_GROUND, "/assets/atlasses/GroundAssets.png", "/assets/atlasses/GroundAssets.json");
   load.atlas(ATLAS_MECH, "/assets/atlasses/MechAssets.png", "/assets/atlasses/MechAssets.json");
   load.atlas(ATLAS_TEMPLE, "/assets/atlasses/Temples/forest/TempleAssets.png", "/assets/atlasses/Temples/forest/TempleAssets.json");
@@ -189,7 +201,10 @@ export class BootScene extends Phaser.Scene {
     // bundle:2160057 区 → Load 态全程有条；单场景镜像=本队列尽早可用，见 buildLoaderBar）
     this.load.atlas(ATLAS_PRELOADER, "/assets/atlasses/PreloaderAssets.png", "/assets/atlasses/PreloaderAssets.json");
     // Menu 首帧必需：角色立绘（MenuScene 双角色 + idle 动画）/菜单图集/位图字/四张独立图
-    this.load.atlas(ATLAS_CHARS, "/assets/atlasses/CharAssets.png", "/assets/atlasses/CharAssets.json");
+    // r22 件2：角色那张改配 CharAssetsMenu（53 帧 152.1KB，生成器 scripts/split-char-atlas.mjs）——
+    // 开始界面的像素只用得上 glow0000 + legs_idle0000 + head_idle 全序列，其余 186 帧（461.9KB）
+    // 是房内跑步/跳跃/坠落/上升/楼梯/死亡烟雾/钻石，一律走 loadGameAtlases 延迟通道。
+    this.load.atlas(ATLAS_CHARS, "/assets/atlasses/CharAssetsMenu.png", "/assets/atlasses/CharAssetsMenu.json");
     this.load.atlas(ATLAS_MENU, "/assets/atlasses/MenuAssets.png", "/assets/atlasses/MenuAssets.json");
     // 原版画布内时钟的位图字（font 48 基准，LevelUI Clock 用 24 号 = 半缩放）
     // 进房前字体子集（r18 件1 生成器 scripts/font-subset/build-font-prephase.mjs；
@@ -251,25 +266,14 @@ export class BootScene extends Phaser.Scene {
     });
   }
 
-  /** Menu 阶段就需要的动画（全部 CharAssets 帧与 MenuScene 立绘共用同一图集） */
+  /** Menu 阶段就需要的动画（r22 件2：只留开始界面双角色在放的两式，帧全在 CharAssetsMenu） */
   private buildMenuAnims(): void {
-    const a = this.anims;
-    const seq = buildSeq(a);
+    const seq = buildSeq(this.anims);
     // 帧率全部按原版实测 30fps（init.js：idle/jumping/rising/falling 均 30）
     for (const role of ["fire", "water"] as const) {
       seq(`${role}_idle`, ATLAS_CHARS, `${role}_head_idle`, 0, role === "fire" ? 18 : 29, 30, -1);
       seq(`${role}_legs_idle`, ATLAS_CHARS, `${role}_legs_idle`, 0, 0, 1, -1);
-      seq(`${role}_legs_run`, ATLAS_CHARS, `${role}_legs_running`, 0, 7, 30, -1);
-      seq(`${role}_jump`, ATLAS_CHARS, `${role}_head_jumping`, 0, 10, 30, -1); // 原版 jumping 30,!0 循环——起跑后头部定格即此处漏循环
-      // E19 字证（init.js@1861937）：falling 对双角色都只注册 0..4
-      // （water 图集虽有 11 帧表，原版注册子区间仍是 0..4）
-      seq(`${role}_fall`, ATLAS_CHARS, `${role}_head_falling`, 0, 4, 30, -1);
-      // E19 字证（init.js@1862115）：rising 0..4@30fps 循环（water 图集 11 帧同取子区间）
-      seq(`${role}_rising`, ATLAS_CHARS, `${role}_head_rising`, 0, 4, 30, -1);
-      // 通关上楼梯（原版 25fps 一次性，31 帧收 0..29 同段）
-      seq(`${role}_stairs`, ATLAS_CHARS, `${role}_stairs`, 0, 29, 25, 0);
     }
-    seq("smoke", ATLAS_CHARS, "death_smoke", 0, 44, 30, 0);
   }
 }
 
@@ -281,6 +285,25 @@ function buildSeq(a: Phaser.Animations.AnimationManager) {
     for (let i = start; i <= end; i++) frames.push({ key: atlas, frame: `${prefix}${String(i).padStart(4, "0")}` });
     a.create({ key, frames, frameRate, repeat });
   };
+}
+
+/** 角色房内十一式（r22 件2 从 buildMenuAnims 拆出）：帧在 CharAssetsGame，
+ *  那张随 loadGameAtlases 进缓存，故注册必须在房内装载之后——GameScene.create 与
+ *  buildGameAnims 同处调用。键集与拆前逐字相同，少一式就是"进房后某状态定格"的静默回归。 */
+export function buildCharAnims(a: Phaser.Animations.AnimationManager): void {
+  const seq = buildSeq(a);
+  for (const role of ["fire", "water"] as const) {
+    seq(`${role}_legs_run`, ATLAS_CHARS_GAME, `${role}_legs_running`, 0, 7, 30, -1);
+    seq(`${role}_jump`, ATLAS_CHARS_GAME, `${role}_head_jumping`, 0, 10, 30, -1); // 原版 jumping 30,!0 循环——起跑后头部定格即此处漏循环
+    // E19 字证（init.js@1861937）：falling 对双角色都只注册 0..4
+    // （water 图集虽有 11 帧表，原版注册子区间仍是 0..4）
+    seq(`${role}_fall`, ATLAS_CHARS_GAME, `${role}_head_falling`, 0, 4, 30, -1);
+    // E19 字证（init.js@1862115）：rising 0..4@30fps 循环（water 图集 11 帧同取子区间）
+    seq(`${role}_rising`, ATLAS_CHARS_GAME, `${role}_head_rising`, 0, 4, 30, -1);
+    // 通关上楼梯（原版 25fps 一次性，31 帧收 0..29 同段）
+    seq(`${role}_stairs`, ATLAS_CHARS_GAME, `${role}_stairs`, 0, 29, 25, 0);
+  }
+  seq("smoke", ATLAS_CHARS_GAME, "death_smoke", 0, 44, 30, 0);
 }
 
 /** 游戏内动画（ground/mech/popup 帧——图集随 GameScene 装载后再注册，r5 随装载序迁移） */
