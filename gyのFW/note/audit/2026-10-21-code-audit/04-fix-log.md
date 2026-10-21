@@ -2,7 +2,7 @@
 
 > 状态：`待修` / `进行中` / `已修` / `挂账` / `不修（附理由）`。每个已修项必须附 commit 与复验门禁。
 >
-> 收口时点：2026-10-21。修复批次 commit：`9fc2bb3`（客户端网络/输入）、`c7dc51b`（客户端场景/存储）、`bd151d8`（服务端加固）、`86731ec`（CI/版本门禁）、`fa7e075`（客户端单测）、`5cdf0d2`（浏览器 e2e）。审计建档见 `42195c0`。
+> 收口时点：2026-10-21。修复批次 commit：`9fc2bb3`（客户端网络/输入）、`c7dc51b`（客户端场景/存储）、`bd151d8`（服务端加固）、`86731ec`（CI/版本门禁）、`fa7e075`（客户端单测）、`5cdf0d2`（浏览器 e2e）；CI 工作流根目录修正见 `70cf984`。审计建档见 `42195c0`。
 
 | ID | 问题 | 优先级 | 状态 | commit | 复验 |
 |---|---|---|---|---|---|
@@ -15,7 +15,7 @@
 | M3 | 速度关 BGM 类型滞后 | P1 | 已修 | `c7dc51b`+`9fc2bb3` | `templeEntry` 同步注入回读 + 全量门禁；音频实听未做 |
 | M4 | HTTP 剪贴板无回退 | P1 | 已修 | `9fc2bb3` | 特性检测/`execCommand` 回退回读；LAN 非安全上下文未手测 |
 | M5 | 鉴权时序/速率/请求体 | P1 | 已修 | `bd151d8` | 限流/静态 onAuth 单测 3 例 + 请求体上限 5 例 + 集成测试密码 4403 仍生效 |
-| M6 | 测试/CI 覆盖缺口 | P1 | 已修 | `bd151d8`+`86731ec`+`fa7e075`+`5cdf0d2` | 新增 3 个服务端测试文件、templeData 单测与 progress 扩展、3 个 e2e 场景；工作流位于仓库根（`working-directory: gyのFW`），随本版推送首次触发 |
+| M6 | 测试/CI 覆盖缺口 | P1 | 已修 | `bd151d8`+`86731ec`+`fa7e075`+`5cdf0d2`+`70cf984` | 新增 3 个服务端测试文件、templeData 单测与 progress 扩展、3 个 e2e 场景；GitHub Actions run `39538401687` 两 job 全绿 |
 | M7 | 版本/engines 漂移 | P2 | 已修 | `86731ec`+发版提交 | `version.test` 4 例通过；根/三子包/lock/README 统一 0.3.41 |
 | M8 | Vite 哈希缓存规则 | P2 | 已修 | `bd151d8` | `cachePolicy` 哈希用例通过；实际构建产物 `index-Co3t3lNC.js` 命中 |
 | M9 | 机关平滑速度不衰减 | P2 | 已修 | `c7dc51b` | 超 80ms 静止清零回读 + 全量门禁；未做视觉抽帧 |
@@ -39,12 +39,13 @@
 | 浏览器 e2e | `node scripts/e2e/journey.mjs pause` | **11/11**：冻结/恢复/时基 + 二次暂停开关 |
 | 浏览器 e2e | `node scripts/e2e/journey.mjs leave` | **3/3**：回选关树、无断线横幅、余端回 lobby |
 | 浏览器 e2e | `node scripts/e2e/journey.mjs refresh` | **3/3**：两次刷新回座 + 相机解冻 |
+| GitHub CI | Actions run `39538401687`（push `70cf984`） | **两 job 全绿**：typecheck/test/build 1m43s、determinism 22s |
 
 ## §3 遗留与说明
 
 - **M12（架构级）**：`GameScene` 拆分、共享 DTO/生成类型、快照字段存在性校验不在本次批量修复范围；风险与方案保留在 02-medium.md，需单独立项。
 - **M4 / M3 实机口径**：剪贴板仅做代码路径与回退审查，未在局域网 HTTP 浏览器手测；速度关 BGM 未做听感验收。
 - **H4 内存**：LRU=2 与分片只做了实现与门禁复验，未在真机测峰值 RSS；如需数字应另跑内存基准。
-- **CI**：仓库根 `.github/workflows/ci.yml`（`working-directory: gyのFW`，`paths: gyのFW/**`）已完成本地等价执行；随本版推送首次在 GitHub 实际触发。
+- **CI**：仓库根 `.github/workflows/ci.yml`（`working-directory: gyのFW`，`paths: gyのFW/**`）已随 `70cf984` 推送在 GitHub 实跑通过（run [39538401687](https://github.com/Guiyuan1111/slbhr/actions/runs/39538401687)）；仅有 `actions/checkout@v4`/`setup-node@v4` 的 Node 20 运行时弃用提示，不影响门禁结果。
 - **Colyseus 警告**：定义静态 `onAuth` 后框架打印 "instance onAuth will be ignored" 属预期；实例 `onAuth` 由 `onJoin` 显式调用，集成测试的 4403 密码错误用例证明校验未被绕过。
 - 浏览器/单测均使用无头 Chromium 与 Node 22；未覆盖真机触屏、弱网、跨设备代理链路。
