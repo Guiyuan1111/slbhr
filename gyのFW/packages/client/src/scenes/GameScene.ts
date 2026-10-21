@@ -19,7 +19,7 @@ import Phaser from "phaser";
 import { DOOR, ROLES, type Role } from "@fw/shared";
 import type { LevelData, Rect } from "@fw/shared/level2";
 import { windBodyPos } from "@fw/shared/level2";
-import { AUDIO_BGM_OVER, AUDIO_SFX, bgmFamilyOf, bgmPackOf, loadAudioPack } from "../audio.js";
+import { AUDIO_BGM_OVER, AUDIO_SFX, bgmFamilyOf, bgmFinishOf, bgmLoopOf, loadAudioPack } from "../audio.js";
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
@@ -321,7 +321,10 @@ export class GameScene extends Phaser.Scene {
     // 已由 __fwInit.templeEntry 同步填好）——暖装猜错族时这里就是补齐点。
     loadAudioPack(this, AUDIO_SFX);
     loadAudioPack(this, AUDIO_BGM_OVER);
-    loadAudioPack(this, bgmPackOf(bgmFamilyOf(this.templeType)));
+    // r21：族内的**循环曲**（LevelMusic 1285.4KB）不再进这条阻塞批——它不决定任何一帧，
+    // 却占进房段单笔最大字节（4g 2.63s／slow3g 21.0s）。改由 create 之后 kickBgmLoop 取。
+    // 终局曲留在这里：won 补演（create 同帧的 prevPhase==="won"）与通关演出都要当场取键。
+    loadAudioPack(this, bgmFinishOf(bgmFamilyOf(this.templeType)));
     // 游戏内四图集（r5 冷启动装载序整形）：Boot 不再装载（Menu 首帧用不到），
     // MenuScene 后台暖装通常已就绪（此处静默跳过）；暖装被提前打断（快速建房/
     // 邀请深链直进）时在此补齐，保证 create 前纹理完备——与旧 Boot 全量装载等价。
@@ -474,6 +477,7 @@ export class GameScene extends Phaser.Scene {
     // Boot :2162295 / fx 信号 :2209677 同式——settings.ts 分轨语义仅保留 music 侧）
     this.sound.mute = !getSettings().fx;
     this.sfx(this.bgmKey(), { loop: true });
+    this.kickBgmLoop();
 
     // T4（14 号档）：退场统一停音。Phaser 3 场景共享全局 sound manager（InjectionMap
     // sound:'sound'，scene.stop 不停音）——quit/换关/重开路径都过本场景 SHUTDOWN，在此
@@ -494,6 +498,29 @@ export class GameScene extends Phaser.Scene {
     // H2：刷新回座时已在 started，create 到首个 update 之间不会再有 ready→started 迁移事件，
     // 在此直接解冻；ready 仍保持冻结，由既有 onPhaseChanged 在开局时解冻。
     if (this.prevPhase === "started") this.camFrozen = false;
+  }
+
+  /** r21：关卡循环曲（LevelMusic 1285.4KB）的兜底装载点——既不在落定门也不在阻塞批，
+   *  create 之后才取，房间先可玩。落定即补起，但只在"这一局还活着"时补：死亡换失败曲、
+   *  通关换终局曲、重开按原逻辑重起，晚到的循环曲一律不得把它们盖回去。
+   *  键已在缓存（驻留暖装跑完的常规路径）时直接返回：零请求、零延后、create 当场有声。 */
+  private kickBgmLoop(): void {
+    const key = this.bgmKey();
+    if (this.cache.audio.exists(key)) return;
+    loadAudioPack(this, bgmLoopOf(bgmFamilyOf(this.templeType)));
+    const catchUp = (): void => {
+      // 补起的就是 create 那一次没成功的播放：ready 阶段也该在播（今日行为如此，
+      // 房主就位到 started 之间的两秒里 BGM 本来就在响），只有"已被别的曲子接管"才不补。
+      if (this.stairsPlayed) return;
+      if (this.sound.isPlaying("bgm_over") || this.sound.isPlaying(this.finishKey())) return;
+      if (this.sound.isPlaying(key)) return;
+      this.sfx(key, { loop: true });
+    };
+    // LoaderPlugin 随场景复用（shutdown 只 reset 队列、不解绑事件），换关/重开每次 create
+    // 都会再挂一个 once——SHUTDOWN 时摘掉，否则补起处理器会累积并在下一次装载时多播一支。
+    this.load.once("complete", catchUp);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.load.off("complete", catchUp));
+    this.load.start();
   }
 
   /** 关卡 BGM 键：speed 关用专属曲（原版 preloadAudioFiles 按 levelData.type 换曲） */

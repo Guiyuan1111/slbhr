@@ -71,6 +71,21 @@ export function bgmPackOf(family: BgmFamily): ReadonlyArray<readonly [string, st
   return family === "speed" ? AUDIO_BGM_SPEED : AUDIO_BGM_GENERAL;
 }
 
+/**
+ * 族内**循环曲**单支（r21）：`LevelMusic` 1285.4KB / `LevelMusic_speed` 是其变体。
+ * 它是进房段单笔最大的一支，却不参与"可玩"所需的任何一帧——从落定门与阻塞批里挪出，
+ * 改为门后二段 + create 后兜底（见 BootScene.startBgWarm / GameScene.kickBgmLoop）。
+ */
+export function bgmLoopOf(family: BgmFamily): ReadonlyArray<readonly [string, string]> {
+  return bgmPackOf(family).filter(([key]) => key === "bgm_level" || key === "bgm_level_speed");
+}
+
+/** 族内**终局曲**单支（r21）：won 演出可能在 create 同帧取键（GameScene 的 prevPhase==="won" 补演），
+ *  故它不进"可玩"路径之外的第二段，仍留在落定门与阻塞批内。 */
+export function bgmFinishOf(family: BgmFamily): ReadonlyArray<readonly [string, string]> {
+  return bgmPackOf(family).filter(([key]) => key === "bgm_finish" || key === "bgm_finish_speed");
+}
+
 /** 按清单向场景装载器入队（已在缓存中的键由 Phaser Loader 自动跳过） */
 export function loadAudioPack(scene: Phaser.Scene, pack: ReadonlyArray<readonly [string, string]>): void {
   for (const [key, file] of pack) {

@@ -16,7 +16,7 @@
  * 的串行段（blob→Image ~180ms）而非网络（19 请求全并行仅 ~55ms）。
  */
 import Phaser from "phaser";
-import { AUDIO_BGM_OVER, AUDIO_MENU, AUDIO_SFX, bgmFamilyOf, bgmPackOf, loadAudioPack, type BgmFamily } from "../audio.js";
+import { AUDIO_BGM_OVER, AUDIO_MENU, AUDIO_SFX, bgmFamilyOf, bgmFinishOf, bgmLoopOf, loadAudioPack, type BgmFamily } from "../audio.js";
 
 export const ATLAS_CHARS = "chars";
 export const ATLAS_GROUND = "ground";
@@ -96,7 +96,20 @@ export function startBgWarm(scene: Phaser.Scene): void {
   });
   warmState = { done, resolve };
   const finish = (): void => warmState?.resolve();
-  scene.load.once("complete", finish);
+  // r21：关卡循环曲（LevelMusic 1285.4KB）不进落定门——它是"可玩"之前最大的一笔，却没有一帧靠它。
+  // 门只等必需集（四图集+全量字体+sfx+失败曲+终局曲）。循环曲排在**门落定之后**再入队：
+  // 快速建房/邀请深链那条路上 Menu 在落定后几百毫秒就被切走，定时器随场景停用作废、请求根本不发起，
+  // 循环曲改由 GameScene.kickBgmLoop 在 create 之后兜底；驻留路径（真人正常节奏）则在门后把它预缓存，
+  // 进房即有声，与今日等价。节拍取 1500ms：必须晚于 fadeSwitch 的切场窗口，否则又变回与必需集抢管道。
+  const thenLoop = (): void => {
+    if (!scene.sys.isActive()) return; // Menu 已被切走（含切场瞬间竞态）：交给 Game 侧兜底
+    loadAudioPack(scene, bgmLoopOf(warmBgmFamily));
+    scene.load.start();
+  };
+  scene.load.once("complete", () => {
+    finish();
+    scene.time.delayedCall(1500, thenLoop);
+  });
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, finish);
   loadGameAtlases(scene.load);
   // 游戏内音频批（r6，同 r5 模式）：并入同一暖装队列与落定门——进 Game 前若暖装在飞，
@@ -105,7 +118,7 @@ export function startBgWarm(scene: Phaser.Scene): void {
   // r16 件A：BGM 只取一族（sfx + 失败曲与类型无关，恒取）。
   loadAudioPack(scene, AUDIO_SFX);
   loadAudioPack(scene, AUDIO_BGM_OVER);
-  loadAudioPack(scene, bgmPackOf(warmBgmFamily));
+  loadAudioPack(scene, bgmFinishOf(warmBgmFamily));
   scene.load.start();
 }
 
