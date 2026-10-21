@@ -218,6 +218,10 @@ node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>              
   **代次由产物指纹判、不由 HEAD 判**（共享工作树里 dist 可能落后 HEAD）：读入口 chunk 哈希 +
   字体目录内每个 PNG 的哈希，据 `font-prephase` 引用有无定"全量代/两段化代"，
   三份证据（首捕代/上一批/本批）并列写进 `manifest.bundlesVerified`。
+- `font-decode-probe.mjs`：**字体位图解码归因件**（r18）。同一次 Chromium 页内对 `font.png` 与
+  `font-prephase.png`（同尺寸 2191×1024）分别计 `fetch`/`createImageBitmap`/`Image.decode()`/绘进同尺寸 canvas+取像素
+  四段。用途是把"少下 1.3MB"与"多挂一张 8.97MB 解码位图"两笔账分开——r18 实测 1600.3KB 传输在批内只占 36ms，
+  所以本机口径下字体拆代的收益是**字节形状**而非毫秒，代价是驻留（见 r18 报告 §五之一、§五之二）。
 - `scripts/build-dom-skin.mjs`：DOM 皮肤合成贴图生成器（r17 件A 的资产侧）。
   帧坐标取自 `assets/atlasses/*.json` 并**断言**（素材重打包即红）；裁片拼成 1082×988 + 2px 透明隔离带。
   **无损证明走原始样本**：自解 IDAT + 反滤波拿 RGBA 字节，与图集原帧逐字节全等（`compare` 两侧同过
@@ -291,6 +295,12 @@ git 列以快照 JSON `meta.git`（存档时脚本记录）为准；visual 系�
 | domskin-{wide-idle,wide-hover,wide-error,narrow-idle}.png | 7c19e61 | — | — | DOM 皮肤四态逐像素基线（合成贴图皮一代；上一代图集皮在 `043b2a5`） |
 | load-r17-after-f01 | 7c19e61 | — | — | r17 件A 后冷启（Menu 段 3799KB/19req，DOM 皮 80.5KB 单行；全链 6830KB＝基线 +79.0KB，PopupAssets 334.4KB 退回点击后真实下载） |
 | visual-r17b{1,2} | 305715e | — | — | r17 件A 同码补跑（92.79 / 93.10，与首跑 92.96 并记，极差 0.31pt＝带顶抖动） |
+| load-r18-base-f01 | 851f0a2 | — | — | r18 拆代前基线：Menu 段 3799KB/19req，其中 `font.png` 1600.3KB＝42.1%（Boot 关键路径最大单文件） |
+| load-r18-after-f01 | 0969558 | — | — | 件C 后终态：Menu 段 **2504KB**/19req（−1295.0KB·−34.1%），全链 7135KB＝**+304.8KB（本轮代价）**；条件复验 47 URL 7120.7KB→0KB、reload 4KB |
+| load-r18-ab-{full,split,full2} | 0969558（检出 HEAD；代际由工作树回退重建决定，同 r16 口径） | — | — | **同场 A/B/A** 三快照：点击→Game 1716.5 / 1542.5 / 1270.5ms——同一份全量代产物两次跑差 **446ms**，故本轮两个 ms 差全部撤回，只留字节与位图账 |
+| client-r18-f01 | 0969558 | — | — | canvas 60.3fps、帧内分配 998KB·s⁻¹（webgl 12.1fps 软件光栅口径） |
+| advance-r18 | 0969558 | — | — | 5/5 零网络、烘焙均值 28.5ms、换关→可玩均值 1090.5ms（与 r13/r17 同带＝字体拆代未触碰换关链） |
+| prephase-canvas/（5 PNG + manifest） | c37f585 → c39679f | — | — | 前场五态逐像素基线（menu 803825B/temple 279822B/temple-numbers 448944B/settings 327029B/credits 378094B）；`bundlesVerified` 已登三代产物指纹互验（全量代首捕 `CJqW9TNF`、两段化 `rlLaY6Dc`、终态 `BEyFZ836`） |
 
 ## 注意
 
