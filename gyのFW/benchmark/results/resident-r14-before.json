@@ -1,0 +1,282 @@
+{
+  "meta": {
+    "label": "r14-before",
+    "git": "3561ed7",
+    "date": "2026-10-21T08:34:50.466Z",
+    "node": "v22.22.1",
+    "level": "forest_01",
+    "note": "heapGC=强制 HeapProfiler.collectGarbage 后的常驻；texMB 为逐源 w·h·4 估算（含透明边距，非可见面积）；audioMB 为解码后 PCM 字节；peakJobMB/peakHeapMB 为分帧烘焙在飞期间的 40ms 轮询峰值；game 与 temple-after-game 属第二文档线（enterAs 整页 goto 会重置模块级缓存）"
+  },
+  "results": [
+    {
+      "mode": "menu",
+      "ok": true,
+      "texMB": 82.39,
+      "canvasTexMB": 0,
+      "texTop": [
+        [
+          "chars",
+          16
+        ],
+        [
+          "mech",
+          16
+        ],
+        [
+          "popup",
+          16
+        ],
+        [
+          "font",
+          8.56
+        ],
+        [
+          "ground",
+          8
+        ],
+        [
+          "temple",
+          8
+        ]
+      ],
+      "audioMB": 0,
+      "audioTop": [],
+      "audioCount": 0,
+      "ground": {
+        "size": 0,
+        "bytesMB": 0
+      },
+      "tree": {
+        "jobs": 0,
+        "results": 0,
+        "jobMB": 0,
+        "resultMB": 0
+      },
+      "dom": 62,
+      "sceneObjs": {
+        "Menu": 25
+      },
+      "heapRawMB": 11.7,
+      "heapGCMB": 11.7,
+      "heapRawBeforeGC": 14.3
+    },
+    {
+      "mode": "temple",
+      "ok": true,
+      "texMB": 97.32,
+      "canvasTexMB": 14.93,
+      "texTop": [
+        [
+          "chars",
+          16
+        ],
+        [
+          "mech",
+          16
+        ],
+        [
+          "popup",
+          16
+        ],
+        [
+          "font",
+          8.56
+        ],
+        [
+          "ground",
+          8
+        ],
+        [
+          "temple",
+          8
+        ]
+      ],
+      "audioMB": 0,
+      "audioTop": [],
+      "audioCount": 0,
+      "ground": {
+        "size": 0,
+        "bytesMB": 0
+      },
+      "tree": {
+        "jobs": 0,
+        "results": 1,
+        "jobMB": 0,
+        "resultMB": 10.24
+      },
+      "dom": 62,
+      "sceneObjs": {
+        "Temple": 56
+      },
+      "heapRawMB": 27.5,
+      "peakJobMB": 30.76,
+      "peakHeapMB": 100.8,
+      "peakSamples": 5,
+      "peakMs": 763,
+      "heapGCMB": 27,
+      "heapRawBeforeGC": 106.4
+    },
+    {
+      "mode": "temple-again",
+      "ok": true,
+      "texMB": 97.32,
+      "canvasTexMB": 14.93,
+      "texTop": [
+        [
+          "chars",
+          16
+        ],
+        [
+          "mech",
+          16
+        ],
+        [
+          "popup",
+          16
+        ],
+        [
+          "font",
+          8.56
+        ],
+        [
+          "ground",
+          8
+        ],
+        [
+          "temple",
+          8
+        ]
+      ],
+      "audioMB": 0,
+      "audioTop": [],
+      "audioCount": 0,
+      "ground": {
+        "size": 0,
+        "bytesMB": 0
+      },
+      "tree": {
+        "jobs": 0,
+        "results": 1,
+        "jobMB": 0,
+        "resultMB": 10.24
+      },
+      "dom": 62,
+      "sceneObjs": {
+        "Temple": 56
+      },
+      "heapRawMB": 27.1,
+      "heapGCMB": 27,
+      "heapRawBeforeGC": 172.5
+    },
+    {
+      "mode": "game",
+      "ok": true,
+      "texMB": 91.78,
+      "canvasTexMB": 9.38,
+      "texTop": [
+        [
+          "chars",
+          16
+        ],
+        [
+          "mech",
+          16
+        ],
+        [
+          "popup",
+          16
+        ],
+        [
+          "font",
+          8.56
+        ],
+        [
+          "ground",
+          8
+        ],
+        [
+          "temple",
+          8
+        ]
+      ],
+      "audioMB": 0,
+      "audioTop": [],
+      "audioCount": 0,
+      "ground": {
+        "size": 1,
+        "bytesMB": 4.96
+      },
+      "tree": {
+        "jobs": 0,
+        "results": 0,
+        "jobMB": 0,
+        "resultMB": 0
+      },
+      "dom": 65,
+      "sceneObjs": {
+        "Game": 105
+      },
+      "heapRawMB": 22.9,
+      "lineage": 2,
+      "heapGCMB": 22.8,
+      "heapRawBeforeGC": 24.1
+    },
+    {
+      "mode": "temple-after-game",
+      "ok": true,
+      "texMB": 102.29,
+      "canvasTexMB": 19.9,
+      "texTop": [
+        [
+          "chars",
+          16
+        ],
+        [
+          "mech",
+          16
+        ],
+        [
+          "popup",
+          16
+        ],
+        [
+          "font",
+          8.56
+        ],
+        [
+          "ground",
+          8
+        ],
+        [
+          "temple",
+          8
+        ]
+      ],
+      "audioMB": 0,
+      "audioTop": [],
+      "audioCount": 0,
+      "ground": {
+        "size": 1,
+        "bytesMB": 4.96
+      },
+      "tree": {
+        "jobs": 0,
+        "results": 1,
+        "jobMB": 0,
+        "resultMB": 10.24
+      },
+      "dom": 64,
+      "sceneObjs": {
+        "Temple": 56
+      },
+      "heapRawMB": 33.5,
+      "peakJobMB": 30.76,
+      "peakHeapMB": 58.8,
+      "peakSamples": 28,
+      "peakMs": 3433,
+      "lineage": 2,
+      "heapGCMB": 33.4,
+      "heapRawBeforeGC": 85.1
+    }
+  ]
+}

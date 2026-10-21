@@ -16,6 +16,7 @@ import { BootScene, bgWarmSettled } from "./scenes/BootScene";
 import { MenuScene } from "./scenes/MenuScene";
 import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
+import { treeBakeStats } from "./scenes/templeTreeBake";
 import { PauseMenu, EndMenu, GameOverMenu } from "./scenes/overlays";
 import { SettingsScene, CreditsScene, CompleteScene } from "./scenes/menus";
 import { FadeScene, fadeSwitch } from "./scenes/transition";
@@ -658,6 +659,9 @@ function bootPhaser(): void {
   phaser.sound.volume = 0.1;
   phaser.sound.mute = !getSettings().fx;
   (globalThis as unknown as Record<string, unknown>).__fw = phaser; // 调试句柄（验收自动化用）
+  // 驻留内存自报（benchmark/perf-resident 只读口径，不参与任何游戏逻辑）
+  (globalThis as unknown as Record<string, unknown>).__fwGroundStats = () => GameScene.groundCacheStats();
+  (globalThis as unknown as Record<string, unknown>).__fwTreeStats = () => treeBakeStats();
   // 选关 → 弹出联机面板（?level= 深链时面板直接可见，跳过画布选关）
   phaser.registry.set("onLevelPicked", (levelId: string) => {
     selectedLevel = levelId;

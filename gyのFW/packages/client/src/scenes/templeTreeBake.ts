@@ -455,3 +455,23 @@ export function bakeTreeLayersSync(p: TreeBakeParams): TreeBakeResult {
     if (r) return r;
   }
 }
+
+/** 只读自报（benchmark/perf-resident 用）：在飞任务持有的 typed array 字节 + 结果位图字节。
+ *  纯观测，不进产品路径；jobMB 是选关驻留期 JS 堆的主要来源。 */
+function viewBytes(rec: Record<string, ArrayBufferView | undefined>): number {
+  let n = 0;
+  for (const v of Object.values(rec)) if (v) n += v.byteLength;
+  return n;
+}
+
+export function treeBakeStats(): { jobs: number; results: number; jobMB: number; resultMB: number } {
+  let job = 0;
+  for (const j of jobs.values()) {
+    job += viewBytes(j.raw) + viewBytes(j.alphas) + viewBytes(j.sats) + viewBytes(j.outs) + viewBytes(j.outAlphas) + viewBytes(j.outSats);
+  }
+  let res = 0;
+  for (const r of results.values()) {
+    for (const cv of Object.values(r.canvases)) res += cv.width * cv.height * 4;
+  }
+  return { jobs: jobs.size, results: results.size, jobMB: +(job / 1048576).toFixed(2), resultMB: +(res / 1048576).toFixed(2) };
+}

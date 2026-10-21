@@ -553,6 +553,11 @@ export class GameScene extends Phaser.Scene {
     GameScene.grounds.put(levelId, GameScene.bakeGroundCanvas(level, textures));
   }
 
+  /** 只读自报（benchmark/perf-resident 用）：地面 LRU 当前张数与字节，不进产品路径 */
+  static groundCacheStats(): { size: number; bytesMB: number } {
+    return { size: GameScene.grounds.size, bytesMB: +(GameScene.grounds.totalBytes / 1048576).toFixed(2) };
+  }
+
   /** 地面：岩壁纹理 × 蒙版合成 + 黑外描边 + 右下软投影（canvas 一次性合成） */
   private buildGround(level: LevelData): void {
     const cached = GameScene.grounds.get(level.id) as HTMLCanvasElement | null;
