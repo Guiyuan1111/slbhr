@@ -202,6 +202,7 @@ node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>              
   `.fnt` 一字未动故 260 条度量全在原位。生成器硬断言：padding 四边相等、字形帧两两不重叠、非授权区 RGBA 全零、
   辅助块集合与源一致、重解码样本全等；`--check` 只重建到 TEMP 与在库产物比字节（复现性门禁，当前 304.5KB / −1295.8KB）。
 - `load-ab-era.sh`：**同场 A/B/A 跨代复测台**（r18 立，口径纪律的载体）。把两个源码代次在同一机同一时间窗交替构建并测 perf-load，三次（A/B/A）用臂1↔臂3 的带宽框住漂移，只有臂间差超出该带才允许主张 ms 差异——r18 就是用它抓到同一份产物两次跑差 **446ms**，从而撤回两条 ms 主张。脚本会临时 `git checkout <rev> -- $FILES` 改写工作树并在收尾恢复，故**开工前强制要求这些文件无未提交改动**（共享工作树保护，违反即退出）。
+- `ab-assets.sh`：**同场 A/B/A 只换资产复测台**（r19 立，`load-ab-era.sh` 的资产轴孪生）。那台交替**源码代次**（重建两次，两条臂的 JS bundle 各自换代号），这台只换 `packages/client/dist` 里的一对资产，**三次运行的 JS bundle 逐字节相同**——两条臂之间唯一的自变量就是那份资产本身，用来判"位图幅面/编码变了到底省不省驻留"这类资产轴问题。两道硬门由脚本自判：① 三条臂的 dist 入口 chunk 指纹必须逐字符相同（换臂把 JS 带跑即中止），② `trap` 收尾装回现役资产并复算指纹，绝不把换臂状态留在 dist 里；校验先于装 trap，缺件时报错不会谎称 "restored"。env：`ASSETS`（dist 相对路径）、`ARM_A_DIR`（臂 A 那份，按 basename 取）、`TOOL`（默认 `perf-resident`，可用 `perf-load`）、`LABEL_A/B/C`。转正验收即在 r19 字体轴上复跑：三臂 18 个 `texMB` 读数与 `results/resident-r19-ab-*.json` **逐位相同**（83.84/98.77/93.23 对 90.95/105.88/100.33），`heapGCMB` 仅上一代臂出现 0.1MB 舍入抖动——即同臂漂移带，自证"强制 GC 后的堆不随纹理幅面动"。快照留 `results/resident-smoke-ab-{a,b,c}.json`。
 - `scripts/png-raw.mjs`：零依赖 PNG 原始样本层（inflate IDAT + 反滤波 0–4 → RGBA；重编码保留非 IDAT/IEND 辅助块）。
   r17 先用于 DOM 皮肤裁片对拍，r18 起字体子集自证也走它——**"`magick compare` AE=0" 不能充当"字节没变"的证明**：
   两侧同过一套色彩管理，±1 级量化差会被抹平，"看着无损"不等于"存着无损"。
