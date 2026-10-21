@@ -177,6 +177,35 @@ function show(err?: string): void {
   el.textContent = err ?? "";
 }
 
+/** 下一关 id（temple.json 序）：结算「继续」与 won 期预取共用同一口径——两处若算法
+ *  分叉，预烘的就是另一关，等于白烘。无后继返回 undefined（原版最后一关无 Continue）。 */
+function nextTempleLevelId(fromEntry: { filename: string } | null): string | undefined {
+  const idx = templeLevels.findIndex((lv) => lv.filename === fromEntry?.filename);
+  const next = idx >= 0 ? templeLevels[idx + 1] : undefined;
+  return next?.filename?.split("/").pop()?.replace(".json", "");
+}
+
+/** 结算期预取（r13）：won 之后到玩家点「继续」之间是纯空闲，把换关链里最重的两笔——
+ *  关卡 JSON 拉取（基线 5–98ms）+ 整关地面烘焙（基线均值 66ms，落在帧间，表现为换关
+ *  瞬间一次 146–182ms 掉帧）——挪进这段空闲。延后 500ms 起跳，避开 EndMenu 开板与星碑
+ *  动效；预取失败或被离房取消一律静默（换关链自身仍会现拉现烘，正确性不依赖预取）。 */
+let groundPrefetchTimer: number | undefined;
+function prefetchNextLevel(): void {
+  if (!phaser || !net) return;
+  const nextId = nextTempleLevelId(currentTempleEntry);
+  if (!nextId) return;
+  window.clearTimeout(groundPrefetchTimer);
+  groundPrefetchTimer = window.setTimeout(() => {
+    void fetchLevelCached(nextId)
+      .then((lv) => {
+        if (phaser) GameScene.prepareGround(nextId, lv, phaser.textures);
+      })
+      .catch(() => {
+        // 预取失败无副作用：fetchLevelCached 已自行逐出该键，换关链现拉现烘
+      });
+  }, 500);
+}
+
 /**
  * 断线横幅（issue #5 H-04）：独立于 #hud-status 的常驻元素——updateHud 每 250ms 会用
  * 相位文本无条件覆写 #hud-status（started 相位是空串），断线提示曾在 ≤250ms 内被冲掉。
@@ -345,6 +374,8 @@ async function enterGame(): Promise<void> {
       keyboard = null;
       endMenuShown = false;
       setNetLost(null);
+      // r13：离房取消未起跳的结算期预取（回选关树后这张关的下一关预烘无意义）
+      window.clearTimeout(groundPrefetchTimer);
       const sm = phaser!.scene;
       sm.stop("Game");
       sm.stop("EndMenu");
@@ -365,9 +396,7 @@ async function enterGame(): Promise<void> {
   // = 活房间内 advance 换关（席位保留、双端同跳，2026-10-12 实玩反馈：不再回大厅
   // 重建房间）；无后继或已离房 → 回选关树（原版最后一关无 Continue 后继）。
   (globalThis as unknown as Record<string, unknown>).__fwNextLevel = () => {
-    const idx = templeLevels.findIndex((lv) => lv.filename === currentTempleEntry?.filename);
-    const next = idx >= 0 ? templeLevels[idx + 1] : undefined;
-    const nextId = next?.filename?.split("/").pop()?.replace(".json", "");
+    const nextId = nextTempleLevelId(currentTempleEntry);
     if (net && gameStarted && nextId) {
       net.advance(nextId);
       return;
@@ -471,6 +500,8 @@ function netHandlers(): NetCallbacks {
         keyboard?.setPaused(true);
         // 正常通路：进入 won 即结算（刷新回座的早到 won 由 enterGame 尾部补开，见 resumeWonIfNeeded）
         openEndMenu();
+        // r13：结算空闲期预取+预烘下一关地面（换关瞬间的 66ms 烘焙与 JSON 拉取挪出关键路径）
+        prefetchNextLevel();
       } else if (phase === "ready") {
         // 重开（自动/对方 R）时关闭残留结算/失败面板，否则盖住新一轮；结算幂等门复位
         endMenuShown = false;

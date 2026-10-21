@@ -29,6 +29,7 @@ import { loadTempleLevels } from "../templeData";
 import { validateSnapshot } from "../snapshotValidation";
 import { MechanismSmoother } from "./mechSmoothing";
 import { PlatformSoundTracker } from "./platformSound";
+import { GroundCache } from "./groundCache";
 
 export interface GameInit {
   net: Net;
@@ -541,21 +542,38 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  /** 地面合成缓存（性能审计 #5：重开重进整段重付 ≈20.8MB 像素缓冲；键=levelId，单槽够用） */
-  private static groundCache: { levelId: string; canvas: HTMLCanvasElement } | null = null;
+  /** 地面合成缓存（r13 抽到 scenes/groundCache.ts 以便单测）：字节账、LRU 逐出序与
+   *  「正绑定的那张不逐出」这条不变量都在那边，这里只做「取/烘/绑」三步。 */
+  private static grounds = new GroundCache();
+
+  /** 结算（won）期离线预烘（main.ts 预取调用）：只填缓存、不碰纹理绑定，
+   *  因此下一关的地面不会画进当前关卡。幂等：已缓存直接返回。 */
+  static prepareGround(levelId: string, level: LevelData, textures: Phaser.Textures.TextureManager): void {
+    if (GameScene.grounds.has(levelId)) return;
+    GameScene.grounds.put(levelId, GameScene.bakeGroundCanvas(level, textures));
+  }
 
   /** 地面：岩壁纹理 × 蒙版合成 + 黑外描边 + 右下软投影（canvas 一次性合成） */
   private buildGround(level: LevelData): void {
-    if (GameScene.groundCache && GameScene.groundCache.levelId === this.d.level.id) {
+    const cached = GameScene.grounds.get(level.id) as HTMLCanvasElement | null;
+    const canvas = cached ?? GameScene.bakeGroundCanvas(level, this.textures);
+    if (!cached) GameScene.grounds.put(level.id, canvas);
+    // 纹理绑定：同 canvas 已绑则整段跳过（重开同关/换关回看省一次 ≈5MB 全幅重传）
+    if (GameScene.grounds.bound !== canvas || !this.textures.exists("groundTex")) {
       if (this.textures.exists("groundTex")) this.textures.remove("groundTex");
-      this.textures.addCanvas("groundTex", GameScene.groundCache.canvas);
-      this.add.image(0, 0, "groundTex").setOrigin(0).setDepth(2);
-      return;
+      this.textures.addCanvas("groundTex", canvas);
+      GameScene.grounds.bound = canvas;
     }
+    this.add.image(0, 0, "groundTex").setOrigin(0).setDepth(2);
+  }
+
+  /** 烘焙整关地面（r13 从 buildGround 抽出为纯静态：只读图集与关卡数据，
+   *  不触场景状态、不碰纹理 → 可在任何时刻（结算空闲）预烘。像素逻辑逐字未动。） */
+  private static bakeGroundCanvas(level: LevelData, textures: Phaser.Textures.TextureManager): HTMLCanvasElement {
     const W = level.widthPx + PAD * 2;
     const H = level.heightPx + PAD * 2;
     const { tile, cols, rows } = level;
-    const gtex = this.textures.get(ATLAS_GROUND);
+    const gtex = textures.get(ATLAS_GROUND);
     const gimg = gtex.getSourceImage() as HTMLImageElement;
     const stamp = (ctx: CanvasRenderingContext2D, name: string, cx: number, cy: number): void => {
       const f = gtex.get(name);
@@ -611,7 +629,7 @@ export class GameScene extends Phaser.Scene {
     rock.width = W;
     rock.height = H;
     const rc = rock.getContext("2d")!;
-    const ttex = this.textures.get(ATLAS_TEMPLE);
+    const ttex = textures.get(ATLAS_TEMPLE);
     const tf = ttex.get("ForeGround0000");
     const timg = ttex.getSourceImage() as HTMLImageElement;
     for (let y = 0; y < H; y += 256) {
@@ -653,11 +671,7 @@ export class GameScene extends Phaser.Scene {
       fc.drawImage(black, ox, oy);
     }
     fc.drawImage(rock, 0, 0);
-
-    if (this.textures.exists("groundTex")) this.textures.remove("groundTex");
-    this.textures.addCanvas("groundTex", final);
-    GameScene.groundCache = { levelId: this.d.level.id, canvas: final };
-    this.add.image(0, 0, "groundTex").setOrigin(0).setDepth(2);
+    return final;
   }
 
   /** 钻石（underGround：地面之下，会被地形边缘稍遮；原尺寸 + ±5px 正弦浮动） */
