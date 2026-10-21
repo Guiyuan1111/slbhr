@@ -48,7 +48,7 @@
 | 单测 | **16 文件 / 172 用例全通过**（新增 M12 三模块 14 例 + 既有 158） |
 | 确定性 | **48/48 关位级一致**（2.6s） |
 | 浏览器 e2e | pause **11/11**、leave **3/3**、refresh **3/3**、wonrefresh **6/6**、journey rejoin **3/3**；f12 route repeat3 **ALL PASS**（winAt 12989/13477/12967ms，墙钟抖动） |
-| GitHub CI | 0.3.42 发版提交后实跑，见 Release 记录 |
+| GitHub CI | Actions run [39543650721](https://github.com/Guiyuan1111/slbhr/actions/runs/39543650721)（push `af6d873`） | **两 job 全绿**（typecheck/test/build + determinism） |
 
 ## §3 遗留与说明
 
