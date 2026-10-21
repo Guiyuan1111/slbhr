@@ -19,8 +19,15 @@
  *   wide-error  #menu-error:not(:empty)::before 的 CrossIcon0000
  *   narrow-idle 窄屏回流皮（.panel width:min(560px,94vw) 的百分比缩放分支）
  *
- * 判据：基线 PNG 字节 SHA-256 相等为 PASS；不等时若有 ImageMagick 再跑 `compare -metric AE`
- * 把"像素差"与"编码差"分开报——像素差必须为 0 才算皮肤未变。
+ * 判据：基线 PNG 字节 SHA-256 相等为 PASS，不等即 FAIL 并打印像素 AE 与差图路径。
+ * 不设容差——DOM 皮肤的任何像素变化都该被人看过再入账。要**有意**改皮时的流程：
+ *   1) 先跑一次对拍，拿 FAIL 行里的 AE，再用 `magick compare -metric AE/MAE/RMSE -fuzz 1%`
+ *      把差图与基线（旧基线在 git 里，按 manifest 记录的 commit 取）量成一张表；
+ *   2) 表写进 note/report/perf/ 当轮报告，说清差异来自哪（内容变了=缺陷；
+ *      源图尺寸变了导致 Chrome 重采样相位变了=画质折衷，须给原始样本全等证明）；
+ *   3) `--save` 刷基线，把新 commit 记进 manifest 的 provenance。
+ * 灵敏度实测：r17 的 L5 头像错位缺陷在这套判据下是 AE=1248、最大级差 255， localized 在两颗头像；
+ * 图集皮→合成贴图皮（同内容、不同源尺寸）是 AE=21538 但 MAE 归一 4.9e-5、fuzz1% 只剩 234 像素。
  *
  * 用法：
  *   node scripts/e2e/domskin.mjs --save          # 生成/刷新基线（写入 benchmark/results/domskin/）
@@ -40,6 +47,8 @@ const OUT = join(ROOT, "benchmark", "results", "domskin");
 /** 差图只落在 TEMP（不入库），失败时打印路径供人工比对 */
 const SCRATCH = join(ROOT, "TEMP", "domskin");
 const SAVE = process.argv.includes("--save");
+/** 写进 manifest：这代基线对应哪张皮、上一代在哪儿能取回 */
+const PROVENANCE = "现役基线 = 合成贴图皮（assets/dom/dom-skin.png，r17 件A）；上一代图集皮基线在 commit 043b2a5，两代像素差量化见 note/report/perf/2026-10-21-r17-dom-skin-atlas-decoupling.md";
 const PORT = Number(process.env.FW_DOMSKIN_PORT ?? 3611);
 const LEVEL = process.env.FW_DOMSKIN_LEVEL ?? "forest_01";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -160,7 +169,7 @@ if (errs.length) {
   process.exit(1);
 }
 if (SAVE) {
-  writeFileSync(join(OUT, "manifest.json"), JSON.stringify({ note: "DOM 皮肤逐像素基线（r17）；截屏前隐藏 #game-root 画布，四态见脚本头注释", states: results.map((r) => ({ id: r.id, sha256: r.sha, bytes: r.bytes })) }, null, 2));
+  writeFileSync(join(OUT, "manifest.json"), JSON.stringify({ note: "DOM 皮肤逐像素基线（r17）；截屏前隐藏 #game-root 画布，四态见脚本头注释", provenance: PROVENANCE, states: results.map((r) => ({ id: r.id, sha256: r.sha, bytes: r.bytes })) }, null, 2));
   log(`domskin: 基线 ${results.length} 态已生成 → results/domskin/`);
   process.exit(0);
 }
