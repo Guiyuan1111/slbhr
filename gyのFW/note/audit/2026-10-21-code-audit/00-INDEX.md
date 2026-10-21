@@ -5,6 +5,8 @@
 > **收口状态（2026-10-21，0.3.41）**：H1–H4、M1–M11、M13、L1–L3 已修；M12 架构重构挂账；L4 为有意边界。最终门禁：13 文件/158 用例、build、48/48 determinism、pause/leave/refresh 三组浏览器 e2e 全通过；GitHub Actions 实跑两 job 全绿（run [39538401687](https://github.com/Guiyuan1111/slbhr/actions/runs/39538401687)）。
 >
 > **0.3.42 追加（2026-10-21）**：M12 转「部分已修」——机关平滑/快照字段校验/平台声三个低耦合子系统已抽为纯模块并接入（相机子系统与共享 DTO 仍挂账）；另含 A 槽 L-02 重连结算补开、L-01 爬梯幽灵清理、P-01 隐藏行静音。追加门禁：16 文件/172 用例、48/48 determinism、pause/leave/refresh/wonrefresh 全通过。详见 [04-fix-log.md](04-fix-log.md) §2.1。
+>
+> **战役期追加（2026-10-21，r17）**：新建 DOM 皮肤逐像素门禁 `scripts/e2e/domskin.mjs`，随即测出原清单之外的 **L5**——连接面板两枚头像的 `background-position` 被 `.btn .av` 的 `background` 简写按特异性赢掉，火头从未生效。已修（独立 commit），证据与验证见 [04-fix-log.md](04-fix-log.md) §2.2。
 
 ## §1 范围与方法
 

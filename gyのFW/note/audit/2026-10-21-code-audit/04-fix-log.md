@@ -50,6 +50,20 @@
 | 浏览器 e2e | pause **11/11**、leave **3/3**、refresh **3/3**、wonrefresh **6/6**、journey rejoin **3/3**；f12 route repeat3 **ALL PASS**（winAt 12989/13477/12967ms，墙钟抖动） |
 | GitHub CI | Actions run [39543650721](https://github.com/Guiyuan1111/slbhr/actions/runs/39543650721)（push `af6d873`） | **两 job 全绿**（typecheck/test/build + determinism） |
 
+## §2.2 战役期新发现 L5：连接面板头像位规则被 CSS 简写复位（2026-10-21，r17 量具暴露）
+
+原审计清单之外的新项，由性能战役 r17 的 DOM 皮肤逐像素门禁（`scripts/e2e/domskin.mjs`）测出——
+此前 DOM 无任何像素回归面，故该缺陷存活了整个 0.3.x。
+
+| 面 | 事实 |
+|---|---|
+| 缺陷 | `packages/client/index.html` 的 `.btn .av` 用 `background: url(...) no-repeat` 简写，简写隐含把 `background-position` 复位为 `0% 0%`；该条特异性 (0,2,0) 高于下面的 `.av-fire`/`.av-water` (0,1,0)，复位因此赢过这两条定位声明 |
+| 后果 | 两枚按钮的头像都落在图集左上角窗口，实测渲染的是 `water_head_falling0000` 的 130×162 裁片——**创建（火）按钮显示的是水系头像裁片，注释所写的火/水设计意图从未生效** |
+| 证据 | 页内计算值 `background-position: 0% 0%`（两枚皆然）；`CharAssets.json` 查得窗口 (0,0,130,162) 命中 `water_head_falling0000` 一帧；domskin 修复前后 AE=1248/1.23M 像素（0.10%），连通域全部落在两枚 33×41 头像盒内 |
+| 修 | `.btn .av` 的简写改长写（`background-image` + `background-repeat`），保留原 `background-size`；两条头像定位规则与图集坐标一律不动 |
+| 验证 | 修复后 `domskin` 四态基线刷新并二次复跑逐字节一致；头像盒像素均值 0.375/0.377/0.387（中性，即错裁片）→ 0.460/0.315/0.288（红主导 = 火头），加入钮 0.316/0.390/0.450（蓝主导 = 水头）；石板/按钮/角片/十字逐像素未变 |
+| 纪律 | 与本仓"发现即修"一致，作为**独立 commit** 与 r17 字节优化分开落，可单独回滚；基线刷新记录在该 commit 内 |
+
 ## §3 遗留与说明
 
 - **M12（架构级）**：渐进拆分已完成机关平滑/快照字段校验/平台声三个低耦合子系统；`GameScene` 相机子系统、共享 DTO/生成类型仍挂账，风险与方案保留在 02-medium.md。

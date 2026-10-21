@@ -344,7 +344,12 @@
         width: 33px;
         height: 41px;
         pointer-events: none;
-        background: url(/assets/atlasses/CharAssets.png) no-repeat;
+        /* 长写而非 `background` 简写：简写会把 background-position 复位成 0% 0%，
+           而本条特异性 (0,2,0) 高于下面的 `.av-fire/.av-water` (0,1,0)，复位因此赢过它们、
+           让两枚头像自始显示图集左上角 water_head_falling0000 的裁片（火头从未生效）。
+           由 domskin 逐像素门禁实测暴露（计算值 background-position: 0% 0%）。 */
+        background-image: url(/assets/atlasses/CharAssets.png);
+        background-repeat: no-repeat;
         background-size: calc(2048 / 130 * 33px) auto;
       }
       .av-fire { background-position: 0 calc(-862 / 130 * 33px); }
