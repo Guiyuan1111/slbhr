@@ -204,6 +204,11 @@ git 列以快照 JSON `meta.git`（存档时脚本记录）为准；visual 系�
 | alloc-r13-{f01,fb2}-{webgl,canvas} | f7dfe6e | — | — | r13 帧内分配函数级归因（CDP 采样，self 份额口径）：我方 app chunk **2.1–2.9%**，其余 colyseus 消息回调 41.6–76.1% / Phaser 渲染器 19.2–97.1% → 判库内地板 |
 | advance-r13-before / -before-fast | f7dfe6e | — | — | r13 换关链基线两档：dwell1200 烘 71.4ms、网 35.7ms、可玩帧 1239.6ms、峰隔 222.7ms；dwell120（秒点）88.5/80.7/1272.7/190.5 |
 | advance-r13-prefetch / -prefetch2 | f7dfe6e | — | — | r13 预取+预烘+LRU+免重传后（-prefetch2 为抽模块后复测，数字同带）：烘 **16.9ms（-76.3%）**、网 **0ms（8/8 零网络）**、可玩帧 **1045ms（-15.7%）**、峰隔 198ms |
+| advance-r13-{before,prefetch,prefetch2}-fast | f7dfe6e | — | — | r13 秒点档（`--dwell 120`，点击早于 500ms 预取起跳）：烘 88.5→**30.2ms（-65.9%）**、网 80.7→56.6、可玩帧 1272.7→1266.6（-0.5%，被 1000ms 黑幕包络淹没）、峰隔 190.5→186.5；代价＝过场窗空闲掉帧 151→177 次/峰 530.7→667.8ms |
+
+> 注：r13 各快照的 `meta.git` 均记为 `f7dfe6e`——测量时改动仍在工作树未提交，工具按 HEAD 打戳；
+> 实施件随后落为 `09c6c13`+`9cd0c3a`，还原实现态复跑 `route forest_03` 与 `scripts/e2e/groundcache.mjs`
+> 均 PASS，故快照与代码态可对应。
 | client-r12-baseline-* / -opt-* | 6221aeb | — | — | r12 帧内写入计数基线/实施后（相机 484→31、HUD 1452→93、分配 1149→1044KB/s） |
 | visual-r13 / visual-r13b | f7dfe6e | — | — | r13 视觉差分（新口径带 90.0–92.9 内，run-to-run 抖动 ±2pt，须与 r12 同带并读） |
 
