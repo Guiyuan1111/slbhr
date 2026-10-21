@@ -37,6 +37,8 @@ import { log, startServer } from "./lib.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const OUT = join(ROOT, "benchmark", "results", "domskin");
+/** 差图只落在 TEMP（不入库），失败时打印路径供人工比对 */
+const SCRATCH = join(ROOT, "TEMP", "domskin");
 const SAVE = process.argv.includes("--save");
 const PORT = Number(process.env.FW_DOMSKIN_PORT ?? 3611);
 const LEVEL = process.env.FW_DOMSKIN_LEVEL ?? "forest_01";
@@ -138,11 +140,12 @@ try {
         log(`${st.id.padEnd(12)} PASS 像素与基线逐字节一致（${png.length}B）`);
       } else {
         let ae;
-        const tmp = join(OUT, `.tmp-${st.id}.png`);
+        mkdirSync(SCRATCH, { recursive: true });
+        const tmp = join(SCRATCH, `${st.id}.png`);
         writeFileSync(tmp, png);
         ae = pixelAE(file, tmp);
         results[results.length - 1].fail = true;
-        log(`${st.id.padEnd(12)} FAIL 基线 ${bsha.slice(0, 16)} → 现役 ${sha.slice(0, 16)}，像素 AE=${ae}`);
+        log(`${st.id.padEnd(12)} FAIL 基线 ${bsha.slice(0, 16)} → 现役 ${sha.slice(0, 16)}，像素 AE=${ae}（差图 ${tmp.replace(ROOT + "/", "")}）`);
       }
     }
     await ctx.close();
