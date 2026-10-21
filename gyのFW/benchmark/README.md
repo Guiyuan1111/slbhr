@@ -194,6 +194,30 @@ node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>              
   覆盖全部 5 处皮肤引用。判据 **SHA-256 逐字节相等，零容差**；FAIL 时打印 `magick compare -metric AE`
   并把差图落 `TEMP/domskin/`（不入库）。有意改皮的三步流程（量表→写报告→`--save`）写在脚本头，
   基线代次由 `results/domskin/manifest.json` 的 `provenance` 记录。
+- `scripts/font-subset/`：**进房前字体子集链**（r18 起，生产资产 `assets/fonts/chinese/font-prephase.png` 的来源）。
+  与 r7f 的老工具分工要说清：`subset.py` 是按**全项目普查并集**清字形的休眠件（r7f 实测 −5.2% 未破 20% 停止线，
+  未上生产），`build-font-prephase.mjs` 才是本轮上产的——它只按**进房前会渲染的文案**（声明源
+  `prephase-chars.json`）保留字形，口径层 `prephase.mjs` 同时被生成器与 `font-prephase.test.ts` 使用，
+  测试与产物不可能各算一套字形集。授权区 = 保留字形帧矩形 ∪ `padding="4,4,4,4"` 原样环带（LINEAR 滤波会采到帧外一格），
+  `.fnt` 一字未动故 260 条度量全在原位。生成器硬断言：padding 四边相等、字形帧两两不重叠、非授权区 RGBA 全零、
+  辅助块集合与源一致、重解码样本全等；`--check` 只重建到 TEMP 与在库产物比字节（复现性门禁，当前 304.5KB / −1295.8KB）。
+- `scripts/png-raw.mjs`：零依赖 PNG 原始样本层（inflate IDAT + 反滤波 0–4 → RGBA；重编码保留非 IDAT/IEND 辅助块）。
+  r17 先用于 DOM 皮肤裁片对拍，r18 起字体子集自证也走它——**"`magick compare` AE=0" 不能充当"字节没变"的证明**：
+  两侧同过一套色彩管理，±1 级量化差会被抹平，"看着无损"不等于"存着无损"。
+- `scripts/e2e/prephase-canvas.mjs`：**前场画布逐像素门禁**（r18 起）。"进房前"这一段
+  （Menu/Temple/Settings/Credits）此前没有任何画布面：visual-diff 只拍 Game 的 forest_01 战斗帧、
+  domskin 把画布摘掉、journey 只看 textContent——所以"把 `font.png` 换成子集"这种动整个前场
+  中文渲染的改法，原本可以在零报警的情况下把字框切秃。口径：`Math.random` 换 mulberry32
+  （`MenuScene.create` 一轮消费 52 个随机数，不锁就不是确定编舞）、Phaser 自驱动主循环封死
+  （`loop.sleep()` + 把 `raf.start`/`loop.wake`/`loop.step` 在 `__fw` setter 处拦掉），
+  改由 1000/60ms 合成步驱动 `Game.step`；视口 1280×960、`deviceScaleFactor` 1、DOM 覆盖层隐藏，
+  只截 `#game-root` canvas。五态靠真实点击走到（含 `assertBoard` 校验板心 y≈159、
+  temple-numbers 要求 48/48 编号已上墙），判据 **SHA-256 逐字节相等，零容差**，
+  FAIL 打印 `magick compare -metric AE` 与差图（`TEMP/`，不入库）；`--save` 前先做
+  `magick identify -format %k` 颜色数体检（防把空白图当基线存档）。
+  **代次由产物指纹判、不由 HEAD 判**（共享工作树里 dist 可能落后 HEAD）：读入口 chunk 哈希 +
+  字体目录内每个 PNG 的哈希，据 `font-prephase` 引用有无定"全量代/两段化代"，
+  三份证据（首捕代/上一批/本批）并列写进 `manifest.bundlesVerified`。
 - `scripts/build-dom-skin.mjs`：DOM 皮肤合成贴图生成器（r17 件A 的资产侧）。
   帧坐标取自 `assets/atlasses/*.json` 并**断言**（素材重打包即红）；裁片拼成 1082×988 + 2px 透明隔离带。
   **无损证明走原始样本**：自解 IDAT + 反滤波拿 RGBA 字节，与图集原帧逐字节全等（`compare` 两侧同过
