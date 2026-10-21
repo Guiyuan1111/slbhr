@@ -58,6 +58,9 @@ let templeLevels: Array<{ id: number; filename: string }> = [];
 let templeRaw: Array<{ id?: number; filename?: string; time?: number; type?: string }> = [];
 /** 已选关卡的星级/通过判定（EndMenu 与 saveBest 共用） */
 let lastResult: { stars: number; passed: boolean } | null = null;
+/** 本轮结算面板是否已开（L-02：重连/回座补结算与 onPhase("won") 共用入口，防重复开板；
+ *  phase=ready 新一轮或离房时复位） */
+let endMenuShown = false;
 
 /**
  * 拉关卡原始 JSON（/api/level/:id → {id, json}）并预取外部图块集。
@@ -224,6 +227,69 @@ function updateHud(): void {
   touch?.setActive(phase === "ready" || phase === "started");
 }
 
+/**
+ * 结算面板入口（正常 onPhase("won") 与重连/回座补结算共用，L-02）。
+ * 前置：关卡数据与场景/字体资源已就绪（enterGame 完成后）——刷新回座时权威 won
+ * 可能早于 enterGame 抵达，提前 start 会因字体未装载在 create 抛错（EndMenu 起不来）。
+ * 幂等：EndMenu 已活动或本轮已开板则直接返回；关键副作用（星级/最佳）只在开板时算一次。
+ */
+function openEndMenu(): void {
+  if (!net || !currentLevel || !gameStarted || !phaser) return;
+  if (endMenuShown || phaser.scene.isActive("EndMenu")) return;
+  endMenuShown = true;
+  const f = net.lastFinish;
+  const diaTotal = currentLevel.diamonds.filter((d) => d.kind !== "silver").length;
+  const diaGot = (f?.fbDiamonds ?? 0) + (f?.wgDiamonds ?? 0);
+  const timeSec = Math.round((f?.timeMs ?? 0) / 1000);
+  const limit = currentTempleEntry?.time ?? 0;
+  const type = currentTempleEntry?.type ?? "general";
+  // 原版 ProgressModel.update 星级口径：puzzle=银钻>0?3:0（不收=未通过）；general=1+钻石+限时
+  let stars: number;
+  let passed: boolean;
+  if (type === "puzzle") {
+    passed = (f?.silver ?? 0) > 0;
+    stars = passed ? 3 : 0;
+  } else {
+    const diaFull = diaTotal > 0 && diaGot >= diaTotal;
+    const timeOk = limit > 0 && timeSec <= limit;
+    stars = 1 + (diaFull ? 1 : 0) + (timeOk ? 1 : 0);
+    passed = true;
+  }
+  lastResult = { stars, passed };
+  if (passed && currentTempleEntry) {
+    // 全通庆典置位（P-02 #34，0.3.40）：oracle EndMenu.create → progress.update
+    // （:1881953 success 分支），仅 best 刷新才 merge+process（:2152850 区）；
+    // process 置位段 :2149483-:2149538：b=全 48 关 3 星 && gameComplete 未置
+    // → firstComplete（瞬态），gameComplete=b 持久化。消费在 Menu/Temple 入口
+    // （takeFirstComplete），时点对齐 oracle「通关置位、回菜单才播」。
+    if (saveBest(currentTempleEntry.filename, stars, timeSec)) {
+      processWinResult(templeLevels.length > 0 && templeLevels.every((lv) => starsOf(lv.filename) === 3));
+    }
+  }
+  phaser.scene.start("EndMenu", {
+    diamonds: diaGot,
+    diamondsTotal: diaTotal,
+    silver: f?.silver ?? 0,
+    timeSec,
+    timeLimitSec: limit,
+    type,
+    stars,
+  });
+}
+
+/**
+ * L-02：重连/刷新回座成功后补结算。客户端的 onPhase 是状态差分——重连端 prevPhase
+ * 若已是 "won"（或刷新回座时 onPhase 在资源就绪前被前置门拦下）不会再开板；这里按
+ * 权威 state.phase 主动检查，lastFinish 已由服务端补发回填后才触发，等价于正常
+ * onPhase("won") 的结算 UI。
+ */
+function resumeWonIfNeeded(): void {
+  if (!net || !gameStarted || !currentLevel) return;
+  if (String(net.room?.state?.phase ?? "") !== "won") return;
+  if (!net.lastFinish) return;
+  openEndMenu();
+}
+
 async function enterGame(): Promise<void> {
   if (!net) throw new Error("未连接房间");
   // join 方以房间的真实关卡为准（修 E14 双端路径分裂的最后一环）；拿不到回退 URL/默认
@@ -277,6 +343,7 @@ async function enterGame(): Promise<void> {
       touch = null;
       keyboard?.destroy();
       keyboard = null;
+      endMenuShown = false;
       setNetLost(null);
       const sm = phaser!.scene;
       sm.stop("Game");
@@ -330,6 +397,9 @@ async function enterGame(): Promise<void> {
     sceneMgr.stop("Game");
     sceneMgr.start("Game");
   });
+  // L-02：刷新/回座进 won 房——早到的 onPhase("won") 因关卡/字体未就绪被前置门拦下，
+  // 此处 enterGame 已完成（currentLevel/currentTempleEntry/资源就绪），按权威相位补开结算。
+  resumeWonIfNeeded();
 }
 
 /** 联机栏房间码（start() 与刷新恢复共用）。房间码琥珀高亮（textContent 串不变——perf/e2e 按 /房间码 ([^（\s]+)/ 提取） */
@@ -399,46 +469,11 @@ function netHandlers(): NetCallbacks {
       updateHud();
       if (phase === "won") {
         keyboard?.setPaused(true);
-        const f = net?.lastFinish;
-        const diaTotal = currentLevel ? currentLevel.diamonds.filter((d) => d.kind !== "silver").length : 0;
-        const diaGot = (f?.fbDiamonds ?? 0) + (f?.wgDiamonds ?? 0);
-        const timeSec = Math.round((f?.timeMs ?? 0) / 1000);
-        const limit = currentTempleEntry?.time ?? 0;
-        const type = currentTempleEntry?.type ?? "general";
-        // 原版 ProgressModel.update 星级口径：puzzle=银钻>0?3:0（不收=未通过）；general=1+钻石+限时
-        let stars: number;
-        let passed: boolean;
-        if (type === "puzzle") {
-          passed = (f?.silver ?? 0) > 0;
-          stars = passed ? 3 : 0;
-        } else {
-          const diaFull = diaTotal > 0 && diaGot >= diaTotal;
-          const timeOk = limit > 0 && timeSec <= limit;
-          stars = 1 + (diaFull ? 1 : 0) + (timeOk ? 1 : 0);
-          passed = true;
-        }
-        lastResult = { stars, passed };
-        if (passed && currentTempleEntry) {
-          // 全通庆典置位（P-02 #34，0.3.40）：oracle EndMenu.create → progress.update
-          // （:1881953 success 分支），仅 best 刷新才 merge+process（:2152850 区）；
-          // process 置位段 :2149483-:2149538：b=全 48 关 3 星 && gameComplete 未置
-          // → firstComplete（瞬态），gameComplete=b 持久化。消费在 Menu/Temple 入口
-          // （takeFirstComplete），时点对齐 oracle「通关置位、回菜单才播」。
-          if (saveBest(currentTempleEntry.filename, stars, timeSec)) {
-            processWinResult(templeLevels.length > 0 && templeLevels.every((lv) => starsOf(lv.filename) === 3));
-          }
-        }
-        phaser?.scene.start("EndMenu", {
-          diamonds: diaGot,
-          diamondsTotal: diaTotal,
-          silver: f?.silver ?? 0,
-          timeSec,
-          timeLimitSec: limit,
-          type,
-          stars,
-        });
+        // 正常通路：进入 won 即结算（刷新回座的早到 won 由 enterGame 尾部补开，见 resumeWonIfNeeded）
+        openEndMenu();
       } else if (phase === "ready") {
-        // 重开（自动/对方 R）时关闭残留结算/失败面板，否则盖住新一轮
+        // 重开（自动/对方 R）时关闭残留结算/失败面板，否则盖住新一轮；结算幂等门复位
+        endMenuShown = false;
         phaser?.scene.stop("EndMenu");
         phaser?.scene.stop("GameOverMenu");
       } else if (phase === "gameover") {
@@ -456,6 +491,9 @@ function netHandlers(): NetCallbacks {
     onDisconnect: (recovered) => {
       if (recovered) {
         setNetLost(null);
+        // L-02：页内重连成功——若断线期间相位已恢复 won 而差分不再触发 onPhase，
+        // 按权威快照补开结算（lastFinish 在断线前/补发后均已就位；幂等）
+        resumeWonIfNeeded();
         return;
       }
       setNetLost("连接已断开，请刷新页面重新加入");
