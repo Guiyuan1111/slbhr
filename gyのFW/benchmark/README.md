@@ -133,6 +133,21 @@ node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>              
   （稳定态 setScaleW 应≈0 而非 3×帧数）。**勘误**：Phaser 3.90 的 setZoom/centerOn 不在
   `cameras.Base.prototype` 自有属性上，直接 `prototype.hasOwnProperty` 取原型的写法会静默计 0——
   必须沿活相机实例的原型链上溯到属主原型再包装（本轮首个量具 bug，基线已修后重跑）。
+- `perf-alloc`：帧内分配函数级归因（r13 起）——CDP `HeapProfiler.startSampling/stopSampling`
+  采样堆 + `source-map-js` 还原 TS 源（需先 `npx vite build --sourcemap`，纯产物无源可还原）。
+  **口径警告**：采样堆记的是"被抽中对象自身字节"，样本数 ∝ 1/`--interval`（缺省 256），
+  绝对 KB/s 与 perf-client 的 allocKBs **不同量纲，只可并列看份额，不可直列差值**；
+  样本 <200 时输出无统计意义警告。产物 `results/alloc-<label>.json`（chunks=app/phaser/colyseus 归口）。
+- `perf-advance`：换关链分段计时（r13 起）——`FW_DEBUG_FORCE_DOORS=1` 加速通关，直调
+  `window.__fwNextLevel`（=EndMenu「继续」按钮 handler 本体），双页真服实跑 N 次链。
+  分段：`bakeMs`(buildGround 包装)/`fetchMs`(/api/level/ 包装，命中缓存即 0)/
+  `sceneStopped`→`sceneStarted`→`firstRender`/`worstFrame`(帧内)/`worstGap`(**帧间隔**)。
+  两口径必须并记：关卡构建跑在 create 的 loader 回调里，属帧间任务，落在 prestep→postrender
+  窗外——只量帧内会得到 2-11ms 的"无害帧"，实际是 146-182ms 掉帧（本工具首跑抓到的口径盲区）。
+  `__hitches` 全程掉帧流水按"链窗内/空闲窗"归位：把开销挪到结算空闲窗的优化，
+  只看链内会读成"没变好"，须两处分开报。`--dwell` 控制结算面板停留（缺省 1200ms；
+  120ms 模拟"秒点继续"，此时预取未起跳、链内退化回现烘，两档都要跑才是公平对比）。
+  产物 `results/advance-<label>.json`。
 
 ## 快照索引
 
@@ -186,6 +201,11 @@ git 列以快照 JSON `meta.git`（存档时脚本记录）为准；visual 系�
 | serialize-r4-encode / sync-r4-encode | f0118d3 | — | — | r4 两件后（生产语义）：60Hz scripted patch 50/58/91B、encCPU 0.29/0.11/0.27ms/仿真秒、线路 2.93/3.39/5.36KB/s/客户端；idle 20Hz patch 4/12B；**旧 serialize/sync 快照为累积伪影口径不可比** |
 | load-r5-before | a68c0bc | — | — | r5 冷启基线：Menu 769ms/4863KB·22req、reload 759ms/3KB |
 | load-r5-coldstart | 458bff2 | — | — | r5 件1 装载序整形后：**Menu 523.5ms（-32%）/3674KB·14req**、reload 532ms、即点→Game 620~698ms（真人驻留路径不变，见 r5 报告 §三注） |
+| alloc-r13-{f01,fb2}-{webgl,canvas} | f7dfe6e | — | — | r13 帧内分配函数级归因（CDP 采样，self 份额口径）：我方 app chunk **2.1–2.9%**，其余 colyseus 消息回调 41.6–76.1% / Phaser 渲染器 19.2–97.1% → 判库内地板 |
+| advance-r13-before / -before-fast | f7dfe6e | — | — | r13 换关链基线两档：dwell1200 烘 71.4ms、网 35.7ms、可玩帧 1239.6ms、峰隔 222.7ms；dwell120（秒点）88.5/80.7/1272.7/190.5 |
+| advance-r13-prefetch / -prefetch2 | f7dfe6e | — | — | r13 预取+预烘+LRU+免重传后（-prefetch2 为抽模块后复测，数字同带）：烘 **16.9ms（-76.3%）**、网 **0ms（8/8 零网络）**、可玩帧 **1045ms（-15.7%）**、峰隔 198ms |
+| client-r12-baseline-* / -opt-* | 6221aeb | — | — | r12 帧内写入计数基线/实施后（相机 484→31、HUD 1452→93、分配 1149→1044KB/s） |
+| visual-r13 / visual-r13b | f7dfe6e | — | — | r13 视觉差分（新口径带 90.0–92.9 内，run-to-run 抖动 ±2pt，须与 r12 同带并读） |
 
 ## 注意
 
