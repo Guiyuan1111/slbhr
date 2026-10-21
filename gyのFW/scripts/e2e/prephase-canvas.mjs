@@ -65,6 +65,11 @@
  * font.png，说明读到的仍是全量代产物）。为此每次运行都登记入口 chunk 与字体 PNG 的 SHA-256 前缀，
  * 写进 manifest.bundle；对拍时若指纹变了，先打印"产物已更换"再报像素差异，
  * 免得把"换了一份 dist"误读成"环境噪声"。基线该由哪份产物复现，看 manifest 即可，不必猜。
+ * --save 还会把"哪几份产物复现过同一批字节"累积成 manifest.bundlesVerified（首捕产物/上一批产物/本次产物，
+ * 三者指纹去重），并逐态核对新旧 SHA——只在全等时才并列，作为无损证据。
+ * 实测（r18）：首捕那份是全量代产物；随后 dist 被重建为两段化代（入口 chunk 出现 font-prephase 引用、
+ * 字体目录多出 font-prephase.png），同一编舞重跑，五态 SHA 一字不变——拆字在前场画布上无损，
+ * 这条结论就是这个门禁存在的意义，也是它第一次派上用场。
  *
  * 用法：
  *   node scripts/e2e/prephase-canvas.mjs --save    # 生成/刷新基线（benchmark/results/prephase-canvas/）
@@ -85,8 +90,24 @@ const OUT = join(ROOT, "benchmark", "results", "prephase-canvas");
 const SCRATCH = join(ROOT, "TEMP", "r18-canvas");
 const SAVE = process.argv.includes("--save");
 const PORT = Number(process.env.FW_PREPHASE_PORT ?? 3631);
-/** 基线所属代：本批改然在拆字之前生成，是下一轮"两阶段装载"的前值 */
+/** 基线所属代=拆字之前的全量 font.png 一代；代不由 HEAD 判，由 dist 产物指纹判（见 bundleFp） */
 const BASELINE_COMMIT = "851f0a2";
+/** 字体两段化写进 client 代码的提交（产物指纹里查 font-prephase 引用就是冲它判代） */
+const POST_SPLIT_COMMIT = "90fe319";
+/**
+ * 首捕产物（实测登记，不是猜的）：本批五态字节第一次由 packages/client/dist 的这份产物产出——
+ * 入口 chunk 里没有 font-prephase 引用、字体目录只有 font.png，即"拆字前"的全量装载一代
+ * （其 client 代码与 851f0a2 逐字节同：git diff 851f0a2 90fe319~1 -- packages/client 为空）。
+ * 之后 dist 被重建为两段化产物，同一编舞重跑，五态 SHA 一字不变（见 manifest.bundlesVerified）。
+ * 换 dist 不改这几个串；若哪天 --save 的产物指纹与它不同，manifest 会把两份都列出来，
+ * 谁在哪个产物上复现过什么，一目了然。
+ */
+const FIRST_CAPTURE_BUNDLE = {
+  chunk: "index-CJqW9TNF.js",
+  chunkSha: "b8f19d5a06d02ca3",
+  fonts: { "font.png": "24800f35d619d57a" },
+  fontEra: `全量 font.png 一代（${BASELINE_COMMIT} 代 client 代码）`,
+};
 /** 合成时钟步长（ms）：与 fps.target=60 同值，保证与真实运行时的缺省节奏一致 */
 const STEP_MS = 1000 / 60;
 /** Math.random 替换为 mulberry32 的固定种子（改它=换相位=换基线） */
@@ -356,14 +377,33 @@ function bundleFp() {
     chunk: chunks[0],
     chunkSha: sha16(entry),
     fonts: pngs,
+    subsetReferenced,
     fontEra: subsetReferenced ? `两段化（子集先行，见 ${POST_SPLIT_COMMIT}）` : `全量 font.png 一代（${BASELINE_COMMIT} 代 client 代码）`,
   };
 }
 
+/** 产物指纹先取：dist 没构建就直接在这里退出，别先起服务器再炸（端口白占） */
+const bundle = bundleFp();
 const server = await startServer(PORT, {});
 const browser = await chromium.launch({ headless: true, args: ["--mute-audio", "--force-color-profile=srgb"] });
 const results = [];
 const errs = [];
+log(`产物指纹：${bundle.chunk}=${bundle.chunkSha} 字体=${JSON.stringify(bundle.fonts)} ⇒ 代=${bundle.fontEra}`);
+/** 上一批 manifest 先读进来：对拍要靠它区分"换了产物"，--save 要靠它核对新旧 SHA */
+let prior = null;
+if (existsSync(join(OUT, "manifest.json"))) {
+  try {
+    prior = JSON.parse(readFileSync(join(OUT, "manifest.json"), "utf8"));
+  } catch { /* manifest 坏了会在按态对拍时报缺失/差异，这里不抢话 */ }
+}
+if (SAVE && bundle.fontEra !== FIRST_CAPTURE_BUNDLE.fontEra) {
+  log(`ℹ 现役产物已是 ${bundle.fontEra}（首捕产物是 ${FIRST_CAPTURE_BUNDLE.fontEra}）：`);
+  log("  本批像素若与基线逐字节相同，说明两代产物在这五态上等价——这正是要验的事；若不同，--save 会把后值刷成基线，");
+  log("  必须在该轮报告写明换代理由，不得静默放容差。只验无损的话应该跑对拍（不带 --save）。");
+}
+if (!SAVE && prior?.bundle && prior.bundle.chunkSha !== bundle.chunkSha) {
+  log(`ℹ 产物已更换（基线 ${prior.bundle.chunk}=${prior.bundle.chunkSha} → 现役 ${bundle.chunk}=${bundle.chunkSha}）：像素差异来自这份新产物。`);
+}
 
 /** 每态一套页内会话工具（同一条编舞语言，免得状态表里塞满 evaluate 字符串） */
 async function openSession(st) {
@@ -517,10 +557,34 @@ if (SAVE) {
   try {
     head = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim();
   } catch { /* 保持占位：基线仍可用，只是少一条溯源 */ }
+  const fonts = Object.keys(bundle.fonts).join("/");
+  const eraWhy = bundle.subsetReferenced
+    ? `入口 chunk ${bundle.chunk}=${bundle.chunkSha} 内**查到** "font-prephase" 引用，dist 字体目录=${fonts} ⇒ 本批 PNG 是两段化之后的像素`
+    : `入口 chunk ${bundle.chunk}=${bundle.chunkSha} 内**查不到** "font-prephase" 引用，dist 字体目录=${fonts} ⇒ 本批 PNG 是拆字之前的像素（Boot 一次性装载 font.png 全量 2191×1024、font.fnt 声明 260 字）`;
+  /** 新旧 SHA 逐态核对：只有全等，才允许把两份产物并列进"已复现清单"当无损证据 */
+  const priorSha = new Map((prior?.states ?? []).map((s) => [s.id, s.sha256]));
+  const sameAsPrior = !!prior && results.length === priorSha.size && results.every((r) => priorSha.get(r.id) === r.sha);
+  const crossNote = !prior
+    ? "本批为首捕，无旧批可比"
+    : sameAsPrior
+      ? "与前批 SHA 逐态相同 ⇒ 这份产物在五态上复现了拆字前那批像素，正是本门禁要证的无损"
+      : "与前批 SHA 有差异：本批已换值，须在该轮报告写明原因，不得静默放容差";
+  const verifiedBy = [];
+  const pushBundle = (b, role) => {
+    if (b && !verifiedBy.some((v) => v.chunkSha === b.chunkSha)) verifiedBy.push({ ...b, role });
+  };
+  pushBundle(FIRST_CAPTURE_BUNDLE, `首捕：本批字节第一次产出的产物（${FIRST_CAPTURE_BUNDLE.fontEra}）`);
+  pushBundle(prior?.bundle, `上一批 manifest 登记的产物（与本批 SHA ${sameAsPrior ? "逐态相同" : "有差异"}）`);
+  pushBundle(bundle, `本次 --save 所用产物（${bundle.fontEra}，HEAD=${head}）`);
   const provenance =
-    `基线代=全量 font.png 一代（commit ${BASELINE_COMMIT}：Boot 一次性装载 assets/fonts/chinese/font.png ` +
-    `2191×1024、font.fnt 声明 260 字，尚无预裁子集），本批生成时 HEAD=${head}；` +
-    `下一轮"字体两阶段"改动（Menu/加载/选关取预裁子集 + 游戏内再取全量）必须逐字节复现本批 PNG——` +
+    `基线锚代=${FIRST_CAPTURE_BUNDLE.fontEra}：首捕产物 ${FIRST_CAPTURE_BUNDLE.chunk}=${FIRST_CAPTURE_BUNDLE.chunkSha} 查不到 "font-prephase" 引用、` +
+    `字体目录只有 ${Object.keys(FIRST_CAPTURE_BUNDLE.fonts).join("/")}，装载路径=Boot 一次性取 assets/fonts/chinese/font.png 全量 2191×1024` +
+    `（font.fnt 声明 260 字），即 commit ${BASELINE_COMMIT} 的口径。判代不靠 HEAD 而靠产物指纹：` +
+    `两段化的 client 代码落在 commit ${POST_SPLIT_COMMIT}（BootScene 只装子集、全量走延迟通道），` +
+    `要重新构建进 dist 才改变本门禁读到的像素，而 client 代码在 ${BASELINE_COMMIT}→${POST_SPLIT_COMMIT}~1 之间 diff 为空，` +
+    `故首捕那批 dist 的 client 面就是 ${BASELINE_COMMIT} 代。` +
+    `本次生成（HEAD=${head}）所用产物：${eraWhy}；跨产物复现=${crossNote}。` +
+    `用途：改动前场字体/装载序的一方必须让对拍逐字节复现本批 PNG——` +
     `任何差异都是子集缺字框或空白化过切，不是画质折衷。页内口径：Math.random=mulberry32(seed ${RNG_SEED})，` +
     `Phaser 主循环自驱动封死、改由 ${STEP_MS.toFixed(6)}ms 合成步时钟驱动 Game.step，` +
     `视口 1280×960 deviceScaleFactor 1，DOM 覆盖层隐藏，只截 #game-root canvas。`;
@@ -532,6 +596,8 @@ if (SAVE) {
           "前场画布逐像素基线（r18 门禁件）：只拍 #game-root canvas，DOM 覆盖层整层隐藏；" +
           "五态编舞与不覆盖态（Boot 进度条/FadeScene Loading/游戏内）见 scripts/e2e/prephase-canvas.mjs 头注",
         provenance,
+        bundle,
+        bundlesVerified: verifiedBy,
         states: results.map((r) => ({ id: r.id, sha256: r.sha, bytes: r.bytes, uniqueColors: r.colors, profile: r.profile, desc: r.desc })),
       },
       null,

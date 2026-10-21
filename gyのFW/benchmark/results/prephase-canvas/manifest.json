@@ -1,6 +1,38 @@
 {
   "note": "前场画布逐像素基线（r18 门禁件）：只拍 #game-root canvas，DOM 覆盖层整层隐藏；五态编舞与不覆盖态（Boot 进度条/FadeScene Loading/游戏内）见 scripts/e2e/prephase-canvas.mjs 头注",
-  "provenance": "基线代=全量 font.png 一代（commit 851f0a2：Boot 一次性装载 assets/fonts/chinese/font.png 2191×1024、font.fnt 声明 260 字，尚无预裁子集），本批生成时 HEAD=d25b275；下一轮\"字体两阶段\"改动（Menu/加载/选关取预裁子集 + 游戏内再取全量）必须逐字节复现本批 PNG——任何差异都是子集缺字框或空白化过切，不是画质折衷。页内口径：Math.random=mulberry32(seed 6221086)，Phaser 主循环自驱动封死、改由 16.666667ms 合成步时钟驱动 Game.step，视口 1280×960 deviceScaleFactor 1，DOM 覆盖层隐藏，只截 #game-root canvas。",
+  "provenance": "基线锚代=全量 font.png 一代（851f0a2 代 client 代码）：首捕产物 index-CJqW9TNF.js=b8f19d5a06d02ca3 查不到 \"font-prephase\" 引用、字体目录只有 font.png，装载路径=Boot 一次性取 assets/fonts/chinese/font.png 全量 2191×1024（font.fnt 声明 260 字），即 commit 851f0a2 的口径。判代不靠 HEAD 而靠产物指纹：两段化的 client 代码落在 commit 90fe319（BootScene 只装子集、全量走延迟通道），要重新构建进 dist 才改变本门禁读到的像素，而 client 代码在 851f0a2→90fe319~1 之间 diff 为空，故首捕那批 dist 的 client 面就是 851f0a2 代。本次生成（HEAD=832bccb）所用产物：入口 chunk index-rlLaY6Dc.js=665b79bcf5440636 内**查到** \"font-prephase\" 引用，dist 字体目录=font-prephase.png/font.png ⇒ 本批 PNG 是两段化之后的像素；跨产物复现=与前批 SHA 逐态相同 ⇒ 这份产物在五态上复现了拆字前那批像素，正是本门禁要证的无损。用途：改动前场字体/装载序的一方必须让对拍逐字节复现本批 PNG——任何差异都是子集缺字框或空白化过切，不是画质折衷。页内口径：Math.random=mulberry32(seed 6221086)，Phaser 主循环自驱动封死、改由 16.666667ms 合成步时钟驱动 Game.step，视口 1280×960 deviceScaleFactor 1，DOM 覆盖层隐藏，只截 #game-root canvas。",
+  "bundle": {
+    "chunk": "index-rlLaY6Dc.js",
+    "chunkSha": "665b79bcf5440636",
+    "fonts": {
+      "font-prephase.png": "c1309f00e18b2545",
+      "font.png": "24800f35d619d57a"
+    },
+    "subsetReferenced": true,
+    "fontEra": "两段化（子集先行，见 90fe319）"
+  },
+  "bundlesVerified": [
+    {
+      "chunk": "index-CJqW9TNF.js",
+      "chunkSha": "b8f19d5a06d02ca3",
+      "fonts": {
+        "font.png": "24800f35d619d57a"
+      },
+      "fontEra": "全量 font.png 一代（851f0a2 代 client 代码）",
+      "role": "首捕：本批字节第一次产出的产物（全量 font.png 一代（851f0a2 代 client 代码））"
+    },
+    {
+      "chunk": "index-rlLaY6Dc.js",
+      "chunkSha": "665b79bcf5440636",
+      "fonts": {
+        "font-prephase.png": "c1309f00e18b2545",
+        "font.png": "24800f35d619d57a"
+      },
+      "subsetReferenced": true,
+      "fontEra": "两段化（子集先行，见 90fe319）",
+      "role": "上一批 manifest 登记的产物（与本批 SHA 逐态相同）"
+    }
+  ],
   "states": [
     {
       "id": "menu",
