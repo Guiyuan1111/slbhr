@@ -12,6 +12,7 @@
 #   - ASSETS：dist 相对路径（空格分隔），两条臂都按 basename 取文件；
 #   - ARM_A_DIR：臂 A（上一代）那份资产所在目录，臂 B 恒为当前 dist 内容；
 #   - TOOL：perf-resident（默认）或 perf-load，都用 --no-build；
+#   - EXTRA_ARGS：透传给量具的档位类参数（换臂不动它，三臂同档位），如 EXTRA_ARGS="--net 4g --level forest_12"；
 #   - 快照标签即 --save 的标签，产物落 benchmark/results/。
 #
 # 硬门（脚本自己判，不靠人记）：
@@ -24,6 +25,9 @@ cd "$(dirname "$0")/.."
 : "${ARM_A_DIR:?请设 ARM_A_DIR=臂 A 资产所在目录}"
 TOOL="${TOOL:-perf-resident}"
 LABEL_A="${LABEL_A:-ab-a}"; LABEL_B="${LABEL_B:-ab-b}"; LABEL_C="${LABEL_C:-ab-a2}"
+# 透传给量具的额外参数（档位类都走这里，换臂不动它们）：
+#   EXTRA_ARGS="--net 4g --level forest_12"
+EXTRA_ARGS="${EXTRA_ARGS:-}"
 DIST=packages/client/dist
 [ -d "$DIST" ] || { echo "dist 不存在，先 npm run build" >&2; exit 1; }
 [ -d "$ARM_A_DIR" ] || { echo "臂 A 目录不存在：$ARM_A_DIR" >&2; exit 1; }
@@ -58,7 +62,7 @@ arm () { # $1=a|b  $2=快照标签
   local got; got=$(fp)
   [ "$got" = "$BUNDLE0" ] || { echo "臂 $2 入口指纹变成 $got，中止：换臂把 JS 带跑了" >&2; exit 1; }
   echo "===== [$2] arm=$1 资产 sha=$(for p in $ASSETS; do printf '%s:%s ' "$(basename "$p")" "$(sha256sum "$DIST/$p" | cut -c1-12)"; done) ====="
-  node --import tsx "benchmark/$TOOL.mjs" --no-build --save "$2"
+  node --import tsx "benchmark/$TOOL.mjs" --no-build --save "$2" $EXTRA_ARGS
 }
 
 arm a "$LABEL_A"

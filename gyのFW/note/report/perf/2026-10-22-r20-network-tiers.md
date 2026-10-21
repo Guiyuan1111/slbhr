@@ -120,9 +120,58 @@ round1 逐 URL 时间线把 Menu 段切成三截（单位 ms）：
 4. 面额最大的一笔仍属待裁决项：进房后 4636KB 里 `font.png` 1600.6KB 单笔就要
    4g 3.28s / fast3g 8.20s / slow3g 26.2s；≥64KB 未压缩的 15 条 6295.0KB 在 slow3g 是 **103.1s**。
 
-## 五、实施件
+## 五、实施件：进房前阻塞批预取（`<link rel=preload>`）——**实测判退**
 
-（待归因结论填。）
+按 §四 的归因做的第一个实施件：把 Boot 阻塞批里 7 张图（1723.5KB，占该批 1881.0KB 的 91.6%）
+在 `packages/client/index.html` 的 `<head>` 顶部预取，`as="image" crossorigin`。
+刻意排除 `GameNameForest.png`（`<img>` 先取、Loader 走 304）与 `MenuMusic`。
+七条 link 逐字为（按体积降序发射，`as="image" crossorigin`）：
+`atlasses/CharAssets.png`、`images/TempleHallForest.jpg`、`fonts/chinese/font-prephase.png`、
+`atlasses/MenuAssets.png`、`images/Beam.png`、`images/branding/branding_logo_kizi.png`、
+`atlasses/PreloaderAssets.png`。判退后源码已回退、dist 已按回退态重建（下方证据快照保留）。
+
+### 机制先验证：crossorigin 的判断是对的，缓存确实复用
+
+arm B 的 Resource Timing 出现 `initiatorType="link"` 的 7 条新条目，@91–103ms 就发起来了
+（对照 arm A 的同一批 XHR @1696ms）——**预取把发起时刻前移了约 1.6s（4g）/0.44s（off）**，
+而且紧随其后的 7 条 XHR 每条只剩 **0.3KB**（304 复验），整份重下一例都没有：
+`doubleDownloads` 两档均空、`restKB` 逐条 0.3KB。
+⇒ "Phaser Loader 是 XHR=CORS 模式，预取必须带 `crossorigin`"这条判断被数据证实；
+不带的话这里会是 7 条整份重下载（+1723.5KB）。
+
+### 但两个里程碑一升一降，净收益不成立
+
+`ab-assets.sh ASSETS="index.html" TOOL=perf-load EXTRA_ARGS="--net …"`，A/B/A 三臂
+（入口 chunk 指纹 `522fb75aa7cdea46` 三臂逐字符相同，收尾已装回）：
+
+| 档 | 指标 | 臂 A（a1↔a2，漂移带） | 臂 B | 差 |
+|---|---|---|---|---|
+| `off` | Menu active | 738 ↔ 841（带 103ms） | 744 | −45.5ms ⇒ **带内，不可主张** |
+| `off` | Game 绝对（clickPerf+game） | 2427 ↔ 2757（带 330ms） | 2280 | −312ms ⇒ **带内，不可主张** |
+| `off` | Menu 段字节/请求 | 2440KB / 19 | 2443KB / 26 | **+3KB / +7 请求** |
+| `4g` | Menu active | 5752 ↔ 5740（带 **12ms**） | 5382 | **−364ms ⇒ 30 倍于带宽，可主张** |
+| `4g` | Game 绝对 | 16463 ↔ 16486（带 23ms） | 16690 | **+215.5ms ⇒ 9 倍于带宽，可主张的劣化** |
+| `4g` | Menu 段字节/请求 | 2440KB / 19 | 2443KB / 26 | +3KB / +7 请求 |
+
+劣化的原因是量出来的、不是猜的：**预取和 JS bundle 抢同一条饱和管道**。
+4g 档 `phaser-BMeCXOGt.js` 的落定时刻从 arm A 的 1366ms 变成 arm B 的 **3769ms（+2403ms）**，
+`GameNameForest.png`（img）971→2062ms、`dom-skin.png`（css）864→1657ms 全被拖后。
+Loader 只有在 bundle 求值完之后才存在，所以 bundle 被拖 = 进房那条腿被拖。
+字节账一克没少（还多 2.1KB＝7 次 304 的头），管道又是满的 ⇒ **提示类手段只能在里程碑之间搬运字节，
+不能减少字节**——这正是 §四第 3 条推论的反面验证。
+
+一条必须记下的口径边界：harness 在 Menu 激活的瞬间就点击（4g 臂 A：Menu 5752 → clickPerf 5894，
+只隔 142ms），真人会多在菜单停几秒，那条 +215.5ms 的进房劣化在真人路径上大概率被空闲期吸收。
+但即便如此，`off` 档两项都落在同臂漂移带内（103ms / 330ms）拿不出可主张收益，
+却要为改动永久多付 2KB（7 次 304 头）和 7 条请求，且没有任何一档出现端到端正收益，
+**按判据（无跨带正收益即回退）判退**。留此记录是为了下次有人提"加 preload"时不必重跑这 20 分钟。
+
+### 顺带把 `ab-assets.sh` 接上档位
+
+换臂台原先只能测驻留轴。加 `EXTRA_ARGS` 透传（换臂不动它，三臂同档位），
+现在 `ASSETS="index.html" TOOL=perf-load EXTRA_ARGS="--net 4g"` 就能在弱网档上做只换 HTML 的 A/B/A。
+本轮用它拿到的同臂带宽是 **4g 12～23ms、off 103～330ms**：管道时间主导的档位，ms 反而比
+本机 `off` 稳一个量级——这条对未来轮次"该在哪一档立判据"有用（越慢的档，可主张的门槛越低）。
 
 ## 六、门禁与遗留
 
