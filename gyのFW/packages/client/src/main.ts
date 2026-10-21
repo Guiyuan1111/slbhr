@@ -102,16 +102,32 @@ async function fetchLevel(id: string): Promise<LevelData> {
 }
 
 /** 关卡数据客户端缓存（r8 perf 件4）：LevelData 只读（场景构建遍历读，不改写），
- *  同关重进（离房再建/邀请深链重复进出）零重复拉取；失败逐出保证可重试。 */
+ *  同关重进（离房再建/邀请深链重复进出）零重复拉取；失败逐出保证可重试。
+ *  r14 件C：有界 LRU。一张 LevelData 是整份 Tiled 解析对象（数百 KB 级），原先无上限
+ *  → 长时间挂机逐关浏览会单调增长。4 = 本关 + 结算期预取的下一关 + 回看/重玩，
+ *  被逐出的关重新进入时按原路径重取（与冷入房同代价，不新增失败面）。 */
+const LEVEL_CACHE_MAX = 4;
 const levelCache = new Map<string, Promise<LevelData>>();
 
 /** fetchLevel 带缓存（异常不缓存） */
 function fetchLevelCached(id: string): Promise<LevelData> {
-  let p = levelCache.get(id);
-  if (!p) {
-    p = fetchLevel(id);
-    p.catch(() => levelCache.delete(id));
-    levelCache.set(id, p);
+  const hit = levelCache.get(id);
+  if (hit) {
+    // 触达即置队尾：插入序就是 LRU 序
+    levelCache.delete(id);
+    levelCache.set(id, hit);
+    return hit;
+  }
+  const p = fetchLevel(id);
+  // 身份校验后再删：该项可能已被逐出、同一 id 由后来的请求占回，误删会丢掉新缓存
+  p.catch(() => {
+    if (levelCache.get(id) === p) levelCache.delete(id);
+  });
+  levelCache.set(id, p);
+  while (levelCache.size > LEVEL_CACHE_MAX) {
+    const oldest = levelCache.keys().next().value;
+    if (oldest === undefined) break;
+    levelCache.delete(oldest);
   }
   return p;
 }
