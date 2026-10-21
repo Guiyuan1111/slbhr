@@ -3,7 +3,9 @@
  *
  * 用法（Git Bash，先注入便携 Node PATH；构建产物由调用方保证）：
  *   node scripts/e2e/journey.mjs journey [--port 3571]   # 通关→继续→活房间 advance 同房换关 forest_02（全旅程，需 FW_DEBUG_FORCE_DOORS 加速到门）
- *   node scripts/e2e/journey.mjs pause   [--port 3572]   # KeyP 暂停：服务端权威全场物理冻结+时钟停摆，恢复推进（F3 翻转回归）
+ *   node scripts/e2e/journey.mjs pause   [--port 3572]   # KeyP 暂停：服务端权威全场物理冻结+时钟停摆，恢复推进；含二次暂停/恢复（PauseMenu closing 复位，H1）
+ *   node scripts/e2e/journey.mjs leave   [--port 3575]   # 主动返回菜单：4000 关闭码不得触发重连横幅，余端回 lobby（H3）
+ *   node scripts/e2e/journey.mjs refresh [--port 3586]   # 刷新回座：started 相机解冻（H2）+重连新令牌可再次回座（M1）
  *   node scripts/e2e/journey.mjs rejoin  [--port 3573]   # 断线超时→补位重进：房间整关重开而非死房（0.3.27 onLeave 修复回归；用 FW_RECONNECT_SECONDS 缩窗）
  *   node scripts/e2e/journey.mjs deathretry [--port 3574] # 死亡→gameover 静置（原版无自动重开）→Retry 整关重开（F2 翻转回归）
  *   node scripts/e2e/journey.mjs rolesplit [--port 3576] # 按角色分键：fb 只认方向键/wg 只认 WASD，跨组键免疫（F1 翻转回归）
@@ -128,8 +130,83 @@ try {
     check("恢复 → 时钟续走", resumed.t > frozen2.t, `t ${frozen2.t}→${resumed.t}`);
     await a.keyboard.up("ArrowRight");
     await b.keyboard.up("KeyD");
+    // H1：PauseMenu 实例 stop→start 复用——第二次暂停必须重新打开，且 requestClose
+    // 不被上次残留的 closing=true 吞掉。走完整第二次暂停/恢复，读 Phaser 场景状态。
+    await a.waitForFunction(() => !window.__fw.scene.isActive("PauseMenu"), null, { timeout: 4000 }).catch(() => {});
+    await a.keyboard.press("p");
+    await a.waitForFunction(() => window.__fw.scene.isActive("PauseMenu"), null, { timeout: 4000 }).catch(() => {});
+    check("二次暂停 → PauseMenu 重新打开", await a.evaluate(() => window.__fw.scene.isActive("PauseMenu")));
+    await a.keyboard.press("p");
+    await a.waitForFunction(() => !window.__fw.scene.isActive("PauseMenu"), null, { timeout: 4000 }).catch(() => {});
+    check("二次暂停 → 面板可再次关闭（closing 已复位）", !(await a.evaluate(() => window.__fw.scene.isActive("PauseMenu"))));
     await a.screenshot({ path: join(OUT, "pause-a.png") });
     await b.screenshot({ path: join(OUT, "pause-b.png") });
+    results.pass = results.checks.every((c) => c.ok);
+    await ctxA.close();
+    await ctxB.close();
+  } else if (MODE === "leave") {
+    // ── 场景：主动返回菜单（H3）——room.leave 的服务端关闭码是 4000（WS_CLOSE_CONSENTED），
+    // 旧实现只认 1000，会把主动离房当断线：退避重连期间闪出断线横幅、并对已离房间反复重连。
+    // 断言：A 回选关树且横幅保持隐藏；B 侧因 consented 释放席位立即回 lobby（H-01 语义）。
+    const ctxA = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+    const ctxB = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+    const a = await ctxA.newPage();
+    const b = await ctxB.newPage();
+    const code = await enterAs(a, PORT, "create", "", "forest_01");
+    await enterAs(b, PORT, "join", code, "forest_01");
+    await waitForStarted(a);
+    await waitForStarted(b);
+    await a.evaluate(() => window.__fwLeaveToMenu());
+    await a.waitForFunction(() => window.__fw.scene.isActive("Temple"), null, { timeout: 5000 }).catch(() => {});
+    // 覆盖旧实现重连退避的前三轮（0/1/2s）：正确实现下横幅应始终 hidden
+    await a.waitForTimeout(2300);
+    const banner = await a.evaluate(() => {
+      const el = document.querySelector("#net-lost");
+      return { hidden: el?.classList.contains("hidden") ?? true, text: (el?.textContent ?? "").trim() };
+    });
+    check("主动离房 → 返回选关树", await a.evaluate(() => window.__fw.scene.isActive("Temple")));
+    check("主动离房 → 不出现断线/重连横幅", banner.hidden && banner.text === "", JSON.stringify(banner));
+    let bLobby = false;
+    try {
+      await b.waitForFunction(() => window.__fwInit.net.room.state.phase === "lobby", null, { timeout: 4000 });
+      bLobby = true;
+    } catch { /* 超时按失败记 */ }
+    check("对端主动离房 → 余端回 lobby", bLobby);
+    await a.screenshot({ path: join(OUT, "leave-a-menu.png") });
+    await b.screenshot({ path: join(OUT, "leave-b-lobby.png") });
+    results.pass = results.checks.every((c) => c.ok);
+    await ctxA.close();
+    await ctxB.close();
+  } else if (MODE === "refresh") {
+    // ── 场景：刷新回座（H2/M1）——sessionStorage 令牌恢复原席，进入已在 started 的游戏
+    // 必须解冻相机（旧实现 init 置 camFrozen=true 后无 ready→started 事件，画面永久冻结）；
+    // 回座后服务端换发新令牌，第二次刷新仍能回座（旧实现只存首次 token）。
+    const ctxA = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+    const ctxB = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+    const a = await ctxA.newPage();
+    const b = await ctxB.newPage();
+    const code = await enterAs(a, PORT, "create", "", "forest_01");
+    await enterAs(b, PORT, "join", code, "forest_01");
+    await waitForStarted(a);
+    await waitForStarted(b);
+    const resumedGate = `(() => { try {
+      return window.__fwInit?.net?.room?.state?.phase === "started" && window.__fw.scene.isActive("Game");
+    } catch { return false; } })()`;
+    for (const round of [1, 2]) {
+      await a.reload({ waitUntil: "domcontentloaded" });
+      let resumed = false;
+      try {
+        await a.waitForFunction(resumedGate, null, { timeout: 20000 });
+        resumed = true;
+      } catch { /* 超时按失败记 */ }
+      check(`第 ${round} 次刷新 → 自动回座 started`, resumed);
+      if (!resumed) break;
+      if (round === 1) {
+        const camFrozen = await a.evaluate(() => window.__fw.scene.getScene("Game").camFrozen);
+        check("刷新回座 → 相机已解冻（H2）", camFrozen === false, `camFrozen=${camFrozen}`);
+      }
+    }
+    await a.screenshot({ path: join(OUT, "refresh-a-resumed.png") });
     results.pass = results.checks.every((c) => c.ok);
     await ctxA.close();
     await ctxB.close();
@@ -251,7 +328,7 @@ try {
     await ctxA.close();
     await ctxB.close();
   } else {
-    throw new Error(`未知模式: ${MODE}（可用 journey|pause|rejoin|deathretry|rolesplit）`);
+    throw new Error(`未知模式: ${MODE}（可用 journey|pause|leave|refresh|rejoin|deathretry|rolesplit）`);
   }
 
   await browser.close();
