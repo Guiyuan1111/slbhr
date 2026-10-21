@@ -322,3 +322,31 @@ CDP `HeapProfiler.startSampling` + source-map-js 还原到 TS 源）、换关纹
 再压触及保真红线；**真机 GPU 口径**的 `texMB` 与烘焙峰值；`prepareGround/buildGround` 命中计数；
 换关链剩余 ≈45ms；服务端 tick 侧候选；幕布/图集常驻税。
 
+
+## 十二、r15 增补（2026-10-21，0.3.42 后第四轮）
+
+> 报告 `2026-10-21-r15-cold-start-transfer.md`。火力从"帧时间/驻留字节"切到**线上字节与缓存校验契约**：
+> 本作经樱花隧道对外，回环毫秒不可信，唯一可信度量是逐 URL 传输字节。
+
+| 轮 | 焦点 | commit | 关键数字（同机同口径） | 门禁 |
+|---|---|---|---|---|
+| r15 | 冷启动/入房传输 + 压缩路径的 ETag/304 契约修复 + 关卡 API 协商压缩 | `754d136`+`aede24f`(量具/复验探测)、`a29dde3`(件B)、`fbc8ba3`(件C) | 冷启动全链 **6942KB/56 响应** 拆成 Menu 段 4054KB(21req) + 进房段 2889KB(35req)；**关卡数据 API 传输 16.9→1.8KB（−89.3%）**（解码 16.6KB 逐字不变），进房段随之 −16KB；**br 响应带校验器 0/14 → 15/15**，修复前 14 个无校验器文本响应＝**388.2KB**（硬刷新/过期只能整份重下）；复验探测 47 幂等 URL **6912KB→0KB、非 304 者 0 个**；服务端重压成本实测 br q5 1.03ms / gzip6 0.56ms（9.33ms 系 JIT 预热）故不落包缓存；**Menu 段与请求数不动**（88.8% 字节是 br 无法再压的二进制载荷，再编码须用户裁决） | det **48/48** 位级一致（对现役基线 r32）、vitest 18 文件 **191/191**（staticGz 15→**24**、新 `jsonRes` **6**）、build/typecheck、treebake 9/9、groundcache 6/6、journey 7/7·pause 11/11·leave 3/3·refresh 3/3·wonrefresh 6/6·rejoin 3/3·rolesplit 6/6·deathretry 4/4、route f01（winAt 39504 带内）、visual **91.54%**（带内）、perf-client canvas 60.6fps/**1042KB·s⁻¹**（零帧内回归）、advance 5/5 零网络·链 1049.3ms |
+
+**契约一笔**：0.3.21 把压缩响应改为自持 `res.end(buffer)` 后 `express.static` 的 ETag/Last-Modified 不再可达——
+凡走过 br/gzip 的文本响应失去条件复用能力（`Cache-Control` 还在，看起来"缓存工作正常"，过期后才整份重下）。
+本轮补齐并规定：**编码写进强 ETag**（`"br-<mtime>-<size>"`，同 URL 的 br/gzip/identity 不可互换校验），
+原地可改的数据（关卡 JSON）另用**内容寻址弱族**（`"json-"+sha256`，配 `no-cache`）。压缩缓存失效键 mtime→**mtime+size**。
+
+**三条勘误入档**：①页面 `performance.now` 与 Node 墙钟**不可做跨基减法**，归段改用 URL 集合差；
+②页内 `fetch(cache:"no-store")` 会**剥离条件请求头**（Blink），据此测 304 必得假阴性、差点把件B 判成无效——
+校验类探测必须走 Node `http`+keepAlive，且避让 `/matchmake/*`（会真建房）、`blob:`、文档 URL；
+③首版 `gamePhaseKB` 恒 0（phase 打在 Menu 快照上，进房段新增 URL 未赋值）→ 改从 `resourcesAfterGame` 反算并**重取基线**。
+
+**不主张之项明写**：`Menu active 800→716ms`、`建房→Game 1424.5→1477ms`、`reload 615.5→831.5ms` 全落在
+本机 ±120ms 噪声带内，本轮收益口径只有字节与头部契约，不声称延迟。
+
+剩余挂账（r16 起）：**待裁决**——二进制再编码（WebP-lossless/AVIF/MP3 重压）面额 6148.5KB（15 个 ≥64KB 未压缩响应）；
+下一轮候选（量具已给证据）——进房段一次性 22 req/2.87MB 中 `LevelMusicFinish/Over/_speed` 四轨 **500.6KB** 属
+结算/速度模式才用，压在开局关键路径上，按"开局必需/相位到达再取"分池可直减进房段 ≈17%；perf-load 隧道节流档
+（`--rtt`/CDP emulate）未实现，字节收益仍靠换算；真机 GPU 口径、`prepareGround/buildGround` 命中计数、
+换关链剩余 ≈45ms、服务端 tick 侧、LAN/触屏/弱网手测。

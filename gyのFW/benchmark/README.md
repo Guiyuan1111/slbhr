@@ -83,6 +83,11 @@ node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>              
   （--compare 退出码即结果）；快照 `results/det-<label>.json`。
 - `perf-load`：构建产物冷启动（新 context）DCL/Menu/Game 激活、传输字节、请求数、
   reload 缓存命中；页面错误非空即失败。快照 `results/load-<label>.json`。
+  **r15 拆账口径**：逐 URL `transferKB/decodedKB/startMs/endMs` + 逐 URL 真实响应头
+  （`status/cache-control/content-encoding/etag`）；Menu/进房段按 **URL 集合差**归段
+  （页面 `performance.now` 与 Node 墙钟不可跨基减法）；`revalidate` 用 **Node `http`+keepAlive**
+  对幂等 URL 探测"整份重下 → 带 `If-None-Match` 复验"，避让 `/matchmake/*`（会真建房）、`blob:`、文档 URL。
+  页内 `fetch(cache:"no-store")` **不可**用于该探测——Blink 会剥离条件请求头，测得的"仍 200 全量"是仪器伪差。
 - `perf-sync`：快照路径成本拆解，buildState/syncState 与 ForestRoom.syncState 逐字段同构
   （r1 起机关位姿走 mechanisms 直读，镜像同构）；20Hz 编码；快照 `results/sync-<label>.json`。
   **r4 起生产语义**：encode 后 discardChanges（applyPatches 同款），patch=本网格真增量；
