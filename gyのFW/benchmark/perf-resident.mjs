@@ -17,6 +17,9 @@
  *   - peakJobMB / bakeSamples：选关树分帧烘焙在飞期间的 typed array 峰值与在飞采样数
  *     （jobs>0 的样本数即「这次到底烘没烘」的判据，命中缓存时恒 0）
  *   - texMB / audioMB / groundMB / treeMB：纹理逐源 w·h·4、解码后 PCM、地面 LRU、树结果位图
+ *     （audioMB 探针 r16 修正：SoundCache 只能用 `getKeys()` 枚举（账本 `entries` 是 List
+ *     包装，own keys 只有 entries/size），r14 版读不存在的 `keys` 恒 0，
+ *     旧快照里的 audioMB/audioCount 一律不作数，需按新探针重取）
  *   - dom / objs：DOM 节点数与场景显示对象数
  * 口径注：game 与 temple-after-game 属第二文档线（enterAs 整页 goto 会重置模块级缓存），
  * 与菜单线只可比 heapGC / tex / audio 这类文档级字节。
@@ -70,10 +73,16 @@ function collectPage() {
   let audioMB = 0;
   const audioTop = [];
   try {
-    for (const k of g.cache.audio.keys || []) {
+    // SoundCache 的账本对象是 List 包装（own keys 只有 entries/size），r14 那版读不存在的
+    // `keys`、改成 Object.keys(entries) 也一样恒 0（r16 勘误）——枚举只能用 getKeys()。
+    // PCM 字节 = 帧数 × 声道 × 4（Chromium Float32 解码）。
+    const ent = typeof g.cache.audio.getKeys === "function" ? g.cache.audio.getKeys() : [];
+    for (const k of ent) {
       const buf = g.cache.audio.get(k);
       if (!buf) continue;
-      const b = (buf.length || 0) * (buf.numberOfChannels || 1) * 4;
+      const b = buf.length
+        ? buf.length * (buf.numberOfChannels || 1) * 4
+        : (buf.data || []).reduce((s, ch) => s + (ch.length || 0) * (ch.BYTES_PER_ELEMENT || 4), 0);
       audioMB += b;
       if (b > 200000) audioTop.push([k, +(b / 1048576).toFixed(2)]);
     }
@@ -89,7 +98,7 @@ function collectPage() {
     texTop: texTop.sort((a, b) => b[1] - a[1]).slice(0, 6),
     audioMB: +(audioMB / 1048576).toFixed(2),
     audioTop: audioTop.sort((a, b) => b[1] - a[1]).slice(0, 6),
-    audioCount: (g.cache.audio.keys || []).length,
+    audioCount: typeof g.cache.audio.getKeys === "function" ? g.cache.audio.getKeys().length : 0,
     ground: gc,
     tree: tb,
     dom: document.querySelectorAll("*").length,
