@@ -89,8 +89,8 @@ function pack(names) {
     x += w;
     rowH = Math.max(rowH, h);
   }
-  W = Math.max(W, x);
-  const H = y + rowH;
+  W = Math.max(W, x) + GUT;
+  const H = y + rowH + GUT; // 末行也要有隔离带：否则最高的那帧贴着画布下沿，采样核读到的是画布外
   const data = Buffer.alloc(W * H * 4); // 全透明底
   const frames = [];
   for (const { f, px, py } of placed) {
