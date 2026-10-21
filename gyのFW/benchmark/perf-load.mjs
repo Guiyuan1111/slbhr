@@ -14,10 +14,17 @@
  *     /matchmake/* 与文档请求有副作用（重复建房），不进探测清单。
  *
  * 用法：
- *   node --import tsx benchmark/perf-load.mjs [--no-build] [--level <id>] --save <label>
+ *   node --import tsx benchmark/perf-load.mjs [--no-build] [--level <id>] [--net <off|cable|4g|fast3g|slow3g>] --save <label>
  *   node --import tsx benchmark/perf-load.mjs --no-build --compare <label>
  *   · --level（r16 量具）：深链选关档位，缺省 forest_01。音频按关卡类型选族（r16 件A）
  *     只有换成 speed 关（如 forest_12）才测得出差异，对比时两侧必须同档位。
+ *   · --net（r20 量具）：隧道节流档位 `off|cable|4g|fast3g|slow3g`，缺省 off＝**完全不建 CDP 会话、
+ *     完全不节流**，故历轮数字口径不变。可用 `--rtt <ms>`/`--down <Mbps>` 覆写单参数做定点换算。
+ *     节流由 CDP `Network.emulateNetworkConditions` 施加在页面上；**条件复验探测（revalidate）走 Node
+ *     原生 http，不经节流**，所以那一栏跨档位仍可比（它测的是服务器能力，不是链路）。
+ *     档位自带"节流真的生效"断言（见 throttleProof）：延迟档要求逐请求 TTFB 中位数 ≥ 0.5×rtt，
+ *     带宽档要求最大单笔的响应体耗时 ≥ 0.5×(字节/带宽)。静默失效的节流档比没有档更坏——
+ *     它会把"弱网换算"写成"弱网实测"，故断言不过直接抛错退出。
  * 产物：benchmark/results/load-<label>.json
  */
 import { spawn, execSync } from "node:child_process";
@@ -38,6 +45,30 @@ const argCompare = argOf("--compare");
 /** 深链档位（r16）：speed 关（forest_03/06/12/14/16/26 等）与 general 关走的 BGM 族不同 */
 const LEVEL = argOf("--level") ?? "forest_01";
 const NO_BUILD = process.argv.includes("--no-build");
+
+/** 隧道节流档位（r20）：down/up 为**字节/秒**（CDP 口径），latency 为毫秒，-1＝不限。
+ *  fast3g/slow3g 取 Lighthouse 定义（1.6Mbps·150ms / 0.5Mbps·400ms），cable/4g 为中间档。
+ *  waitScale：各等待超时按此放大——节流后 30s 的 `__fw` 等待在 slow3g 下必然误判成失败。 */
+const NET_PROFILES = {
+  off: { latency: 0, down: -1, up: -1, waitScale: 1, desc: "不节流（历轮口径）" },
+  cable: { latency: 30, down: 1_250_000, up: 312_500, waitScale: 8, desc: "有线 10Mbps↓/2.5Mbps↑ · 30ms" },
+  "4g": { latency: 80, down: 500_000, up: 125_000, waitScale: 24, desc: "4G 4Mbps↓/1Mbps↑ · 80ms" },
+  fast3g: { latency: 150, down: 200_000, up: 93_750, waitScale: 60, desc: "Lighthouse Fast 3G 1.6Mbps↓/0.75Mbps↑ · 150ms" },
+  slow3g: { latency: 400, down: 62_500, up: 62_500, waitScale: 200, desc: "Lighthouse Slow 3G 0.5Mbps↓↑ · 400ms" },
+};
+const NET_NAME = argOf("--net") ?? "off";
+if (!Object.hasOwn(NET_PROFILES, NET_NAME)) {
+  throw new Error(`--net 档位未知：${NET_NAME}（可用：${Object.keys(NET_PROFILES).join("/")}）`);
+}
+const NET = { ...NET_PROFILES[NET_NAME] };
+if (argOf("--rtt") !== undefined) NET.latency = Number(argOf("--rtt"));
+if (argOf("--down") !== undefined) NET.down = Math.round(Number(argOf("--down")) * 1_000_000 / 8);
+if (argOf("--up") !== undefined) NET.up = Math.round(Number(argOf("--up")) * 1_000_000 / 8);
+if (!Number.isFinite(NET.latency) || (NET.down > 0 && NET.down < 1000)) {
+  throw new Error(`节流参数不可用：latency=${NET.latency}ms down=${NET.down}B/s（--down 单位 Mbps，别写成 0）`);
+}
+const THROTTLED = NET_NAME !== "off" || NET.latency > 0 || NET.down !== NET_PROFILES[NET_NAME].down;
+const W = (ms) => Math.round(ms * NET.waitScale);
 const log = (...a) => console.log("[load]", ...a);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -71,6 +102,9 @@ async function resourceStats(page) {
     const byType = {};
     let totalTransfer = 0, totalDecoded = 0, count = 0;
     const items = [];
+    const ttfbs = [];
+    let largest = null;
+    let windowStart = Infinity, windowEnd = 0;
     for (const e of es) {
       const t = e.initiatorType || "other";
       byType[t] = byType[t] || { n: 0, transferKB: 0, decodedKB: 0 };
@@ -88,7 +122,47 @@ async function resourceStats(page) {
         startMs: +e.startTime.toFixed(0),
         endMs: +e.responseEnd.toFixed(0),
       });
+      // 节流生效证据只用**真过了网**的条目：transferSize=0 是缓存命中/blob/data，量不出链路
+      if ((e.transferSize || 0) > 0 && e.responseStart > 0 && e.fetchStart > 0 && /^https?:/.test(e.name)) {
+        ttfbs.push(e.responseStart - e.fetchStart);
+        windowStart = Math.min(windowStart, e.fetchStart);
+        windowEnd = Math.max(windowEnd, e.responseEnd);
+        if (!largest || e.transferSize > largest.bytes) {
+          largest = {
+            url: e.name.replace(/^https?:\/\/[^/]+/, ""),
+            bytes: e.transferSize,
+            bodyMs: +(e.responseEnd - e.responseStart).toFixed(1),
+          };
+        }
+      }
     }
+    ttfbs.sort((a, b) => a - b);
+    const med = (arr) => (arr.length ? (arr.length % 2 ? arr[(arr.length - 1) / 2] : (arr[arr.length / 2 - 1] + arr[arr.length / 2]) / 2) : null);
+    // 同一次导航里取过两次以上的 URL（r20）：预取/双载类改动的判据。
+    // 第二次命中内存缓存时 transferSize=0，**总字节看不出双取**，只有条数露馅——
+    // r19 快照 round2 的 /assets/audio/s/LevelMusic（17→18 条而 KB 不变）就是靠这条抓出来的。
+    const urlN = {};
+    const urlTransfers = {};
+    for (const it of items) {
+      urlN[it.url] = (urlN[it.url] || 0) + 1;
+      (urlTransfers[it.url] ||= []).push(it.transferKB);
+    }
+    const dupUrls = Object.keys(urlN)
+      .filter((u) => urlN[u] > 1)
+      .map((u) => {
+        // 关键区分：第二次只花几百字节头 = 条件复验（binary 资产 max-age=0 是 staticGz 有意策略，
+        // 不是缺陷）；第二次仍是整份字节 = 真双载。只看条数会把前者误判成后者，反之只看总 KB
+        // 会把后者漏掉（命中内存缓存时 transferSize=0）。
+        const t = urlTransfers[u].slice().sort((a, b) => b - a);
+        return {
+          url: u,
+          n: urlN[u],
+          wireFetches: t.filter((x) => x > 0).length,
+          transfersKB: urlTransfers[u],
+          restKB: +t.slice(1).reduce((a, b) => a + b, 0).toFixed(1),
+          doubleDownload: (t[1] || 0) > 1,
+        };
+      });
     const nav = performance.getEntriesByType("navigation")[0];
     return {
       count,
@@ -96,9 +170,68 @@ async function resourceStats(page) {
       totalDecodedKB: +(totalDecoded / 1024).toFixed(0),
       byType,
       items,
+      dupUrls,
+      throttleProbe: {
+        netRequests: ttfbs.length,
+        ttfbMinMs: ttfbs.length ? +ttfbs[0].toFixed(1) : null,
+        ttfbMedianMs: med(ttfbs) === null ? null : +med(ttfbs).toFixed(1),
+        ttfbMaxMs: ttfbs.length ? +ttfbs[ttfbs.length - 1].toFixed(1) : null,
+        largestBytesMs: largest ? largest.bodyMs : null,
+        largestKB: largest ? +(largest.bytes / 1024).toFixed(1) : null,
+        largestUrl: largest ? largest.url : null,
+        windowMs: ttfbs.length ? +(windowEnd - windowStart).toFixed(0) : null,
+        wireKBTotal: +(totalTransfer / 1024).toFixed(0),
+        wireBytesTotal: totalTransfer,
+      },
       domContentLoadedMs: nav ? +nav.domContentLoadedEventEnd.toFixed(0) : null,
     };
   });
+}
+
+/** 节流是不是真的落在链路上了？——静默失效的节流档会把"换算"冒充成"实测"，所以这里必须能失败。
+ *  两条独立判据（各只依赖一个旋钮）：延迟档看逐请求 TTFB 中位数，带宽档看最大单笔的响应体耗时。
+ *  系数取 0.5 且只设下限：并发调度会让单笔体耗时大幅偏离名义值（本机 4g 实测 font.png 体 9531ms
+ *  vs 名义 3278ms——多请求共享同一节流带宽），拿名义值当等式判会把好机器判成失效。 */
+function assertThrottleActive(probe, tag) {
+  if (!THROTTLED) return { profile: NET_NAME, checked: false };
+  const fails = [];
+  if (NET.latency > 0) {
+    const floor = 0.5 * NET.latency;
+    if (probe.ttfbMedianMs === null) fails.push(`无过网请求可证 TTFB（netRequests=${probe.netRequests}）`);
+    else if (probe.ttfbMedianMs < floor) fails.push(`TTFB 中位数 ${probe.ttfbMedianMs}ms < 0.5×rtt(${floor}ms)`);
+  }
+  if (NET.down > 0) {
+    if (probe.largestBytesMs === null || probe.largestKB === null) fails.push("无最大单笔可证带宽");
+    else {
+      const floor = 0.5 * ((probe.largestKB * 1024) / NET.down) * 1000;
+      if (probe.largestBytesMs < floor) {
+        fails.push(`${probe.largestUrl} 响应体 ${probe.largestBytesMs}ms < 0.5×名义 ${(floor).toFixed(0)}ms`);
+      }
+    }
+  }
+  if (fails.length) {
+    throw new Error(`节流档位 ${NET_NAME} 静默失效（${tag}）：${fails.join("；")}。` +
+      `名义参数 latency=${NET.latency}ms down=${NET.down}B/s——档位没生效的读数一律不可用作弱网主张。`);
+  }
+  return {
+    profile: NET_NAME,
+    checked: true,
+    latencyMs: NET.latency,
+    downBps: NET.down,
+    upBps: NET.up,
+    desc: NET.desc,
+    ttfbMedianMs: probe.ttfbMedianMs,
+    largestUrl: probe.largestUrl,
+    largestKB: probe.largestKB,
+    largestBytesMs: probe.largestBytesMs,
+    windowMs: probe.windowMs,
+    // 聚合带宽自证：过网字节 ÷ 过网窗口。分母是**窗口**（首末过网请求跨度），不是档位标称值，
+    // 所以它天然低于名义下行——窗口里有主线程解码、握手与队列空转。用作"档位像不像那条链路"
+    // 的量级核对，不作判据（判据只有上面两条下限）。
+    achievedMbps: probe.windowMs && NET.down > 0
+      ? +(((probe.wireBytesTotal * 8) / (probe.windowMs / 1000)) / 1e6).toFixed(2)
+      : null,
+  };
 }
 
 async function waitSceneActive(page, key, timeout = 30000) {
@@ -152,6 +285,18 @@ async function probeRevalidate(urls) {
 async function measureRound(browser, round) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 960 } });
   const page = await ctx.newPage();
+  // FW_NET_NOOP=1 是阴性对照开关：**装作**开了档但不发 CDP 指令，用来逼自检报错——
+  // 证明这两道判据不是永真的摆设。日常测量切勿带它（带了就是拿不节流的数当弱网数）。
+  if (THROTTLED && !process.env.FW_NET_NOOP) {
+    const cdp = await ctx.newCDPSession(page);
+    await cdp.send("Network.enable");
+    await cdp.send("Network.emulateNetworkConditions", {
+      offline: false,
+      latency: NET.latency,
+      downloadThroughput: NET.down,
+      uploadThroughput: NET.up,
+    });
+  }
   const errs = [];
   page.on("pageerror", (e) => errs.push(String(e)));
   // 响应头实况（r15）：同一 URL 只记首见（reload 的缓存命中头不作为策略证据）
@@ -171,9 +316,9 @@ async function measureRound(browser, round) {
   const t0 = Date.now();
   await page.goto(`${BASE}/?level=${LEVEL}`, { waitUntil: "domcontentloaded" });
   const tDom = Date.now();
-  await page.waitForFunction(() => !!globalThis.__fw, null, { timeout: 30000 });
+  await page.waitForFunction(() => !!globalThis.__fw, null, { timeout: W(30000) });
   const tFw = Date.now();
-  await waitSceneActive(page, "Menu");
+  await waitSceneActive(page, "Menu", W(30000));
   const tMenu = Date.now();
   const cold = {
     domContentLoadedMs: tDom - t0,
@@ -190,13 +335,14 @@ async function measureRound(browser, round) {
   const clickPerfMs = await page.evaluate(() => performance.now());
   const tClick = Date.now();
   await page.click("#btn-create");
-  await page.waitForSelector("#menu", { state: "hidden", timeout: 20000 });
-  await page.waitForFunction(() => /房间码 [^（\s]{4,}/.test(document.querySelector("#hud-room")?.textContent ?? ""), null, { timeout: 20000 });
-  await waitSceneActive(page, "Game");
+  await page.waitForSelector("#menu", { state: "hidden", timeout: W(20000) });
+  await page.waitForFunction(() => /房间码 [^（\s]{4,}/.test(document.querySelector("#hud-room")?.textContent ?? ""), null, { timeout: W(20000) });
+  await waitSceneActive(page, "Game", W(30000));
   const tGame = Date.now();
   cold.gameActiveAfterClickMs = tGame - tClick;
   cold.clickPerfMs = Math.round(clickPerfMs);
   cold.resourcesAfterGame = await resourceStats(page);
+  cold.throttle = assertThrottleActive(cold.resourcesAfterGame.throttleProbe, `round${round} 冷启动段`);
   cold.pageErrors = errs;
   // 阶段归位：Menu 快照里已存在 = Menu 前；进 Game 快照里新增的 = 点建房→Game 段。
   // （不拿页内 performance.now 与 Node 墙钟对齐——两钟不可比，集合差是唯一可靠判据）
@@ -216,7 +362,7 @@ async function measureRound(browser, round) {
   // reload（同 context，浏览器有缓存）→ Menu active 与传输字节
   const r0 = Date.now();
   await page.reload({ waitUntil: "domcontentloaded" });
-  await waitSceneActive(page, "Menu");
+  await waitSceneActive(page, "Menu", W(30000));
   const warm = {
     menuActiveMs: Date.now() - r0,
     resources: await resourceStats(page),
@@ -245,9 +391,12 @@ const results = {
     date: new Date().toISOString(),
     node: process.version,
     level: LEVEL,
+    net: THROTTLED ? `${NET_NAME}(rtt=${NET.latency}ms down=${NET.down}B/s up=${NET.up}B/s)` : "off",
+    netDesc: NET.desc,
   },
   rounds: [],
 };
+if (THROTTLED) log(`节流档位 ${NET_NAME}：${NET.desc}——waitScale ${NET.waitScale}×，条件复验探测走 Node http 不受节流`);
 const browser = await chromium.launch({
   channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined),
   headless: true,
@@ -311,6 +460,10 @@ results.summary = {
       revalKB: r1.cold.revalidateSummary.revalKB,
       notConditional304: r1.cold.revalidateSummary.notConditional,
     },
+    throttle: r1.cold.throttle,
+    dupUrls: r1.cold.resourcesAfterGame.dupUrls,
+    // 预取类改动的通过条件：这一列必须为空。复验（第二次只花头字节）不算双载。
+    doubleDownloads: r1.cold.resourcesAfterGame.dupUrls.filter((d) => d.doubleDownload).map((d) => d.url),
   },
   warmReload: {
     menuActiveMs: avg2(r1.warm.menuActiveMs, r2.warm.menuActiveMs),
@@ -331,6 +484,18 @@ for (const i of table) {
 const audioRows = r1.cold.resourcesAfterGame.items.filter(isAudio).sort((a, b) => a.phase.localeCompare(b.phase) || b.transferKB - a.transferKB);
 console.log(`\n=== 音轨装载拆账（round1，档位 ${LEVEL}，${audioRows.length} 条 / ${kbOf(audioRows).toFixed(1)}KB）===`);
 for (const i of audioRows) console.log(`  ${String(i.transferKB).padStart(7)}KB  ${i.phase.padEnd(4)} ${i.url}`);
+// 同一次导航内重复取回的 URL（r20）：**条数不是判据，第二次过网字节才是**。
+// 基线本身就有 6 条重复——它们是二进制资产的 max-age=0 条件复验（staticGz 有意策略，
+// 第二次只花几百字节头），属正常。真双载（preload 模式与消费方不一致时整份重下）由
+// doubleDownload=第二次仍 >1KB 抓出，预取类改动以"这一列为空"为硬性通过条件。
+const dups = r1.cold.resourcesAfterGame.dupUrls;
+console.log(`\n=== 同一导航内重复取回的 URL（round1）===`);
+if (!dups.length) console.log("  无（每个 URL 只取一次）");
+for (const d of dups) {
+  console.log(`  ${d.doubleDownload ? "⚠ 双载" : "复验"} ${d.n} 次（过网 ${d.wireFetches} 次，第二次起共 ${d.restKB}KB） ${d.url}`);
+}
+const dbl = dups.filter((d) => d.doubleDownload);
+if (dbl.length) console.log(`  ⚠ 真双载 ${dbl.length} 个：同一资源在一次导航内整份下了两次（预取模式与消费方不一致的典型征兆）。`);
 
 const bigByUrl = new Map(r1.cold.resourcesAfterGame.items.map((i) => [i.url, i.decodedKB]));
 const uncom = r1.cold.headers.filter((h) => h.enc === "-" && (bigByUrl.get(h.url) ?? 0) >= 64);
@@ -370,8 +535,22 @@ if (argCompare) {
   console.log(`条件复验探测      : ${bRv ? `${bRv.refetchKB}KB→${bRv.revalKB}KB` : "-"} → ${c.cold.revalProbe ? `${c.cold.revalProbe.refetchKB}KB→${c.cold.revalProbe.revalKB}KB` : "-"}`);
   const fmtA = (a) => (a ? `${a.count}条/${a.totalKB}KB（暖装 ${a.warmKB ?? "-"}KB·进房 ${a.postKB ?? "-"}KB）` : "-");
   console.log(`音轨装载          : ${fmtA(b.cold.audio)} → ${fmtA(c.cold.audio)}`);
+  // 条数不是判据（基线本就有 6 条 max-age=0 复验）；真双载看 doubleDownloads。
+  const fmtDup = (cold) => (cold.dupUrls === undefined ? "-" : cold.dupUrls.length === 0 ? "无" : `${cold.dupUrls.length} 个重复（其中真双载 ${(cold.doubleDownloads ?? []).length} 个）`);
+  console.log(`重复取回 URL      : ${fmtDup(b.cold)} → ${fmtDup(c.cold)}`);
+  const newDbl = (c.cold.doubleDownloads ?? []).filter((u) => !(b.cold.doubleDownloads ?? []).includes(u));
+  if (newDbl.length) console.log(`⚠ 新增真双载：${newDbl.join(", ")}——同一资源一次导航内整份下两次，预取模式与消费方不一致的征兆`);
   if (base.meta.level && results.meta.level && base.meta.level !== results.meta.level) {
     console.log(`⚠ 档位不同：基线 ${base.meta.level} vs 当前 ${results.meta.level}（字节类指标不可直接比）`);
+  }
+  const bNet = base.meta.net ?? "off", cNet = results.meta.net ?? "off";
+  if (bNet !== cNet) {
+    console.log(`⚠ 节流档不同：基线 ${bNet} vs 当前 ${cNet}——ms 类跨档不可比，只有字节账可比`);
+  }
+  const cTh = c.throttle;
+  if (cTh && cTh.checked) {
+    console.log(`节流生效自检     : ${cTh.profile} 已过——TTFB 中位 ${cTh.ttfbMedianMs}ms，` +
+      `最大单笔 ${cTh.largestKB}KB→${cTh.largestUrl} 体耗时 ${cTh.largestBytesMs}ms，过网窗 ${cTh.windowMs}ms`);
   }
   console.log(`reload Menu active : ${b.warmReload.menuActiveMs}ms → ${c.warmReload.menuActiveMs}ms`);
   console.log(`reload 传输        : ${b.warmReload.transferKB}KB → ${c.warmReload.transferKB}KB`);

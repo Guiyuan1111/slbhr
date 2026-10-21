@@ -64,6 +64,8 @@ DOM 皮肤）同码三次得 92.79 / 92.96 / 93.10，极差 0.31pt——单跑�
 node --import tsx benchmark/perf-step.mjs --save <label>        # 服务端物理 step：48 关计时
 node --import tsx benchmark/perf-determinism.mjs --compare <label>  # 位级一致门禁（引擎改动硬门）
 node --import tsx benchmark/perf-load.mjs --save <label>        # 客户端加载（先构建再测）
+node --import tsx benchmark/perf-load.mjs --net 4g --no-build --save <label>  # 弱网档（r20：off/cable/4g/fast3g/slow3g）
+FW_NET_NOOP=1 node --import tsx benchmark/perf-load.mjs --net 4g  # 阴性对照：档位静默失效必须报错退出
 node --import tsx benchmark/perf-sync.mjs --save <label>        # tick 链拆解：step/syncState/encode(20Hz)
 node --import tsx benchmark/perf-serialize.mjs --save <label>   # 真实 RoomState 出站 20 vs 60Hz 价签
 node --import tsx benchmark/perf-routeio.mjs --save <label>     # 路线回放/纯 step/世界构建吞吐
@@ -101,6 +103,23 @@ node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>              
   不是回归**：机器人点击早于暖装启动（页钟 ≈1011ms vs 暖装 +120ms），暖装字节全落进 `postClickKB`。
   配套门禁 `scripts/e2e/audiofamily.mjs`：本族两支入缓存且在播 / 另一族两支零缓存**零请求** / 类型无关件恒在 /
   页面零错误——缓存面与请求面双向对账（阳性对照不能靠 `cache.audio.set()`，Phaser 3.90 SoundCache 无此方法）。
+  **r20 弱网档口径**：`--net off|cable|4g|fast3g|slow3g` 用 CDP `Network.emulateNetworkConditions`
+  对本页 context 节流（`--rtt` 毫秒、`--down/--up` **Mbps** 可逐旋钮覆盖），每档自带 `waitScale`
+  放大页内等待超时（slow3g 200×），否则节流下必然把"还没到"误判成"失败"。
+  **档位必须自证生效**——静默失效的节流看起来就是一条快链路，会拿"换算"冒充"实测"：两条独立下限判据
+  （延迟档看逐请求 TTFB 中位数 ≥0.5×rtt，带宽档看最大单笔响应体耗时 ≥0.5×bytes÷down）任一不满足
+  **即抛错退出**；`FW_NET_NOOP=1` 是阴性对照开关（装作开档但不发 CDP 指令，专门用来逼这两条判据报错，
+  日常测量切勿带）。系数取 0.5 且只设下限，因为并发调度会让单笔体耗时大幅偏离名义值
+  （4g 实测 `font.png` 体 9542ms vs 名义 3278ms——多请求共享同一节流带宽）。
+  `throttle.achievedMbps` 是过网字节÷过网窗口的量级核对（4g 3.71 vs 名义 4Mbps），**不作判据**。
+  ms 类跨档不可比（`--compare` 遇档位不同即告警）；**字节账跨档全等**（off/4g/fast3g/slow3g 四轮
+  进 Game 累计恒 7076KB/19 请求），这本身就是"弱网区间是字节 bound"的直接证据。
+  条件复验探测走 Node `http`，不经该 context，故 `revalProbe` 与档位无关。
+  **同导航重复取回口径（r20）**：`dupUrls` 每条带 `n/wireFetches/transfersKB/restKB/doubleDownload`。
+  **条数不是判据**——基线本身就有 6 条重复，它们是二进制资产 `max-age=0` 的 304 条件复验
+  （第二次只花几百字节头，`staticGz` 有意策略，不是缺陷）；真双载（第二次仍 >1KB）才进
+  `doubleDownloads`，预取类改动以**该列为空**为硬性通过条件。r19 那轮"18 条 vs 17 条而 KB 不变"
+  的伪影正是这个口径要抓的东西。
 - `perf-sync`：快照路径成本拆解，buildState/syncState 与 ForestRoom.syncState 逐字段同构
   （r1 起机关位姿走 mechanisms 直读，镜像同构）；20Hz 编码；快照 `results/sync-<label>.json`。
   **r4 起生产语义**：encode 后 discardChanges（applyPatches 同款），patch=本网格真增量；
