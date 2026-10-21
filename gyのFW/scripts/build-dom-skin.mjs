@@ -22,7 +22,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import zlib from "node:zlib";
+import { cropRaw, decodePng } from "./png-raw.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(ROOT, "assets", "dom", "dom-skin.png");
@@ -42,57 +42,6 @@ const FRAMES = [
 ];
 
 const im = (args) => execFileSync("magick", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
-/** 解 8bit RGBA 无交错 PNG，返回原始样本（不经任何色彩管理，等同浏览器看到的字节） */
-function decodePng(buf, tag) {
-  if (buf.readUInt32BE(0) !== 0x89504e47) throw new Error(`${tag} 不是 PNG`);
-  let p = 8;
-  let ihdr = null;
-  const chunks = [];
-  const idat = [];
-  while (p < buf.length) {
-    const len = buf.readUInt32BE(p);
-    const type = buf.toString("ascii", p + 4, p + 8);
-    chunks.push(type);
-    const data = buf.subarray(p + 8, p + 8 + len);
-    if (type === "IHDR") ihdr = { w: data.readUInt32BE(0), h: data.readUInt32BE(4), depth: data[8], color: data[9], interlace: data[12] };
-    else if (type === "IDAT") idat.push(data);
-    p += 12 + len;
-  }
-  if (ihdr.depth !== 8 || ihdr.color !== 6 || ihdr.interlace !== 0) throw new Error(`${tag} 非 8bit RGBA 无交错：${JSON.stringify(ihdr)}`);
-  const raw = zlib.inflateSync(Buffer.concat(idat));
-  const stride = ihdr.w * 4;
-  const out = Buffer.alloc(ihdr.h * stride);
-  let prev = Buffer.alloc(stride);
-  for (let y = 0; y < ihdr.h; y++) {
-    const f = raw[y * (stride + 1)];
-    const line = raw.subarray(y * (stride + 1) + 1, y * (stride + 1) + 1 + stride);
-    const cur = out.subarray(y * stride, y * stride + stride);
-    line.copy(cur);
-    for (let x = 0; x < stride; x++) {
-      const a = x >= 4 ? cur[x - 4] : 0;
-      const b = prev[x];
-      const c = x >= 4 ? prev[x - 4] : 0;
-      let v = cur[x];
-      if (f === 1) v += a;
-      else if (f === 2) v += b;
-      else if (f === 3) v += (a + b) >> 1;
-      else if (f === 4) {
-        const pa = Math.abs(b - c), pb = Math.abs(a - c), pc = Math.abs(a + b - 2 * c);
-        v += pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
-      } else if (f !== 0) throw new Error(`${tag} 未知滤波 ${f}`);
-      cur[x] = v & 0xff;
-    }
-    prev = cur;
-  }
-  return { ...ihdr, data: out, chunks: chunks.filter((t) => t !== "IDAT").join(",") };
-}
-/** 把矩形区域从原始样本里拍平成一块 buffer（逐行 copy，越界即抛） */
-function cropRaw(img, x, y, w, h) {
-  if (x < 0 || y < 0 || x + w > img.w || y + h > img.h) throw new Error(`矩形 (${x},${y},${w},${h}) 越界 ${img.w}x${img.h}`);
-  const out = Buffer.alloc(w * h * 4);
-  for (let i = 0; i < h; i++) img.data.copy(out, i * w * 4, (y + i) * img.w * 4 + x * 4, (y + i) * img.w * 4 + x * 4 + w * 4);
-  return out;
-}
 const sha = (f) => createHash("sha256").update(readFileSync(f)).digest("hex");
 
 mkdirSync(TEMP, { recursive: true });
