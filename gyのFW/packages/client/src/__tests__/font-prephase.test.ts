@@ -128,6 +128,18 @@ function literal(arg: string): string | null {
   return body.includes("${") ? null : body;
 }
 
+/** 场景类体切分：`export class X extends Phaser.Scene` 起，到下一个同形声明止。
+ *  只做粗切（不去尾括号），因为断言只关心类体内有没有某个标记。 */
+function sceneClassBodies(src: string): { name: string; body: string }[] {
+  const re = /^export class (\w+) extends Phaser\.Scene\b/gm;
+  const marks: { name: string; start: number }[] = [];
+  for (let m = re.exec(src); m !== null; m = re.exec(src)) marks.push({ name: m[1], start: m.index });
+  return marks.map((mk, i) => ({
+    name: mk.name,
+    body: src.slice(mk.start, i + 1 < marks.length ? marks[i + 1].start : src.length),
+  }));
+}
+
 const fnt = parseFnt(path.join(ROOT, "assets/fonts/chinese/font.fnt"));
 const fontSrc = loadFontAtlas(path.join(ROOT, "assets/fonts/chinese/font.png"), fnt);
 const spec = loadSpec(ROOT);
@@ -209,6 +221,30 @@ describe("r18 字体两段化：调用点分类", () => {
     expect(sites).toBe(6); // GameScene 2 + overlays 4（stoneButton 内 1、暫停、时限、游戏结束）
   });
 
+  it("凡画 FONT_FULL 的场景都在自己的 preload 里声明装载（消费方自备，不靠上游兜底）", () => {
+    // 失效模式（本轮实测抓到）：面板/ HUD 可以在"Game 的装载队列还没跑"的路径上被启动——
+    // 刷新回座 won/gameover 时 enterGame 的黑幕把 Game 起步压到淡入之后，而 resumeWonIfNeeded
+    // 与 onPhase("gameover") 已经 scene.start 了面板。此时 FONT_FULL 未进缓存，
+    // add.bitmapText 抛 Invalid BitmapText key、create 中断，结算/失败面板开不出来。
+    // 已缓存时声明也零成本：addFile(:532)→keyExists(:568) 跳过，队列空则 start() 当场 loadComplete。
+    const declarers: string[] = [];
+    for (const file of IN_ROOM_FILES) {
+      for (const cls of sceneClassBodies(stripComments(SRC(file)))) {
+        if (!/\bFONT_FULL\b/.test(cls.body)) continue;
+        declarers.push(`${file.split("/").pop()}:${cls.name}`);
+        const body = cls.body.match(/preload\(\): void \{([\s\S]*?)\n  \}/)?.[1] ?? "";
+        const declares = /loadFontFull\(this\.load\)|loadGameAtlases\(this\.load\)/.test(body);
+        expect(declares, `${cls.name} 画 FONT_FULL 却没在自己的 preload 里声明装载`).toBe(true);
+      }
+    }
+    expect(declarers.sort()).toEqual([
+      "GameScene.ts:GameScene",
+      "overlays.ts:EndMenu",
+      "overlays.ts:GameOverMenu",
+      "overlays.ts:PauseMenu",
+    ]);
+  });
+
   it("stoneButton 调用：房内六处显式 FONT_FULL，进房前三处用缺省子集且 label 在子集内", () => {
     const inRoom = stoneButtonCalls("packages/client/src/scenes/overlays.ts");
     expect(inRoom.length).toBe(6);
@@ -225,15 +261,24 @@ describe("r18 字体两段化：调用点分类", () => {
     }
   });
 
-  it("Boot 关键路径只装子集，1.6MB 全量字体只出现在延迟装载函数里", () => {
+  it("Boot 关键路径只装子集，1.6MB 全量字体只在延迟通道里声明一次", () => {
     const boot = SRC("packages/client/src/scenes/BootScene.ts");
     expect(boot.includes('this.load.bitmapFont(FONT_MAIN, "/assets/fonts/chinese/font-prephase.png"')).toBe(true);
-    expect(boot.includes('load.bitmapFont(FONT_FULL, "/assets/fonts/chinese/font.png"')).toBe(true);
-    const warmFn = boot.indexOf("export function loadGameAtlases");
+    const declFn = boot.indexOf("export function loadFontFull");
     const fullLoad = boot.indexOf("load.bitmapFont(FONT_FULL");
-    expect(fullLoad).toBeGreaterThan(warmFn); // 全量字体在延迟通道函数体内
+    expect(declFn).toBeGreaterThan(-1);
+    expect(fullLoad).toBeGreaterThan(declFn); // 唯一的声明语句在 loadFontFull 体内
+    expect(boot.split("load.bitmapFont(FONT_FULL").length - 1).toBe(1); // 本文件不第二处
     const preload = boot.slice(boot.indexOf("preload(): void"), boot.indexOf("create(): void"));
     expect(preload.includes("font.png")).toBe(false); // Boot 段再无那次 1.6MB 下载
     expect(preload.includes("font-prephase.png")).toBe(true);
+    // 全量路径字面量全局只此一处：别处硬编码=绕过 keyExists 跳过逻辑的第二下载源
+    const sites = [
+      "packages/client/src/scenes/BootScene.ts",
+      "packages/client/src/scenes/GameScene.ts",
+      "packages/client/src/scenes/overlays.ts",
+      "packages/client/src/main.ts",
+    ].reduce((n, f) => n + (stripComments(SRC(f)).match(/fonts\/chinese\/font\.png/g)?.length ?? 0), 0);
+    expect(sites).toBe(1);
   });
 });

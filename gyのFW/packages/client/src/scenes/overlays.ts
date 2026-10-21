@@ -10,7 +10,7 @@
  * 子元素一律用板内局部坐标（板中心 = (541,321)）；1280×960 下 screen = local + (99,159)。
  */
 import Phaser from "phaser";
-import { ATLAS_MENU, ATLAS_POPUP, FONT_FULL, FONT_MAIN } from "./BootScene";
+import { ATLAS_MENU, ATLAS_POPUP, FONT_FULL, FONT_MAIN, loadFontFull } from "./BootScene";
 import { getSettings } from "../settings";
 
 /** 板原生尺寸（PopupBackground0000 帧 1082×642，sourceSize 实测；运行时以纹理帧为准） */
@@ -157,6 +157,13 @@ export class PauseMenu extends Phaser.Scene {
   constructor() {
     super("PauseMenu");
   }
+  /** 三块面板的板内文案都用 FONT_FULL，而启动路径不止"Game 已在场"这一条：刷新回座
+   *  won/gameover 时 enterGame 的黑幕把 Game 起步压到淡入之后，面板却会先被 start
+   *  （0.3.42 的 L-02 补结算链）。故消费方各自声明装载——已缓存时队列空、start() 当场
+   *  loadComplete（LoaderPlugin.js），既不重下也不多等一帧。理由详见 BootScene.loadFontFull。 */
+  preload(): void {
+    loadFontFull(this.load);
+  }
   /** 场景实例在 stop/start 间复用，create 前必须清掉上次弹簧关闭态：
    *  否则 closing 残留 true 会让第二次打开的 requestClose 被幂等守卫直接吞掉。 */
   init(): void {
@@ -220,6 +227,10 @@ export class PauseMenu extends Phaser.Scene {
 export class EndMenu extends Phaser.Scene {
   constructor() {
     super("EndMenu");
+  }
+  /** 装载理由同 PauseMenu.preload（刷新回座 won 时本面板先于 Game 起步） */
+  preload(): void {
+    loadFontFull(this.load);
   }
   create(): void {
     const d = (this.scene.settings.data ?? {}) as {
@@ -335,6 +346,10 @@ export class EndMenu extends Phaser.Scene {
 export class GameOverMenu extends Phaser.Scene {
   constructor() {
     super("GameOverMenu");
+  }
+  /** 装载理由同 PauseMenu（刷新回座 gameover 时 onPhase 先于 Game 起步启动本面板） */
+  preload(): void {
+    loadFontFull(this.load);
   }
   create(): void {
     const board = buildBoard(this);

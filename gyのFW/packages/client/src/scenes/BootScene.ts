@@ -26,12 +26,12 @@ export const ATLAS_POPUP = "popup";
 export const ATLAS_MENU = "menu";
 export const ATLAS_PRELOADER = "preloader";
 export const FONT_MAIN = "font";
-/** 全量位图字体（r18 两段化）：Boot 关键路径只装 FONT_MAIN 子集，本键由延迟通道
- *  loadGameAtlases 装载——用第二个键而不是覆盖 "font"，因为 TextureManager.checkKey
+/** 全量位图字体（r18 两段化）：Boot 关键路径只装 FONT_MAIN 子集，本键由消费方 preload
+ *  经 loadFontFull 装载——用第二个键而不是覆盖 "font"，因为 TextureManager.checkKey
  *  (:248) 拒绝同名重载并 console.error，addImage (:469) 随即早退——旧纹理与其上已挂的
  *  BitmapText 帧引用原样留着（换纹理只能 textures.remove，那会让在场字对象抛错）。
- *  本键可能被 loadGameAtlases 声明两次（Menu 暖装 + GameScene.preload 补齐），这是安全的：
- *  LoaderPlugin.addFile (:532) 先问 keyExists (:568)→File.hasCacheConflict (:499)
+ *  本键可被多处声明（Menu 暖装、GameScene.preload、弹窗三件套 preload，见 loadFontFull），
+ *  这是安全的：LoaderPlugin.addFile (:532) 先问 keyExists (:568)→File.hasCacheConflict (:499)
  *  `cache.exists(key)`，bitmapFont 的 png 落在 textureManager（ImageFile.js:66）、
  *  fnt 落在 cache.xml（XMLFile.js:56），而 BitmapFontFile 给两个子文件同一个键
  *  (:70-74)，故二者同进同出——第二次声明静默跳过：不发请求、不重解析、不触替换。 */
@@ -43,6 +43,19 @@ export const FONT_FULL = "font-full";
  */
 export const PLAYER_SCALE = 0.95;
 
+/**
+ * 全量位图字体的装载声明（唯一一处，路径与键都只在这里）：房内文案（GameScene HUD、
+ * 弹窗三件套）用的 FONT_FULL 由它进缓存。声明方一律是消费方自己的 preload——已缓存时
+ * LoaderPlugin.addFile (:532)→keyExists (:568) 静默跳过，队列空则 start() 当场 loadComplete
+ * （LoaderPlugin.js: start 内 `list.size === 0` 分支），既不重下也不多等一帧，所以无脑声明
+ * 比"猜上游已经装过"便宜。0.3.43 实测教训：刷新回座 won/gameover 时 enterGame 的黑幕把
+ * Game 起步压到淡入之后，而 resumeWonIfNeeded/onPhase 会先 start 弹窗场景，靠上游兜底就
+ * 撞上 `Invalid BitmapText key: font-full`（create 中断，结算板开不出来）。
+ */
+export function loadFontFull(load: Phaser.Loader.LoaderPlugin): void {
+  load.bitmapFont(FONT_FULL, "/assets/fonts/chinese/font.png", "/assets/fonts/chinese/font.fnt");
+}
+
 /** 游戏内四图集（Menu 首帧用不到）：进阶装载共用入口——已缓存的键 Phaser 自动跳过 */
 export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
   load.atlas(ATLAS_GROUND, "/assets/atlasses/GroundAssets.png", "/assets/atlasses/GroundAssets.json");
@@ -51,7 +64,7 @@ export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
   load.atlas(ATLAS_POPUP, "/assets/atlasses/PopupAssets.png", "/assets/atlasses/PopupAssets.json");
   // r18 件2b：全量位图字体同走这条延迟通道（Menu 驻留暖装 / GameScene.preload 兜底，
   //  已缓存的键照旧静默跳过）。进房前文案一律 FONT_MAIN 子集，故房前不等这 1.6MB。
-  load.bitmapFont(FONT_FULL, "/assets/fonts/chinese/font.png", "/assets/fonts/chinese/font.fnt");
+  loadFontFull(load);
 }
 
 /** 后台暖装落定状态（r5）：MenuScene 启动暖装时登记，进 Game 前等待其落定，
