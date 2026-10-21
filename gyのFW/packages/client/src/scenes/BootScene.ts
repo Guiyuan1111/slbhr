@@ -26,6 +26,10 @@ export const ATLAS_POPUP = "popup";
 export const ATLAS_MENU = "menu";
 export const ATLAS_PRELOADER = "preloader";
 export const FONT_MAIN = "font";
+/** 全量位图字体（r18 两段化）：Boot 关键路径只装 FONT_MAIN 子集，本键由延迟通道
+ *  loadGameAtlases 装载——用第二个键而不是覆盖 "font"，因为 TextureManager.checkKey
+ *  (:248) 拒绝同名重载，且 textures.remove() 会让已在场的 BitmapText 抛错。 */
+export const FONT_FULL = "font-full";
 
 /**
  * 官方素材以高分辨率绘制。原版运行时角色帧缩放 0.95（帧含大量透明边距，
@@ -39,6 +43,9 @@ export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
   load.atlas(ATLAS_MECH, "/assets/atlasses/MechAssets.png", "/assets/atlasses/MechAssets.json");
   load.atlas(ATLAS_TEMPLE, "/assets/atlasses/Temples/forest/TempleAssets.png", "/assets/atlasses/Temples/forest/TempleAssets.json");
   load.atlas(ATLAS_POPUP, "/assets/atlasses/PopupAssets.png", "/assets/atlasses/PopupAssets.json");
+  // r18 件2b：全量位图字体同走这条延迟通道（Menu 驻留暖装 / GameScene.preload 兜底，
+  //  已缓存的键照旧静默跳过）。进房前文案一律 FONT_MAIN 子集，故房前不等这 1.6MB。
+  load.bitmapFont(FONT_FULL, "/assets/fonts/chinese/font.png", "/assets/fonts/chinese/font.fnt");
 }
 
 /** 后台暖装落定状态（r5）：MenuScene 启动暖装时登记，进 Game 前等待其落定，
@@ -95,7 +102,9 @@ export class BootScene extends Phaser.Scene {
     this.load.atlas(ATLAS_CHARS, "/assets/atlasses/CharAssets.png", "/assets/atlasses/CharAssets.json");
     this.load.atlas(ATLAS_MENU, "/assets/atlasses/MenuAssets.png", "/assets/atlasses/MenuAssets.json");
     // 原版画布内时钟的位图字（font 48 基准，LevelUI Clock 用 24 号 = 半缩放）
-    this.load.bitmapFont(FONT_MAIN, "/assets/fonts/chinese/font.png", "/assets/fonts/chinese/font.fnt");
+    // 进房前字体子集（r18 件1 生成器 scripts/font-subset/build-font-prephase.mjs）：
+    // 同尺寸、同 fnt，只把进房前文案用不到的字形像素清零——1600.3KB → 304.5KB。
+    this.load.bitmapFont(FONT_MAIN, "/assets/fonts/chinese/font-prephase.png", "/assets/fonts/chinese/font.fnt");
     // 独立图片（0.3.12 起开始界面引用，此前漏载致缺纹理静默空白——差距审计 P0）
     this.load.image("TempleHall", "/assets/images/TempleHallForest.jpg");
     this.load.image("Beam", "/assets/images/Beam.png");

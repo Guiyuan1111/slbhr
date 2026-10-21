@@ -23,7 +23,7 @@ import { AUDIO_BGM_OVER, AUDIO_SFX, bgmFamilyOf, bgmPackOf, loadAudioPack } from
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
-import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_MAIN, PLAYER_SCALE, buildGameAnims, loadGameAtlases } from "./BootScene";
+import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_FULL, PLAYER_SCALE, buildGameAnims, loadGameAtlases } from "./BootScene";
 import { getSettings } from "../settings";
 import { loadTempleLevels } from "../templeData";
 import { validateSnapshot } from "../snapshotValidation";
@@ -1392,7 +1392,7 @@ export class GameScene extends Phaser.Scene {
       const texts = step.textItems.map((t) => {
         // 世界 = 关卡 +PAD：文本与触发矩形同域（此前漏 +PAD 致文本相对地砖偏 32px，
         // 2026-10-12 用户报告第一关文字错位时实锤）
-        const bt = this.add.bitmapText(t.x + PAD, t.y + PAD, FONT_MAIN, t.text, 18);
+        const bt = this.add.bitmapText(t.x + PAD, t.y + PAD, FONT_FULL, t.text, 18);
         // 运行时接受 'left'|'center'|'right'（Phaser 3 字体排版），本仓 phaser 类型标注偏差强转
         bt.align = (t.halign ?? "left") as unknown as typeof bt.align;
         return bt.setMaxWidth(t.width).setDepth(0.8).setVisible(false).setAlpha(0);
@@ -1492,7 +1492,7 @@ export class GameScene extends Phaser.Scene {
     // 原版 LevelUI/Clock：TempleAssets Clock0000 + font 位图字（oracle 实拍 2026-10-12：字形 39px 高
     // ≈ 名义字号×1.6；旧 24 号只渲染 26px 高，偏小——注意文字 y=56 是文字区起点，加高后仍落在盘面内）
     this.clockText = this.add
-      .bitmapText(clockX, 56, FONT_MAIN, "00:00", 24)
+      .bitmapText(clockX, 56, FONT_FULL, "00:00", 24)
       .setOrigin(0.5, 0)
       .setDepth(9)
       .setScrollFactor(0);
