@@ -1,0 +1,481 @@
+{
+  "meta": {
+    "label": "r13-fb2-webgl",
+    "level": "forest_bonus_2",
+    "secs": 12.03,
+    "renderer": "webgl",
+    "interval": 64,
+    "map": true,
+    "git": "f7dfe6e",
+    "date": "2026-10-21T07:14:25.487Z",
+    "node": "v22.22.1"
+  },
+  "sampledTotalKB": 99.3,
+  "sampleCount": 335,
+  "allocKBs": 8.3,
+  "distinctFrames": 93,
+  "pageErrors": [],
+  "chunks": [
+    {
+      "chunk": "phaser",
+      "self": 55712,
+      "kb": 4.5
+    },
+    {
+      "chunk": "colyseus",
+      "self": 42304,
+      "kb": 3.4
+    },
+    {
+      "chunk": "app",
+      "self": 2996,
+      "kb": 0.2
+    },
+    {
+      "chunk": "other",
+      "self": 712,
+      "kb": 0.1
+    }
+  ],
+  "topSelf": [
+    {
+      "key": "onMessageCallback|http://127.0.0.1:3618/assets/colyseus-BEjLCa9D.js|24|53950",
+      "self": 41884,
+      "inclusive": 42268,
+      "functionName": "onMessageCallback",
+      "url": "http://127.0.0.1:3618/assets/colyseus-BEjLCa9D.js",
+      "lineNumber": 24,
+      "columnNumber": 53950,
+      "chain": [],
+      "src": "../../../../node_modules/colyseus.js/build/cjs/Room.js:155:4",
+      "chunk": "colyseus"
+    },
+    {
+      "key": "e|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|1035|284",
+      "self": 25144,
+      "inclusive": 128096,
+      "functionName": "e",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 1035,
+      "columnNumber": 284,
+      "chain": [],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:31369:36",
+      "chunk": "phaser"
+    },
+    {
+      "key": "batchQuad|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|4713|5377",
+      "self": 11628,
+      "inclusive": 11628,
+      "functionName": "batchQuad",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 4713,
+      "columnNumber": 5377,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:179175:15",
+      "chunk": "phaser"
+    },
+    {
+      "key": "S|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|1558|17",
+      "self": 3096,
+      "inclusive": 40740,
+      "functionName": "S",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 1558,
+      "columnNumber": 17,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:56132:25",
+      "chunk": "phaser"
+    },
+    {
+      "key": "get|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|1268|64",
+      "self": 2768,
+      "inclusive": 2768,
+      "functionName": "get",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 1268,
+      "columnNumber": 64,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:41449:13",
+      "chunk": "phaser"
+    },
+    {
+      "key": "we|http://127.0.0.1:3618/assets/index-Kj3yYRw-.js|103|44637",
+      "self": 2116,
+      "inclusive": 2116,
+      "functionName": "we",
+      "url": "http://127.0.0.1:3618/assets/index-Kj3yYRw-.js",
+      "lineNumber": 103,
+      "columnNumber": 44637,
+      "chain": [],
+      "src": "../../src/main.ts:206:9",
+      "chunk": "app"
+    },
+    {
+      "key": "setSizeToFrame|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|1320|337",
+      "self": 1736,
+      "inclusive": 1736,
+      "functionName": "setSizeToFrame",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 1320,
+      "columnNumber": 337,
+      "chain": [
+        "e",
+        "setCurrentFrame"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:45018:20",
+      "chunk": "phaser"
+    },
+    {
+      "key": "ct.50792.n.emit|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|0|1864",
+      "self": 1532,
+      "inclusive": 8324,
+      "functionName": "ct.50792.n.emit",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 0,
+      "columnNumber": 1864,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:183:30",
+      "chunk": "phaser"
+    },
+    {
+      "key": "S|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|1155|17",
+      "self": 1084,
+      "inclusive": 1240,
+      "functionName": "S",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 1155,
+      "columnNumber": 17,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:36295:24",
+      "chunk": "phaser"
+    },
+    {
+      "key": "setAlpha|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|1260|142",
+      "self": 1076,
+      "inclusive": 1076,
+      "functionName": "setAlpha",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 1260,
+      "columnNumber": 142,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:41093:14",
+      "chunk": "phaser"
+    },
+    {
+      "key": "emitEvents|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|233|4632",
+      "self": 1032,
+      "inclusive": 1032,
+      "functionName": "emitEvents",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 233,
+      "columnNumber": 4632,
+      "chain": [
+        "e",
+        "setCurrentFrame"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:6430:16",
+      "chunk": "phaser"
+    },
+    {
+      "key": "setCurrentFrame|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|233|7415",
+      "self": 868,
+      "inclusive": 3636,
+      "functionName": "setCurrentFrame",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 233,
+      "columnNumber": 7415,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:6898:21",
+      "chunk": "phaser"
+    },
+    {
+      "key": "getParentBounds|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|4948|3205",
+      "self": 772,
+      "inclusive": 772,
+      "functionName": "getParentBounds",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 4948,
+      "columnNumber": 3205,
+      "chain": [
+        "e",
+        "ct.50792.n.emit"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:195335:21",
+      "chunk": "phaser"
+    },
+    {
+      "key": "batchSprite|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|4753|1065",
+      "self": 768,
+      "inclusive": 20924,
+      "functionName": "batchSprite",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 4753,
+      "columnNumber": 1065,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:186615:17",
+      "chunk": "phaser"
+    },
+    {
+      "key": "flush|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|4718|9875",
+      "self": 696,
+      "inclusive": 1024,
+      "functionName": "flush",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 4718,
+      "columnNumber": 9875,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:181738:11",
+      "chunk": "phaser"
+    },
+    {
+      "key": "(IDLE_EXTERNAL)|none|-1|-1",
+      "self": 460,
+      "inclusive": 460,
+      "functionName": "(IDLE_EXTERNAL)",
+      "url": "",
+      "lineNumber": -1,
+      "columnNumber": -1,
+      "chain": [],
+      "src": ":-1:-1",
+      "chunk": "other"
+    }
+  ],
+  "topInclusive": [
+    {
+      "key": "(root)|none|-1|-1",
+      "self": 0,
+      "inclusive": 173096,
+      "functionName": "(root)",
+      "url": "",
+      "lineNumber": -1,
+      "columnNumber": -1,
+      "chain": [],
+      "src": ":-1:-1",
+      "chunk": "other"
+    },
+    {
+      "key": "e|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|1035|284",
+      "self": 25144,
+      "inclusive": 128096,
+      "functionName": "e",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 1035,
+      "columnNumber": 284,
+      "chain": [],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:31369:36",
+      "chunk": "phaser"
+    },
+    {
+      "key": "step|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|469|2558",
+      "self": 0,
+      "inclusive": 102952,
+      "functionName": "step",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 469,
+      "columnNumber": 2558,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:18212:10",
+      "chunk": "phaser"
+    },
+    {
+      "key": "step|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|465|1623",
+      "self": 0,
+      "inclusive": 102816,
+      "functionName": "step",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 465,
+      "columnNumber": 1623,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:17180:10",
+      "chunk": "phaser"
+    },
+    {
+      "key": "render|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|5020|3313",
+      "self": 0,
+      "inclusive": 90944,
+      "functionName": "render",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 5020,
+      "columnNumber": 3313,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:198266:12",
+      "chunk": "phaser"
+    },
+    {
+      "key": "render|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|321|2838",
+      "self": 0,
+      "inclusive": 90944,
+      "functionName": "render",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 321,
+      "columnNumber": 2838,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:11715:12",
+      "chunk": "phaser"
+    },
+    {
+      "key": "render|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|4718|17267",
+      "self": 0,
+      "inclusive": 90944,
+      "functionName": "render",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 4718,
+      "columnNumber": 17267,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:182818:12",
+      "chunk": "phaser"
+    },
+    {
+      "key": "onMessageCallback|http://127.0.0.1:3618/assets/colyseus-BEjLCa9D.js|24|53950",
+      "self": 41884,
+      "inclusive": 42268,
+      "functionName": "onMessageCallback",
+      "url": "http://127.0.0.1:3618/assets/colyseus-BEjLCa9D.js",
+      "lineNumber": 24,
+      "columnNumber": 53950,
+      "chain": [],
+      "src": "../../../../node_modules/colyseus.js/build/cjs/Room.js:155:4",
+      "chunk": "colyseus"
+    },
+    {
+      "key": "S|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|1558|17",
+      "self": 3096,
+      "inclusive": 40740,
+      "functionName": "S",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 1558,
+      "columnNumber": 17,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:56132:25",
+      "chunk": "phaser"
+    },
+    {
+      "key": "S|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|1382|17",
+      "self": 0,
+      "inclusive": 30764,
+      "functionName": "S",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 1382,
+      "columnNumber": 17,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:49423:29",
+      "chunk": "phaser"
+    },
+    {
+      "key": "batchSprite|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|4753|1065",
+      "self": 768,
+      "inclusive": 20924,
+      "functionName": "batchSprite",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 4753,
+      "columnNumber": 1065,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:186615:17",
+      "chunk": "phaser"
+    },
+    {
+      "key": "batchQuad|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|4713|5377",
+      "self": 11628,
+      "inclusive": 11628,
+      "functionName": "batchQuad",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 4713,
+      "columnNumber": 5377,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:179175:15",
+      "chunk": "phaser"
+    },
+    {
+      "key": "update|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|5020|3052",
+      "self": 0,
+      "inclusive": 9872,
+      "functionName": "update",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 5020,
+      "columnNumber": 3052,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:198235:12",
+      "chunk": "phaser"
+    },
+    {
+      "key": "step|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|5033|734",
+      "self": 0,
+      "inclusive": 9872,
+      "functionName": "step",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 5033,
+      "columnNumber": 734,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:201003:10",
+      "chunk": "phaser"
+    },
+    {
+      "key": "c|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|2166|28",
+      "self": 0,
+      "inclusive": 8576,
+      "functionName": "c",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 2166,
+      "columnNumber": 28,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:85489:30",
+      "chunk": "phaser"
+    },
+    {
+      "key": "set|http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js|4694|3808",
+      "self": 0,
+      "inclusive": 8576,
+      "functionName": "set",
+      "url": "http://127.0.0.1:3618/assets/phaser-BMeCXOGt.js",
+      "lineNumber": 4694,
+      "columnNumber": 3808,
+      "chain": [
+        "e"
+      ],
+      "src": "../../../../node_modules/phaser/dist/phaser.js:176080:9",
+      "chunk": "phaser"
+    }
+  ]
+}
