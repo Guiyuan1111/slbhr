@@ -74,4 +74,24 @@ describe("GroundCache", () => {
     expect(c.totalBytes).toBe(canvasBytes(a2));
     expect(c.get("l1")).toBe(a2);
   });
+
+  it("clear（离房回选关）：全部归还像素缓冲、账归零，且 bound 一并置空", () => {
+    const c = new GroundCache(BUDGET);
+    const a = mk();
+    const b = mk();
+    c.put("l1", a);
+    c.put("l2", b);
+    c.bound = b;
+    c.clear();
+    expect(a.width).toBe(0);
+    expect(b.height).toBe(0);
+    expect(c.size).toBe(0);
+    expect(c.totalBytes).toBe(0);
+    expect(c.bound).toBeNull();
+    // 清完再进关必须走重绑：bound 若还指着归零面具，地面会当场变黑
+    const fresh = mk();
+    c.put("l1", fresh);
+    expect(c.get("l1")).toBe(fresh);
+    expect(c.bound).toBeNull();
+  });
 });

@@ -558,6 +558,14 @@ export class GameScene extends Phaser.Scene {
     return { size: GameScene.grounds.size, bytesMB: +(GameScene.grounds.totalBytes / 1048576).toFixed(2) };
   }
 
+  /** 离房回选关（r14 件B，main.ts leaveToMenu 在 sm.stop("Game") 之后调用）：
+   *  先摘 game 级纹理（场景 shutdown 不会带走它，GL 句柄还占着），再清位图缓存。
+   *  换关（advance）路径不经过这里，缓存与免重传照旧。 */
+  static releaseGrounds(textures: Phaser.Textures.TextureManager): void {
+    if (textures.exists("groundTex")) textures.remove("groundTex");
+    GameScene.grounds.clear();
+  }
+
   /** 地面：岩壁纹理 × 蒙版合成 + 黑外描边 + 右下软投影（canvas 一次性合成） */
   private buildGround(level: LevelData): void {
     const cached = GameScene.grounds.get(level.id) as HTMLCanvasElement | null;

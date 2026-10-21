@@ -382,6 +382,9 @@ async function enterGame(): Promise<void> {
       sm.stop("EndMenu");
       sm.stop("GameOverMenu");
       sm.stop("PauseMenu");
+      // r14 件B：Game 已停，地面位图与它的 game 级纹理在此后无人引用；
+      // 选关树驻留期把这 ≈5MB/张 交回（重进同关重烘 ≈12ms，入房链不可见）。
+      GameScene.releaseGrounds(phaser!.textures);
       sm.start("Temple");
       const hud = document.querySelector("#hud");
       if (hud) hud.classList.add("hidden");

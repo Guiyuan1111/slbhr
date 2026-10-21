@@ -70,6 +70,21 @@ export class GroundCache {
     return this.entries.size;
   }
 
+  /** 离房回选关（main.ts leaveToMenu 在 Game 场景 stop 之后调用）：整条 LRU 归零。
+   *  选关树不渲染地面，这 ≈5MB/张 的位图在菜单态纯属驻留；重进同关要重烘，
+   *  实测 ≈12–17ms（perf-advance bakeMs 中位 12），落在 1s 入房链里不可见。
+   *  `bound` 必须一并置空：留着一张已归零的面具自称"正绑着"，下一次进关会跳过
+   *  重绑而把空纹理贴到地上（= 地面变黑）。 */
+  clear(): void {
+    for (const c of this.entries.values()) {
+      c.width = 0;
+      c.height = 0;
+    }
+    this.entries.clear();
+    this.bytes = 0;
+    this.bound = null;
+  }
+
   get totalBytes(): number {
     return this.bytes;
   }
