@@ -109,9 +109,17 @@ const HOOK = `(() => {
   // r12 写入计数探针（仅自增计数，零行为改动）：量化「每帧强写」面——
   // 相机弹簧 applyCam(force) 与 HUD 反缩放补偿、以及机关位姿 setter 的静止态残留写入。
   P.camZoom = 0; P.camCenter = 0; P.setPos = 0; P.setAngleW = 0; P.setScaleW = 0; P.setTextureW = 0;
-  const CB = Phaser.cameras?.Base?.prototype;
-  if (CB?.setZoom) { const o = CB.setZoom; CB.setZoom = function (...a) { P.camZoom++; return o.apply(this, a); }; }
-  if (CB?.centerOn) { const o = CB.centerOn; CB.centerOn = function (...a) { P.camCenter++; return o.apply(this, a); }; }
+  // 相机方法所在原型随 Phaser 版本层级不同（Base/Camera/管线上），沿原型链找拥有者再包
+  const cam = scene.cameras.main;
+  for (const meth of ["setZoom", "centerOn"]) {
+    let proto = Object.getPrototypeOf(cam);
+    while (proto && !Object.prototype.hasOwnProperty.call(proto, meth)) proto = Object.getPrototypeOf(proto);
+    if (!proto) continue;
+    const o = proto[meth];
+    if (typeof o !== "function") continue;
+    const c = meth === "setZoom" ? "camZoom" : "camCenter";
+    proto[meth] = function (...a) { P[c]++; return o.apply(this, a); };
+  }
   for (const cls of ["Image", "Sprite", "Container", "BitmapText"]) {
     const p = Phaser.GameObjects[cls]?.prototype;
     if (!p) continue;
