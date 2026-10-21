@@ -23,7 +23,7 @@ import { AUDIO_BGM_OVER, AUDIO_SFX, bgmFamilyOf, bgmFinishOf, bgmLoopOf, loadAud
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
-import { ATLAS_CHARS, ATLAS_CHARS_GAME, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_FULL, PLAYER_SCALE, buildCharAnims, buildGameAnims, loadGameAtlases } from "./BootScene";
+import { ATLAS_CHARS, ATLAS_CHARS_ENTRY, ATLAS_CHARS_PLAY, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_FULL, PLAYER_SCALE, buildGameAnims, ensureCharAnims, loadCharsPlay, loadGameAtlases } from "./BootScene";
 import { getSettings } from "../settings";
 import { loadTempleLevels } from "../templeData";
 import { validateSnapshot } from "../snapshotValidation";
@@ -410,10 +410,19 @@ export class GameScene extends Phaser.Scene {
     // 游戏内动画注册（r5 随装载序从 BootScene 迁来：wind/liquid/finish_stone 的帧在
     // ground/mech/popup 图集，Boot 阶段尚未装载；exists 幂等，重开/换关不重复建）
     buildGameAnims(this.anims);
-    // r22 件2：角色房内十一式（跑步/跳跃/坠落/上升/楼梯/烟雾）的帧在 CharAssetsGame，
-    // 那张随 loadGameAtlases 进缓存，故注册也只能在这里——早一帧就会踩 TextureManager.get
-    // 的缺键分支（整张图集当一帧）。菜单两式已由 Boot.create 注册，exists 幂等不冲突。
-    buildCharAnims(this.anims);
+    // r23 件1：角色房内十一式（跑步/跳跃/坠落/上升/楼梯序列/烟雾序列）的帧改挂 CharAssetsPlay——
+    // 那张不再进落定门，注册必须等它落地（已在缓存时当场注册），早一步就是把整张图集当一帧绑进动画。
+    // 钻石与 smoke/stairs 的 0000 帧在 Entry 张、随 loadGameAtlases 进缓存，构造期照常解析。
+    // 菜单两式已由 Boot.create 注册，exists 幂等不冲突。
+    ensureCharAnims(this, () => {
+      // 补注册完成时，跑/跳的 play() 并不会自动重发——两个 diff 卫（:1812 view.anim / :1823 legsKey）
+      // 只在状态**变化**那一帧才播。玩家若在窗口里一直按着跑键，状态没变就永远停在 idle 样子，
+      // 故把在线状态清空，让下一帧按当前快照重新播（与 :1651 已有的 `view.anim = ""` 同一手法）。
+      for (const view of this.views.values()) {
+        view.anim = "";
+        view.legsKey = "";
+      }
+    });
     // 相机管理（F4 翻转，原版 CameraManager @1881500）：此前固定全景（冻结偏离）。
     // 原版行为：加载期 camFreeze 在全图 minScale，started 解冻后每帧自动适配双角色。
     // settled 口径（F2 后）：标准关 settled 恒钉关卡矩形中心 → scroll(16,16)
@@ -481,6 +490,7 @@ export class GameScene extends Phaser.Scene {
     // Boot :2162295 / fx 信号 :2209677 同式——settings.ts 分轨语义仅保留 music 侧）
     this.sound.mute = !getSettings().fx;
     this.sfx(this.bgmKey(), { loop: true });
+    this.kickCharsPlay(); // 先声明：与循环曲同批并发时，让决定画面的那张排在队头
     this.kickBgmLoop();
 
     // T4（14 号档）：退场统一停音。Phaser 3 场景共享全局 sound manager（InjectionMap
@@ -524,6 +534,16 @@ export class GameScene extends Phaser.Scene {
     // 都会再挂一个 once——SHUTDOWN 时摘掉，否则补起处理器会累积并在下一次装载时多播一支。
     this.load.once("complete", catchUp);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.load.off("complete", catchUp));
+    this.load.start();
+  }
+
+  /** r23 件1：角色播放序列帧（CharAssetsPlay 442.4KB）的兜底装载点——它既不在 Boot 阻塞批也不在落定门。
+   *  驻留路径由 MenuScene 暖装在门落定后入队，到此键已进纹理缓存 ⇒ 零请求零延后；快速进房/邀请深链那条
+   *  路 Menu 在落定前后就被切走、暖装队列随场景 reset，这里补发。create 里的 `ensureCharAnims` 把注册
+   *  挂在同场景 loader 的 `filecomplete-atlasjson-chars-play` 上，所以这条兜底队列落定时动画照样补齐。 */
+  private kickCharsPlay(): void {
+    if (this.textures.exists(ATLAS_CHARS_PLAY)) return;
+    loadCharsPlay(this.load);
     this.load.start();
   }
 
@@ -726,7 +746,7 @@ export class GameScene extends Phaser.Scene {
   private buildDiamonds(level: LevelData): void {
     for (const d of level.diamonds) {
       const img = this.add
-        .image(d.x + PAD, d.y + PAD - 5, ATLAS_CHARS_GAME, DIAMOND_FRAME[d.kind])
+        .image(d.x + PAD, d.y + PAD - 5, ATLAS_CHARS_ENTRY, DIAMOND_FRAME[d.kind])
         .setOrigin(0.5)
         .setDepth(1);
       // 原版浮动带 = 中心 ±5px（38380-38393：sprite.y=-5 → tween y:+5）
@@ -1098,7 +1118,7 @@ export class GameScene extends Phaser.Scene {
       const glow = this.add.image(cx, cy, ATLAS_CHARS, `${p}_glow0000`).setOrigin(0.5).setScale(PLAYER_SCALE).setAlpha(0.9).setDepth(4);
       const legs = this.add.sprite(cx, cy, ATLAS_CHARS, `${p}_legs_idle0000`).setOrigin(0.5).setScale(PLAYER_SCALE).setDepth(4.9);
       const head = this.add.sprite(cx, cy, ATLAS_CHARS, `${p}_head_idle0000`).setOrigin(0.5).setScale(PLAYER_SCALE).setDepth(5);
-      const smoke = this.add.sprite(cx, cy + 21, ATLAS_CHARS_GAME, "death_smoke0000").setOrigin(0.5).setScale(PLAYER_SCALE).setDepth(5.5).setVisible(false);
+      const smoke = this.add.sprite(cx, cy + 21, ATLAS_CHARS_ENTRY, "death_smoke0000").setOrigin(0.5).setScale(PLAYER_SCALE).setDepth(5.5).setVisible(false);
       smoke.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => smoke.setVisible(false));
       legs.play(`${p}_legs_idle`);
       head.play(`${p}_idle`);
@@ -1681,7 +1701,7 @@ export class GameScene extends Phaser.Scene {
       }
       const p = PREFIX[role];
       const s = this.add
-        .sprite(door.x + door.w / 2 + PAD, door.y + door.h + 4 + PAD, ATLAS_CHARS_GAME, `${p}_stairs0000`)
+        .sprite(door.x + door.w / 2 + PAD, door.y + door.h + 4 + PAD, ATLAS_CHARS_ENTRY, `${p}_stairs0000`)
         .setOrigin(0.5, 1)
         .setScale(PLAYER_SCALE)
         .setDepth(5);
