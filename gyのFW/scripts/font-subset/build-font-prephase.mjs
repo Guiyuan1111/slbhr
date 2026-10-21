@@ -12,10 +12,15 @@
  *   node scripts/font-subset/build-font-prephase.mjs            # 写出 assets/fonts/chinese/font-prephase.png
  *   node scripts/font-subset/build-font-prephase.mjs --check    # 只重建到 TEMP，与在库产物比字节（复现性门禁）
  *   node scripts/font-subset/build-font-prephase.mjs --ring 0   # 探量用：临时改环宽，不写在库产物
+ *
+ * r19 换代说明：在库 font-prephase.png 已由"重排版"拥有（scripts/font-subset/reflow-prephase.mjs
+ * 同时写 png＋配对的 font-prephase.fnt）。本脚本再写/再 --check 会被 guardReflowGeneration 挡下——
+ * 因为"帧坐标不变"的那一代图与重排坐标的 fnt 是两种布局，混用只会画出位置全错、却不报错的鬼影。
+ * 口径层 composeSubset 仍由本脚本定义，重排版直接从它复现上一代做账。
  */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { decodePng, encodePngRgba } from "../png-raw.mjs";
 import { auditSubset, composeSubset, inkOf, loadFontAtlas, loadSpec, parseFnt, prephaseChars } from "./prephase.mjs";
@@ -77,6 +82,7 @@ console.log(`产物 ${buf.length.toLocaleString()}B (${kb(buf.length)})  相对�
 if (ringOverride !== null) console.log(`（--ring ${ring} 探量模式：不写在库产物）`);
 
 if (CHECK) {
+  guardReflowGeneration();
   if (!existsSync(OUT)) throw new Error(`在库产物缺失：${OUT}`);
   mkdirSync(TEMP, { recursive: true });
   const probe = join(TEMP, "font-prephase.png");
@@ -86,7 +92,20 @@ if (CHECK) {
   writeFileSync(join(TEMP, "report.json"), JSON.stringify({ ring, kept: kept.length, srcBytes, outBytes: buf.length, sha: sha(buf), audit, srcInk }, null, 2));
   if (!same) process.exit(1);
 } else if (ringOverride === null) {
+  guardReflowGeneration();
   mkdirSync(dirname(OUT), { recursive: true });
   writeFileSync(OUT, buf);
   console.log(`已写出 ${OUT.slice(ROOT.length + 1)}`);
+}
+
+/** 换代保护：r19 起在库 png 由 reflow-prephase.mjs 拥有（png 与 fnt 成对，坐标是重排后的）。
+ *  本脚本单独重写 png＝用旧坐标的图去配新坐标的 fnt——字形都在但各画各的位置，且冷启动不会报错。 */
+function guardReflowGeneration() {
+  const pair = join(ROOT, "assets/fonts/chinese", "font-prephase.fnt");
+  if (!existsSync(pair)) return;
+  throw new Error(
+    `在库 ${relative(ROOT, OUT)} 属 r19 重排代（同目录有配对的 font-prephase.fnt），本脚本只产上一代的"原坐标＋清零"图：` +
+      `写下去就是旧布局的 png 配新坐标的 fnt。重建请跑 node scripts/font-subset/reflow-prephase.mjs（同时写 png+fnt）；` +
+      `要探量本脚本口径请带 --ring 0 之类的探量参数（探量模式不碰在库产物）。`,
+  );
 }

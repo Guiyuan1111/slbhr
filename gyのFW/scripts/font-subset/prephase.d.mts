@@ -84,3 +84,21 @@ export function composeSubset(srcImg: RgbaImage, fnt: Fnt, kept: KeptGlyph[], ri
 export function auditSubset(srcImg: RgbaImage, subset: Subset, fnt: Fnt, kept: KeptGlyph[]): SubsetAudit;
 export function loadFontAtlas(pngPath: string, fnt: Fnt): RgbaImage;
 export function inkOf(img: RgbaImage): number;
+
+export interface PackItem {
+  key: string;
+  w: number;
+  h: number;
+}
+export interface Packed {
+  w: number;
+  h: number;
+  place: Map<string, { x: number; y: number }>;
+  totalItemArea?: number;
+}
+export function packRow(items: PackItem[], spacing: number, targetWidth: number): Packed;
+export function pack(
+  items: PackItem[],
+  spacing: number,
+  opts?: { widths?: number[]; forbidden?: (w: number, h: number) => boolean },
+): Packed;

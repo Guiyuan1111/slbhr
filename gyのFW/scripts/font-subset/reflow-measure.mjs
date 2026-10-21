@@ -18,7 +18,7 @@ import { readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { decodePng, encodePngRgba, cropRaw } from "../png-raw.mjs";
-import { parseFnt, prephaseChars, loadSpec } from "./prephase.mjs";
+import { parseFnt, prephaseChars, loadSpec, pack } from "./prephase.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const FONT_DIR = "packages/client/public/assets/fonts/chinese";
@@ -27,6 +27,15 @@ const asOfs = (p) => join(ROOT, p);
 const argv = process.argv.slice(2);
 const SPACING = Number(argv.includes("--spacing") ? argv[argv.indexOf("--spacing") + 1] : 2);
 const AS_JSON = argv.includes("--json");
+
+/**
+ * 候选宽高**不得同时为 2 的幂**：Phaser 上传纹理时 `generateMipmap = IsSizePowerOfTwo(w,h)`
+ * （node_modules/phaser/src/renderer/webgl/wrappers/WebGLTextureWrapper.js:344），
+ * 今日 2191x1024 非 2 的幂 ⇒ 无 mipmap、纯 LINEAR 采样。若重排产物恰为 POT×POT，
+ * 采样级别会从"LINEAR"变成"LINEAR_MIPMAP_LINEAR"，那是观感层面的变化，不在本量具的等价口径里。
+ */
+const isPot = (n) => n > 0 && Number.isInteger(Math.log2(n));
+const PACK_OPTS = { forbidden: (w, h) => isPot(w) && isPot(h) };
 
 /** 取 (x,y) 处 RGBA 四字节是否全零 */
 const isZeroAt = (img, x, y) => {
@@ -94,39 +103,7 @@ function inkBoxOf(img, g) {
   return { dx: x0, dy: y0, w: x1 - x0 + 1, h: y1 - y0 + 1, ink };
 }
 
-/** 货架式打包（高降序）：给定目标宽度铺行，返回 {w,h,place} */
-function packRow(items, spacing, targetWidth) {
-  const sorted = [...items].sort((a, b) => b.h - a.h || b.w - a.w);
-  const place = new Map();
-  let x = spacing, y = spacing, shelfH = 0, widest = 0;
-  for (const it of sorted) {
-    const w = it.w + spacing, h = it.h + spacing;
-    if (x + w > targetWidth) {
-      widest = Math.max(widest, x);
-      y += shelfH; x = spacing; shelfH = 0;
-    }
-    place.set(it.key, { x, y });
-    x += w;
-    shelfH = Math.max(shelfH, h);
-  }
-  widest = Math.max(widest, x);
-  // 保留末端 spacing：画布右/下各留一条隔离带，帧外 1 texel 才必然落在透明区
-  return { w: widest, h: y + shelfH, place };
-}
-
-/** 在若干目标宽度里取面积最紧凑的一档 */
-function pack(items, spacing) {
-  const maxW = Math.max(...items.map((i) => i.w));
-  let best = null;
-  for (const tw of [512, 640, 768, 900, 1024, 1152, 1280, 1440, 1600, 1792, 2048, 2191]) {
-    if (tw < maxW + spacing * 3) continue;
-    const cand = packRow(items, spacing, tw);
-    if (!best || cand.w * cand.h < best.w * best.h) best = cand;
-  }
-  if (!best) best = packRow(items, spacing, maxW + spacing * 2);
-  best.totalItemArea = items.reduce((s, i) => s + i.w * i.h, 0);
-  return best;
-}
+/** 货架式打包与多档择优已升入口径层 scripts/font-subset/prephase.mjs（生成器共用，防量具/产物两套数字漂移） */
 
 function assemble(img, fnt, layout, opts) {
   const out = Buffer.alloc(layout.w * layout.h * 4);
@@ -167,7 +144,7 @@ function report(label, img, f, glyphs, note) {
     if (g.x === 0 || g.y === 0 || g.x + g.width === img.w || g.y + g.height === img.h) clampEdges++;
   }
   const items = declared.map((g) => ({ key: String(g.id), w: g.width, h: g.height }));
-  const p = pack(items, SPACING);
+  const p = pack(items, SPACING, PACK_OPTS);
   const pBytes = p.w * p.h * 4;
   rows.push({
     label, note,
@@ -219,7 +196,7 @@ for (const g of A.declared) {
   inkArea += (dR - dL) * (dB - dT);
 }
 const glyphsB = new Map([...f.glyphs].map(([c, g]) => [c, { ...g, width: trim.get(g.id)?.w ?? g.width, height: trim.get(g.id)?.h ?? g.height }]));
-const pB = pack([...glyphsB.values()].filter((g) => g.width > 0 && g.height > 0).map((g) => ({ key: String(g.id), w: g.width, h: g.height })), SPACING);
+const pB = pack([...glyphsB.values()].filter((g) => g.width > 0 && g.height > 0).map((g) => ({ key: String(g.id), w: g.width, h: g.height })), SPACING, PACK_OPTS);
 const metricsMoved = [...trim.values()].filter((t) => t.ox || t.oy).length;
 console.log(`B 全量·裁边重排（墨迹＋1px）：候选 ${pB.w}x${pB.h}＝${(pB.w * pB.h * 4 / 1048576).toFixed(2)}MB，` +
   `texel 收益 ${(((fullImg.w * fullImg.h - pB.w * pB.h) / (fullImg.w * fullImg.h)) * 100).toFixed(2)}%，` +
@@ -230,7 +207,7 @@ const keptList = A.declared.filter((g) => keptCodes.has(g.id));
 const nonKept = A.declared.filter((g) => !keptCodes.has(g.id));
 const blockW = Math.max(...nonKept.map((g) => g.width)) + SPACING;
 const blockH = Math.max(...nonKept.map((g) => g.height)) + SPACING;
-const pC = pack(keptList.map((g) => ({ key: String(g.id), w: g.width, h: g.height })), SPACING);
+const pC = pack(keptList.map((g) => ({ key: String(g.id), w: g.width, h: g.height })), SPACING, PACK_OPTS);
 const curSub = decodePng(readFileSync(asOfs(join(FONT_DIR, "font-prephase.png"))), "font-prephase.png");
 const curSubKB = kb(statSync(asOfs(join(FONT_DIR, "font-prephase.png"))).size);
 const W = Math.max(pC.w, blockW + SPACING);
@@ -245,7 +222,7 @@ console.log(`C 子集·原样重排：保留 ${keptList.length} 帧 ＋ 透明�
 
 // D：子集裁边（同 B 的度量改写代价）
 const keptTrim = keptList.map((g) => ({ key: String(g.id), ...(trim.get(g.id) ?? { w: g.width, h: g.height }) }));
-const pD = pack(keptTrim, SPACING);
+const pD = pack(keptTrim, SPACING, PACK_OPTS);
 console.log(`D 子集·裁边重排：候选 ${pD.w}x${pD.h}＝${(pD.w * pD.h * 4 / 1048576).toFixed(2)}MB`);
 
 console.log();
@@ -259,7 +236,7 @@ console.log(`成因：${A.declared.length} 条字形全部同时命中 bandViol/
 function ringLayout(list, srcImg, block) {
   const items = list.map((g) => ({ key: String(g.id), w: g.width + 2 * ringN, h: g.height + 2 * ringN }));
   if (block) items.push({ key: "block", w: block.w, h: block.h });
-  const p = pack(items, SPACING);
+  const p = pack(items, SPACING, PACK_OPTS);
   const out = Buffer.alloc(p.w * p.h * 4);
   let copied = 0, clipped = 0;
   for (const g of list) {

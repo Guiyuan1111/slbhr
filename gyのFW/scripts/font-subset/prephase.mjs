@@ -260,3 +260,52 @@ export function inkOf(img) {
   for (let i = 0; i < img.w * img.h; i++) if (img.data[i * 4 + 3] > 0) n++;
   return n;
 }
+
+const DEFAULT_TARGET_WIDTHS = [512, 640, 768, 900, 1024, 1152, 1280, 1440, 1600, 1792, 2048, 2191];
+
+/**
+ * 货架打包（高降序）：按给定目标宽度铺行，返回 {w,h,place}。
+ * 末端保留一个 spacing：画布右/下各留一条隔离带，帧外采到的邻域才必然落在自己的区域里。
+ */
+export function packRow(items, spacing, targetWidth) {
+  const sorted = [...items].sort((a, b) => b.h - a.h || b.w - a.w || a.key.localeCompare(b.key));
+  /** @type {Map<string, {x:number,y:number}>} */
+  const place = new Map();
+  let x = spacing, y = spacing, shelfH = 0, widest = 0;
+  for (const it of sorted) {
+    const w = it.w + spacing, h = it.h + spacing;
+    if (x + w > targetWidth) {
+      widest = Math.max(widest, x);
+      y += shelfH; x = spacing; shelfH = 0;
+    }
+    place.set(it.key, { x, y });
+    x += w;
+    shelfH = Math.max(shelfH, h);
+  }
+  widest = Math.max(widest, x);
+  return { w: widest, h: y + shelfH, place };
+}
+
+/**
+ * 在多档目标宽度里取面积最紧凑的一档。
+ * `forbidden(w,h)` 返回 true 的候选丢弃（重排件用它拒绝"宽高同为 2 的幂"——见 reflow-prephase.mjs 的 mipmap 口径）。
+ */
+export function pack(items, spacing, opts = {}) {
+  const widths = opts.widths ?? DEFAULT_TARGET_WIDTHS;
+  const maxW = Math.max(...items.map((i) => i.w));
+  let best = null;
+  for (const tw of widths) {
+    if (tw < maxW + spacing * 3) continue;
+    const cand = packRow(items, spacing, tw);
+    if (opts.forbidden?.(cand.w, cand.h)) continue;
+    if (!best || cand.w * cand.h < best.w * best.h) best = cand;
+  }
+  if (!best) {
+    for (let tw = maxW + spacing * 2; ; tw += 64) {
+      const cand = packRow(items, spacing, tw);
+      if (!opts.forbidden?.(cand.w, cand.h)) { best = cand; break; }
+    }
+  }
+  best.totalItemArea = items.reduce((s, i) => s + i.w * i.h, 0);
+  return best;
+}
