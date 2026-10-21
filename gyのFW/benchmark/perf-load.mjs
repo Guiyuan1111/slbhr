@@ -9,6 +9,9 @@
  *     "Menu 时刻快照里存在即属 Menu 前"，两次快照做集合差；
  *   · responses——服务端响应头实况（content-encoding / cache-control / etag / 状态码），
  *     压缩与缓存策略争议以头部实测为准，不读代码推断。
+ *   · revalidate——条件复验探测：对幂等同源 GET 各发"无标签整份"与"带 ETag 复验"两次
+ *     no-store 请求，直接读出新鲜期过后的两种成本差（件B 的收益口径）；
+ *     /matchmake/* 与文档请求有副作用（重复建房），不进探测清单。
  *
  * 用法：
  *   node --import tsx benchmark/perf-load.mjs [--no-build] --save <label>
@@ -16,6 +19,7 @@
  * 产物：benchmark/results/load-<label>.json
  */
 import { spawn, execSync } from "node:child_process";
+import http from "node:http";
 import { writeFileSync, readFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -103,6 +107,44 @@ async function waitSceneActive(page, key, timeout = 30000) {
   return Date.now() - t0;
 }
 
+/** 条件复验探测（r15 件B 收益直读）：对同一批 URL 各发两次请求——第一次不带标签
+ *  （等价"新鲜期已过、整份重下"），第二次带首次拿到的 ETag（等价"新鲜期已过的校验复用"）。
+ *  必须用 Node 原生 http 而不是页内 fetch：Blink 在 cache:no-store 下会**丢掉条件请求头**
+ *  （no-store 语义即"不做校验复用"），页内测出来的"200 全量"是浏览器行为而非服务器能力，
+ *  会把"服务器不支持 ETag"与"客户端没发标签"两种原因混为一谈。
+ *  keepAlive 复用连接，贴近真实浏览器连接复用。 */
+async function probeRevalidate(urls) {
+  return new Promise((resolve, reject) => {
+    const agent = new http.Agent({ keepAlive: true, maxSockets: 6 });
+    const get = (path, headers) =>
+      new Promise((res, rej) => {
+        const req = http.request({ host: "127.0.0.1", port: PORT, path, agent, headers }, (r) => {
+          let bytes = 0;
+          r.on("data", (c) => { bytes += c.length; });
+          r.on("end", () => res({ status: r.statusCode ?? 0, etag: r.headers.etag ?? null, bytes }));
+        });
+        req.on("error", rej);
+        req.end();
+      });
+    (async () => {
+      const rows = [];
+      for (const u of urls) {
+        const full = await get(u, { "accept-encoding": "gzip, br" });
+        const cond = await get(u, { "accept-encoding": "gzip, br", ...(full.etag ? { "if-none-match": full.etag } : {}) });
+        rows.push({
+          url: u,
+          etag: full.etag ? "yes" : "no",
+          refetchKB: +(full.bytes / 1024).toFixed(2),
+          revalKB: +(cond.bytes / 1024).toFixed(2),
+          status: cond.status,
+        });
+      }
+      agent.destroy();
+      resolve(rows);
+    })().catch((e) => { agent.destroy(); reject(e); });
+  });
+}
+
 /** 一轮完整测量：冷 context 深链 → Menu → 建房 → Game；再 reload 测缓存命中 */
 async function measureRound(browser, round) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 960 } });
@@ -166,6 +208,18 @@ async function measureRound(browser, round) {
     menuActiveMs: Date.now() - r0,
     resources: await resourceStats(page),
   };
+  // 条件复验探测（件B）：只探幂等的同源静态/数据 GET。blob: 无服务器语义；
+  // /matchmake/* 与文档请求有副作用（再打一次=再建一间房），一律排除。
+  const probeUrls = [...headers.values()]
+    .map((h) => h.url)
+    .filter((u) => !u.startsWith("blob:") && !u.startsWith("/matchmake") && !u.startsWith("/?"));
+  cold.revalidate = await probeRevalidate(probeUrls);
+  cold.revalidateSummary = {
+    urls: cold.revalidate.length,
+    refetchKB: +cold.revalidate.reduce((s, x) => s + x.refetchKB, 0).toFixed(1),
+    revalKB: +cold.revalidate.reduce((s, x) => s + x.revalKB, 0).toFixed(1),
+    notConditional: cold.revalidate.filter((x) => x.status !== 304).map((x) => x.url),
+  };
   await ctx.close();
   return { round, cold, warm };
 }
@@ -211,6 +265,12 @@ results.summary = {
     transferKBAfterGame: avg2(r1.cold.resourcesAfterGame.totalTransferKB, r2.cold.resourcesAfterGame.totalTransferKB),
     menuPhaseKB: avg2(r1.cold.resources.menuKB, r2.cold.resources.menuKB),
     gamePhaseKB: avg2(r1.cold.resources.gamePhaseKB, r2.cold.resources.gamePhaseKB),
+    revalProbe: {
+      urls: r1.cold.revalidateSummary.urls,
+      refetchKB: r1.cold.revalidateSummary.refetchKB,
+      revalKB: r1.cold.revalidateSummary.revalKB,
+      notConditional304: r1.cold.revalidateSummary.notConditional,
+    },
   },
   warmReload: {
     menuActiveMs: avg2(r1.warm.menuActiveMs, r2.warm.menuActiveMs),
@@ -231,6 +291,11 @@ const bigByUrl = new Map(r1.cold.resourcesAfterGame.items.map((i) => [i.url, i.d
 const uncom = r1.cold.headers.filter((h) => h.enc === "-" && (bigByUrl.get(h.url) ?? 0) >= 64);
 console.log(`\n=== 未压缩且 ≥64KB 的响应（round1）===`);
 for (const h of uncom) console.log(`  ${h.status} ${h.cc}  etag=${h.etag}  ${h.url}`);
+const rv = results.summary.cold.revalProbe;
+console.log(`\n=== 条件复验探测（round1，${rv.urls} 个幂等 URL）===`);
+console.log(`  整份重下 ${rv.refetchKB}KB → 带 ETag 复验 ${rv.revalKB}KB（省 ${(rv.refetchKB - rv.revalKB).toFixed(1)}KB）`);
+const bad = rv.notConditional304;
+if (bad.length) console.log(`  ⚠ 未命中 304（${bad.length} 个，无 ETag 或服务器不支持条件请求）：${bad.join(", ")}`);
 console.log(`\n=== 汇总（两轮均值）===`);
 console.log(JSON.stringify(results.summary, null, 2));
 
@@ -254,6 +319,8 @@ if (argCompare) {
   const p = (k) => `${b.cold[k] ?? "-"} → ${c.cold[k] ?? "-"}`;
   console.log(`其中 Menu 前传输    : ${p("menuPhaseKB")}`);
   console.log(`其中进房段传输    : ${p("gamePhaseKB")}`);
+  const bRv = b.cold.revalProbe;
+  console.log(`条件复验探测      : ${bRv ? `${bRv.refetchKB}KB→${bRv.revalKB}KB` : "-"} → ${c.cold.revalProbe ? `${c.cold.revalProbe.refetchKB}KB→${c.cold.revalProbe.revalKB}KB` : "-"}`);
   console.log(`reload Menu active : ${b.warmReload.menuActiveMs}ms → ${c.warmReload.menuActiveMs}ms`);
   console.log(`reload 传输        : ${b.warmReload.transferKB}KB → ${c.warmReload.transferKB}KB`);
   if (c.pageErrors.length) { console.log(`⚠ 页面错误：${c.pageErrors.join("; ")}`); process.exitCode = 1; }
