@@ -128,7 +128,7 @@ export class BootScene extends Phaser.Scene {
       this.add.image(cx, cy - 80, ATLAS_PRELOADER, "LoaderTitle0000").setOrigin(0.47, 0.47);
     };
     if (this.textures.exists(ATLAS_PRELOADER)) build();
-    else this.load.once("filecomplete-atlas-" + ATLAS_PRELOADER, build);
+    else this.load.once("filecomplete-atlasjson-" + ATLAS_PRELOADER, build);
     this.load.on("progress", cropTo);
     this.load.once(Phaser.Loader.Events.COMPLETE, () => {
       this.load.off("progress", cropTo);

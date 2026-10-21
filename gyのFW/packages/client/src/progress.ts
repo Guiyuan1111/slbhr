@@ -26,6 +26,14 @@ const PLAYED_KEY = "fw-played-v1";
 const COMPLETE_KEY = "fw-gamecomplete-v1";
 const LEGACY_SHOWN_KEY = "fw-complete-shown";
 
+/** 存储写入失败（隐私模式等）只提示一次，避免结算/标记链路逐次刷屏 */
+let storageWarned = false;
+function warnStorageFailed(): void {
+  if (storageWarned) return;
+  storageWarned = true;
+  console.warn("[fw] localStorage 写入失败（隐私模式等），进度仅在本次会话内生效");
+}
+
 export function loadProgress(): Record<string, LevelBest> {
   try {
     return JSON.parse(localStorage.getItem(KEY) ?? "{}") ?? {};
@@ -41,7 +49,12 @@ export function saveBest(filename: string, stars: number, timeSec: number): bool
   const prev = all[filename];
   if (!prev || stars > prev.stars || (stars === prev.stars && timeSec < prev.time)) {
     all[filename] = { stars, time: Math.round(timeSec) };
-    localStorage.setItem(KEY, JSON.stringify(all));
+    try {
+      localStorage.setItem(KEY, JSON.stringify(all));
+    } catch {
+      // 写失败仍按成绩已刷新返回 true，结算链（星级/庆典判定）继续走
+      warnStorageFailed();
+    }
     return true;
   }
   return false;
@@ -66,7 +79,11 @@ export function markPlayed(filename: string): void {
   const set = loadPlayed();
   if (set.has(filename)) return;
   set.add(filename);
-  localStorage.setItem(PLAYED_KEY, JSON.stringify([...set]));
+  try {
+    localStorage.setItem(PLAYED_KEY, JSON.stringify([...set]));
+  } catch {
+    warnStorageFailed();
+  }
 }
 
 // —— 全通庆典双旗（P-02 #34，oracle ProgressModel.process/update 字节同构） ——
@@ -74,15 +91,20 @@ export function markPlayed(filename: string): void {
 /** gameComplete 持久旗（oracle progress 键 "gameComplete"；缺旧门迁移：fw-complete-shown
  *  有值=0.3.38 门下已庆过，落 gameComplete=1 后删旧键，防升级重播） */
 export function loadGameComplete(): boolean {
-  const v = localStorage.getItem(COMPLETE_KEY);
-  if (v === "1") return true;
-  if (v === "0") return false;
-  if (localStorage.getItem(LEGACY_SHOWN_KEY)) {
-    localStorage.setItem(COMPLETE_KEY, "1");
-    localStorage.removeItem(LEGACY_SHOWN_KEY);
-    return true;
+  try {
+    const v = localStorage.getItem(COMPLETE_KEY);
+    if (v === "1") return true;
+    if (v === "0") return false;
+    if (localStorage.getItem(LEGACY_SHOWN_KEY)) {
+      localStorage.setItem(COMPLETE_KEY, "1");
+      localStorage.removeItem(LEGACY_SHOWN_KEY);
+      return true;
+    }
+    return false;
+  } catch {
+    // 隐私模式 getItem 也可能抛 SecurityError：按未完成处理，不阻塞菜单/选关
+    return false;
   }
-  return false;
 }
 
 /** firstComplete 瞬态旗：进程内变量，不落盘（oracle :1939549 消费即清、刷新即失——语义照抄） */

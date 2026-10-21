@@ -31,6 +31,9 @@ export interface GameInit {
   net: Net;
   level: LevelData;
   keyboard: KeyboardInput;
+  /** 服务端入关时附带的 temple.json 条目（main.ts 注入）：create 同步选 BGM 用；
+   *  缺省时仍由 fetchTempleTime 异步兜底。 */
+  templeEntry?: { filename: string; time: number; type: string } | null;
 }
 
 /** 关卡四周留白（原版 groundTexture 1312×992 @(-32,-32) 实测） */
@@ -335,6 +338,15 @@ export class GameScene extends Phaser.Scene {
     this.prevPhase = "";
     this.snapPending = false;
     this.templeTimeSec = null;
+    // M3：templeEntry 由 main.ts 随 __fwInit 同步注入（速度关 BGM 必须赶在 create 选曲前就位）；
+    // 先回缺省再按条目赋值，create 里 fetchTempleTime 的异步结果仍可覆盖。
+    this.templeType = "general";
+    const entry = d.templeEntry;
+    if (entry) {
+      this.templeType = String(entry.type ?? "general");
+      const t = Number(entry.time);
+      this.templeTimeSec = Number.isFinite(t) && t > 0 ? t : null;
+    }
     this.waterPlaying = false;
     this.platformPrev.clear();
     this.platformMoving.clear();
@@ -349,6 +361,24 @@ export class GameScene extends Phaser.Scene {
     this.lastClockSec = -1;
     this.pFb = null;
     this.pWg = null;
+    // H2：场景实例在 stop/start 间复用，相机临时态须逐次复位——尤其 camFrozen
+    // （刷新回座 started 由 create 末尾解冻；refresh 进 ready 则保持冻结到开局事件）。
+    this.camFrozen = true;
+    this.camUserScale = null;
+    this.camWheelScale = null;
+    this.camUserCenter = null;
+    if (this.camWheelReset != null) {
+      window.clearTimeout(this.camWheelReset);
+      this.camWheelReset = null;
+    }
+    this.pinchState = null;
+    this.panState = null;
+    this.camVX = 0;
+    this.camVY = 0;
+    this.camVScale = 0;
+    this.camLastX = NaN;
+    this.camLastY = NaN;
+    this.camLastScale = NaN;
     this.myRole = this.d.net.myRole ?? this.myRole;
   }
 
@@ -440,6 +470,9 @@ export class GameScene extends Phaser.Scene {
     // 场景晚于 phase 启动（如重连进 won 房）：补一次演出
     this.prevPhase = String(this.d.net.room?.state?.phase ?? "");
     if (this.prevPhase === "won") this.playStairsSequence();
+    // H2：刷新回座时已在 started，create 到首个 update 之间不会再有 ready→started 迁移事件，
+    // 在此直接解冻；ready 仍保持冻结，由既有 onPhaseChanged 在开局时解冻。
+    if (this.prevPhase === "started") this.camFrozen = false;
   }
 
   /** 关卡 BGM 键：speed 关用专属曲（原版 preloadAudioFiles 按 levelData.type 换曲） */
@@ -1767,6 +1800,10 @@ export class GameScene extends Phaser.Scene {
       da = ((da + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI; // 最短弧，防整圈翻卷
       m.va = da / dt;
       m.x = x; m.y = y; m.a = a; m.t = this.curNow;
+    } else if (this.curNow - m.t > 80) {
+      // 80ms≈多个 60Hz patch 周期：静止快照不再按 25ms×v 外推，清掉残留速度防永久偏移
+      m.vx = m.vy = m.va = 0;
+      m.t = this.curNow;
     }
     const lead = 25; // ms（final-b A/B 扫描选定；"≈半个快照周期"是 20Hz 期语境，60Hz 下按 netopt 11 号档 §2.2 复检保留）
     const ex = m.x + (m.vx * lead) / 1000;

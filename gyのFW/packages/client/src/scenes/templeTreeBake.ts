@@ -258,15 +258,30 @@ export interface TreeBakeResult {
   ms: number;
 }
 
+/** 缓存/任务上限：单结果约 3 张整屏 canvas，任务分片另持整层 raw+SAT+out。
+ *  保留最近两次即可覆盖「选关↔进度变化后回退」的复用面，避免无界占位。 */
+const MAX_RESULTS = 2;
+const MAX_JOBS = 2;
+const CH = 64; // 行分片
+
+type JobTaskKind = "prepare" | "alphaSat" | "bevel" | "satOut" | "outline";
+interface JobTask {
+  key: TreeLayerKey;
+  kind: JobTaskKind;
+  y0: number;
+  y1: number;
+}
+
 interface JobState {
   params: TreeBakeParams;
-  sources: Record<TreeLayerKey, HTMLCanvasElement>;
+  /** prepare 暂存的源 RGBA（ImageData.data），该层最后一个 alphaSat 行分片到达即释放 */
+  raw: Partial<Record<TreeLayerKey, Uint8ClampedArray>>;
   alphas: Record<TreeLayerKey, Uint8ClampedArray>;
   sats: Record<TreeLayerKey, Int32Array>;
   outs: Record<TreeLayerKey, Uint8ClampedArray>;
   outAlphas: Partial<Record<TreeLayerKey, Uint8ClampedArray>>;
   outSats: Partial<Record<TreeLayerKey, Int32Array>>;
-  tasks: Array<{ key: TreeLayerKey; kind: "bevel" | "satOut" | "outline"; y0: number; y1: number }>;
+  tasks: JobTask[];
   t0: number;
 }
 const jobs = new Map<string, JobState>();
@@ -277,44 +292,63 @@ function cacheKey(p: TreeBakeParams): string {
   return [p.canvasW, p.canvasH, p.Cf, p.Kf, p.color, p.scale, p.edges.length, states].join("|");
 }
 
-/** 缓存命中读取（无副作用） */
-export function peekTreeBake(p: TreeBakeParams): TreeBakeResult | null {
-  return results.get(cacheKey(p)) ?? null;
+/** 结果 LRU 落缓存：超上限时先释放最旧结果的位图（width/height=0）再删引用 */
+function rememberResult(key: string, r: TreeBakeResult): void {
+  results.delete(key);
+  while (results.size >= MAX_RESULTS) {
+    const oldest = results.keys().next().value;
+    if (oldest === undefined) break;
+    const old = results.get(oldest);
+    if (old) {
+      for (const cv of Object.values(old.canvases)) {
+        cv.width = 0;
+        cv.height = 0;
+      }
+    }
+    results.delete(oldest);
+  }
+  results.set(key, r);
 }
 
-/** 启动（或续接）分片烘焙任务 */
+/** 缓存命中读取；命中即刷新 LRU（delete+set 移到 Map 末尾） */
+export function peekTreeBake(p: TreeBakeParams): TreeBakeResult | null {
+  const key = cacheKey(p);
+  const r = results.get(key);
+  if (!r) return null;
+  results.delete(key);
+  results.set(key, r);
+  return r;
+}
+
+/** 启动（或续接）分片烘焙任务；绘制/读像素/建 SAT 全部下沉到 prepare 分片，
+ *  调用方（选关界面 create）不再承担同步像素开销。 */
 export function startTreeBake(p: TreeBakeParams): string {
   const key = cacheKey(p);
   if (results.has(key) || jobs.has(key)) return key;
-  const sources = {
-    big: drawLayerContent(p, true, 1.2),
-    all: drawLayerContent(p, true, 1.0),
-    done: drawLayerContent(p, false, 1.0),
-  } as Record<TreeLayerKey, HTMLCanvasElement>;
-  const alphas = {} as Record<TreeLayerKey, Uint8ClampedArray>;
-  const sats = {} as Record<TreeLayerKey, Int32Array>;
-  const outs = {} as Record<TreeLayerKey, Uint8ClampedArray>;
-  const tasks: JobState["tasks"] = [];
-  const CH = 64; // 行分片
-  for (const layer of LAYERS) {
-    const a = new Uint8ClampedArray(p.canvasW * p.canvasH);
-    const idata = sources[layer.key].getContext("2d", { willReadFrequently: true })!.getImageData(0, 0, p.canvasW, p.canvasH);
-    for (let i = 0; i < a.length; i++) a[i] = idata.data[i * 4 + 3];
-    alphas[layer.key] = a;
-    sats[layer.key] = buildSAT(a, p.canvasW, p.canvasH);
-    outs[layer.key] = new Uint8ClampedArray(p.canvasW * p.canvasH * 4);
-    for (let y = 0; y < p.canvasH; y += CH) tasks.push({ key: layer.key, kind: "bevel", y0: y, y1: Math.min(y + CH, p.canvasH) });
-    if (layer.outline) {
-      // outline 依赖本层 bevel 全部完成（输出 alpha 的 SAT），任务序保证
-      tasks.push({ key: layer.key, kind: "satOut", y0: 0, y1: p.canvasH });
-      for (let y = 0; y < p.canvasH; y += CH) tasks.push({ key: layer.key, kind: "outline", y0: y, y1: Math.min(y + CH, p.canvasH) });
-    }
+  while (jobs.size >= MAX_JOBS) {
+    // 淘汰最早插入的未完成任务（直接丢引用）；仍持旧 key 的调用方 step 得到 null，
+    // 维持平色兜底。当前 key 不在 jobs 中（上方已返回），不会被误删。
+    const oldest = jobs.keys().next().value;
+    if (oldest === undefined) break;
+    jobs.delete(oldest);
   }
-  jobs.set(key, { params: p, sources, alphas, sats, outs, outAlphas: {}, outSats: {}, tasks, t0: performance.now() });
+  // 初始每层一个 prepare；后续 alphaSat/bevel/outline 分片由 prepare 追加，保证依赖顺序
+  const tasks: JobTask[] = LAYERS.map((layer): JobTask => ({ key: layer.key, kind: "prepare", y0: 0, y1: p.canvasH }));
+  jobs.set(key, {
+    params: p,
+    raw: {},
+    alphas: {} as Record<TreeLayerKey, Uint8ClampedArray>,
+    sats: {} as Record<TreeLayerKey, Int32Array>,
+    outs: {} as Record<TreeLayerKey, Uint8ClampedArray>,
+    outAlphas: {},
+    outSats: {},
+    tasks,
+    t0: performance.now(),
+  });
   return key;
 }
 
-/** 步进一个分片任务；全部完成时落缓存并返回结果 */
+/** 步进分片任务；全部完成时落缓存并返回结果 */
 export function stepTreeBake(key: string, budgetMs = 10): TreeBakeResult | null {
   const job = jobs.get(key);
   if (!job) return results.get(key) ?? null;
@@ -323,7 +357,43 @@ export function stepTreeBake(key: string, budgetMs = 10): TreeBakeResult | null 
   let i = 0;
   while (i < job.tasks.length && performance.now() < deadline) {
     const t = job.tasks[i++];
-    if (t.kind === "bevel") {
+    if (t.kind === "prepare") {
+      // 一层一次同步绘制/读像素；读完立刻把源画布缩到 0 释放位图，RGBA 留给 alphaSat 分片
+      const layer = LAYERS.find((l) => l.key === t.key)!;
+      const src = drawLayerContent(p, layer.all, layer.baseScale);
+      const idata = src.getContext("2d", { willReadFrequently: true })!.getImageData(0, 0, p.canvasW, p.canvasH);
+      job.raw[t.key] = idata.data;
+      job.alphas[t.key] = new Uint8ClampedArray(p.canvasW * p.canvasH);
+      job.sats[t.key] = new Int32Array((p.canvasW + 1) * (p.canvasH + 1));
+      job.outs[t.key] = new Uint8ClampedArray(p.canvasW * p.canvasH * 4);
+      src.width = 0;
+      src.height = 0;
+      // 顺序：本层 alphaSat 全部 → 本层 bevel 全部 →（outline 层）satOut → outline 全部
+      for (let y = 0; y < p.canvasH; y += CH) job.tasks.push({ key: t.key, kind: "alphaSat", y0: y, y1: Math.min(y + CH, p.canvasH) });
+      for (let y = 0; y < p.canvasH; y += CH) job.tasks.push({ key: t.key, kind: "bevel", y0: y, y1: Math.min(y + CH, p.canvasH) });
+      if (layer.outline) {
+        job.tasks.push({ key: t.key, kind: "satOut", y0: 0, y1: p.canvasH });
+        for (let y = 0; y < p.canvasH; y += CH) job.tasks.push({ key: t.key, kind: "outline", y0: y, y1: Math.min(y + CH, p.canvasH) });
+      }
+    } else if (t.kind === "alphaSat") {
+      // 逐行复刻 buildSAT 递推（第 y+1 行依赖第 y 行），同时提取 alpha；分片按行连续
+      const w = p.canvasW;
+      const stride = w + 1;
+      const raw = job.raw[t.key]!;
+      const a = job.alphas[t.key];
+      const sat = job.sats[t.key];
+      for (let y = t.y0; y < t.y1; y++) {
+        let rowSum = 0;
+        const row = y * w;
+        for (let x = 0; x < w; x++) {
+          const v = raw[(row + x) * 4 + 3];
+          a[row + x] = v;
+          rowSum += v;
+          sat[(y + 1) * stride + (x + 1)] = sat[y * stride + (x + 1)] + rowSum;
+        }
+      }
+      if (t.y1 >= p.canvasH) delete job.raw[t.key];
+    } else if (t.kind === "bevel") {
       const layer = LAYERS.find((l) => l.key === t.key)!;
       const tint: [number, number, number] = layer.gold
         ? [0xff, 0xd6, 0x20]
@@ -373,7 +443,7 @@ export function stepTreeBake(key: string, budgetMs = 10): TreeBakeResult | null 
     canvases[layer.key] = cv;
   }
   const r: TreeBakeResult = { canvases, ms: performance.now() - job.t0 };
-  results.set(key, r);
+  rememberResult(key, r);
   return r;
 }
 

@@ -18,13 +18,22 @@ export interface TempleEntry {
 
 let pending: Promise<TempleEntry[]> | null = null;
 
-/** 取 temple.json levels 数组（页面生命周期内只 fetch 一次；失败返回 []） */
+/** 取 temple.json levels 数组（成功时页面生命周期内只 fetch 一次；失败返回 [] 并清空 pending，
+ *  下次调用重新请求——避免一次网络抖动把空数组永久固化为成功结果） */
 export function loadTempleLevels(): Promise<TempleEntry[]> {
   if (!pending) {
     pending = fetch("/data/forest/temple.json")
-      .then((r) => (r.ok ? r.json() : { levels: [] }))
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((j: { levels?: TempleEntry[] }) => j?.levels ?? [])
-      .catch(() => [] as TempleEntry[]);
+      .catch(() => {
+        // 本次调用方已持有 promise，清空只影响下一次调用，不会造成并发重复请求
+        pending = null;
+        console.warn("[fw] temple.json 加载失败，将重试");
+        return [] as TempleEntry[];
+      });
   }
   return pending;
 }

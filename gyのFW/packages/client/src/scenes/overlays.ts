@@ -154,6 +154,12 @@ export class PauseMenu extends Phaser.Scene {
   constructor() {
     super("PauseMenu");
   }
+  /** 场景实例在 stop/start 间复用，create 前必须清掉上次弹簧关闭态：
+   *  否则 closing 残留 true 会让第二次打开的 requestClose 被幂等守卫直接吞掉。 */
+  init(): void {
+    this.closing = false;
+    this.board = undefined;
+  }
   create(): void {
     // V17（15 号档 Top3）：oracle togglePause=game.paused 引擎级冻结（:416750 区——paused
     // 分支不跑 stage.update ⇒ 液面/钻石/海军/风效全部静帧，仅面板经 pauseUpdate 继续）。

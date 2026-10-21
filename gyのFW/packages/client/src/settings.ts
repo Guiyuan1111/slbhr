@@ -23,6 +23,11 @@ export function getSettings(): FwSettings {
 
 export function setSettings(patch: Partial<FwSettings>): FwSettings {
   const next = { ...getSettings(), ...patch };
-  localStorage.setItem(KEY, JSON.stringify(next));
+  try {
+    localStorage.setItem(KEY, JSON.stringify(next));
+  } catch {
+    // 隐私模式等场景写入可能抛错：本次设置仍返回生效值，仅不持久化
+    console.warn("[fw] 设置写入失败，本次会话内生效");
+  }
   return next;
 }
