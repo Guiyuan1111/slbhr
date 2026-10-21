@@ -1,20 +1,24 @@
 /**
- * r18 字体两段化防护网（两件一体：子集产物语义 + 代码里 FONT_MAIN/FONT_FULL 的用法）。
+ * 进房前字体链的静态防护网（r18 两段化 + r19 图集重排，两件一体：产物语义 + 代码里 FONT_MAIN/FONT_FULL 的用法）。
  *
- * 为什么需要它：进房前只装 304.5KB 子集（assets/fonts/chinese/font-prephase.png），全量 font.png
- * 改由延迟通道以 font-full 键装载。这条链唯一致命的失效模式是"某处房内文案仍用 FONT_MAIN"——
- * 那个字当场画空白，而冷启动一切正常；反过来"某处进房前文案用了 FONT_FULL"则是白等 1.6MB。
- * 两种错都不出现在报错里，只能靠按调用点分类的静态断言挡住。
+ * 为什么需要它：进房前只装子集图集（r18 件1 生成、r19 件1 重排：assets/fonts/chinese/font-prephase.png
+ * ＋同目录 font-prephase.fnt），全量 font.png 改由延迟通道以 font-full 键装载。这条链致命的失效模式有三类：
+ *  1. 某处房内文案仍用 FONT_MAIN ⇒ 那个字当场画空白，而冷启动一切正常；
+ *  2. 某处进房前文案用了 FONT_FULL ⇒ 白等 1.6MB；
+ *  3.（r19 新增）png 与 fnt 是**一对**必须同时重建的产物 ⇒ 只重建一边就会把字形搬到错位置，
+ *     画出来是"字还在、位置错"的鬼影，比空白更难发现。
+ * 三种错都不出现在报错里，只能靠按调用点分类＋逐像素回算的静态断言挡住。
  *
  * 口径层与生成器共用 scripts/font-subset/prephase.mjs，测试与产物不可能各算一套字形集。
+ * 但对重排版产物，本测试**故意不调用**生成器 scripts/font-subset/reflow-prephase.mjs 的任何装配代码：
+ * 期望值全部由「官方 font.png/font.fnt 的字节与坐标」＋「fnt 声明的新坐标」独立回算，
+ * 这样生成器自己的断言若有口径错误，这里仍会独立发现。
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { decodePng } from "../../../../scripts/png-raw.mjs";
 import {
-  auditSubset,
-  composeSubset,
   loadFontAtlas,
   loadSpec,
   parseFnt,
@@ -145,26 +149,85 @@ const fontSrc = loadFontAtlas(path.join(ROOT, "assets/fonts/chinese/font.png"), 
 const spec = loadSpec(ROOT);
 const { kept, noGlyph, chars } = prephaseChars(spec, fnt);
 const subsetPath = path.join(ROOT, "assets/fonts/chinese/font-prephase.png");
-const subsetOfCode = () => composeSubset(fontSrc, fnt, kept, spec._ring);
-const committedSubset = () => decodePng(readFileSync(subsetPath), subsetPath);
+const preFntPath = path.join(ROOT, "assets/fonts/chinese/font-prephase.fnt");
+/** 重排后的子集声明（新坐标）；loadFontAtlas 顺带钉住"png 尺寸 == fnt scaleW/scaleH" */
+const preFnt = parseFnt(preFntPath);
+const prePng = loadFontAtlas(subsetPath, preFnt);
+const ring = spec._ring;
 
-describe("r18 字体两段化：子集产物语义", () => {
-  it("子集与源同尺寸、同块序（改页/改色彩解释块=appearance 生成改变，须走三步流程）", () => {
-    const committed = committedSubset();
-    expect([committed.w, committed.h]).toEqual([fontSrc.w, fontSrc.h]);
-    expect(committed.chunks).toBe(fontSrc.chunks);
+/** 取一张原始 RGBA 图上的矩形字节（逐行拷贝，越界即抛） */
+function region(img: { w: number; h: number; data: Buffer }, x: number, y: number, w: number, h: number): Buffer {
+  if (x < 0 || y < 0 || x + w > img.w || y + h > img.h) {
+    throw new Error(`矩形 (${x},${y},${w}x${h}) 越出 ${img.w}x${img.h}`);
+  }
+  const out = Buffer.alloc(w * h * 4);
+  for (let r = 0; r < h; r++) img.data.copy(out, r * w * 4, ((y + r) * img.w + x) * 4, ((y + r) * img.w + x + w) * 4);
+  return out;
+}
+
+const isPot = (n: number) => n > 0 && Number.isInteger(Math.log2(n));
+
+describe("进房前子集产物语义（r19 重排版）", () => {
+  it("重排只动坐标：逐条字形 width/height/xoffset/yoffset/xadvance 与官方 fnt 全等", () => {
+    expect(preFnt.charLines).toBe(fnt.charLines); // 261 条 <char>（含 id=32 重复）
+    expect(preFnt.dupes.length).toBe(fnt.dupes.length);
+    expect(preFnt.size).toBe(fnt.size);
+    expect(preFnt.lineHeight).toBe(fnt.lineHeight);
+    expect(preFnt.base).toBe(fnt.base);
+    expect(preFnt.pages).toBe(fnt.pages);
+    expect(preFnt.padding.join(",")).toBe(fnt.padding.join(","));
+    expect([...preFnt.glyphs.keys()].sort()).toEqual([...fnt.glyphs.keys()].sort());
+    for (const [code, g] of fnt.glyphs) {
+      const n = preFnt.glyphs.get(code)!;
+      expect([n.width, n.height, n.xoffset, n.yoffset, n.xadvance, n.id], `字形 ${code} 度量被改动`).toEqual([g.width, g.height, g.xoffset, g.yoffset, g.xadvance, g.id]);
+    }
   });
 
-  it("在库子集逐字节等于由声明推出的合成结果（改文案不重建、手改产物 → 红）", () => {
-    expect(Buffer.compare(subsetOfCode().out, committedSubset().data)).toBe(0);
+  it("每个保留字形的区域（帧 ∪ 环带）逐字节等于源图原坐标处字节——png 与 fnt 必须同代", () => {
+    for (const k of kept) {
+      const old = k.glyph;
+      if (old.width === 0 || old.height === 0) continue;
+      const now = preFnt.glyphs.get(old.id)!;
+      const box = { w: old.width + 2 * ring, h: old.height + 2 * ring };
+      // 区域必须整体在新画布内（生成器同口径：环带不许被画布边界切掉）
+      expect(region(prePng, now.x - ring, now.y - ring, box.w, box.h), `字形 ${k.ch} 区域字节 != 源`).toEqual(
+        region(fontSrc, old.x - ring, old.y - ring, box.w, box.h),
+      );
+    }
+    expect(kept.filter((k) => k.glyph.width > 0 && k.glyph.height > 0).length).toBe(52);
   });
 
-  it("保留字形帧矩形逐行字节等于源，且非授权区 RGBA 全 0", () => {
-    const expected = subsetOfCode();
-    const audit = auditSubset(fontSrc, { ...expected, out: committedSubset().data }, fnt, kept);
-    expect(audit.outsideNonZero).toBe(0);
-    expect(audit.inkFrame).toBeGreaterThan(0);
-    expect(audit.framePixels).toBe(266074); // 53 个保留字形的帧像素总量，改文案会动它
+  it("未保留声明（含 0×0）全部指向全零区，且新图上非零像素只可能来自保留区域", () => {
+    const keptCodes = new Set(kept.map((k) => k.glyph.id));
+    const mask = new Uint8Array(prePng.w * prePng.h);
+    for (const g of preFnt.glyphs.values()) {
+      if (g.width === 0 || g.height === 0) continue;
+      if (keptCodes.has(g.id)) {
+        for (let r = -ring; r < g.height + ring; r++) {
+          for (let c = -ring; c < g.width + ring; c++) mask[(g.y + r) * prePng.w + (g.x + c)] = 1;
+        }
+      } else {
+        // 未保留者：帧矩形整块必须全零（今日画空白，重排后仍画空白）
+        expect([...region(prePng, g.x, g.y, g.width, g.height)].every((b) => b === 0), `未保留字形 ${g.id} 的矩形里有非零字节`).toBe(true);
+      }
+    }
+    let stray = 0;
+    for (let i = 0; i < prePng.w * prePng.h; i++) {
+      const o = i * 4;
+      if ((prePng.data[o] | prePng.data[o + 1] | prePng.data[o + 2] | prePng.data[o + 3]) && !mask[i]) stray++;
+    }
+    expect(stray, "区域外有残留非零像素（重排后采样会读到计划外邻居）").toBe(0);
+  });
+
+  it("幅面确实缩小、块序与辅助块与源一致、且不得是 2 的幂对（POT 会触发 mipmap=换采样级别）", () => {
+    expect(prePng.chunks).toBe(fontSrc.chunks);
+    expect(prePng.w).toBeLessThan(fontSrc.w);
+    expect(prePng.h).toBeLessThan(fontSrc.h);
+    expect(prePng.w * prePng.h).toBeLessThan((fontSrc.w * fontSrc.h) / 2);
+    expect(isPot(prePng.w) && isPot(prePng.h)).toBe(false);
+    // 帧矩形总量是文案的字形面积账，改文案会动它
+    const framePixels = kept.reduce((s, k) => s + k.glyph.width * k.glyph.height, 0);
+    expect(framePixels).toBe(266074);
   });
 
   it("进房前文案的字形全部保留；无字形者今日即空白（本轮不改表现）", () => {
@@ -261,9 +324,15 @@ describe("r18 字体两段化：调用点分类", () => {
     }
   });
 
-  it("Boot 关键路径只装子集，1.6MB 全量字体只在延迟通道里声明一次", () => {
+  it("Boot 关键路径只装子集对，1.6MB 全量字体只在延迟通道里声明一次", () => {
     const boot = SRC("packages/client/src/scenes/BootScene.ts");
-    expect(boot.includes('this.load.bitmapFont(FONT_MAIN, "/assets/fonts/chinese/font-prephase.png"')).toBe(true);
+    // png 与 fnt 必须成对钉死：重排版把 x/y 改写进新布局，FONT_MAIN 若配上源 font.fnt
+    // 就是"用旧坐标读新图"——字还在但每个都画到别处，冷启动看着仍是中文。
+    expect(
+      boot.includes(
+        'this.load.bitmapFont(FONT_MAIN, "/assets/fonts/chinese/font-prephase.png", "/assets/fonts/chinese/font-prephase.fnt")',
+      ),
+    ).toBe(true);
     const declFn = boot.indexOf("export function loadFontFull");
     const fullLoad = boot.indexOf("load.bitmapFont(FONT_FULL");
     expect(declFn).toBeGreaterThan(-1);
@@ -272,13 +341,20 @@ describe("r18 字体两段化：调用点分类", () => {
     const preload = boot.slice(boot.indexOf("preload(): void"), boot.indexOf("create(): void"));
     expect(preload.includes("font.png")).toBe(false); // Boot 段再无那次 1.6MB 下载
     expect(preload.includes("font-prephase.png")).toBe(true);
+    expect(preload.includes("font-prephase.fnt")).toBe(true);
+    // 源 font.fnt 只服务 FONT_FULL：出现在 loadFontFull 之后、preload 段之前=延迟通道之外
+    expect(preload.includes('chinese/font.fnt"')).toBe(false);
+    expect(boot.slice(fullLoad).includes('"/assets/fonts/chinese/font.fnt"')).toBe(true);
     // 全量路径字面量全局只此一处：别处硬编码=绕过 keyExists 跳过逻辑的第二下载源
-    const sites = [
+    const files = [
       "packages/client/src/scenes/BootScene.ts",
       "packages/client/src/scenes/GameScene.ts",
       "packages/client/src/scenes/overlays.ts",
       "packages/client/src/main.ts",
-    ].reduce((n, f) => n + (stripComments(SRC(f)).match(/fonts\/chinese\/font\.png/g)?.length ?? 0), 0);
-    expect(sites).toBe(1);
+    ];
+    const count = (re: RegExp) => files.reduce((n, f) => n + (stripComments(SRC(f)).match(re)?.length ?? 0), 0);
+    expect(count(/fonts\/chinese\/font\.png/g)).toBe(1);
+    expect(count(/fonts\/chinese\/font\.fnt/g)).toBe(1);
+    expect(count(/fonts\/chinese\/font-prephase\.fnt/g)).toBe(1);
   });
 });
