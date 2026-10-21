@@ -73,6 +73,9 @@
  *
  * 用法：
  *   node scripts/e2e/prephase-canvas.mjs --save    # 生成/刷新基线（benchmark/results/prephase-canvas/）
+ *   node scripts/e2e/prephase-canvas.mjs --save --reason "换代理由"   # 像素与上一批不同时**必须**给理由
+ *     （换代三步：留差图 → 写清机制 → 刷基线。理由直接写进 manifest.provenance，
+ *      免得只有报告里有一句、基线这边看不出是谁在什么时候为什么换的值）
  *   node scripts/e2e/prephase-canvas.mjs         # 对拍现役实现与基线（连续两次都全等才算确定）
  *   FW_PREPHASE_PORT=3631 ...                    # 换端口（缺省 3631，避开 domskin 3611/其余工具默认口）
  */
@@ -89,6 +92,9 @@ const OUT = join(ROOT, "benchmark", "results", "prephase-canvas");
 /** 差图只落 TEMP（不入库），失败时打印路径供人工比对 */
 const SCRATCH = join(ROOT, "TEMP", "r18-canvas");
 const SAVE = process.argv.includes("--save");
+const rIdx = process.argv.indexOf("--reason");
+const REASON = rIdx >= 0 ? process.argv[rIdx + 1] : null;
+if (rIdx >= 0 && (!REASON || REASON.startsWith("--"))) throw new Error("--reason 需要一句文字（为什么这批像素与上一批不同）");
 const PORT = Number(process.env.FW_PREPHASE_PORT ?? 3631);
 /** 基线所属代=拆字之前的全量 font.png 一代；代不由 HEAD 判，由 dist 产物指纹判（见 bundleFp） */
 const BASELINE_COMMIT = "851f0a2";
@@ -568,7 +574,13 @@ if (SAVE) {
     ? "本批为首捕，无旧批可比"
     : sameAsPrior
       ? "与前批 SHA 逐态相同 ⇒ 这份产物在五态上复现了拆字前那批像素，正是本门禁要证的无损"
-      : "与前批 SHA 有差异：本批已换值，须在该轮报告写明原因，不得静默放容差";
+      : `与前批 SHA 有差异，本批已换值。换代理由（--reason）：${REASON}`;
+  if (!sameAsPrior && prior && !REASON) {
+    throw new Error(
+      "像素与上一批基线不同却没有 --reason：换代必须留理由。" +
+      "先跑不带 --save 的对拍取差图与 AE，人工核清机制，再 --save --reason \"机制一句话\"。",
+    );
+  }
   const verifiedBy = [];
   const pushBundle = (b, role) => {
     if (b && !verifiedBy.some((v) => v.chunkSha === b.chunkSha)) verifiedBy.push({ ...b, role });
