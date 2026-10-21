@@ -1,0 +1,384 @@
+{
+  "meta": {
+    "label": "r14-after",
+    "git": "9412c62",
+    "date": "2026-10-21T09:05:23.127Z",
+    "node": "v22.22.1",
+    "level": "forest_01",
+    "note": "churnMB=事件期间 raw 堆峰 − GC 基线（该事件造出的字节，含随后回收的垃圾）；heapGCMB/residentDeltaMB=强制 HeapProfiler.collectGarbage 后的真实常驻与其增量；peakJobMB=选关树分帧烘焙在飞 typed array 峰值；烘样 jobs>0 的采样数（0=结果缓存命中、零烘焙）；texMB 逐源 w·h·4（含透明边距）；audioMB 解码后 PCM；game 与 temple 离房后属第二文档线"
+  },
+  "results": [
+    {
+      "mode": "menu（暖装落定）",
+      "ok": true,
+      "texMB": 82.39,
+      "canvasTexMB": 0,
+      "texTop": [
+        [
+          "chars",
+          16
+        ],
+        [
+          "mech",
+          16
+        ],
+        [
+          "popup",
+          16
+        ],
+        [
+          "font",
+          8.56
+        ],
+        [
+          "ground",
+          8
+        ],
+        [
+          "temple",
+          8
+        ]
+      ],
+      "audioMB": 0,
+      "audioTop": [],
+      "audioCount": 0,
+      "ground": {
+        "size": 0,
+        "bytesMB": 0
+      },
+      "tree": {
+        "jobs": 0,
+        "results": 0,
+        "jobMB": 0,
+        "resultMB": 0
+      },
+      "dom": 62,
+      "sceneObjs": {
+        "Menu": 25
+      },
+      "heapRawMB": 12.5,
+      "peakJobMB": 0,
+      "peakHeapMB": 12.5,
+      "samples": 29,
+      "jobSamples": 0,
+      "resultMB": 0,
+      "t0": 1791.300000011921,
+      "ms": 1241,
+      "lineage": 1,
+      "gcBaseMB": 11.7,
+      "heapGCMB": 11.7,
+      "churnMB": 0.8,
+      "residentDeltaMB": 0
+    },
+    {
+      "mode": "temple 首入（冷烘）",
+      "ok": true,
+      "texMB": 97.32,
+      "canvasTexMB": 14.93,
+      "texTop": [
+        [
+          "chars",
+          16
+        ],
+        [
+          "mech",
+          16
+        ],
+        [
+          "popup",
+          16
+        ],
+        [
+          "font",
+          8.56
+        ],
+        [
+          "ground",
+          8
+        ],
+        [
+          "temple",
+          8
+        ]
+      ],
+      "audioMB": 0,
+      "audioTop": [],
+      "audioCount": 0,
+      "ground": {
+        "size": 0,
+        "bytesMB": 0
+      },
+      "tree": {
+        "jobs": 0,
+        "results": 1,
+        "jobMB": 0,
+        "resultMB": 10.24
+      },
+      "dom": 62,
+      "sceneObjs": {
+        "Temple": 56
+      },
+      "heapRawMB": 43.8,
+      "peakJobMB": 11.97,
+      "peakHeapMB": 61.3,
+      "samples": 39,
+      "jobSamples": 25,
+      "resultMB": 10.24,
+      "t0": 3539.0999999940395,
+      "ms": 2674,
+      "lineage": 1,
+      "gcBaseMB": 11.7,
+      "heapGCMB": 27,
+      "churnMB": 49.6,
+      "residentDeltaMB": 15.3
+    },
+    {
+      "mode": "temple 重进（命中）",
+      "ok": true,
+      "texMB": 97.32,
+      "canvasTexMB": 14.93,
+      "texTop": [
+        [
+          "chars",
+          16
+        ],
+        [
+          "mech",
+          16
+        ],
+        [
+          "popup",
+          16
+        ],
+        [
+          "font",
+          8.56
+        ],
+        [
+          "ground",
+          8
+        ],
+        [
+          "temple",
+          8
+        ]
+      ],
+      "audioMB": 0,
+      "audioTop": [],
+      "audioCount": 0,
+      "ground": {
+        "size": 0,
+        "bytesMB": 0
+      },
+      "tree": {
+        "jobs": 0,
+        "results": 1,
+        "jobMB": 0,
+        "resultMB": 10.24
+      },
+      "dom": 62,
+      "sceneObjs": {
+        "Temple": 56
+      },
+      "heapRawMB": 32,
+      "peakJobMB": 0,
+      "peakHeapMB": 32.5,
+      "samples": 36,
+      "jobSamples": 0,
+      "resultMB": 10.24,
+      "t0": 6909,
+      "ms": 2206,
+      "lineage": 1,
+      "gcBaseMB": 27,
+      "heapGCMB": 27,
+      "churnMB": 5.5,
+      "residentDeltaMB": 0
+    },
+    {
+      "mode": "temple 三进（命中）",
+      "ok": true,
+      "texMB": 97.32,
+      "canvasTexMB": 14.93,
+      "texTop": [
+        [
+          "chars",
+          16
+        ],
+        [
+          "mech",
+          16
+        ],
+        [
+          "popup",
+          16
+        ],
+        [
+          "font",
+          8.56
+        ],
+        [
+          "ground",
+          8
+        ],
+        [
+          "temple",
+          8
+        ]
+      ],
+      "audioMB": 0,
+      "audioTop": [],
+      "audioCount": 0,
+      "ground": {
+        "size": 0,
+        "bytesMB": 0
+      },
+      "tree": {
+        "jobs": 0,
+        "results": 1,
+        "jobMB": 0,
+        "resultMB": 10.24
+      },
+      "dom": 62,
+      "sceneObjs": {
+        "Temple": 56
+      },
+      "heapRawMB": 32,
+      "peakJobMB": 0,
+      "peakHeapMB": 32.5,
+      "samples": 37,
+      "jobSamples": 0,
+      "resultMB": 10.24,
+      "t0": 9637.09999999404,
+      "ms": 2252,
+      "lineage": 1,
+      "gcBaseMB": 27,
+      "heapGCMB": 27,
+      "churnMB": 5.5,
+      "residentDeltaMB": 0
+    },
+    {
+      "mode": "game（开局静止）",
+      "ok": true,
+      "texMB": 91.78,
+      "canvasTexMB": 9.38,
+      "texTop": [
+        [
+          "chars",
+          16
+        ],
+        [
+          "mech",
+          16
+        ],
+        [
+          "popup",
+          16
+        ],
+        [
+          "font",
+          8.56
+        ],
+        [
+          "ground",
+          8
+        ],
+        [
+          "temple",
+          8
+        ]
+      ],
+      "audioMB": 0,
+      "audioTop": [],
+      "audioCount": 0,
+      "ground": {
+        "size": 1,
+        "bytesMB": 4.96
+      },
+      "tree": {
+        "jobs": 0,
+        "results": 0,
+        "jobMB": 0,
+        "resultMB": 0
+      },
+      "dom": 65,
+      "sceneObjs": {
+        "Game": 105
+      },
+      "heapRawMB": 23.6,
+      "peakJobMB": 0,
+      "peakHeapMB": 23.5,
+      "samples": 26,
+      "jobSamples": 0,
+      "resultMB": 0,
+      "t0": 9965,
+      "ms": 2029,
+      "lineage": 2,
+      "gcBaseMB": 22.8,
+      "heapGCMB": 22.9,
+      "churnMB": 0.7,
+      "residentDeltaMB": 0.1
+    },
+    {
+      "mode": "temple 离房后（冷烘）",
+      "ok": true,
+      "texMB": 97.32,
+      "canvasTexMB": 14.93,
+      "texTop": [
+        [
+          "chars",
+          16
+        ],
+        [
+          "mech",
+          16
+        ],
+        [
+          "popup",
+          16
+        ],
+        [
+          "font",
+          8.56
+        ],
+        [
+          "ground",
+          8
+        ],
+        [
+          "temple",
+          8
+        ]
+      ],
+      "audioMB": 0,
+      "audioTop": [],
+      "audioCount": 0,
+      "ground": {
+        "size": 0,
+        "bytesMB": 0
+      },
+      "tree": {
+        "jobs": 0,
+        "results": 1,
+        "jobMB": 0,
+        "resultMB": 10.24
+      },
+      "dom": 64,
+      "sceneObjs": {
+        "Temple": 56
+      },
+      "heapRawMB": 54.4,
+      "peakJobMB": 11.97,
+      "peakHeapMB": 55,
+      "samples": 55,
+      "jobSamples": 37,
+      "resultMB": 10.24,
+      "t0": 12688.300000011921,
+      "ms": 4387,
+      "lineage": 2,
+      "gcBaseMB": 22.9,
+      "heapGCMB": 28.6,
+      "churnMB": 32.1,
+      "residentDeltaMB": 5.7
+    }
+  ]
+}

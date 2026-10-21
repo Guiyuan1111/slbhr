@@ -148,6 +148,19 @@ node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>              
   只看链内会读成"没变好"，须两处分开报。`--dwell` 控制结算面板停留（缺省 1200ms；
   120ms 模拟"秒点继续"，此时预取未起跳、链内退化回现烘，两档都要跑才是公平对比）。
   产物 `results/advance-<label>.json`。
+- `perf-resident`：驻留内存与分配峰值拆账（r14 起）——按**事件**而非按时间窗计量：
+  `HeapProfiler.collectGarbage` → 读 GC 基线 → 页内 20ms 记录器 → 触发事件 → 等落定 → 再 GC → 读终值。
+  出四类数：`churnMB`（该事件造出的字节，含随后回收的垃圾）、`peakJobMB`（选关树分帧烘焙在飞
+  typed array 峰值，直读 `__fwTreeStats().jobMB`）、`heapGCMB`/`residentDeltaMB`（强制 GC 后的真常驻
+  与其增量——**不 GC 就会把垃圾读成驻留**）、字节分解（`texMB` 逐源 w·h·4、`ground.bytesMB`、
+  `tree.resultMB`、DOM/场景对象数）。态序固定：menu 暖装 → temple 首入（冷烘）→ 重进×2（命中）
+  → game 开局静止 → 离房后 temple（冷烘），故 `--compare` 直接给同事件前后表。
+  **口径前提（勘误）**：`perf-alloc` 的 `HeapProfiler.startSampling` 对 typed array 大块字节**失明**
+  （同次冷烘 `sampledTotal` 0.32MB vs 堆增长 74MB）——小对象归因走采样器，整块 ArrayBuffer/SAT 的账
+  只能走本工具的事件级 GC 基线。落定条件须写复合判据 `textures.exists("tree-all") && jobs===0`：
+  只看 `jobs===0` 会在 `Temple.create` 尚未执行时即为真，把在飞烘焙当常驻。
+  产物 `results/resident-<label>.json`；位级回归保护由 `scripts/e2e/treebake.mjs`（三层 FNV-1a 金样
+  + 重进零重烘 + 重进免重传 + 阳性对照）承担，金样 `scripts/e2e/fixtures/tree-layers.json`。
 
 ## 快照索引
 

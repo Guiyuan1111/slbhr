@@ -298,3 +298,27 @@ CDP `HeapProfiler.startSampling` + source-map-js 还原到 TS 源）、换关纹
 剩余挂账（r14 起）：`prepareGround/buildGround` 命中计数（把均值下降读成命中率）、秒点档过场窗掉帧的
 **真机 GPU 口径**、换关链剩余 ≈45ms（Game 场景创建与图集取用，非烘焙/网络）、服务端 tick 侧候选、
 幕布驻留税（前置真 GPU）。
+
+## 十一、r14 增补（2026-10-21，0.3.42 后第三轮）
+
+> 报告 `2026-10-21-r14-temple-resident-memory.md`。火力从"帧时间/分配速率"切到**驻留字节与分配峰值**：
+> 前者决定低配进选关会不会被系统杀，后者决定每次进出选关白付多少垃圾。
+
+| 轮 | 焦点 | commit | 关键数字（同机同口径） | 门禁 |
+|---|---|---|---|---|
+| r14 | 选关线驻留内存四件：烘焙逐层流水线+分带收尾(A)、树纹理重进免重传(D)、离房清地面 LRU(B)、levelCache 有界(C) | `e02fe86`(量具)、`9a0d862`(金样门禁)、`9412c62`/`62bf35f`/`6cbef64`/`626bf80`(四件) | 冷烘在飞 typed array 峰 **33.31→11.97MB（−64.1%）**、事件内堆峰 **86.2→61.3MB**、分配流水 **74.5→49.6MB（−33.4%）**；重进（缓存命中）**15.6→5.5MB/次（−64.7%）**并免掉三张 1036×864 全幅重传；离房回选关驻留 **33.5→28.6MB**（地面 4.96→0、纹理账 −4.97MB）；离房后冷烘 **70.2→32.1MB**、堆峰 **93.1→55.0MB**；烘焙在飞时长 28→25 个 20ms 采样点（未劣化）、游玩中 22.9MB 驻留与帧内 1044KB/s 分配**逐字不动** | det 48/48 位级一致、vitest **179/179**、**新件 `scripts/e2e/treebake.mjs` 9/9**（三层 FNV-1a 金样逐位命中 + 重进零重烘 + **重进免重传（canvas 标记 + remove 计数双证）** + 阳性对照）、groundcache、journey 7/7+deathretry 4/4+refresh 3/3+wonrefresh 6/6、route f01（winAt 39488 带内）、visual 91.19/92.56（带内）、perf-client f01 60.3fps/1044KB·s⁻¹、fb2 59fps/2299KB·s⁻¹、advance 5/5 零网络·烘焙 9.8ms·链 1035.7ms |
+
+**量具一笔（新支柱）**：`benchmark/perf-resident.mjs` 把驻留拆成 `churn / 在飞峰 / 常驻Δ / 字节分解`
+四类，逐事件 `collectGarbage→记录器→落定→再 GC`。**V8 采样堆分析器对 typed array 大块字节失明**
+（同次冷烘 `sampledTotal` 0.32MB vs 堆增长 74MB）——整块 ArrayBuffer 的账只能走事件级 GC 基线，
+`perf-alloc` 那条线继续只管小对象归因。
+
+**三条勘误入档**：①`page.evaluate("() => {...}")` 传**字符串**箭头函数会被当表达式求值，代码根本不执行
+（返回函数对象→序列化为 undefined），量具全部改传函数字面量；②落定条件只看 `jobs===0` 会在
+`Temple.create` 未执行时即为真，把在飞烘焙当"常驻"（离房后虚报 81.4MB），须 `textures.exists("tree-all") && jobs===0`；
+③Chromium 全透明像素 RGB 读回被归零，像素金样的**阳性对照必须改 alpha>127 的像素**，否则"一致"毫无意义。
+
+剩余挂账（r15 起）：冷烘余下 49.6MB 的大头已非 typed array（`getImageData` ImageData 与三层 canvas 本体），
+再压触及保真红线；**真机 GPU 口径**的 `texMB` 与烘焙峰值；`prepareGround/buildGround` 命中计数；
+换关链剩余 ≈45ms；服务端 tick 侧候选；幕布/图集常驻税。
+
