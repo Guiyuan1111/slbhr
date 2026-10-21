@@ -545,3 +545,29 @@ M12 相机与共享 DTO 拆分照旧。
 实测**音轨走 XHR，Resource Timing 只在请求完成时入表**——12 份 A/B/A 快照 `pendingCount` 恒为 0，
 出闸的证据形态是"整条缺席"。因此新增 `loopDeferred` 作为这一类改动的通过条件，
 而不是拿 pending 当判据。
+
+## 十九、r22 增补（2026-10-22，Menu 段最后一笔非像素字节＋角色图集按消费点拆张）
+
+> 报告 `2026-10-22-r22-menu-bgm-out-of-blocking-batch.md`（件1/件1b）与
+> `2026-10-22-r22-char-atlas-split.md`（件2）。r21 把进房段最大的一笔搬走，本轮搬 Menu 段：
+> 先是唯一不落在像素上的 `MenuMusic.mp3`（150.1KB），再是阻塞批里最大的 `CharAssets.png`（714.9KB/239 帧）。
+
+| 轮 | 焦点 | commit | 关键数字（同机同口径） | 门禁 |
+|---|---|---|---|---|
+| r22 件1/件1b | 菜单曲出 Boot 阻塞批：v1（`ecf47ec`）单独成批、暖装串在其后；v2（`dd9e915`，现役）把它并进暖装**队头**，起播绑自己那支文件的 `filecomplete`，并按 `settings.music` 门控 | `ecf47ec`(v1)、`dd9e915`(v2) | `Menu active` Δ＝4g **−327ms**（最差带 132，5.8× 配对带）、fast3g **−784ms**（带 81，9.7×）、slow3g **−2540ms**（带 92，27.6×）、off −9ms（带内）；Menu 段 **2441→2291KB**、请求 **19→18**，到落定总量不变（字节只换窗口）；行为面：菜单曲到位在点击后 1788/4519/14519/196ms，仍早于进房 6419/14633/45215/1291ms | det 48/48、audiofamily 14/14、journey 四模式、route 双关 won、12 快照 `doubleDownloads` 全空、页面错误 0 |
+| r22 件2 | 角色图集按消费点拆两张：`CharAssetsMenu`（53 帧 152.1KB，留阻塞批）＋ `CharAssetsGame`（186 帧 461.9KB，走 `loadGameAtlases` 延迟批）；`buildMenuAnims` 缩到 idle 两式，房内十一式 `buildCharAnims` 推迟到纹理落定后注册 | `536fadc`(素材)、`7a9e289`(隔离带)、`24684b3`(接线)、`9bedda1`(取证) | `Menu active` Δ＝4g **−1182.6ms**（10 轮/臂，最差带 191 的 6.2×）、fast3g **−3004.3ms**（带 148，20.3×）、slow3g **−9221.0ms**（带 31，297.5×）、off −29.6（带内）；落定门 `gameActivePerfMs` ＝4g −188.4（带内）、fast3g **−460.8**、slow3g **−1655.5**、off −32.7（带内）；Boot 窗线上 **−565KB**、全链会话 **−80.3KB**（两张相加仍比整张小）、驻留纹理六态各 **−0.13~0.14MB**（算术 0.1378）；**与 r20 单价表吻合到 0.4%–3.9%**（归因律第四次独立复现） | typecheck 0 错、vitest **213/213**、`split-char-atlas --check` 逐字节、det **48/48**、canvas 换代入账＋对拍 **5/5 逐字节**、domskin **4/4**、audiofamily **14/14**、journey 3/3·6/6·4/4·3/3、route forest_01 39550ms 与 forest_12 13014ms 双双 won、treebake 9/9、groundcache 6/6、regression **缺帧警告=0** |
+
+**换代入账（canvas 口径第一次因"拆张"而非"重排"而改）**：`prephase-canvas` 基线 5 态重写，与上一批差
+**23 像素**（menu 13 / settings 5 / credits 5），逐通道最大级差 1、平均绝对差 0.36~0.40、
+**100% 落在抗锯齿渐变区、平坦区 0**，menu 那 13 个聚在 `x[295,993] y[839,889]`（双角色脚下渐变带）；
+`temple`/`temple-numbers` 逐字节相同 ⇒ 改动只影响画角色的三态。机制＝POT 2048²→NPOT 两幅的采样/UV 取整变化。
+
+**登记判据补条（噪声闸门从两条增至三条）**：跨臂主张一个差值，必须同时过
+① 同臂**最差带** `max_{r,r'}|A_r−C_r'|`（均值带与配对带都不够——它们各自只在单轮配对上收缩）；
+② **臂B 自身散布**（同代产物内部都差这么多，就不能读作臂间差）；
+③ **高漂移档要求 ≥8 轮/臂池化**——off 这类管线绑定档臂间散布可达数百 ms，2 轮链连"带"本身都还没框住。
+本轮两次踩线并当场更正：件1b 的 off 档"+564ms/带 7ms"（`verdict.mjs` 只读 `rounds[0]`，两轮换算实为 +170ms/带 254、臂B 自身差 1001ms）；
+件2 的 off 档"+287ms 代价"（①②都过，③不过——10 轮池化后 −32.7ms/带 866，代价不存在）。
+另一条同形状纪律：**差值口径的带不能比它的组成部分更严**——`gameActiveAfterClickMs` 的跨度 Δ 超带而它的两个组成
+（绝对进房、点击时刻）都在带内时，一律读作带内。跨度列（`clickPerfMs`/`gameActiveAfterClickMs`）在
+锚定点击的量具里天然被里程碑移动污染，只作旁证，落定门一律读页钟绝对值 `gameActivePerfMs`。
