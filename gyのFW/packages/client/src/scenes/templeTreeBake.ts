@@ -234,22 +234,29 @@ export function outlinePass(
   }
 }
 
-/** 预乘 RGBA → 直色（上传时 pma 再预乘，与 oracle 链路等价，±1 双舍入） */
+/** 预乘 RGBA → 直色（上传时 pma 再预乘，与 oracle 链路等价，±1 双舍入）
+ *  src 从第 fromPx 个像素起读 count 个，dst 从头写——分带收尾用。 */
+function writeStraight(src: Uint8ClampedArray, dst: Uint8ClampedArray, fromPx: number, count: number): void {
+  for (let p = 0; p < count; p++) {
+    const si = (fromPx + p) * 4;
+    const di = p * 4;
+    const a = src[si + 3];
+    if (a === 0 || a === 255) {
+      dst[di] = src[si];
+      dst[di + 1] = src[si + 1];
+      dst[di + 2] = src[si + 2];
+    } else {
+      dst[di] = Math.round((src[si] * 255) / a);
+      dst[di + 1] = Math.round((src[si + 1] * 255) / a);
+      dst[di + 2] = Math.round((src[si + 2] * 255) / a);
+    }
+    dst[di + 3] = a;
+  }
+}
+
 export function premultToStraight(rgba: Uint8ClampedArray): Uint8ClampedArray {
   const out = new Uint8ClampedArray(rgba.length);
-  for (let i = 0; i < rgba.length; i += 4) {
-    const a = rgba[i + 3];
-    if (a === 0 || a === 255) {
-      out[i] = rgba[i];
-      out[i + 1] = rgba[i + 1];
-      out[i + 2] = rgba[i + 2];
-    } else {
-      out[i] = Math.round((rgba[i] * 255) / a);
-      out[i + 1] = Math.round((rgba[i + 1] * 255) / a);
-      out[i + 2] = Math.round((rgba[i + 2] * 255) / a);
-    }
-    out[i + 3] = a;
-  }
+  writeStraight(rgba, out, 0, rgba.length / 4);
   return out;
 }
 
@@ -264,7 +271,7 @@ const MAX_RESULTS = 2;
 const MAX_JOBS = 2;
 const CH = 64; // 行分片
 
-type JobTaskKind = "prepare" | "alphaSat" | "bevel" | "satOut" | "outline";
+type JobTaskKind = "prepare" | "alphaSat" | "bevel" | "satOut" | "outline" | "raster";
 interface JobTask {
   key: TreeLayerKey;
   kind: JobTaskKind;
@@ -276,11 +283,18 @@ interface JobState {
   params: TreeBakeParams;
   /** prepare 暂存的源 RGBA（ImageData.data），该层最后一个 alphaSat 行分片到达即释放 */
   raw: Partial<Record<TreeLayerKey, Uint8ClampedArray>>;
-  alphas: Record<TreeLayerKey, Uint8ClampedArray>;
-  sats: Record<TreeLayerKey, Int32Array>;
-  outs: Record<TreeLayerKey, Uint8ClampedArray>;
+  /** 以下六项均"该层 raster 末分片即 delete"——三层共用峰值曾达 33.31MB，
+   *  逐层流水线 + 逐层释放后只有一层在飞（r14 件 A） */
+  alphas: Partial<Record<TreeLayerKey, Uint8ClampedArray>>;
+  sats: Partial<Record<TreeLayerKey, Int32Array>>;
+  outs: Partial<Record<TreeLayerKey, Uint8ClampedArray>>;
   outAlphas: Partial<Record<TreeLayerKey, Uint8ClampedArray>>;
   outSats: Partial<Record<TreeLayerKey, Int32Array>>;
+  /** 逐层收尾产物：该层 raster 完成后入位，三层齐了即成结果 */
+  canvases: Partial<Record<TreeLayerKey, HTMLCanvasElement>>;
+  /** 处理序：带 outline 的层排在最前——它另需 outAlpha+outSAT（≈4.5MB），
+   *  此时已完成的画布数最少，整任务峰值最低。 */
+  order: TreeLayerKey[];
   tasks: JobTask[];
   t0: number;
 }
@@ -332,20 +346,40 @@ export function startTreeBake(p: TreeBakeParams): string {
     if (oldest === undefined) break;
     jobs.delete(oldest);
   }
-  // 初始每层一个 prepare；后续 alphaSat/bevel/outline 分片由 prepare 追加，保证依赖顺序
-  const tasks: JobTask[] = LAYERS.map((layer): JobTask => ({ key: layer.key, kind: "prepare", y0: 0, y1: p.canvasH }));
+  // 逐层流水线（r14 件 A）：只入队首层的 prepare，其后每层 raster 末分片再入队下一层。
+  // 三层一次性入队时，三层 typed array 会在 prepare 段同时存在（实测在飞峰值 33.31MB）；
+  // 逐层串起来后同一时刻只有一层的中间量，且该层一收尾就把它的 outs 换成 canvas。
+  const order = [...LAYERS].sort((a, b) => Number(b.outline) - Number(a.outline)).map((l) => l.key);
   jobs.set(key, {
     params: p,
     raw: {},
-    alphas: {} as Record<TreeLayerKey, Uint8ClampedArray>,
-    sats: {} as Record<TreeLayerKey, Int32Array>,
-    outs: {} as Record<TreeLayerKey, Uint8ClampedArray>,
+    alphas: {},
+    sats: {},
+    outs: {},
     outAlphas: {},
     outSats: {},
-    tasks,
+    canvases: {},
+    order,
+    tasks: [{ key: order[0], kind: "prepare", y0: 0, y1: p.canvasH }],
     t0: performance.now(),
   });
   return key;
+}
+
+/** 该层的后续分片入队（prepare 后）：alphaSat 全部 → bevel 全部 →（outline 层）satOut +
+ *  outline 全部 → raster 全部。raster 把 outs 逐带写进 canvas 并在末带释放该层全部中间量。 */
+function enqueueLayerTail(job: JobState, key: TreeLayerKey): void {
+  const p = job.params;
+  const layer = LAYERS.find((l) => l.key === key)!;
+  const bands: Array<[number, number]> = [];
+  for (let y = 0; y < p.canvasH; y += CH) bands.push([y, Math.min(y + CH, p.canvasH)]);
+  for (const [y0, y1] of bands) job.tasks.push({ key, kind: "alphaSat", y0, y1 });
+  for (const [y0, y1] of bands) job.tasks.push({ key, kind: "bevel", y0, y1 });
+  if (layer.outline) {
+    job.tasks.push({ key, kind: "satOut", y0: 0, y1: p.canvasH });
+    for (const [y0, y1] of bands) job.tasks.push({ key, kind: "outline", y0, y1 });
+  }
+  for (const [y0, y1] of bands) job.tasks.push({ key, kind: "raster", y0, y1 });
 }
 
 /** 步进分片任务；全部完成时落缓存并返回结果 */
@@ -368,20 +402,14 @@ export function stepTreeBake(key: string, budgetMs = 10): TreeBakeResult | null 
       job.outs[t.key] = new Uint8ClampedArray(p.canvasW * p.canvasH * 4);
       src.width = 0;
       src.height = 0;
-      // 顺序：本层 alphaSat 全部 → 本层 bevel 全部 →（outline 层）satOut → outline 全部
-      for (let y = 0; y < p.canvasH; y += CH) job.tasks.push({ key: t.key, kind: "alphaSat", y0: y, y1: Math.min(y + CH, p.canvasH) });
-      for (let y = 0; y < p.canvasH; y += CH) job.tasks.push({ key: t.key, kind: "bevel", y0: y, y1: Math.min(y + CH, p.canvasH) });
-      if (layer.outline) {
-        job.tasks.push({ key: t.key, kind: "satOut", y0: 0, y1: p.canvasH });
-        for (let y = 0; y < p.canvasH; y += CH) job.tasks.push({ key: t.key, kind: "outline", y0: y, y1: Math.min(y + CH, p.canvasH) });
-      }
+      enqueueLayerTail(job, t.key);
     } else if (t.kind === "alphaSat") {
       // 逐行复刻 buildSAT 递推（第 y+1 行依赖第 y 行），同时提取 alpha；分片按行连续
       const w = p.canvasW;
       const stride = w + 1;
       const raw = job.raw[t.key]!;
-      const a = job.alphas[t.key];
-      const sat = job.sats[t.key];
+      const a = job.alphas[t.key]!;
+      const sat = job.sats[t.key]!;
       for (let y = t.y0; y < t.y1; y++) {
         let rowSum = 0;
         const row = y * w;
@@ -398,7 +426,7 @@ export function stepTreeBake(key: string, budgetMs = 10): TreeBakeResult | null 
       const tint: [number, number, number] = layer.gold
         ? [0xff, 0xd6, 0x20]
         : [parseInt(p.color.slice(1, 3), 16), parseInt(p.color.slice(3, 5), 16), parseInt(p.color.slice(5, 7), 16)];
-      bevelColorMatrix(job.alphas[t.key], p.canvasW, p.canvasH, {
+      bevelColorMatrix(job.alphas[t.key]!, p.canvasW, p.canvasH, {
         thickness: layer.thickness,
         outer: layer.outer,
         dir: layer.dir,
@@ -407,18 +435,18 @@ export function stepTreeBake(key: string, budgetMs = 10): TreeBakeResult | null 
         Kf: p.Kf,
         y0: t.y0,
         y1: t.y1,
-        out: job.outs[t.key],
-        sat: job.sats[t.key],
+        out: job.outs[t.key]!,
+        sat: job.sats[t.key]!,
       });
     } else if (t.kind === "satOut") {
       const n = p.canvasW * p.canvasH;
       const oa = new Uint8ClampedArray(n);
-      const o = job.outs[t.key];
+      const o = job.outs[t.key]!;
       for (let j = 0; j < n; j++) oa[j] = o[j * 4 + 3];
       job.outAlphas[t.key] = oa;
       job.outSats[t.key] = buildSAT(oa, p.canvasW, p.canvasH);
-    } else {
-      outlinePass(job.outs[t.key], p.canvasW, p.canvasH, {
+    } else if (t.kind === "outline") {
+      outlinePass(job.outs[t.key]!, p.canvasW, p.canvasH, {
         Cf: p.Cf,
         Kf: p.Kf,
         alpha: job.outAlphas[t.key]!,
@@ -426,22 +454,39 @@ export function stepTreeBake(key: string, budgetMs = 10): TreeBakeResult | null 
         y0: t.y0,
         y1: t.y1,
       });
+    } else {
+      // raster：本带 outs 转直色后写进该层画布（首带建画布）。与旧一次性
+      // createImageData(整幅)+set(premultToStraight(...)) 逐位等价，只是把
+      // 整幅 3.6MB×2 的临时量换成 CH 行的小块，且写完即能释放该层 typed array。
+      const cv = job.canvases[t.key] ?? (() => {
+        const c = document.createElement("canvas");
+        c.width = p.canvasW;
+        c.height = p.canvasH;
+        job.canvases[t.key] = c;
+        return c;
+      })();
+      const octx = cv.getContext("2d")!;
+      const bandH = t.y1 - t.y0;
+      const idata = octx.createImageData(p.canvasW, bandH);
+      writeStraight(job.outs[t.key]!, idata.data, t.y0 * p.canvasW, bandH * p.canvasW);
+      octx.putImageData(idata, 0, t.y0);
+      if (t.y1 >= p.canvasH) {
+        delete job.outs[t.key];
+        delete job.alphas[t.key];
+        delete job.sats[t.key];
+        delete job.outAlphas[t.key];
+        delete job.outSats[t.key];
+        const next = job.order[job.order.indexOf(t.key) + 1];
+        if (next) job.tasks.push({ key: next, kind: "prepare", y0: 0, y1: p.canvasH });
+      }
     }
   }
   job.tasks.splice(0, i);
   if (job.tasks.length > 0) return null;
   jobs.delete(key);
+  // 任务排空 ⇔ 三层都已 raster（最后一层的 raster 末带是队列里最后一个任务）
   const canvases = {} as Record<TreeLayerKey, HTMLCanvasElement>;
-  for (const layer of LAYERS) {
-    const cv = document.createElement("canvas");
-    cv.width = p.canvasW;
-    cv.height = p.canvasH;
-    const octx = cv.getContext("2d")!;
-    const idata = octx.createImageData(p.canvasW, p.canvasH);
-    idata.data.set(premultToStraight(job.outs[layer.key]));
-    octx.putImageData(idata, 0, 0);
-    canvases[layer.key] = cv;
-  }
+  for (const layer of LAYERS) canvases[layer.key] = job.canvases[layer.key]!;
   const r: TreeBakeResult = { canvases, ms: performance.now() - job.t0 };
   rememberResult(key, r);
   return r;
