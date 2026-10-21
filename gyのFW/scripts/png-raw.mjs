@@ -11,6 +11,7 @@ export function decodePng(buf, tag) {
   let p = 8;
   let ihdr = null;
   const chunks = [];
+  const ancillary = [];
   const idat = [];
   while (p < buf.length) {
     const len = buf.readUInt32BE(p);
@@ -19,6 +20,9 @@ export function decodePng(buf, tag) {
     const data = buf.subarray(p + 8, p + 8 + len);
     if (type === "IHDR") ihdr = { w: data.readUInt32BE(0), h: data.readUInt32BE(4), depth: data[8], color: data[9], interlace: data[12] };
     else if (type === "IDAT") idat.push(data);
+    // 辅助块原样留着：cHRM/gAMA 之类影响浏览器怎么解释这些字节，重编码时若丢掉，
+    // "像素没变"这句话就不再成立（font.png 就带 pHYs/iTXt/cHRM）。IEND 由编码器补。
+    else if (type !== "IEND") ancillary.push({ type, data: Buffer.from(data) });
     p += 12 + len;
   }
   if (ihdr.depth !== 8 || ihdr.color !== 6 || ihdr.interlace !== 0) throw new Error(`${tag} 非 8bit RGBA 无交错：${JSON.stringify(ihdr)}`);
@@ -47,7 +51,7 @@ export function decodePng(buf, tag) {
     }
     prev = cur;
   }
-  return { ...ihdr, data: out, chunks: chunks.filter((t) => t !== "IDAT").join(",") };
+  return { ...ihdr, data: out, ancillary, chunks: chunks.filter((t) => t !== "IDAT").join(",") };
 }
 
 /** 把矩形区域从原始样本里拍平成一块 buffer（逐行 copy，越界即抛） */
@@ -82,10 +86,11 @@ function chunk(type, data) {
 }
 
 /**
- * 编 8bit RGBA 无交错 PNG（zlib level 9 + libpng 同款逐行滤波择优：取"绝对差之和"最小者）。
- * 纯函数：同样本进同样本出，故 `--check` 的字节级可复现性成立（不写时间戳、不留 ancillary 块）。
+ * 编 8bit RGBA 无交错 PNG（zlib level 9 + libpng 同款逐行滤波择优）。
+ * `ancillary` 传入原文件的辅助块（decodePng 原样带出）则逐字节保留，块序与源一致；
+ * 纯函数：同样本进同样本出，故 `--check` 的字节级可复现性成立（不自造时间戳块）。
  */
-export function encodePngRgba(w, h, data) {
+export function encodePngRgba(w, h, data, ancillary = []) {
   const stride = w * 4;
   const raw = Buffer.alloc(h * (stride + 1));
   for (let y = 0; y < h; y++) {
@@ -141,6 +146,7 @@ export function encodePngRgba(w, h, data) {
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     chunk("IHDR", ihdr),
+    ...ancillary.map((c) => chunk(c.type, c.data)),
     chunk("IDAT", zlib.deflateSync(raw, { level: 9 })),
     chunk("IEND", Buffer.alloc(0)),
   ]);
