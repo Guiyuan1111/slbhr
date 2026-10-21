@@ -383,3 +383,46 @@ CDP `HeapProfiler.startSampling` + source-map-js 还原到 TS 源）、换关纹
 `LevelMusic` 1285.4KB 仍是单关最大项；下一轮候选——**四张图集 PNG 的分场景装载**（temple 态用不到 game 图集）；
 perf-load 隧道节流档（`--rtt`/CDP emulate）未实现，−1449KB 在 2Mbps 下"少等 5.8s"仍是换算；真机 GPU 口径、
 `prepareGround/buildGround` 命中计数、换关链剩余 ≈45ms、服务端 tick 侧、LAN/触屏/弱网手测、M12 拆分。
+
+## 十四、r17 增补（2026-10-21，0.3.42 后第六轮）
+
+> 报告 `2026-10-21-r17-dom-skin-atlas-decoupling.md`。方向切到**HTML 临路径上的 CSS 背景图**：
+> 连接面板（石板大厅）是纯 DOM，其 CSS 用负 `background-position` 直接从三张整游戏图集取帧。
+> 零协议、零物理、零 canvas 改动；素材像素逐字节不变（原始样本层证明）。
+
+| 轮 | 焦点 | commit | 关键数字（同机同口径） | 门禁 |
+|---|---|---|---|---|
+| r17 | DOM 皮肤改专用合成贴图（图集退出 HTML 临路径）+ 新门禁 domskin | `3a5848b`+`98d383f`+`83d27a3`(量具/判据)、`043b2a5`(L5 预修)、`7c19e61`(件A)、`305715e`(普查刷新) | **Menu 段 4054→3799KB（−255.0KB，−6.3%）、请求 21→19**；CSS 皮肤行 3 条(1241.1KB, 20–24ms 起跳占 6 连接中 3 条近 60ms)→**1 条(80.5KB, 26–74ms)**；**DOM 侧解码位图 36.00→4.08MiB（−88.7%）**；**全链 6751→6830KB＝+79.0KB（本轮代价，明写）** | det **48/48**、vitest **191/191**、build/typecheck、**新门禁 domskin 4/4 零容差字节全等**、treebake 9/9、groundcache 6/6、journey 8 模式、route f01（winAt 39540 带内）、visual **92.79/92.96/93.10**（同码三次，极差 0.31pt）、perf-client canvas 60.9fps/1042KB·s⁻¹、advance 5/5 零网络·链 **1035.7→963.8/909.1ms**、audiofamily 14/14 |
+
+**最不顺眼的那条必须先摆正**：基线里 PopupAssets.png 的 CSS 行在 20–78ms 就把 334.4KB 拉完，
+1148ms 时 Phaser 自己的 XHR 只花 **0.3KB**（缓存命中）——这三张图集的字节**本来就要下**，
+DOM 皮肤只是把同一笔账提前到最贵的窗口。件A 后 PopupAssets 退回点击后真实下载（1208–1239ms，31ms），
+所以分段账是 Menu 段 −255KB、点击→Game 段 +334KB、全链 **+79KB**。收益落在**争用形状**
+（HTML 解析关键窗的连接占用 3→1）、**解码位图面**（−31.92MiB，Phaser 那份本来就存在）与**结构解耦**
+（`grep -rn atlasses` 在 `packages/**/*.{html,css}` 已为空集，皮肤与游戏图集再无坐标耦合）。
+LAN 场景 +79KB≈0.06s@100Mbps，故裁定**保留件A、不补 `fetchpriority=low` 图集 preload**——
+补 preload 等于把"提前下载"换个写法请回来，而里程碑没有任何需要抢救的回退。
+
+**等价性用两层各自表态**：内容层自写 PNG 解码器（inflate IDAT + 反滤波 0–4）取 RGBA 原始字节对拍，
+6 帧 **3,197,812 个样本字节 0 差异** + 隔离带全透明 + 块序一致；画面层四态逐像素表（整幅最大级差 39.6/255、
+区均 0.0149，大值只在石板棱边与头像边缘——"同一内容换了重采样相位"的形状）。为什么 `magick compare` 不能充当内容层证明：
+两侧都过同一套色彩管理，±1 量化差被抹平成 AE=0，它测不出"字节变过"。**门禁坚持零容差**，
+本轮按脚本头写好的三步"有意换代"流程收口（量表→报告→`--save`，代次记进 `manifest.provenance`），
+不为一次改动放宽容差。
+
+**门禁顺手抓到的两件事**：① L5——`.btn .av` 的 `background` 简写（特异性 0,2,0）把 `.av-fire/.av-water`
+（0,1,0）的 `background-position` 复位，**火头像从来没画对过**，AE=1248/最大级差 255 定位在两颗头像框；
+② 普查防护网转红——census 对 `client` 根 `*.html` 取原文（注释也算），L5 的中文 CSS 注释带来"特"等字，
+按测试自述补救刷新 `used-chars.json`（字体仍是 r7f"不子集化"全量，无渲染影响）。
+
+**不主张之项明写**：DCL 232.5→234.5、`__fw` 就绪 489.5→433.0、Menu active 754.5→732.0（两轮 861→773 与 648→691
+方向相反＝带内抖动）、点击→Game 1502→1416、暖重载 715→813.5ms，全在 ±120ms 噪声带内，一律不作延迟收益主张；
+`bakeMs` 均值 9.8→20.1 与本轮无因果路径（件A 不动换关链，r14 中位仅 7.6、5 次链里一次预烘未命中即整层冷烘拉高均值），
+按两态分布处理并挂 r18 复测；`audio.count` 17→18 而同集合同 `totalKB`＝同一曲目重复计数，非多下一首歌。
+
+剩余挂账（r18 起）：**待裁决不变**——二进制再编码 6148.5KB（冷启动 88.8%），它是最大单一杠杆；
+**r17 候选"四张图集分场景装载"本轮已量到边界并基本关闭**（CharAssets 是 Boot 关键路径＝Menu 立绘/idle，
+MenuAssets 是 Menu 首帧石板按钮，PopupAssets 已在 `loadGameAtlases()` 暖装队列，font.png 被 `MenuScene.ts:92`
+bitmapText 直接要用——可挪的只剩 Menu 不用的帧，上限个位数 KB）；perf-load 隧道节流档（`--rtt`/CDP emulate）
+仍未实现，+79KB 在弱网的代价只能外推；真机 GPU texMB/烘焙峰、`prepareGround/buildGround` 命中计数、
+换关链剩余 ≈45ms、服务端 tick、LAN/触屏/弱网手测、M12 相机与共享 DTO 拆分。
