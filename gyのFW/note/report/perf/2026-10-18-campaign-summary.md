@@ -426,3 +426,50 @@ MenuAssets 是 Menu 首帧石板按钮，PopupAssets 已在 `loadGameAtlases()` 
 bitmapText 直接要用——可挪的只剩 Menu 不用的帧，上限个位数 KB）；perf-load 隧道节流档（`--rtt`/CDP emulate）
 仍未实现，+79KB 在弱网的代价只能外推；真机 GPU texMB/烘焙峰、`prepareGround/buildGround` 命中计数、
 换关链剩余 ≈45ms、服务端 tick、LAN/触屏/弱网手测、M12 相机与共享 DTO 拆分。
+
+## 十五、r18 增补（2026-10-21，0.3.42 后第七轮）
+
+> 报告 `2026-10-21-r18-font-two-phase.md`。方向切到 **Boot 关键路径上最大的单一文件**：
+> `assets/fonts/chinese/font.png` 1600.3KB（占当时 Menu 段 3799KB 的 42.1%）。进房前画布真的只需要 75 个字符
+> （其中 53 个在 `font.fnt` 有字形），于是把这一份拆成两代：Boot 装子集 304.5KB，全量延到游戏内文本真要用的时候才装。
+> 零协议、零物理、零像素设计——子集是从官方 `font.png` 按字框**逐字节抄写**，其余 RGBA 清零。
+
+| 轮 | 焦点 | commit | 关键数字（同机同口径） | 门禁 |
+|---|---|---|---|---|
+| r18 | 中文位图字两段化（`FONT_MAIN` 子集先行 / `FONT_FULL` 延迟）+ 新门禁 prephase-canvas | `4453c1a`+`7daea81`(量具)、`94290e3`(基线)、`c37f585`(件A 子集资产)、`90fe319`(件B 两段化)、`d25b275`/`add2616`/`832bccb`/`2ae6154`(防护网+门禁)、`20ae670`(件C) | **Menu 段 3799→2504KB（−1295.0KB，−34.1%），请求 19→19**；点击→Game 段 3031→4632KB（+1600.6＝全量字体挪到这一段）；**全链 6830→7135KB＝+304.8KB（本轮代价＝子集那份新文件）**；驻留位图 **1→2 张 8,974,336B**；条件复验 46→47 URL、6816.1→7120.7KB→**0KB** | det **48/48**、vitest **202/202**、**新门禁 prephase-canvas 5/5 零容差字节全等（三代产物指纹互验）**、treebake 9/9、groundcache 6/6、audiofamily 14/14、domskin 4/4、journey 8 模式（**wonrefresh 6/6＝件C 靶**）、route f01（winAt 39494·39514·39505 带内）、visual **90.63%** 平移 (0,0)、perf-client canvas 60.3fps/998KB·s⁻¹、advance 5/5 零网络·链 1090.5ms |
+
+**收益在形状不在总量，代价必须明写**：Menu 段砍掉三分之一，但全链多出 304.8KB，且页面生命周期里从此挂着
+**两张同尺寸（2191×1024）解码位图**——件A 刻意不动 `.fnt`（260 条度量留在原位），子集就只能与全量同幅。
+`benchmark/font-decode-probe.mjs` 实测：1600.3KB 的传输在同场批内只占 **36ms**，解码差（createImageBitmap 110.9 vs 37.0ms）
+也小于驻留差。所以本机口径下这轮**不主张任何毫秒收益**，只主张字节形状、请求占用窗与那条翻出来的 r19 靶：
+**字形帧紧凑重排＋配套 `.fnt`**，把两张 8.97MB 一起降到 ≈1–2MB 量级。
+
+**本轮最重要的收获是量具纪律**：跨快照（相隔数小时、中间跑过整套门禁）的 ms 比较**不算证据**。
+同场 A/B/A（回退重建→测→恢复→测→再回退→测，`load-r18-ab-{full,split,full2}.json`）显示：
+**同一份全量代产物两次跑，点击→Game 差 446ms**（1716.5 vs 1270.5），远宽于战役此前用 DCL/menuActive/reload 标定的 ±120ms 带。
+本轮先前记的"Menu active +108ms""点击→Game +370ms"因此**全部撤回**，报告 §五之一留全文。
+
+**为什么必须新造第四道门禁**：`domskin` 截屏前把画布摘掉、`visual-diff` 只拍 Game 战斗帧、`journey` 只读 DOM `textContent`——
+前场画布里那些中文（「开始游戏」、选关 48 枚编号、面板标题）一旦少一个字框，用户看到的是字面一个洞，而三套门禁全绿。
+prephase-canvas 把 Phaser 自驱动三路封死、改按 1000/60ms 合成步推 `Game.step`（相位＝步数），`Math.random` 换 mulberry32，
+`--save` 前做非空画布体检，判据 SHA-256 逐字节；代次**由产物指纹判不由 HEAD 判**，`manifest.bundlesVerified` 已并列三代。
+
+**两处勘误（都是本轮先写错、后按实源改对）**：① "重复声明 `FONT_FULL` 完全免费"不成立——`bitmapFont` 两个孩子各自入队
+（`BitmapFontFile.js:234`），png 命中 `textureManager` 被跳过（不重下、不换纹理），但 `.fnt` 元数据**每次重声明都会再请一次**
+（本机 0 字节 304），与 r5 起四张图集 `*.json` 一直是同一形状；② 件C——首轮套件就抓到 `journey wonrefresh` 与 vitest 各一条红
+（`Invalid BitmapText key: font-full`，刷新回座 `won` 时结算板根本开不出来）。根因是件B 留下的隐含假设"房前文案的纹理总有人会先装好"：
+`enterGame` 的 500ms 黑幕把 `Game.preload` 压到弹窗场景之后。修法取既有约定同构的**消费方自备声明**（抽 `loadFontFull()`，
+`loadGameAtlases()` 与三块面板各自 `preload()` 调它），防护网补第 11 例静态断言并做过阴性对照。
+
+**发现（非本轮回归）**：进房前 75 字里 **22 个今天就没有字形**（`menus.ts:29` 的「设置」整块、`transition.ts:26` 的 `Loading...` 等），
+`.fnt` 未声明 ⇒ Phaser 静默跳过、advance 为 0。本轮刻意不补（补字形＝往官方图生成新墨＝有意变外观），列为待裁决。
+**归属已定谳、且分两群（[41 号档](../research/2026-10-fidelity/41-chinese-font-glyph-coverage.md)，结论不是单向的）**：
+G1 六串文案（设置/音乐/音效/制作人员/致谢行/`Loading...`）在官方变体 A 全树 `grep -rl` **0 命中**——原版这些位置是图集图标
+（`MusicButton/FxButton`）或 `PreloaderAssets` 纯 sprite，属**我方自创文本＝我方缺口**，任何官方图集（含 `output/E` 的 315 字版）都补不出；
+G2 的「恭喜！」却与官方 `utils/lang/ch` 字典字面逐字相同，官方也走这张 260 字形 canvas 图集（`States_Complete_GameCompleteMenu.js:17`）
+⇒ **原版同样只显「！」，属忠实呈现**，而 E 的 315 字图集可补齐它。处置四条按群分别裁，仍待裁决。
+
+剩余挂账（r19 起）：**待裁决面额按终态重算**——≥64KB 未压缩二进制 15 条 **6357.1KB＝全链 7120.7KB 的 89.3%**（r15 旧记 6148.5KB/88.8% 作废），
+其中两份字体副本 1905.4KB（26.8%）也在这本账里；**r19 首位＝字体图集重排**（同上）；22 缺字形处置待裁；
+perf-load 隧道节流档（`--rtt`/CDP emulate）仍缺位，r17 的 +79KB、本轮的 +304.8KB 在弱网只能换算；
+真机 GPU texMB/烘焙峰、`prepareGround/buildGround` 命中计数、换关链剩余 ≈45ms、服务端 tick、LAN/触屏/弱网手测、M12 相机与共享 DTO 拆分。
