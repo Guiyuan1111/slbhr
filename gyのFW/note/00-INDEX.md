@@ -21,7 +21,7 @@
 | 行为复刻战役（主） | [research/2026-10-behavior-parity/00-INDEX.md](research/2026-10-behavior-parity/00-INDEX.md) | 01–16 号档（含原版优化提案池）+工具链速查+挂账 §3+性能战役速查 §4 |
 | 保真修复档卷 | [research/2026-10-fidelity/00-INDEX.md](research/2026-10-fidelity/00-INDEX.md) | 01–40 号档：关卡/表现/物理保真修复、全 48 关视觉审计、量具核查与验收取证 |
 | Issue 处置档案（2026-10-20 批次） | [issues-2026-10-20/00-INDEX.md](issues-2026-10-20/00-INDEX.md) | 20 条 GitHub issue 处置收官（17 修+3 证伪），0.3.40 发版 |
-| 代码审计（2026-10-21 批次） | [audit/2026-10-21-code-audit/00-INDEX.md](audit/2026-10-21-code-audit/00-INDEX.md) | 独立工程审计：H1–H4 + M1–M13 + 低危/误报纠正 + 修复台账（0.3.41 已修收口，M12 挂账，GitHub CI 实跑通过） |
+| 代码审计（2026-10-21 批次） | [audit/2026-10-21-code-audit/00-INDEX.md](audit/2026-10-21-code-audit/00-INDEX.md) | 独立工程审计：H1–H4 + M1–M13 + 低危/误报纠正 + 修复台账（0.3.41 已修收口；0.3.42 M12 渐进拆分转部分已修，相机/DTO 仍挂账） |
 | 机器探索线 | [research/2026-10-autoplay/00-INDEX.md](research/2026-10-autoplay/00-INDEX.md) | 自动通关路线搜索（S1–S5，断点 tools/ 收容） |
 | 早期性能剖析 | [research/2026-10-18-perf-hotspot/00-INDEX.md](research/2026-10-18-perf-hotspot/00-INDEX.md) | 性能战役前身的热点剖析 |
 | 连接界面调研 | [research/2026-10-19-connect-ui/00-INDEX.md](research/2026-10-19-connect-ui/00-INDEX.md) | 石板大厅方向调研+三份可开 mockup |

@@ -2,7 +2,7 @@
 
 > 状态：`待修` / `进行中` / `已修` / `挂账` / `不修（附理由）`。每个已修项必须附 commit 与复验门禁。
 >
-> 收口时点：2026-10-21。修复批次 commit：`9fc2bb3`（客户端网络/输入）、`c7dc51b`（客户端场景/存储）、`bd151d8`（服务端加固）、`86731ec`（CI/版本门禁）、`fa7e075`（客户端单测）、`5cdf0d2`（浏览器 e2e）；CI 工作流根目录修正见 `70cf984`。审计建档见 `42195c0`。
+> 收口时点：2026-10-21。修复批次 commit：`9fc2bb3`（客户端网络/输入）、`c7dc51b`（客户端场景/存储）、`bd151d8`（服务端加固）、`86731ec`（CI/版本门禁）、`fa7e075`（客户端单测）、`5cdf0d2`（浏览器 e2e）；CI 工作流根目录修正见 `70cf984`。审计建档见 `42195c0`。0.3.42 追加：M12 渐进拆分 `cef6359`+`fc2bb52`+`5225d74`、A 槽 L-02 `1b7532f`+`e40fb23`、P-01 `d6d5861`。
 
 | ID | 问题 | 优先级 | 状态 | commit | 复验 |
 |---|---|---|---|---|---|
@@ -21,7 +21,7 @@
 | M9 | 机关平滑速度不衰减 | P2 | 已修 | `c7dc51b` | 超 80ms 静止清零回读 + 全量门禁；未做视觉抽帧 |
 | M10 | Boot 加载条事件名 | P2 | 已修 | `c7dc51b` | `filecomplete-atlasjson-` 回读；加载条视觉未单独断言 |
 | M11 | temple.json 失败永久缓存 | P2 | 已修 | `c7dc51b`+`fa7e075` | `templeData.test` 失败/网络拒绝重试 + 成功单例 3 例 |
-| M12 | any/GameScene 巨型类 | P2 | 挂账 | — | 单独立项，见 [02-medium.md](02-medium.md)；本次不做架构级重构 |
+| M12 | any/GameScene 巨型类 | P2 | 部分已修 | `cef6359`+`fc2bb52`+`5225d74` | 渐进拆分：机关平滑 `scenes/mechSmoothing.ts`（单测 4）、快照字段校验 `snapshotValidation.ts`（单测 5）、平台声 `scenes/platformSound.ts`（单测 5）已接入；相机子系统与共享 DTO/生成类型仍挂账，见 [02-medium.md](02-medium.md) |
 | M13 | localStorage 写入无保护 | P2 | 已修 | `c7dc51b`+`fa7e075` | `progress.test` 写入/读取抛错降级 2 例 |
 | L1 | oracle 路径硬编码 | P3 | 已修 | `bd151d8` | `ORACLE_ROOT` 环境变量覆盖回读 |
 | L2 | `/api/level` 异常文本泄漏 | P3 | 已修 | `bd151d8` | 错误细节转服务端日志、响应通用文案回读 |
@@ -41,9 +41,18 @@
 | 浏览器 e2e | `node scripts/e2e/journey.mjs refresh` | **3/3**：两次刷新回座 + 相机解冻 |
 | GitHub CI | Actions run `39538401687`（push `70cf984`） | **两 job 全绿**：typecheck/test/build 1m43s、determinism 22s |
 
+## §2.1 0.3.42 追加复验（2026-10-21）
+
+| 门 | 结果 |
+|---|---|
+| 单测 | **16 文件 / 172 用例全通过**（新增 M12 三模块 14 例 + 既有 158） |
+| 确定性 | **48/48 关位级一致**（2.6s） |
+| 浏览器 e2e | pause **11/11**、leave **3/3**、refresh **3/3**、wonrefresh **6/6**、journey rejoin **3/3**；f12 route repeat3 **ALL PASS**（winAt 12989/13477/12967ms，墙钟抖动） |
+| GitHub CI | 0.3.42 发版提交后实跑，见 Release 记录 |
+
 ## §3 遗留与说明
 
-- **M12（架构级）**：`GameScene` 拆分、共享 DTO/生成类型、快照字段存在性校验不在本次批量修复范围；风险与方案保留在 02-medium.md，需单独立项。
+- **M12（架构级）**：渐进拆分已完成机关平滑/快照字段校验/平台声三个低耦合子系统；`GameScene` 相机子系统、共享 DTO/生成类型仍挂账，风险与方案保留在 02-medium.md。
 - **M4 / M3 实机口径**：剪贴板仅做代码路径与回退审查，未在局域网 HTTP 浏览器手测；速度关 BGM 未做听感验收。
 - **H4 内存**：LRU=2 与分片只做了实现与门禁复验，未在真机测峰值 RSS；如需数字应另跑内存基准。
 - **CI**：仓库根 `.github/workflows/ci.yml`（`working-directory: gyのFW`，`paths: gyのFW/**`）已随 `70cf984` 推送在 GitHub 实跑通过（run [39538401687](https://github.com/Guiyuan1111/slbhr/actions/runs/39538401687)）；仅有 `actions/checkout@v4`/`setup-node@v4` 的 Node 20 运行时弃用提示，不影响门禁结果。
