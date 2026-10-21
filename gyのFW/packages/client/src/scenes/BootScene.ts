@@ -127,9 +127,11 @@ export class BootScene extends Phaser.Scene {
     this.load.atlas(ATLAS_CHARS, "/assets/atlasses/CharAssets.png", "/assets/atlasses/CharAssets.json");
     this.load.atlas(ATLAS_MENU, "/assets/atlasses/MenuAssets.png", "/assets/atlasses/MenuAssets.json");
     // 原版画布内时钟的位图字（font 48 基准，LevelUI Clock 用 24 号 = 半缩放）
-    // 进房前字体子集（r18 件1 生成器 scripts/font-subset/build-font-prephase.mjs）：
-    // 同尺寸、同 fnt，只把进房前文案用不到的字形像素清零——1600.3KB → 304.5KB。
-    this.load.bitmapFont(FONT_MAIN, "/assets/fonts/chinese/font-prephase.png", "/assets/fonts/chinese/font.fnt");
+    // 进房前字体子集（r18 件1 生成器 scripts/font-subset/build-font-prephase.mjs；
+    // r19 件1 重排版 scripts/font-subset/reflow-prephase.mjs）：帧坐标改写后的紧凑图集
+    // 1006x378，配 font-prephase.fnt（与官方 font.fnt 只差 x/y 与 scaleW/scaleH，度量逐条相同）。
+    // 304.5KB/8.56MB 解码 → 242.4KB/1.45MB。
+    this.load.bitmapFont(FONT_MAIN, "/assets/fonts/chinese/font-prephase.png", "/assets/fonts/chinese/font-prephase.fnt");
     // 独立图片（0.3.12 起开始界面引用，此前漏载致缺纹理静默空白——差距审计 P0）
     this.load.image("TempleHall", "/assets/images/TempleHallForest.jpg");
     this.load.image("Beam", "/assets/images/Beam.png");
