@@ -374,6 +374,14 @@ async function measureRound(browser, round) {
   cold.loopDeferred = loop.every((i) => i.endMs > gameActivePerfMs);
   cold.loopArrivalAfterEntryMs = loop.length ? Math.round(Math.max(...loop.map((i) => i.endMs)) - gameActivePerfMs) : null;
   cold.gameActivePerfMs = Math.round(gameActivePerfMs);
+  // r23 件1 代价侧，同一条出闸判据：延迟通道里的播放图集晚于进房才算"真的出了落定门"。
+  // 计数列不可省——臂A 产物里根本没有 CharAssetsPlay.png，空数组的 every 恒真会把"没有这张"读成"已延迟"。
+  const charsPlay = cold.resourcesAfterGame.items.filter((i) => /\/CharAssetsPlay\.png$/.test(i.url));
+  cold.charsPlayRequested = charsPlay.length;
+  cold.charsPlayDeferred = charsPlay.length > 0 && charsPlay.every((i) => i.endMs > gameActivePerfMs);
+  cold.charsPlayArrivalAfterEntryMs = charsPlay.length
+    ? Math.round(Math.max(...charsPlay.map((i) => i.endMs)) - gameActivePerfMs)
+    : null;
   cold.headers = [...headers.values()];
 
   // reload（同 context，浏览器有缓存）→ Menu active 与传输字节
