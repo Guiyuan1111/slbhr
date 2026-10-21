@@ -512,3 +512,36 @@ r18 期望的"两张 8.97MB 一起降到 1–2MB"只兑现了进房前那半张�
 r18 的 +304.8KB、本轮的 −63.6KB 在弱网只能换算；真机 GPU 显存口径、换关链剩余、服务端 tick、LAN/触屏/弱网手测、
 M12 相机与共享 DTO 拆分照旧。
 
+
+## 十七、r20 增补（2026-10-22，弱网档位量具轮）
+
+> 报告 `2026-10-22-r20-network-tiers.md`。这一轮不产出收益，产出的是**判据**：
+> 挂账多时的"perf-load 隧道节流档"补上，此后所有弱网数字是实测而不是换算。
+
+| 轮 | 焦点 | commit | 关键数字（同机同口径） | 门禁 |
+|---|---|---|---|---|
+| r20 | `--net off/cable/4g/fast3g/slow3g`（CDP `Network.emulateNetworkConditions`）＋生效自检＋阴性对照；四档基线与冷启动关键路径归因；进房前阻塞批预取件**实测判退**；PNG 无损重压缩执行器就位（未 apply） | `dc95246`(量具)、`d043f2d`(基线归因)、`405a594`(件2 判退)、`30b4e0f`(件3 执行器)、`0d70a7a`+`85dcd98`(收口＋更正) | 弱网三段"闸前富余"仅 **13.4%/8.0%/5.1%** ⇒ Menu 段与进房段都是**字节账**；每 KB 价签 **4g 2.048ms／fast3g 5.12ms／slow3g 16.384ms**；进房段 4636.0KB、字节下限 4g 9.49s／slow3g 76.0s；同臂复跑带 4g 12–23ms、off 103–330ms；预取件机制成立（crossorigin 复用）但里程碑一升一降、无跨带净收益 ⇒ 全退；`png-opt` 14 个 **4322→4175KB＝−147.6KB** | typecheck 0 错、vitest 203/203、产物指纹与 r19 逐字节相同（`rel="preload"` 源码与 dist 均 0）、`reflow-prephase --check` RC=0、`build-font-prephase --check` RC=1（设计内护栏）、`png-opt --check` RC=0、`FW_NET_NOOP=1` 逼出自检报错、off 档回归与 r19 逐字节一致 |
+
+**登记一条自己写错又当场更正的口径**：曾用 Node 墙钟跨度（`gameActiveAfterClickMs`）去比页钟绝对值
+（Resource Timing `responseEnd`），得出"Game active 不被房内资产门控"——**这是假结论**。
+页钟对齐（`clickPerfMs` 为原点）后八组一致：Game active 恒在最后一笔落定后 140–215ms。
+此后铁律：**任何跨 `clickPerfMs` 的比较必须先归一到页钟**。
+
+## 十八、r21 增补（2026-10-22，循环曲出落定门轮）
+
+> 报告 `2026-10-22-r21-bgm-out-of-gate.md`。按 r20 那张价签表反向施工：
+> 既然进房段是字节账，就把**单笔最大且首帧用不到**的那一笔（关卡循环曲 1285.4KB）搬出落定门。
+
+| 轮 | 焦点 | commit | 关键数字（同机同口径） | 门禁 |
+|---|---|---|---|---|
+| r21 | 循环曲出落定门与阻塞批：门内只留 sfx＋终局曲＋失败曲；Menu 落定后 +1500ms 追取，快进路径由 `GameScene.kickBgmLoop` 在 create 后补取、`load.complete` 时补播（守卫逐字对齐 create，SHUTDOWN 摘 `once` 句柄） | `1eefcf1`(实施)、`4f1bab1`+`b65279d`(台架)、`1cba76f`+`231a60a`(量具) | 四档 A/B/A 的 `点击→Game`：4g **10505→7813.5ms（Δ−2678，同臂带 27ms 的 99×）**、fast3g **24845→18332（Δ−6465，带 97ms 的 66×）**、slow3g **78607.5→57218.5（Δ−21448，带 118.5ms 的 181×）**、off +193ms（带内，无回归）；进房段 **4636→3350KB**、到 `Game active` 累计 **7076→5791KB**、请求 19→19；**实测与 r20 单价表吻合到 1.8% 内**（这是该归因律第三次独立复现） | typecheck 0 错、vitest 203/203、det **48/48**、audiofamily **14/14**（general/speed 双档都是延迟批兜底后真在播）、journey refresh/wonrefresh/deathretry/rejoin、**route forest_01 与 forest_12 双双 won**、prephase-canvas/domskin 逐字节、treebake/groundcache 全过、三臂 `doubleDownloads` 全空、复验 7061.2→**0KB**、页面错误 0 |
+
+**代价与它为什么仍然成立**：字节守恒，搬运不是免费午餐。快进路径（不在 Menu 停留就建房）弱网下
+出现"已可玩但无 BGM"窗口，4g 实测 **2749ms**；但同一档位"进房且有声"的端到端时刻只挪了 **+39ms**
+（改前 16800ms／改后 16839ms）——可玩提前 2710ms，音乐到位时刻几乎不动。驻留路径实测
+出声与进房同帧（4g 驻留 14s：进房 1741ms；改前同路径 1782ms），正常玩法不受影响。
+
+**登记一条量具假设的证伪**：原以为"快照时仍在飞"会留下 `responseEnd=0` 的 pending 条目，
+实测**音轨走 XHR，Resource Timing 只在请求完成时入表**——12 份 A/B/A 快照 `pendingCount` 恒为 0，
+出闸的证据形态是"整条缺席"。因此新增 `loopDeferred` 作为这一类改动的通过条件，
+而不是拿 pending 当判据。

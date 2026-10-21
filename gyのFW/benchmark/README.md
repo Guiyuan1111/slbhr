@@ -120,6 +120,12 @@ node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>              
   （第二次只花几百字节头，`staticGz` 有意策略，不是缺陷）；真双载（第二次仍 >1KB）才进
   `doubleDownloads`，预取类改动以**该列为空**为硬性通过条件。r19 那轮"18 条 vs 17 条而 KB 不变"
   的伪影正是这个口径要抓的东西。
+  **r21 两列**：`loopDeferred`＝本关循环曲（`/s/LevelMusic` 或 `/s/LevelMusic_speed`，锚定结尾
+  故不误取 Finish/Over）是否已不挡进房（进房快照里整条缺席，或完成时刻晚于进房时刻），
+  "把某笔字节搬出落定门"这类改动以**该列为 true** 为通过条件；`pendingCount/pendingUrls`＝
+  快照时 `responseEnd=0` 的条目。**读法警告**：音轨走 XHR，Resource Timing 只在请求完成时入表，
+  所以还在飞的音轨是"整条缺席"而不是 pending 条目（r21 的 12 份快照 `pendingCount` 恒为 0 即此因），
+  音轨的出闸取证看 `loopDeferred`，不看 pending。
 - `perf-sync`：快照路径成本拆解，buildState/syncState 与 ForestRoom.syncState 逐字段同构
   （r1 起机关位姿走 mechanisms 直读，镜像同构）；20Hz 编码；快照 `results/sync-<label>.json`。
   **r4 起生产语义**：encode 后 discardChanges（applyPatches 同款），patch=本网格真增量；
