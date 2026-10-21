@@ -31,9 +31,16 @@ if [ -n "$dirty" ]; then
 fi
 
 BK=$(mktemp -d)
-trap 'cp "$BK/"*.ts packages/client/src/ 2>/dev/null; rm -rf "$BK"' EXIT
-cp $FILES "$BK/" || exit 1
-echo "已备份现役源码 → $BK"
+# 备份必须保留原路径：旧写法 `cp $FILES $BK/` + `cp $BK/*.ts packages/client/src/` 把
+# packages/client/src/scenes/*.ts 摊平回了 src/ 根目录——臂2/收尾的"恢复"于是写出不存在的
+# 文件、真正的 scenes 文件却停在臂A 代次（r21 换臂前自查发现，未跑成即拦住）。
+restore () { for f in $FILES; do cp "$BK/$f" "$f" 2>/dev/null; done; }
+trap 'restore; rm -rf "$BK"' EXIT
+for f in $FILES; do
+  [ -f "$f" ] || { echo "FILES 里找不到 $f" >&2; exit 1; }
+  mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f" || exit 1
+done
+echo "已备份现役源码（保留路径）→ $BK"
 
 build_and_measure () { # $1 = label, $2 = 说明
   npm run build >/dev/null 2>&1 || { echo "构建失败 $1"; exit 1; }
@@ -46,14 +53,19 @@ echo "===== 臂1 $LABEL_A（源码代 $ERA_A）====="
 git checkout "$ERA_A" -- $FILES && build_and_measure "$LABEL_A" "臂A"
 
 echo "===== 臂2 $LABEL_B（当前工作树源码）====="
-cp "$BK/"*.ts packages/client/src/ && build_and_measure "$LABEL_B" "臂B"
+restore && build_and_measure "$LABEL_B" "臂B"
 
 echo "===== 臂3 $LABEL_C（$ERA_A 复测，用来框住漂移）====="
 git checkout "$ERA_A" -- $FILES && build_and_measure "$LABEL_C" "臂A 复测"
 
 echo "===== 收尾：恢复工作树并重建 ====="
-cp "$BK/"*.ts packages/client/src/
+restore
 git reset -q HEAD -- $FILES   # 只退索引，不动工作树：让 git status 回到干净基线
-git status --short -- $FILES
+if [ -n "$(git status --porcelain -- $FILES)" ]; then
+  echo "⚠ 收尾核验失败：$FILES 仍有差异，请手工核对" >&2
+  git status --short -- $FILES
+else
+  echo "✓ 收尾核验：$FILES 与 HEAD 逐字节一致（工作树已回到现役源码）"
+fi
 npm run build >/dev/null 2>&1 && echo "已按现役源码重建 dist：$(basename "$(ls packages/client/dist/assets/index-*.js | head -1)")"
 echo "A/B/A DONE：三份快照同名前缀，比 ms 只看 臂1↔臂3 的带宽，臂间差超出该带才算差异"
