@@ -21,7 +21,8 @@
 ## 2. 架构 60 秒
 
 - monorepo `gyのFW/`：`packages/client`（Phaser 3.90 + Vite，DOM 连接界面 index.html/main.ts 与 9-ID 契约）+ `packages/server`（Colyseus，60Hz patch + dead reckoning，房间 `ForestRoom.ts`）+ `packages/shared`（Box2D 确定性内核，det 48/48 位级锚 r0-baseline）。
-- **门禁全家桶（发版前必须全绿）**：tsc 0 错 / build / **vitest 126/126**（含 48 关行为测试 STRICT=true + ForestRoom 集成测试 13 例）/ **det 48/48 `--compare r0-baseline`** / census 18,446 PASS / e2e `route.mjs f01+f12 --repeat1`（本机标定 `--offset -15`）/ journey 7/7+pause 9/9+rejoin 3/3+deathretry 4/4+rolesplit 6/6 / touch 6/6 / visual-diff（**新口径带 90.55–92.86**，截帧隐 `#hud/#menu/#toast`，与旧带不可直比）/ ID 契约探针 14/14 / `npm audit --omit=dev` 0 critical。
+- **门禁全家桶（发版前必须全绿；2026-10-21 r18 刷新）**：tsc 0 错 / build / **vitest 202/202**（19 文件：含 48 关行为测试 STRICT=true、ForestRoom 集成测试 13 例、`font-prephase` 11 例等静态防护网）/ **det 48/48 `--compare r32`**（位级红线）/ census PASS / e2e `route.mjs f01 --repeat3`（本机标定 `--offset -15`）/ journey 七模式 7/7+pause 11/11+leave 3/3+refresh 3/3+wonrefresh 6/6+rejoin 3/3+deathretry 4/4+rolesplit 6/6 / touch 6/6 / 逐像素零容差三件 **domskin 4/4**（DOM 石板皮）、**prephase-canvas 5/5**（前场画布中文，代次按产物指纹判）、**treebake 9/9**（三层 FNV 金样）/ **groundcache 6/6**、**audiofamily 14/14** / visual-diff（**新口径带 90.55–92.86**，截帧隐 `#hud/#menu/#toast`，与旧带不可直比）/ 计量件 perf-client·perf-advance·perf-load·perf-resident（性能轮配平用，非红线门）/ ID 契约探针 14/14 / `npm audit --omit=dev` 0 critical。
+  **口径纪律（r18 立）**：跨快照的 ms 比较不算证据，凡主张 ms 级差异必须**同场 A/B/A 交替**（同一份产物两次跑实测差 446ms）。
 - oracle 参考库可起（8787 冒烟口径）；我方服务器只绑 127.0.0.1。
 
 ## 3. 当前状态（2026-10-20 收盘）
