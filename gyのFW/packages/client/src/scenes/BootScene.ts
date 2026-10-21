@@ -16,7 +16,7 @@
  * 的串行段（blob→Image ~180ms）而非网络（19 请求全并行仅 ~55ms）。
  */
 import Phaser from "phaser";
-import { AUDIO_GAME, AUDIO_MENU, loadAudioPack } from "../audio.js";
+import { AUDIO_BGM_OVER, AUDIO_MENU, AUDIO_SFX, bgmFamilyOf, bgmPackOf, loadAudioPack, type BgmFamily } from "../audio.js";
 
 export const ATLAS_CHARS = "chars";
 export const ATLAS_GROUND = "ground";
@@ -45,6 +45,16 @@ export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
  *  避免「暖装仍在飞 + GameScene 兜底重复拉同一批文件」的双载竞态 */
 let warmState: { done: Promise<void>; resolve: () => void } | null = null;
 
+/** 暖装期 BGM 族猜测（r16 件A）：暖装发生在 Menu 驻留期，此时目标关卡通常未知，
+ *  只能按缺省 general 猜（48 关里 38 关命中）。main.ts 在 temple.json 单例落定后
+ *  若已能从 `?level=` 深链定出类型，则先于暖装写入本字段。暖装已启动后改它无效
+ *  ——缺的族由 GameScene.preload 兜底声明补齐（未缓存的键照常下载）。 */
+let warmBgmFamily: BgmFamily = "general";
+export function setWarmBgmFamily(type: string | null | undefined): void {
+  if (warmState) return;
+  warmBgmFamily = bgmFamilyOf(type);
+}
+
 /** MenuScene 调用：开始后台暖装并登记落定门（complete 或场景被切走都算落定） */
 export function startBgWarm(scene: Phaser.Scene): void {
   if (warmState) return;
@@ -59,8 +69,11 @@ export function startBgWarm(scene: Phaser.Scene): void {
   loadGameAtlases(scene.load);
   // 游戏内音频批（r6，同 r5 模式）：并入同一暖装队列与落定门——进 Game 前若暖装在飞，
   // GameScene.preload 的兜底声明会整体等门后重跑（已入 cache.audio 的键静默跳过），
-  // 不产生双载竞态；全部 22 请求 < maxParallelDownloads 32，仍全并行。
-  loadAudioPack(scene, AUDIO_GAME);
+  // 不产生双载竞态；请求数仍 < maxParallelDownloads 32，全并行。
+  // r16 件A：BGM 只取一族（sfx + 失败曲与类型无关，恒取）。
+  loadAudioPack(scene, AUDIO_SFX);
+  loadAudioPack(scene, AUDIO_BGM_OVER);
+  loadAudioPack(scene, bgmPackOf(warmBgmFamily));
   scene.load.start();
 }
 
@@ -89,9 +102,10 @@ export class BootScene extends Phaser.Scene {
     this.load.image("GameName", "/assets/images/GameNameForest.png");
     this.load.image("KiziLogo", "/assets/images/branding/branding_logo_kizi.png");
 
-    // 音频仅装 menu 批（bgm_menu）；游戏内 18 键 ≈2.0MB（0.3.21 起 Menu 冷启动不再为其付出
-    // 传输；r6 起由 MenuScene 驻留期后台暖装提前拉齐，GameScene.preload 仅兜底）。装载方式
-    // 沿用无扩展名流式路由 + 显式 type=mp3 的 IDM 防劫持约定，见 audio.ts。
+    // 音频仅装 menu 批（bgm_menu）；游戏内批（0.3.21 起 Menu 冷启动不再为其付出传输；
+    // r6 起由 MenuScene 驻留期后台暖装提前拉齐，GameScene.preload 仅兜底；r16 件A 起
+    // BGM 只取目标关卡类型的一族，见 audio.ts）。装载方式沿用无扩展名流式路由 +
+    // 显式 type=mp3 的 IDM 防劫持约定。
     loadAudioPack(this, AUDIO_MENU);
     // ground/mech/temple/popup 不在 Boot 关键路径（r5 冷启动装载序整形，见文件头注释）
     this.buildLoaderBar();

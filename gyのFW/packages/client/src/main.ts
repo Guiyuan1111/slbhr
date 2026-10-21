@@ -12,7 +12,7 @@ import { parseLevel, type LevelData } from "@fw/shared/level2";
 import { Net, type NetCallbacks } from "./net";
 import { KeyboardInput } from "./input";
 import { TouchControls } from "./touch";
-import { BootScene, bgWarmSettled } from "./scenes/BootScene";
+import { BootScene, bgWarmSettled, setWarmBgmFamily } from "./scenes/BootScene";
 import { MenuScene } from "./scenes/MenuScene";
 import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
@@ -143,6 +143,18 @@ function tilesetUrl(source: string): string {
 function findTempleEntry(levelId: string): { filename: string; time: number; type: string } | null {
   const e = templeRaw.find((lv) => String(lv.filename ?? "").endsWith(`/${levelId}.json`));
   return e ? { filename: String(e.filename), time: Number(e.time) || 0, type: String(e.type ?? "general") } : null;
+}
+
+/** r16 件A：把后台暖装的 BGM 族预判成已知关卡的类型（深链 ?level= / 选关面板换关）。
+ *  与 oracle preloadAudioFiles 按 levelData.type 只取一支族同构；templeRaw 要到 enterGame
+ *  才填充，故这里直接吃页面级单例 promise。暖装已入队时 setWarmBgmFamily 静默拒绝，
+ *  缺的那支族由 GameScene.preload 兜底补齐（只多取一支、绝不缺键）。 */
+function predictWarmBgmFamily(levelId: string): void {
+  if (!levelId) return;
+  void loadTempleLevels().then((levels) => {
+    const e = levels.find((lv) => String(lv?.filename ?? "").endsWith(`/${levelId}.json`));
+    setWarmBgmFamily(String(e?.type ?? "general"));
+  });
 }
 
 /** 重开整关（黑幕包络；13 号档遗留销账，0.3.39）。oracle 对应语义=Level.retry 走 fade
@@ -734,6 +746,10 @@ function bindUi(): void {
   bootPhaser();
   // r8 件3：temple.json 预取（enterGame 关键路径 await 恒命中）
   void loadTempleLevels();
+  // r16 件A：?level= 深链时把暖装 BGM 族预判到该关类型。预取在上方先入队，本 .then 的
+  // 微任务恒早于 Boot 装载完成后的 MenuScene 暖装定时器（>120ms + 全图集传输），
+  // 故预判总在入队前生效；无深链则沿用缺省 general。
+  if (urlLevel) predictWarmBgmFamily(urlLevel);
   // R 键请求整关重开（E1；服务端按 phase 把关：won/gameover 才受理）
   window.addEventListener("keydown", (e) => {
     if (e.code === "KeyP" && gameStarted) togglePause();

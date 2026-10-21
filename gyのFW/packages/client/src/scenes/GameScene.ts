@@ -19,7 +19,7 @@ import Phaser from "phaser";
 import { DOOR, ROLES, type Role } from "@fw/shared";
 import type { LevelData, Rect } from "@fw/shared/level2";
 import { windBodyPos } from "@fw/shared/level2";
-import { AUDIO_GAME, loadAudioPack } from "../audio.js";
+import { AUDIO_BGM_OVER, AUDIO_SFX, bgmFamilyOf, bgmPackOf, loadAudioPack } from "../audio.js";
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
@@ -317,7 +317,11 @@ export class GameScene extends Phaser.Scene {
     // 游戏内音频兜底装载（0.3.21 从 Boot 挪出；r6 起 MenuScene 驻留期已后台暖装，
     // 常规路径此处全部命中 cache.audio 静默跳过零传输）；暖装未启动/被打断的路径
     // （邀请深链直进等）在此补齐。场景重启时同样不会重复下载。
-    loadAudioPack(this, AUDIO_GAME);
+    // r16 件A：只声明本关类型对应的那一支 BGM 族（init 早于 preload 执行，templeType
+    // 已由 __fwInit.templeEntry 同步填好）——暖装猜错族时这里就是补齐点。
+    loadAudioPack(this, AUDIO_SFX);
+    loadAudioPack(this, AUDIO_BGM_OVER);
+    loadAudioPack(this, bgmPackOf(bgmFamilyOf(this.templeType)));
     // 游戏内四图集（r5 冷启动装载序整形）：Boot 不再装载（Menu 首帧用不到），
     // MenuScene 后台暖装通常已就绪（此处静默跳过）；暖装被提前打断（快速建房/
     // 邀请深链直进）时在此补齐，保证 create 前纹理完备——与旧 Boot 全量装载等价。
