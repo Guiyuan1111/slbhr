@@ -15,7 +15,7 @@
 | M3 | 速度关 BGM 类型滞后 | P1 | 已修 | `c7dc51b`+`9fc2bb3` | `templeEntry` 同步注入回读 + 全量门禁；音频实听未做 |
 | M4 | HTTP 剪贴板无回退 | P1 | 已修 | `9fc2bb3` | 特性检测/`execCommand` 回退回读；LAN 非安全上下文未手测 |
 | M5 | 鉴权时序/速率/请求体 | P1 | 已修 | `bd151d8` | 限流/静态 onAuth 单测 3 例 + 请求体上限 5 例 + 集成测试密码 4403 仍生效 |
-| M6 | 测试/CI 覆盖缺口 | P1 | 已修 | `bd151d8`+`86731ec`+`fa7e075`+`5cdf0d2` | 新增 3 个服务端测试文件、templeData 单测与 progress 扩展、3 个 e2e 场景；CI 配置静态审查（未在 GitHub 实跑） |
+| M6 | 测试/CI 覆盖缺口 | P1 | 已修 | `bd151d8`+`86731ec`+`fa7e075`+`5cdf0d2` | 新增 3 个服务端测试文件、templeData 单测与 progress 扩展、3 个 e2e 场景；工作流位于仓库根（`working-directory: gyのFW`），随本版推送首次触发 |
 | M7 | 版本/engines 漂移 | P2 | 已修 | `86731ec`+发版提交 | `version.test` 4 例通过；根/三子包/lock/README 统一 0.3.41 |
 | M8 | Vite 哈希缓存规则 | P2 | 已修 | `bd151d8` | `cachePolicy` 哈希用例通过；实际构建产物 `index-Co3t3lNC.js` 命中 |
 | M9 | 机关平滑速度不衰减 | P2 | 已修 | `c7dc51b` | 超 80ms 静止清零回读 + 全量门禁；未做视觉抽帧 |
@@ -45,6 +45,6 @@
 - **M12（架构级）**：`GameScene` 拆分、共享 DTO/生成类型、快照字段存在性校验不在本次批量修复范围；风险与方案保留在 02-medium.md，需单独立项。
 - **M4 / M3 实机口径**：剪贴板仅做代码路径与回退审查，未在局域网 HTTP 浏览器手测；速度关 BGM 未做听感验收。
 - **H4 内存**：LRU=2 与分片只做了实现与门禁复验，未在真机测峰值 RSS；如需数字应另跑内存基准。
-- **CI**：`.github/workflows/ci.yml` 已完成静态审查并在本地等价执行全部门禁；尚未推送到 GitHub 实际触发。
+- **CI**：仓库根 `.github/workflows/ci.yml`（`working-directory: gyのFW`，`paths: gyのFW/**`）已完成本地等价执行；随本版推送首次在 GitHub 实际触发。
 - **Colyseus 警告**：定义静态 `onAuth` 后框架打印 "instance onAuth will be ignored" 属预期；实例 `onAuth` 由 `onJoin` 显式调用，集成测试的 4403 密码错误用例证明校验未被绕过。
 - 浏览器/单测均使用无头 Chromium 与 Node 22；未覆盖真机触屏、弱网、跨设备代理链路。

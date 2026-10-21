@@ -2,10 +2,20 @@ name: CI
 
 on:
   push:
+    paths:
+      - "gyのFW/**"
+      - ".github/workflows/ci.yml"
   pull_request:
+    paths:
+      - "gyのFW/**"
+      - ".github/workflows/ci.yml"
 
 permissions:
   contents: read
+
+defaults:
+  run:
+    working-directory: gyのFW
 
 jobs:
   typecheck-test-build:
@@ -18,6 +28,7 @@ jobs:
         with:
           node-version: 22.x
           cache: npm
+          cache-dependency-path: gyのFW/package-lock.json
       - name: Install
         run: npm ci
       - name: Typecheck
@@ -37,6 +48,7 @@ jobs:
         with:
           node-version: 22.x
           cache: npm
+          cache-dependency-path: gyのFW/package-lock.json
       - name: Install
         run: npm ci
       - name: Compare 48-level determinism against r0-baseline
