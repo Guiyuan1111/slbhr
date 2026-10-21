@@ -92,37 +92,45 @@ export function setWarmBgmFamily(type: string | null | undefined): void {
 /** 菜单曲缓存键（r22 件1）：Menu/Temple/Settings 三处消费方共用的唯一写法 */
 export const MENU_BGM_KEY = "bgm_menu";
 
+/** 菜单曲起播（settings.music 门控 + 已在播不重播）；`loop` 与 v1 前的 Boot 批行为一致 */
+function playMenuBgm(scene: Phaser.Scene): void {
+  if (getSettings().music && !scene.sound.isPlaying(MENU_BGM_KEY)) {
+    scene.sound.play(MENU_BGM_KEY, { loop: true });
+  }
+}
+
+/** 菜单曲的"到达即播"绑定（r22 件1b）：绑这一支文件自己的 filecomplete，不等整批落定 */
+function onMenuBgmArrive(scene: Phaser.Scene): void {
+  const evt = `${Phaser.Loader.Events.FILE_KEY_COMPLETE}audio-${MENU_BGM_KEY}`;
+  const arrive = (): void => playMenuBgm(scene);
+  scene.load.once(evt, arrive);
+  // LoaderPlugin 跨场景重启复用同一实例，摘不干净就会在下一次入队时对旧场景起播
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.load.off(evt, arrive));
+}
+
 /**
- * 菜单 BGM：有则当场起播，无则本场景取回后起播（r22 件1）。
+ * 菜单曲：有则当场起播，无则本场景单独取回、到达即播（r22 件1，冷启动路径不走这里）。
  *
  * 它不入 Boot 阻塞批也不入落定门——`MenuMusic.mp3` 150.1KB 是 Menu 段唯一不落在任何一帧像素上的
- * 一笔（BootScene.preload 注）。`afterArrive` 在"这一拍结束"时被调：已在缓存/`music` 关则同帧，
- * 需要装载则装载完成那一帧——MenuScene 用它把游戏内暖装排在菜单曲之后，两条批不抢同一个 loader，
- * 落定门的 `once("complete")` 也不会被菜单曲那一批提前触发。
+ * 一笔（BootScene.preload 注）。冷启动由 startBgWarm 把它并入暖装队头；本函数只服务"菜单曲不在
+ * 任何在飞批里"的重入路径：TempleScene 的 create、SettingsScene 的 music 开关。
  *
- * 装载失败/被切走的兜底：`SHUTDOWN` 上摘掉 handler（LoaderPlugin 跨场景重启复用，见 r21 同式注释），
- * 键不入缓存；下一位消费方（TempleScene 的 create、SettingsScene 的 music 开关）重新声明再起播。
+ * 装载失败/被切走的兜底：键不入缓存；下一位消费方重新声明再起播。
  * `music=false` 时整支不装载——这批用户在 Menu 段直接少付 150.1KB。
  */
-export function ensureMenuBgm(scene: Phaser.Scene, afterArrive?: () => void): void {
-  const go = (): void => {
-    if (getSettings().music && !scene.sound.isPlaying(MENU_BGM_KEY)) {
-      scene.sound.play(MENU_BGM_KEY, { loop: true });
-    }
-    afterArrive?.();
-  };
-  if (!getSettings().music || scene.cache.audio.exists(MENU_BGM_KEY)) {
-    go();
+export function ensureMenuBgm(scene: Phaser.Scene): void {
+  if (!getSettings().music) return;
+  if (scene.cache.audio.exists(MENU_BGM_KEY)) {
+    playMenuBgm(scene);
     return;
   }
+  onMenuBgmArrive(scene);
   loadAudioPack(scene, AUDIO_MENU);
-  scene.load.once("complete", go);
-  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.load.off("complete", go));
   scene.load.start();
 }
 
 /** MenuScene 调用：开始后台暖装并登记落定门（complete 或场景被切走都算落定） */
-export function startBgWarm(scene: Phaser.Scene): void {
+export function startBgWarm(scene: Phaser.Scene, opts?: { menuBgm?: boolean }): void {
   if (warmState) return;
   let resolve: () => void = () => {};
   const done = new Promise<void>((r) => {
@@ -145,6 +153,16 @@ export function startBgWarm(scene: Phaser.Scene): void {
     scene.time.delayedCall(1500, thenLoop);
   });
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, finish);
+  // r22 件1b：菜单曲并入这条批、声明在**队头**（同一条管道最先服务的一笔），到达即播。
+  // v1 把它单独成批、暖装串在它之后——四档实测 Menu 里程碑 −319/−776/−2477/−108ms 全改善，
+  // 但绝对进房时刻 4g +94ms / slow3g +208ms / 不节流档 +564ms（同臂带仅 7ms）：多付的那条
+  // 装载管线固定段（blob→解码→回调，r5 起就量过它不是字节价）在快网络上藏不住。
+  // 并入队头两头都拿：里程碑收益只取决于"它离开 Boot 阻塞批"（r20 归因律，字节账不变），
+  // 而起播时间仍是它自己那 150.1KB 落地的时刻。`music=false` 的用户这一支根本不进队。
+  if (opts?.menuBgm && getSettings().music && !scene.cache.audio.exists(MENU_BGM_KEY)) {
+    onMenuBgmArrive(scene);
+    loadAudioPack(scene, AUDIO_MENU);
+  }
   loadGameAtlases(scene.load);
   // 游戏内音频批（r6，同 r5 模式）：并入同一暖装队列与落定门——进 Game 前若暖装在飞，
   // GameScene.preload 的兜底声明会整体等门后重跑（已入 cache.audio 的键静默跳过），

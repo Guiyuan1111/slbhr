@@ -11,7 +11,7 @@
  * 左下设置齿轮 (100,860)、右上"?" (1240,40)。
  */
 import Phaser from "phaser";
-import { ATLAS_CHARS, ATLAS_MENU, ensureMenuBgm, FONT_MAIN, startBgWarm } from "./BootScene";
+import { ATLAS_CHARS, ATLAS_MENU, FONT_MAIN, startBgWarm } from "./BootScene";
 import { clickSfx } from "./overlays";
 import { fadeSwitch } from "./transition";
 import { takeFirstComplete } from "../progress";
@@ -146,12 +146,9 @@ export class MenuScene extends Phaser.Scene {
     });
     creditsTxt.on("pointerupoutside", () => creditsTxt.setScale(1));
 
-    // 菜单 BGM（settings.music 门控）：r22 件1 起它不在 Boot 阻塞批里，键多半还没入缓存，
-    // 由下面 delayedCall 的 ensureMenuBgm 取回后起播——首帧不再有义务等这 150.1KB。
-
     // 全 3 星首通庆典·消费点 2/2（P-02 #34，0.3.40）：本场景≡oracle Menu，afterAddContent
     // （:1939446/:1939549）与 LevelMenu 同款检查——通关时刻置位（main.ts won 分支），此处读即清。
-    // launch 并行景=oracle bare start clearWorld=!1 显示表保留的 Phaser 3 等价物（字节链详见
+    // launch 并行景=oracle bare start clearWorld=!1 显示表保留的 Phaser 3 等价物（字节账详见
     // TempleScene 消费点注）；先到先得，与 Temple 消费点共用同一瞬态旗。
     if (takeFirstComplete()) this.scene.launch("CompleteScene");
 
@@ -161,10 +158,10 @@ export class MenuScene extends Phaser.Scene {
     // 延迟 120ms：先让 Menu 首帧独占渲染/解码，再开始后台拉取（不与首帧抢线程）；
     // 立刻建房时 enterGame 会等暖装落定再切 Game（BootScene.bgWarmSettled），
     // 不与 GameScene 兜底装载形成双载竞态。
-    // r22 件1：菜单曲排在这一步**之前**——它单独占一段管道时到达最快（150.1KB，四图集没来抢），
-    // 暖装排在它落定之后。饱和管道下总时长是字节账（r20 归因律），串行不比并行贵，故进房路径
-    // 与今日等价，而 Menu 里程碑不再为这支曲子等 307ms@4g。
-    this.time.delayedCall(120, () => ensureMenuBgm(this, () => startBgWarm(this)));
+    // r22 件1 把菜单曲（MenuMusic.mp3 150.1KB）移出 Boot 阻塞批——首帧不再有义务等它；
+    // 件1b 让它作为这条暖装批的**队头**（到达即播，见 startBgWarm 的 menuBgm 注），
+    // 不再另起一条批把暖装串在自己之后：那条串行链在不节流档要给进房时刻 +564ms。
+    this.time.delayedCall(120, () => startBgWarm(this, { menuBgm: true }));
   }
 
   update(_time: number, delta: number): void {
