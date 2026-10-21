@@ -350,3 +350,36 @@ CDP `HeapProfiler.startSampling` + source-map-js 还原到 TS 源）、换关纹
 结算/速度模式才用，压在开局关键路径上，按"开局必需/相位到达再取"分池可直减进房段 ≈17%；perf-load 隧道节流档
 （`--rtt`/CDP emulate）未实现，字节收益仍靠换算；真机 GPU 口径、`prepareGround/buildGround` 命中计数、
 换关链剩余 ≈45ms、服务端 tick 侧、LAN/触屏/弱网手测。
+
+## 十三、r16 增补（2026-10-21，0.3.42 后第五轮）
+
+> 报告 `2026-10-21-r16-audio-family-by-level-type.md`。方向切到**进房段的音频字节构成**：开局装的 5 支 BGM
+> 里最多 2 支会响。零协议、零像素、零音频内容改动，补的是原版 `preloadAudioFiles`（bundle:1887237）
+> 按 `levelData.type` 三选一装 BGM 的既有语义。
+
+| 轮 | 焦点 | commit | 关键数字（同机同口径） | 门禁 |
+|---|---|---|---|---|
+| r16 | 音频清单按关卡类型分族（general/speed），装载点只取目标族 + 暖装族预测 | `c83c805`+`0496baf`+`58b87f7`(量具/探针勘误/新门禁)、`ac0516f`(件A) | **general 关（38/48）音轨 2165.3→1988.6KB＝−176.7KB**；**speed 关（10/48）2165.3→715.9KB＝−1449.4KB**，点击→Game 段 **2872→1423KB（−50.5%）**、冷启动全链 6926→5477KB（−20.9%）；48 关全逛 = **省 20.7MB**、单次进房均 **≈442KB**；解码后 PCM 驻留 game 态 **24.96→21.81MB**(general) / **24.96→11.44MB**(speed)，与少装的族逐轨对得上（speed 关少 `bgm_level` 12.02 + `bgm_finish` 1.50）；**Menu 段 4054KB/21req 不动** | det **48/48**（对 r32）、vitest **191/191**、**新门禁 audiofamily 14/14 ALL PASS**（本族在播 + 另一族零缓存零请求 + 页面零错误）、treebake 9/9、groundcache 6/6、journey 8 模式、route f01（winAt 39507 带内）、visual **90.07%**（带内）、perf-client canvas 60.4fps/**1039KB·s⁻¹**（对 r15 1042 零帧内回归）、advance 5/5 零网络·链 1020.2ms |
+
+**为什么这样切**：`temple.json` 类型分布 general 24 / puzzle 14 / speed 10，`LevelMusic_dark` 470.4KB 无对应关卡、
+本来就不装。所以省下的是"另一族"，不是"下一相位"——r15 挂账里那 500.6KB 的拆法（按相位推迟取结算/速度轨）
+分析后**否决**：弱网下 `won`/`gameover` 到达时轨可能真缺席，属行为回归，而弱网手测未做，不能拿自动化门禁
+论证测不到的场景。兼容性红线优先于 324KB。
+
+**三条勘误入档**：①**`cache.audio` 只能用 `getKeys()` 枚举**——账本 `entries` 是 List 包装（own keys 只有
+`entries`/`size`），r14 读不存在的 `.keys`、首版修复读 `Object.keys(entries)` 都恒 0，r14/r15 驻留表的
+`音 0/2键` 全是仪器伪差（正文未引用 audioMB，故无需勘误正文；旧快照该字段一律不作数）；
+②Phaser 3.90 SoundCache **没有 `set()`**，门禁的阳性对照不能靠注入缓存，改为**请求面**断言；
+③A/B 手法"5 文件回退 `bddd85b`→构建→测→恢复 `ac0516f`"会让 base 快照的 `meta.git` 记成检出 HEAD 而非内容
+提交——共档对比先看内容回退记录。
+
+**不主张之项明写**：`Menu active 741.5→745.5`(f01)、`640→782.5`(f12，超 ±120ms 带但本轮无 Menu 面改动可解释，
+按跨进程复测漂移处理)、`点击→Game 1323→1274.5`/`1303.5→1248.5` 一律不声称延迟收益。`heapGCMB` game 态
+22.9→22.9 **不动**——Chromium 的 AudioBuffer PCM 在 JS 堆外，−13.52MB 是 WebAudio 持有的解码缓冲，
+不是 V8 堆。harness 里"暖装(点击前)"段恒 0KB 是机器人点击过快（页钟 1011ms vs 暖装 +120ms 启动）所致，
+真人停留时这些字节本就发生在点击前。
+
+剩余挂账（r17 起）：**待裁决不变**——二进制再编码 6148.5KB（冷启动总传输 88.8%），件A 后 general 关的
+`LevelMusic` 1285.4KB 仍是单关最大项；下一轮候选——**四张图集 PNG 的分场景装载**（temple 态用不到 game 图集）；
+perf-load 隧道节流档（`--rtt`/CDP emulate）未实现，−1449KB 在 2Mbps 下"少等 5.8s"仍是换算；真机 GPU 口径、
+`prepareGround/buildGround` 命中计数、换关链剩余 ≈45ms、服务端 tick 侧、LAN/触屏/弱网手测、M12 拆分。
