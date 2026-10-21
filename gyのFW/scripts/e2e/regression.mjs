@@ -51,7 +51,23 @@ async function runOnce(browser, inputTimeline, expectWin, tag) {
   const ctxB = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   const a = await ctxA.newPage();
   const b = await ctxB.newPage();
-  const result = { tag, errors: [], won: false, finish: null, syncErrors: [] };
+  const result = { tag, errors: [], won: false, finish: null, syncErrors: [], warns: [] };
+
+  // 纹理缺帧取证（r22 件2）：`Texture.get` 找不到帧时只 console.warn 并把 `firstFrame`/`__BASE`
+  // 交出去（Texture.js:248-253）——角色会把整张图集当一帧贴上来，而 __errs 与 pageerror 全静默。
+  // 图集拆分/换键这类改动最容易踩这条，故本门禁把 console 也收成硬失败。
+  // 刻意**不含** "Texture key already in use"：那是 FONT_FULL 多方各自声明装载的已知良性
+  // console.error（BootScene.ts 的 FONT_FULL 注：checkKey 拒绝同名重载、addImage 早退，
+  // 既不重下 1.6MB 也不换纹理），本轮 zz_probe 通关路线实测在 A 页出现一次，属既有行为而非拆分引入。
+  const TEX_WARN = /has no frame|Texture key not found|No texture found matching key|Invalid BitmapText/i;
+  const grabWarn = (page, side) =>
+    page.on("console", (m) => {
+      if ((m.type() === "warning" || m.type() === "error") && TEX_WARN.test(m.text())) {
+        result.warns.push(`${side} console.${m.type()}: ${m.text()}`);
+      }
+    });
+  grabWarn(a, "A");
+  grabWarn(b, "B");
 
   const code = await enterAs(a, PORT, "create", "", LEVEL);
   if (!code) throw new Error("创建房间未取到房间码");
@@ -131,8 +147,9 @@ try {
     try {
       const res = await runOnce(browser, timeline, INPUTS_FILE.length > 0, `run${r}`);
       results.push(res);
-      const ok = res.errors.length === 0 && res.syncErrors.length === 0 && (!EXPECT_WIN || res.won);
-      log(`run${r}: ${ok ? "PASS" : "FAIL"} won=${res.won} errors=${res.errors.length} sync=${res.syncErrors.length}`);
+      const ok = res.errors.length === 0 && res.syncErrors.length === 0 && res.warns.length === 0 && (!EXPECT_WIN || res.won);
+      log(`run${r}: ${ok ? "PASS" : "FAIL"} won=${res.won} errors=${res.errors.length} sync=${res.syncErrors.length} 缺帧警告=${res.warns.length}`);
+      for (const w of [...new Set(res.warns)]) log(`  ⚠ ${w}`);
       if (!ok) pass = false;
     } catch (err) {
       log(`run${r}: EXCEPTION`, String(err));
