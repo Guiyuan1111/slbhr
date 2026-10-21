@@ -52,8 +52,10 @@ e2e/journey/touch 首跑各出现过一次「#password 定位 30s 超时」瞬�
 
 - L-01 提交时 `git add <file> && git commit` 卷入了并行槽暂存在共享 index 的客户端 WIP（index.html/main.ts/net.ts）。当即 `reset --soft` + `restore --staged packages/client` 后以 `git commit -- <path>` 重提交（`ebc2a24`，仅 ForestRoom.ts），对方改动原样还原回工作树。后续本槽提交全部采用 pathspec 限定。
 
-## 客户端余量（需协调方排后续波次，本次协议均兼容）
+## 客户端余量（本轮收口，2026-10-21）
 
-1. **L-02**：reconnect 后 `prevPhase` 已是 "won" 的端不会重触发 onPhase（EndMenu 不重开；lastFinish 已由补发回填）。需客户端在重连成功路径主动检查 `state.phase==="won" && lastFinish`。
-2. **L-01**：客户端本地渲染图仍可能保留离场角色（schema 已不再下发幽灵条目），是否隐藏由渲染层决定。
-3. **H-01/M-01**：余端回 lobby 后 HUD 文案由既有 phase 驱动，无需改动；已验证协议兼容。
+1. **L-02：已修** `1b7532f`。`onPhase("won")` 结算段抽为 `openEndMenu()`（`packages/client/src/main.ts:236`），正常相位迁移与重连/回座共用；`resumeWonIfNeeded()`（`:286`）在 `enterGame` 尾部（`:402`，关卡/字体/场景就绪后）与页内重连 `onDisconnect(true)`（`:496`）按权威 `state.phase==="won" && lastFinish` 补开。`endMenuShown`+`isActive("EndMenu")` 双门幂等，`phase=ready`/离房复位（`:476`/`:346`）。实测刷新回座时 `onPhase("won")` 可能早于资源就绪（提前 start 会因字体缺失报 `Invalid BitmapText key: font`，EndMenu 起不来），故以 `gameStarted && currentLevel` 前置门拦截早到调用，由 `enterGame` 尾部补开；正常通路不回归。复验：新增 e2e `journey.mjs wonrefresh` **6/6 ALL PASS**（回座后 Game+EndMenu 同时活动、`diamondsTotal=7/timeLimitSec=40/timeSec=3/stars=2`、无页面错误、HUD=通关），`journey.mjs rejoin` **3/3 ALL PASS**。
+2. **L-01：无需改**。渲染层已有清理：`GameScene.updatePlayers` 对快照缺失角色隐藏 `glow/legs/head`（`packages/client/src/scenes/GameScene.ts:1607-1609`），快照引用每帧取自 `players.get`（`:1451-1452`），仅隐藏不销毁，重连恢复该角色后原视图复用、不闪。实测（headless 双端）：B 主动离房与断线超时两路径，A 侧 `state.players=["fireboy"]`，水女孩 `legs/head/glow` 均 `visible=false`；本地火人保持可见。
+3. **H-01/M-01：无需改**。余端回 lobby 后 HUD 由既有 phase 映射驱动（`packages/client/src/main.ts:209-224`，`lobby`→「等待另一位玩家加入…」）；实测 B 主动离房与断线超时后 A 相位 `lobby`、`#hud-status` 文案正确，联机栏恢复显示（仅 won/gameover 隐藏）。协议兼容结论维持。
+
+本轮门禁（HEAD `e40fb23`）：`npm run typecheck` exit 0；`npx vitest run` **172/172**；`npm run build` exit 0；`journey.mjs rejoin` **3/3**；`journey.mjs wonrefresh` **6/6**。L-02 单测不可行（`main.ts` 模块级依赖 DOM/Phaser，vitest 为 node 环境无 jsdom），改以浏览器 e2e 覆盖真实回座时序。
