@@ -233,12 +233,13 @@ export class EndMenu extends Phaser.Scene {
     // 勾叉节拍链（oracle :1876767 起 f=700 四级 _.delay 嵌套；各拍实参精确配对：
     // 拍0=j.visible&&f(:1876786)、拍1=j.visible&&f(:1877004)、拍2=g.visible&&f(:1877210)——g=钻石行
     // twoRows 隐藏 ⇒ 拍2 串联 0、拍3=m.visible&&f(:1877517) ⇒ general 累计 700/1400/2100/2800、
-    // twoRows 700/1400/1400/2100。隐藏行不建图但音照拍（oracle 拍回调不看可见性 :1877004）。
+    // twoRows 700/1400/1400/2100。隐藏行不建图、拍链照走；P-01（用户 2026-10-21 裁定）：
+    // oracle 隐藏行仍播 endPass，双人结算听感属误响，这里保留空拍但静音。
     const rowTicks: Array<() => void> = [];
     rows.forEach((row, i) => {
       const y = 321 - 160.5 + (twoRows ? [60, 140, 140][i] : [20, 100, 180][i]);
       if (row.hide) {
-        rowTicks.push(() => handle().__fwSfx?.("sfx_end_pass"));
+        rowTicks.push(() => {});
         return;
       }
       board.add(this.add.image(294.5, y, ATLAS_POPUP, row.icon).setOrigin(0.5));
