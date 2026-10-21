@@ -106,6 +106,20 @@ const HOOK = `(() => {
     const p = Phaser.GameObjects[cls]?.prototype;
     if (p?.setDepth) { const o = p.setDepth; p.setDepth = function (...a) { P.setDepth++; return o.apply(this, a); }; }
   }
+  // r12 写入计数探针（仅自增计数，零行为改动）：量化「每帧强写」面——
+  // 相机弹簧 applyCam(force) 与 HUD 反缩放补偿、以及机关位姿 setter 的静止态残留写入。
+  P.camZoom = 0; P.camCenter = 0; P.setPos = 0; P.setAngleW = 0; P.setScaleW = 0; P.setTextureW = 0;
+  const CB = Phaser.cameras?.Base?.prototype;
+  if (CB?.setZoom) { const o = CB.setZoom; CB.setZoom = function (...a) { P.camZoom++; return o.apply(this, a); }; }
+  if (CB?.centerOn) { const o = CB.centerOn; CB.centerOn = function (...a) { P.camCenter++; return o.apply(this, a); }; }
+  for (const cls of ["Image", "Sprite", "Container", "BitmapText"]) {
+    const p = Phaser.GameObjects[cls]?.prototype;
+    if (!p) continue;
+    if (p.setPosition) { const o = p.setPosition; p.setPosition = function (...a) { P.setPos++; return o.apply(this, a); }; }
+    if (p.setAngle) { const o = p.setAngle; p.setAngle = function (...a) { P.setAngleW++; return o.apply(this, a); }; }
+    if (p.setScale) { const o = p.setScale; p.setScale = function (...a) { P.setScaleW++; return o.apply(this, a); }; }
+    if (p.setTexture) { const o = p.setTexture; p.setTexture = function (...a) { P.setTextureW++; return o.apply(this, a); }; }
+  }
   // r7r 渲染段细分探针（零分配：定长签名包装，仅计数器自增；采样窗内累计，COLLECT 汇总）
   P.draws = 0; P.verts = 0; P.texBinds = 0; P.blendSets = 0; P.flushes = 0; P.pipeBinds = 0; P.batchSprites = 0;
   if (g.renderer.gl) {
@@ -178,6 +192,8 @@ const COLLECT = `(() => {
     gcDrops,
     mechCalls: P.mechCalls,
     setDepth: P.setDepth,
+    camZoom: P.camZoom, camCenter: P.camCenter, setPos: P.setPos,
+    setAngleW: P.setAngleW, setScaleW: P.setScaleW, setTextureW: P.setTextureW,
     draws: P.draws, verts: P.verts, texBinds: P.texBinds, blendSets: P.blendSets,
     flushes: P.flushes, pipeBinds: P.pipeBinds, batchSprites: P.batchSprites,
     renderer: window.__fw.renderer.type === 2 ? "webgl" : "canvas",
@@ -237,7 +253,7 @@ async function runOnce(server, browser, rendererMode) {
   r.sceneChildren = meta.children;
   r.gpu = meta.gpu || "";
   if (!remoteGpu && meta.gpu) remoteGpu = meta.gpu;
-  log(`${rendererMode}: fps=${r.effectiveFps} 帧总 p50=${r.totalP50}/avg=${r.totalP50 && r.totalAvg}ms update p50=${r.updateP50}ms 分配=${r.allocKBs}KB/s gc=${r.gcDrops} setDepth=${r.setDepth} draws=${r.draws}(${r.verts}v) tex=${r.texBinds} blend=${r.blendSets} flush=${r.flushes} pipe=${r.pipeBinds}${r.batchSprites ? ` bspr=${r.batchSprites}` : ""}`);
+  log(`${rendererMode}: fps=${r.effectiveFps} 帧总 p50=${r.totalP50}/avg=${r.totalP50 && r.totalAvg}ms update p50=${r.updateP50}ms 分配=${r.allocKBs}KB/s gc=${r.gcDrops} setDepth=${r.setDepth} camZoom=${r.camZoom} camCenter=${r.camCenter} setPos=${r.setPos} setAngle=${r.setAngleW} setScale=${r.setScaleW} setTex=${r.setTextureW} draws=${r.draws}(${r.verts}v) tex=${r.texBinds} blend=${r.blendSets} flush=${r.flushes} pipe=${r.pipeBinds}${r.batchSprites ? ` bspr=${r.batchSprites}` : ""}`);
   if (errs.length) log(`${rendererMode} 页面错误:`, errs.join("; "));
   return r;
 }
@@ -311,7 +327,7 @@ if (argCompare) {
   console.log(`\n===== 对比：${argCompare}（${base.meta.git}）→ 当前（${results.meta.git}）=====`);
   for (const key of ["webgl", "canvas"]) {
     console.log(`--- ${key} ---`);
-    for (const m of ["effectiveFps", "totalP50", "totalAvg", "updateP50", "updateAvg", "renderAvg", "allocKBs", "gcDrops", "setDepth", "mechCalls", "draws", "verts", "texBinds", "blendSets", "flushes", "pipeBinds", "batchSprites"]) {
+    for (const m of ["effectiveFps", "totalP50", "totalAvg", "updateP50", "updateAvg", "renderAvg", "allocKBs", "gcDrops", "setDepth", "mechCalls", "camZoom", "camCenter", "setPos", "setAngleW", "setScaleW", "setTextureW", "draws", "verts", "texBinds", "blendSets", "flushes", "pipeBinds", "batchSprites"]) {
       line(m, base[key][m], results[key][m]);
     }
   }
