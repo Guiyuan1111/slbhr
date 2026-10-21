@@ -31,10 +31,15 @@ export const FONT_MAIN = "font";
  *  (:248) 拒绝同名重载并 console.error，addImage (:469) 随即早退——旧纹理与其上已挂的
  *  BitmapText 帧引用原样留着（换纹理只能 textures.remove，那会让在场字对象抛错）。
  *  本键可被多处声明（Menu 暖装、GameScene.preload、弹窗三件套 preload，见 loadFontFull），
- *  这是安全的：LoaderPlugin.addFile (:532) 先问 keyExists (:568)→File.hasCacheConflict (:499)
- *  `cache.exists(key)`，bitmapFont 的 png 落在 textureManager（ImageFile.js:66）、
- *  fnt 落在 cache.xml（XMLFile.js:56），而 BitmapFontFile 给两个子文件同一个键
- *  (:70-74)，故二者同进同出——第二次声明静默跳过：不发请求、不重解析、不触替换。 */
+ *  这是安全的。机制在 BitmapFontFile：`loader.bitmapFont` 是把**两个子文件各自入队**
+ *  （:234 `addFile(multifile.files)`），所以跳过判定按子文件分别做——png 子文件的
+ *  hasCacheConflict 打 textureManager（ImageFile.js:66），第二次声明**既不重下 1.6MB 也不换纹理**；
+ *  fnt 子文件打 cache.xml（XMLFile.js:56），而 BitmapFontFile.addToCache 只写
+ *  cacheManager.bitmapFont（:105）、从不填 cache.xml ⇒ **元数据每次都会重新请求**
+ *  （本机靠 r15 的 ETag 契约是 0 字节 304；四张图集的 *.json 从 r5 起就是同一形状，
+ *  逐 URL 账为证）。重新解析也不会发生：MultiFile.pending 按子文件数初始化（:125）且只由
+ *  真正加载完的子文件递减，png 缺席就永远 `isReadyToProcess()` 为假 ⇒ addToCache 直接返回；
+ *  装载完成同样不受影响——被跳过的子文件根本没进队列，队列空则 start() 当场 loadComplete。 */
 export const FONT_FULL = "font-full";
 
 /**
@@ -45,10 +50,11 @@ export const PLAYER_SCALE = 0.95;
 
 /**
  * 全量位图字体的装载声明（唯一一处，路径与键都只在这里）：房内文案（GameScene HUD、
- * 弹窗三件套）用的 FONT_FULL 由它进缓存。声明方一律是消费方自己的 preload——已缓存时
- * LoaderPlugin.addFile (:532)→keyExists (:568) 静默跳过，队列空则 start() 当场 loadComplete
- * （LoaderPlugin.js: start 内 `list.size === 0` 分支），既不重下也不多等一帧，所以无脑声明
- * 比"猜上游已经装过"便宜。0.3.43 实测教训：刷新回座 won/gameover 时 enterGame 的黑幕把
+ * 弹窗三件套）用的 FONT_FULL 由它进缓存。声明方一律是消费方自己的 preload：已入纹理缓存时
+ * png 子文件静默跳过（不重下、不换纹理，机制见 FONT_FULL 注释），代价只有 .fnt 元数据再走一次
+ * 条件复验（本机 0 字节 304）；若键已在缓存或队列里则本次不产生请求，队列空时 start() 当场
+ * loadComplete（LoaderPlugin.js 的 `list.size === 0` 分支），所以既不重下也不多等一帧，
+ * 无脑声明比"猜上游已经装过"便宜。0.3.43 实测教训：刷新回座 won/gameover 时 enterGame 的黑幕把
  * Game 起步压到淡入之后，而 resumeWonIfNeeded/onPhase 会先 start 弹窗场景，靠上游兜底就
  * 撞上 `Invalid BitmapText key: font-full`（create 中断，结算板开不出来）。
  */
