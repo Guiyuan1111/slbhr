@@ -6,7 +6,7 @@
  * - played 集（fw-played-v1）与 gameComplete（fw-gamecomplete-v1）两旗独立
  * node 环境无 localStorage——装最小 memory stub。
  */
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   saveBest,
   loadProgress,
@@ -34,6 +34,10 @@ beforeEach(() => {
       },
     },
   });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe("全通庆典双旗（oracle firstComplete/gameComplete 同构）", () => {
@@ -88,5 +92,38 @@ describe("全通庆典双旗（oracle firstComplete/gameComplete 同构）", () 
     // 删庆典旗不影响 played，反之亦然
     delete backing["fw-gamecomplete-v1"];
     expect(loadPlayed().has("tutorials/levels/forest_01.json")).toBe(true);
+  });
+});
+
+describe("存储不可用降级（M13：隐私模式/配额满不阻断结算）", () => {
+  it("写入抛错：markPlayed/saveBest 不抛，best 仍按刷新返回 true", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: () => null,
+        setItem: () => {
+          throw new Error("QuotaExceededError");
+        },
+        removeItem: () => {},
+      },
+    });
+    expect(() => markPlayed("tutorials/levels/forest_01.json")).not.toThrow();
+    expect(saveBest("tutorials/levels/forest_01.json", 3, 12)).toBe(true);
+  });
+
+  it("读取抛错：loadProgress/loadGameComplete 返回安全缺省", () => {
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: () => {
+          throw new Error("SecurityError");
+        },
+        setItem: () => {},
+        removeItem: () => {},
+      },
+    });
+    expect(loadProgress()).toEqual({});
+    expect(loadGameComplete()).toBe(false);
   });
 });
