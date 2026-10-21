@@ -166,10 +166,13 @@ export function startBgWarm(scene: Phaser.Scene, opts?: { menuBgm?: boolean }): 
   });
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, finish);
   // r22 件1b：菜单曲并入这条批、声明在**队头**（同一条管道最先服务的一笔），到达即播。
-  // v1 把它单独成批、暖装串在它之后——四档实测 Menu 里程碑 −319/−776/−2477/−108ms 全改善，
-  // 但绝对进房时刻 4g +94ms / slow3g +208ms / 不节流档 +564ms（同臂带仅 7ms）：多付的那条
-  // 装载管线固定段（blob→解码→回调，r5 起就量过它不是字节价）在快网络上藏不住。
-  // 并入队头两头都拿：里程碑收益只取决于"它离开 Boot 阻塞批"（r20 归因律，字节账不变），
+  // v1（`ecf47ec`）把它单独成批、暖装串在它之后——四档实测 Menu 里程碑 −319/−776/−2477/−108ms 全改善，
+  // 绝对进房时刻四档全落带内。当时写下的"不节流档 +564ms（同臂带仅 7ms）"出自只读 `rounds[0]` 的单轮
+  // 配对：换算成两轮是 +170ms 对最差带 254ms，而臂B 自身两轮就差 1001ms ⇒ 不足判定，那条代价作废
+  // （`note/report/perf/2026-10-22-r22-menu-bgm-out-of-blocking-batch.md` §五）。
+  // 因此 v2 的定位要如实写：**一次没有测出收益的简化**，v1 与 v2 在两个里程碑上等价。留它的理由只有结构性
+  // 两条——少一条 `LoaderPlugin` 批 = 少一段"按件计价"的管线固定段（r5 起就量过它不是字节价，本轮没能把它
+  // 测出来）、落定门不再排在一条音频之后。里程碑收益本身只取决于"它离开 Boot 阻塞批"（r20 归因律，字节账不变），
   // 而起播时间仍是它自己那 150.1KB 落地的时刻。`music=false` 的用户这一支根本不进队。
   if (opts?.menuBgm && getSettings().music && !scene.cache.audio.exists(MENU_BGM_KEY)) {
     onMenuBgmArrive(scene);
