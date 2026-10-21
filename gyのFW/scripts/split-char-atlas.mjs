@@ -1,20 +1,29 @@
-// 角色图集拆分（r22 件2）：把官方 `CharAssets.png`（714.9KB / 239 帧 / 2048²）无损切成两张——
+// 角色图集拆分（r22 件2 两张，r23 件1 三张）：把官方 `CharAssets.png`（714.9KB / 239 帧 / 2048²）
+// 无损切成三张——
 //   CharAssetsMenu.png  53 帧：开始界面首帧真正绘制/播放的 glow0000 + legs_idle0000 + head_idle 序列
-//   CharAssetsGame.png 186 帧：其余全部（跳跃/坠落/上升/跑步腿/楼梯/烟雾/钻石/机关帧…）
-// 目的是让 Boot 阻塞批只为"看得见的两个角色"付字节；游戏侧改由延迟通道（loadGameAtlases）取第二张。
+//   CharAssetsEntry.png   7 帧：房内"可玩之前"就要解析的钻石四式 + death_smoke0000 + 双角色 stairs0000
+//   CharAssetsPlay.png 182 帧：其余全部（跳跃/坠落/上升/跑步腿/楼梯序列/烟雾序列/冰腿/_default）
+// 分段的判据是同一条：**这一帧在"可玩"之前是否必须到位**。Menu 张服务开始界面；Entry 张服务房间
+// 首帧与构造期解析（钻石是首帧唯一可见的房内角色帧，另三处虽构造时不可见，帧名却当场解析）；
+// Play 张全是"某状态发生时才播"的序列 ⇒ 不再进任何阻塞批，改由房间可玩之后的延迟通道取（r21 挪循环
+// BGM 同一手法）。`ENTRY_SHARED` 那三帧**故意同时存在于 Entry 与 Play**（构造点与动画区间各取一边，
+// 少一边就是 `__BASE` 花屏），故三张不是严格划分：Menu∩Play=∅、Menu∪Play=官方去掉钻石、Entry ⊆ 官方。
+// r22 的 `ATLAS_CHARS_GAME`（186 帧一张、随 loadGameAtlases 进落定门）就是被这条判据再切一刀的产物。
 //
-// 为什么是"拆"而不是"额外再做一张子集"：239 帧面积合计 3,643,157px，两张与原图是同一批帧、只差容器，
-// 所以密度直接读成字节比——整张 0.201 B/px，两张合计 0.173 B/px，**两张相加仍比原图小**
-// （png 614.0KB vs 714.9KB；连 json 一起 683.3KB vs 763.6KB）。
-// 关键路径（Boot 阻塞批）少付 595.9KB 文件字节（562.8 png + 33.1 json），线上口径 564.5KB
-// （png 走 identity，json 走 br），同时总会话字节还净减 80.3KB——不存在"同一批像素传两遍"的代价。
+// 为什么是"拆"而不是"额外再做一张子集"：239 帧面积合计 3,643,157px，各张与原图是同一批帧、只差容器，
+// 所以密度直接读成字节比——整张 0.201 B/px，Menu+Play 两张合计 0.173 B/px，**两张相加仍比原图小**；
+// 第三张只多付 8.8KB 会话字节（就是那三个重复帧）与 0.29MB 驻留像素，换进房阻塞批少付 434.4KB。
+// 具体数每次生成后打印，`--check` 门禁保证在库产物与本脚本逐字节复现。
 //
 // 帧集合的唯一依据是消费点（改这里必须同步改代码，`__tests__/char-atlas-split.test.ts`
-// 把两处对齐钉成断言，口径与 scripts/font-subset 那套 FONT_MAIN/FONT_FULL 分类同一形状）：
-//   - packages/client/src/scenes/MenuScene.ts:80-83 —— 双角色 glow0000 + legs_idle0000 + head 精灵；
-//   - packages/client/src/scenes/BootScene.ts buildMenuAnims() —— `{role}_idle` 的 head_idle 帧区间
-//     （fire 0..18 / water 0..29）与 `{role}_legs_idle` 单帧。
-//   其余角色动画（jump/fall/rising/legs_run/stairs/smoke）与房内帧串一律落在 Game 张。
+// 把三处对齐钉成断言，口径与 scripts/font-subset 那套 FONT_MAIN/FONT_FULL 分类同一形状）：
+//   - Menu 张：MenuScene.ts:79-82 双角色 glow0000 + legs_idle0000 + head 精灵；BootScene.buildMenuAnims()
+//     的 `{role}_idle` head_idle 帧区间（fire 0..18 / water 0..29）与 `{role}_legs_idle` 单帧。
+//   - Entry 张：GameScene.ts:729 钻石（DIAMOND_FRAME :52-57，首帧可见）、:1101 `death_smoke0000`
+//     （buildPlayers 构造，setVisible(false)）、:1684 `{p}_stairs0000`（won 演出构造即播）。
+//   - Play 张：BootScene.buildCharAnims() 的十一式序列帧区间（legs_run/jump/fall/rising/stairs/smoke），
+//     注册点已推迟到该张纹理到位之后——早一步就是 Texture.get 缺帧分支（Texture.js:248-253 只 warn
+//     并交出 `firstFrame`/`__BASE`，于是那个对象把整张图集当一帧贴满屏）。
 //
 // 无损证明走**原始样本**（与 build-dom-skin.mjs 同式）：回读自己 inflate IDAT + 反滤波取
 // RGBA 字节，与官方图集里同帧的同样矩形逐位相比；不做 magick 对拍（两侧同过色彩管理会把
@@ -23,8 +32,8 @@
 // 前提，变了就抛），故渲染几何与整张版逐像素等价，prephase-canvas 像素门禁在换图集后仍能对拍。
 //
 // 用法：
-//   node scripts/split-char-atlas.mjs            # 生成/覆盖 assets/atlasses/CharAssets{Menu,Game}.{png,json}
-//   node scripts/split-char-atlas.mjs --check    # 重建到 TEMP 并与在库四个产物比字节（复现性门禁）
+//   node scripts/split-char-atlas.mjs            # 生成/覆盖 assets/atlasses/CharAssets{Menu,Entry,Play}.{png,json}
+//   node scripts/split-char-atlas.mjs --check    # 重建到 TEMP 并与在库六件产物比字节（复现性门禁）
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -52,15 +61,31 @@ const MENU_FRAMES = ["fire", "water"].flatMap((role) => [
   ...seq(`${role}_head_idle`, 0, role === "fire" ? 18 : 29),
 ]);
 
+/** Entry 张（r23 件1）：房内"可玩之前"必须解析到位的七帧——钻石四式首帧就画，
+ *  smoke/stairs 的 0000 帧在 create/won 演出里构造即解析（构造时不可见不等于可以不装：
+ *  缺帧走 `Texture.get` 的 `__BASE` 分支，等于把整张图集当一帧贴上来）。
+ *  序列的其余帧都只在按了键/死了/通关那一刻才播，归 Play 张。 */
+const DIAMOND_FRAMES = ["diamond_fb0000", "diamond_wg0000", "diamond_silver0000", "diamond_fbwg0000"];
+/** 与 Play 张**故意重复**的三帧：它们同时是构造点的初始帧名（走 Entry）和动画区间的首帧（走 Play）。
+ *  少任何一边都踩坑——Entry 没有 ⇒ create/won 当场解析不到帧，把整张图集当一帧贴上；
+ *  Play 没有 ⇒ `seq(..., 0, 29)` 注册时首帧落 `__BASE`，动画带着错帧一直播（buildSeq 的 exists 幂等卫
+ *  还禁止之后重建）。代价如实记账：png +8.8KB 会话字节、第三张容器 +0.29MB 驻留像素，
+ *  换来进房阻塞批少付 434.4KB。 */
+const ENTRY_SHARED = ["death_smoke0000", "fire_stairs0000", "water_stairs0000"];
+const ENTRY_FRAMES = [...DIAMOND_FRAMES, ...ENTRY_SHARED];
+
 const PRODUCTS = [
   { base: "CharAssetsMenu", names: MENU_FRAMES },
-  { base: "CharAssetsGame", names: null }, // null = 其余全部
+  { base: "CharAssetsEntry", names: ENTRY_FRAMES },
+  // 其余全部：非 Menu 张、且不是钻石（钻石没有任何动画引用它，只被 Entry 画一次）
+  { base: "CharAssetsPlay", names: null },
 ];
 
 const atlas = JSON.parse(readFileSync(SRC_JSON, "utf8"));
 const byName = new Map(atlas.frames.map((f) => [f.filename, f]));
 const menuSet = new Set(MENU_FRAMES);
-const missing = MENU_FRAMES.filter((n) => !byName.has(n));
+const diamondSet = new Set(DIAMOND_FRAMES);
+const missing = [...MENU_FRAMES, ...ENTRY_FRAMES].filter((n) => !byName.has(n));
 if (missing.length) throw new Error(`官方图集缺帧（素材变动？）：${missing.join(", ")}`);
 // 归一化 spriteSourceSize 的前提：官方帧未被 trim、偏移为 0。任一不成立都必须改脚本，
 // 悄悄归一化会把像素搬到错位置——"图还在、位置错"比缺图更难发现。
@@ -113,14 +138,19 @@ function pack(names) {
   return { W, H, data, frames };
 }
 
-/** 无损证明 + 覆盖证明：逐帧回读与官方裁片逐字节比较；两张合起来恰好等于官方帧集 */
+/** 无损证明 + 覆盖证明：逐帧回读与官方裁片逐字节比较；Menu/Play 两张不相交且并集恰等于官方去掉
+ *  钻石之后的帧集，Entry 张 = 钻石四式 + `ENTRY_SHARED` 三帧（唯一允许的跨张重复） */
 const seen = new Map();
 const report = [];
 for (const p of PRODUCTS) {
-  const names = p.names ?? atlas.frames.map((f) => f.filename).filter((n) => !menuSet.has(n));
+  const names = p.names ?? atlas.frames.map((f) => f.filename).filter((n) => !menuSet.has(n) && !diamondSet.has(n));
   for (const n of names) {
-    if (seen.has(n)) throw new Error(`帧 ${n} 被两张同时收录（切分不唯一）`);
-    seen.set(n, p.base);
+    const prev = seen.get(n);
+    if (prev) {
+      const ok = (p.base === "CharAssetsPlay" && ENTRY_SHARED.includes(n)) || (p.base === "CharAssetsEntry" && ENTRY_SHARED.includes(n));
+      if (!ok) throw new Error(`帧 ${n} 同时出现在 ${prev} 与 ${p.base}（切分不唯一，且不在 ENTRY_SHARED 白名单里）`);
+    }
+    seen.set(n, `${prev ? `${prev}+${p.base}` : p.base}`);
   }
   const { W, H, data, frames } = pack(names);
   const png = encodePngRgba(W, H, data);
@@ -145,7 +175,7 @@ for (const p of PRODUCTS) {
   report.push({ base: p.base, png, json, count: frames.length, W, H });
 }
 if (seen.size !== atlas.frames.length) {
-  throw new Error(`覆盖不全：两张合计 ${seen.size} 帧，官方 ${atlas.frames.length} 帧`);
+  throw new Error(`覆盖不全：三张合计 ${seen.size} 帧，官方 ${atlas.frames.length} 帧`);
 }
 
 if (CHECK) {
@@ -163,7 +193,7 @@ if (CHECK) {
     if (!sameP || !sameJ) throw new Error(`复现性失败：${r.base} png 一致=${sameP} json 一致=${sameJ}`);
   }
   rmSync(TEMP, { recursive: true, force: true });
-  console.log(`✓ 复现性：CharAssets{Menu,Game}.{png,json} 四件与生成器逐字节一致（${report.map((r) => `${r.count}帧 ${(r.png.length / 1024).toFixed(1)}KB`).join(" + ")}）`);
+  console.log(`✓ 复现性：${report.map((r) => `${r.base}.{png,json}`).join(" + ")}（六件）与生成器逐字节一致：${report.map((r) => `${r.count}帧 ${(r.png.length / 1024).toFixed(1)}KB`).join(" + ")}`);
 } else {
   let total = 0;
   for (const r of report) {
@@ -176,7 +206,7 @@ if (CHECK) {
     );
   }
   console.log(
-    `两张 PNG 合计 ${(total / 1024).toFixed(1)}KB vs 官方整张 ${(readFileSync(SRC_PNG).length / 1024).toFixed(1)}KB` +
+    `三张 PNG 合计 ${(total / 1024).toFixed(1)}KB vs 官方整张 ${(readFileSync(SRC_PNG).length / 1024).toFixed(1)}KB` +
       `（差 ${((total - readFileSync(SRC_PNG).length) / 1024).toFixed(1)}KB）`,
   );
 }
