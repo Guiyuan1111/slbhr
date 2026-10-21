@@ -1,15 +1,15 @@
 {
   "meta": {
     "label": "r14-before",
-    "git": "3561ed7",
-    "date": "2026-10-21T08:34:50.466Z",
+    "git": "9b0ee82",
+    "date": "2026-10-21T08:48:59.937Z",
     "node": "v22.22.1",
     "level": "forest_01",
-    "note": "heapGC=强制 HeapProfiler.collectGarbage 后的常驻；texMB 为逐源 w·h·4 估算（含透明边距，非可见面积）；audioMB 为解码后 PCM 字节；peakJobMB/peakHeapMB 为分帧烘焙在飞期间的 40ms 轮询峰值；game 与 temple-after-game 属第二文档线（enterAs 整页 goto 会重置模块级缓存）"
+    "note": "churnMB=事件期间 raw 堆峰 − GC 基线（该事件造出的字节，含随后回收的垃圾）；heapGCMB/residentDeltaMB=强制 HeapProfiler.collectGarbage 后的真实常驻与其增量；peakJobMB=选关树分帧烘焙在飞 typed array 峰值；烘样 jobs>0 的采样数（0=结果缓存命中、零烘焙）；texMB 逐源 w·h·4（含透明边距）；audioMB 解码后 PCM；game 与 temple 离房后属第二文档线"
   },
   "results": [
     {
-      "mode": "menu",
+      "mode": "menu（暖装落定）",
       "ok": true,
       "texMB": 82.39,
       "canvasTexMB": 0,
@@ -57,11 +57,21 @@
         "Menu": 25
       },
       "heapRawMB": 11.7,
+      "peakJobMB": 0,
+      "peakHeapMB": 12.4,
+      "samples": 27,
+      "jobSamples": 0,
+      "resultMB": 0,
+      "t0": 1819.8999999761581,
+      "ms": 1204,
+      "lineage": 1,
+      "gcBaseMB": 11.7,
       "heapGCMB": 11.7,
-      "heapRawBeforeGC": 14.3
+      "churnMB": 0.7,
+      "residentDeltaMB": 0
     },
     {
-      "mode": "temple",
+      "mode": "temple 首入（冷烘）",
       "ok": true,
       "texMB": 97.32,
       "canvasTexMB": 14.93,
@@ -108,16 +118,22 @@
       "sceneObjs": {
         "Temple": 56
       },
-      "heapRawMB": 27.5,
-      "peakJobMB": 30.76,
-      "peakHeapMB": 100.8,
-      "peakSamples": 5,
-      "peakMs": 763,
+      "heapRawMB": 85.6,
+      "peakJobMB": 33.31,
+      "peakHeapMB": 86.2,
+      "samples": 42,
+      "jobSamples": 28,
+      "resultMB": 10.24,
+      "t0": 3502.5999999940395,
+      "ms": 2594,
+      "lineage": 1,
+      "gcBaseMB": 11.7,
       "heapGCMB": 27,
-      "heapRawBeforeGC": 106.4
+      "churnMB": 74.5,
+      "residentDeltaMB": 15.3
     },
     {
-      "mode": "temple-again",
+      "mode": "temple 重进（命中）",
       "ok": true,
       "texMB": 97.32,
       "canvasTexMB": 14.93,
@@ -164,12 +180,84 @@
       "sceneObjs": {
         "Temple": 56
       },
-      "heapRawMB": 27.1,
+      "heapRawMB": 42.6,
+      "peakJobMB": 0,
+      "peakHeapMB": 42.6,
+      "samples": 36,
+      "jobSamples": 0,
+      "resultMB": 10.24,
+      "t0": 6603.399999976158,
+      "ms": 2234,
+      "lineage": 1,
+      "gcBaseMB": 27,
       "heapGCMB": 27,
-      "heapRawBeforeGC": 172.5
+      "churnMB": 15.6,
+      "residentDeltaMB": 0
     },
     {
-      "mode": "game",
+      "mode": "temple 三进（命中）",
+      "ok": true,
+      "texMB": 97.32,
+      "canvasTexMB": 14.93,
+      "texTop": [
+        [
+          "chars",
+          16
+        ],
+        [
+          "mech",
+          16
+        ],
+        [
+          "popup",
+          16
+        ],
+        [
+          "font",
+          8.56
+        ],
+        [
+          "ground",
+          8
+        ],
+        [
+          "temple",
+          8
+        ]
+      ],
+      "audioMB": 0,
+      "audioTop": [],
+      "audioCount": 0,
+      "ground": {
+        "size": 0,
+        "bytesMB": 0
+      },
+      "tree": {
+        "jobs": 0,
+        "results": 1,
+        "jobMB": 0,
+        "resultMB": 10.24
+      },
+      "dom": 62,
+      "sceneObjs": {
+        "Temple": 56
+      },
+      "heapRawMB": 43.2,
+      "peakJobMB": 0,
+      "peakHeapMB": 42.5,
+      "samples": 36,
+      "jobSamples": 0,
+      "resultMB": 10.24,
+      "t0": 9387.09999999404,
+      "ms": 2223,
+      "lineage": 1,
+      "gcBaseMB": 27,
+      "heapGCMB": 27,
+      "churnMB": 15.5,
+      "residentDeltaMB": 0
+    },
+    {
+      "mode": "game（开局静止）",
       "ok": true,
       "texMB": 91.78,
       "canvasTexMB": 9.38,
@@ -216,13 +304,22 @@
       "sceneObjs": {
         "Game": 105
       },
-      "heapRawMB": 22.9,
+      "heapRawMB": 23.6,
+      "peakJobMB": 0,
+      "peakHeapMB": 23.5,
+      "samples": 32,
+      "jobSamples": 0,
+      "resultMB": 0,
+      "t0": 9999.200000017881,
+      "ms": 2048,
       "lineage": 2,
-      "heapGCMB": 22.8,
-      "heapRawBeforeGC": 24.1
+      "gcBaseMB": 22.8,
+      "heapGCMB": 22.9,
+      "churnMB": 0.7,
+      "residentDeltaMB": 0.1
     },
     {
-      "mode": "temple-after-game",
+      "mode": "temple 离房后（冷烘）",
       "ok": true,
       "texMB": 102.29,
       "canvasTexMB": 19.9,
@@ -269,14 +366,19 @@
       "sceneObjs": {
         "Temple": 56
       },
-      "heapRawMB": 33.5,
-      "peakJobMB": 30.76,
-      "peakHeapMB": 58.8,
-      "peakSamples": 28,
-      "peakMs": 3433,
+      "heapRawMB": 91.9,
+      "peakJobMB": 33.31,
+      "peakHeapMB": 93.1,
+      "samples": 57,
+      "jobSamples": 37,
+      "resultMB": 10.24,
+      "t0": 12793.40000000596,
+      "ms": 4326,
       "lineage": 2,
-      "heapGCMB": 33.4,
-      "heapRawBeforeGC": 85.1
+      "gcBaseMB": 22.9,
+      "heapGCMB": 33.5,
+      "churnMB": 70.2,
+      "residentDeltaMB": 10.6
     }
   ]
 }
