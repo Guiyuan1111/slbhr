@@ -61,6 +61,12 @@ const PREFIX: Record<Role, string> = { fireboy: "fire", watergirl: "water" };
 const TILES_DESKTOP = { w: 40, h: 30 };
 const TILES_SMALL = { w: 20, h: 15 };
 
+/** 相机弹簧收敛吸附阈（r12）：1e-3 世界像素 / 1e-6 缩放——远小于一个像素的一个千分之一，
+ *  肉眼与 visual-diff 均不可辨；不吸附则浮点弹簧永不精确归零，applyCam 脏守卫每帧判"变了"，
+ *  相机 setZoom/centerOn 与 HUD 补偿退化为每帧强写。 */
+const CAM_EPS_POS = 1e-3;
+const CAM_EPS_SCALE = 1e-6;
+
 interface PlayerView {
   glow: Phaser.GameObjects.Image;
   legs: Phaser.GameObjects.Sprite;
@@ -236,6 +242,8 @@ export class GameScene extends Phaser.Scene {
   private camLastX = NaN;
   private camLastY = NaN;
   private camLastScale = NaN;
+  /** r12：上次 HUD 反缩放补偿所用的 zoom（HUD 为 scrollFactor 0，补偿只随 zoom 变） */
+  private camHudScale = NaN;
   private pinchState: { startDist: number; startScale: number } | null = null;
   private panState: { cx: number; cy: number; px: number; py: number } | null = null;
   /** HUD 反缩放登记（zoom≠1 时逐帧补偿，见 buildHud 头注） */
@@ -385,6 +393,7 @@ export class GameScene extends Phaser.Scene {
     this.camLastX = NaN;
     this.camLastY = NaN;
     this.camLastScale = NaN;
+    this.camHudScale = NaN;
     this.myRole = this.d.net.myRole ?? this.myRole;
   }
 
@@ -1273,7 +1282,21 @@ export class GameScene extends Phaser.Scene {
     this.camX += this.camVX;
     this.camY += this.camVY;
     this.camScale += this.camVScale;
-    this.applyCam(true);
+    // r12：亚像素吸附——原版弹簧在 Phaser 2 里也是收敛到目标后停算；我方 float 永远差最后
+    // 一比特，故按阈吸附，使 settle 后 applyCam 脏守卫真正生效（此前 force 每帧强写）。
+    if (Math.abs(this.camVX) < CAM_EPS_POS && Math.abs(this.camTX - this.camX) < CAM_EPS_POS) {
+      this.camX = this.camTX;
+      this.camVX = 0;
+    }
+    if (Math.abs(this.camVY) < CAM_EPS_POS && Math.abs(this.camTY - this.camY) < CAM_EPS_POS) {
+      this.camY = this.camTY;
+      this.camVY = 0;
+    }
+    if (Math.abs(this.camVScale) < CAM_EPS_SCALE && Math.abs(this.camTScale - this.camScale) < CAM_EPS_SCALE) {
+      this.camScale = this.camTScale;
+      this.camVScale = 0;
+    }
+    this.applyCam();
   }
 
   private applyCam(force = false): void {
@@ -1287,8 +1310,13 @@ export class GameScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setZoom(this.camScale);
     cam.centerOn(this.camX, this.camY);
+    // r12：HUD 反缩放只随 zoom 变（items 全为 scrollFactor 0，平移不影响其屏幕位），
+    // 故按 camHudScale 守卫；force=true 视为"必须重补"（HUD 重建/相机复位）→ 清守卫。
+    if (force) this.camHudScale = NaN;
+    if (this.hudItems.length === 0 || this.camScale === this.camHudScale) return;
+    this.camHudScale = this.camScale;
     // HUD 反缩放：zoom 以视口中点为枢轴，screen = M + (pos−M)·zoom → 保持 screen=pos 需 pos' = M + (pos−M)/zoom
-    if (this.camScale !== 1 && this.hudItems.length > 0) {
+    if (this.camScale !== 1) {
       const inv = 1 / this.camScale;
       const mx = this.scale.width / 2;
       const my = this.scale.height / 2;
@@ -1297,7 +1325,7 @@ export class GameScene extends Phaser.Scene {
         h.obj.x = mx + (h.x - mx) * inv;
         h.obj.y = my + (h.y - my) * inv;
       }
-    } else if (this.hudItems.length > 0) {
+    } else {
       for (const h of this.hudItems) {
         h.obj.setScale(1);
         h.obj.x = h.x;
@@ -2053,17 +2081,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** T10：平台电机声逐台实例（oracle MovingPlatform/RotMirror 的 playInstance/stopInstance 语义）。
-   *  快照无事件通道，起步/限位/反向由 PlatformSoundTracker 按位姿差分判定。 */
+   *  快照无事件通道，起步/限位/反向由 PlatformSoundTracker 按位姿差分判定。
+   *  r12：与 stepPlatforms 分开遍历是**有意的**——声用原始快照位姿判动（平滑位姿带 lead 外推，
+   *  会把"已到限位但视觉仍在收敛"误判为运动）；标量直传消除每台每帧一次的位姿对象分配。 */
   private updatePlatformSound(st: any): void {
     st.platforms?.forEach?.(this.cbPlatSnd);
   }
 
   private stepPlatSnd(b: { x: number; y: number; angle?: number }, id: string): void {
-    this.platformSounds.update(id, {
-      x: Number(b.x) || 0,
-      y: Number(b.y) || 0,
-      angle: Number(b.angle) || 0,
-    });
+    this.platformSounds.update(id, Number(b.x) || 0, Number(b.y) || 0, Number(b.angle) || 0);
   }
 
   private startPlatformSound(_id: string): Phaser.Sound.BaseSound | null {
