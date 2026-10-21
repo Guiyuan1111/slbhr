@@ -195,4 +195,48 @@ Loader 只有在 bundle 求值完之后才存在，所以 bundle 被拖 = 进房
 
 ## 七、门禁与遗留
 
-（待收口填。）
+### 门禁（末轮套件，全部按退出码判定；本轮零生产改动，故重点是"证明没动"）
+
+| 件 | 结果 |
+|---|---|
+| typecheck | 0 错 |
+| build | `✓ built in 4.88s`，入口仍是 `index-CM7A5OVz.js`，sha256 前 16 位 **`522fb75aa7cdea46`**——与 r19 登记值逐字符相同 ⇒ §五 的 HTML 回退在产物面彻底（dist 已按回退态重建） |
+| `rel="preload"` 计数 | 源码 `packages/client/index.html` **0**、`packages/client/dist/index.html` **0**（预取件确实摘干净，没留半身） |
+| vitest | 19 文件 **203/203** |
+| **`reflow-prephase.mjs --check`** | **RC=0**，重排代 png 字节一致 ✓ / fnt 字节一致 ✓（`b0fd54eb33c5…` / `857d08f7bbb0…`）——字体工具链在本轮没被碰 |
+| `build-font-prephase.mjs --check` | **RC=1，这是设计的**：r19 的换代守卫拒绝在重排代上跑上一代生成器（报"旧布局 png 配新坐标 fnt"）。本轮复核它仍会拦 ⇒ 阴性对照有效 |
+| **`png-opt.mjs --check`** | **RC=0**，14 张 4322KB→4175KB、逐文件写盘前后逐字节 RGBA 比对 14/14 通过、非 IDAT 块序一致（§六 那条减字节路的可行性自证） |
+| perf-load `off` 档回归 | 与 r19 逐位相同：Menu 段 2441KB、进房累计 7076KB／19 请求、条件复验 7061.1KB→0KB（量具改动不影响无节流口径） |
+| 节流生效阴性对照 | `FW_NET_NOOP=1` 时下界判据如期拒绝（§二）；`doubleDownloads` 四档全空 |
+
+版本号不动（仍 0.3.43）：本轮落的是量具与判据，§五 的实施件判退、§六 的减字节件待裁，**没有任何一条改到生产**。
+
+### 本轮新暴露的一条口径欠账（比任何遗留都优先）
+
+`off`/`4g` 证据里有一个此前没被注意的事实：**Game active 这个里程碑不被房内资产门控**。
+4g 档 `clickPerf+gameActive = 10512.5ms`，而同一轮 Resource Timing 里 `font.png` 的
+`responseEnd = 15739ms`（`startMs=6080`，正是点击后 186ms 发起）——里程碑比它后面的响应**早 5.2s**。
+`waitSceneActive` 量的是 `game.scene.isActive("Game")` 翻转，属**场景启动**，不是**首帧可玩**。
+代码面能对上：GameScene 的阻塞批由 `preload()` 声明（[GameScene.ts:316-329](../../../packages/client/src/scenes/GameScene.ts)，
+`loadAudioPack` 三支 + `loadGameAtlases`，后者内部就含 `loadFontFull` ⇒ `font.png` 1600.6KB 与
+`LevelMusic` 1285.4KB 都在这批里），而 `create()` 要等这批落定。
+
+必须把边界说清，以免下一轮误读：**这条差值是否用户可见，取决于驻留暖装有没有跑完**。
+`startBgWarm` 的 Menu 驻留期后台装载若已完成，则这批在 `preload` 全部命中缓存、静默跳过零传输，
+可玩≈场景启动；但 harness 在 Menu 激活后 142ms 就点击（§五 那条口径边界），暖装一克没跑，
+**快速建房/邀请深链直进**走的正是这条路——对这条路径，进房后 4636KB 全在关键路径上，
+`font.png`（HUD 时钟、教程文案都用 FONT_FULL）单笔 slow3g 26.2s。
+
+⇒ **r21 件0 定为里程碑口径修正**：在页内同钟埋 `preload 发起／loader 完成／create 开始／首帧`四个标记，
+与 Resource Timing 对齐，量出"场景启动"与"可玩"在各档、以及"暖装跑完/没跑完"两种路径下的差；
+归因重算之后才允许再动实施件。这条不改任何生产代码，但它决定后面每一轮的判据落在哪个数上。
+
+### 其余遗留（沿用，均未擅自处置）
+
+1. **§六 的素材再编码 −147.6KB 待用户裁定**：`node scripts/png-opt.mjs --apply` 一条命令即可落地，
+   像素/辅助块/解码面三者都不变，但仍属"官方素材二进制"，不自裁。
+2. **`font.png` 按需子集 ↔ 41 号档"进房前 22 缺字形"**（G1/G2/G2′）：同族，动子集必须先回答子集外的字画什么。
+3. **游戏内 8.56MB 全量字体**：r19 判为内存负收益，动它等于动观感/复刻层面，需先立新判据件。
+4. **二进制素材 `max-age=0 + ETag` 缓存策略**：`staticGz.ts` 头注里写明了是有意保留（图集帧布局与
+   客户端代码同版本耦合），不在本轮及后续"提速"里顺手改。
+5. 真机 GPU 显存口径仍拿不到（VM 内软件光栅），沿用 r19 挂账。
