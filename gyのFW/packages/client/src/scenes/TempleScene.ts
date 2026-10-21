@@ -11,11 +11,10 @@
  * 点可玩关卡 → registry "onLevelPicked"(levelId, filename) → main.ts 弹出联机面板。
  */
 import Phaser from "phaser";
-import { ATLAS_MENU, ATLAS_TEMPLE, FONT_MAIN } from "./BootScene";
+import { ATLAS_MENU, ATLAS_TEMPLE, ensureMenuBgm, FONT_MAIN } from "./BootScene";
 import { clickSfx } from "./overlays";
 import { fadeSwitch } from "./transition";
 import { loadPlayed, loadProgress, starsOf, takeFirstComplete } from "../progress";
-import { getSettings } from "../settings";
 import { peekTreeBake, startTreeBake, stepTreeBake, type MaskFrame, type TreeBakeParams, type TreeBakeResult } from "./templeTreeBake";
 
 interface TempleLevel {
@@ -61,7 +60,9 @@ export class TempleScene extends Phaser.Scene {
     const W = this.scale.width;
     const H = this.scale.height;
     // 选关界面延续菜单 BGM（Menu→Temple 不断；原版进关才 fadeOut(500)，bundle:1935104 LevelMenu.startLevel）
-    if (getSettings().music && !this.sound.isPlaying("bgm_menu")) this.sound.play("bgm_menu", { loop: true });
+    // r22 件1：键可能尚未入缓存（菜单曲移出 Boot 阻塞批后，快速进选关那条路上它还在飞或被切走），
+    // 交给 ensureMenuBgm 补齐再播，而不是撞缺键警告。
+    ensureMenuBgm(this);
     this.data_ = this.cache.json.get("templeData") as TempleData;
 
     // 背景：MenuBackground0000 平铺（最底）

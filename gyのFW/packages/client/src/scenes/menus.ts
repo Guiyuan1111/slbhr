@@ -8,7 +8,7 @@
  * - CompleteScene：48 关全 3 星首通一次性彩带雨（Confetti0000-3）+ 恭喜弹窗（bundle:45603-45721）。
  */
 import Phaser from "phaser";
-import { ATLAS_MENU, ATLAS_POPUP, FONT_MAIN } from "./BootScene";
+import { ATLAS_MENU, ATLAS_POPUP, ensureMenuBgm, FONT_MAIN } from "./BootScene";
 import { buildBoard, stoneButton } from "./overlays";
 import { getSettings, setSettings } from "../settings";
 
@@ -33,7 +33,8 @@ export class SettingsScene extends Phaser.Scene {
         // 菜单态即时恢复 BGM（menus 域）；Game 态即时起播交 GameScene.applyMusicSetting（T6）
         const act = this.game.scene.getScenes(true).map((s) => s.scene.key);
         if ((act.includes("Menu") || act.includes("Temple")) && !this.sound.isPlaying("bgm_menu")) {
-          this.sound.play("bgm_menu", { loop: true });
+          // r22 件1：关→开这条路径上键可能从没被取过（菜单曲已不在 Boot 阻塞批），补齐再播
+          ensureMenuBgm(this);
         }
         const gs = this.game.scene.getScene("Game") as unknown as { applyMusicSetting?: () => void } | null;
         gs?.applyMusicSetting?.();

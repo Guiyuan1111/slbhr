@@ -8,7 +8,8 @@
  *   元数据 JSON），地面改为程序化绘制（见 GameScene.buildGround）。
  *
  * 冷启动装载序整形（r5 perf，2026-10-18）：Boot 只装开始界面首帧必需
- * （CharAssets 角色立绘/MenuAssets/位图字/四张独立图/menu 音频）；ground/mech/temple/popup
+ * （CharAssets 角色立绘/MenuAssets/位图字/四张独立图；r22 件1 起 menu 音频也移出）；
+ * ground/mech/temple/popup
  * 四图集（≈1.35MB）移出关键路径——MenuScene.create 首帧后由本场景 loader 后台暖装，
  * GameScene.preload / TempleScene 等消费方照常声明装载（Phaser Loader 对已入纹理缓存
  * 的键静默跳过，见 LoaderPlugin.keyExists→File.hasCacheConflict），暖装被提前打断时
@@ -17,6 +18,7 @@
  */
 import Phaser from "phaser";
 import { AUDIO_BGM_OVER, AUDIO_MENU, AUDIO_SFX, bgmFamilyOf, bgmFinishOf, bgmLoopOf, loadAudioPack, type BgmFamily } from "../audio.js";
+import { getSettings } from "../settings.js";
 
 export const ATLAS_CHARS = "chars";
 export const ATLAS_GROUND = "ground";
@@ -87,6 +89,38 @@ export function setWarmBgmFamily(type: string | null | undefined): void {
   warmBgmFamily = bgmFamilyOf(type);
 }
 
+/** 菜单曲缓存键（r22 件1）：Menu/Temple/Settings 三处消费方共用的唯一写法 */
+export const MENU_BGM_KEY = "bgm_menu";
+
+/**
+ * 菜单 BGM：有则当场起播，无则本场景取回后起播（r22 件1）。
+ *
+ * 它不入 Boot 阻塞批也不入落定门——`MenuMusic.mp3` 150.1KB 是 Menu 段唯一不落在任何一帧像素上的
+ * 一笔（BootScene.preload 注）。`afterArrive` 在"这一拍结束"时被调：已在缓存/`music` 关则同帧，
+ * 需要装载则装载完成那一帧——MenuScene 用它把游戏内暖装排在菜单曲之后，两条批不抢同一个 loader，
+ * 落定门的 `once("complete")` 也不会被菜单曲那一批提前触发。
+ *
+ * 装载失败/被切走的兜底：`SHUTDOWN` 上摘掉 handler（LoaderPlugin 跨场景重启复用，见 r21 同式注释），
+ * 键不入缓存；下一位消费方（TempleScene 的 create、SettingsScene 的 music 开关）重新声明再起播。
+ * `music=false` 时整支不装载——这批用户在 Menu 段直接少付 150.1KB。
+ */
+export function ensureMenuBgm(scene: Phaser.Scene, afterArrive?: () => void): void {
+  const go = (): void => {
+    if (getSettings().music && !scene.sound.isPlaying(MENU_BGM_KEY)) {
+      scene.sound.play(MENU_BGM_KEY, { loop: true });
+    }
+    afterArrive?.();
+  };
+  if (!getSettings().music || scene.cache.audio.exists(MENU_BGM_KEY)) {
+    go();
+    return;
+  }
+  loadAudioPack(scene, AUDIO_MENU);
+  scene.load.once("complete", go);
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.load.off("complete", go));
+  scene.load.start();
+}
+
 /** MenuScene 调用：开始后台暖装并登记落定门（complete 或场景被切走都算落定） */
 export function startBgWarm(scene: Phaser.Scene): void {
   if (warmState) return;
@@ -151,11 +185,11 @@ export class BootScene extends Phaser.Scene {
     this.load.image("GameName", "/assets/images/GameNameForest.png");
     this.load.image("KiziLogo", "/assets/images/branding/branding_logo_kizi.png");
 
-    // 音频仅装 menu 批（bgm_menu）；游戏内批（0.3.21 起 Menu 冷启动不再为其付出传输；
-    // r6 起由 MenuScene 驻留期后台暖装提前拉齐，GameScene.preload 仅兜底；r16 件A 起
-    // BGM 只取目标关卡类型的一族，见 audio.ts）。装载方式沿用无扩展名流式路由 +
-    // 显式 type=mp3 的 IDM 防劫持约定。
-    loadAudioPack(this, AUDIO_MENU);
+    // 音频：r22 件1 起 Boot 阻塞批不再含菜单曲——Menu 首帧的像素一个也不靠它，却曾是本批
+    // 唯一非像素的一笔（MenuMusic.mp3 150.1KB ⇒ 4g −307ms / fast3g −769ms / slow3g −2459ms 的
+    // Menu 里程碑面额）。改由 MenuScene.create 之后单独取回、到达即播（ensureMenuBgm）。
+    // 游戏内批（0.3.21 起 Menu 冷启动不再为其付出传输；r6 起由 MenuScene 驻留期后台暖装提前
+    // 拉齐，GameScene.preload 仅兜底；r16 件A 起 BGM 只取目标关卡类型的一族，见 audio.ts）。
     // ground/mech/temple/popup 不在 Boot 关键路径（r5 冷启动装载序整形，见文件头注释）
     this.buildLoaderBar();
   }

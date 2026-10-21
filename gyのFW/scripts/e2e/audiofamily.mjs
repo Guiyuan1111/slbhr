@@ -53,7 +53,11 @@ try {
     check(`${level} 开局曲在播（族=${fam}）`, st.playing.includes(on), `playing=${st.playing.join(",") || "无"} mute=${st.soundMute}`);
     check(`${level} 本族两支均入缓存`, st.has[on] && st.has["bgm_" + (fam === "speed" ? "finish_speed" : "finish")]);
     check(`${level} 另一族两支未入缓存（省字节成立）`, !st.has[offOn] && !st.has[offFin], `${offOn}=${st.has[offOn]} ${offFin}=${st.has[offFin]}`);
-    check(`${level} 与类型无关件恒在`, st.has.bgm_over && st.has.bgm_menu && st.has.sfx_jump_fb && st.has.sfx_wind);
+    // r22 件1：菜单曲移出 Boot 阻塞批后不再"恒在"——本用例走的是快速建房路径，Menu 在
+    // 菜单曲落定前就被切走，请求随场景 shutdown 作废，房内 bgm_menu 缺席是设计行为
+    // （GameScene 对它只做 fadeOut/stopByKey，缺键幂等安全）。原先这条断言只是在替
+    // "Boot 批里有它"背书，契约本身（族两支/另一族零请求）不受影响。
+    check(`${level} 与类型无关件恒在`, st.has.bgm_over && st.has.sfx_jump_fb && st.has.sfx_wind);
     check(`${level} 页面零错误（缺键不炸更新循环）`, errs.length === 0, errs.join("; "));
     // 阳性对照走网络面：同一探针函数在"已知取过"的 URL 上判真、在"不该取"的 URL 上判假，
     // 两端都由 Resource Timing 的真实请求名驱动（注入 cache.audio 的写法在 3.90 无 set 入口）。
