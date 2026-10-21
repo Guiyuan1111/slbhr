@@ -68,6 +68,11 @@ export interface NetCallbacks {
 /** 重连令牌+角色持久化键（sessionStorage：同标签页刷新存活，关标签即弃；issue #5 H-04） */
 const RESUME_KEY = "fw-resume";
 
+/** 主动离开的关闭码：1000=正常关闭，4000=WS_CLOSE_CONSENTED（Colyseus room.leave 的关闭码） */
+export function isConsentedClose(code: number): boolean {
+  return code === 1000 || code === 4000;
+}
+
 /** 断线重连退避序列（毫秒）：首试 +3 次重试，总窗 ~7s+尝试耗时（服务端席位窗默认 60s） */
 const RECONNECT_DELAYS_MS = [0, 1000, 2000, 4000];
 
@@ -86,6 +91,8 @@ export class Net {
   private levelIdWaiters: Array<(id: string) => void> = [];
   /** 最近一次绑定的回调（重连重试/恢复路径复用；bindRoom 时更新） */
   private cb: NetCallbacks | null = null;
+  /** 本端已主动离开（leave 置位）：onLeave 不再走重连退避 */
+  private leaving = false;
 
   /** 服务器地址：开发直连 2567，生产同源自适应 ws/wss */
   static serverUrl(): string {
@@ -156,8 +163,8 @@ export class Net {
     });
 
     room.onLeave(async (code) => {
-      // 1000 = 自己主动离开：清恢复令牌，不留任何回座预期
-      if (code === 1000) {
+      // 主动离开（1000 正常关闭 / 4000=WS_CLOSE_CONSENTED）不重连，也不留回座预期
+      if (this.leaving || isConsentedClose(code)) {
         this.clearResume();
         cb.onDisconnect(true);
         return;
@@ -172,14 +179,24 @@ export class Net {
       // 有限次退避重试（原实现只试一次，短抖动/服务重启即永久断开）
       const max = RECONNECT_DELAYS_MS.length;
       for (let attempt = 1; attempt <= max; attempt++) {
+        if (this.leaving) return;
         if (RECONNECT_DELAYS_MS[attempt - 1] > 0) {
           await new Promise((r) => setTimeout(r, RECONNECT_DELAYS_MS[attempt - 1]));
+          if (this.leaving) return;
         }
         cb.onReconnecting?.(attempt, max);
         try {
           // reconnect 返回的是新 Room 实例：必须换绑 net.room 并重挂全部监听
-          this.room = await this.client.reconnect(token);
+          const room = await this.client.reconnect(token);
+          if (this.leaving) {
+            // 重连期间本端已主动离开：关掉刚拿到的房间，避免留下孤儿连接
+            room.leave(true);
+            return;
+          }
+          this.room = room;
           this.bindRoom(cb);
+          // 重连后服务端可能已换发令牌，立即落盘供后续刷新恢复
+          this.saveResume();
           cb.onDisconnect(true);
           return;
         } catch {
@@ -230,17 +247,26 @@ export class Net {
     const client = new Client(Net.serverUrl());
     const net = new Net();
     net.client = client;
+    // Promise.race 超时不会取消底层 reconnect：先持有原 promise，迟到 resolve 时关房
+    const reconnectPromise = client.reconnect(saved.token);
     try {
       net.room = await Promise.race([
-        client.reconnect(saved.token),
+        reconnectPromise,
         new Promise<never>((_, rej) => setTimeout(() => rej(new Error("重连超时")), timeoutMs)),
       ]);
     } catch {
-      sessionStorage.removeItem(RESUME_KEY);
+      reconnectPromise.then((room) => room.leave(true)).catch(() => {});
+      // 隐私模式下 sessionStorage 可能直接抛 SecurityError，不能让清理失败盖过返回值
+      try {
+        sessionStorage.removeItem(RESUME_KEY);
+      } catch {
+        /* 存储不可用时无持久化可言 */
+      }
       return { net: null, hadToken: true };
     }
     net.myRole = saved.role ?? null;
     net.bindRoom(cb);
+    net.saveResume();
     return { net, hadToken: true };
   }
 
@@ -289,6 +315,9 @@ export class Net {
   }
 
   leave(): void {
+    if (this.leaving) return;
+    this.leaving = true;
+    this.clearResume();
     this.room.leave(true);
   }
 }

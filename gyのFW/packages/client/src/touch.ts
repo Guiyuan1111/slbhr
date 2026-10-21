@@ -23,8 +23,12 @@ export class TouchControls {
   private root: HTMLDivElement;
   /** 当前是否有任一按钮处于按下态（样式高亮同步用） */
   private applicable: boolean;
+  /** 仍在按下的合成码：只对原本按下的发送松开，避免 up/lostpointercapture 重复回调 */
+  private readonly pressed = new Set<TouchCode>();
+  private readonly onPress: (code: TouchCode, pressed: boolean) => void;
 
   constructor(onPress: (code: TouchCode, pressed: boolean) => void) {
+    this.onPress = onPress;
     this.root = document.createElement("div");
     this.root.id = "touch-controls";
     this.root.classList.add("hidden");
@@ -33,15 +37,15 @@ export class TouchControls {
     this.applicable = coarse || forced;
     if (this.applicable) {
       this.root.append(
-        this.makeButton("TouchLeft", "◀", "left", onPress),
-        this.makeButton("TouchRight", "▶", "right", onPress),
-        this.makeButton("TouchUp", "▲", "jump", onPress),
+        this.makeButton("TouchLeft", "◀", "left"),
+        this.makeButton("TouchRight", "▶", "right"),
+        this.makeButton("TouchUp", "▲", "jump"),
       );
     }
     document.body.append(this.root);
   }
 
-  private makeButton(code: TouchCode, label: string, cls: string, onPress: (code: TouchCode, pressed: boolean) => void): HTMLButtonElement {
+  private makeButton(code: TouchCode, label: string, cls: string): HTMLButtonElement {
     const el = document.createElement("button");
     el.type = "button";
     el.className = `touch-btn ${cls}`;
@@ -50,16 +54,18 @@ export class TouchControls {
     el.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       try { el.setPointerCapture(e.pointerId); } catch { /* 已释放的指针，忽略 */ }
+      this.pressed.add(code);
       el.classList.add("on");
-      onPress(code, true);
+      this.onPress(code, true);
     });
     const release = (e: Event) => {
       e.preventDefault();
-      el.classList.remove("on");
-      onPress(code, false);
+      this.release(code, el);
     };
     el.addEventListener("pointerup", release);
     el.addEventListener("pointercancel", release);
+    // 指针捕获被系统收回时 pointerup 可能缺席：同一 release 兜底
+    el.addEventListener("lostpointercapture", release);
     // 触摸滚动手势/双击缩放/长按系统菜单全部拦下（pointerdown 的 preventDefault
     // 不拦截滚动，必须配合 touch-action:none + touchstart 层面的拦截）
     el.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false });
@@ -67,13 +73,30 @@ export class TouchControls {
     return el;
   }
 
+  /** 单键释放：只有原本按下才上报，避免 pointerup 与 lostpointercapture 重复发松开 */
+  private release(code: TouchCode, el: HTMLElement): void {
+    el.classList.remove("on");
+    if (this.pressed.delete(code)) this.onPress(code, false);
+  }
+
+  /** 全部松开（隐藏/销毁前）：逐键上报并清残留高亮 */
+  releaseAll(): void {
+    for (const code of this.pressed) this.onPress(code, false);
+    this.pressed.clear();
+    this.root.querySelectorAll(".touch-btn.on").forEach((el) => el.classList.remove("on"));
+  }
+
   /** 游戏进行中显示（ready/started），菜单/暂停/返回选关时隐藏 */
   setActive(active: boolean): void {
     if (!this.applicable) return;
     this.root.classList.toggle("hidden", !active);
-    if (!active) {
-      // 隐藏时若仍有按住态，由 KeyboardInput 的暂停/清键语义兜底（phase 闸门在 main.ts）
-      this.root.querySelectorAll(".touch-btn.on").forEach((el) => el.classList.remove("on"));
-    }
+    // 隐藏时释放仍按住的虚拟键，避免服务端持续收到按住态
+    if (!active) this.releaseAll();
+  }
+
+  /** 释放并摘除 DOM（可重复调用）：dispose 后本对象不再使用 */
+  dispose(): void {
+    this.releaseAll();
+    this.root.remove();
   }
 }

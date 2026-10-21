@@ -51,29 +51,37 @@ export class KeyboardInput {
   private resendTimer: number;
   /** 本机角色（onRole 到达前为 null：键盘不生效，触屏在进房后才有意义） */
   private role: Role | null = null;
+  /** 监听目标与具名 handler：destroy 必须精确摘除，匿名单例会在返场重进时叠加 */
+  private readonly target: Window;
+  private readonly onKeyDown = (e: KeyboardEvent): void => this.handleKey(e, true);
+  private readonly onKeyUp = (e: KeyboardEvent): void => this.handleKey(e, false);
+  private readonly onBlur = (): void => {
+    // 窗口失焦清空按键，避免卡键
+    if (this.pressed.size > 0) {
+      this.pressed.clear();
+      this.emit();
+    }
+  };
+  private destroyed = false;
 
   constructor(target: Window, private onInput: (input: InputMessage) => void) {
-    const handle = (e: KeyboardEvent, pressed: boolean) => {
-      if (!ALL_CODES.includes(e.code)) return;
-      e.preventDefault();
-      if (pressed) this.pressed.add(e.code);
-      else this.pressed.delete(e.code);
-      this.emit();
-    };
-    target.addEventListener("keydown", (e) => handle(e, true));
-    target.addEventListener("keyup", (e) => handle(e, false));
-    // 窗口失焦清空按键，避免卡键
-    target.addEventListener("blur", () => {
-      if (this.pressed.size > 0) {
-        this.pressed.clear();
-        this.emit();
-      }
-    });
+    this.target = target;
+    target.addEventListener("keydown", this.onKeyDown);
+    target.addEventListener("keyup", this.onKeyUp);
+    target.addEventListener("blur", this.onBlur);
     // ≥15Hz 重发最后状态（emit 内部被 paused 挡住时静默跳过）
     this.resendTimer = window.setInterval(() => this.emit(true), RESEND_MS);
   }
 
   private pressed = new Set<string>();
+
+  private handleKey(e: KeyboardEvent, pressed: boolean): void {
+    if (!ALL_CODES.includes(e.code)) return;
+    e.preventDefault();
+    if (pressed) this.pressed.add(e.code);
+    else this.pressed.delete(e.code);
+    this.emit();
+  }
 
   /** onRole 到达时注入本机角色，键位表随之定向（就位后重发一次快照，收敛悬空按住态） */
   setRole(role: Role): void {
@@ -112,6 +120,11 @@ export class KeyboardInput {
   }
 
   destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
+    this.target.removeEventListener("keydown", this.onKeyDown);
+    this.target.removeEventListener("keyup", this.onKeyUp);
+    this.target.removeEventListener("blur", this.onBlur);
     window.clearInterval(this.resendTimer);
   }
 

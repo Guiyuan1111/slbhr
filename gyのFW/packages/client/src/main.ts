@@ -156,7 +156,7 @@ async function reloadLevel(levelId: string): Promise<void> {
   // NewSign played 标记（13 号档 #13，0.3.39）：oracle setPlayed 于 startLevel 进关即置
   // （bundle:1935016）；换关亦属进关（advance 回声同达）。
   if (currentTempleEntry) markPlayed(currentTempleEntry.filename);
-  (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level: currentLevel, keyboard };
+  (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level: currentLevel, keyboard, templeEntry: currentTempleEntry };
   // 换关黑幕（oracle LevelMenu.startLevel fade("level") :1935281；EndMenu Continue→advance 回声双侧同达）
   const sm = phaser!.scene;
   fadeSwitch(phaser!, () => {
@@ -231,7 +231,10 @@ async function enterGame(): Promise<void> {
   const level = await fetchLevelCached(levelId);
   show();
 
-  // 返场重进时旧实例的监听与 15Hz 重发定时器会残留——先销毁（曾随房间叠加）
+  // 返场重进时旧实例的监听与 15Hz 重发定时器会残留——先销毁（曾随房间叠加）。
+  // 触屏先释放：此时旧键盘仍在，虚拟键松开能经旧键盘发出全松快照
+  touch?.dispose();
+  touch = null;
   keyboard?.destroy();
   keyboard = new KeyboardInput(window, (input) => net?.sendInput(input));
   // 返场重进时角色已知（onRole 先于键盘构造到达）；首进由 onRole 回调补设
@@ -250,7 +253,7 @@ async function enterGame(): Promise<void> {
   // （bundle:1935016）。时点注记：oracle 单机=点击节点直进；我方联机=此处真进关
   // （弹面板间隔不计），语义取「进过这关」。
   if (currentTempleEntry) markPlayed(currentTempleEntry.filename);
-  (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level, keyboard };
+  (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level, keyboard, templeEntry: currentTempleEntry };
   (globalThis as unknown as Record<string, unknown>).__fwRestart = () => net?.restart();
   (globalThis as unknown as Record<string, unknown>).__fwPauseKeyboard = (b: boolean) => keyboard?.setPaused(b);
   // F3：P 键/暂停菜单「继续」统一入口——只发请求，画面以服务端 pause-changed 回声为准
@@ -268,8 +271,12 @@ async function enterGame(): Promise<void> {
       net = null;
       gameStarted = false;
       pausedByUser = false;
+      // 保留 setPaused(true) 的全松语义（清按下集合），再释放触屏 DOM、销毁键盘监听
       keyboard?.setPaused(true);
-      touch?.setActive(false);
+      touch?.dispose();
+      touch = null;
+      keyboard?.destroy();
+      keyboard = null;
       setNetLost(null);
       const sm = phaser!.scene;
       sm.stop("Game");
@@ -494,20 +501,44 @@ async function start(mode: "create" | "join"): Promise<void> {
       btn.title = "链接只含房间码不含密码：对方打开后填入同一密码加入";
       // 样式统一在 index.html #btn-invite（#hud 整层 none 防挡画布，按钮 pointer-events:auto 单点恢复可点）
       btn.addEventListener("click", () => {
-        void navigator.clipboard
-          .writeText(invite)
-          .catch(() => {
-            const ta = document.createElement("textarea");
+        // 非安全上下文（局域网 http）无 navigator.clipboard：特性检测后走 execCommand 回退。
+        // 回退自身也捕获异常，点击处理绝不向外抛，且无论成败都给按钮反馈
+        const fallbackCopy = (): boolean => {
+          const ta = document.createElement("textarea");
+          try {
             ta.value = invite;
+            ta.setAttribute("readonly", "");
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
             document.body.appendChild(ta);
             ta.select();
-            document.execCommand("copy");
+            ta.setSelectionRange(0, ta.value.length);
+            return document.execCommand("copy");
+          } catch {
+            return false;
+          } finally {
             ta.remove();
-          })
-          .finally(() => {
-            btn.textContent = "已复制";
-            setTimeout(() => (btn.textContent = "复制邀请链接"), 1500);
-          });
+          }
+        };
+        const flash = (text: string): void => {
+          btn.textContent = text;
+          setTimeout(() => (btn.textContent = "复制邀请链接"), 1500);
+        };
+        void (async () => {
+          let ok = false;
+          const clip = navigator.clipboard;
+          if (clip?.writeText) {
+            try {
+              await clip.writeText(invite); // 同步 throw 与 reject 都由 await 捕获
+              ok = true;
+            } catch {
+              ok = fallbackCopy();
+            }
+          } else {
+            ok = fallbackCopy();
+          }
+          flash(ok ? "已复制" : "复制失败");
+        })();
       });
       $("#hud-room").appendChild(btn);
     }
@@ -515,6 +546,11 @@ async function start(mode: "create" | "join"): Promise<void> {
   } catch (e: any) {
     // 进房成功但进游戏失败（关卡缺失等）→ 退回菜单并释放房间
     setBusy(false);
+    // enterGame 半途失败可能已创建输入实例：先释放触屏（经旧键盘发全松），再销毁键盘
+    touch?.dispose();
+    touch = null;
+    keyboard?.destroy();
+    keyboard = null;
     if (net && !gameStarted) {
       net.leave();
       net = null;
