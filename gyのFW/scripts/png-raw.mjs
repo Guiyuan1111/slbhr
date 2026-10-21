@@ -5,7 +5,11 @@
 // 这里 decodePng 出来的就是浏览器解码后拿到的那份 RGBA，逐字节可比。
 import zlib from "node:zlib";
 
-/** 解 8bit RGBA 无交错 PNG，返回原始样本（不经任何色彩管理） */
+/**
+ * 解 8bit 无交错 PNG，返回原始样本（不经任何色彩管理）。
+ * 支持 colour type 6（RGBA）与 2（RGB，浏览器截图就是这一类）；
+ * 返回的 `data` 一律是 RGBA（type 2 补 α=255），`color` 保留原文件的类型，免得调用方以为来源是 RGBA。
+ */
 export function decodePng(buf, tag) {
   if (buf.readUInt32BE(0) !== 0x89504e47) throw new Error(`${tag} 不是 PNG`);
   let p = 8;
@@ -25,20 +29,23 @@ export function decodePng(buf, tag) {
     else if (type !== "IEND") ancillary.push({ type, data: Buffer.from(data) });
     p += 12 + len;
   }
-  if (ihdr.depth !== 8 || ihdr.color !== 6 || ihdr.interlace !== 0) throw new Error(`${tag} 非 8bit RGBA 无交错：${JSON.stringify(ihdr)}`);
+  const ch = { 6: 4, 2: 3 }[ihdr.color];
+  if (ihdr.depth !== 8 || ihdr.interlace !== 0 || !ch) {
+    throw new Error(`${tag} 非 8bit 无交错的 RGBA/RGB：${JSON.stringify(ihdr)}`);
+  }
   const raw = zlib.inflateSync(Buffer.concat(idat));
-  const stride = ihdr.w * 4;
-  const out = Buffer.alloc(ihdr.h * stride);
+  const stride = ihdr.w * ch;
+  const lineBuf = Buffer.alloc(ihdr.h * stride);
   let prev = Buffer.alloc(stride);
   for (let y = 0; y < ihdr.h; y++) {
     const f = raw[y * (stride + 1)];
     const line = raw.subarray(y * (stride + 1) + 1, y * (stride + 1) + 1 + stride);
-    const cur = out.subarray(y * stride, y * stride + stride);
+    const cur = lineBuf.subarray(y * stride, y * stride + stride);
     line.copy(cur);
     for (let x = 0; x < stride; x++) {
-      const a = x >= 4 ? cur[x - 4] : 0;
+      const a = x >= ch ? cur[x - ch] : 0;
       const b = prev[x];
-      const c = x >= 4 ? prev[x - 4] : 0;
+      const c = x >= ch ? prev[x - ch] : 0;
       let v = cur[x];
       if (f === 1) v += a;
       else if (f === 2) v += b;
@@ -51,7 +58,17 @@ export function decodePng(buf, tag) {
     }
     prev = cur;
   }
-  return { ...ihdr, data: out, ancillary, chunks: chunks.filter((t) => t !== "IDAT").join(",") };
+  let data = lineBuf;
+  if (ch === 3) {
+    data = Buffer.alloc(ihdr.w * ihdr.h * 4);
+    for (let i = 0, j = 0; i < lineBuf.length; i += 3, j += 4) {
+      data[j] = lineBuf[i];
+      data[j + 1] = lineBuf[i + 1];
+      data[j + 2] = lineBuf[i + 2];
+      data[j + 3] = 255;
+    }
+  }
+  return { ...ihdr, data, ancillary, chunks: chunks.filter((t) => t !== "IDAT").join(",") };
 }
 
 /** 把矩形区域从原始样本里拍平成一块 buffer（逐行 copy，越界即抛） */
