@@ -14,8 +14,10 @@
  *     /matchmake/* 与文档请求有副作用（重复建房），不进探测清单。
  *
  * 用法：
- *   node --import tsx benchmark/perf-load.mjs [--no-build] --save <label>
+ *   node --import tsx benchmark/perf-load.mjs [--no-build] [--level <id>] --save <label>
  *   node --import tsx benchmark/perf-load.mjs --no-build --compare <label>
+ *   · --level（r16 量具）：深链选关档位，缺省 forest_01。音频按关卡类型选族（r16 件A）
+ *     只有换成 speed 关（如 forest_12）才测得出差异，对比时两侧必须同档位。
  * 产物：benchmark/results/load-<label>.json
  */
 import { spawn, execSync } from "node:child_process";
@@ -30,10 +32,11 @@ const RESULTS = join(ROOT, "benchmark", "results");
 const PORT = 3561;
 const BASE = `http://127.0.0.1:${PORT}`;
 const PASSWORD = "load-pw";
-const LEVEL = "forest_01";
-
-const argSave = process.argv.includes("--save") ? process.argv[process.argv.indexOf("--save") + 1] : undefined;
-const argCompare = process.argv.includes("--compare") ? process.argv[process.argv.indexOf("--compare") + 1] : undefined;
+const argOf = (flag) => (process.argv.includes(flag) ? process.argv[process.argv.indexOf(flag) + 1] : undefined);
+const argSave = argOf("--save");
+const argCompare = argOf("--compare");
+/** 深链档位（r16）：speed 关（forest_03/06/12/14/16/26 等）与 general 关走的 BGM 族不同 */
+const LEVEL = argOf("--level") ?? "forest_01";
 const NO_BUILD = process.argv.includes("--no-build");
 const log = (...a) => console.log("[load]", ...a);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -181,6 +184,10 @@ async function measureRound(browser, round) {
   const menuUrls = new Set(cold.resources.items.map((i) => i.url));
   // 建房 → Game active
   await page.fill("#password", PASSWORD);
+  // 点击时刻用**页内时钟**采样（r16）：与 Resource Timing 的 startTime/responseEnd 同钟，
+  // 故可把 Menu 快照之后的请求再切成「点击前=Menu 驻留期暖装」与「点击后=进房路径」两段。
+  // （r15 集合差只分 Menu/非 Menu 两段；这里不做 Node 墙钟↔页钟对齐，只在页钟内比较）
+  const clickPerfMs = await page.evaluate(() => performance.now());
   const tClick = Date.now();
   await page.click("#btn-create");
   await page.waitForSelector("#menu", { state: "hidden", timeout: 20000 });
@@ -188,6 +195,7 @@ async function measureRound(browser, round) {
   await waitSceneActive(page, "Game");
   const tGame = Date.now();
   cold.gameActiveAfterClickMs = tGame - tClick;
+  cold.clickPerfMs = Math.round(clickPerfMs);
   cold.resourcesAfterGame = await resourceStats(page);
   cold.pageErrors = errs;
   // 阶段归位：Menu 快照里已存在 = Menu 前；进 Game 快照里新增的 = 点建房→Game 段。
@@ -198,6 +206,11 @@ async function measureRound(browser, round) {
     .filter((i) => !menuUrls.has(i.url))
     .reduce((s, i) => s + i.transferKB, 0).toFixed(0);
   cold.resourcesAfterGame.items.forEach((i) => { i.phase = menuUrls.has(i.url) ? "menu" : "game"; });
+  // 非 Menu 段再按页钟点击时刻细分：warm=点击前的 Menu 驻留期暖装，post=点击后进房路径
+  cold.resourcesAfterGame.items.forEach((i) => { if (i.phase !== "menu") i.phase = i.endMs <= cold.clickPerfMs ? "warm" : "post"; });
+  const phaseKB = (p) => +cold.resourcesAfterGame.items.filter((i) => i.phase === p).reduce((s, i) => s + i.transferKB, 0).toFixed(0);
+  cold.resources.warmPhaseKB = phaseKB("warm");
+  cold.resources.postClickKB = phaseKB("post");
   cold.headers = [...headers.values()];
 
   // reload（同 context，浏览器有缓存）→ Menu active 与传输字节
@@ -231,6 +244,7 @@ const results = {
     git: execSync("git rev-parse --short HEAD", { cwd: ROOT }).toString().trim(),
     date: new Date().toISOString(),
     node: process.version,
+    level: LEVEL,
   },
   rounds: [],
 };
@@ -255,7 +269,23 @@ try {
 
 // 聚合（两轮取均值）
 const avg2 = (a, b) => +(((a + b) / 2).toFixed(1));
+const isAudio = (i) => i.url.startsWith("/assets/audio/");
+const kbOf = (items) => items.reduce((s, i) => s + i.transferKB, 0);
+/** 音轨拆账：count=实际下载的音轨条数，kb=其传输字节（r16 件A 的收益口径） */
+const audioStats = (cold) => {
+  const all = cold.resourcesAfterGame.items.filter(isAudio);
+  const kb = (f) => +kbOf(all.filter(f)).toFixed(1);
+  return {
+    count: all.length,
+    totalKB: +kbOf(all).toFixed(1),
+    menuKB: kb((i) => i.phase === "menu"),
+    warmKB: kb((i) => i.phase === "warm"),
+    postKB: kb((i) => i.phase === "post"),
+    tracks: all.map((i) => `${i.url.split("/").pop()}:${i.phase}:${i.transferKB}`).join(","),
+  };
+};
 const [r1, r2] = results.rounds;
+const a1 = audioStats(r1.cold), a2 = audioStats(r2.cold);
 results.summary = {
   cold: {
     menuActiveMs: avg2(r1.cold.menuActiveMs, r2.cold.menuActiveMs),
@@ -265,6 +295,16 @@ results.summary = {
     transferKBAfterGame: avg2(r1.cold.resourcesAfterGame.totalTransferKB, r2.cold.resourcesAfterGame.totalTransferKB),
     menuPhaseKB: avg2(r1.cold.resources.menuKB, r2.cold.resources.menuKB),
     gamePhaseKB: avg2(r1.cold.resources.gamePhaseKB, r2.cold.resources.gamePhaseKB),
+    warmPhaseKB: avg2(r1.cold.resources.warmPhaseKB, r2.cold.resources.warmPhaseKB),
+    postClickKB: avg2(r1.cold.resources.postClickKB, r2.cold.resources.postClickKB),
+    audio: {
+      count: Math.round((a1.count + a2.count) / 2),
+      totalKB: avg2(a1.totalKB, a2.totalKB),
+      menuKB: avg2(a1.menuKB, a2.menuKB),
+      warmKB: avg2(a1.warmKB, a2.warmKB),
+      postKB: avg2(a1.postKB, a2.postKB),
+      tracksRound1: a1.tracks,
+    },
     revalProbe: {
       urls: r1.cold.revalidateSummary.urls,
       refetchKB: r1.cold.revalidateSummary.refetchKB,
@@ -282,11 +322,16 @@ results.summary = {
 const table = r1.cold.resourcesAfterGame.items
   .filter((i) => i.transferKB >= 1)
   .sort((a, b) => b.transferKB - a.transferKB);
-console.log("\n=== Menu 前 / 进房段 传输拆账 ===");
-console.log(`Menu 前 ${results.summary.cold.menuPhaseKB}KB，点建房→Game 段 ${results.summary.cold.gamePhaseKB}KB（round1 明细，≥1KB）`);
+console.log("\n=== Menu 前 / 暖装（点击前）/ 进房（点击后）传输拆账 ===");
+console.log(`Menu 前 ${results.summary.cold.menuPhaseKB}KB，暖装 ${results.summary.cold.warmPhaseKB}KB，点击→Game ${results.summary.cold.postClickKB}KB（round1 明细，≥1KB）`);
 for (const i of table) {
   console.log(`  ${String(i.transferKB).padStart(7)}KB→${String(i.decodedKB).padStart(8)}KB  ${i.phase.padEnd(4)} ${i.type.padEnd(7)} @${String(i.startMs).padStart(5)}-${String(i.endMs).padStart(5)}ms  ${i.url}`);
 }
+// 音轨拆账（r16 件A）：本档位实际下载的音轨清单与两段归属
+const audioRows = r1.cold.resourcesAfterGame.items.filter(isAudio).sort((a, b) => a.phase.localeCompare(b.phase) || b.transferKB - a.transferKB);
+console.log(`\n=== 音轨装载拆账（round1，档位 ${LEVEL}，${audioRows.length} 条 / ${kbOf(audioRows).toFixed(1)}KB）===`);
+for (const i of audioRows) console.log(`  ${String(i.transferKB).padStart(7)}KB  ${i.phase.padEnd(4)} ${i.url}`);
+
 const bigByUrl = new Map(r1.cold.resourcesAfterGame.items.map((i) => [i.url, i.decodedKB]));
 const uncom = r1.cold.headers.filter((h) => h.enc === "-" && (bigByUrl.get(h.url) ?? 0) >= 64);
 console.log(`\n=== 未压缩且 ≥64KB 的响应（round1）===`);
@@ -318,9 +363,16 @@ if (argCompare) {
   // r15 起新字段：旧快照无对应值，打 "-" 兼容（口径同 perf-client r7r）
   const p = (k) => `${b.cold[k] ?? "-"} → ${c.cold[k] ?? "-"}`;
   console.log(`其中 Menu 前传输    : ${p("menuPhaseKB")}`);
-  console.log(`其中进房段传输    : ${p("gamePhaseKB")}`);
+  console.log(`其中暖装(点击前)    : ${p("warmPhaseKB")}`);
+  console.log(`其中点击→Game 传输: ${p("postClickKB")}`);
+  console.log(`其中非 Menu 合计    : ${p("gamePhaseKB")}`);
   const bRv = b.cold.revalProbe;
   console.log(`条件复验探测      : ${bRv ? `${bRv.refetchKB}KB→${bRv.revalKB}KB` : "-"} → ${c.cold.revalProbe ? `${c.cold.revalProbe.refetchKB}KB→${c.cold.revalProbe.revalKB}KB` : "-"}`);
+  const fmtA = (a) => (a ? `${a.count}条/${a.totalKB}KB（暖装 ${a.warmKB ?? "-"}KB·进房 ${a.postKB ?? "-"}KB）` : "-");
+  console.log(`音轨装载          : ${fmtA(b.cold.audio)} → ${fmtA(c.cold.audio)}`);
+  if (base.meta.level && results.meta.level && base.meta.level !== results.meta.level) {
+    console.log(`⚠ 档位不同：基线 ${base.meta.level} vs 当前 ${results.meta.level}（字节类指标不可直接比）`);
+  }
   console.log(`reload Menu active : ${b.warmReload.menuActiveMs}ms → ${c.warmReload.menuActiveMs}ms`);
   console.log(`reload 传输        : ${b.warmReload.transferKB}KB → ${c.warmReload.transferKB}KB`);
   if (c.pageErrors.length) { console.log(`⚠ 页面错误：${c.pageErrors.join("; ")}`); process.exitCode = 1; }
