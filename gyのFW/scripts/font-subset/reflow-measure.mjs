@@ -13,12 +13,16 @@
  * 本量具把这条假设**逐字节核验**，而不是引用规范文字默认成立。
  *
  * 用法：node scripts/font-subset/reflow-measure.mjs [--spacing N] [--json]
+ *
+ * 跨代口径（r19 件2 修）：本量具打印的"上一代子集"一律由 `composeSubset` 在内存复现，
+ * 不读在库 `font-prephase.png`——在库那张自件1 起已是重排代（1006×378），
+ * 按源帧坐标去裁它会直接越界。量具要能量任何一代，参照系就不能指向某一代的产物。
  */
-import { readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { decodePng, encodePngRgba, cropRaw } from "../png-raw.mjs";
-import { parseFnt, prephaseChars, loadSpec, pack } from "./prephase.mjs";
+import { parseFnt, prephaseChars, loadSpec, pack, composeSubset } from "./prephase.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const FONT_DIR = "packages/client/public/assets/fonts/chinese";
@@ -208,8 +212,15 @@ const nonKept = A.declared.filter((g) => !keptCodes.has(g.id));
 const blockW = Math.max(...nonKept.map((g) => g.width)) + SPACING;
 const blockH = Math.max(...nonKept.map((g) => g.height)) + SPACING;
 const pC = pack(keptList.map((g) => ({ key: String(g.id), w: g.width, h: g.height })), SPACING, PACK_OPTS);
-const curSub = decodePng(readFileSync(asOfs(join(FONT_DIR, "font-prephase.png"))), "font-prephase.png");
-const curSubKB = kb(statSync(asOfs(join(FONT_DIR, "font-prephase.png"))).size);
+// "今日子集"参照一律由源在内存复现（composeSubset），**不读在库 font-prephase.png**：
+// r19 件1 之后在库那张已是重排代（1006x378），按源帧坐标去裁它必然越界。量具要能跨代反复跑，
+// 参照系就必须自己算出来，而不是指向某一代的产物（在库那一代只在下面作为事实打印）。
+const baseSubset = composeSubset(fullImg, f, pre.kept, f.padding[0]);
+const curSub = { w: fullImg.w, h: fullImg.h, data: baseSubset.out };
+const curSubKB = kb(encodePngRgba(curSub.w, curSub.h, baseSubset.out, fullImg.ancillary).length);
+const inLib = existsSync(asOfs(join(FONT_DIR, "font-prephase.png")))
+  ? decodePng(readFileSync(asOfs(join(FONT_DIR, "font-prephase.png"))), "font-prephase.png")
+  : null;
 const W = Math.max(pC.w, blockW + SPACING);
 const H = Math.max(pC.h, blockH + SPACING);
 const blockBuf = Buffer.alloc(blockW * blockH * 4);
@@ -217,7 +228,7 @@ const glyphsC = new Map(keptList.map((g) => [g.id, g]));
 const laid = assemble(curSub, f, { w: W, h: H, place: pC.place }, { glyphs: glyphsC });
 const pngC = encodePngRgba(W, H, laid);
 console.log(`C 子集·原样重排：保留 ${keptList.length} 帧 ＋ 透明块 ${blockW}x${blockH}（承载未保留声明 ${nonKept.length} 条）` +
-  ` ⇒ 候选 ${W}x${H}＝${(W * H * 4 / 1048576).toFixed(2)}MB（今日子集 ${(curSub.w * curSub.h * 4 / 1048576).toFixed(2)}MB / ${curSubKB}KB），` +
+  ` ⇒ 候选 ${W}x${H}＝${(W * H * 4 / 1048576).toFixed(2)}MB（上一代子集 ${(curSub.w * curSub.h * 4 / 1048576).toFixed(2)}MB / ${curSubKB}KB），` +
   `PNG 实测 ${(pngC.length / 1024).toFixed(1)}KB`);
 
 // D：子集裁边（同 B 的度量改写代价）
@@ -261,14 +272,16 @@ console.log(`A' 全量环带重排：${AR.p.w}x${AR.p.h}＝${(AR.p.w * AR.p.h * 
   `（今日 ${(fullImg.w * fullImg.h * 4 / 1048576).toFixed(2)}MB，texel ${(((fullImg.w * fullImg.h - AR.p.w * AR.p.h) / (fullImg.w * fullImg.h)) * 100).toFixed(2)}%）、` +
   `PNG ${(pngAR.length / 1024).toFixed(1)}KB（今日 ${kb(f.fileBytes)}KB）、环带被切 ${AR.clipped} 处`);
 
-// C' 子集环带重排：内容＝**现行子集图**的一次布局置换（r18 已把环带搬好，非授权区本就是零）
+// C' 子集环带重排：内容＝**上一代子集**的一次布局置换（r18 已把环带搬好，非授权区本就是零）
 const blkW = Math.max(...nonKept.map((g) => g.width)) + 2 * SPACING;
 const blkH = Math.max(...nonKept.map((g) => g.height)) + 2 * SPACING;
 const CR = ringLayout(keptList, curSub, { w: blkW, h: blkH });
 const pngCR = encodePngRgba(CR.p.w, CR.p.h, CR.out);
 console.log(`C' 子集环带重排＋透明块 ${blkW}x${blkH}（承载 ${nonKept.length} 条未保留声明）：` +
-  `${CR.p.w}x${CR.p.h}＝${(CR.p.w * CR.p.h * 4 / 1048576).toFixed(2)}MB（今日子集 ${(curSub.w * curSub.h * 4 / 1048576).toFixed(2)}MB）、` +
-  `PNG ${(pngCR.length / 1024).toFixed(1)}KB（今日 ${curSubKB}KB）、搬运 ${CR.copied} texel、环带被切 ${CR.clipped} 处`);
+  `${CR.p.w}x${CR.p.h}＝${(CR.p.w * CR.p.h * 4 / 1048576).toFixed(2)}MB（上一代子集 ${(curSub.w * curSub.h * 4 / 1048576).toFixed(2)}MB，内存复现）、` +
+  `PNG ${(pngCR.length / 1024).toFixed(1)}KB（上一代 ${curSubKB}KB）、搬运 ${CR.copied} texel、环带被切 ${CR.clipped} 处`);
+console.log(`在库 font-prephase.png：${inLib ? `${inLib.w}x${inLib.h}＝` +
+  `${inLib.w === curSub.w && inLib.h === curSub.h ? "上一代（原坐标＋清零）" : "重排代（本量具这条 C' 布局已落地）"}，仅作事实打印，不参与参照` : "缺失（未构建）"}`);
 console.log(`D' 说明：裁到墨迹包围盒（B/D 路线）要改 xoffset/yoffset，而"裁掉的像素"里正含被邻帧采到的墨——` +
   `环带假设既不成立，裁边也就没有余量，该路线不进实施。`);
 
