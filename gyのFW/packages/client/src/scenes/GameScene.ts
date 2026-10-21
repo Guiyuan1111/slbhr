@@ -26,6 +26,9 @@ import { createSeedrandomFactory } from "../vendor/seedrandom.js";
 import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_MAIN, PLAYER_SCALE, buildGameAnims, loadGameAtlases } from "./BootScene";
 import { getSettings } from "../settings";
 import { loadTempleLevels } from "../templeData";
+import { validateSnapshot } from "../snapshotValidation";
+import { MechanismSmoother } from "./mechSmoothing";
+import { PlatformSoundTracker } from "./platformSound";
 
 export interface GameInit {
   net: Net;
@@ -140,7 +143,7 @@ interface WindView {
  * 快照键 → 视图解析缓存条目（r3 客户端帧预算）：快照按数组下标/"kind:idx"/"u<i><a|b>"
  * 键下发，视图按 LevelData id 键建。此前每帧现场做模板串拼接 / propViewKey 切片 /
  * 滑轮正则解析——现首见时解析一次缓存（v=null 表示该键无视图，跳过并记忆），
- * k 为 mechSm 平滑键（取视图 id，全类前缀互不冲突）。
+ * k 为机关平滑键（取视图 id，全类前缀互不冲突）。
  */
 interface LeverSnap { v: LeverView; k: string }
 interface PusherSnap { v: PusherView; k: string }
@@ -253,6 +256,8 @@ export class GameScene extends Phaser.Scene {
   private finishDelayEvent: Phaser.Time.TimerEvent | undefined;
   /** phase 差分（场景侧自算，net.onPhase 仅刷新 DOM HUD） */
   private prevPhase = "";
+  /** M12：首个快照做一次 schema 字段校验（每关一次，漂移只告警不阻塞渲染） */
+  private snapshotChecked = false;
   /** ready 瞬移标记（跨图平滑会把角色从门口滑回出生点，E15/E1） */
   private snapPending = false;
   /** 原版限时（data/forest/temple.json 的 time 字段；取不到=不限时） */
@@ -260,8 +265,11 @@ export class GameScene extends Phaser.Scene {
   /** temple.json 的关卡类型（general/speed/puzzle），bgm 选曲与星级口径用 */
   private templeType: string = "general";
   private waterPlaying = false;
-  private platformPrev = new Map<string, { x: number; y: number }>();
-  private platformMoving = new Set<string>();
+  /** T10：逐台平台电机声实例（限位/反向即停，见 platformSound.ts） */
+  private readonly platformSounds = new PlatformSoundTracker<Phaser.Sound.BaseSound>({
+    play: (id) => this.startPlatformSound(id),
+    stop: (_id, sound) => this.stopPlatformSound(sound),
+  });
   // ---- r3 客户端帧预算：update 路径零稳态分配 ----
   /** 快照键解析缓存（首见填入；场景重启清空） */
   private leverSnaps = new Map<string, LeverSnap | null>();
@@ -272,8 +280,6 @@ export class GameScene extends Phaser.Scene {
   private hangingSnaps = new Map<string, HangingSnap | null>();
   private pulleySnaps = new Map<string, PulleySnap | null>();
   private romanSnaps = new Map<string, RomanSnap | null>();
-  /** mechTarget 复用输出对象（调用方即读即弃不持有，全仓唯一消费者=updateMechs 各步） */
-  private mechOut = { x: 0, y: 0, a: 0 };
   /** 每帧快照上下文（供提升后的 forEach 回调读取，免逐帧闭包捕获） */
   private curNow = 0;
   private curDelta = 0;
@@ -348,8 +354,8 @@ export class GameScene extends Phaser.Scene {
       this.templeTimeSec = Number.isFinite(t) && t > 0 ? t : null;
     }
     this.waterPlaying = false;
-    this.platformPrev.clear();
-    this.platformMoving.clear();
+    this.platformSounds.clear();
+    this.snapshotChecked = false;
     this.leverSnaps.clear();
     this.pusherSnaps.clear();
     this.platformSnaps.clear();
@@ -462,6 +468,7 @@ export class GameScene extends Phaser.Scene {
     // （oracle retry 同样重起 BGM）。
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.stopWater();
+      this.platformSounds.clear();
       for (const k of ["bgm_menu", "bgm_level", "bgm_level_speed", "bgm_over", "bgm_finish", "bgm_finish_speed", "sfx_wind", "sfx_door"]) {
         this.sound.stopByKey(k);
       }
@@ -1447,6 +1454,14 @@ export class GameScene extends Phaser.Scene {
     if (!st) return;
     const nowMs = Number(time) || 0;
 
+    // M12：首个快照做一次字段校验。schema 漂移（漏 defineTypes/字段改名）此前被
+    // Number(x)||0 静默吞成 0；这里只告警不阻塞，避免渲染层与协议悄悄脱节。
+    if (!this.snapshotChecked) {
+      this.snapshotChecked = true;
+      const issues = validateSnapshot(st, ROLES);
+      if (issues.length > 0) console.warn("[fw] 快照字段异常（schema 漂移？）", issues.slice(0, 8));
+    }
+
     // 每帧取一次双角色引用（下游 updatePlayers/updateCamTarget/tutorial 复用）
     this.pFb = st.players?.get?.("fireboy") ?? null;
     this.pWg = st.players?.get?.("watergirl") ?? null;
@@ -1525,7 +1540,8 @@ export class GameScene extends Phaser.Scene {
   /** 整轮复位（重开=ready）：瞬移标记 + 清演出/门帧/烟，跨图平滑会把角色滑回出生点 */
   private resetRound(prev: string): void {
     this.snapPending = true;
-    this.mechSm.clear(); // 机关位姿平滑态一并作废（重开=整关重载，快照域瞬移）
+    this.mechSmoother.clear(); // 机关位姿平滑态一并作废（重开=整关重载，快照域瞬移）
+    this.platformSounds.clear(); // 平台电机声随整轮复位停止，避免旧实例跨轮滞留
     this.resetCamera(this.d.level); // 相机回冻结全图（原版整关 reload 重建 CameraManager）
     this.stairsPlayed = false;
     this.tutorialFrozen = false; // 新一轮恢复教学判定（原版 retry=整状态重载重建 tutorialTexts）
@@ -1606,6 +1622,9 @@ export class GameScene extends Phaser.Scene {
       const ps = role === "fireboy" ? this.pFb : this.pWg; // r3：每帧一次取（update 顶部）
       if (!ps) {
         view.glow.visible = view.legs.visible = view.head.visible = false;
+        // L-01：席位释放后快照不再含该 role——终局爬梯 sprite 是独立于角色视图的对象，
+        // 不随本体隐藏；won 后对端超时/主动离场、余端回 lobby 时门口会残留幽灵。
+        this.stairsSprites.get(role)?.setVisible(false);
         continue;
       }
       const tx = (Number(ps.x) || 0) + PAD;
@@ -1765,58 +1784,16 @@ export class GameScene extends Phaser.Scene {
 
   /**
    * 机关位姿平滑（rotcheck 10 号档，E13 二轮）：服务端 60Hz 仿真写 schema，Colyseus patch 出站
-   * 现役同为 60Hz——ForestRoom onCreate 里 setPatchRate(PATCH_MS)=1000/60 已覆写
-   * @colyseus/core Room.js:49 缺省 DEFAULT_PATCH_RATE=1e3/20（FW_PATCH_MS 仅取证回退用，
-   * netopt 11 号档；10 号档写作时点 patch 确为缺省 20Hz/50ms，"20Hz 阶梯"是当期语境）。
-   * 角色层已有"速度外推+强收敛"（updatePlayers），
-   * 机关（拉杆/推杆/平台/箱球/吊板/滑轮/罗马杠）此前直吃快照——快转吊板 ≈11°/步的阶梯感
-   * 即用户"旋转体系没原版好"的表现层根因（原版单机每帧直读 body.angle 渲染，60fps 平滑）。
-   * 处置与角色层同构：每键存最近快照，有限差分估速（角度走最短弧防 ±π 翻卷；快照量化
-   * 0.1px/0.001rad → 速度噪声 ≤2px/s、0.02rad/s，对真实速度可忽略）→ 目标=最新快照+v·lead
-   * → 渲染值向目标指数收敛（lead 25ms/rate 30/s；final-b 风车实录 A/B 扫描选定，rms/max 双优；
-   * 60Hz patch 落地后 netopt 11 号档 §2.2 复检全面改善、参数不动）。纯表现层，零物理/det 影响。
+   * 现役同为 60Hz——ForestRoom onCreate 里 setPatchRate(PATCH_MS)=1000/60 已覆写缺省 20Hz。
+   * 角色层已有"速度外推+强收敛"（updatePlayers）；机关（拉杆/推杆/平台/箱球/吊板/滑轮/罗马杠）
+   * 此前直吃快照，即用户"旋转体系没原版好"的表现层根因。实现已抽至 mechSmoothing.ts：
+   * 有限差分估速（角度最短弧）→ 目标=最新快照+v·lead → 指数收敛；纯表现层，零物理/det 影响。
    */
-  private mechSm = new Map<string, { x: number; y: number; a: number; vx: number; vy: number; va: number; t: number; rx: number; ry: number; ra: number; init: boolean }>();
+  private readonly mechSmoother = new MechanismSmoother();
 
-  /** 取 key 的平滑后位姿（快照域数值，转换与 PAD 由各视图块自理）。snapPending 帧=瞬移直贴。
-   *  r3：输出复用 this.mechOut（调用方即读即弃，全仓唯一消费者=step 机关方法）；
-   *  now/delta 走 curNow/curDelta（updateMechs 每帧先置）。 */
+  /** 取 key 的平滑后位姿（快照域数值，转换与 PAD 由各视图块自理）。snapPending 帧=瞬移直贴。 */
   private mechTarget(key: string, x: number, y: number, a: number): { x: number; y: number; a: number } {
-    let m = this.mechSm.get(key);
-    if (!m) {
-      m = { x, y, a, vx: 0, vy: 0, va: 0, t: this.curNow, rx: x, ry: y, ra: a, init: false };
-      this.mechSm.set(key, m);
-    }
-    if (!m.init || this.snapPending) {
-      m.x = x; m.y = y; m.a = a; m.rx = x; m.ry = y; m.ra = a; m.t = this.curNow; m.init = true;
-      this.mechOut.x = x; this.mechOut.y = y; this.mechOut.a = a;
-      return this.mechOut;
-    }
-    if (x !== m.x || y !== m.y || a !== m.a) {
-      const dt = Math.min(0.2, Math.max(1 / 120, (this.curNow - m.t) / 1000));
-      m.vx = (x - m.x) / dt;
-      m.vy = (y - m.y) / dt;
-      let da = a - m.a;
-      da = ((da + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI; // 最短弧，防整圈翻卷
-      m.va = da / dt;
-      m.x = x; m.y = y; m.a = a; m.t = this.curNow;
-    } else if (this.curNow - m.t > 80) {
-      // 80ms≈多个 60Hz patch 周期：静止快照不再按 25ms×v 外推，清掉残留速度防永久偏移
-      m.vx = m.vy = m.va = 0;
-      m.t = this.curNow;
-    }
-    const lead = 25; // ms（final-b A/B 扫描选定；"≈半个快照周期"是 20Hz 期语境，60Hz 下按 netopt 11 号档 §2.2 复检保留）
-    const ex = m.x + (m.vx * lead) / 1000;
-    const ey = m.y + (m.vy * lead) / 1000;
-    const ea = m.a + (m.va * lead) / 1000;
-    const k = 1 - Math.exp((-30 * this.curDelta) / 1000);
-    m.rx += (ex - m.rx) * k;
-    m.ry += (ey - m.ry) * k;
-    let dra = ea - m.ra;
-    dra = ((dra + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
-    m.ra += dra * k;
-    this.mechOut.x = m.rx; this.mechOut.y = m.ry; this.mechOut.a = m.ra;
-    return this.mechOut;
+    return this.mechSmoother.target(key, x, y, a, this.curNow, this.curDelta, this.snapPending);
   }
 
   /** 机关快照消费（E13）：lever 角度+灯、pusher 压下、平台/箱/球位姿、风区显隐。
@@ -2075,29 +2052,30 @@ export class GameScene extends Phaser.Scene {
     if (e.v.bar.angle !== deg) e.v.bar.setAngle(deg);
   }
 
-  /** 平台电机声（原版 updateState 激活时 playInstance @1719824；无事件通道，按位移自检） */
+  /** T10：平台电机声逐台实例（oracle MovingPlatform/RotMirror 的 playInstance/stopInstance 语义）。
+   *  快照无事件通道，起步/限位/反向由 PlatformSoundTracker 按位姿差分判定。 */
   private updatePlatformSound(st: any): void {
-    this.platAnyStart = false;
     st.platforms?.forEach?.(this.cbPlatSnd);
-    if (this.platAnyStart) this.sfx("sfx_platform");
   }
 
-  private platAnyStart = false;
+  private stepPlatSnd(b: { x: number; y: number; angle?: number }, id: string): void {
+    this.platformSounds.update(id, {
+      x: Number(b.x) || 0,
+      y: Number(b.y) || 0,
+      angle: Number(b.angle) || 0,
+    });
+  }
 
-  private stepPlatSnd(b: { x: number; y: number }, id: string): void {
-    const x = Number(b.x) || 0;
-    const y = Number(b.y) || 0;
-    let prev = this.platformPrev.get(id);
-    if (prev === undefined) {
-      prev = { x, y };
-      this.platformPrev.set(id, prev);
-    }
-    const moved = Math.abs(prev.x - x) + Math.abs(prev.y - y) > 0.5;
-    if (moved && !this.platformMoving.has(id)) this.platAnyStart = true;
-    if (moved) this.platformMoving.add(id);
-    else this.platformMoving.delete(id);
-    prev.x = x;
-    prev.y = y;
+  private startPlatformSound(_id: string): Phaser.Sound.BaseSound | null {
+    if (!getSettings().fx || !this.cache.audio.exists("sfx_platform")) return null;
+    const s = this.sound.add("sfx_platform");
+    s.play();
+    return s;
+  }
+
+  private stopPlatformSound(s: Phaser.Sound.BaseSound): void {
+    s.stop();
+    s.destroy();
   }
 
   /** Navies 漂移（原版每帧：r′+=speed.r → pos.r=offset.r·sin r′ → 极坐标转直角坐标） */

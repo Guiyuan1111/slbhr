@@ -24,7 +24,9 @@ interface MechSample {
   init: boolean;
 }
 
+/** lead 25ms/rate 30/s：final-b 风车实录 A/B 扫描选定（rms/max 双优）；60Hz patch 下 netopt §2.2 复检保留。 */
 const LEAD_MS = 25;
+/** 80ms≈多个 60Hz patch 周期：静止快照不再按 lead 外推，清残留速度防永久偏移。 */
 const STATIC_MS = 80;
 const RATE = 30;
 const MIN_DT_S = 1 / 120;
