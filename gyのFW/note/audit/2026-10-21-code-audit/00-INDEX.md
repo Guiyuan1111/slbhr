@@ -6,7 +6,7 @@
 >
 > **0.3.42 追加（2026-10-21）**：M12 转「部分已修」——机关平滑/快照字段校验/平台声三个低耦合子系统已抽为纯模块并接入（相机子系统与共享 DTO 仍挂账）；另含 A 槽 L-02 重连结算补开、L-01 爬梯幽灵清理、P-01 隐藏行静音。追加门禁：16 文件/172 用例、48/48 determinism、pause/leave/refresh/wonrefresh 全通过。详见 [04-fix-log.md](04-fix-log.md) §2.1。
 >
-> **战役期追加（2026-10-21，r17）**：新建 DOM 皮肤逐像素门禁 `scripts/e2e/domskin.mjs`，随即测出原清单之外的 **L5**——连接面板两枚头像的 `background-position` 被 `.btn .av` 的 `background` 简写按特异性赢掉，火头从未生效。已修（独立 commit），证据与验证见 [04-fix-log.md](04-fix-log.md) §2.2。
+> **战役期追加（2026-10-21，r17）**：新建 DOM 皮肤逐像素门禁 `scripts/e2e/domskin.mjs`，随即测出原清单之外的 **L5**——连接面板两枚头像的 `background-position` 被 `.btn .av` 的 `background` 简写按特异性赢掉，火头从未生效。已修（`043b2a5`），证据与验证见 [04-fix-log.md](04-fix-log.md) §2.2。同轮把面板 CSS 的 5 处皮肤引用从三张整游戏图集改指专用合成贴图（`7c19e61` + 生成器 `scripts/build-dom-skin.mjs`，帧坐标断言 + 原始样本无损校验），四态基线与代次见 `benchmark/results/domskin/manifest.json`；收益/代价与逐像素等价性表见 `note/report/perf/2026-10-21-r17-dom-skin-atlas-decoupling.md`。
 
 ## §1 范围与方法
 
