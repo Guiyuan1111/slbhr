@@ -15,7 +15,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import express from "express";
-import { staticGz } from "../staticGz.js";
+import { cachePolicy, staticGz } from "../staticGz.js";
 
 let server: http.Server;
 let port = 0;
@@ -63,6 +63,29 @@ function rawGet(path: string, acceptEncoding = "gzip"): Promise<{ status: number
     req.end();
   });
 }
+
+describe("cachePolicy（M8 Vite 哈希产物）", () => {
+  it.each([
+    ["/assets/index-CnbrvQg2.js", "大小写混合哈希（实际 Vite 产物）"],
+    ["/assets/vendor-B1Q2w3e4.js", "非十六进制字符"],
+    ["/assets/app-abcdef12.css", "8 位纯十六进制 CSS"],
+    ["/assets/chunk-_aB3dE9z.mjs", "含下划线/下划线开头的 mjs"],
+  ])("%s → immutable（%s）", (path) => {
+    expect(cachePolicy(path)).toBe("public, max-age=31536000, immutable");
+  });
+
+  it("index.html → no-cache（必须回源拿新哈希引用）", () => {
+    expect(cachePolicy("/index.html")).toBe("no-cache");
+  });
+
+  it("logo.png → public 1 天（原地可能更新，不可 immutable）", () => {
+    expect(cachePolicy("/assets/logo.png")).toBe("public, max-age=86400");
+  });
+
+  it("短横线后缀不足 8 位不误判 immutable", () => {
+    expect(cachePolicy("/assets/app-abc123.js")).toBe("public, max-age=86400");
+  });
+});
 
 describe("staticGz 根前缀校验（M-02）", () => {
   it("根内文件正常 gzip 响应（不误伤）", async () => {

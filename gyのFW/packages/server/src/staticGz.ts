@@ -3,7 +3,8 @@
  * - 压缩：文本类扩展名 + ≥1KB ≤8MB；客户端支持 br 优先 brotli（比 gzip 再省 ~15%），
  *   否则 gzip；产物按 路径+mtime+编码 内存缓存；异常回退 express.static。
  * - 缓存（perf-load 基准优化项）：
- *   · Vite 内容哈希产物（*.[-8hex].js 等）→ immutable 1 年（版本升级换文件名自然失效）；
+ *   · Vite 内容哈希产物（如 index-CnbrvQg2.js / vendor-B1Q2w3e4.js：`-` 后 8 位以上
+ *     [A-Za-z0-9_-]，大小写混合且非纯十六进制）→ immutable 1 年（版本升级换文件名自然失效）；
  *   · index.html → no-cache（必须回源校验，才能拿到新哈希引用）；
  *   · 其余（图集/音频/数据）→ public 1 天（内容随版本可能原地更新，不可 immutable）。
  *   · 压缩响应带 Vary: Accept-Encoding（经代理/隧道缓存时的协商正确性）。
@@ -17,9 +18,11 @@ import { join, resolve, sep } from "node:path";
 import express from "express";
 
 const GZ_EXT = /\.(js|mjs|json|html|css|svg|fnt|txt|xml)$/;
-const HASHED_EXT = /-[0-9a-f]{8}.(js|mjs|css)$/;
+/** Vite 产物哈希：`-` + 8 位以上 [A-Za-z0-9_-] + .js/.mjs/.css（点必须转义）。
+ *  实际产物含大小写/非十六进制（index-CnbrvQg2.js），旧的 `-[0-9a-f]{8}.` 会漏判。 */
+const HASHED_EXT = /-[A-Za-z0-9_-]{8,}\.(js|mjs|css)$/;
 
-function cachePolicy(urlPath: string): string {
+export function cachePolicy(urlPath: string): string {
   if (urlPath.endsWith(".html")) return "no-cache";
   if (HASHED_EXT.test(urlPath)) return "public, max-age=31536000, immutable";
   return "public, max-age=86400";

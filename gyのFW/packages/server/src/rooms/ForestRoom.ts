@@ -12,7 +12,7 @@
  *   （F3 翻转 2026-10-11，原为本地停手 AFK 语义）
  * - 断线冻结：phase=paused 等待重连 60s，重连恢复、超时才踢出
  */
-import type { Client } from "colyseus";
+import type { AuthContext, Client } from "colyseus";
 import { appendFileSync } from "node:fs";
 import { Room, ServerError } from "../colyseus.cjs.js";
 import { ROLES, EMPTY_INPUT, type Role, type InputState } from "@fw/shared";
@@ -26,15 +26,68 @@ interface JoinOptions {
 }
 
 const STEP_MS = 1000 / 60;
+
+/** 环境变量数值读取（L3）：未设置/空串→fallback；非有限数或越界→console.warn 后 fallback。
+ *  导出供单测；非法值绝不透传进房间常量（NaN 会让 patch interval/重连窗静默失效）。 */
+export function envNumber(name: string, fallback: number, min: number, max: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw === "") return fallback;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < min || value > max) {
+    console.warn(`[fw] 环境变量 ${name}="${raw}" 非法（需 ${min}..${max} 的有限数），已回退 ${fallback}`);
+    return fallback;
+  }
+  return value;
+}
+
 /** 出站 patch 率：state 增量广播间隔。缺省 1000/60（60Hz，与模拟同频）——Colyseus 出厂默认
  *  1e3/20（@colyseus/core Room.js DEFAULT_PATCH_RATE）会让客户端只能 20Hz 阶梯地看到 60Hz 仿真
  *  （10 号档 §4 表现层根因之一，netopt 槽 11 号档把出站升到与模拟同频）。FW_PATCH_MS 仅
  *  取证对照/回退用（如 FW_PATCH_MS=50 复现旧 20Hz 出站，带宽 A/B 见 11 号档 §2）。 */
-const PATCH_MS = process.env.FW_PATCH_MS !== undefined ? Number(process.env.FW_PATCH_MS) : 1000 / 60;
+const PATCH_MS = envNumber("FW_PATCH_MS", 1000 / 60, 1, 1000);
 /** 断线重连等待；FW_RECONNECT_SECONDS 仅供 e2e 缩短窗口（默认 60s 不变） */
-const RECONNECT_SECONDS = Number(process.env.FW_RECONNECT_SECONDS ?? 60);
+const RECONNECT_SECONDS = envNumber("FW_RECONNECT_SECONDS", 60, 1, 3600);
 /** 原版 startLevel：_.delay(1600)+_.delay(400) → 2.0s 开钟 */
 const READY_MS = 2000;
+
+/** matchmaking IP 限流（M5）：固定窗口 60s 内每 IP 最多 60 次尝试。
+ *  只防公网隧道下的密码暴力尝试/占座洪水；与房间无关，状态进程级共享。 */
+const AUTH_WINDOW_MS = 60_000;
+const AUTH_MAX_ATTEMPTS = 60;
+const AUTH_MAP_SOFT_LIMIT = 1024;
+interface AuthWindow {
+  start: number;
+  count: number;
+}
+const authWindows = new Map<string, AuthWindow>();
+
+/** 惰性清理：只在窗口轮换/Map 过大时扫过期项，避免每次请求 O(n) */
+function pruneAuthWindows(now: number): void {
+  for (const [ip, win] of authWindows) {
+    if (now - win.start >= AUTH_WINDOW_MS) authWindows.delete(ip);
+  }
+}
+
+/** 固定窗口计数（导出供单测注入 now）。返回 false 表示本窗口第 61+ 次。 */
+export function checkAuthRateLimit(ip: string, now = Date.now()): boolean {
+  let win = authWindows.get(ip);
+  if (!win || now - win.start >= AUTH_WINDOW_MS) {
+    win = { start: now, count: 0 };
+    authWindows.set(ip, win);
+  }
+  win.count++;
+  // Map 过大时顺手扫掉过期窗口（攻击者换源 IP 时避免 Map 无界增长）
+  if (authWindows.size > AUTH_MAP_SOFT_LIMIT) pruneAuthWindows(now);
+  return win.count <= AUTH_MAX_ATTEMPTS;
+}
+
+/** 从 matchmaking authContext 取客户端 IP：Colyseus 已优先 x-real-ip / x-forwarded-for，
+ *  再退到 socket.remoteAddress；取首项（xff 可能是逗号列表），缺失归入 unknown 桶。 */
+function authIp(context: AuthContext | undefined): string {
+  const raw = context?.ip ?? context?.req?.socket?.remoteAddress;
+  const first = Array.isArray(raw) ? raw[0] : raw;
+  return String(first ?? "unknown").split(",")[0].trim() || "unknown";
+}
 
 export class ForestRoom extends Room<RoomState> {
   maxClients = 2;
@@ -240,6 +293,21 @@ export class ForestRoom extends Room<RoomState> {
     });
   }
 
+  /** Colyseus 0.16 matchmaking 级静态 onAuth（MatchMaker.js:469-470 的调用签名为
+   *  `onAuth(token, options, authContext)`，authContext 含 ip/headers/req）。
+   *  这里只做 IP 固定窗口限流，返回 true 仅表示放行 matchmaking，**不代表房间密码已通过**。
+   *
+   *  注意：Room._onJoin 在 authData 为真时不再自动调用实例 onAuth（Room.js:531-535），
+   *  因此密码校验仍由实例 onAuth 完成，并在 onJoin 入口显式调用；两处不可删。
+   *  也不能把密码校验搬到这里：create 时房间尚未建立，joinById 时静态层读不到房间实例密码。 */
+  static async onAuth(_token: string, _options: unknown, context?: AuthContext): Promise<true> {
+    const ip = authIp(context);
+    if (!checkAuthRateLimit(ip)) {
+      throw new ServerError(4429, "尝试过于频繁，请稍后再试");
+    }
+    return true;
+  }
+
   /** 创建与加入共用：密码不对直接拒绝 */
   onAuth(_client: Client, options: JoinOptions) {
     if (String(options?.password ?? "") !== this.roomPassword) {
@@ -248,7 +316,13 @@ export class ForestRoom extends Room<RoomState> {
     return true;
   }
 
-  onJoin(client: Client) {
+  onJoin(client: Client, options?: JoinOptions | true) {
+    // 静态 onAuth 返回 true 后框架会跳过实例 onAuth（Room.js:531-535）——密码在此显式校验，
+    // 校验逻辑仍属实例 onAuth（按房间密码只能在实例级比对）。重连路径 _reserveSeat 传
+    // joinOptions=true（Room.js:609），原实现同样不跑 onAuth，这里保持跳过。
+    if (typeof options === "object" && options !== null) {
+      this.onAuth(client, options);
+    }
     let role: Role | undefined = this.roles.get(client.sessionId);
     if (!role) {
       role = ROLES.find((r) => ![...this.roles.values()].includes(r));

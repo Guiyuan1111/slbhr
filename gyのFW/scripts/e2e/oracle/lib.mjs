@@ -17,7 +17,8 @@
 import { spawn } from "node:child_process";
 import { chromium } from "playwright";
 
-export const ORACLE_ROOT = "/home/gy/桌面/dev/slbhr/Fireboy-and-Watergirl/output/A";
+/** 原版只读产物目录（L1）：可用 ORACLE_ROOT 覆盖，缺省保留本机历史路径。 */
+export const ORACLE_ROOT = process.env.ORACLE_ROOT || "/home/gy/桌面/dev/slbhr/Fireboy-and-Watergirl/output/A";
 const PORT_CANDIDATES = [8842, 8843, 8844];
 export const LAUNCH_ARGS = ["--mute-audio", "--disable-webgl", "--js-flags=--max-semi-space-size=64"];
 export const VIEWPORT = { width: 1280, height: 800 };

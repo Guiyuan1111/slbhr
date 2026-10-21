@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import { Server, WebSocketTransport } from "./colyseus.cjs.js";
 import { staticGz } from "./staticGz.js";
+import { installMatchmakeBodyGuard } from "./matchmakeGuard.js";
 import { ForestRoom } from "./rooms/ForestRoom.js";
 import { levelExists, listLevelIds, loadLevel } from "./levels.js";
 
@@ -67,7 +68,9 @@ app.get("/api/level/:id", (req, res) => {
     const bundle = loadLevel(id);
     res.json({ id: bundle.id, json: bundle.json });
   } catch (err) {
-    res.status(500).json({ error: String(err) });
+    // L2：异常细节只进服务端日志（含路径/堆栈），响应保持通用文案，避免泄漏部署结构
+    console.error("[fw] 关卡加载失败:", err);
+    res.status(500).json({ error: "关卡加载失败" });
   }
 });
 
@@ -76,6 +79,12 @@ const httpServer = http.createServer(app);
 const gameServer = new Server({
   transport: new WebSocketTransport({ server: httpServer }),
 });
+
+// M5：Colyseus 的 /matchmake 请求体无上限（Server.js:225-231 全量 concat 后 JSON.parse），
+// 在 new Server 之后（attachMatchMakingRoutes 会 removeAllListeners("request")）、listen 之前
+// 用 prependListener 抢在 Colyseus 之前做 16KB 上限拦截。注意 src/matchmakeGuard.ts 的实现顺序依赖。
+installMatchmakeBodyGuard(httpServer);
+
 gameServer.define("forest", ForestRoom);
 
 // SIGTERM/SIGINT 优雅停机（M-05 复核：colyseus 0.16 Server 默认 gracefullyShutdown=true
