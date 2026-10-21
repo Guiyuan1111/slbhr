@@ -28,7 +28,13 @@ export const ATLAS_PRELOADER = "preloader";
 export const FONT_MAIN = "font";
 /** 全量位图字体（r18 两段化）：Boot 关键路径只装 FONT_MAIN 子集，本键由延迟通道
  *  loadGameAtlases 装载——用第二个键而不是覆盖 "font"，因为 TextureManager.checkKey
- *  (:248) 拒绝同名重载，且 textures.remove() 会让已在场的 BitmapText 抛错。 */
+ *  (:248) 拒绝同名重载并 console.error，addImage (:469) 随即早退——旧纹理与其上已挂的
+ *  BitmapText 帧引用原样留着（换纹理只能 textures.remove，那会让在场字对象抛错）。
+ *  本键可能被 loadGameAtlases 声明两次（Menu 暖装 + GameScene.preload 补齐），这是安全的：
+ *  LoaderPlugin.addFile (:532) 先问 keyExists (:568)→File.hasCacheConflict (:499)
+ *  `cache.exists(key)`，bitmapFont 的 png 落在 textureManager（ImageFile.js:66）、
+ *  fnt 落在 cache.xml（XMLFile.js:56），而 BitmapFontFile 给两个子文件同一个键
+ *  (:70-74)，故二者同进同出——第二次声明静默跳过：不发请求、不重解析、不触替换。 */
 export const FONT_FULL = "font-full";
 
 /**
