@@ -3,6 +3,12 @@
  * - 里程碑：goto→DCL→__fw 就绪→Menu active→（建房）→Game active
  * - 资源：请求数 / 传输字节 / 解码字节（按 initiatorType 分组）
  * - 声明资源缓存命中：二次访问（同 context reload）传输字节对比
+ * - r15 起逐 URL 拆账（冷启动归因用）：
+ *   · items——每条资源的 传输KB/解码KB/类型 + 相对导航起点的起止毫秒；
+ *   · 阶段归位不靠跨时钟对齐（页内 performance.now 与 Node 墙钟不可比），而是
+ *     "Menu 时刻快照里存在即属 Menu 前"，两次快照做集合差；
+ *   · responses——服务端响应头实况（content-encoding / cache-control / etag / 状态码），
+ *     压缩与缓存策略争议以头部实测为准，不读代码推断。
  *
  * 用法：
  *   node --import tsx benchmark/perf-load.mjs [--no-build] --save <label>
@@ -57,6 +63,7 @@ async function resourceStats(page) {
     const es = performance.getEntriesByType("resource");
     const byType = {};
     let totalTransfer = 0, totalDecoded = 0, count = 0;
+    const items = [];
     for (const e of es) {
       const t = e.initiatorType || "other";
       byType[t] = byType[t] || { n: 0, transferKB: 0, decodedKB: 0 };
@@ -66,6 +73,14 @@ async function resourceStats(page) {
       totalTransfer += e.transferSize || 0;
       totalDecoded += e.decodedBodySize || 0;
       count++;
+      items.push({
+        url: e.name.replace(/^https?:\/\/[^/]+/, ""),
+        type: t,
+        transferKB: +((e.transferSize || 0) / 1024).toFixed(1),
+        decodedKB: +((e.decodedBodySize || 0) / 1024).toFixed(1),
+        startMs: +e.startTime.toFixed(0),
+        endMs: +e.responseEnd.toFixed(0),
+      });
     }
     const nav = performance.getEntriesByType("navigation")[0];
     return {
@@ -73,6 +88,7 @@ async function resourceStats(page) {
       totalTransferKB: +(totalTransfer / 1024).toFixed(0),
       totalDecodedKB: +(totalDecoded / 1024).toFixed(0),
       byType,
+      items,
       domContentLoadedMs: nav ? +nav.domContentLoadedEventEnd.toFixed(0) : null,
     };
   });
@@ -93,6 +109,20 @@ async function measureRound(browser, round) {
   const page = await ctx.newPage();
   const errs = [];
   page.on("pageerror", (e) => errs.push(String(e)));
+  // 响应头实况（r15）：同一 URL 只记首见（reload 的缓存命中头不作为策略证据）
+  const headers = new Map();
+  page.on("response", (r) => {
+    const u = r.url().replace(/^https?:\/\/[^/]+/, "");
+    if (headers.has(u)) return;
+    const h = r.headers();
+    headers.set(u, {
+      url: u,
+      status: r.status(),
+      enc: h["content-encoding"] ?? "-",
+      cc: h["cache-control"] ?? "-",
+      etag: h["etag"] ? "yes" : "no",
+    });
+  });
   const t0 = Date.now();
   await page.goto(`${BASE}/?level=${LEVEL}`, { waitUntil: "domcontentloaded" });
   const tDom = Date.now();
@@ -106,6 +136,7 @@ async function measureRound(browser, round) {
     menuActiveMs: tMenu - t0,
     resources: await resourceStats(page),
   };
+  const menuUrls = new Set(cold.resources.items.map((i) => i.url));
   // 建房 → Game active
   await page.fill("#password", PASSWORD);
   const tClick = Date.now();
@@ -117,6 +148,15 @@ async function measureRound(browser, round) {
   cold.gameActiveAfterClickMs = tGame - tClick;
   cold.resourcesAfterGame = await resourceStats(page);
   cold.pageErrors = errs;
+  // 阶段归位：Menu 快照里已存在 = Menu 前；进 Game 快照里新增的 = 点建房→Game 段。
+  // （不拿页内 performance.now 与 Node 墙钟对齐——两钟不可比，集合差是唯一可靠判据）
+  cold.resources.items.forEach((i) => { i.phase = "menu"; });
+  cold.resources.menuKB = +cold.resources.items.reduce((s, i) => s + i.transferKB, 0).toFixed(0);
+  cold.resources.gamePhaseKB = +cold.resourcesAfterGame.items
+    .filter((i) => !menuUrls.has(i.url))
+    .reduce((s, i) => s + i.transferKB, 0).toFixed(0);
+  cold.resourcesAfterGame.items.forEach((i) => { i.phase = menuUrls.has(i.url) ? "menu" : "game"; });
+  cold.headers = [...headers.values()];
 
   // reload（同 context，浏览器有缓存）→ Menu active 与传输字节
   const r0 = Date.now();
@@ -169,6 +209,8 @@ results.summary = {
     requests: Math.round((r1.cold.resources.count + r2.cold.resources.count) / 2),
     gameActiveAfterClickMs: avg2(r1.cold.gameActiveAfterClickMs, r2.cold.gameActiveAfterClickMs),
     transferKBAfterGame: avg2(r1.cold.resourcesAfterGame.totalTransferKB, r2.cold.resourcesAfterGame.totalTransferKB),
+    menuPhaseKB: avg2(r1.cold.resources.menuKB, r2.cold.resources.menuKB),
+    gamePhaseKB: avg2(r1.cold.resources.gamePhaseKB, r2.cold.resources.gamePhaseKB),
   },
   warmReload: {
     menuActiveMs: avg2(r1.warm.menuActiveMs, r2.warm.menuActiveMs),
@@ -176,7 +218,20 @@ results.summary = {
   },
   pageErrors: r1.cold.pageErrors.concat(r2.cold.pageErrors),
 };
-console.log("\n=== 汇总（两轮均值）===");
+// 逐 URL 归因表（round1，取进 Game 后的全量快照以覆盖两段）
+const table = r1.cold.resourcesAfterGame.items
+  .filter((i) => i.transferKB >= 1)
+  .sort((a, b) => b.transferKB - a.transferKB);
+console.log("\n=== Menu 前 / 进房段 传输拆账 ===");
+console.log(`Menu 前 ${results.summary.cold.menuPhaseKB}KB，点建房→Game 段 ${results.summary.cold.gamePhaseKB}KB（round1 明细，≥1KB）`);
+for (const i of table) {
+  console.log(`  ${String(i.transferKB).padStart(7)}KB→${String(i.decodedKB).padStart(8)}KB  ${i.phase.padEnd(4)} ${i.type.padEnd(7)} @${String(i.startMs).padStart(5)}-${String(i.endMs).padStart(5)}ms  ${i.url}`);
+}
+const bigByUrl = new Map(r1.cold.resourcesAfterGame.items.map((i) => [i.url, i.decodedKB]));
+const uncom = r1.cold.headers.filter((h) => h.enc === "-" && (bigByUrl.get(h.url) ?? 0) >= 64);
+console.log(`\n=== 未压缩且 ≥64KB 的响应（round1）===`);
+for (const h of uncom) console.log(`  ${h.status} ${h.cc}  etag=${h.etag}  ${h.url}`);
+console.log(`\n=== 汇总（两轮均值）===`);
 console.log(JSON.stringify(results.summary, null, 2));
 
 if (argSave) {
@@ -195,6 +250,10 @@ if (argCompare) {
   console.log(`冷启动请求数       : ${b.cold.requests} → ${c.cold.requests}`);
   console.log(`点击建房→Game     : ${b.cold.gameActiveAfterClickMs}ms → ${c.cold.gameActiveAfterClickMs}ms`);
   console.log(`进 Game 累计传输   : ${b.cold.transferKBAfterGame}KB → ${c.cold.transferKBAfterGame}KB`);
+  // r15 起新字段：旧快照无对应值，打 "-" 兼容（口径同 perf-client r7r）
+  const p = (k) => `${b.cold[k] ?? "-"} → ${c.cold[k] ?? "-"}`;
+  console.log(`其中 Menu 前传输    : ${p("menuPhaseKB")}`);
+  console.log(`其中进房段传输    : ${p("gamePhaseKB")}`);
   console.log(`reload Menu active : ${b.warmReload.menuActiveMs}ms → ${c.warmReload.menuActiveMs}ms`);
   console.log(`reload 传输        : ${b.warmReload.transferKB}KB → ${c.warmReload.transferKB}KB`);
   if (c.pageErrors.length) { console.log(`⚠ 页面错误：${c.pageErrors.join("; ")}`); process.exitCode = 1; }
