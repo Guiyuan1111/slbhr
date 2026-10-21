@@ -127,6 +127,12 @@ node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>              
   r7r 起渲染段细分探针（缺省开，零分配定长包装）：gl.drawArrays 计数+顶点数、gl.bindTexture、
   gl.blendFunc(Separate)（=混合实切换）、WebGLPipeline.flush/bind、Canvas batchSprite；旧快照无对应字段
   （--compare 打 "-" 兼容）。`--dumpdl` 增打印一次性显示清单分解（depth/type/texture 聚合，剖析用）。
+  r12 起帧内写入计数器（同为零分配包装，只自增）：`camZoom`/`camCenter`=主相机 setZoom/centerOn
+  实调用数，`setPos`/`setAngleW`/`setScaleW`/`setTex`=Image/Sprite/Container/BitmapText 四类对象的
+  setPosition/setAngle/setScale/setTexture 实调用数；用于把"脏守卫是否真的生效"从推断变成直读
+  （稳定态 setScaleW 应≈0 而非 3×帧数）。**勘误**：Phaser 3.90 的 setZoom/centerOn 不在
+  `cameras.Base.prototype` 自有属性上，直接 `prototype.hasOwnProperty` 取原型的写法会静默计 0——
+  必须沿活相机实例的原型链上溯到属主原型再包装（本轮首个量具 bug，基线已修后重跑）。
 
 ## 快照索引
 

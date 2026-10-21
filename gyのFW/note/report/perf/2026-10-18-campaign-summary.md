@@ -1,4 +1,4 @@
-# 性能优化战役 · 总账（2026-10-18/19 七轮 r0–r7 收官 + 2026-10-20 §八 r8–r11 增补）
+# 性能优化战役 · 总账（2026-10-18/19 七轮 r0–r7 收官 + 2026-10-20 §八 r8–r11 + 2026-10-21 §九 r12 增补）
 
 > 2026-10-18 · perfsum 槽 · **零代码改动**（本报告与文档收口为纯文档件）；
 > r6 段由主会话补记（三 Flash 槽并行收官后独立复验追加）；r7 段主会话补记（负结论轮）。
@@ -257,3 +257,20 @@ r8-r11 累计：**点击→Game -11% + 连接窗三段 -49/-77/-93%、vitest -12
 位级三门（det/fixtures/patch 字节）全绿贯穿，dist 逐字节不变；新增量具 4 件
 （perf-scene/perf-idle/perf-toolchain/perf-gc）。剩余挂账：幕布驻留税（前置真 GPU 口径）、
 matchmake 点击派发管线成本（两态共有，低优先）、temple 态 heap 58MB（非每帧成本）。
+
+## 九、r12 增补（2026-10-21，0.3.42 后首轮）
+
+> 报告 `2026-10-21-r12-client-frame-writes.md`。战役首次用「帧内写入计数器」把"脏守卫是否真生效"
+> 从推断变成直读。
+
+| 轮 | 焦点 | commit | 关键数字（同机同口径） | 门禁 |
+|---|---|---|---|---|
+| r12 | 客户端帧内残余分配 + 相机/HUD 每帧强写 | `1251929`+`300a75f`(量具)、`6221aeb`+`e7a788e`(件) | canvas 60fps 主路径：相机 setZoom/centerOn **484→31（f01）/460→69（fb2）**、HUD 补偿写 **1452→93/1380→207（−85~−94%）**、帧分配 **1149→1044 / 2438→2246 KB/s**（与 47 台×60fps 位姿对象 ≈192KB/s 理论值对齐）、fb2 update 段 0.292→0.270ms；WebGL fb2 update 段 −14.5%，低帧率下相机目标仍逐帧变→写数≈帧数属正确行为（收益只在 60fps 主路径） | det 48/48 位级一致、visual-diff 92.92（带内上沿）、vitest 172/172、journey 26 项全 PASS、route f01+f12 各 3/3（winAt 基线带内） |
+
+r12 新增量具：`perf-client` 帧内写入计数器（camZoom/camCenter/setPos/setAngleW/setScaleW/setTextureW）。
+两条勘误入档：①Phaser 3.90 的 setZoom/centerOn 不在 `cameras.Base.prototype` 自有属性上，
+包装必须沿活实例原型链找属主（否则静默计 0）；②两个 `route-all` 并发共用默认 `--port-base 3620`
+互撞端口→各报"1/2 过"假失败，并行须显式分口。
+剩余挂账（r13 起）：帧内分配剩余 ~1044KB/s 的**函数级归因**（新量具 `benchmark/perf-alloc.mjs`，
+CDP `HeapProfiler.startSampling` + source-map-js 还原到 TS 源）、换关纹理重传与下一关预取、
+服务端 tick 侧候选。
