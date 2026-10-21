@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import { Server, WebSocketTransport } from "./colyseus.cjs.js";
 import { staticGz } from "./staticGz.js";
+import { sendJson } from "./jsonRes.js";
 import { installMatchmakeBodyGuard } from "./matchmakeGuard.js";
 import { ForestRoom } from "./rooms/ForestRoom.js";
 import { levelExists, listLevelIds, loadLevel } from "./levels.js";
@@ -55,8 +56,10 @@ app.get("/assets/audio/s/:name", (req, res) => {
 
 // 关卡数据 API（E14/E16：两端取关路径统一——客户端不再自行拼 tutorials/forest 目录，
 // 统一走本接口按 id 取关；服务端 LEVEL_DIRS 顺序为唯一权威）
-app.get("/api/levels", (_req, res) => {
-  res.json({ ids: listLevelIds() });
+// r15 件C：响应改走 sendJson（协商 br/gzip + no-cache + 内容寻址 ETag）——原先 res.json
+// 原字节传输，单关最高 58.5KB；实现与口径见 ./jsonRes.ts
+app.get("/api/levels", (req, res) => {
+  sendJson(req, res, { ids: listLevelIds() });
 });
 app.get("/api/level/:id", (req, res) => {
   const id = String(req.params.id ?? "");
@@ -66,7 +69,7 @@ app.get("/api/level/:id", (req, res) => {
   }
   try {
     const bundle = loadLevel(id);
-    res.json({ id: bundle.id, json: bundle.json });
+    sendJson(req, res, { id: bundle.id, json: bundle.json });
   } catch (err) {
     // L2：异常细节只进服务端日志（含路径/堆栈），响应保持通用文案，避免泄漏部署结构
     console.error("[fw] 关卡加载失败:", err);
