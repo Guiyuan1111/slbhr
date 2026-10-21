@@ -8,12 +8,6 @@
  * 纯逻辑模块：播放/停止由 host 注入，便于单测；不持有 Phaser 类型。
  */
 
-export interface PlatformPose {
-  x: number;
-  y: number;
-  angle: number;
-}
-
 export interface PlatformSoundHost<S> {
   /** 新建并起播一个独立实例；音频缺失/音效关闭时返回 null。 */
   play(id: string): S | null;
@@ -41,15 +35,16 @@ export class PlatformSoundTracker<S> {
 
   constructor(private readonly host: PlatformSoundHost<S>) {}
 
-  update(id: string, pose: PlatformPose): void {
+  /** 标量入参（r12）：调用方每帧逐台喂快照位姿，先前的 pose 对象字面量=每帧每台一次分配。 */
+  update(id: string, x: number, y: number, angle: number): void {
     const t = this.tracks.get(id);
     if (!t) {
-      this.tracks.set(id, { x: pose.x, y: pose.y, angle: pose.angle, dx: 0, dy: 0, da: 0, moving: false, sound: null });
+      this.tracks.set(id, { x, y, angle, dx: 0, dy: 0, da: 0, moving: false, sound: null });
       return;
     }
-    const dx = pose.x - t.x;
-    const dy = pose.y - t.y;
-    const da = pose.angle - t.angle;
+    const dx = x - t.x;
+    const dy = y - t.y;
+    const da = angle - t.angle;
     const translated = Math.abs(dx) + Math.abs(dy) > MOVE_PX;
     const rotated = Math.abs(da) > MOVE_RAD;
     if (!translated && !rotated) {
@@ -70,9 +65,9 @@ export class PlatformSoundTracker<S> {
       t.dy = dy;
       t.da = da;
     }
-    t.x = pose.x;
-    t.y = pose.y;
-    t.angle = pose.angle;
+    t.x = x;
+    t.y = y;
+    t.angle = angle;
   }
 
   clear(): void {
