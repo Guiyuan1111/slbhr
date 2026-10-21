@@ -6,6 +6,7 @@
  *   node scripts/e2e/journey.mjs pause   [--port 3572]   # KeyP 暂停：服务端权威全场物理冻结+时钟停摆，恢复推进；含二次暂停/恢复（PauseMenu closing 复位，H1）
  *   node scripts/e2e/journey.mjs leave   [--port 3575]   # 主动返回菜单：4000 关闭码不得触发重连横幅，余端回 lobby（H3）
  *   node scripts/e2e/journey.mjs refresh [--port 3586]   # 刷新回座：started 相机解冻（H2）+重连新令牌可再次回座（M1）
+ *   node scripts/e2e/journey.mjs wonrefresh [--port 3587] # won 相位刷新回座：服务端补发 finish 后客户端主动重开 EndMenu（L-02）
  *   node scripts/e2e/journey.mjs rejoin  [--port 3573]   # 断线超时→补位重进：房间整关重开而非死房（0.3.27 onLeave 修复回归；用 FW_RECONNECT_SECONDS 缩窗）
  *   node scripts/e2e/journey.mjs deathretry [--port 3574] # 死亡→gameover 静置（原版无自动重开）→Retry 整关重开（F2 翻转回归）
  *   node scripts/e2e/journey.mjs rolesplit [--port 3576] # 按角色分键：fb 只认方向键/wg 只认 WASD，跨组键免疫（F1 翻转回归）
@@ -30,7 +31,7 @@ const check = (name, ok, detail = "") => {
 
 let server;
 try {
-  server = await startServer(PORT, MODE === "journey" ? { FW_DEBUG_FORCE_DOORS: "1" } : MODE === "rejoin" ? { FW_RECONNECT_SECONDS: "4" } : {});
+  server = await startServer(PORT, MODE === "journey" ? { FW_DEBUG_FORCE_DOORS: "1" } : MODE === "rejoin" ? { FW_RECONNECT_SECONDS: "4" } : MODE === "wonrefresh" ? { FW_DEBUG_FORCE_DOORS: "1", FW_RECONNECT_SECONDS: "15" } : {});
   mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true, args: ["--mute-audio"] });
 
@@ -210,6 +211,70 @@ try {
     results.pass = results.checks.every((c) => c.ok);
     await ctxA.close();
     await ctxB.close();
+  } else if (MODE === "wonrefresh") {
+    // ── 场景：won 相位刷新回座（L-02）——服务端补发 finish 后，客户端必须按权威
+    // state.phase 主动补开结算板。旧实现刷新端停在终局画面（EndMenu 未开），
+    // 且 lastFinish 已在（0 秒最佳已由服务端修复挡住，但结算 UI 缺失）。
+    const ctxA = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+    const ctxB = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+    const a = await ctxA.newPage();
+    const b = await ctxB.newPage();
+    const code = await enterAs(a, PORT, "create", "", "forest_01");
+    await enterAs(b, PORT, "join", code, "forest_01");
+    await waitForStarted(a);
+    await waitForStarted(b);
+    const wonGate = `(() => { try { return window.__fwInit.net.room.state.phase === "won"; } catch { return false; } })()`;
+    let won = false;
+    try {
+      await a.waitForFunction(wonGate, null, { timeout: 15000 });
+      won = true;
+    } catch { /* 超时按失败记 */ }
+    check("FORCE_DOORS 通关（phase=won）", won);
+    let endOpen = false;
+    try {
+      await b.waitForFunction(() => window.__fw.scene.isActive("EndMenu"), null, { timeout: 8000 });
+      endOpen = true;
+    } catch { /* 超时按失败记 */ }
+    check("正常通路 → EndMenu 已开（相位迁移路径不回归）", endOpen);
+    const pageErrors = [];
+    b.on("pageerror", (e) => pageErrors.push(e.message));
+    await b.reload({ waitUntil: "domcontentloaded" });
+    let resumed = false;
+    try {
+      await b.waitForFunction(
+        `(() => { try {
+          const s = window.__fwInit?.net?.room?.state;
+          return s?.phase === "won" && window.__fw.scene.isActive("Game") && window.__fw.scene.isActive("EndMenu");
+        } catch { return false; } })()`,
+        null,
+        { timeout: 25000 },
+      );
+      resumed = true;
+    } catch { /* 超时按失败记 */ }
+    check("刷新回座 won → Game 与 EndMenu 均活动", resumed, pageErrors.length ? pageErrors.join("; ") : "");
+    const data = await b.evaluate(() => {
+      try { return window.__fw.scene.getScene("EndMenu").scene.settings.data; } catch { return null; }
+    });
+    check(
+      "回座结算数据来自关卡/结算消息（钻石总数与限时均非 0）",
+      !!data && data.diamondsTotal > 0 && data.timeLimitSec > 0,
+      JSON.stringify(data),
+    );
+    check("刷新回座无页面错误（EndMenu 不在字体未就绪时创建）", pageErrors.length === 0, pageErrors.join("; "));
+    let hudOk = false;
+    try {
+      await b.waitForFunction(
+        `(() => document.querySelector("#hud-status")?.textContent === "通关！" && document.querySelector("#hud-top")?.classList.contains("hidden"))()`,
+        null,
+        { timeout: 3000 },
+      );
+      hudOk = true;
+    } catch { /* 超时按失败记 */ }
+    check("won HUD 文案由既有 phase 驱动（通关/隐藏联机栏）", hudOk);
+    await b.screenshot({ path: join(OUT, "wonrefresh-b-resumed.png") });
+    results.pass = results.checks.every((c) => c.ok);
+    await ctxA.close();
+    await ctxB.close();
   } else if (MODE === "rejoin") {
     // ── 场景 3：断线超时 → 补位重进 —— B 断线，FW_RECONNECT_SECONDS=4 缩窗；
     // 超时后座位释放、相位回 lobby；新人按码补位 → 整关重开 ready→started，
@@ -328,7 +393,7 @@ try {
     await ctxA.close();
     await ctxB.close();
   } else {
-    throw new Error(`未知模式: ${MODE}（可用 journey|pause|leave|refresh|rejoin|deathretry|rolesplit）`);
+    throw new Error(`未知模式: ${MODE}（可用 journey|pause|leave|refresh|wonrefresh|rejoin|deathretry|rolesplit）`);
   }
 
   await browser.close();
