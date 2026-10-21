@@ -13,7 +13,14 @@
 //   ③ 窗口里跑动是"良性降级"：按住方向键会让 AnimationState 找不到键而打 `Missing animation`
 //      并原样留着当前帧 —— 观察到它才证明窗口真被走过，而 TEX_WARN 那四类必须零条。
 //   ④ 放行后按帧补齐：十一式全部注册、163 帧全部来自 chars-play 且几何等于产物 json。
-//   ⑤ 真路径（不停答）也收敛：房间可玩后若干秒内十一式齐、零缺帧警告、零花屏。
+//   ⑤ 真路径（不停答）也收敛：房间可玩后十一式齐、零缺帧警告、零花屏，并**量出**"可玩 → Play 张落定"
+//      这段窗口的真实长度（这条长度 perf-load 量不到，原因见用例二注）。
+//
+// 用法：node scripts/e2e/charsplay.mjs [port] [level] [停答保险丝ms] [net]
+//   net = off|cable|4g|fast3g|slow3g（缺省 off）。窗口这段东西的**现场在弱网**：off 档实测 Play 张
+//   比"可玩"还早约 4s 到位（本地 5ms 就取完），窗口长度是负数——只跑 off 会把"没有窗口"当成设计成立。
+//   档位表与 perf-load 的 --net 逐值相同（同一套 CDP `Network.emulateNetworkConditions` 条件），
+//   并自带"节流真的生效"的阴性对照，静默失效的节流档比没有档更坏（读数会被写成弱网实测）。
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright";
@@ -24,6 +31,22 @@ const PORT = Number(process.argv[2] || 3611);
 const LEVEL = process.argv[3] || "forest_01";
 /** 停答上限：窗口实际由 `release()` 提前结束，这个数只是"探针抛错也不吊死"的保险丝 */
 const STALL = Number(process.argv[4] || 60000);
+const NET_PROFILES = {
+  off: { latency: 0, down: -1, up: -1, desc: "不节流（历轮口径）" },
+  cable: { latency: 30, down: 1_250_000, up: 312_500, desc: "有线 10Mbps↓/2.5Mbps↑ · 30ms" },
+  "4g": { latency: 80, down: 500_000, up: 125_000, desc: "4G 4Mbps↓/1Mbps↑ · 80ms" },
+  fast3g: { latency: 150, down: 200_000, up: 93_750, desc: "Lighthouse Fast 3G 1.6Mbps↓/0.75Mbps↑ · 150ms" },
+  slow3g: { latency: 400, down: 62_500, up: 62_500, desc: "Lighthouse Slow 3G 0.5Mbps↓↑ · 400ms" },
+};
+const NET_NAME = process.argv[5] || "off";
+if (!Object.hasOwn(NET_PROFILES, NET_NAME)) {
+  throw new Error(`net 档位未知：${NET_NAME}（可用：${Object.keys(NET_PROFILES).join("/")}）`);
+}
+const NET = NET_PROFILES[NET_NAME];
+const THROTTLED = NET_NAME !== "off";
+/** 播放图集到位的等待上限：名义体耗时 + 12s 余量（节流档不能拿 off 档的 25s 判到位，否则会把
+ *  "慢但正确"读成超时）；442.4KB 在 slow3g 是 7.1s，在 fast3g 是 2.3s */
+const ARRIVAL_CAP = 12000 + (THROTTLED ? Math.round((1000 * 453_000) / NET.down) : 0);
 
 /** 产物 json 的帧几何（Node 侧独立回算，页面只认这一份） */
 const geomOf = (f) => {
@@ -107,7 +130,49 @@ const waitAnims = (page, needTexture, ms) =>
 const mkCtx = async () => {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   const page = await ctx.newPage();
+  // 与 perf-load 同一条施加路径：CDP 条件挂在页面上、导航之前，故整趟装载都按档位付带宽与 RTT
+  if (THROTTLED) {
+    const cdp = await ctx.newCDPSession(page);
+    await cdp.send("Network.enable");
+    await cdp.send("Network.emulateNetworkConditions", {
+      offline: false,
+      latency: NET.latency,
+      downloadThroughput: NET.down,
+      uploadThroughput: NET.up,
+    });
+  }
   return { ctx, page };
+};
+/** 节流真的生效（阴性对照，口径同 perf-load 的 assertThrottleActive：系数取 0.5 且只设下限——
+ *  并发调度会让单笔体耗时大幅偏离名义值，拿名义值当等式判会把好机器判成失效） */
+const throttleProof = (page) =>
+  page.evaluate(`(() => {
+    const es = performance.getEntriesByType("resource").filter((e) => e.responseEnd > 0);
+    const ttfb = es.map((e) => e.responseStart - e.fetchStart).filter((v) => v > 0).sort((a, b) => a - b);
+    const big = es.slice().sort((a, b) => b.transferSize - a.transferSize)[0] || null;
+    return {
+      netRequests: es.length,
+      ttfbMedianMs: ttfb.length ? Math.round(ttfb[ttfb.length >> 1]) : null,
+      bigUrl: big ? big.name.split("/").pop() : null,
+      bigTransferB: big ? big.transferSize : 0,
+      bigBodyMs: big ? Math.round(big.responseEnd - Math.max(big.responseStart, big.fetchStart)) : null,
+    };
+  })()`);
+const assertThrottle = async (page, tag) => {
+  if (!THROTTLED) return;
+  const p = await throttleProof(page);
+  const fails = [];
+  if (NET.latency > 0) {
+    const floor = 0.5 * NET.latency;
+    if (p.ttfbMedianMs === null) fails.push(`无过网请求可证 TTFB（netRequests=${p.netRequests}）`);
+    else if (p.ttfbMedianMs < floor) fails.push(`TTFB 中位数 ${p.ttfbMedianMs}ms < 0.5×rtt(${floor}ms)`);
+  }
+  if (NET.down > 0 && p.bigBodyMs !== null) {
+    const floor = 0.5 * (1000 * p.bigTransferB) / NET.down;
+    if (p.bigBodyMs < floor) fails.push(`${p.bigUrl} 体耗时 ${p.bigBodyMs}ms < 0.5×名义(${Math.round(floor)}ms)`);
+  }
+  check(`${tag} 节流生效（档位 ${NET_NAME}：${NET.desc}）`, fails.length === 0,
+    `ttfb中位=${p.ttfbMedianMs}ms 最大单笔=${p.bigUrl}/${p.bigTransferB}B 体=${p.bigBodyMs}ms${fails.length ? " ⇒ " + fails.join("；") : ""}`);
 };
 const warns = [];
 const missingAnim = [];
@@ -157,7 +222,7 @@ try {
 
   // 放行后：注册必须补齐，且逐帧几何等于产物
   release();
-  await waitAnims(A.page, true, 25000);
+  await waitAnims(A.page, true, ARRIVAL_CAP);
   const s3 = await snapshot(A.page);
   check("放行后十一式全部注册", s3.registeredCount === PLAY_KEYS.length, `registered=${s3.registeredCount}/${PLAY_KEYS.length} ${s3.registered.join(" ")}`);
   check(`放行后动画帧数恰为 ${PLAY_FRAME_COUNT} 且全部来自 chars-play`, s3.animFrames === PLAY_FRAME_COUNT && s3.animForeign.length === 0, `frames=${s3.animFrames} foreign=${s3.animForeign.join(",")}`);
@@ -172,7 +237,10 @@ try {
   await A.ctx.close();
   await B.ctx.close();
 
-  // ── 用例二：真路径（不停答）也必须收敛（⑤）──
+  // ── 用例二：真路径（不停答）也必须收敛（⑤），并量出这段"已可玩、播放序列未到位"的窗口长度 ──
+  // 为什么窗口长度只能在这里量：perf-load 的冷启快照打在"可玩"那一刻，而 Play 张要到落定登记之后
+  // 才入队，于是臂B 的 CharAssetsPlay.png 在快照里**整条条目都不存在**（不是 pending、也不是"晚于进房"），
+  // r21 那条 loopDeferred 判据搬到这张图上会退化成单边断言（实测见 r23 报告 §代价侧）。
   const C = await mkCtx();
   const D = await mkCtx();
   watch("C", C.page);
@@ -180,11 +248,24 @@ try {
   const code2 = await enterAs(C.page, PORT, "create", "", LEVEL);
   await enterAs(D.page, PORT, "join", code2, LEVEL);
   await waitForStarted(C.page);
+  // 页钟锚点：waitForStarted 落地后立刻取 performance.now()，带 Playwright 观测延迟（几十 ms 级），
+  // 只用于同钟相减，不当绝对时刻用（同 perf-load 的口径）。
+  const t0 = await C.page.evaluate(() => performance.now());
   await waitForStarted(D.page);
-  await waitAnims(C.page, false, 25000).catch(() => {});
+  await waitAnims(C.page, false, ARRIVAL_CAP).catch(() => {});
+  const win = await C.page.evaluate(() => {
+    const e = performance.getEntriesByType("resource").find((x) => x.name.endsWith("/CharAssetsPlay.png"));
+    const j = performance.getEntriesByType("resource").find((x) => x.name.endsWith("/CharAssetsPlay.json"));
+    return { respEnd: e ? Math.round(e.responseEnd) : null, jsonEnd: j ? Math.round(j.responseEnd) : null, now: Math.round(performance.now()) };
+  });
+  const winMs = win.respEnd === null ? null : win.respEnd - Math.round(t0);
+  log(`自然路径窗口[${NET_NAME}]：可玩页钟=${Math.round(t0)} → Play.png 落定=${win.respEnd}（${winMs === null ? "未观测" : (winMs >= 0 ? "+" : "") + winMs + "ms"}）` +
+    ` .json=${win.jsonEnd} 十一式注册观测上界=+${win.now - Math.round(t0)}ms`);
+  await assertThrottle(C.page, `用例二[${NET_NAME}]`);
   await C.page.waitForTimeout(800);
   const s4 = await snapshot(C.page);
   check("真路径（不停答）十一式收敛", s4.registeredCount === PLAY_KEYS.length, `registered=${s4.registeredCount} hasPlay=${s4.hasPlay}`);
+  check(`真路径 Play.png 确有请求（延迟通道真的发起了这一趟，档位 ${NET_NAME}）`, win.respEnd !== null, `respEnd=${win.respEnd}`);
   check("真路径零花屏、零缺帧警告", s4.badPainted.length === 0 && warns.length === 0, `bad=${JSON.stringify(s4.badPainted)} warns=${warns.join("; ")}`);
   check("真路径页面零错误", errs.length === 0, errs.join("; "));
   await C.ctx.close();
@@ -193,5 +274,6 @@ try {
   await browser.close().catch(() => {});
   server.kill();
 }
-log(fail ? `charsplay: ${fail} 项 FAIL（Missing animation 计数=${missingAnim.length}）` : `charsplay: ALL PASS（窗口期良性降级取证 ${missingAnim.length} 条）`);
+log(fail ? `charsplay[${NET_NAME}]: ${fail} 项 FAIL（Missing animation 计数=${missingAnim.length}）`
+  : `charsplay[${NET_NAME}]: ALL PASS（窗口期良性降级取证 ${missingAnim.length} 条）`);
 process.exit(fail ? 1 : 0);

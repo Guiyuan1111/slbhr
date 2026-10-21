@@ -374,12 +374,16 @@ async function measureRound(browser, round) {
   cold.loopDeferred = loop.every((i) => i.endMs > gameActivePerfMs);
   cold.loopArrivalAfterEntryMs = loop.length ? Math.round(Math.max(...loop.map((i) => i.endMs)) - gameActivePerfMs) : null;
   cold.gameActivePerfMs = Math.round(gameActivePerfMs);
-  // r23 件1 代价侧，同一条出闸判据：延迟通道里的播放图集晚于进房才算"真的出了落定门"。
-  // 计数列不可省——臂A 产物里根本没有 CharAssetsPlay.png，空数组的 every 恒真会把"没有这张"读成"已延迟"。
+  // r23 件1 代价侧：这段窗口量具**量不出长度**，只能登记观测事实。冷启快照打在"可玩"那一刻，
+  // 而 Play 张在门落定之后才入队，Resource Timing 只在响应完成后建条目 ⇒ 节流三档读到空数组。
+  // 空数组既可能是"还在飞"也可能是"还没发起"，所以这里出三态字符串而不是布尔：
+  // `[].every()` 恒真与 `length > 0 &&` 恒假都是单边断言（r23 §六），把"产物里没这张"或
+  // "可玩时还没取完"读成设计意图。窗口长度改由 scripts/e2e/charsplay.mjs 用例二在自然路径上断言，
+  // 用例一（扣住 Play 张响应）负责把窗口摊开做逐帧取证。
   const charsPlay = cold.resourcesAfterGame.items.filter((i) => /\/CharAssetsPlay\.png$/.test(i.url));
-  cold.charsPlayRequested = charsPlay.length;
-  cold.charsPlayDeferred = charsPlay.length > 0 && charsPlay.every((i) => i.endMs > gameActivePerfMs);
-  cold.charsPlayArrivalAfterEntryMs = charsPlay.length
+  cold.charsPlayInWindow =
+    charsPlay.length === 0 ? "none" : charsPlay.every((i) => i.endMs <= gameActivePerfMs) ? "before-gate" : "after-gate";
+  cold.charsPlayArrivalAfterGateMs = charsPlay.length
     ? Math.round(Math.max(...charsPlay.map((i) => i.endMs)) - gameActivePerfMs)
     : null;
   cold.headers = [...headers.values()];
@@ -480,6 +484,12 @@ results.summary = {
       r1.cold.loopArrivalAfterEntryMs === null || r2.cold.loopArrivalAfterEntryMs === null
         ? null
         : avg2(r1.cold.loopArrivalAfterEntryMs, r2.cold.loopArrivalAfterEntryMs),
+    // r23：三态照录，不是断言（none = 可玩那一刻还没有条目）；两轮都取到条目才做均值，否则记 null
+    charsPlayInWindow: `${r1.cold.charsPlayInWindow}/${r2.cold.charsPlayInWindow}`,
+    charsPlayArrivalAfterGateMs:
+      r1.cold.charsPlayArrivalAfterGateMs === null || r2.cold.charsPlayArrivalAfterGateMs === null
+        ? null
+        : avg2(r1.cold.charsPlayArrivalAfterGateMs, r2.cold.charsPlayArrivalAfterGateMs),
     audio: {
       count: Math.round((a1.count + a2.count) / 2),
       totalKB: avg2(a1.totalKB, a2.totalKB),
@@ -517,6 +527,9 @@ console.log(`快照时仍在飞 ${results.summary.cold.pendingCount} 条：${(re
 // r21 件1 的通过条件：循环曲不进落定门。null=进房快照时还在飞（连条目都没入表），同样是"门外"。
 const la = results.summary.cold.loopArrivalAfterEntryMs;
 console.log(`循环曲落点：${results.summary.cold.loopDeferred ? "门外（不挡进房）✓" : "门内（仍挡进房）✗"}  到齐时刻=进房后 ${la === null ? "快照时仍在飞" : `${la}ms`}（负=进房前已就绪）`);
+// r23：三态照录，不判好坏——none 只说明"可玩那一刻条目还没入表"，窗口长度由 scripts/e2e/charsplay.mjs 量
+const cg = results.summary.cold.charsPlayArrivalAfterGateMs;
+console.log(`播放图集（chars-play）：快照内条目=${results.summary.cold.charsPlayInWindow}  落点=进房后 ${cg === null ? "快照时条目未入表" : `${cg}ms`}（负=进房前已就绪）`);
 for (const i of table) {
   console.log(`  ${String(i.transferKB).padStart(7)}KB→${String(i.decodedKB).padStart(8)}KB  ${i.phase.padEnd(4)} ${i.type.padEnd(7)} @${String(i.startMs).padStart(5)}-${String(i.endMs).padStart(5)}ms  ${i.url}`);
 }
