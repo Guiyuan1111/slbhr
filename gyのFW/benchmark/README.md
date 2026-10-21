@@ -44,7 +44,9 @@ forest_01 就绪后第 60 物理帧（无输入 idle）对 canvas 元素截图�
 此修恢复"canvas 截图比对"设计本义。**跨口径带不可直列**，演变链：
 95.2–95.8（旧带，10-06–10-13；旧轻量 HUD 文本仍入镜）→ 88.5–93.0（漂移期过渡带，
 方案二=不修量具口径）→ **现行带 90.55–92.86**（新口径，0.3.38 repeat5 静窗定带，
-中位 91.44；F2 相机修复后最优平移=(0,0) 域；39 号档 §7.2）。
+中位 91.44；F2 相机修复后最优平移=(0,0) 域；39 号档 §7.2）。带顶不是硬上限：r17 件A（只动
+DOM 皮肤）同码三次得 92.79 / 92.96 / 93.10，极差 0.31pt——单跑越顶 0.10pt 属带内抖动，
+处置是按 README 的 ±2pt 抖动条款补跑取分布，而不是放宽容差或改代码。
 
 - 实测（0.3.6，旧口径）：最优平移 (−1,−2)（镜头取景几乎一致）、全帧匹配率 86.63%、
   顶部 HUD 带 76.58%（原版画布内 HUD 为已知系统性差异）。
@@ -75,6 +77,10 @@ node --import tsx benchmark/perf-idle.mjs [--secs 8] [--modes ...] --save <label
 node benchmark/perf-toolchain.mjs --save <label>                                    # 工具链（r10）
 node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>                  # GC 拆账（r11）
 ```
+
+- **`--compare` 参数写的是 label 本体，不含文件名前缀**：`perf-client` 存 `client-<label>.json`、
+  `perf-advance` 存 `advance-<label>.json`，故对拍写 `--compare r16-f01` / `--compare r14`；
+  写成 `--compare client-r16-f01` 会去找 `client-client-r16-f01.json` 而报缺快照（r17 门禁实跑踩到）。
 
 - `perf-step`：每关预热 90 步 + 600 步计时（`PERF_STEPS`/`PERF_LEVELS` 可覆盖），
   产出 avg/p95/p99、每仿真秒物理占用；快照 `results/perf-<label>.json`。
@@ -178,6 +184,22 @@ node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>              
   只看 `jobs===0` 会在 `Temple.create` 尚未执行时即为真，把在飞烘焙当常驻。
   产物 `results/resident-<label>.json`；位级回归保护由 `scripts/e2e/treebake.mjs`（三层 FNV-1a 金样
   + 重进零重烘 + 重进免重传 + 阳性对照）承担，金样 `scripts/e2e/fixtures/tree-layers.json`。
+- `scripts/e2e/domskin.mjs`：**DOM 皮肤逐像素门禁**（r17 起）。连接面板是纯 DOM，
+  canvas 的 visual-diff 拍不到它、journey 只看 textContent，所以"改 CSS 背景指向"这类动作
+  原本没有任何回归面。口径：截屏前 `#game-root` 摘画布（角色待机相位不是确定量）、
+  `animation/transition:none` 冻结时间基（`.menu-logo` 的 menu-floaty 4s 实测让同版本两次截图
+  差出 1%~3% 像素），再遍历 `#menu *` 的 `::before/::after` 计算值取全部 `background-image`
+  URL 逐个 `Image.decode()`（背景图不参与 `img.complete`，也不被 `document.fonts.ready` 覆盖，
+  不等就是把"715KB 还没解码"读成"头像没画"）。四态 wide-idle/wide-hover/wide-error/narrow-idle
+  覆盖全部 5 处皮肤引用。判据 **SHA-256 逐字节相等，零容差**；FAIL 时打印 `magick compare -metric AE`
+  并把差图落 `TEMP/domskin/`（不入库）。有意改皮的三步流程（量表→写报告→`--save`）写在脚本头，
+  基线代次由 `results/domskin/manifest.json` 的 `provenance` 记录。
+- `scripts/build-dom-skin.mjs`：DOM 皮肤合成贴图生成器（r17 件A 的资产侧）。
+  帧坐标取自 `assets/atlasses/*.json` 并**断言**（素材重打包即红）；裁片拼成 1082×988 + 2px 透明隔离带。
+  **无损证明走原始样本**：自解 IDAT + 反滤波拿 RGBA 字节，与图集原帧逐字节全等（`compare` 两侧同过
+  ImageMagick 色彩管理，会把 ±1 级量化差抹平成 AE=0——"看着无损"不等于"存着无损"）；
+  另断言隔离带全 0、辅助块集合与图集一致（图集只有 IHDR/IDAT/IEND，多一个色彩块就换解码路径）、
+  `--check` 重跑字节可复现。
 
 ## 快照索引
 
@@ -241,6 +263,10 @@ git 列以快照 JSON `meta.git`（存档时脚本记录）为准；visual 系�
 > 均 PASS，故快照与代码态可对应。
 | client-r12-baseline-* / -opt-* | 6221aeb | — | — | r12 帧内写入计数基线/实施后（相机 484→31、HUD 1452→93、分配 1149→1044KB/s） |
 | visual-r13 / visual-r13b | f7dfe6e | — | — | r13 视觉差分（新口径带 90.0–92.9 内，run-to-run 抖动 ±2pt，须与 r12 同带并读） |
+| load-r17-base-f01 | e0080b2 | — | — | r17 DOM 皮改指前的冷启基线（Menu 段 4054KB/21req，其中 3 条 `type:css` 图集行 1241.1KB 落在 20–81ms） |
+| domskin-{wide-idle,wide-hover,wide-error,narrow-idle}.png | 7c19e61 | — | — | DOM 皮肤四态逐像素基线（合成贴图皮一代；上一代图集皮在 `043b2a5`） |
+| load-r17-after-f01 | 7c19e61 | — | — | r17 件A 后冷启（Menu 段 3799KB/19req，DOM 皮 80.5KB 单行；全链 6830KB＝基线 +79.0KB，PopupAssets 334.4KB 退回点击后真实下载） |
+| visual-r17b{1,2} | 305715e | — | — | r17 件A 同码补跑（92.79 / 93.10，与首跑 92.96 并记，极差 0.31pt＝带顶抖动） |
 
 ## 注意
 
