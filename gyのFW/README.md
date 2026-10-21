@@ -2,7 +2,7 @@
 
 服务端权威的《森林冰火人 1：森林神庙》双人对战合作网页游戏。完整开发计划见 [note/PLAN.md](note/PLAN.md)。
 
-> **当前版本**：0.3.38（审计遗留大批实施：38 号档 F1/F3 机构子精灵族+相机 settled scroll 关卡矩形语义 F2、15 号档镜头 Top3（平台灯组色 tint/风机关 400ms 停帧+effect 相位常驻/暂停全画面静帧）、14 号档音效 T2-T6/T8（速度关终局曲/退场停音钩子/fx 总静音/music 即时/fadeOut）；F1 复核修正——冰膜系 oracle 恒不可见隐藏层，38 号档前提判为仪器伪差）。上版 0.3.37：UI 转场动画保真修复。上版 0.3.36：连接界面石板大厅视觉精修。上上版 0.3.35（选关树浮雕质感还原：templeTreeBake 原版滤镜链 CPU 逐操作移植，分帧烘焙三层纹理（底影/全树枝干 3px 描边/通关金枝），oracle 对拍枝干中线 49/49+浮雕方向 50/50+通关层字节 99.82%；兼修树形数据暗病——edges 按 `_id` 连接（旧按 id 错连 47 条中的 41 条））。上版 0.3.34：性能战役 r8–r11 四轮收账：点击→Game 场景切换链 -11%（连接窗三段 -49%/-77%/-93%，temple.json 单例预取+waitForLevelId 事件驱动+关卡缓存+连接忙期画布冻结；换肤幕布连接窗性能税 +364ms 归档并回收）；空闲 CPU 面负结论收口（JS 面 script%<2% 地板、帧率上限因慢机砍帧弃件、幕布驻留税挂账真 GPU 口径）；工具链 vitest threads -12% + build 去 npm 层 -6.8%（dist 逐字节不变）；r0 §八 GC 挂账勘误收口（GC 份额 0-0.4%、无并发膨胀、bonus_2 158ms/建=前 60 步固有收敛）。上版 0.3.33：连接界面方向 A「石板大厅」换肤。上版 0.3.32：性能战役 r6–r7 收账（音频批 Menu 驻留暖装 +941ms、96 房容量拐点、渲染段 JS 面理论地板、font 子集化关闭、det 门禁并行 -44%）。上版 0.3.31：hanging 摆板 revolute 轴点归位 + 常驻服务器管理。行为复刻战役进行中（总索引见 [note/research/2026-10-behavior-parity/00-INDEX.md](note/research/2026-10-behavior-parity/00-INDEX.md)）。0.3.28 自验收体系落地（L0-L4 验收阶梯 note/self-acceptance.md）。此前 0.3.0-0.3.24 完成 box2d 保真重写 + 全 UI 复刻 + 48 关 + 机关全谱 + 物理复刻度 84.31/动画 99.97/视觉 95.20。量化基准见 [benchmark/](benchmark/README.md)，性能战役总账（r0–r7 七轮+r8–r11 四轮）见 [note/report/perf/2026-10-18-campaign-summary.md](note/report/perf/2026-10-18-campaign-summary.md) 与 [2026-10-20-r8-scene-switch.md](note/report/perf/2026-10-20-r8-scene-switch.md) 等 r8–r11 四报告，逐版改动见 [note/release/](note/release/)
+> **当前版本**：0.3.41（独立工程审计修复批次：H1–H4/M1–M13 客户端与服务端加固）。上版 0.3.40：issue 批 20 条收官（17 修+3 证伪）+P-02 全收集庆典对齐；0.3.38：审计遗留大批实施（38 号档 F1/F3 机构子精灵族+相机 settled scroll 关卡矩形语义 F2、15 号档镜头 Top3（平台灯组色 tint/风机关 400ms 停帧+effect 相位常驻/暂停全画面静帧）、14 号档音效 T2-T6/T8（速度关终局曲/退场停音钩子/fx 总静音/music 即时/fadeOut）；F1 复核修正——冰膜系 oracle 恒不可见隐藏层，38 号档前提判为仪器伪差）。上版 0.3.37：UI 转场动画保真修复。上版 0.3.36：连接界面石板大厅视觉精修。上上版 0.3.35（选关树浮雕质感还原：templeTreeBake 原版滤镜链 CPU 逐操作移植，分帧烘焙三层纹理（底影/全树枝干 3px 描边/通关金枝），oracle 对拍枝干中线 49/49+浮雕方向 50/50+通关层字节 99.82%；兼修树形数据暗病——edges 按 `_id` 连接（旧按 id 错连 47 条中的 41 条））。上版 0.3.34：性能战役 r8–r11 四轮收账：点击→Game 场景切换链 -11%（连接窗三段 -49%/-77%/-93%，temple.json 单例预取+waitForLevelId 事件驱动+关卡缓存+连接忙期画布冻结；换肤幕布连接窗性能税 +364ms 归档并回收）；空闲 CPU 面负结论收口（JS 面 script%<2% 地板、帧率上限因慢机砍帧弃件、幕布驻留税挂账真 GPU 口径）；工具链 vitest threads -12% + build 去 npm 层 -6.8%（dist 逐字节不变）；r0 §八 GC 挂账勘误收口（GC 份额 0-0.4%、无并发膨胀、bonus_2 158ms/建=前 60 步固有收敛）。上版 0.3.33：连接界面方向 A「石板大厅」换肤。上版 0.3.32：性能战役 r6–r7 收账（音频批 Menu 驻留暖装 +941ms、96 房容量拐点、渲染段 JS 面理论地板、font 子集化关闭、det 门禁并行 -44%）。上版 0.3.31：hanging 摆板 revolute 轴点归位 + 常驻服务器管理。行为复刻战役进行中（总索引见 [note/research/2026-10-behavior-parity/00-INDEX.md](note/research/2026-10-behavior-parity/00-INDEX.md)）。0.3.28 自验收体系落地（L0-L4 验收阶梯 note/self-acceptance.md）。此前 0.3.0-0.3.24 完成 box2d 保真重写 + 全 UI 复刻 + 48 关 + 机关全谱 + 物理复刻度 84.31/动画 99.97/视觉 95.20。量化基准见 [benchmark/](benchmark/README.md)，性能战役总账（r0–r7 七轮+r8–r11 四轮）见 [note/report/perf/2026-10-18-campaign-summary.md](note/report/perf/2026-10-18-campaign-summary.md) 与 [2026-10-20-r8-scene-switch.md](note/report/perf/2026-10-20-r8-scene-switch.md) 等 r8–r11 四报告，逐版改动见 [note/release/](note/release/)
 >
 > **使用边界**：本项目使用官方游戏素材与关卡数据，仅供两名开发者私下联机游玩。禁止公开分发、上线或商用。
 
@@ -19,6 +19,11 @@ npm run dev:client    # 终端 2：开发前端 http://localhost:5173
 ```bash
 start.bat             # 构建 + 起服务器，配合樱花穿透使用（见计划附录 B）
 ```
+
+部署安全（公网/隧道场景）：优先同源部署（页面与 `/matchmake`、WebSocket 同域），由
+Nginx/Caddy 等反代层终止 HTTPS、限制请求速率与并发，并把 `FW_HOST` 保持在 `127.0.0.1`
+仅让反代回源；不要直接把服务绑到 `0.0.0.0` 暴露公网。服务端已内置 `/matchmake` 16KB
+请求体上限与每 IP 60 次/分钟的鉴权尝试限流，但不替代反代层的 TLS/限流。
 
 ## 命令
 
