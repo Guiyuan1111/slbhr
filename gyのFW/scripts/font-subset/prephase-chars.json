@@ -3,29 +3,29 @@
   "_ring": 4,
   "_ringWhy": "环宽取 font.fnt 的 info padding=\"4,4,4,4\"。理由不是好看，是滤波：项目里没有 pixelArt/setFilter 配置，纹理保持 Phaser 默认 LINEAR，WebGL 下字形边缘会采到帧矩形外 1 texel，所以这一圈邻域字节必须与今日同一批。实测环带像素 54,254 个、侵入未保留字形帧矩形 0 个（说明打包间隙本就 ≥4px），产物比 ring=0 贵 9.8KB（295.0→304.5KB）。",
   "sources": [
-    { "file": "packages/client/src/scenes/MenuScene.ts", "line": 92, "texts": ["开始游戏"], "note": "Play 标题" },
-    { "file": "packages/client/src/scenes/MenuScene.ts", "line": 138, "texts": ["?"], "note": "右上制作人员入口" },
+    { "file": "packages/client/src/scenes/MenuScene.ts", "line": 91, "texts": ["开始游戏"], "note": "Play 标题" },
+    { "file": "packages/client/src/scenes/MenuScene.ts", "line": 137, "texts": ["?"], "note": "右上制作人员入口" },
     { "file": "packages/client/src/scenes/menus.ts", "line": 29, "texts": ["设置"], "note": "SettingsScene 标题" },
-    { "file": "packages/client/src/scenes/menus.ts", "line": 62, "texts": ["音乐"], "note": "toggleRow(..., \"音乐\") → menus.ts:52 的 text 实参" },
-    { "file": "packages/client/src/scenes/menus.ts", "line": 63, "texts": ["音效"], "note": "toggleRow(..., \"音效\") → menus.ts:52 的 text 实参" },
-    { "file": "packages/client/src/scenes/menus.ts", "line": 64, "texts": ["好的"], "note": "stoneButton label（stoneButton 缺省 fontKey=FONT_MAIN，见 overlays.ts:131）" },
-    { "file": "packages/client/src/scenes/menus.ts", "line": 80, "texts": ["制作人员"], "note": "CreditsScene 标题" },
+    { "file": "packages/client/src/scenes/menus.ts", "line": 63, "texts": ["音乐"], "note": "toggleRow(..., \"音乐\") → menus.ts:53 的 text 实参" },
+    { "file": "packages/client/src/scenes/menus.ts", "line": 64, "texts": ["音效"], "note": "toggleRow(..., \"音效\") → menus.ts:53 的 text 实参" },
+    { "file": "packages/client/src/scenes/menus.ts", "line": 65, "texts": ["好的"], "note": "stoneButton label（stoneButton 缺省 fontKey=FONT_MAIN，见 overlays.ts:131）" },
+    { "file": "packages/client/src/scenes/menus.ts", "line": 81, "texts": ["制作人员"], "note": "CreditsScene 标题" },
     {
       "file": "packages/client/src/scenes/menus.ts",
-      "line": 81,
+      "line": 82,
       "texts": ["本复刻基于原版游戏", "Oslo Albet", "Anna Tamarit", "Jan Villanueva", "septimania 2018"],
-      "note": "lines 数组 → menus.ts:85 的 line 实参"
+      "note": "lines 数组 → menus.ts:86 的 line 实参"
     },
-    { "file": "packages/client/src/scenes/menus.ts", "line": 90, "texts": ["好的"], "note": "CreditsScene 的 stoneButton label" },
-    { "file": "packages/client/src/scenes/menus.ts", "line": 124, "texts": ["恭喜！"], "note": "CompleteScene 标题（TempleScene:233 可在进房前 launch）" },
-    { "file": "packages/client/src/scenes/menus.ts", "line": 125, "texts": ["你完成了全部挑战"], "note": "CompleteScene 副标" },
-    { "file": "packages/client/src/scenes/menus.ts", "line": 127, "texts": ["好的"], "note": "CompleteScene 的 stoneButton label" },
-    { "file": "packages/client/src/scenes/TempleScene.ts", "line": 208, "texts": ["返回"], "note": "BackButton label" },
-    { "file": "packages/client/src/scenes/TempleScene.ts", "line": 237, "texts": ["显示关卡数"], "note": "右下切换钮" },
+    { "file": "packages/client/src/scenes/menus.ts", "line": 91, "texts": ["好的"], "note": "CreditsScene 的 stoneButton label" },
+    { "file": "packages/client/src/scenes/menus.ts", "line": 125, "texts": ["恭喜！"], "note": "CompleteScene 标题（TempleScene:233 可在进房前 launch）" },
+    { "file": "packages/client/src/scenes/menus.ts", "line": 126, "texts": ["你完成了全部挑战"], "note": "CompleteScene 副标" },
+    { "file": "packages/client/src/scenes/menus.ts", "line": 128, "texts": ["好的"], "note": "CompleteScene 的 stoneButton label" },
+    { "file": "packages/client/src/scenes/TempleScene.ts", "line": 209, "texts": ["返回"], "note": "BackButton label" },
+    { "file": "packages/client/src/scenes/TempleScene.ts", "line": 238, "texts": ["显示关卡数"], "note": "右下切换钮" },
     { "file": "packages/client/src/scenes/transition.ts", "line": 26, "texts": ["Loading...", "Loading", "Loading.", "Loading.."], "note": "DOTS 数组 → transition.ts:76 的 label.text 赋值" },
     { "file": "packages/client/src/scenes/transition.ts", "line": 43, "texts": ["Loading..."], "note": "FadeScene 初始 label" }
   ],
   "dynamic": [
-    { "file": "packages/client/src/scenes/TempleScene.ts", "line": 186, "chars": "0123456789", "note": "String(lv.id)：1..48，静态取全体数字" }
+    { "file": "packages/client/src/scenes/TempleScene.ts", "line": 187, "chars": "0123456789", "note": "String(lv.id)：1..48，静态取全体数字" }
   ]
 }

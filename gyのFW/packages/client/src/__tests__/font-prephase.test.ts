@@ -40,9 +40,9 @@ const IN_ROOM_FILES = ["packages/client/src/scenes/GameScene.ts", "packages/clie
 const PRE_ROOM_SITES = 12;
 /** 参数化实参的位图字：字形来源由 prephase-chars.json 的调用侧声明交代 */
 const PARAMETERISED = [
-  "packages/client/src/scenes/menus.ts:52", // text ← toggleRow 实参（menus.ts:62/63 声明）
-  "packages/client/src/scenes/menus.ts:85", // line ← lines 数组（menus.ts:81 声明）
-  "packages/client/src/scenes/TempleScene.ts:186", // String(lv.id) → dynamic 数字
+  "packages/client/src/scenes/menus.ts:53", // text ← toggleRow 实参（menus.ts:63/64 声明）
+  "packages/client/src/scenes/menus.ts:86", // line ← lines 数组（menus.ts:82 声明）
+  "packages/client/src/scenes/TempleScene.ts:187", // String(lv.id) → dynamic 数字
 ];
 /** 今日 font.fnt 里没有字形的进房前字符：本来就画空白，本轮不改表现 */
 const NO_GLYPH_TODAY = ".L乐于你全刻原员喜基复恭战挑效本版置设部音".split("");
