@@ -296,12 +296,22 @@ export class TempleScene extends Phaser.Scene {
 
   /** 烘焙产物入纹理系统并按 oracle 层序铺放（底影→全树→进度，全部低于节点按钮） */
   private applyTreeTextures(r: TreeBakeResult, W: number, H: number): void {
-    for (const key of Object.values(TREE_TEX)) {
-      if (this.textures.exists(key)) this.textures.remove(key);
+    // 纹理绑定：已指着同一张烘焙 canvas 就整段跳过（r14 件D，与 buildGround 的
+    // bound 免重传同款）。场景 shutdown 不带走 game 级纹理，因此结果缓存命中重进时
+    // 三张 1036×864 仍在纹理里——省掉 remove+addCanvas 的三次 texImage2D 全幅重传
+    // 与随之而来的一帧卡顿。canvas 被 LRU 逐出（width 归零）时必然伴随新对象，
+    // 身份不等 → 照旧重绑。
+    const binds: Array<[string, HTMLCanvasElement]> = [
+      [TREE_TEX.big, r.canvases.big],
+      [TREE_TEX.all, r.canvases.all],
+      [TREE_TEX.done, r.canvases.done],
+    ];
+    for (const [key, canvas] of binds) {
+      const tex = this.textures.exists(key) ? this.textures.get(key) : null;
+      if (tex && tex.source[0]?.image === canvas) continue;
+      if (tex) this.textures.remove(key);
+      this.textures.addCanvas(key, canvas);
     }
-    this.textures.addCanvas(TREE_TEX.big, r.canvases.big);
-    this.textures.addCanvas(TREE_TEX.all, r.canvases.all);
-    this.textures.addCanvas(TREE_TEX.done, r.canvases.done);
     this.add.image(W / 2, H / 2, TREE_TEX.big).setDepth(-7);
     this.add.image(W / 2, H / 2, TREE_TEX.all).setDepth(-6);
     this.add.image(W / 2, H / 2, TREE_TEX.done).setDepth(-5);

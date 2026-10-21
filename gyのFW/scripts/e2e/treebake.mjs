@@ -8,7 +8,8 @@
  *
  * 口径：对 tree-big/tree-all/tree-done 三张 canvas 逐像素求 FNV-1a 混合和 + 尺寸 +
  * 非透明计数；同时阳性对照（把某层亮度整体 +1 必须使指纹变化）。
- * 另断言二次进入（结果缓存命中路径）指纹与首入逐位一致、且零重烘（烘样=0）。
+ * 另断言二次进入（结果缓存命中路径）指纹与首入逐位一致、零重烘（烘样=0）、
+ * 且零重传（同一张 canvas 仍在原键上，r14 件D）。
  *
  * 用法：
  *   node scripts/e2e/treebake.mjs            # 校验（对 fixtures/tree-layers.json）
@@ -83,6 +84,29 @@ try {
   const jobsAfter = await page.evaluate(() => globalThis.__fwTreeStats?.().jobs ?? -1);
   check("重进走缓存：无在飞任务", jobsBefore === 0 && jobsAfter === 0, `jobs ${jobsBefore}→${jobsAfter}`);
   check("重进指纹与首入逐位一致", JSON.stringify(first) === JSON.stringify(again));
+
+  // r14 件D（重进免重传）：命中缓存的重进必须跳过 remove+addCanvas——同一张烘焙
+  // canvas 仍绑在原键上。canvas 上打标记 + 计数 remove，两条一起断：
+  // 标记还在 ⇒ 绑的就是首入那张（不是新建的第二张），remove=0 ⇒ 没有全幅 texImage2D 重传。
+  const skip = await page.evaluate(async (keys) => {
+    for (const k of keys) globalThis.__fw.textures.get(k).source[0].image.__r14tag = 1;
+    globalThis.__rm = 0;
+    const tm = globalThis.__fw.textures;
+    const orig = tm.remove.bind(tm);
+    tm.remove = (key) => {
+      const name = typeof key === "string" ? key : key?.key;
+      if (keys.includes(name)) globalThis.__rm++;
+      return orig(key);
+    };
+    globalThis.__fw.scene.getScene("Temple").scene.restart();
+    await new Promise((res) => setTimeout(res, 800));
+    return {
+      tagged: keys.every((k) => globalThis.__fw.textures.get(k).source[0].image.__r14tag === 1),
+      removes: globalThis.__rm,
+    };
+  }, KEYS);
+  check("重进免重传：同 canvas 仍在原键且零 remove", skip.tagged && skip.removes === 0,
+    `同对象 ${skip.tagged} 重传 remove=${skip.removes}`);
 
   // 阳性对照：改一个不透明像素必须使指纹变化（否则上面的"一致"毫无意义）。
   // 注意只能改 alpha>127 的像素——全透明像素的 RGB 在 Chromium 读回时被归零，改它测不出差异。
