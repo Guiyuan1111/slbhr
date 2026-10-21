@@ -225,6 +225,12 @@ node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>              
 - `scripts/png-raw.mjs`：零依赖 PNG 原始样本层（inflate IDAT + 反滤波 0–4 → RGBA；重编码保留非 IDAT/IEND 辅助块）。
   r17 先用于 DOM 皮肤裁片对拍，r18 起字体子集自证也走它——**"`magick compare` AE=0" 不能充当"字节没变"的证明**：
   两侧同过一套色彩管理，±1 级量化差会被抹平，"看着无损"不等于"存着无损"。
+- `scripts/png-opt.mjs`：PNG **无损**重压缩执行器（r20 件3 候选）。干跑列出逐文件前后与合计，`--apply` 写盘，
+  `--check` 做幂等核验。安全边界由脚本自证而非口头承诺：每个文件写盘前后各解一次码做**逐字节 RGBA 比对**，
+  并核对非 IDAT 块序，不过即拒写并非零退出；只受理 8bit 无交错 RGBA(color=6)，color=2 一律跳过
+  （解码器会把 RGB 展成 RGBA，那属于改像素格式不是改压缩参数）。本仓实测 14 张 4322KB→4175KB（省 147.6KB）。
+  **顺带记下两条否掉的路线**：调色板化要求 distinct RGBA ≤256，实测本仓 14 张最少 1273、最多 15575，全部超标；
+  再往下只能量化（有损）。
 - `scripts/e2e/prephase-canvas.mjs`：**前场画布逐像素门禁**（r18 起）。"进房前"这一段
   （Menu/Temple/Settings/Credits）此前没有任何画布面：visual-diff 只拍 Game 的 forest_01 战斗帧、
   domskin 把画布摘掉、journey 只看 textContent——所以"把 `font.png` 换成子集"这种动整个前场
