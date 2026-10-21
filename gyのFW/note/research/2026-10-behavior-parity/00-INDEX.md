@@ -70,8 +70,8 @@
 | 8 | **选关树滤镜残余四处**（0.3.35 落地余项）：①水平仿射 ~1.5e-3+0.25px＝FilterTexture texel 1037 vs 逻辑 1036.8 回贴映射假说，未做机理级证明（不影响门禁，门禁按经验仿射对齐）②边缘带 ~2.4% 像素 >10 亚像素相位（双方同族色）③中线 ±2 窗 18 点未中（±10 门禁全过，信息性）④金层近边采样认知已修正（记录性） | 37 号档 §7.3-7.4（`fa17e12`）+handoff 2026-10-20 滤镜条目 ③ | 待核（低优先，门禁已过） |
 | 9 | **选关树按钮层三小件**：锁图标视觉与 oracle 石钻观感差异、NewSign **已实现（0.3.39 `985914a`，fw-played-v1+markPlayed，oracle setPlayed :1935016 同语义）**、BackButton 微位——37 号档记录「维持不动」，是否立项 UI 校准轮待裁 | 37 号档 §3.1/§7.4-4（`fa17e12`）+handoff 2026-10-19 ② | 待用户裁决 |
 | 10 | **连接面板方向 A 遗留小件**：①连接失败横幅 raw 错误串直通（如 "[object ProgressEvent]"，0.3.32 同款 catch 行为，非回归）②<560px 回流皮石纹边中段拉伸与 74px 角片比例失配（小屏不显眼；若立项可换方向 C 双门布局，同套帧坐标资产直接复用） | connect-ui README §既有问题/§遗留（`31a277d`）+handoff 2026-10-19 ⑤；最近验证=10-20 无后续收口（2026-10-20 复查） | ①待实施（低优先）②待用户裁决 |
-| 11 | **官方素材二进制再编码（冷启动 88.8% 字节的面额）**：15 个 ≥64KB 未压缩响应合计 **6148.5KB**（`font.png` 1600.6 / `LevelMusic` 1285.4 / 四张图集 PNG 1814.1 / 其余音频），br/gzip 对其无效。候选=图集 PNG→WebP-lossless 或 AVIF-lossless、MP3 重压。**损像素/损听感与老浏览器解码面**，属兼容性红线；已排除的旁路：`font.png` 裁剪（alpha 包围盒 98.7%）、调色板化（6264 唯一 RGBA 色）、libpng L9（≈现产物尺寸）、字形子集（−5.2% 低于 20% 停线） | r15 报告 §二/§七（[2026-10-21-r15-cold-start-transfer.md](../../report/perf/2026-10-21-r15-cold-start-transfer.md)）+快照 `benchmark/results/load-r15-after.json` 逐 URL 账；工具可用性本机已核实 | **待用户裁决**（未擅自动手） |
-| 12 | **战役 r12–r15 剩余挂账**：①进房段一次性 22req/2.87MB 中 `LevelMusicFinish/Over/_speed` 四轨 **500.6KB** 属结算/速度模式才用却压在开局关键路径（分池 ≈17%）②perf-load **隧道节流档**（`--rtt`/CDP emulate）未实现，r15 的字节收益仍靠换算而非实测延迟 ③真机 GPU 口径 `texMB`/烘焙峰值、`prepareGround/buildGround` 命中计数 ④换关链剩余 ≈45ms（Game 场景创建与图集取用）⑤服务端 tick 侧候选 ⑥LAN 剪贴板/BGM 听感/真机触屏弱网手测 | 总账 §九～§十二「剩余挂账」+ 各轮报告 §挂账；r16 候选证据=r15 报告 §七 | ①②③④⑤待实施/待核 ⑥待用户手测 |
+| 11 | **官方素材二进制再编码（冷启动 88.8% 字节的面额）**：15 个 ≥64KB 未压缩响应合计 **6148.5KB**（`font.png` 1600.6 / `LevelMusic` 1285.4 / 四张图集 PNG 1814.1 / 其余音频），br/gzip 对其无效。候选=图集 PNG→WebP-lossless 或 AVIF-lossless、MP3 重压。**损像素/损听感与老浏览器解码面**，属兼容性红线；已排除的旁路：`font.png` 裁剪（alpha 包围盒 98.7%）、调色板化（6264 唯一 RGBA 色）、libpng L9（≈现产物尺寸）、字形子集（−5.2% 低于 20% 停线） | r15 报告 §二/§七（[2026-10-21-r15-cold-start-transfer.md](../../report/perf/2026-10-21-r15-cold-start-transfer.md)）+快照 `benchmark/results/load-r15-after.json` 逐 URL 账；**r16 件A 后**：speed 关不再取 general 族（`LevelMusic` 1285.4 已离路径），general 关仍付这支；工具可用性本机已核实 | **待用户裁决**（未擅自动手） |
+| 12 | **战役 r12–r16 剩余挂账**：①~~进房段 `LevelMusicFinish/Over/_speed` 四轨 500.6KB 按相位分池~~ **r16 改按关卡类型分族收口**（`ac0516f`：general −176.7KB / speed −1449.4KB），而"按相位推迟取结算轨"的件B **判负不做**——弱网下 `won`/`gameover` 到达时轨可能真缺席＝行为回归，弱网手测未做 ②perf-load **隧道节流档**（`--rtt`/CDP emulate）未实现，r15/r16 的字节收益仍靠换算而非实测延迟（speed 关 −1449KB 在 2Mbps ≈ 少等 5.8s）③真机 GPU 口径 `texMB`/烘焙峰值、`prepareGround/buildGround` 命中计数 ④换关链剩余 ≈45ms（Game 场景创建与图集取用）⑤服务端 tick 侧候选 ⑥LAN 剪贴板/BGM 听感/真机触屏弱网手测 ⑦**r17 候选**：四张图集 PNG 的分场景装载（temple 态用不到 game 图集，反之亦然） | 总账 §九～§十三「剩余挂账」+ 各轮报告 §挂账；r17 候选证据=r16 报告 §八 | ②③④⑤⑦待实施/待核 ⑥待用户手测 |
 
 ### 3.2 销账区（旧条目/查核项已收口，保可追溯）
 
@@ -84,7 +84,7 @@
 | census 防护网首跑 88/89（2026-10-20 重提取查核项，原疑挂账） | 非挂账：换肤新文案按设计触发 font census 防护网，按 census.ts 自述刷新 used-chars 247→248 即绿（client 源字符 395→527、fnt 交集 247→248） | `3808338` |
 | 发版 tag 惯例（重提取初版挂账 #11，源自文档审计观察项"tag 止于 0.3.9"） | 已收口：该观察系抽样误读（`git tag -l` 字典序+tail -5 遮蔽 0.3.10–0.3.31 段），实际一直有 tag；缺口仅 0.3.32–0.3.35 且远端已在（并行工作流所打），本地重打与之冲突→删本地重复+fetch 收敛；现 0.3.1–0.3.35 全覆盖（36 tag）、本地=远端逐标签一致、四标签均锚定正确发版提交（8e71487/477cec0/44be8f1/92f7fc3）；惯例=今后每版发版随手打注解 tag 并推送 | 无代码面（git tag 收敛核验 2026-10-20，本地/远端 diff 为空） |
 
-## §4 性能优化战役速查（2026-10-18/19 七轮 + 2026-10-20 r8–r11 续账 + 2026-10-21 r12–r15，perfsum 槽补录·主会话续记）
+## §4 性能优化战役速查（2026-10-18/19 七轮 + 2026-10-20 r8–r11 续账 + 2026-10-21 r12–r16，perfsum 槽补录·主会话续记）
 
 > 行为复刻战役之外的姊妹战役：七轮 22 件（含两件负结论测量件）全部位级中性（det 48/48 锚=det-r0-baseline + fixtures 6/6 + patch 字节逐字不变贯穿），r8–r11 四轮续账（0.3.34 收账，零生产 diff 面）同纪律，本节只做导航，数字以各轮报告与 `benchmark/results/` 快照为准。总账：[note/report/perf/2026-10-18-campaign-summary.md](../../report/perf/2026-10-18-campaign-summary.md)。
 
@@ -106,6 +106,7 @@
 | r13 换关链 | [2026-10-21-r13-advance-chain-prefetch](../../report/perf/2026-10-21-r13-advance-chain-prefetch.md) | 地面字节记账 LRU(24MB) + won 后预取预烘下一关 + 同 canvas 免纹理重传：烘焙 71.4→16.9ms、链内网络 35.7→0（8/8）、点继续→可玩 1239.6→1045.0ms；**帧内分配线判至库内地板结案** | `47c4e18`+`09c6c13`+`9cd0c3a` |
 | r14 驻留内存 | [2026-10-21-r14-temple-resident-memory](../../report/perf/2026-10-21-r14-temple-resident-memory.md) | 烘焙逐层流水线+分带收尾、树纹理重进免重传、离房清地面 LRU、levelCache 有界(4)：在飞峰 33.31→11.97MB、冷烘流水 −33.4%、重进 15.6→5.5MB/次、离房驻留 33.5→28.6MB；新金样门禁 `treebake.mjs` | `e02fe86`+`9412c62`+`62bf35f`+`6cbef64`+`626bf80` |
 | r15 传输字节/缓存契约 | [2026-10-21-r15-cold-start-transfer](../../report/perf/2026-10-21-r15-cold-start-transfer.md) | 逐 URL 传输/响应头/集合差归段 + Node 侧条件复验探测；压缩路径补**编码入强 ETag**+304（0.3.21 静默回归）、关卡 API 内容寻址 ETag+br/gzip 协商：API 16.9→1.8KB（−89.3%）、br 带校验器 0/14→15/15、复验探测 6912→0KB | `754d136`+`aede24f`+`a29dde3`+`fbc8ba3` |
+| r16 进房音频分族 | [2026-10-21-r16-audio-family-by-level-type](../../report/perf/2026-10-21-r16-audio-family-by-level-type.md) | 音频清单按 `templeType` 拆 general/speed 族，装载点/暖装只取目标族（对齐原版 `preloadAudioFiles` 语义）：general 关音轨 **2165.3→1988.6KB（−176.7）**、speed 关 **2165.3→715.9KB（−1449.4）**、speed 深链点击→Game 段 **−50.5%**、48 关全逛省 **20.7MB**；驻留 PCM 24.96→21.81/11.44MB；新门禁 `audiofamily.mjs` 14/14；**按相位推迟结算轨判负**（弱网行为回归红线） | `c83c805`+`0496baf`+`58b87f7`+`ac0516f` |
 
 遗留候选与 vendor 必漂禁区清单（SolveTOI/InsertLeaf/goog.base/关节求解序——永挂账不动）见总账报告 §四。
 

@@ -88,6 +88,13 @@ node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>              
   （页面 `performance.now` 与 Node 墙钟不可跨基减法）；`revalidate` 用 **Node `http`+keepAlive**
   对幂等 URL 探测"整份重下 → 带 `If-None-Match` 复验"，避让 `/matchmake/*`（会真建房）、`blob:`、文档 URL。
   页内 `fetch(cache:"no-store")` **不可**用于该探测——Blink 会剥离条件请求头，测得的"仍 200 全量"是仪器伪差。
+  **r16 档位/三段口径**：`--level forest_12` 可选档位（缺省 forest_01，`meta.level` 入快照，`--compare` 遇
+  档位不同会告警——字节类指标跨档位不可直接比）；点击建房时刻取一次**页内时钟**样本 `cold.clickPerfMs`，
+  据此把进房段再切成 `warmPhaseKB`（暖装，`endMs<=clickPerfMs`）与 `postClickKB`（点击→Game），
+  音轨逐条按段归账 `audio.{menuKB,warmKB,postKB,tracks}`。**自动化 harness 里 `warmPhaseKB` 恒 0 是口径特性
+  不是回归**：机器人点击早于暖装启动（页钟 ≈1011ms vs 暖装 +120ms），暖装字节全落进 `postClickKB`。
+  配套门禁 `scripts/e2e/audiofamily.mjs`：本族两支入缓存且在播 / 另一族两支零缓存**零请求** / 类型无关件恒在 /
+  页面零错误——缓存面与请求面双向对账（阳性对照不能靠 `cache.audio.set()`，Phaser 3.90 SoundCache 无此方法）。
 - `perf-sync`：快照路径成本拆解，buildState/syncState 与 ForestRoom.syncState 逐字段同构
   （r1 起机关位姿走 mechanisms 直读，镜像同构）；20Hz 编码；快照 `results/sync-<label>.json`。
   **r4 起生产语义**：encode 后 discardChanges（applyPatches 同款），patch=本网格真增量；
@@ -160,6 +167,11 @@ node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>              
   与其增量——**不 GC 就会把垃圾读成驻留**）、字节分解（`texMB` 逐源 w·h·4、`ground.bytesMB`、
   `tree.resultMB`、DOM/场景对象数）。态序固定：menu 暖装 → temple 首入（冷烘）→ 重进×2（命中）
   → game 开局静止 → 离房后 temple（冷烘），故 `--compare` 直接给同事件前后表。
+  `FW_R14_LEVEL`/`FW_R14_PORT` 可切档位与端口（`meta.level` 入快照）。
+  **`audioMB` 探针勘误（r16）**：`cache.audio` 的枚举入口**只有 `getKeys()`**——账本 `entries` 是 List 包装
+  （own keys 仅 `entries`/`size`），r14 版读不存在的 `.keys`、首版修复读 `Object.keys(entries)` 都恒得 0，
+  故 r14/r15 快照的 `audioMB`/`audioCount` 一律不作数。条目是 `AudioBuffer`，PCM 字节=帧数×声道×4
+  （`bgm_level` 1,575,383 帧×2ch≈12.02MB@48kHz）；这块在 **JS 堆外**，所以 `heapGCMB` 不随音频族增减移动。
   **口径前提（勘误）**：`perf-alloc` 的 `HeapProfiler.startSampling` 对 typed array 大块字节**失明**
   （同次冷烘 `sampledTotal` 0.32MB vs 堆增长 74MB）——小对象归因走采样器，整块 ArrayBuffer/SAT 的账
   只能走本工具的事件级 GC 基线。落定条件须写复合判据 `textures.exists("tree-all") && jobs===0`：
