@@ -12,6 +12,9 @@
 // 所以这里的判据换成"**不许永远不来**"：进房即读登记三态（在缓存／在飞，两者本地读不出区别，
 // 见 perf-load 的 bgmTerminalInWindow），再在 CAP 内轮询等两支落地并**量出窗口长度**，超时即 FAIL。
 // 门内的字节照旧恒在（13 支 sfx 逐键读，不再抽样）。
+// 同一批里的循环曲（LevelMusic 1285.4KB）也走这套口径：4g 实测两支终局曲到齐（进房后 4.6s）时它**还在飞**，
+// 历轮那条"进房即在播"的硬断言在节流档会把设计行为读成回归——故进房即读只登记，
+// 判据改为"CAP 内入缓存"＋"到位后真在播"（后者验 kickBgmLoop 的补起，缺键静音若永不补齐才是真故障）。
 //
 // 用法：node scripts/e2e/audiofamily.mjs [port] [net]
 //   net = off|cable|4g|fast3g|slow3g（缺省 off，口径历轮不变）。加档位不是为了复核契约，而是为了
@@ -108,6 +111,26 @@ async function waitTerminal(page, keys, t0) {
   return Date.now() - t0;
 }
 
+/** 循环曲入缓存的窗口（同一批被 r25 多塞 323.9KB，起点比门内时代晚——量出来才谈代价） */
+async function waitCached(page, key, t0) {
+  try {
+    await page.waitForFunction(({ key: k }) => window.__fw.cache.audio.exists(k), { key }, { timeout: ARRIVE_CAP, polling: 100 });
+  } catch {
+    return null;
+  }
+  return Date.now() - t0;
+}
+
+/** 到位之后**真在播**（补起处理器 kickBgmLoop 的判据）：给两拍让 loader complete 走到补起 */
+async function waitPlayingKey(page, key) {
+  try {
+    await page.waitForFunction(({ key: k }) => { const s = window.__fw.sound.get(k); return !!s && s.isPlaying; }, { key }, { timeout: 5000 * WAIT_SCALE, polling: 100 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** 节流档挂在页面上、导航之前，故整趟装载都按档位付带宽与 RTT（施加路径同 perf-load/charsplay） */
 const mkPage = async () => {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 960 } });
@@ -141,7 +164,14 @@ try {
     const tEntry = Date.now(); // 窗口锚点：started 这一刻起，死亡/通关若发生就落在窗口里
     await page.waitForTimeout(400); // BGM 起播在 create，给一拍让 WebAudio 实例就位
     const st = await probe(page);
-    check(`${level} 开局曲在播（族=${fam}）`, st.playing.includes(on), `playing=${st.playing.join(",") || "无"} mute=${st.soundMute}`);
+    // 开局曲在进房这一刻：off 档沿用历轮口径（进房即在播）；节流档它是门后批里最大的一支
+    // （LevelMusic 1285.4KB，r25 又往同一条批里加了 323.9KB），进房时仍在飞是设计行为（r21 立），
+    // 所以那一带只登记，判据换成下面两条有界断言（入缓存 + 到位后真在播）。
+    if (THROTTLED) {
+      log(`  [${level}] 进房即读 开局曲 ${on}=${st.has[on]} playing=${st.playing.includes(on)}（档 ${NET_NAME}）`);
+    } else {
+      check(`${level} 开局曲在播（族=${fam}）`, st.playing.includes(on), `playing=${st.playing.join(",") || "无"} mute=${st.soundMute}`);
+    }
     if (THROTTLED) {
       const p = await throttleProof(page);
       const fails = [];
@@ -160,7 +190,13 @@ try {
     // 窗口长度 = 进房到两支齐（锚点是 started）。这段里死亡/通关发生 ⇒ 曲子还没到，
     // 失败曲不补起（时刻绑定）、终局曲由 catchUpFinish 补。perf-load 量不到长度，只能靠这里。
     if (windowMs !== null) log(`  [${level}] 终局时刻曲到齐窗口 = 进房后 ${windowMs}ms（档 ${NET_NAME}）`);
+    // 同一条门后批里的循环曲：r25 的代价之一是它被 323.9KB 挤在后面，量出它的入缓存窗口与补起结果
+    const loopMs = await waitCached(page, on, tEntry);
+    check(`${level} 循环曲在 CAP 内入缓存（不许永远不来）`, loopMs !== null, `CAP=${ARRIVE_CAP}ms`);
+    if (loopMs !== null) log(`  [${level}] 循环曲入缓存窗口 = 进房后 ${loopMs}ms（档 ${NET_NAME}）`);
+    const played = await waitPlayingKey(page, on);
     const st2 = await probe(page);
+    check(`${level} 循环曲到位后在播（补起生效，不是永远无声）`, played, `playing=${st2.playing.join(",") || "无"} mute=${st2.soundMute}`);
     check(`${level} 本族两支到达后入缓存`, st2.has[on] && st2.has[fin], `${on}=${st2.has[on]} ${fin}=${st2.has[fin]}`);
     check(`${level} 另一族两支未入缓存（省字节成立）`, !st2.has[offOn] && !st2.has[offFin], `${offOn}=${st2.has[offOn]} ${offFin}=${st2.has[offFin]}`);
     // r22 件1：菜单曲移出 Boot 阻塞批后不再"恒在"——本用例走的是快速建房路径，Menu 在
