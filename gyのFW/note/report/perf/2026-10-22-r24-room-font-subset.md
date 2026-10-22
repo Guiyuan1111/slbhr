@@ -115,8 +115,41 @@ D 更省，但代价落在**行为面**——面板文字要等自己的装载�
 
 ## 一、实施（件1）
 
-TODO：生成器 `scripts/font-subset/build-font-room.mjs` + 口径层 `room.mjs`、产物 `assets/fonts/chinese/font-room.{png,fnt}`、
-`BootScene.loadFontFull()` 换 URL、静态网 `font-room.test.ts`、`scripts/e2e/roomtext.mjs` 逐像素门禁。
+两件 commit：`5a2bf1f`（生成器＋产物＋静态网，产品代码零改动）与 `c4bc9d5`（客户端换装载 URL）。
+
+**口径层 `scripts/font-subset/room.mjs`**：需求＝48 关 `parseLevel` 选中教学层文本 ∪ 9 处行钉字面量 ∪ 2 处动态点
+（时钟 `mmss(clockSec)`、结算板 `padStart(2,"0")` ⇒ `0123456789:`）。行钉在读取时逐行断言，文案一改就抛；
+关卡侧另钉一条不变式——`data/forest/temple.json` 列表与磁盘 `data/*/levels/*.json` 必须一一对应（孤儿关=按关出图会漏）。
+求得 **114 字符，有帧 114／无帧 0**，与件0 的独立量具 `TEMP/r24/census-room.mjs` 互为对照：两份代码各算一遍，
+集合差集为空（`agent-not-in-census=""`、`census-not-in-agent=""`），需求侧不存在"生成器自己说了算"。
+
+**生成器 `scripts/font-subset/build-font-room.mjs`** 照抄 r19 装配断言（区域＝帧矩形 ∪ `ring=4` 环带逐字节、
+未保留声明共指透明块、`pack(spacing=2)` 拒绝 POT 对、占用位图防重叠、逐区域墨迹守恒、fnt 掩掉 x/y/scaleW/scaleH
+后逐行等值＋重解析度量不变）。产物账目与件0 预测逐位相符：
+
+| 项 | 值 | 件0 预测 |
+|---|---|---|
+| 幅面 | 871×1179 | 871×1179 |
+| PNG | 707,913B（691.3KB） | 707,913B |
+| fnt | 30,959B | 30,959B |
+| 墨迹 | 914,743 | 914,743 |
+| 帧密度 | 74.94% | 74.94% |
+| 解码驻留 | 3.92MiB | 4,107,636B |
+
+搬运 925,472 texel，透明块 98×101 承载 146 条未保留声明；260 条 id（261 个 `<char>` 标签，id=32 双条照旧）一条不少，
+`<info>` 逐字相等，PNG 辅助块与块序列与源一致（`IHDR,pHYs,iTXt,cHRM,IEND`）⇒ "像素没变"这句话仍然成立。
+**面额：线上 1631.1KB → 721.6KB（−909.6KB，−55.8%）／驻留 8.56MiB → 3.92MiB（−4.64MiB）**。
+
+**独立核验**（`TEMP/r24/verify-room.mjs`，不调用生成器任何装配代码）：需求内 114 字帧与 ring 环带逐字节相符、
+需求外 144 字全零、授权区重叠像素 0、区外不透明像素 0、260 条声明除 x/y 外逐属性不变 ⇒ 全绿。
+
+**客户端只改一行**：`BootScene.loadFontFull()` 的 URL 换成 `font-room.png/.fnt`（键 `font-full`、全部 `FONT_FULL`
+消费点与三块面板自备装载全不动）。静态网 `font-prephase.test.ts` 的断言随之换向——官方 `font.png`／`font.fnt` 字面量在客户端源码
+里由"各恰好 1 处"改成**必须 0 处**，并新增 `font-room.png`／`font-room.fnt` 各恰好 1 处且成对（只换一边＝用旧坐标读新图的鬼影）。
+`font-room.test.ts`（10 例）钉产物语义与行钉，`split-char-atlas --check`、`reflow-prephase --check`、
+`build-font-room --check` 三处复现门禁均"字节一致 ✓"，`npm run typecheck` 通过，`vitest` 全量 **21 文件／230 例**通过。
+
+房内文本的逐像素门禁 `scripts/e2e/roomtext.mjs` 见 §四。
 
 ## 二、四档 A/B/A 实测
 
