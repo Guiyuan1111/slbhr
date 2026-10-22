@@ -1,22 +1,23 @@
 {
   "meta": {
-    "git": "e02fe86",
-    "date": "2026-10-21T08:51:05.696Z",
+    "git": "8704d4c",
+    "date": "2026-10-22T19:59:03.343Z",
     "viewport": "1280x960",
-    "note": "选关树三层 canvas 的整幅 FNV-1a 指纹（金样）。重取：node scripts/e2e/treebake.mjs --save"
+    "reason": "r35 Menu 图集 1024²→753×577 重打包：mask 帧与 1px 邻域逐字节相同，Chromium 整图相关的缩小采样使 0.6/0.72 首段 mask 绘制差 554px（Δ≤85，全在 mask 矩形内），经 Bevel 阈值放大为 1409px（Δ≤128）；机制与对照见 r35 报告",
+    "note": "选关树三层 canvas 的整幅 FNV-1a 指纹（金样）。重取：node scripts/e2e/treebake.mjs --save --reason \"...\""
   },
   "layers": {
     "tree-big": {
       "w": 1036,
       "h": 864,
-      "fnv": 3784598315,
-      "opaque": 200968
+      "fnv": 3262048718,
+      "opaque": 200967
     },
     "tree-all": {
       "w": 1036,
       "h": 864,
-      "fnv": 64705792,
-      "opaque": 182279
+      "fnv": 2206923419,
+      "opaque": 182277
     },
     "tree-done": {
       "w": 1036,

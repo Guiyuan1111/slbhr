@@ -86,16 +86,17 @@ function walk(dir: string): string[] {
 }
 
 describe("装载 URL 收敛（Slim／Mini PNG + 官方或派生 JSON）", () => {
-  it("BootScene 的图集装载用 *_PNG 常量：庙宇指向 r34 Core，弹窗/菜单指向 Mini/Slim", () => {
+  it("BootScene 的图集装载用 *_PNG/*_JSON 常量：庙宇指向 r34 Core，弹窗/菜单指向 Mini", () => {
     const boot = stripComments(SRC("packages/client/src/scenes/BootScene.ts"));
     expect(boot).toContain('export const ATLAS_TEMPLE_PNG = "/assets/atlasses/Temples/forest/TempleAssetsCore.png"');
     expect(boot).toContain('export const ATLAS_TEMPLE_JSON = "/assets/atlasses/Temples/forest/TempleAssetsCore.json"');
     expect(boot).toContain('export const ATLAS_POPUP_PNG = "/assets/atlasses/PopupAssetsMini.png"');
     expect(boot).toContain('export const ATLAS_POPUP_JSON = "/assets/atlasses/PopupAssetsMini.json"');
-    expect(boot).toContain('export const ATLAS_MENU_PNG = "/assets/atlasses/MenuAssetsSlim.png"');
+    expect(boot).toContain('export const ATLAS_MENU_PNG = "/assets/atlasses/MenuAssetsMini.png"');
+    expect(boot).toContain('export const ATLAS_MENU_JSON = "/assets/atlasses/MenuAssetsMini.json"');
     expect(boot).toContain("load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, ATLAS_TEMPLE_JSON)");
     expect(boot).toContain("load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, ATLAS_POPUP_JSON)");
-    expect(boot).toContain('load.atlas(ATLAS_MENU, ATLAS_MENU_PNG, "/assets/atlasses/MenuAssets.json")');
+    expect(boot).toContain("load.atlas(ATLAS_MENU, ATLAS_MENU_PNG, ATLAS_MENU_JSON)");
   });
 
   it("机关图集不再走整关 Slim：loadGameAtlases 不声明 mech，变体 URL 由运行时 id 拼出", () => {

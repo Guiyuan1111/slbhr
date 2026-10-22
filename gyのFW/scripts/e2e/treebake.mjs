@@ -11,9 +11,17 @@
  * 另断言二次进入（结果缓存命中路径）指纹与首入逐位一致、零重烘（烘样=0）、
  * 且零重传（同一张 canvas 仍在原键上，r14 件D）。
  *
+ * r35：Menu 图集从 1024² 重打包成 753×577（mask 帧矩形与 1px 邻域逐字节不变，`shrink-menu-main --check`
+ * 与静态网双证）。但 Chromium 的 drawImage 缩小采样并不只取决于 src 矩形：同帧同邻域放到另一张
+ * 图（尺寸/绝对坐标/远处内容任一不同）后，0.6/0.72 缩放的首段 mask 绘制会差 554 个像素
+ * （baseScale 1.2；Δ≤85，全部落在 mask 矩形内，矩形外 0），再经 Bevel 阈值放大为三层 canvas 上
+ * 1409 个像素（Δ≤128）。逐条对照实验（POT 补白、平移、改画布尺寸、远处加色块）确认这是
+ * Chromium 图像缩放缓存的采样相位/派生素材与整图相关，不是 mask 内容变化；任何重打包都无法
+ * 位级复现旧图。故 r35 按“有意换金样”重钉，理由进 fixture。
+ *
  * 用法：
  *   node scripts/e2e/treebake.mjs            # 校验（对 fixtures/tree-layers.json）
- *   node scripts/e2e/treebake.mjs --save     # 重取金样（仅在有意改变烘焙语义时）
+ *   node scripts/e2e/treebake.mjs --save --reason "换样理由"   # 重钉金样（必须留理由）
  */
 import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -25,6 +33,11 @@ import { log, startServer } from "./lib.mjs";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const GOLDEN = join(ROOT, "scripts", "e2e", "fixtures", "tree-layers.json");
 const SAVE = process.argv.includes("--save");
+const rIdx = process.argv.indexOf("--reason");
+const REASON = rIdx >= 0 ? process.argv[rIdx + 1] : "";
+if (SAVE && (!REASON || REASON.startsWith("--"))) {
+  throw new Error("--save 必须带 --reason \"为什么这批指纹与上批不同\"（换金样协议）");
+}
 const PORT = Number(process.argv.includes("--port") ? process.argv[process.argv.indexOf("--port") + 1] : 3571);
 const BASE = `http://127.0.0.1:${PORT}`;
 const KEYS = ["tree-big", "tree-all", "tree-done"];
@@ -132,7 +145,8 @@ try {
         git: execSync("git rev-parse --short HEAD", { cwd: ROOT }).toString().trim(),
         date: new Date().toISOString(),
         viewport: "1280x960",
-        note: "选关树三层 canvas 的整幅 FNV-1a 指纹（金样）。重取：node scripts/e2e/treebake.mjs --save",
+        reason: REASON,
+        note: "选关树三层 canvas 的整幅 FNV-1a 指纹（金样）。重取：node scripts/e2e/treebake.mjs --save --reason \"...\"",
       },
       layers: first,
     }, null, 2));
