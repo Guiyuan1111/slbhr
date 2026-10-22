@@ -30,7 +30,7 @@
 
 | 内容 | 位置 |
 |---|---|
-| 性能战役总账（r0–r7 七轮 + §八 r8–r11 + §九 r12 + §十 r13 + §十一 r14 + §十二 r15 + §十三 r16 + §十四 r17 + §十五 r18 + §十六–§二十六 r19–r29） | [report/perf/2026-10-18-campaign-summary.md](report/perf/2026-10-18-campaign-summary.md) + 同目录各轮报告 |
+| 性能战役总账（r0–r7 七轮 + §八 r8–r11 + §九 r12 + §十 r13 + §十一 r14 + §十二 r15 + §十三 r16 + §十四 r17 + §十五 r18 + §十六–§二十七 r19–r30） | [report/perf/2026-10-18-campaign-summary.md](report/perf/2026-10-18-campaign-summary.md) + 同目录各轮报告 |
 | 代码结构分析（2026-10-18 时点快照） | [report/codebase-analysis/](report/codebase-analysis/) |
 
 ## 规划·方法·逆向·证据
