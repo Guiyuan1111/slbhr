@@ -770,3 +770,35 @@ A/C 的 TTFB（106–126／339–387ms）反而暴露了排队差——臂间字
 **下一轮候选**：MenuAssets 同类原地清零（191.5KB）、Popup 主图集画布随 6 帧缩小（驻留侧）、
 机关图集画布随变体帧数缩小（驻留侧，需与 r26 坐标口径一并裁决）、换关链（advance）的 16MiB 重解码代价入账。
 素材再编码（任务 #42）仍是用户保留项，未经裁决不动。
+
+## 二十八、r31 增补（2026-10-22，菜单图集零消费帧原地清零）
+
+> 报告 `2026-10-22-r31-menu-atlas-slim.md`。r30 之后 Boot 阻塞批里只剩 MenuAssets 没清零：60 帧、1024²、
+> 官方 PNG 191.2KB，而 Menu/Settings/Temple/overlays 实际只画 29 帧。本轮沿用 r26/r30 的原地清零口径
+> （像素清零、官方 JSON 与帧坐标不动），留 29 清 31；dark 星碑 4 帧因森林无 dark 关再清，
+> 四张 `*_Bkg_Mask` 底座因 `templeTreeBake` 静态读四前缀保留。四图集至此全部走同一套口径。
+
+| 件 | 内容 | commit | 关键数字 |
+|---|---|---|---|
+| r31 件1 | `build-slim-atlas.mjs` 扩到 MenuAssets：留 33 清 27（旧 UI 族/开关/静音振动/金币锁/`_default`），`BootScene` 只换 URL（装载点、批内顺序、18 条请求不变）；`needs.mjs` 增 `ATLAS_SPECS.menu` 与字面量 PINS，`atlas-slim.test.ts` FROZEN 增加 menu 台账 | `1d46b71` | PNG **195,797→91,721B（−101.6KB，−51.9%）**；60 帧留 33 清 27 |
+| r31 件2 | dark 星碑 4 帧再清（`inspect` 断言森林只有 general/speed/puzzle）；dark 底座保留，树烘焙 9/9 金样复验 | `6f22338` | **91,721→84,297B（再 −7.2KB）**，累计 **−108.9KB／−56.9%**；留 29 清 31（478,985 个不透明像素清零） |
+| r31 件3 | 四档 A/B/A（2 轮/臂）＋驻留 A/B＋运行时接线探针（TEMP） | 快照 `load-r31-ab-{4g,fast3g,slow3g,off}-*`（12 份）、`resident-r31-resident-{a,b}.json` | `menuActiveMs` Δ＝fast3g **−598.0ms**（带 214 的 2.8×，兑现 107.3%）、slow3g **−1717.3ms**（带 99 的 17.3×，96.3%）、4g **−235.0ms**（带 176 的 1.3×，105.4%）；`gameActivePerfMs` fast3g −534.0／slow3g −1756.8，4g +121.5（B 散布 799ms）不作主张；off 两指标带内且 n=2 不主张；Menu 窗三臂 1728→1619KB／18 条，解码 3196→3087KB；稳定档到落定 3357→3249KB／56 条；房内窗 1630KB／38 条三臂一致；驻留六态两臂逐项相同；探针三场景引用 11/29 保留帧全部 alpha>0，清零帧抽样 alpha 0 |
+| r31 件4 | 末轮门禁与文档收口 | `docs` | 20 行门禁全过：typecheck 0 错、六项 `--check` 逐字节（四图集 1278.6→536.0KB）、build `index-CC0imxf6` 104.84KB／gzip 35.73KB、vitest **24 文件/269 例**、det **48/48**、roomtext **6/6·5/5**、canvas 5/5、domskin 4/4、audiofamily 22 项、charsplay 21 项、treebake 9/9、groundcache 6/6、journey 3/3·6/6·4/4·3/3、route 双关 won、regression won=true 零错零缺帧 |
+
+**三条可复用结论**：
+① **清零口径在最后一张 Boot 图集上同样成立，且是纯线上字节收益**：1024² 画布解码 4MiB 不变，驻留六态
+两臂逐项相同（Menu 59.45／temple 74.38／Game 95.35MB）；menuActive 兑现 107.3%／96.3%／105.4%，
+与 r25–r30「门内排队字节按价签兑现」同型。要动驻留必须缩画布，清零本身给不了。
+② **运行时探针只能证明"当前路径没用到"，不能证明"可以删"**：dark 星碑 4 帧在 Menu/Settings/Temple 零引用，
+删除安全的前提是森林 48 关没有 dark 关（`inspect` 断言）——换到有 dark 关的素材线就必须恢复；
+反过来四张 `*_Bkg_Mask` 运行时也没画到，却被 `templeTreeBake` 静态读四前缀、参与三层金样，必须保留。
+清零判据＝运行时遍历 ∪ 静态字面量 ∪ 烘焙依赖，三者缺一不可。
+③ **gameActive 天然继承 Menu 段收益，但弱档会被自身散布吞掉**：fast3g／slow3g 的 gameActive Δ 与
+menuActive Δ 相差 64.0／39.5ms（带内漂移）；4g 臂 B 两轮 8596/9395ms（散布 799ms）把 −235ms 完全淹没，
+同档 menuActive 散布仅 42ms，故只主张 Menu 段。4g 字节窗还混入 chars-play 442.7KB 竞态
+（B round2 到落定 3691KB／55 条、房内窗 2072KB／37 条），按 r30 先例不引房内窗。
+
+**下一轮候选**：Popup 主图集 2048² 画布随 6 帧缩小（驻留侧，需与 r26 坐标口径一并裁决）、
+机关图集画布随变体帧数缩小（同上）、换关链（advance）的 16MiB 重解码代价入账、
+MenuAssets 1024² 画布随 29 帧缩小（驻留侧，先做 bitmap 字相位核验）。
+素材再编码（任务 #42）仍是用户保留项，未经裁决不动。
