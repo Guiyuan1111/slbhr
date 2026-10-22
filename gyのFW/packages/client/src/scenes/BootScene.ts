@@ -59,7 +59,8 @@ export const FONT_MAIN = "font";
 export const FONT_FULL = "font-full";
 export const FONT_ROOM = "font-room";
 /** 带教学文本的关卡（scripts/font-subset/room.mjs 的 tutorialLevels 回算；静态网钉住这份名单）。
- *  选关在进房前才确定，Menu 暖装无法预知 ⇒ r28 起 Menu 不声明房内字体，由 GameScene.preload 选。 */
+ *  选关在进房前才确定，Menu 暖装起步时多半还未知 ⇒ r28 起 Menu 不声明房内字体；但目标是教学关
+ *  且暖装门仍在飞时，main.ts 在关卡定出后把全量变体补进同一批（warmRoomFontFor）。 */
 const TUTORIAL_LEVEL_FILES = ["tutorials/levels/forest_01.json", "forest/levels/forest_bonus_1.json"] as const;
 export function roomFontKey(levelFile?: string | null): string {
   const file = levelFile ?? (globalThis as { __fwInit?: { templeEntry?: { filename?: string } | null } }).__fwInit?.templeEntry?.filename ?? "";
@@ -71,11 +72,11 @@ export function roomFontKey(levelFile?: string | null): string {
  * 静默跳过，fnt 元数据走一次条件复验（0 字节 304），队列空则当场 loadComplete。透明刷新回座时
  * 弹窗可能先于 Game 起步，所以三块面板也各自声明，不能只靠 GameScene 兜底（0.3.43 的
  * `Invalid BitmapText key: font-full` 教训）。
- * r27 的 roomblank 是官方 font.png 未用字形原地清零（坐标/环带/幅面/fnt 全不动，115 处采样等价）；
+ * r27 的 roomblank 是官方 font.png 未用字形原地清零（坐标/环带/幅面/fnt 全不动，114 处采样等价）；
  * r28 按关再切一刀：46 关只需要基础 27 字（209.8KB），教学两关才装 777.0KB 全量。
  */
-export function loadRoomFont(load: Phaser.Loader.LoaderPlugin): void {
-  const key = roomFontKey();
+export function loadRoomFont(load: Phaser.Loader.LoaderPlugin, levelFile?: string | null): void {
+  const key = roomFontKey(levelFile);
   // 两把键互斥（同一张 8,974,336B 解码画布）。正常「结算继续」就会跨变体
   // （forest_01 → forest_02 是同一房间内的 advance 换关），不卸旧键会在一个会话里
   // 叠加第二份解码驻留；本函数只在进房/面板 preload 调用，此刻旧关的 Game 与面板
@@ -118,7 +119,7 @@ export function loadCharsPlay(load: Phaser.Loader.LoaderPlugin): void {
 
 /** 后台暖装落定状态（r5）：MenuScene 启动暖装时登记，进 Game 前等待其落定，
  *  避免「暖装仍在飞 + GameScene 兜底重复拉同一批文件」的双载竞态 */
-let warmState: { done: Promise<void>; resolve: () => void } | null = null;
+let warmState: { done: Promise<void>; resolve: () => void; scene: Phaser.Scene; settled: boolean } | null = null;
 
 /** 暖装期 BGM 族猜测（r16 件A）：暖装发生在 Menu 驻留期，此时目标关卡通常未知，
  *  只能按缺省 general 猜（48 关里 38 关命中）。main.ts 在 temple.json 单例落定后
@@ -177,8 +178,12 @@ export function startBgWarm(scene: Phaser.Scene, opts?: { menuBgm?: boolean }): 
   const done = new Promise<void>((r) => {
     resolve = r;
   });
-  warmState = { done, resolve };
-  const finish = (): void => warmState?.resolve();
+  warmState = { done, resolve, scene, settled: false };
+  const finish = (): void => {
+    if (!warmState) return;
+    warmState.settled = true;
+    warmState.resolve();
+  };
   // r21：关卡循环曲（LevelMusic 1285.4KB）不进落定门——它是"可玩"之前最大的一笔，却没有一帧靠它。
   // 门只等必需集（四图集+房内字体+sfx）。循环曲与两支终局时刻曲（失败曲 159.6KB、本族终局曲
   // 163.7KB／speed 变体 68.9KB，r25）排在**门落定之后**再入队：快速建房/邀请深链那条路上 Menu 在落定后
@@ -234,6 +239,19 @@ export function startBgWarm(scene: Phaser.Scene, opts?: { menuBgm?: boolean }): 
 /** 进 Game 前等待暖装落定（未启动/已落定立即返回；剩余键由 GameScene.preload 兜底） */
 export function bgWarmSettled(): Promise<void> {
   return warmState ? warmState.done : Promise.resolve();
+}
+
+/** 教学目标关的全量房内字体（777.0KB）在关卡定出后补进仍在飞的暖装门。
+ *  暖装起步时按键位多半未知，只能由主流程拿到 `templeEntry.filename` 后补声明；教学关的这份
+ *  大字体放在门内与其余必需集并行（与 r27 前的窗口一致），否则会落到门后 GameScene.preload
+ *  独占管道（补齐前的对照实测 4g +0.4s，按字节价 slow3g 约 +8s）。非教学关保持门后只装 210.1KB 基础集；
+ *  暖装已落定/未启动时 no-op，由 GameScene.preload 照常兜底（与 r28 前邀请深链路径一致）。 */
+export function warmRoomFontFor(levelFile?: string | null): void {
+  if (!warmState || warmState.settled) return;
+  if (roomFontKey(levelFile) !== FONT_FULL) return;
+  if (!warmState.scene.sys.isActive()) return;
+  loadRoomFont(warmState.scene.load, levelFile);
+  warmState.scene.load.start();
 }
 
 export class BootScene extends Phaser.Scene {

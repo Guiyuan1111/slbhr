@@ -352,6 +352,14 @@ describe("在库产物：两个变体都按原地清零语义（坐标/幅面/fn
     // 双键互斥：跨变体换关（forest_01 → forest_02 的「继续」）不得在同一会话叠两份 8.97MB 解码
     expect(boot.includes("const stale = key === FONT_FULL ? FONT_ROOM : FONT_FULL;")).toBe(true);
     expect(boot.includes("if (load.scene.textures.exists(stale)) load.scene.textures.remove(stale);")).toBe(true);
+    // 教学目标关：777KB 全量字体必须在暖装门仍开时补进同一批，不得落到门后独占管道
+    expect(boot.includes("export function warmRoomFontFor(levelFile?: string | null): void {")).toBe(true);
+    expect(boot.includes("if (roomFontKey(levelFile) !== FONT_FULL) return;")).toBe(true);
+    expect(boot.includes("loadRoomFont(warmState.scene.load, levelFile);")).toBe(true);
+    const main = stripComments(SRC("packages/client/src/main.ts"));
+    const warmCall = main.indexOf("warmRoomFontFor(currentTempleEntry?.filename);");
+    expect(warmCall, "main.ts 未在关卡定出后补声明教学目标字体").toBeGreaterThan(-1);
+    expect(main.indexOf("await bgWarmSettled();"), "补声明必须早于暖装门等待").toBeGreaterThan(warmCall);
     // 官方全量 font.png 在客户端源码里必须已无任何引用
     expect(stripComments(boot).match(/fonts\/chinese\/font\.png/g)).toBeNull();
   });

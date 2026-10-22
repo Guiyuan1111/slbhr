@@ -12,7 +12,7 @@ import { parseLevel, type LevelData } from "@fw/shared/level2";
 import { Net, type NetCallbacks } from "./net";
 import { KeyboardInput } from "./input";
 import { TouchControls } from "./touch";
-import { BootScene, bgWarmSettled, setWarmBgmFamily } from "./scenes/BootScene";
+import { BootScene, bgWarmSettled, setWarmBgmFamily, warmRoomFontFor } from "./scenes/BootScene";
 import { MenuScene } from "./scenes/MenuScene";
 import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
@@ -447,6 +447,8 @@ async function enterGame(): Promise<void> {
   // 网络任务驱动不依赖帧循环，睡眠可覆盖整个 fetch 段；而 bgWarmSettled 的 Loader
   // 队列处理与场景切换都挂在帧循环上，必须先醒。wake() 在合成侧的"补账"（积压
   // 的一帧重合成）随场景切换一并发生，不再插进 fetch 段（实测早醒会拖慢 fetch）。
+  // r28：教学目标关的全量字体在关卡定出后补进仍在飞的暖装门（非教学关 no-op）
+  warmRoomFontFor(currentTempleEntry?.filename);
   phaser?.loop.wake();
   await bgWarmSettled();
   // 切入游戏场景（Game 若已在跑则重启以载入关卡数据）；黑幕包络
