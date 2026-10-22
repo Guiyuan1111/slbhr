@@ -1,0 +1,4042 @@
+{
+  "meta": {
+    "label": "r26-ab-slow3g-b",
+    "git": "6c38772",
+    "date": "2026-10-22T07:30:56.160Z",
+    "node": "v22.22.1",
+    "level": "forest_01",
+    "net": "slow3g(rtt=400ms down=62500B/s up=62500B/s)",
+    "netDesc": "Lighthouse Slow 3G 0.5Mbps↓↑ · 400ms"
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "cold": {
+        "domContentLoadedMs": 10526,
+        "phaserReadyMs": 10695,
+        "menuActiveMs": 30350,
+        "resources": {
+          "count": 18,
+          "totalTransferKB": 1727,
+          "totalDecodedKB": 3192,
+          "byType": {
+            "script": {
+              "n": 3,
+              "transferKB": 370.876953125,
+              "decodedKB": 1672.4482421875
+            },
+            "img": {
+              "n": 1,
+              "transferKB": 106.7861328125,
+              "decodedKB": 106.4931640625
+            },
+            "css": {
+              "n": 1,
+              "transferKB": 80.4755859375,
+              "decodedKB": 80.1826171875
+            },
+            "fetch": {
+              "n": 1,
+              "transferKB": 1.62109375,
+              "decodedKB": 9.4892578125
+            },
+            "xmlhttprequest": {
+              "n": 12,
+              "transferKB": 1166.876953125,
+              "decodedKB": 1323.5498046875
+            }
+          },
+          "items": [
+            {
+              "url": "/assets/index-CL_bTxBJ.js",
+              "type": "script",
+              "transferKB": 32.4,
+              "decodedKB": 99,
+              "startMs": 790,
+              "endMs": 3788,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/colyseus-BEjLCa9D.js",
+              "type": "script",
+              "transferKB": 39,
+              "decodedKB": 125.9,
+              "startMs": 790,
+              "endMs": 4268,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/phaser-BMeCXOGt.js",
+              "type": "script",
+              "transferKB": 299.5,
+              "decodedKB": 1447.6,
+              "startMs": 790,
+              "endMs": 10364,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "type": "img",
+              "transferKB": 106.8,
+              "decodedKB": 106.5,
+              "startMs": 812,
+              "endMs": 7196,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/dom/dom-skin.png",
+              "type": "css",
+              "transferKB": 80.5,
+              "decodedKB": 80.2,
+              "startMs": 813,
+              "endMs": 6333,
+              "phase": "menu"
+            },
+            {
+              "url": "/data/forest/temple.json",
+              "type": "fetch",
+              "transferKB": 1.6,
+              "decodedKB": 9.5,
+              "startMs": 10519,
+              "endMs": 10965,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/PreloaderAssets.png",
+              "type": "xmlhttprequest",
+              "transferKB": 33.3,
+              "decodedKB": 33,
+              "startMs": 10672,
+              "endMs": 13796,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/PreloaderAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 1.1,
+              "decodedKB": 0.8,
+              "startMs": 10672,
+              "endMs": 11134,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsMenu.png",
+              "type": "xmlhttprequest",
+              "transferKB": 152.4,
+              "decodedKB": 152.1,
+              "startMs": 10672,
+              "endMs": 23515,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsMenu.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0.8,
+              "decodedKB": 15.5,
+              "startMs": 10673,
+              "endMs": 11084,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/MenuAssets.png",
+              "type": "xmlhttprequest",
+              "transferKB": 191.5,
+              "decodedKB": 191.2,
+              "startMs": 10673,
+              "endMs": 25437,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/MenuAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 1.3,
+              "decodedKB": 12.3,
+              "startMs": 10673,
+              "endMs": 11445,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/fonts/chinese/font-prephase.png",
+              "type": "xmlhttprequest",
+              "transferKB": 242.7,
+              "decodedKB": 242.4,
+              "startMs": 10673,
+              "endMs": 27357,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/fonts/chinese/font-prephase.fnt",
+              "type": "xmlhttprequest",
+              "transferKB": 2.8,
+              "decodedKB": 30,
+              "startMs": 10673,
+              "endMs": 11756,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/TempleHallForest.jpg",
+              "type": "xmlhttprequest",
+              "transferKB": 417,
+              "decodedKB": 416.7,
+              "startMs": 10673,
+              "endMs": 30308,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/Beam.png",
+              "type": "xmlhttprequest",
+              "transferKB": 63.4,
+              "decodedKB": 63.1,
+              "startMs": 10673,
+              "endMs": 18404,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 106.5,
+              "startMs": 10673,
+              "endMs": 18933,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/branding/branding_logo_kizi.png",
+              "type": "xmlhttprequest",
+              "transferKB": 60.4,
+              "decodedKB": 60.1,
+              "startMs": 10674,
+              "endMs": 19964,
+              "phase": "menu"
+            }
+          ],
+          "dupUrls": [
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "n": 2,
+              "wireFetches": 2,
+              "transfersKB": [
+                106.8,
+                0.3
+              ],
+              "restKB": 0.3,
+              "doubleDownload": false
+            }
+          ],
+          "throttleProbe": {
+            "netRequests": 18,
+            "ttfbMinMs": 3.3,
+            "ttfbMedianMs": 30.1,
+            "ttfbMaxMs": 7732.5,
+            "largestBytesMs": 18859.9,
+            "largestKB": 417,
+            "largestUrl": "/assets/images/TempleHallForest.jpg",
+            "windowMs": 29518,
+            "wireKBTotal": 1727,
+            "wireBytesTotal": 1768076
+          },
+          "domContentLoadedMs": 10519,
+          "menuKB": 1727,
+          "gamePhaseKB": 2752,
+          "warmPhaseKB": 0,
+          "postClickKB": 2752,
+          "pendingCount": 0,
+          "pendingUrls": []
+        },
+        "gameActiveAfterClickMs": 47301,
+        "clickPerfMs": 30563,
+        "resourcesAfterGame": {
+          "count": 57,
+          "totalTransferKB": 4478,
+          "totalDecodedKB": 6383,
+          "byType": {
+            "script": {
+              "n": 3,
+              "transferKB": 370.876953125,
+              "decodedKB": 1672.4482421875
+            },
+            "img": {
+              "n": 1,
+              "transferKB": 106.7861328125,
+              "decodedKB": 106.4931640625
+            },
+            "css": {
+              "n": 1,
+              "transferKB": 80.4755859375,
+              "decodedKB": 80.1826171875
+            },
+            "fetch": {
+              "n": 5,
+              "transferKB": 5.251953125,
+              "decodedKB": 32.5224609375
+            },
+            "xmlhttprequest": {
+              "n": 47,
+              "transferKB": 3914.806640625,
+              "decodedKB": 4490.994140625
+            }
+          },
+          "items": [
+            {
+              "url": "/assets/index-CL_bTxBJ.js",
+              "type": "script",
+              "transferKB": 32.4,
+              "decodedKB": 99,
+              "startMs": 790,
+              "endMs": 3788,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/colyseus-BEjLCa9D.js",
+              "type": "script",
+              "transferKB": 39,
+              "decodedKB": 125.9,
+              "startMs": 790,
+              "endMs": 4268,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/phaser-BMeCXOGt.js",
+              "type": "script",
+              "transferKB": 299.5,
+              "decodedKB": 1447.6,
+              "startMs": 790,
+              "endMs": 10364,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "type": "img",
+              "transferKB": 106.8,
+              "decodedKB": 106.5,
+              "startMs": 812,
+              "endMs": 7196,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/dom/dom-skin.png",
+              "type": "css",
+              "transferKB": 80.5,
+              "decodedKB": 80.2,
+              "startMs": 813,
+              "endMs": 6333,
+              "phase": "menu"
+            },
+            {
+              "url": "/data/forest/temple.json",
+              "type": "fetch",
+              "transferKB": 1.6,
+              "decodedKB": 9.5,
+              "startMs": 10519,
+              "endMs": 10965,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/PreloaderAssets.png",
+              "type": "xmlhttprequest",
+              "transferKB": 33.3,
+              "decodedKB": 33,
+              "startMs": 10672,
+              "endMs": 13796,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/PreloaderAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 1.1,
+              "decodedKB": 0.8,
+              "startMs": 10672,
+              "endMs": 11134,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsMenu.png",
+              "type": "xmlhttprequest",
+              "transferKB": 152.4,
+              "decodedKB": 152.1,
+              "startMs": 10672,
+              "endMs": 23515,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsMenu.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0.8,
+              "decodedKB": 15.5,
+              "startMs": 10673,
+              "endMs": 11084,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/MenuAssets.png",
+              "type": "xmlhttprequest",
+              "transferKB": 191.5,
+              "decodedKB": 191.2,
+              "startMs": 10673,
+              "endMs": 25437,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/MenuAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 1.3,
+              "decodedKB": 12.3,
+              "startMs": 10673,
+              "endMs": 11445,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/fonts/chinese/font-prephase.png",
+              "type": "xmlhttprequest",
+              "transferKB": 242.7,
+              "decodedKB": 242.4,
+              "startMs": 10673,
+              "endMs": 27357,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/fonts/chinese/font-prephase.fnt",
+              "type": "xmlhttprequest",
+              "transferKB": 2.8,
+              "decodedKB": 30,
+              "startMs": 10673,
+              "endMs": 11756,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/TempleHallForest.jpg",
+              "type": "xmlhttprequest",
+              "transferKB": 417,
+              "decodedKB": 416.7,
+              "startMs": 10673,
+              "endMs": 30308,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/Beam.png",
+              "type": "xmlhttprequest",
+              "transferKB": 63.4,
+              "decodedKB": 63.1,
+              "startMs": 10673,
+              "endMs": 18404,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 106.5,
+              "startMs": 10673,
+              "endMs": 18933,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/branding/branding_logo_kizi.png",
+              "type": "xmlhttprequest",
+              "transferKB": 60.4,
+              "decodedKB": 60.1,
+              "startMs": 10674,
+              "endMs": 19964,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/audio/s/MenuMusic",
+              "type": "xmlhttprequest",
+              "transferKB": 150.1,
+              "decodedKB": 149.8,
+              "startMs": 30565,
+              "endMs": 44853,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsEntry.png",
+              "type": "xmlhttprequest",
+              "transferKB": 28.6,
+              "decodedKB": 28.3,
+              "startMs": 30565,
+              "endMs": 33428,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsEntry.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0.6,
+              "decodedKB": 2.2,
+              "startMs": 30567,
+              "endMs": 30981,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/GroundAssets.png",
+              "type": "xmlhttprequest",
+              "transferKB": 93,
+              "decodedKB": 92.7,
+              "startMs": 30567,
+              "endMs": 39644,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/GroundAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 2.5,
+              "decodedKB": 66.3,
+              "startMs": 30567,
+              "endMs": 31148,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/MechAssetsSlim.png",
+              "type": "xmlhttprequest",
+              "transferKB": 153.2,
+              "decodedKB": 152.9,
+              "startMs": 30567,
+              "endMs": 45164,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/MechAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 2.2,
+              "decodedKB": 32.8,
+              "startMs": 30567,
+              "endMs": 31604,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/Temples/forest/TempleAssetsSlim.png",
+              "type": "xmlhttprequest",
+              "transferKB": 229.8,
+              "decodedKB": 229.5,
+              "startMs": 30567,
+              "endMs": 52532,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/Temples/forest/TempleAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 1.1,
+              "decodedKB": 12,
+              "startMs": 30567,
+              "endMs": 32134,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/PopupAssetsSlim.png",
+              "type": "xmlhttprequest",
+              "transferKB": 249.6,
+              "decodedKB": 249.3,
+              "startMs": 30567,
+              "endMs": 54092,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/PopupAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 1.4,
+              "decodedKB": 22.7,
+              "startMs": 30567,
+              "endMs": 33956,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/fonts/chinese/font.png",
+              "type": "xmlhttprequest",
+              "transferKB": 1600.6,
+              "decodedKB": 1600.3,
+              "startMs": 30568,
+              "endMs": 77116,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/fonts/chinese/font.fnt",
+              "type": "xmlhttprequest",
+              "transferKB": 3.8,
+              "decodedKB": 30.8,
+              "startMs": 30568,
+              "endMs": 40459,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Jump_fb",
+              "type": "xmlhttprequest",
+              "transferKB": 5.4,
+              "decodedKB": 5.1,
+              "startMs": 30568,
+              "endMs": 41420,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Jump_wg",
+              "type": "xmlhttprequest",
+              "transferKB": 9.4,
+              "decodedKB": 9.1,
+              "startMs": 30568,
+              "endMs": 42812,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Diamond",
+              "type": "xmlhttprequest",
+              "transferKB": 8.9,
+              "decodedKB": 8.6,
+              "startMs": 30568,
+              "endMs": 44203,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Death",
+              "type": "xmlhttprequest",
+              "transferKB": 15.6,
+              "decodedKB": 15.3,
+              "startMs": 30568,
+              "endMs": 46004,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Door",
+              "type": "xmlhttprequest",
+              "transferKB": 28.4,
+              "decodedKB": 28.1,
+              "startMs": 30568,
+              "endMs": 47852,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Lever",
+              "type": "xmlhttprequest",
+              "transferKB": 13,
+              "decodedKB": 12.8,
+              "startMs": 30569,
+              "endMs": 46772,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Pusher",
+              "type": "xmlhttprequest",
+              "transferKB": 15.6,
+              "decodedKB": 15.3,
+              "startMs": 30569,
+              "endMs": 47901,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Platform",
+              "type": "xmlhttprequest",
+              "transferKB": 27.9,
+              "decodedKB": 27.6,
+              "startMs": 30569,
+              "endMs": 49723,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/WaterSteps",
+              "type": "xmlhttprequest",
+              "transferKB": 11.7,
+              "decodedKB": 11.4,
+              "startMs": 30569,
+              "endMs": 49484,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/EndPass",
+              "type": "xmlhttprequest",
+              "transferKB": 9.5,
+              "decodedKB": 9.2,
+              "startMs": 30569,
+              "endMs": 49292,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/EndFail",
+              "type": "xmlhttprequest",
+              "transferKB": 9.5,
+              "decodedKB": 9.2,
+              "startMs": 30569,
+              "endMs": 50564,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/EndDiamond",
+              "type": "xmlhttprequest",
+              "transferKB": 32.9,
+              "decodedKB": 32.7,
+              "startMs": 30569,
+              "endMs": 52868,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Wind",
+              "type": "xmlhttprequest",
+              "transferKB": 41.4,
+              "decodedKB": 41.1,
+              "startMs": 30569,
+              "endMs": 53542,
+              "phase": "post"
+            },
+            {
+              "url": "/matchmake/create/forest",
+              "type": "xmlhttprequest",
+              "transferKB": 0.5,
+              "decodedKB": 0.2,
+              "startMs": 30777,
+              "endMs": 51117,
+              "phase": "post"
+            },
+            {
+              "url": "/api/level/forest_01",
+              "type": "fetch",
+              "transferKB": 1.8,
+              "decodedKB": 16.6,
+              "startMs": 52101,
+              "endMs": 52773,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/tilemaps/tilesets/Ground.json",
+              "type": "fetch",
+              "transferKB": 0.6,
+              "decodedKB": 2.5,
+              "startMs": 52774,
+              "endMs": 53253,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/tilemaps/tilesets/Chars.json",
+              "type": "fetch",
+              "transferKB": 0.5,
+              "decodedKB": 1.6,
+              "startMs": 52774,
+              "endMs": 53277,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/tilemaps/tilesets/Objects.json",
+              "type": "fetch",
+              "transferKB": 0.7,
+              "decodedKB": 2.3,
+              "startMs": 52774,
+              "endMs": 53373,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsPlay.json",
+              "type": "xmlhttprequest",
+              "transferKB": 1.8,
+              "decodedKB": 52.6,
+              "startMs": 77176,
+              "endMs": 77637,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsEntry.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 2.2,
+              "startMs": 77722,
+              "endMs": 77724,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/GroundAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 66.3,
+              "startMs": 77722,
+              "endMs": 77728,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/MechAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 32.8,
+              "startMs": 77723,
+              "endMs": 77727,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/Temples/forest/TempleAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 12,
+              "startMs": 77723,
+              "endMs": 77728,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/PopupAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 22.7,
+              "startMs": 77723,
+              "endMs": 77728,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/fonts/chinese/font.fnt",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 30.8,
+              "startMs": 77723,
+              "endMs": 77728,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsPlay.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 52.6,
+              "startMs": 77828,
+              "endMs": 77829,
+              "phase": "post"
+            }
+          ],
+          "dupUrls": [
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "n": 2,
+              "wireFetches": 2,
+              "transfersKB": [
+                106.8,
+                0.3
+              ],
+              "restKB": 0.3,
+              "doubleDownload": false
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsEntry.json",
+              "n": 2,
+              "wireFetches": 1,
+              "transfersKB": [
+                0.6,
+                0
+              ],
+              "restKB": 0,
+              "doubleDownload": false
+            },
+            {
+              "url": "/assets/atlasses/GroundAssets.json",
+              "n": 2,
+              "wireFetches": 1,
+              "transfersKB": [
+                2.5,
+                0
+              ],
+              "restKB": 0,
+              "doubleDownload": false
+            },
+            {
+              "url": "/assets/atlasses/MechAssets.json",
+              "n": 2,
+              "wireFetches": 1,
+              "transfersKB": [
+                2.2,
+                0
+              ],
+              "restKB": 0,
+              "doubleDownload": false
+            },
+            {
+              "url": "/assets/atlasses/Temples/forest/TempleAssets.json",
+              "n": 2,
+              "wireFetches": 1,
+              "transfersKB": [
+                1.1,
+                0
+              ],
+              "restKB": 0,
+              "doubleDownload": false
+            },
+            {
+              "url": "/assets/atlasses/PopupAssets.json",
+              "n": 2,
+              "wireFetches": 1,
+              "transfersKB": [
+                1.4,
+                0
+              ],
+              "restKB": 0,
+              "doubleDownload": false
+            },
+            {
+              "url": "/assets/fonts/chinese/font.fnt",
+              "n": 2,
+              "wireFetches": 1,
+              "transfersKB": [
+                3.8,
+                0
+              ],
+              "restKB": 0,
+              "doubleDownload": false
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsPlay.json",
+              "n": 2,
+              "wireFetches": 1,
+              "transfersKB": [
+                1.8,
+                0
+              ],
+              "restKB": 0,
+              "doubleDownload": false
+            }
+          ],
+          "throttleProbe": {
+            "netRequests": 50,
+            "ttfbMinMs": 1.7,
+            "ttfbMedianMs": 439.3,
+            "ttfbMaxMs": 19853.9,
+            "largestBytesMs": 43157.8,
+            "largestKB": 1600.6,
+            "largestUrl": "/assets/fonts/chinese/font.png",
+            "windowMs": 76847,
+            "wireKBTotal": 4478,
+            "wireBytesTotal": 4585674
+          },
+          "domContentLoadedMs": 10519
+        },
+        "throttle": {
+          "profile": "slow3g",
+          "checked": true,
+          "latencyMs": 400,
+          "downBps": 62500,
+          "upBps": 62500,
+          "desc": "Lighthouse Slow 3G 0.5Mbps↓↑ · 400ms",
+          "ttfbMedianMs": 439.3,
+          "largestUrl": "/assets/fonts/chinese/font.png",
+          "largestKB": 1600.6,
+          "largestBytesMs": 43157.8,
+          "windowMs": 76847,
+          "achievedMbps": 0.48
+        },
+        "pageErrors": [],
+        "loopDeferred": true,
+        "loopArrivalAfterEntryMs": null,
+        "gameActivePerfMs": 77864,
+        "charsPlayInWindow": "none",
+        "charsPlayArrivalAfterGateMs": null,
+        "bgmTerminalInWindow": "none",
+        "bgmTerminalArrivalAfterGateMs": null,
+        "bgmTerminalPreGateKB": 0,
+        "headers": [
+          {
+            "url": "/?level=forest_01",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/images/GameNameForest.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/dom/dom-skin.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/index-CL_bTxBJ.js",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=31536000, immutable",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/colyseus-BEjLCa9D.js",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=31536000, immutable",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/phaser-BMeCXOGt.js",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=31536000, immutable",
+            "etag": "yes"
+          },
+          {
+            "url": "/data/forest/temple.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsMenu.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/PreloaderAssets.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/PreloaderAssets.json",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsMenu.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/MenuAssets.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/MenuAssets.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/fonts/chinese/font-prephase.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/fonts/chinese/font-prephase.fnt",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/images/TempleHallForest.jpg",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/images/Beam.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/f1990e3f-2c93-44b2-919a-486cbcefd615",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "/assets/images/branding/branding_logo_kizi.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/eeb051de-868d-47ad-8189-2e1abb10c790",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/68025483-1b74-4954-8f2d-26f0310d1cb8",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/6d71bd7d-96c8-472e-a8ca-8b827390d982",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/4fa3e1ae-d02f-4bf4-9905-a76644a046b3",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/9eb192f7-c11c-413a-904b-d5a2033978e6",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/2a50108b-7215-43d5-a067-17a700aa318a",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/0f4b42fd-a21e-46cb-b7cf-1481c6bce5cb",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsEntry.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsEntry.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/GroundAssets.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/GroundAssets.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/MechAssetsSlim.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/MenuMusic",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/MechAssets.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/Temples/forest/TempleAssetsSlim.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/Temples/forest/TempleAssets.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/PopupAssetsSlim.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/a0eca216-cdb2-4034-bfc8-ad1d786ff627",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "/assets/atlasses/PopupAssets.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/fonts/chinese/font.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/c9bd076e-44c1-4965-a7fa-812e2078ef3b",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "/assets/fonts/chinese/font.fnt",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/Jump_fb",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/Jump_wg",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/Diamond",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/Death",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/71571745-ac1f-4f24-b493-6695429ba280",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "/assets/audio/s/Door",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/Lever",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/Pusher",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/Platform",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/WaterSteps",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/EndPass",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/EndFail",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/EndDiamond",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/Wind",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/matchmake/create/forest",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/4ec47ce1-3161-426d-b073-6f5a1d7ff27c",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "/api/level/forest_01",
+            "status": 200,
+            "enc": "br",
+            "cc": "no-cache",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/tilemaps/tilesets/Ground.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/tilemaps/tilesets/Chars.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/tilemaps/tilesets/Objects.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/64de42e8-82ca-4758-964f-d0e02318782f",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/06041a83-f62b-4669-8621-996cd34c4ca1",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsPlay.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsPlay.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          }
+        ],
+        "revalidate": [
+          {
+            "url": "/assets/images/GameNameForest.png",
+            "etag": "yes",
+            "refetchKB": 106.49,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/dom/dom-skin.png",
+            "etag": "yes",
+            "refetchKB": 80.18,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/index-CL_bTxBJ.js",
+            "etag": "yes",
+            "refetchKB": 32.08,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/colyseus-BEjLCa9D.js",
+            "etag": "yes",
+            "refetchKB": 38.72,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/phaser-BMeCXOGt.js",
+            "etag": "yes",
+            "refetchKB": 299.2,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/data/forest/temple.json",
+            "etag": "yes",
+            "refetchKB": 1.33,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsMenu.json",
+            "etag": "yes",
+            "refetchKB": 0.53,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/PreloaderAssets.png",
+            "etag": "yes",
+            "refetchKB": 32.96,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/PreloaderAssets.json",
+            "etag": "yes",
+            "refetchKB": 0.76,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsMenu.png",
+            "etag": "yes",
+            "refetchKB": 152.14,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/MenuAssets.png",
+            "etag": "yes",
+            "refetchKB": 191.21,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/MenuAssets.json",
+            "etag": "yes",
+            "refetchKB": 0.99,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/fonts/chinese/font-prephase.png",
+            "etag": "yes",
+            "refetchKB": 242.38,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/fonts/chinese/font-prephase.fnt",
+            "etag": "yes",
+            "refetchKB": 2.53,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/images/TempleHallForest.jpg",
+            "etag": "yes",
+            "refetchKB": 416.68,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/images/Beam.png",
+            "etag": "yes",
+            "refetchKB": 63.09,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/images/branding/branding_logo_kizi.png",
+            "etag": "yes",
+            "refetchKB": 60.09,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsEntry.json",
+            "etag": "yes",
+            "refetchKB": 0.35,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsEntry.png",
+            "etag": "yes",
+            "refetchKB": 28.32,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/GroundAssets.json",
+            "etag": "yes",
+            "refetchKB": 2.16,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/GroundAssets.png",
+            "etag": "yes",
+            "refetchKB": 92.73,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/MechAssetsSlim.png",
+            "etag": "yes",
+            "refetchKB": 152.89,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/MenuMusic",
+            "etag": "yes",
+            "refetchKB": 149.79,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/MechAssets.json",
+            "etag": "yes",
+            "refetchKB": 1.9,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/Temples/forest/TempleAssetsSlim.png",
+            "etag": "yes",
+            "refetchKB": 229.51,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/Temples/forest/TempleAssets.json",
+            "etag": "yes",
+            "refetchKB": 0.8,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/PopupAssetsSlim.png",
+            "etag": "yes",
+            "refetchKB": 249.29,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/PopupAssets.json",
+            "etag": "yes",
+            "refetchKB": 1.15,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/fonts/chinese/font.png",
+            "etag": "yes",
+            "refetchKB": 1600.29,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/fonts/chinese/font.fnt",
+            "etag": "yes",
+            "refetchKB": 3.5,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Jump_fb",
+            "etag": "yes",
+            "refetchKB": 5.1,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Jump_wg",
+            "etag": "yes",
+            "refetchKB": 9.14,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Diamond",
+            "etag": "yes",
+            "refetchKB": 8.57,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Death",
+            "etag": "yes",
+            "refetchKB": 15.31,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Door",
+            "etag": "yes",
+            "refetchKB": 28.13,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Lever",
+            "etag": "yes",
+            "refetchKB": 12.75,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Pusher",
+            "etag": "yes",
+            "refetchKB": 15.31,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Platform",
+            "etag": "yes",
+            "refetchKB": 27.56,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/WaterSteps",
+            "etag": "yes",
+            "refetchKB": 11.43,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/EndPass",
+            "etag": "yes",
+            "refetchKB": 9.18,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/EndFail",
+            "etag": "yes",
+            "refetchKB": 9.18,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/EndDiamond",
+            "etag": "yes",
+            "refetchKB": 32.65,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Wind",
+            "etag": "yes",
+            "refetchKB": 41.06,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/api/level/forest_01",
+            "etag": "yes",
+            "refetchKB": 1.53,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/tilemaps/tilesets/Ground.json",
+            "etag": "yes",
+            "refetchKB": 0.29,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/tilemaps/tilesets/Chars.json",
+            "etag": "yes",
+            "refetchKB": 0.24,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/tilemaps/tilesets/Objects.json",
+            "etag": "yes",
+            "refetchKB": 0.4,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsPlay.json",
+            "etag": "yes",
+            "refetchKB": 1.46,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsPlay.png",
+            "etag": "yes",
+            "refetchKB": 442.39,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/LevelMusic",
+            "etag": "yes",
+            "refetchKB": 1285.12,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/LevelMusicOver",
+            "etag": "yes",
+            "refetchKB": 159.61,
+            "revalKB": 0,
+            "status": 304
+          }
+        ],
+        "revalidateSummary": {
+          "urls": 51,
+          "refetchKB": 6350.5,
+          "revalKB": 0,
+          "notConditional": []
+        }
+      },
+      "warm": {
+        "menuActiveMs": 1882,
+        "resources": {
+          "count": 19,
+          "totalTransferKB": 4,
+          "totalDecodedKB": 3112,
+          "byType": {
+            "script": {
+              "n": 3,
+              "transferKB": 0,
+              "decodedKB": 1672.4482421875
+            },
+            "img": {
+              "n": 1,
+              "transferKB": 0.29296875,
+              "decodedKB": 106.4931640625
+            },
+            "xmlhttprequest": {
+              "n": 13,
+              "transferKB": 3.1337890625,
+              "decodedKB": 1323.75390625
+            },
+            "css": {
+              "n": 1,
+              "transferKB": 0.29296875,
+              "decodedKB": 0
+            },
+            "fetch": {
+              "n": 1,
+              "transferKB": 0,
+              "decodedKB": 9.4892578125
+            }
+          },
+          "items": [
+            {
+              "url": "/assets/index-CL_bTxBJ.js",
+              "type": "script",
+              "transferKB": 0,
+              "decodedKB": 99,
+              "startMs": 570,
+              "endMs": 570
+            },
+            {
+              "url": "/assets/phaser-BMeCXOGt.js",
+              "type": "script",
+              "transferKB": 0,
+              "decodedKB": 1447.6,
+              "startMs": 570,
+              "endMs": 570
+            },
+            {
+              "url": "/assets/colyseus-BEjLCa9D.js",
+              "type": "script",
+              "transferKB": 0,
+              "decodedKB": 125.9,
+              "startMs": 570,
+              "endMs": 570
+            },
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "type": "img",
+              "transferKB": 0.3,
+              "decodedKB": 106.5,
+              "startMs": 570,
+              "endMs": 994
+            },
+            {
+              "url": "/matchmake/reconnect/IBx6vJ0L7",
+              "type": "xmlhttprequest",
+              "transferKB": 0.5,
+              "decodedKB": 0.2,
+              "startMs": 719,
+              "endMs": 1163
+            },
+            {
+              "url": "/assets/dom/dom-skin.png",
+              "type": "css",
+              "transferKB": 0.3,
+              "decodedKB": 0,
+              "startMs": 722,
+              "endMs": 1138
+            },
+            {
+              "url": "/data/forest/temple.json",
+              "type": "fetch",
+              "transferKB": 0,
+              "decodedKB": 9.5,
+              "startMs": 739,
+              "endMs": 741
+            },
+            {
+              "url": "/assets/atlasses/PreloaderAssets.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 33,
+              "startMs": 845,
+              "endMs": 1258
+            },
+            {
+              "url": "/assets/atlasses/PreloaderAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 0.8,
+              "startMs": 845,
+              "endMs": 1282
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsMenu.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 152.1,
+              "startMs": 846,
+              "endMs": 1305
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsMenu.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 15.5,
+              "startMs": 846,
+              "endMs": 850
+            },
+            {
+              "url": "/assets/atlasses/MenuAssets.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 191.2,
+              "startMs": 846,
+              "endMs": 1401
+            },
+            {
+              "url": "/assets/atlasses/MenuAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 12.3,
+              "startMs": 846,
+              "endMs": 850
+            },
+            {
+              "url": "/assets/fonts/chinese/font-prephase.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 242.4,
+              "startMs": 846,
+              "endMs": 1546
+            },
+            {
+              "url": "/assets/fonts/chinese/font-prephase.fnt",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 30,
+              "startMs": 846,
+              "endMs": 850
+            },
+            {
+              "url": "/assets/images/TempleHallForest.jpg",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 416.7,
+              "startMs": 846,
+              "endMs": 1593
+            },
+            {
+              "url": "/assets/images/Beam.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 63.1,
+              "startMs": 846,
+              "endMs": 1689
+            },
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 106.5,
+              "startMs": 847,
+              "endMs": 1762
+            },
+            {
+              "url": "/assets/images/branding/branding_logo_kizi.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 60.1,
+              "startMs": 847,
+              "endMs": 1714
+            }
+          ],
+          "dupUrls": [
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "n": 2,
+              "wireFetches": 2,
+              "transfersKB": [
+                0.3,
+                0.3
+              ],
+              "restKB": 0.3,
+              "doubleDownload": false
+            }
+          ],
+          "throttleProbe": {
+            "netRequests": 12,
+            "ttfbMinMs": 1.2,
+            "ttfbMedianMs": 80,
+            "ttfbMaxMs": 459.7,
+            "largestBytesMs": 433.3,
+            "largestKB": 0.5,
+            "largestUrl": "/matchmake/reconnect/IBx6vJ0L7",
+            "windowMs": 1192,
+            "wireKBTotal": 4,
+            "wireBytesTotal": 3809
+          },
+          "domContentLoadedMs": 739
+        }
+      }
+    },
+    {
+      "round": 2,
+      "cold": {
+        "domContentLoadedMs": 10497,
+        "phaserReadyMs": 10602,
+        "menuActiveMs": 30264,
+        "resources": {
+          "count": 18,
+          "totalTransferKB": 1727,
+          "totalDecodedKB": 3192,
+          "byType": {
+            "script": {
+              "n": 3,
+              "transferKB": 370.876953125,
+              "decodedKB": 1672.4482421875
+            },
+            "img": {
+              "n": 1,
+              "transferKB": 106.7861328125,
+              "decodedKB": 106.4931640625
+            },
+            "css": {
+              "n": 1,
+              "transferKB": 80.4755859375,
+              "decodedKB": 80.1826171875
+            },
+            "fetch": {
+              "n": 1,
+              "transferKB": 1.62109375,
+              "decodedKB": 9.4892578125
+            },
+            "xmlhttprequest": {
+              "n": 12,
+              "transferKB": 1166.876953125,
+              "decodedKB": 1323.5498046875
+            }
+          },
+          "items": [
+            {
+              "url": "/assets/index-CL_bTxBJ.js",
+              "type": "script",
+              "transferKB": 32.4,
+              "decodedKB": 99,
+              "startMs": 791,
+              "endMs": 3791,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/colyseus-BEjLCa9D.js",
+              "type": "script",
+              "transferKB": 39,
+              "decodedKB": 125.9,
+              "startMs": 792,
+              "endMs": 4270,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/phaser-BMeCXOGt.js",
+              "type": "script",
+              "transferKB": 299.5,
+              "decodedKB": 1447.6,
+              "startMs": 792,
+              "endMs": 10366,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "type": "img",
+              "transferKB": 106.8,
+              "decodedKB": 106.5,
+              "startMs": 814,
+              "endMs": 7198,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/dom/dom-skin.png",
+              "type": "css",
+              "transferKB": 80.5,
+              "decodedKB": 80.2,
+              "startMs": 815,
+              "endMs": 6334,
+              "phase": "menu"
+            },
+            {
+              "url": "/data/forest/temple.json",
+              "type": "fetch",
+              "transferKB": 1.6,
+              "decodedKB": 9.5,
+              "startMs": 10491,
+              "endMs": 10943,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/PreloaderAssets.png",
+              "type": "xmlhttprequest",
+              "transferKB": 33.3,
+              "decodedKB": 33,
+              "startMs": 10585,
+              "endMs": 13678,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/PreloaderAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 1.1,
+              "decodedKB": 0.8,
+              "startMs": 10585,
+              "endMs": 11040,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsMenu.png",
+              "type": "xmlhttprequest",
+              "transferKB": 152.4,
+              "decodedKB": 152.1,
+              "startMs": 10585,
+              "endMs": 23398,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsMenu.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0.8,
+              "decodedKB": 15.5,
+              "startMs": 10585,
+              "endMs": 10991,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/MenuAssets.png",
+              "type": "xmlhttprequest",
+              "transferKB": 191.5,
+              "decodedKB": 191.2,
+              "startMs": 10586,
+              "endMs": 25295,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/MenuAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 1.3,
+              "decodedKB": 12.3,
+              "startMs": 10586,
+              "endMs": 11423,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/fonts/chinese/font-prephase.png",
+              "type": "xmlhttprequest",
+              "transferKB": 242.7,
+              "decodedKB": 242.4,
+              "startMs": 10586,
+              "endMs": 27262,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/fonts/chinese/font-prephase.fnt",
+              "type": "xmlhttprequest",
+              "transferKB": 2.8,
+              "decodedKB": 30,
+              "startMs": 10586,
+              "endMs": 11663,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/TempleHallForest.jpg",
+              "type": "xmlhttprequest",
+              "transferKB": 417,
+              "decodedKB": 416.7,
+              "startMs": 10586,
+              "endMs": 30214,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/Beam.png",
+              "type": "xmlhttprequest",
+              "transferKB": 63.4,
+              "decodedKB": 63.1,
+              "startMs": 10586,
+              "endMs": 18310,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 106.5,
+              "startMs": 10586,
+              "endMs": 18840,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/branding/branding_logo_kizi.png",
+              "type": "xmlhttprequest",
+              "transferKB": 60.4,
+              "decodedKB": 60.1,
+              "startMs": 10586,
+              "endMs": 19847,
+              "phase": "menu"
+            }
+          ],
+          "dupUrls": [
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "n": 2,
+              "wireFetches": 2,
+              "transfersKB": [
+                106.8,
+                0.3
+              ],
+              "restKB": 0.3,
+              "doubleDownload": false
+            }
+          ],
+          "throttleProbe": {
+            "netRequests": 18,
+            "ttfbMinMs": 1.7,
+            "ttfbMedianMs": 4.5,
+            "ttfbMaxMs": 7724.8,
+            "largestBytesMs": 18788.3,
+            "largestKB": 417,
+            "largestUrl": "/assets/images/TempleHallForest.jpg",
+            "windowMs": 29423,
+            "wireKBTotal": 1727,
+            "wireBytesTotal": 1768076
+          },
+          "domContentLoadedMs": 10492,
+          "menuKB": 1727,
+          "gamePhaseKB": 2752,
+          "warmPhaseKB": 0,
+          "postClickKB": 2752,
+          "pendingCount": 0,
+          "pendingUrls": []
+        },
+        "gameActiveAfterClickMs": 47427,
+        "clickPerfMs": 30482,
+        "resourcesAfterGame": {
+          "count": 57,
+          "totalTransferKB": 4478,
+          "totalDecodedKB": 6383,
+          "byType": {
+            "script": {
+              "n": 3,
+              "transferKB": 370.876953125,
+              "decodedKB": 1672.4482421875
+            },
+            "img": {
+              "n": 1,
+              "transferKB": 106.7861328125,
+              "decodedKB": 106.4931640625
+            },
+            "css": {
+              "n": 1,
+              "transferKB": 80.4755859375,
+              "decodedKB": 80.1826171875
+            },
+            "fetch": {
+              "n": 5,
+              "transferKB": 5.251953125,
+              "decodedKB": 32.5224609375
+            },
+            "xmlhttprequest": {
+              "n": 47,
+              "transferKB": 3914.806640625,
+              "decodedKB": 4490.994140625
+            }
+          },
+          "items": [
+            {
+              "url": "/assets/index-CL_bTxBJ.js",
+              "type": "script",
+              "transferKB": 32.4,
+              "decodedKB": 99,
+              "startMs": 791,
+              "endMs": 3791,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/colyseus-BEjLCa9D.js",
+              "type": "script",
+              "transferKB": 39,
+              "decodedKB": 125.9,
+              "startMs": 792,
+              "endMs": 4270,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/phaser-BMeCXOGt.js",
+              "type": "script",
+              "transferKB": 299.5,
+              "decodedKB": 1447.6,
+              "startMs": 792,
+              "endMs": 10366,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "type": "img",
+              "transferKB": 106.8,
+              "decodedKB": 106.5,
+              "startMs": 814,
+              "endMs": 7198,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/dom/dom-skin.png",
+              "type": "css",
+              "transferKB": 80.5,
+              "decodedKB": 80.2,
+              "startMs": 815,
+              "endMs": 6334,
+              "phase": "menu"
+            },
+            {
+              "url": "/data/forest/temple.json",
+              "type": "fetch",
+              "transferKB": 1.6,
+              "decodedKB": 9.5,
+              "startMs": 10491,
+              "endMs": 10943,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/PreloaderAssets.png",
+              "type": "xmlhttprequest",
+              "transferKB": 33.3,
+              "decodedKB": 33,
+              "startMs": 10585,
+              "endMs": 13678,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/PreloaderAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 1.1,
+              "decodedKB": 0.8,
+              "startMs": 10585,
+              "endMs": 11040,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsMenu.png",
+              "type": "xmlhttprequest",
+              "transferKB": 152.4,
+              "decodedKB": 152.1,
+              "startMs": 10585,
+              "endMs": 23398,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsMenu.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0.8,
+              "decodedKB": 15.5,
+              "startMs": 10585,
+              "endMs": 10991,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/MenuAssets.png",
+              "type": "xmlhttprequest",
+              "transferKB": 191.5,
+              "decodedKB": 191.2,
+              "startMs": 10586,
+              "endMs": 25295,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/atlasses/MenuAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 1.3,
+              "decodedKB": 12.3,
+              "startMs": 10586,
+              "endMs": 11423,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/fonts/chinese/font-prephase.png",
+              "type": "xmlhttprequest",
+              "transferKB": 242.7,
+              "decodedKB": 242.4,
+              "startMs": 10586,
+              "endMs": 27262,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/fonts/chinese/font-prephase.fnt",
+              "type": "xmlhttprequest",
+              "transferKB": 2.8,
+              "decodedKB": 30,
+              "startMs": 10586,
+              "endMs": 11663,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/TempleHallForest.jpg",
+              "type": "xmlhttprequest",
+              "transferKB": 417,
+              "decodedKB": 416.7,
+              "startMs": 10586,
+              "endMs": 30214,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/Beam.png",
+              "type": "xmlhttprequest",
+              "transferKB": 63.4,
+              "decodedKB": 63.1,
+              "startMs": 10586,
+              "endMs": 18310,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 106.5,
+              "startMs": 10586,
+              "endMs": 18840,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/images/branding/branding_logo_kizi.png",
+              "type": "xmlhttprequest",
+              "transferKB": 60.4,
+              "decodedKB": 60.1,
+              "startMs": 10586,
+              "endMs": 19847,
+              "phase": "menu"
+            },
+            {
+              "url": "/assets/audio/s/MenuMusic",
+              "type": "xmlhttprequest",
+              "transferKB": 150.1,
+              "decodedKB": 149.8,
+              "startMs": 30494,
+              "endMs": 44806,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsEntry.png",
+              "type": "xmlhttprequest",
+              "transferKB": 28.6,
+              "decodedKB": 28.3,
+              "startMs": 30494,
+              "endMs": 33360,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsEntry.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0.6,
+              "decodedKB": 2.2,
+              "startMs": 30494,
+              "endMs": 30912,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/GroundAssets.png",
+              "type": "xmlhttprequest",
+              "transferKB": 93,
+              "decodedKB": 92.7,
+              "startMs": 30494,
+              "endMs": 39550,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/GroundAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 2.5,
+              "decodedKB": 66.3,
+              "startMs": 30494,
+              "endMs": 31055,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/MechAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 2.2,
+              "decodedKB": 32.8,
+              "startMs": 30494,
+              "endMs": 31534,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/MechAssetsSlim.png",
+              "type": "xmlhttprequest",
+              "transferKB": 153.2,
+              "decodedKB": 152.9,
+              "startMs": 30494,
+              "endMs": 45142,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/Temples/forest/TempleAssetsSlim.png",
+              "type": "xmlhttprequest",
+              "transferKB": 229.8,
+              "decodedKB": 229.5,
+              "startMs": 30494,
+              "endMs": 52367,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/Temples/forest/TempleAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 1.1,
+              "decodedKB": 12,
+              "startMs": 30495,
+              "endMs": 32063,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/PopupAssetsSlim.png",
+              "type": "xmlhttprequest",
+              "transferKB": 249.6,
+              "decodedKB": 249.3,
+              "startMs": 30495,
+              "endMs": 53999,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/PopupAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 1.4,
+              "decodedKB": 22.7,
+              "startMs": 30495,
+              "endMs": 33887,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/fonts/chinese/font.fnt",
+              "type": "xmlhttprequest",
+              "transferKB": 3.8,
+              "decodedKB": 30.8,
+              "startMs": 30495,
+              "endMs": 40366,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/fonts/chinese/font.png",
+              "type": "xmlhttprequest",
+              "transferKB": 1600.6,
+              "decodedKB": 1600.3,
+              "startMs": 30495,
+              "endMs": 77017,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Jump_fb",
+              "type": "xmlhttprequest",
+              "transferKB": 5.4,
+              "decodedKB": 5.1,
+              "startMs": 30495,
+              "endMs": 41326,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Jump_wg",
+              "type": "xmlhttprequest",
+              "transferKB": 9.4,
+              "decodedKB": 9.1,
+              "startMs": 30495,
+              "endMs": 42717,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Diamond",
+              "type": "xmlhttprequest",
+              "transferKB": 8.9,
+              "decodedKB": 8.6,
+              "startMs": 30495,
+              "endMs": 44110,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Death",
+              "type": "xmlhttprequest",
+              "transferKB": 15.6,
+              "decodedKB": 15.3,
+              "startMs": 30495,
+              "endMs": 45909,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Door",
+              "type": "xmlhttprequest",
+              "transferKB": 28.4,
+              "decodedKB": 28.1,
+              "startMs": 30495,
+              "endMs": 47830,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Lever",
+              "type": "xmlhttprequest",
+              "transferKB": 13,
+              "decodedKB": 12.8,
+              "startMs": 30495,
+              "endMs": 46750,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Pusher",
+              "type": "xmlhttprequest",
+              "transferKB": 15.6,
+              "decodedKB": 15.3,
+              "startMs": 30495,
+              "endMs": 47806,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Platform",
+              "type": "xmlhttprequest",
+              "transferKB": 27.9,
+              "decodedKB": 27.6,
+              "startMs": 30495,
+              "endMs": 49678,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/WaterSteps",
+              "type": "xmlhttprequest",
+              "transferKB": 11.7,
+              "decodedKB": 11.4,
+              "startMs": 30496,
+              "endMs": 49438,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/EndPass",
+              "type": "xmlhttprequest",
+              "transferKB": 9.5,
+              "decodedKB": 9.2,
+              "startMs": 30496,
+              "endMs": 49222,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/EndFail",
+              "type": "xmlhttprequest",
+              "transferKB": 9.5,
+              "decodedKB": 9.2,
+              "startMs": 30496,
+              "endMs": 50447,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/EndDiamond",
+              "type": "xmlhttprequest",
+              "transferKB": 32.9,
+              "decodedKB": 32.7,
+              "startMs": 30496,
+              "endMs": 52749,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/audio/s/Wind",
+              "type": "xmlhttprequest",
+              "transferKB": 41.4,
+              "decodedKB": 41.1,
+              "startMs": 30496,
+              "endMs": 53423,
+              "phase": "post"
+            },
+            {
+              "url": "/matchmake/create/forest",
+              "type": "xmlhttprequest",
+              "transferKB": 0.5,
+              "decodedKB": 0.2,
+              "startMs": 30768,
+              "endMs": 50999,
+              "phase": "post"
+            },
+            {
+              "url": "/api/level/forest_01",
+              "type": "fetch",
+              "transferKB": 1.8,
+              "decodedKB": 16.6,
+              "startMs": 51985,
+              "endMs": 52607,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/tilemaps/tilesets/Ground.json",
+              "type": "fetch",
+              "transferKB": 0.6,
+              "decodedKB": 2.5,
+              "startMs": 52608,
+              "endMs": 53087,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/tilemaps/tilesets/Chars.json",
+              "type": "fetch",
+              "transferKB": 0.5,
+              "decodedKB": 1.6,
+              "startMs": 52608,
+              "endMs": 53111,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/tilemaps/tilesets/Objects.json",
+              "type": "fetch",
+              "transferKB": 0.7,
+              "decodedKB": 2.3,
+              "startMs": 52608,
+              "endMs": 53231,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsPlay.json",
+              "type": "xmlhttprequest",
+              "transferKB": 1.8,
+              "decodedKB": 52.6,
+              "startMs": 77128,
+              "endMs": 77590,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsEntry.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 2.2,
+              "startMs": 77715,
+              "endMs": 77717,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/GroundAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 66.3,
+              "startMs": 77715,
+              "endMs": 77724,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/MechAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 32.8,
+              "startMs": 77715,
+              "endMs": 77723,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/Temples/forest/TempleAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 12,
+              "startMs": 77715,
+              "endMs": 77723,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/PopupAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 22.7,
+              "startMs": 77715,
+              "endMs": 77724,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/fonts/chinese/font.fnt",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 30.8,
+              "startMs": 77716,
+              "endMs": 77724,
+              "phase": "post"
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsPlay.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 52.6,
+              "startMs": 77841,
+              "endMs": 77843,
+              "phase": "post"
+            }
+          ],
+          "dupUrls": [
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "n": 2,
+              "wireFetches": 2,
+              "transfersKB": [
+                106.8,
+                0.3
+              ],
+              "restKB": 0.3,
+              "doubleDownload": false
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsEntry.json",
+              "n": 2,
+              "wireFetches": 1,
+              "transfersKB": [
+                0.6,
+                0
+              ],
+              "restKB": 0,
+              "doubleDownload": false
+            },
+            {
+              "url": "/assets/atlasses/GroundAssets.json",
+              "n": 2,
+              "wireFetches": 1,
+              "transfersKB": [
+                2.5,
+                0
+              ],
+              "restKB": 0,
+              "doubleDownload": false
+            },
+            {
+              "url": "/assets/atlasses/MechAssets.json",
+              "n": 2,
+              "wireFetches": 1,
+              "transfersKB": [
+                2.2,
+                0
+              ],
+              "restKB": 0,
+              "doubleDownload": false
+            },
+            {
+              "url": "/assets/atlasses/Temples/forest/TempleAssets.json",
+              "n": 2,
+              "wireFetches": 1,
+              "transfersKB": [
+                1.1,
+                0
+              ],
+              "restKB": 0,
+              "doubleDownload": false
+            },
+            {
+              "url": "/assets/atlasses/PopupAssets.json",
+              "n": 2,
+              "wireFetches": 1,
+              "transfersKB": [
+                1.4,
+                0
+              ],
+              "restKB": 0,
+              "doubleDownload": false
+            },
+            {
+              "url": "/assets/fonts/chinese/font.fnt",
+              "n": 2,
+              "wireFetches": 1,
+              "transfersKB": [
+                3.8,
+                0
+              ],
+              "restKB": 0,
+              "doubleDownload": false
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsPlay.json",
+              "n": 2,
+              "wireFetches": 1,
+              "transfersKB": [
+                1.8,
+                0
+              ],
+              "restKB": 0,
+              "doubleDownload": false
+            }
+          ],
+          "throttleProbe": {
+            "netRequests": 50,
+            "ttfbMinMs": 1.7,
+            "ttfbMedianMs": 437,
+            "ttfbMaxMs": 19709.8,
+            "largestBytesMs": 43128.4,
+            "largestKB": 1600.6,
+            "largestUrl": "/assets/fonts/chinese/font.png",
+            "windowMs": 76799,
+            "wireKBTotal": 4478,
+            "wireBytesTotal": 4585674
+          },
+          "domContentLoadedMs": 10492
+        },
+        "throttle": {
+          "profile": "slow3g",
+          "checked": true,
+          "latencyMs": 400,
+          "downBps": 62500,
+          "upBps": 62500,
+          "desc": "Lighthouse Slow 3G 0.5Mbps↓↑ · 400ms",
+          "ttfbMedianMs": 437,
+          "largestUrl": "/assets/fonts/chinese/font.png",
+          "largestKB": 1600.6,
+          "largestBytesMs": 43128.4,
+          "windowMs": 76799,
+          "achievedMbps": 0.48
+        },
+        "pageErrors": [],
+        "loopDeferred": true,
+        "loopArrivalAfterEntryMs": null,
+        "gameActivePerfMs": 77909,
+        "charsPlayInWindow": "none",
+        "charsPlayArrivalAfterGateMs": null,
+        "bgmTerminalInWindow": "none",
+        "bgmTerminalArrivalAfterGateMs": null,
+        "bgmTerminalPreGateKB": 0,
+        "headers": [
+          {
+            "url": "/?level=forest_01",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/images/GameNameForest.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/dom/dom-skin.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/index-CL_bTxBJ.js",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=31536000, immutable",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/colyseus-BEjLCa9D.js",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=31536000, immutable",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/phaser-BMeCXOGt.js",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=31536000, immutable",
+            "etag": "yes"
+          },
+          {
+            "url": "/data/forest/temple.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsMenu.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/PreloaderAssets.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/PreloaderAssets.json",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsMenu.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/MenuAssets.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/MenuAssets.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/fonts/chinese/font-prephase.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/fonts/chinese/font-prephase.fnt",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/images/TempleHallForest.jpg",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/images/Beam.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/be71d0d7-e35e-463c-8574-08dea99180ed",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "/assets/images/branding/branding_logo_kizi.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/9497ee97-4073-4a20-8f8f-a23bcebe5884",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/3bbb0585-dd35-4179-8afd-ba70a12c52d3",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/b50b0597-2898-446e-82a4-98c769f58aa2",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/742af08f-b6a5-466a-b864-c2fd52a3207a",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/9039464e-8b58-444c-975e-694ec97fe157",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/4b258f61-9e8f-4a89-b735-d75e5b34762d",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/63b8b33d-b8f3-4d0a-8ec1-0ab1733c0ac5",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsEntry.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/GroundAssets.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsEntry.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/GroundAssets.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/MechAssetsSlim.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/MenuMusic",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/MechAssets.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/Temples/forest/TempleAssetsSlim.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/Temples/forest/TempleAssets.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/PopupAssetsSlim.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/59a39b50-3611-4788-afe2-3c10812666f9",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "/assets/atlasses/PopupAssets.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/fonts/chinese/font.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/53ff913e-f0af-4d11-a6cf-94919d7b345d",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "/assets/fonts/chinese/font.fnt",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/Jump_fb",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/Jump_wg",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/Diamond",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/Death",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/dd4c2d56-a897-4971-966b-01e7ec191f38",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "/assets/audio/s/Door",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/Lever",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/Pusher",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/Platform",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/WaterSteps",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/EndPass",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/EndFail",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/EndDiamond",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/audio/s/Wind",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/matchmake/create/forest",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/c42aea70-443f-42ba-ab36-3fc41bb38404",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "/api/level/forest_01",
+            "status": 200,
+            "enc": "br",
+            "cc": "no-cache",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/tilemaps/tilesets/Ground.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/tilemaps/tilesets/Chars.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/tilemaps/tilesets/Objects.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/bfbd83e3-a7cf-425d-98e0-503e66aff7c3",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "blob:http://127.0.0.1:3561/38a0af1d-dd8a-40cf-8f2c-3bb51eaeb4dc",
+            "status": 200,
+            "enc": "-",
+            "cc": "-",
+            "etag": "no"
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsPlay.json",
+            "status": 200,
+            "enc": "br",
+            "cc": "public, max-age=86400",
+            "etag": "yes"
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsPlay.png",
+            "status": 200,
+            "enc": "-",
+            "cc": "public, max-age=0",
+            "etag": "yes"
+          }
+        ],
+        "revalidate": [
+          {
+            "url": "/assets/images/GameNameForest.png",
+            "etag": "yes",
+            "refetchKB": 106.49,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/dom/dom-skin.png",
+            "etag": "yes",
+            "refetchKB": 80.18,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/index-CL_bTxBJ.js",
+            "etag": "yes",
+            "refetchKB": 32.08,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/colyseus-BEjLCa9D.js",
+            "etag": "yes",
+            "refetchKB": 38.72,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/phaser-BMeCXOGt.js",
+            "etag": "yes",
+            "refetchKB": 299.2,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/data/forest/temple.json",
+            "etag": "yes",
+            "refetchKB": 1.33,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsMenu.json",
+            "etag": "yes",
+            "refetchKB": 0.53,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/PreloaderAssets.png",
+            "etag": "yes",
+            "refetchKB": 32.96,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/PreloaderAssets.json",
+            "etag": "yes",
+            "refetchKB": 0.76,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsMenu.png",
+            "etag": "yes",
+            "refetchKB": 152.14,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/MenuAssets.png",
+            "etag": "yes",
+            "refetchKB": 191.21,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/MenuAssets.json",
+            "etag": "yes",
+            "refetchKB": 0.99,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/fonts/chinese/font-prephase.png",
+            "etag": "yes",
+            "refetchKB": 242.38,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/fonts/chinese/font-prephase.fnt",
+            "etag": "yes",
+            "refetchKB": 2.53,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/images/TempleHallForest.jpg",
+            "etag": "yes",
+            "refetchKB": 416.68,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/images/Beam.png",
+            "etag": "yes",
+            "refetchKB": 63.09,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/images/branding/branding_logo_kizi.png",
+            "etag": "yes",
+            "refetchKB": 60.09,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsEntry.json",
+            "etag": "yes",
+            "refetchKB": 0.35,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/GroundAssets.json",
+            "etag": "yes",
+            "refetchKB": 2.16,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsEntry.png",
+            "etag": "yes",
+            "refetchKB": 28.32,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/GroundAssets.png",
+            "etag": "yes",
+            "refetchKB": 92.73,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/MechAssetsSlim.png",
+            "etag": "yes",
+            "refetchKB": 152.89,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/MenuMusic",
+            "etag": "yes",
+            "refetchKB": 149.79,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/MechAssets.json",
+            "etag": "yes",
+            "refetchKB": 1.9,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/Temples/forest/TempleAssetsSlim.png",
+            "etag": "yes",
+            "refetchKB": 229.51,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/Temples/forest/TempleAssets.json",
+            "etag": "yes",
+            "refetchKB": 0.8,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/PopupAssetsSlim.png",
+            "etag": "yes",
+            "refetchKB": 249.29,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/PopupAssets.json",
+            "etag": "yes",
+            "refetchKB": 1.15,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/fonts/chinese/font.png",
+            "etag": "yes",
+            "refetchKB": 1600.29,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/fonts/chinese/font.fnt",
+            "etag": "yes",
+            "refetchKB": 3.5,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Jump_fb",
+            "etag": "yes",
+            "refetchKB": 5.1,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Jump_wg",
+            "etag": "yes",
+            "refetchKB": 9.14,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Diamond",
+            "etag": "yes",
+            "refetchKB": 8.57,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Death",
+            "etag": "yes",
+            "refetchKB": 15.31,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Door",
+            "etag": "yes",
+            "refetchKB": 28.13,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Lever",
+            "etag": "yes",
+            "refetchKB": 12.75,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Pusher",
+            "etag": "yes",
+            "refetchKB": 15.31,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Platform",
+            "etag": "yes",
+            "refetchKB": 27.56,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/WaterSteps",
+            "etag": "yes",
+            "refetchKB": 11.43,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/EndPass",
+            "etag": "yes",
+            "refetchKB": 9.18,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/EndFail",
+            "etag": "yes",
+            "refetchKB": 9.18,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/EndDiamond",
+            "etag": "yes",
+            "refetchKB": 32.65,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/audio/s/Wind",
+            "etag": "yes",
+            "refetchKB": 41.06,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/api/level/forest_01",
+            "etag": "yes",
+            "refetchKB": 1.53,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/tilemaps/tilesets/Ground.json",
+            "etag": "yes",
+            "refetchKB": 0.29,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/tilemaps/tilesets/Chars.json",
+            "etag": "yes",
+            "refetchKB": 0.24,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/tilemaps/tilesets/Objects.json",
+            "etag": "yes",
+            "refetchKB": 0.4,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsPlay.json",
+            "etag": "yes",
+            "refetchKB": 1.46,
+            "revalKB": 0,
+            "status": 304
+          },
+          {
+            "url": "/assets/atlasses/CharAssetsPlay.png",
+            "etag": "yes",
+            "refetchKB": 442.39,
+            "revalKB": 0,
+            "status": 304
+          }
+        ],
+        "revalidateSummary": {
+          "urls": 49,
+          "refetchKB": 4905.7,
+          "revalKB": 0,
+          "notConditional": []
+        }
+      },
+      "warm": {
+        "menuActiveMs": 1857,
+        "resources": {
+          "count": 19,
+          "totalTransferKB": 4,
+          "totalDecodedKB": 3112,
+          "byType": {
+            "script": {
+              "n": 3,
+              "transferKB": 0,
+              "decodedKB": 1672.4482421875
+            },
+            "img": {
+              "n": 1,
+              "transferKB": 0.29296875,
+              "decodedKB": 106.4931640625
+            },
+            "xmlhttprequest": {
+              "n": 13,
+              "transferKB": 3.1337890625,
+              "decodedKB": 1323.75390625
+            },
+            "css": {
+              "n": 1,
+              "transferKB": 0.29296875,
+              "decodedKB": 0
+            },
+            "fetch": {
+              "n": 1,
+              "transferKB": 0,
+              "decodedKB": 9.4892578125
+            }
+          },
+          "items": [
+            {
+              "url": "/assets/index-CL_bTxBJ.js",
+              "type": "script",
+              "transferKB": 0,
+              "decodedKB": 99,
+              "startMs": 547,
+              "endMs": 547
+            },
+            {
+              "url": "/assets/phaser-BMeCXOGt.js",
+              "type": "script",
+              "transferKB": 0,
+              "decodedKB": 1447.6,
+              "startMs": 547,
+              "endMs": 547
+            },
+            {
+              "url": "/assets/colyseus-BEjLCa9D.js",
+              "type": "script",
+              "transferKB": 0,
+              "decodedKB": 125.9,
+              "startMs": 548,
+              "endMs": 548
+            },
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "type": "img",
+              "transferKB": 0.3,
+              "decodedKB": 106.5,
+              "startMs": 548,
+              "endMs": 963
+            },
+            {
+              "url": "/matchmake/reconnect/8BVVK77sm",
+              "type": "xmlhttprequest",
+              "transferKB": 0.5,
+              "decodedKB": 0.2,
+              "startMs": 703,
+              "endMs": 1154
+            },
+            {
+              "url": "/assets/dom/dom-skin.png",
+              "type": "css",
+              "transferKB": 0.3,
+              "decodedKB": 0,
+              "startMs": 706,
+              "endMs": 1131
+            },
+            {
+              "url": "/data/forest/temple.json",
+              "type": "fetch",
+              "transferKB": 0,
+              "decodedKB": 9.5,
+              "startMs": 720,
+              "endMs": 722
+            },
+            {
+              "url": "/assets/atlasses/PreloaderAssets.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 33,
+              "startMs": 829,
+              "endMs": 1251
+            },
+            {
+              "url": "/assets/atlasses/PreloaderAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 0.8,
+              "startMs": 829,
+              "endMs": 1275
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsMenu.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 152.1,
+              "startMs": 829,
+              "endMs": 1299
+            },
+            {
+              "url": "/assets/atlasses/CharAssetsMenu.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 15.5,
+              "startMs": 829,
+              "endMs": 833
+            },
+            {
+              "url": "/assets/atlasses/MenuAssets.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 191.2,
+              "startMs": 829,
+              "endMs": 1371
+            },
+            {
+              "url": "/assets/atlasses/MenuAssets.json",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 12.3,
+              "startMs": 829,
+              "endMs": 833
+            },
+            {
+              "url": "/assets/fonts/chinese/font-prephase.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 242.4,
+              "startMs": 830,
+              "endMs": 1539
+            },
+            {
+              "url": "/assets/fonts/chinese/font-prephase.fnt",
+              "type": "xmlhttprequest",
+              "transferKB": 0,
+              "decodedKB": 30,
+              "startMs": 830,
+              "endMs": 833
+            },
+            {
+              "url": "/assets/images/TempleHallForest.jpg",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 416.7,
+              "startMs": 830,
+              "endMs": 1562
+            },
+            {
+              "url": "/assets/images/Beam.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 63.1,
+              "startMs": 830,
+              "endMs": 1661
+            },
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 106.5,
+              "startMs": 830,
+              "endMs": 1730
+            },
+            {
+              "url": "/assets/images/branding/branding_logo_kizi.png",
+              "type": "xmlhttprequest",
+              "transferKB": 0.3,
+              "decodedKB": 60.1,
+              "startMs": 830,
+              "endMs": 1707
+            }
+          ],
+          "dupUrls": [
+            {
+              "url": "/assets/images/GameNameForest.png",
+              "n": 2,
+              "wireFetches": 2,
+              "transfersKB": [
+                0.3,
+                0.3
+              ],
+              "restKB": 0.3,
+              "doubleDownload": false
+            }
+          ],
+          "throttleProbe": {
+            "netRequests": 12,
+            "ttfbMinMs": 1.5,
+            "ttfbMedianMs": 76.6,
+            "ttfbMaxMs": 470.8,
+            "largestBytesMs": 432.1,
+            "largestKB": 0.5,
+            "largestUrl": "/matchmake/reconnect/8BVVK77sm",
+            "windowMs": 1183,
+            "wireKBTotal": 4,
+            "wireBytesTotal": 3809
+          },
+          "domContentLoadedMs": 721
+        }
+      }
+    }
+  ],
+  "summary": {
+    "cold": {
+      "menuActiveMs": 30307,
+      "transferKB": 1727,
+      "requests": 18,
+      "gameActiveAfterClickMs": 47364,
+      "transferKBAfterGame": 4478,
+      "menuPhaseKB": 1727,
+      "gamePhaseKB": 2752,
+      "warmPhaseKB": 0,
+      "postClickKB": 2752,
+      "pendingCount": 0,
+      "pendingUrlsRound1": [],
+      "loopDeferred": true,
+      "loopArrivalAfterEntryMs": null,
+      "charsPlayInWindow": "none/none",
+      "charsPlayArrivalAfterGateMs": null,
+      "bgmTerminalInWindow": "none/none",
+      "bgmTerminalArrivalAfterGateMs": null,
+      "bgmTerminalPreGateKB": 0,
+      "audio": {
+        "count": 14,
+        "totalKB": 379.3,
+        "menuKB": 0,
+        "warmKB": 0,
+        "postKB": 379.3,
+        "pendingRound1": "",
+        "tracksRound1": "MenuMusic:post:150.1,Jump_fb:post:5.4,Jump_wg:post:9.4,Diamond:post:8.9,Death:post:15.6,Door:post:28.4,Lever:post:13,Pusher:post:15.6,Platform:post:27.9,WaterSteps:post:11.7,EndPass:post:9.5,EndFail:post:9.5,EndDiamond:post:32.9,Wind:post:41.4"
+      },
+      "revalProbe": {
+        "urls": 51,
+        "refetchKB": 6350.5,
+        "revalKB": 0,
+        "notConditional304": []
+      },
+      "throttle": {
+        "profile": "slow3g",
+        "checked": true,
+        "latencyMs": 400,
+        "downBps": 62500,
+        "upBps": 62500,
+        "desc": "Lighthouse Slow 3G 0.5Mbps↓↑ · 400ms",
+        "ttfbMedianMs": 439.3,
+        "largestUrl": "/assets/fonts/chinese/font.png",
+        "largestKB": 1600.6,
+        "largestBytesMs": 43157.8,
+        "windowMs": 76847,
+        "achievedMbps": 0.48
+      },
+      "dupUrls": [
+        {
+          "url": "/assets/images/GameNameForest.png",
+          "n": 2,
+          "wireFetches": 2,
+          "transfersKB": [
+            106.8,
+            0.3
+          ],
+          "restKB": 0.3,
+          "doubleDownload": false
+        },
+        {
+          "url": "/assets/atlasses/CharAssetsEntry.json",
+          "n": 2,
+          "wireFetches": 1,
+          "transfersKB": [
+            0.6,
+            0
+          ],
+          "restKB": 0,
+          "doubleDownload": false
+        },
+        {
+          "url": "/assets/atlasses/GroundAssets.json",
+          "n": 2,
+          "wireFetches": 1,
+          "transfersKB": [
+            2.5,
+            0
+          ],
+          "restKB": 0,
+          "doubleDownload": false
+        },
+        {
+          "url": "/assets/atlasses/MechAssets.json",
+          "n": 2,
+          "wireFetches": 1,
+          "transfersKB": [
+            2.2,
+            0
+          ],
+          "restKB": 0,
+          "doubleDownload": false
+        },
+        {
+          "url": "/assets/atlasses/Temples/forest/TempleAssets.json",
+          "n": 2,
+          "wireFetches": 1,
+          "transfersKB": [
+            1.1,
+            0
+          ],
+          "restKB": 0,
+          "doubleDownload": false
+        },
+        {
+          "url": "/assets/atlasses/PopupAssets.json",
+          "n": 2,
+          "wireFetches": 1,
+          "transfersKB": [
+            1.4,
+            0
+          ],
+          "restKB": 0,
+          "doubleDownload": false
+        },
+        {
+          "url": "/assets/fonts/chinese/font.fnt",
+          "n": 2,
+          "wireFetches": 1,
+          "transfersKB": [
+            3.8,
+            0
+          ],
+          "restKB": 0,
+          "doubleDownload": false
+        },
+        {
+          "url": "/assets/atlasses/CharAssetsPlay.json",
+          "n": 2,
+          "wireFetches": 1,
+          "transfersKB": [
+            1.8,
+            0
+          ],
+          "restKB": 0,
+          "doubleDownload": false
+        }
+      ],
+      "doubleDownloads": []
+    },
+    "warmReload": {
+      "menuActiveMs": 1869.5,
+      "transferKB": 4
+    },
+    "pageErrors": []
+  }
+}
