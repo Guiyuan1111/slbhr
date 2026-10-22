@@ -958,3 +958,33 @@ fast3g 面额 47.1ms 被 91ms 的带吞掉，4g/off 更不必说。这与 r25–
 **下一轮候选**：换关时 Phaser `sourceSize` 空引用的根因（旧纹理帧在动画/显示对象上的引用时序，
 两臂同型、基线既有）；二进制 PNG 的 304 消除（缓存策略一致性评估）；换关落定后 Temple Finish
 的保留/释放再账。素材再编码（任务 #42）仍是用户保留项，未经裁决不动。
+
+## 三十四、r37 增补（2026-10-23，换关链静态资源内容寻址）
+
+> 报告 `2026-10-23-r37-asset-versioning.md`。r36 把换关链的字节压到 0.4KB，但那是两次
+> **300B 的 304 复验**——每次换关的机关变体 PNG（以及变体翻转时的房内字体 PNG）仍要回源，
+> 代价是一个并行 RTT（off≈0／4g≈90ms／fast3g≈170ms／slow3g≈430ms）。本轮给 24 个机关变体的
+> PNG/JSON 与 3 个房内字体文件（共 **51 条**）生成内容寻址 URL `?v=<sha1-8>`，服务端对带
+> 版本参数的静态文件回 `immutable`：URL 不变 ⇒ 字节不变，链上这两个请求从 304 变成纯缓存命中。
+> 版本参数不进入 Phaser 的纹理/动画键，游戏状态零变化；未版本化资源的缓存策略逐条保持原值。
+
+| 件 | 内容 | commit | 关键数字 |
+|---|---|---|---|
+| r37 件1 | `scripts/asset-versions.mjs` 按字节生成 51 条清单到 `packages/client/src/asset-versions.ts`（`--check` 逐字节，build/dev 前置）；`BootScene.versionedAsset()` 接入 `mechAtlasUrls`／`roomFontPng`／`FONT_FNT`，URL 构造仍单点；`staticGz` 新增版本正则与 `cachePolicy`／`fallbackCachePolicy`，`express.static` 关自带缓存头使兜底路径统一写头；`asset-versions.test.ts` 4 例＋`staticGz.test.ts` 新增 5 例 | 本轮 | 客户端 +3,082B raw／**+804B gzip**（105,771→108,853B／35,932→36,736B）；51 条清单覆盖 48 个机关文件＋3 个字体文件；HTML 26,141B 不变 |
+| r37 件2 | 量具沿用 r36（`FW_DEBUG_ARM_WIN`＋结算窗静网门＋三窗拆账＋驻留快照），四档 A/B/A 换臂；臂 A/A′＝r36 构建、臂 B＝r37 | 快照本轮 12 份 `advance-r37-*` | 链内传输 **0.45→0.00KB**；链上 PNG 响应 slow3g **435–460→10–16ms**、fast3g **169–181→14–21ms**、4g **92–106→11–18ms**、off **14–21→9–16ms**（≈一个 RTT）；换关→可玩 slow3g 匹配 4 轮 **1729.1→1386.7ms（−342.4ms，−19.8%）**、fast3g 中点 **1477.1→1297.6ms（−179.5ms，−12.1%）**；4g（B−A′ −44.6ms）与 off（+24.6ms）在散布内不主张；结算窗 1358.0→1357.8KB／690.4→690.3KB 不变，纹理驻留逐档持平 |
+| r37 件3 | 末轮门禁与文档收口 | `docs` | typecheck 0 错、十一项 `--check` 逐字节（含 asset-versions 51 条）、build `index-uHFsMKYU` 108.85KB／gzip 36.74KB、vitest **29 文件/313 例**、det **48/48**、fixtures 6/6、prephase 5/5、roomtext 6/6·5/5、domskin 4/4、audiofamily／charsplay ALL PASS、treebake／groundcache ALL PASS、journey 7/7·3/3·6/6·4/4·3/3、route 双关 won（39,502／12,973ms）、regression won=true 零错零缺帧；slow3g `sourceSize` 页错两臂同型（A′ 53／B 89）为基线既有 |
+
+**三条可复用结论**：
+① **字节归零后，下一个成本单位是 RTT**：r36 之后链内只剩 0.4KB，但两个 304 并行仍要一个
+完整往返；收益按档位恰好等于 RTT（slow3g 400ms 档 −342ms、fast3g 150ms 档 −180ms、off ≈0）。
+弱网优化做到"字节很少"之后，要把"往返次数"单独记账，否则会低估剩余空间。
+② **内容寻址是消除复验的正确工具，但必须与构建链绑定**：URL 随字节变，才能安全地给
+immutable；若素材替换而清单没重算，就会把旧哈希发给新文件。生成器前置于 build/dev、
+`--check` 与单测逐条重算 sha1，是把这条约束变成门禁而不是口头约定。
+③ **收益小于臂内散布时，机制证据比均值差更可靠**：4g/off 的均值差方向正确但不可分离；
+链上 PNG 的响应时长（92–106→11–18ms、14–21→9–16ms）逐资源证明了机制生效，
+报告据此只主张 slow3g 与 fast3g，不把噪声写成收益。
+
+**下一轮候选**：换关时 Phaser `sourceSize` 空引用的根因（旧纹理帧在动画/显示对象上的引用时序，
+两臂同型、基线既有）；换关落定后 Temple Finish 的保留/释放再账；4g 档小收益需更多轮次。
+素材再编码（任务 #42）仍是用户保留项，未经裁决不动。
