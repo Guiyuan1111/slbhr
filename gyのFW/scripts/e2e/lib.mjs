@@ -53,14 +53,16 @@ export function startServer(port, extraEnv = {}) {
   });
 }
 
-export async function enterAs(page, port, mode, roomCode, level = "forest_01") {
+/** waitScale（r23 件1b）：弱网档位下 #menu 隐藏与房间码出现都要按档位带宽等，
+ *  缺省 15s/20s 是 off/4g 口径——slow3g 的 Menu active 实测 30.3s，不放大就会误判成页面卡死。 */
+export async function enterAs(page, port, mode, roomCode, level = "forest_01", waitScale = 1) {
   const BASE = `http://127.0.0.1:${port}`;
   await page.goto(`${BASE}/?level=${level}`, { waitUntil: "domcontentloaded" });
   await page.fill("#password", PASSWORD);
   if (mode === "join") await page.fill("#roomcode", roomCode);
   await page.click(mode === "create" ? "#btn-create" : "#btn-join");
-  await page.waitForSelector("#menu", { state: "hidden", timeout: 15000 });
-  await page.waitForFunction(() => /房间码 [^（\s]{4,}/.test(document.querySelector("#hud-room")?.textContent ?? ""), null, { timeout: 20000 });
+  await page.waitForSelector("#menu", { state: "hidden", timeout: 15000 * waitScale });
+  await page.waitForFunction(() => /房间码 [^（\s]{4,}/.test(document.querySelector("#hud-room")?.textContent ?? ""), null, { timeout: 20000 * waitScale });
   const roomText = await page.textContent("#hud-room");
   // Colyseus roomId 字符集不止 alnum：取 房间码 与（密码已校验）之间的完整串
   return (roomText.match(/房间码 ([^（\s]+)/) || [])[1] ?? "";

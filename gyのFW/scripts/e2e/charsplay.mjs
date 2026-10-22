@@ -46,7 +46,13 @@ const NET = NET_PROFILES[NET_NAME];
 const THROTTLED = NET_NAME !== "off";
 /** 播放图集到位的等待上限：名义体耗时 + 12s 余量（节流档不能拿 off 档的 25s 判到位，否则会把
  *  "慢但正确"读成超时）；442.4KB 在 slow3g 是 7.1s，在 fast3g 是 2.3s */
-const ARRIVAL_CAP = 12000 + (THROTTLED ? Math.round((1000 * 453_000) / NET.down) : 0);
+const ARRIVAL_CAP = 12000 + (THROTTLED ? 3 * Math.round((1000 * 453_000) / NET.down) : 0);
+/** 档位等待倍率：lib.mjs 的 enterAs 缺省按 off/4g 口径（#menu 隐藏 15s / 房间码 20s），
+ *  而 r23 §五 实测 Menu active 是 off 0.66s / 4g 4.3s / fast3g 9.9s / slow3g 30.4s，
+ *  slow3g 不带倍率会把"慢"读成"卡死"。只放大等待，不放宽任何判据。 */
+const WAIT_SCALE = { off: 1, cable: 2, "4g": 2, fast3g: 3, slow3g: 8 }[NET_NAME];
+/** started 落定上限：到落定的过网总量实测约 5.2~6.2MB（r23 §八），按档位带宽换算再留 20s */
+const WAIT_START = THROTTLED ? 20000 + Math.round((1000 * 6_200_000) / NET.down) : 20000;
 
 /** 产物 json 的帧几何（Node 侧独立回算，页面只认这一份） */
 const geomOf = (f) => {
@@ -127,6 +133,25 @@ const waitAnims = (page, needTexture, ms) =>
     { timeout: ms },
   );
 
+/** 等"角色确有上屏"：`waitForStarted` 读的是**服务器**相位（ready→started 由双人到座计时，
+ *  不看客户端装载），而落定门是客户端 `GameScene.create` 跑完那一刻。off 档两者几乎同帧，
+ *  节流档差出 8~78s（r23 §四/§五：4g 可玩 12.8s、slow3g 90.8s），不锚这一步就会把
+ *  "create 还没跑"读成"窗口里画面对不上"（4g 首跑实测 painted=0）。
+ *  判据用探针自己那套遍历，不引入第二个口径。 */
+const waitPainted = (page, ms) => page.waitForFunction(`(() => {
+  const g = window.__fw;
+  if (!g || !g.scene.isActive("Game")) return false;
+  const walk = (l) => {
+    for (const o of l || []) {
+      if (o.type === "Container") { if (walk(o.list)) return true; continue; }
+      const k = o.texture && o.texture.key;
+      if (k && k.indexOf("chars") === 0) return true;
+    }
+    return false;
+  };
+  return walk(g.scene.getScene("Game").children.list);
+})()`, null, { timeout: ms, polling: 80 });
+
 const mkCtx = async () => {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   const page = await ctx.newPage();
@@ -199,10 +224,11 @@ try {
     await Promise.race([held, new Promise((r) => setTimeout(r, STALL))]);
     await route.continue();
   });
-  const code = await enterAs(A.page, PORT, "create", "", LEVEL);
-  await enterAs(B.page, PORT, "join", code, LEVEL);
-  await waitForStarted(A.page);
-  await waitForStarted(B.page);
+  const code = await enterAs(A.page, PORT, "create", "", LEVEL, WAIT_SCALE);
+  await enterAs(B.page, PORT, "join", code, LEVEL, WAIT_SCALE);
+  await waitForStarted(A.page, WAIT_START);
+  await waitForStarted(B.page, WAIT_START);
+  await waitPainted(A.page, WAIT_START);
 
   const s1 = await snapshot(A.page);
   check("停答生效：窗口里 chars-play 未入缓存（阴性对照）", s1.hasPlay === false, `hasPlay=${s1.hasPlay} role=${s1.myRole} diamonds=${s1.diamonds}`);
@@ -245,13 +271,14 @@ try {
   const D = await mkCtx();
   watch("C", C.page);
   watch("D", D.page);
-  const code2 = await enterAs(C.page, PORT, "create", "", LEVEL);
-  await enterAs(D.page, PORT, "join", code2, LEVEL);
-  await waitForStarted(C.page);
-  // 页钟锚点：waitForStarted 落地后立刻取 performance.now()，带 Playwright 观测延迟（几十 ms 级），
+  const code2 = await enterAs(C.page, PORT, "create", "", LEVEL, WAIT_SCALE);
+  await enterAs(D.page, PORT, "join", code2, LEVEL, WAIT_SCALE);
+  await waitForStarted(C.page, WAIT_START);
+  await waitForStarted(D.page, WAIT_START);
+  await waitPainted(C.page, WAIT_START);
+  // 页钟锚点：落定门（角色上屏）之后立刻取 performance.now()，带 Playwright 观测延迟（几十 ms 级），
   // 只用于同钟相减，不当绝对时刻用（同 perf-load 的口径）。
   const t0 = await C.page.evaluate(() => performance.now());
-  await waitForStarted(D.page);
   await waitAnims(C.page, false, ARRIVAL_CAP).catch(() => {});
   const win = await C.page.evaluate(() => {
     const e = performance.getEntriesByType("resource").find((x) => x.name.endsWith("/CharAssetsPlay.png"));
