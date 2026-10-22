@@ -20,11 +20,16 @@
  * 与生成器 scripts/split-char-atlas.mjs 的关系：本测试**不调用**它的任何装配代码，
  * 期望值全部由「官方 CharAssets.png/json 的字节与坐标」＋「三张产物 json 声明的坐标」独立回算，
  * 生成器自己的断言若有口径错误，这里仍会独立发现。复现性（同输入必同输出）由 `--check` 门禁负责。
+ *
+ * 末尾那个 r25 describe 装的是**音频分批**的同类网（门里/门后/兜底三处名单）。放这里不是顺手：
+ * 音频的失效模式与错帧同形——`GameScene.sfx` 首行按 `cache.audio.exists` 静默跳过，
+ * 缺键不抛不警告，冷启动/像素/回归三条门禁全都读不出"死亡没声"，只有按调用点分类才挡得住。
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { cropRaw, decodePng } from "../../../../scripts/png-raw.mjs";
+import { AUDIO_SFX, bgmFinishOf, bgmLoopOf, bgmPackOf, bgmTerminalOf } from "../audio";
 
 const ROOT = path.resolve(import.meta.dirname, "..", "..", "..", "..");
 const SRC = (p: string) => readFileSync(path.join(ROOT, p), "utf8");
@@ -393,5 +398,79 @@ describe("r23 件1 拆分：装载批与调用点分类", () => {
     const create = game.slice(game.indexOf("create(): void"));
     expect(create).toContain("ensureCharAnims(this");
     expect(create.indexOf("ensureCharAnims(this")).toBeLessThan(create.indexOf("setupCameraManager(level)")); // 角色在 create 后段才建
+  });
+});
+
+/** 类内方法体（两格缩进闭合）：body() 对类方法会一路取到 class 末尾，"不许出现在这条批里"需要紧口径 */
+function methodBody(file: string, sig: string): string {
+  const src = stripComments(SRC(file));
+  const at = src.indexOf(sig);
+  expect(at, `${file} 里找不到 ${sig}`).toBeGreaterThan(-1);
+  const end = src.indexOf("\n  }", at);
+  expect(end, `${sig} 没有闭合`).toBeGreaterThan(at);
+  return src.slice(at, end);
+}
+
+describe("r25 件1 音频分批：落定门只等 sfx", () => {
+  const BOOT = "packages/client/src/scenes/BootScene.ts";
+  const GAME = "packages/client/src/scenes/GameScene.ts";
+
+  it("清单闭包：族两支恰是循环曲＋终局曲（不相交、不缺支），终局批=失败曲＋本族终局曲", () => {
+    for (const fam of ["general", "speed"] as const) {
+      const loop = bgmLoopOf(fam).map(([k]) => k);
+      const fin = bgmFinishOf(fam).map(([k]) => k);
+      expect([...loop, ...fin].sort()).toEqual(bgmPackOf(fam).map(([k]) => k).sort());
+      expect(new Set([...loop, ...fin]).size).toBe(2); // 相交 = 门后同一条批双载
+      expect(bgmTerminalOf(fam).map(([k]) => k)).toEqual(["bgm_over", ...fin]);
+    }
+    expect(bgmPackOf("general").map(([k]) => k)).toEqual(["bgm_level", "bgm_finish"]);
+    expect(bgmPackOf("speed").map(([k]) => k)).toEqual(["bgm_level_speed", "bgm_finish_speed"]);
+    expect(AUDIO_SFX.length).toBe(13);
+  });
+
+  it("门内只剩 sfx 一条音频批；循环曲与三支终局时刻曲同在门后 thenLoop 批", () => {
+    const gate = body(BOOT, "export function startBgWarm");
+    const calls = [...gate.matchAll(/loadAudioPack\((.*?)\)\s*;/g)].map((m) => m[1].replace(/\s+/g, ""));
+    expect(calls.sort()).toEqual([
+      "scene,AUDIO_MENU",
+      "scene,AUDIO_SFX",
+      "scene,bgmLoopOf(warmBgmFamily)",
+      "scene,bgmTerminalOf(warmBgmFamily)",
+    ]);
+    for (const ban of ["AUDIO_BGM_OVER", "bgmFinishOf"]) expect(gate.includes(ban), `落定门出现 ${ban}`).toBe(false);
+    const at = gate.indexOf("const thenLoop");
+    const thenLoop = gate.slice(at, gate.indexOf("};", at));
+    for (const want of ["bgmLoopOf(warmBgmFamily)", "bgmTerminalOf(warmBgmFamily)"]) expect(thenLoop).toContain(want);
+    expect(thenLoop).toContain("scene.sys.isActive()"); // Menu 被切走就作废，交给 Game 侧兜底
+  });
+
+  it("GameScene 兜底声明：preload 只补 sfx，三条 kick 按 画面 > 循环曲 > 终局曲 排队", () => {
+    const preload = methodBody(GAME, "preload(): void");
+    expect(preload).toContain("loadAudioPack(this, AUDIO_SFX)");
+    for (const ban of ["AUDIO_BGM_OVER", "bgmFinishOf", "bgmTerminalOf", "bgmLoopOf"]) {
+      expect(preload.includes(ban), `进房阻塞批出现 ${ban}`).toBe(false);
+    }
+    const game = stripComments(SRC(GAME));
+    expect(game.indexOf("this.kickCharsPlay()")).toBeLessThan(game.indexOf("this.kickBgmLoop()"));
+    expect(game.indexOf("this.kickBgmLoop()")).toBeLessThan(game.indexOf("this.kickBgmTerminal()"));
+  });
+
+  it("终局曲补起钉死在三道卫上；失败曲不补（时刻绑定的一次性音，晚放会把重生盖成失败音）", () => {
+    const kick = methodBody(GAME, "private kickBgmTerminal");
+    expect(kick).toContain('this.cache.audio.exists("bgm_over")');
+    expect(kick).toContain("loadAudioPack(this, bgmTerminalOf(bgmFamilyOf(this.templeType)))");
+    expect(kick).toContain("if (!this.stairsPlayed) return;");
+    expect(kick).toContain('!== "won"');
+    expect(kick).toContain("this.sound.isPlaying(fin)");
+    expect([...kick.matchAll(/this\.sfx\(/g)].length).toBe(1);
+    expect(kick).not.toContain('this.sfx("bgm_over")');
+    expect(kick).toContain('this.load.off("complete", catchUpFinish)'); // 监听随 SHUTDOWN 摘除，否则每次 create 累积一个
+  });
+
+  it("出门批的字节面额：general 323.3KB／speed 228.5KB（素材换版时这条先响，报告口径要重算）", () => {
+    const kb = (f: string) => readFileSync(path.join(ROOT, "packages/client/public/assets/audio", f)).length / 1024;
+    const over = kb("LevelMusicOver.mp3");
+    expect(over + kb("LevelMusicFinish.mp3")).toBeCloseTo(323.3, 1);
+    expect(over + kb("LevelMusicFinish_speed.mp3")).toBeCloseTo(228.5, 1);
   });
 });
