@@ -22,7 +22,9 @@
  *     完全不节流**，故历轮数字口径不变。可用 `--rtt <ms>`/`--down <Mbps>` 覆写单参数做定点换算。
  *     节流由 CDP `Network.emulateNetworkConditions` 施加在页面上；**条件复验探测（revalidate）走 Node
  *     原生 http，不经节流**，所以那一栏跨档位仍可比（它测的是服务器能力，不是链路）。
- *     档位自带"节流真的生效"断言（见 throttleProof）：延迟档要求逐请求 TTFB 中位数 ≥ 0.5×rtt，
+ *     档位自带"节流真的生效"断言（见 throttleProof）：延迟档用**页内墙钟直测**一次 1KB 取回
+ *     （r30 实测：CDP 的 latency 记在 fetchStart 之前，Resource Timing 的 TTFB 只有 1–2ms，
+ *     逐请求 TTFB 中位数实际测的是带宽排队，字节更少的臂会假阴性），要求 ≥ 0.5×rtt；
  *     带宽档要求最大单笔的响应体耗时 ≥ 0.5×(字节/带宽)。静默失效的节流档比没有档更坏——
  *     它会把"弱网换算"写成"弱网实测"，故断言不过直接抛错退出。
  * 产物：benchmark/results/load-<label>.json
@@ -188,17 +190,33 @@ async function resourceStats(page) {
   });
 }
 
+/** r30：延迟档的直接证据。CDP 的 latency 在 fetchStart 之前生效——最小实验（150ms/200KB/s）
+ *  每次 fetch 墙钟 +158ms，而 responseStart−fetchStart 只有 1–2ms。逐请求 TTFB 中位数于是只反映
+ *  带宽排队：字节更少的臂排队更短，反而会在旧判据下"假阴性"（r30 臂 B 连试三次 38–42ms）。
+ *  取 1KB 静态文件、cache-bust、连测两次取小值，避开缓存与渲染卡顿的单向污染。 */
+async function probeLatencyWall(page) {
+  return page.evaluate(async () => {
+    const out = [];
+    for (let i = 0; i < 2; i++) {
+      const t0 = performance.now();
+      await fetch(`/assets/atlasses/CharAssetsEntry.json?latency_probe=${Date.now()}_${i}`, { cache: "no-store" });
+      out.push(performance.now() - t0);
+    }
+    return +Math.min(...out).toFixed(1);
+  });
+}
+
 /** 节流是不是真的落在链路上了？——静默失效的节流档会把"换算"冒充成"实测"，所以这里必须能失败。
- *  两条独立判据（各只依赖一个旋钮）：延迟档看逐请求 TTFB 中位数，带宽档看最大单笔的响应体耗时。
+ *  两条独立判据（各只依赖一个旋钮）：延迟档看页内墙钟探针，带宽档看最大单笔的响应体耗时。
  *  系数取 0.5 且只设下限：并发调度会让单笔体耗时大幅偏离名义值（本机 4g 实测 font.png 体 9531ms
  *  vs 名义 3278ms——多请求共享同一节流带宽），拿名义值当等式判会把好机器判成失效。 */
-function assertThrottleActive(probe, tag) {
+function assertThrottleActive(probe, wallMs, tag) {
   if (!THROTTLED) return { profile: NET_NAME, checked: false };
   const fails = [];
   if (NET.latency > 0) {
     const floor = 0.5 * NET.latency;
-    if (probe.ttfbMedianMs === null) fails.push(`无过网请求可证 TTFB（netRequests=${probe.netRequests}）`);
-    else if (probe.ttfbMedianMs < floor) fails.push(`TTFB 中位数 ${probe.ttfbMedianMs}ms < 0.5×rtt(${floor}ms)`);
+    if (wallMs === null) fails.push("无页内墙钟延迟探针");
+    else if (wallMs < floor) fails.push(`墙钟延迟探针 ${wallMs}ms < 0.5×rtt(${floor}ms)`);
   }
   if (NET.down > 0) {
     if (probe.largestBytesMs === null || probe.largestKB === null) fails.push("无最大单笔可证带宽");
@@ -220,6 +238,7 @@ function assertThrottleActive(probe, tag) {
     downBps: NET.down,
     upBps: NET.up,
     desc: NET.desc,
+    latencyWallMs: wallMs,
     ttfbMedianMs: probe.ttfbMedianMs,
     largestUrl: probe.largestUrl,
     largestKB: probe.largestKB,
@@ -342,7 +361,9 @@ async function measureRound(browser, round) {
   cold.gameActiveAfterClickMs = tGame - tClick;
   cold.clickPerfMs = Math.round(clickPerfMs);
   cold.resourcesAfterGame = await resourceStats(page);
-  cold.throttle = assertThrottleActive(cold.resourcesAfterGame.throttleProbe, `round${round} 冷启动段`);
+  // 探针放在快照之后：它多取一次 1KB，只作链路证据，不计入任何计时/字节窗口。
+  const latencyWallMs = THROTTLED && NET.latency > 0 ? await probeLatencyWall(page) : null;
+  cold.throttle = assertThrottleActive(cold.resourcesAfterGame.throttleProbe, latencyWallMs, `round${round} 冷启动段`);
   cold.pageErrors = errs;
   // 阶段归位：Menu 快照里已存在 = Menu 前；进 Game 快照里新增的 = 点建房→Game 段。
   // （不拿页内 performance.now 与 Node 墙钟对齐——两钟不可比，集合差是唯一可靠判据）
@@ -627,7 +648,7 @@ if (argCompare) {
   }
   const cTh = c.throttle;
   if (cTh && cTh.checked) {
-    console.log(`节流生效自检     : ${cTh.profile} 已过——TTFB 中位 ${cTh.ttfbMedianMs}ms，` +
+    console.log(`节流生效自检     : ${cTh.profile} 已过——墙钟延迟探针 ${cTh.latencyWallMs}ms（RT TTFB 中位 ${cTh.ttfbMedianMs}ms 仅作排队附注），` +
       `最大单笔 ${cTh.largestKB}KB→${cTh.largestUrl} 体耗时 ${cTh.largestBytesMs}ms，过网窗 ${cTh.windowMs}ms`);
   }
   console.log(`reload Menu active : ${b.warmReload.menuActiveMs}ms → ${c.warmReload.menuActiveMs}ms`);
