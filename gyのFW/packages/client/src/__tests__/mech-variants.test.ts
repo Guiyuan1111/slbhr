@@ -1,12 +1,14 @@
 /**
- * r30 机关图集按关变体的静态网：MechAssets 从"整关一张 Slim（152.9KB）"改为
- * 48 关 → 24 个帧子集（`assets/atlasses/mech/MechAssets-<id>.{png,json}`）。
+ * r30/r33 机关图集按关变体的静态网：MechAssets 从"整关一张 Slim（152.9KB）"改为
+ * 48 关 → 24 个帧子集（`assets/atlasses/mech/MechAssets-<id>.{png,json}`）；r33 起每个子集
+ * 从 Slim 重打包到最小画布（帧坐标由生成器重算），像素与官方裁剪逐字节相等。
  *
  * 失效模式都不报错：
  *  1) 空间版（r26 keep 口径同形）：帧集合算错 ⇒ 变体少一帧 ⇒ 那帧画透明；
  *  2) 换关版（r30 新增）：同键重载被 TextureManager.checkKey 静默跳过 ⇒ 新关机制帧全部缺失；
  *  3) 时间版（r23/r29 同形）：风动画在无风关注册 ⇒ 帧名解析成 `__BASE`（Animation.js:454）⇒
- *     整张图集当一帧贴满屏。
+ *     整张图集当一帧贴满屏；
+ *  4) 重打包版（r33 新增）：搬运矩形错位/画布不紧致/帧间无透明间距 ⇒ LINEAR 采样渗到邻帧。
  *
  * 期望值独立回算：关卡字段 → 需求集（本文件手写映射），变体 id 按 FNV-1a 契约重算；
  * shared 的 mechAtlasFrames/mechVariantId 作为被核对对象，不参与期望值构造。
@@ -89,7 +91,13 @@ function idOf(frames: string[]): string {
 }
 
 const officialJson = JSON.parse(SRC(ATLAS_SPECS.mech.json)) as {
-  frames: { filename: string; frame: { x: number; y: number; w: number; h: number }; trimmed: boolean; spriteSourceSize?: { x: number; y: number } }[];
+  frames: {
+    filename: string;
+    frame: { x: number; y: number; w: number; h: number };
+    trimmed: boolean;
+    spriteSourceSize?: { x: number; y: number; w: number; h: number };
+    sourceSize?: { w: number; h: number };
+  }[];
 };
 let needs: Awaited<ReturnType<typeof inspect>>;
 /** id → { frames, levelIds }（独立回算的期望） */
@@ -169,7 +177,6 @@ describe("r30 变体账目（独立回算）", () => {
       const json = JSON.parse(readFileSync(path.join(DIR, `MechAssets-${id}.json`), "utf8"));
       expect((json.frames as { filename: string }[]).map((f) => f.filename).sort(), `关卡 ${l.id} 的在库 JSON`).toEqual(frames);
       expect(json.meta.image, `关卡 ${l.id} 的 meta.image`).toBe(`MechAssets-${id}.png`);
-      expect(json.meta.size).toEqual({ w: 2048, h: 2048 });
     }
   });
 
@@ -213,47 +220,89 @@ describe("r30 变体账目（独立回算）", () => {
   });
 });
 
-describe("r30 像素账（原地清零口径，独立回算）", () => {
-  it("每张变体与 Slim 同幅面；保留帧逐字节相同、非保留帧全 0；占位帧透明", () => {
+describe("r33 像素账（重打包口径，独立回算）", () => {
+  type VariantFrame = {
+    filename: string;
+    frame: { x: number; y: number; w: number; h: number };
+    trimmed: boolean;
+    spriteSourceSize?: { x: number; y: number; w: number; h: number };
+    sourceSize?: { w: number; h: number };
+  };
+  it("每帧裁剪与 Slim 同矩形逐字节相等；不重叠、外圈 1px 透明、画布紧致且解码在预算内", () => {
     const slim = decodePng(readFileSync(path.join(ROOT, ATLAS_SPECS.mech.slimPng)), "MechAssetsSlim");
+    const byName = new Map(officialJson.frames.map((f) => [f.filename, f]));
     const bad: string[] = [];
+    let decodePx = 0;
+    let pngBytes = 0;
     for (const [id, g] of groups) {
-      const png = decodePng(readFileSync(path.join(DIR, `MechAssets-${id}.png`)), `MechAssets-${id}`);
-      if (png.w !== slim.w || png.h !== slim.h) {
-        bad.push(`${id} 幅面 ${png.w}x${png.h}`);
+      const file = path.join(DIR, `MechAssets-${id}.png`);
+      const png = decodePng(readFileSync(file), `MechAssets-${id}`);
+      const json = JSON.parse(readFileSync(path.join(DIR, `MechAssets-${id}.json`), "utf8")) as {
+        meta: { image: string; size: { w: number; h: number } };
+        frames: VariantFrame[];
+      };
+      pngBytes += readFileSync(file).length;
+      decodePx += png.w * png.h;
+      if (g.frames.length === 1 && g.frames[0] === MECH_EMPTY_FRAME) {
+        expect(png.w, `${id} 占位画布宽`).toBe(1);
+        expect(png.h, `${id} 占位画布高`).toBe(1);
+        expect(png.data[3], `${id} 占位帧透明`).toBe(0);
+        expect(json.meta.size, `${id} 占位 meta.size`).toEqual({ w: 1, h: 1 });
         continue;
       }
-      const need = new Set(g.frames);
-      for (const f of officialJson.frames) {
+      const covered = new Uint8Array(png.w * png.h);
+      let overlap = false;
+      for (const f of json.frames) {
+        const o = byName.get(f.filename);
+        if (!o) {
+          bad.push(`${id}/${f.filename} 不在官方图集`);
+          continue;
+        }
+        if (
+          f.frame.w !== o.frame.w ||
+          f.frame.h !== o.frame.h ||
+          f.sourceSize?.w !== o.sourceSize?.w ||
+          f.sourceSize?.h !== o.sourceSize?.h
+        ) {
+          bad.push(`${id}/${f.filename} 帧宽高/sourceSize 变了`);
+        }
+        if (f.trimmed || f.spriteSourceSize?.x || f.spriteSourceSize?.y) bad.push(`${id}/${f.filename} 被 trim`);
         const { x, y, w, h } = f.frame;
-        if (need.has(f.filename)) {
-          for (let yy = y; yy < y + h; yy++) {
-            const off = (yy * slim.w + x) * 4;
-            if (!png.data.subarray(off, off + w * 4).equals(slim.data.subarray(off, off + w * 4))) {
-              bad.push(`${id}/${f.filename} 与 Slim 像素不同`);
-              break;
-            }
+        if (x < 1 || y < 1 || x + w > png.w - 1 || y + h > png.h - 1) bad.push(`${id}/${f.filename} 贴画布边`);
+        for (let yy = 0; yy < h; yy++) {
+          const a = ((y + yy) * png.w + x) * 4;
+          const b = ((o.frame.y + yy) * slim.w + o.frame.x) * 4;
+          if (!png.data.subarray(a, a + w * 4).equals(slim.data.subarray(b, b + w * 4))) {
+            bad.push(`${id}/${f.filename} 第 ${yy} 行与 Slim 不同`);
+            break;
           }
-        } else {
-          let dirty = false;
-          for (let yy = y; yy < y + h && !dirty; yy++) {
-            const off = (yy * slim.w + x) * 4;
-            for (let i = off; i < off + w * 4; i++) {
-              if (png.data[i] !== 0) {
-                dirty = true;
-                break;
-              }
-            }
+        }
+        for (let yy = y; yy < y + h; yy++) {
+          const row = yy * png.w;
+          for (let xx = x; xx < x + w; xx++) {
+            if (covered[row + xx]) overlap = true;
+            covered[row + xx] = 1;
           }
-          if (dirty) bad.push(`${id}/${f.filename} 未被清零`);
         }
       }
-      if (need.has(MECH_EMPTY_FRAME) && png.data[3] !== 0) bad.push(`${id} 占位帧 (0,0) 不透明`);
+      if (overlap) bad.push(`${id} 帧矩形重叠`);
+      const maxX = Math.max(...json.frames.map((f) => f.frame.x + f.frame.w));
+      const maxY = Math.max(...json.frames.map((f) => f.frame.y + f.frame.h));
+      if (maxX !== png.w - 1 || maxY !== png.h - 1) bad.push(`${id} 画布不紧致：${png.w}x${png.h}，内容到 ${maxX}x${maxY}`);
+      if (json.meta.size?.w !== png.w || json.meta.size?.h !== png.h) bad.push(`${id} meta.size 与 PNG 不符`);
+      if (png.w > 2048 || png.h > 2048) bad.push(`${id} 画布超过 2048`);
+      const limit = g.frames.includes("wind_effect0000") ? 5 * 1048576 : 1048576;
+      if (png.w * png.h * 4 > limit) bad.push(`${id} 解码 ${(png.w * png.h * 4) / 1048576}MiB 超预算`);
+      let stray = 0;
+      for (let i = 0; i < covered.length; i++) if (!covered[i] && png.data[i * 4 + 3] !== 0) stray++;
+      if (stray) bad.push(`${id} 帧外（间距/外框）有 ${stray} 个非透明像素`);
     }
     expect(bad).toEqual([]);
+    expect(decodePx * 4).toBeLessThanOrEqual(44 * 1048576);
+    expect(pngBytes).toBeLessThanOrEqual(1150 * 1024);
   }, TT);
 
-  it("官方帧全部未 trim、偏移为 0（原地清零的几何等价前提，变了要先改生成器）", () => {
+  it("官方帧全部未 trim、偏移为 0（按帧矩形搬运的几何等价前提，变了要先改生成器）", () => {
     const bad = officialJson.frames.filter((f) => f.trimmed || f.spriteSourceSize?.x || f.spriteSourceSize?.y);
     expect(bad.map((f) => f.filename)).toEqual([]);
   });

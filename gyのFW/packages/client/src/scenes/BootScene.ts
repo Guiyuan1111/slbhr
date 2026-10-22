@@ -145,12 +145,13 @@ let mechVariant: string | null = null;
 const WIND_ANIM_KEYS = ["wind_base", "wind_effect"] as const;
 
 /** 本关机关图集装载（r30 唯一路径；生成器 scripts/split-mech-atlas.mjs）：
- *  48 关 → 24 个帧子集（`@fw/shared/mech-needs` 的 mechAtlasFrames），画布仍是 2048²、保留帧
- *  坐标与像素逐字节照抄 Slim，只把本关不消费的帧原地清零。风区 34 帧（110.2KB）只进 15 个有风
- *  关卡；零机关关卡（forest_06 / forest_06_1）用 1×1 透明占位帧，保证纹理至少有一帧。
- *  同一会话换关（结算「继续」advance）：旧变体的解码画布是 16.8MB 且键固定，必须先卸纹理再声明；
- *  风动画的 AnimationFrame 在注册时已解析成旧纹理的 Frame（Animation.js:454），也必须一并移除，
- *  由下一次 `buildGameAnims(a,{wind})` 按新关重新注册（未卸干净会继续播旧变体的帧）。
+ *  48 关 → 24 个帧子集（`@fw/shared/mech-needs` 的 mechAtlasFrames）。r33 起每张变体把保留帧
+ *  从 Slim 重打包到最小画布（1px 外框 + 间距，像素逐字节照抄；解码平均 1.75MiB，旧口径固定
+ *  16MiB）。风区 34 帧（110.2KB）只进 15 个有风关卡；零机关关卡（forest_06 / forest_06_1）用
+ *  1×1 透明占位帧，保证纹理至少有一帧。
+ *  同一会话换关（结算「继续」advance）：旧变体的解码画布与帧都绑在固定纹理键上，必须先卸纹理
+ *  再声明；风动画的 AnimationFrame 在注册时已解析成旧纹理的 Frame（Animation.js:454），也必须
+ *  一并移除，由下一次 `buildGameAnims(a,{wind})` 按新关重新注册（未卸干净会继续播旧变体的帧）。
  *  变体 id 由关卡数据当场算出，装载 URL 不存在清单文件；同变体重入（重开同关）零传输。 */
 export function loadMechAtlas(load: Phaser.Loader.LoaderPlugin, level: MechLevel): void {
   const id = mechVariantId(level);
