@@ -19,7 +19,7 @@
  * 的串行段（blob→Image ~180ms）而非网络（19 请求全并行仅 ~55ms）。
  */
 import Phaser from "phaser";
-import { AUDIO_BGM_OVER, AUDIO_MENU, AUDIO_SFX, bgmFamilyOf, bgmFinishOf, bgmLoopOf, loadAudioPack, type BgmFamily } from "../audio.js";
+import { AUDIO_MENU, AUDIO_SFX, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadAudioPack, type BgmFamily } from "../audio.js";
 import { getSettings } from "../settings.js";
 
 export const ATLAS_CHARS = "chars";
@@ -167,13 +167,15 @@ export function startBgWarm(scene: Phaser.Scene, opts?: { menuBgm?: boolean }): 
   warmState = { done, resolve };
   const finish = (): void => warmState?.resolve();
   // r21：关卡循环曲（LevelMusic 1285.4KB）不进落定门——它是"可玩"之前最大的一笔，却没有一帧靠它。
-  // 门只等必需集（四图集+全量字体+sfx+失败曲+终局曲）。循环曲排在**门落定之后**再入队：
-  // 快速建房/邀请深链那条路上 Menu 在落定后几百毫秒就被切走，定时器随场景停用作废、请求根本不发起，
-  // 循环曲改由 GameScene.kickBgmLoop 在 create 之后兜底；驻留路径（真人正常节奏）则在门后把它预缓存，
-  // 进房即有声，与今日等价。节拍取 1500ms：必须晚于 fadeSwitch 的切场窗口，否则又变回与必需集抢管道。
+  // 门只等必需集（四图集+全量字体+sfx）。循环曲与两支终局时刻曲（失败曲 159.6KB、本族终局曲
+  // 163.7KB／speed 变体 68.9KB，r25）排在**门落定之后**再入队：快速建房/邀请深链那条路上 Menu 在落定后
+  // 几百毫秒就被切走，定时器随场景停用作废、请求根本不发起，这几支改由 GameScene 的 kick* 在 create
+  // 之后兜底；驻留路径（真人正常节奏）则在门后把它们预缓存，进房即有声，与今日等价。
+  // 节拍取 1500ms：必须晚于 fadeSwitch 的切场窗口，否则又变回与必需集抢管道。
   const thenLoop = (): void => {
     if (!scene.sys.isActive()) return; // Menu 已被切走（含切场瞬间竞态）：交给 Game 侧兜底
     loadAudioPack(scene, bgmLoopOf(warmBgmFamily));
+    loadAudioPack(scene, bgmTerminalOf(warmBgmFamily));
     scene.load.start();
   };
   scene.load.once("complete", () => {
@@ -209,10 +211,10 @@ export function startBgWarm(scene: Phaser.Scene, opts?: { menuBgm?: boolean }): 
   // 游戏内音频批（r6，同 r5 模式）：并入同一暖装队列与落定门——进 Game 前若暖装在飞，
   // GameScene.preload 的兜底声明会整体等门后重跑（已入 cache.audio 的键静默跳过），
   // 不产生双载竞态；请求数仍 < maxParallelDownloads 32，全并行。
-  // r16 件A：BGM 只取一族（sfx + 失败曲与类型无关，恒取）。
+  // r16 件A：BGM 只取一族（sfx 与类型无关，恒取）。r25 起门里只剩 sfx 十三支：r21 把循环曲搬出门、
+  // r25 把失败曲与终局曲搬出门，三支出门的共同判据是"没有一帧、没有一秒靠它"；而 sfx 里连最晚出声的
+  // 一支也要求跳跃/推箱/水声在**进房第一秒**就有声，留在门内。
   loadAudioPack(scene, AUDIO_SFX);
-  loadAudioPack(scene, AUDIO_BGM_OVER);
-  loadAudioPack(scene, bgmFinishOf(warmBgmFamily));
   scene.load.start();
 }
 

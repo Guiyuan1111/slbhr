@@ -19,7 +19,7 @@ import Phaser from "phaser";
 import { DOOR, ROLES, type Role } from "@fw/shared";
 import type { LevelData, Rect } from "@fw/shared/level2";
 import { windBodyPos } from "@fw/shared/level2";
-import { AUDIO_BGM_OVER, AUDIO_SFX, bgmFamilyOf, bgmFinishOf, bgmLoopOf, loadAudioPack } from "../audio.js";
+import { AUDIO_SFX, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadAudioPack } from "../audio.js";
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
@@ -320,11 +320,12 @@ export class GameScene extends Phaser.Scene {
     // r16 件A：只声明本关类型对应的那一支 BGM 族（init 早于 preload 执行，templeType
     // 已由 __fwInit.templeEntry 同步填好）——暖装猜错族时这里就是补齐点。
     loadAudioPack(this, AUDIO_SFX);
-    loadAudioPack(this, AUDIO_BGM_OVER);
     // r21：族内的**循环曲**（LevelMusic 1285.4KB）不再进这条阻塞批——它不决定任何一帧，
     // 却占进房段单笔最大字节（4g 2.63s／slow3g 21.0s）。改由 create 之后 kickBgmLoop 取。
-    // 终局曲留在这里：won 补演（create 同帧的 prevPhase==="won"）与通关演出都要当场取键。
-    loadAudioPack(this, bgmFinishOf(bgmFamilyOf(this.templeType)));
+    // r25：失败曲（159.6KB）与终局曲（163.7KB／speed 变体 68.9KB）同理出门，由 kickBgmTerminal 取。
+    // 它们出声的时点是死亡/通关那一刻，必然晚于进房若干秒；won 补演（create 同帧的
+    // prevPhase==="won"）取不到键时 `sfx` 静默跳过（GameScene.ts:581 的 exists 卫，不抛不warn），
+    // 到达后由补起处理器补上——见 kickBgmTerminal。
     // 游戏内四图集（r5 冷启动装载序整形）：Boot 不再装载（Menu 首帧用不到），
     // MenuScene 后台暖装通常已就绪（此处静默跳过）；暖装被提前打断（快速建房/
     // 邀请深链直进）时在此补齐，保证 create 前纹理完备——与旧 Boot 全量装载等价。
@@ -492,6 +493,7 @@ export class GameScene extends Phaser.Scene {
     this.sfx(this.bgmKey(), { loop: true });
     this.kickCharsPlay(); // 先声明：与循环曲同批并发时，让决定画面的那张排在队头
     this.kickBgmLoop();
+    this.kickBgmTerminal();
 
     // T4（14 号档）：退场统一停音。Phaser 3 场景共享全局 sound manager（InjectionMap
     // sound:'sound'，scene.stop 不停音）——quit/换关/重开路径都过本场景 SHUTDOWN，在此
@@ -534,6 +536,30 @@ export class GameScene extends Phaser.Scene {
     // 都会再挂一个 once——SHUTDOWN 时摘掉，否则补起处理器会累积并在下一次装载时多播一支。
     this.load.once("complete", catchUp);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.load.off("complete", catchUp));
+    this.load.start();
+  }
+
+  /** r25：两支**终局时刻曲**（失败曲 159.6KB ＋ 本族终局曲 163.7KB／speed 变体 68.9KB）的兜底装载点，
+   *  形状与 r21 循环曲相同：既不在 Boot 阻塞批也不在落定门，create 之后才取。驻留路径（Menu 暖装在门后
+   *  把它并进了同一条 BGM 批）两键已在 `cache.audio` ⇒ 当场返回，零请求零延后。
+   *  补起只给**终局曲**：死亡那一刻的失败曲是时刻绑定的一次性音，晚到几秒再放会把"已经重生在跑"盖成
+   *  失败音，所以不补；终局曲不一样——通关演出与 won 补演（create 同帧 `prevPhase==="won"`）都处在
+   *  "那一局的结尾正在进行/刚结束"的状态，曲子晚到仍是那句结尾，比整段静音更贴原意。三道卫把它钉死在
+   *  这个语义上：没进过演出、已离开 won 相位、或已被失败曲/自己占住，都不补。 */
+  private kickBgmTerminal(): void {
+    const fin = this.finishKey();
+    if (this.cache.audio.exists("bgm_over") && this.cache.audio.exists(fin)) return;
+    loadAudioPack(this, bgmTerminalOf(bgmFamilyOf(this.templeType)));
+    const catchUpFinish = (): void => {
+      if (!this.stairsPlayed) return;
+      if (String(this.d?.net.room?.state?.phase ?? "") !== "won") return;
+      if (this.sound.isPlaying(fin) || this.sound.isPlaying("bgm_over")) return;
+      this.sfx(fin);
+    };
+    // 与 kickBgmLoop 同一处理：LoaderPlugin 随场景复用，once 监听在 SHUTDOWN 摘掉，
+    // 否则换关/重开每次 create 都多挂一个，晚到的 complete 会放重复的曲子。
+    this.load.once("complete", catchUpFinish);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.load.off("complete", catchUpFinish));
     this.load.start();
   }
 

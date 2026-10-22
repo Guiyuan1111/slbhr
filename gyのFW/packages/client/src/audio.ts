@@ -80,10 +80,22 @@ export function bgmLoopOf(family: BgmFamily): ReadonlyArray<readonly [string, st
   return bgmPackOf(family).filter(([key]) => key === "bgm_level" || key === "bgm_level_speed");
 }
 
-/** 族内**终局曲**单支（r21）：won 演出可能在 create 同帧取键（GameScene 的 prevPhase==="won" 补演），
- *  故它不进"可玩"路径之外的第二段，仍留在落定门与阻塞批内。 */
+/** 族内**终局曲**单支。r25 起它出落定门（原先留门的理由是"won 补演可能在 create 同帧取键"，
+ *  那条前提成立、但结论错了：缺键不会抛错也不会警告——`GameScene.sfx` 第一行就按
+ *  `cache.audio.exists` 静默跳过（GameScene.ts:581），所以留门的代价（163.7KB）买来的是
+ *  "补演可能晚响一秒"，而不是"补演能不能活"。晚响由 `GameScene.kickBgmTerminal` 的补起处理。 */
 export function bgmFinishOf(family: BgmFamily): ReadonlyArray<readonly [string, string]> {
   return bgmPackOf(family).filter(([key]) => key === "bgm_finish" || key === "bgm_finish_speed");
+}
+
+/**
+ * 两支**终局时刻曲**（r25）：失败曲（与类型无关，159.6KB）＋ 本族终局曲（general 163.7KB／
+ * speed 变体 68.9KB）。它们是落定门里最后一笔"没有一帧、没有一秒靠它"的字节——出声时点在
+ * 死亡或通关那一刻，而那必然晚于进房若干秒。与 r21 循环曲同条门后批（BootScene.thenLoop），
+ * 快速进房那条路再由 GameScene.kickBgmTerminal 兜底。
+ */
+export function bgmTerminalOf(family: BgmFamily): ReadonlyArray<readonly [string, string]> {
+  return [...AUDIO_BGM_OVER, ...bgmFinishOf(family)];
 }
 
 /** 按清单向场景装载器入队（已在缓存中的键由 Phaser Loader 自动跳过） */
