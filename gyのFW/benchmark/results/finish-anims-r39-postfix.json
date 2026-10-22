@@ -1,0 +1,52 @@
+{
+  "gate": "finish-anims",
+  "pass": true,
+  "checks": [
+    {
+      "name": "forest_04 结算面板为 general 变体（speed 之后重载）",
+      "ok": true,
+      "detail": "finish_stone_2"
+    },
+    {
+      "name": "星碑动画已起播（hasStarted）",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "name": "动画帧对象未销毁",
+      "ok": true,
+      "detail": "true"
+    },
+    {
+      "name": "观察窗内出现 ≥2 个不同帧（动画真的在播）",
+      "ok": true,
+      "detail": "3 帧"
+    },
+    {
+      "name": "第 4 块面板 1.8s 窗内 pageerror = 0",
+      "ok": true,
+      "detail": "0 条"
+    },
+    {
+      "name": "找到 EndMenu「继续」按钮并触发 pointerup",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "「继续」可用并真正换关 forest_04→forest_05",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "整场 pageerror = 0",
+      "ok": true,
+      "detail": "0 条"
+    }
+  ],
+  "pageErrors": [],
+  "stones": [
+    "FinishStone0008",
+    "FinishStone0011",
+    "FinishStone0014"
+  ]
+}

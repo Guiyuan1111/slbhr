@@ -1,0 +1,55 @@
+{
+  "gate": "finish-anims",
+  "pass": false,
+  "note": "r38 构建（index-DEytQHYW）上的失败现场；完整 1311 条页错原文见 TEMP/r39-probe/pre-fix-gate.json（本轮清理前）",
+  "checks": [
+    {
+      "name": "forest_04 结算面板为 general 变体（speed 之后重载）",
+      "ok": true,
+      "detail": "finish_stone_2"
+    },
+    {
+      "name": "星碑动画已起播（hasStarted）",
+      "ok": false,
+      "detail": "false"
+    },
+    {
+      "name": "动画帧对象未销毁",
+      "ok": false,
+      "detail": "false"
+    },
+    {
+      "name": "观察窗内出现 ≥2 个不同帧（动画真的在播）",
+      "ok": false,
+      "detail": "1 帧"
+    },
+    {
+      "name": "第 4 块面板 1.8s 窗内 pageerror = 0",
+      "ok": false,
+      "detail": "92 条"
+    },
+    {
+      "name": "找到 EndMenu「继续」按钮并触发 pointerup",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "「继续」可用并真正换关 forest_04→forest_05",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "整场 pageerror = 0",
+      "ok": false,
+      "detail": "1311 条"
+    }
+  ],
+  "pageErrorCount": 1311,
+  "pageErrorsFirst": [
+    "TypeError: Cannot read properties of null (reading 'sourceSize')\n    at initialize.get [as realWidth] (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:5337:3926)\n    at initialize.setSizeToFrame (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:1321:373)\n    at initialize.setCurrentFrame (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:234:7599)\n    at initialize.handleStart (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:234:4170)\n    at initialize.startAnimation (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:234:4017)\n    at initialize.play (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:234:3410)\n    at initialize.play (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:2079:710)\n    at initialize.callback (http://127.0.0.1:3652/assets/index-DEytQHYW.js:2:22365)\n    at initialize.update (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:5891:2060)\n    at ct.50792.n.emit (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:1:2564)",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')\n    at initialize.get [as realWidth] (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:5337:3926)\n    at initialize.setSizeToFrame (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:1321:373)\n    at initialize.setCurrentFrame (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:234:7599)\n    at initialize.handleStart (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:234:4170)\n    at initialize.update (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:234:7056)\n    at initialize.preUpdate (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:2079:660)\n    at initialize.sceneUpdate (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:1148:573)\n    at ct.50792.n.emit (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:1:2564)\n    at initialize.step (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:5034:786)\n    at initialize.update (http://127.0.0.1:3652/assets/phaser-BMeCXOGt.js:5021:3225)"
+  ],
+  "stones": [
+    "FinishStone0008"
+  ]
+}
