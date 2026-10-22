@@ -30,6 +30,7 @@ import { validateSnapshot } from "../snapshotValidation";
 import { MechanismSmoother } from "./mechSmoothing";
 import { PlatformSoundTracker } from "./platformSound";
 import { GroundCache } from "./groundCache";
+import { makeTileSprite } from "./tileSprite";
 
 export interface GameInit {
   net: Net;
@@ -460,8 +461,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     // background：BackGround 256×256 砖纹只铺关卡本体（原版 tileSprite(0,0,1248,928)，边距留黑）
-    this.add
-      .tileSprite(PAD, PAD, level.widthPx, level.heightPx, ATLAS_TEMPLE, "BackGround0000")
+    makeTileSprite(this, PAD, PAD, level.widthPx, level.heightPx, ATLAS_TEMPLE, "BackGround0000")
       .setOrigin(0)
       .setDepth(0);
 
@@ -938,8 +938,7 @@ export class GameScene extends Phaser.Scene {
       this.add.image(ax, ay, ATLAS_MECH, "hanging_anchor0000").setOrigin(0.5).setDepth(1.28);
       const bx = h.pts[1].x + PAD;
       const by = h.pts[1].y + PAD;
-      const rope = this.add
-        .tileSprite(ax, ay, Math.max(1, Math.hypot(bx - ax, by - ay)), 20, ATLAS_MECH, "pulley_rope0000")
+      const rope = makeTileSprite(this, ax, ay, Math.max(1, Math.hypot(bx - ax, by - ay)), 20, ATLAS_MECH, "pulley_rope0000")
         .setOrigin(0, 0.5)
         .setDepth(1.26);
       rope.setRotation(Math.atan2(by - ay, bx - ax));
@@ -968,8 +967,7 @@ export class GameScene extends Phaser.Scene {
         this.add.image(a2.x + 10, a2.y - 50, ATLAS_MECH, "pulley_anchor0000").setOrigin(0.5).setDepth(1.26),
       ];
       const mkRope = (fx: number, fy: number, tx: number, ty: number): Phaser.GameObjects.TileSprite => {
-        const r = this.add
-          .tileSprite(fx, fy, Math.max(1, Math.hypot(tx - fx, ty - fy)), 19, ATLAS_MECH, "pulley_rope0000")
+        const r = makeTileSprite(this, fx, fy, Math.max(1, Math.hypot(tx - fx, ty - fy)), 19, ATLAS_MECH, "pulley_rope0000")
           .setOrigin(0, 0.5)
           .setDepth(1.22);
         r.setRotation(Math.atan2(ty - fy, tx - fx));
@@ -1008,8 +1006,7 @@ export class GameScene extends Phaser.Scene {
       this.add.image(hx, hy, ATLAS_MECH, "roman_center0000").setOrigin(0.5).setDepth(1.29);
       const baseH = Math.abs(2 * kPx);
       if (baseH > 1) {
-        this.add
-          .tileSprite(hx, hy + kPx, 138, baseH, ATLAS_MECH, "roman_base0000")
+        makeTileSprite(this, hx, hy + kPx, 138, baseH, ATLAS_MECH, "roman_base0000")
           .setOrigin(0.5, kPx >= 0 ? 1 : 0)
           .setDepth(1.2);
       }
@@ -1018,7 +1015,7 @@ export class GameScene extends Phaser.Scene {
         hx,
         hy,
         [
-          this.add.tileSprite(0, 0, w, 30, ATLAS_MECH, "roman_bar0000").setOrigin(0.5),
+          makeTileSprite(this, 0, 0, w, 30, ATLAS_MECH, "roman_bar0000").setOrigin(0.5),
           this.add.image(-w / 2, 0, ATLAS_MECH, "roman_end0000").setOrigin(0.05, 0.5),
           this.add.image(w / 2, 0, ATLAS_MECH, "roman_end0000").setOrigin(0.05, 0.5).setScale(-1, 1),
         ],

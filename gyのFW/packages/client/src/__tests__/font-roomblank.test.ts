@@ -34,7 +34,7 @@ const SRC = (p: string) => readFileSync(path.join(ROOT, p), "utf8");
 const IN_ROOM_FILES = ["packages/client/src/scenes/GameScene.ts", "packages/client/src/scenes/overlays.ts"];
 /** 房内参数化实参的位图字：字形来源由 room.mjs 的 sites / 关卡教学文本交代 */
 const PARAMETERISED = [
-  "packages/client/src/scenes/GameScene.ts:1528", // t.text ← 关卡教学文本（roomLevelTexts）
+  "packages/client/src/scenes/GameScene.ts:1525", // t.text ← 关卡教学文本（roomLevelTexts）
   "packages/client/src/scenes/overlays.ts:321", // limitStr ← ROOM_DYNAMIC_SITES 结算板时限
 ];
 /** 今日有教学文本、会进房内位图字的关卡（其余 46 关无教学层）：新增/改文案这里要红 */

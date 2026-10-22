@@ -14,6 +14,7 @@ import Phaser from "phaser";
 import { ATLAS_MENU, ATLAS_TEMPLE, ATLAS_TEMPLE_JSON, ATLAS_TEMPLE_PNG, ensureMenuBgm, FONT_MAIN } from "./BootScene";
 import { clickSfx } from "./overlays";
 import { fadeSwitch } from "./transition";
+import { makeTileSprite } from "./tileSprite";
 import { loadPlayed, loadProgress, starsOf, takeFirstComplete } from "../progress";
 import { peekTreeBake, startTreeBake, stepTreeBake, type MaskFrame, type TreeBakeParams, type TreeBakeResult } from "./templeTreeBake";
 
@@ -66,7 +67,7 @@ export class TempleScene extends Phaser.Scene {
     this.data_ = this.cache.json.get("templeData") as TempleData;
 
     // 背景：MenuBackground0000 平铺（最底）
-    this.add.tileSprite(W / 2, H / 2, W, H, ATLAS_TEMPLE, "MenuBackground0000").setDepth(-10);
+    makeTileSprite(this, W / 2, H / 2, W, H, ATLAS_TEMPLE, "MenuBackground0000").setDepth(-10);
 
     // 布局（原版：k=0.9H，C=min(1.2k, 0.9W)，缩放 x = min(k,C)<800 ? 0.5 : 0.6）
     const k = 0.9 * H;

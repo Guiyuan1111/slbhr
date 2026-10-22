@@ -43,7 +43,7 @@ const PRE_ROOM_SITES = 12;
 const PARAMETERISED = [
   "packages/client/src/scenes/menus.ts:53", // text ← toggleRow 实参（menus.ts:63/64 声明）
   "packages/client/src/scenes/menus.ts:86", // line ← lines 数组（menus.ts:82 声明）
-  "packages/client/src/scenes/TempleScene.ts:187", // String(lv.id) → dynamic 数字
+  "packages/client/src/scenes/TempleScene.ts:188", // String(lv.id) → dynamic 数字
 ];
 /** 今日 font.fnt 里没有字形的进房前字符：本来就画空白，本轮不改表现 */
 const NO_GLYPH_TODAY = ".L乐于你全刻原员喜基复恭战挑效本版置设部音".split("");
