@@ -1,6 +1,6 @@
 /**
- * 房内字体子集的共用口径层（生成器 scripts/font-subset/build-font-room.mjs 与静态测试
- * packages/client/src/__tests__/font-room.test.ts 共用，避免两处各写一份解析而漂移）。
+ * 房内字体子集的共用口径层（生成器 scripts/font-subset/build-font-blank.mjs 与静态测试
+ * packages/client/src/__tests__/font-roomblank.test.ts 共用，避免两处各写一份解析而漂移）。
  *
  * 定位与 scripts/font-subset/prephase.mjs（进房前链）完全一致：字形图集只动像素与坐标，
  * 授权区＝官方字形帧矩形 ∪ 四周 ring 环带逐字节照抄 font.png，其余 RGBA 全 0；

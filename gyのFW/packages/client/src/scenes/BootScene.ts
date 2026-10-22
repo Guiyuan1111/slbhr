@@ -50,7 +50,7 @@ export const ATLAS_MECH_PNG = "/assets/atlasses/MechAssetsSlim.png";
 export const ATLAS_TEMPLE_PNG = "/assets/atlasses/Temples/forest/TempleAssetsSlim.png";
 export const ATLAS_POPUP_PNG = "/assets/atlasses/PopupAssetsSlim.png";
 export const FONT_MAIN = "font";
-/** 房内位图字体（键名 FULL 是 r18 两段化留下的，r24 起装载的是房内子集）：Boot 关键路径只装 FONT_MAIN 子集，本键由消费方 preload
+/** 房内位图字体（键名 FULL 是 r18 两段化留下的，r27 起装载官方图集的未用字形清零版）：Boot 关键路径只装 FONT_MAIN 子集，本键由消费方 preload
  *  经 loadFontFull 装载——用第二个键而不是覆盖 "font"，因为 TextureManager.checkKey
  *  (:248) 拒绝同名重载并 console.error，addImage (:469) 随即早退——旧纹理与其上已挂的
  *  BitmapText 帧引用原样留着（换纹理只能 textures.remove，那会让在场字对象抛错）。
@@ -92,11 +92,18 @@ export const PLAYER_SCALE = 0.95;
  * 逐字节相同，而 36px 游戏结束标题差 407 像素、36/26px 暂停面板差 52 像素；独立相位探针
  * （benchmark/font-phase-probe.mjs）归因到 26px/36px 的降采样核相位依赖字形在图集中的绝对位置
  * （18/24/48px 在三种目标相位下 0 差，详见 r24 报告 §四）。缺字形会画空白而不报错，
- * 这类小面积像素偏移在真人眼里的观感不可预测，属于红线；未定位可用的空间方案前
- * FONT_FULL 继续装载官方 font.png。生成器、图集产物、口径测试与量具都留在树上等下一轮。
+ * 这类小面积像素偏移在真人眼里的观感不可预测，属于红线。r24 的生成器/产物/测试已随
+ * font-roomblank 换代移除，roomtext 量具保留。
+ *
+ * r27 换装载（font-roomblank.png，脚本 scripts/font-subset/build-font-blank.mjs）：与 r24 的货架
+ * 重排相反，**一个字形坐标都不改**——114 个房内字形的帧矩形照抄官方 x/y，四周 ring=4（= fnt padding）
+ * 环带逐字节照抄，其余像素清零；画布 2191×1024、chunks 与官方 font.fnt 全部不动。每个字形的源矩形
+ * 与滤波邻域逐字节不变，26/36px 的采样核相位按构造与官方相同（roomtext 六面逐字节，r27 报告）。
+ * 线上 1600.3→777.0KB（−823.3KB）；驻留像素不变（8,974,336B）。缺字形仍是静默画空白，
+ * 需求集与 FONT_FULL 调用点的对齐由 font-roomblank.test.ts 独立回算。
  */
 export function loadFontFull(load: Phaser.Loader.LoaderPlugin): void {
-  load.bitmapFont(FONT_FULL, "/assets/fonts/chinese/font.png", "/assets/fonts/chinese/font.fnt");
+  load.bitmapFont(FONT_FULL, "/assets/fonts/chinese/font-roomblank.png", "/assets/fonts/chinese/font.fnt");
 }
 
 /** 游戏内图集（Menu 首帧用不到）：进阶装载共用入口——已缓存的键 Phaser 自动跳过 */

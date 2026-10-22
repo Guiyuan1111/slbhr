@@ -1,9 +1,9 @@
 /**
  * 房内中文位图字逐像素对拍（r24 门禁件）。
  *
- * 为什么要有它：本轮把房内字体键 FONT_FULL 从官方全量图集 assets/fonts/chinese/font.png
- * （2191×1024，驻留 8.56MB）换成只含房内真正用到的 ~114 字的 font-room.png/.fnt。这类改动的
- * 失效模式极其隐蔽：Phaser 位图字缺纹理键时抛 `Invalid BitmapText key`，缺**字形**时更坏——
+ * 为什么要有它：房内字体键 FONT_FULL 在 r24 试过"货架重排"的 font-room 子集（判负回退），
+ * 在 r27 换成官方图集的原地清零版 font-roomblank.png（画布/fnt/全部字形坐标不动，只清零房内
+ * 用不到的像素）。这类改动的失效模式极其隐蔽：Phaser 位图字缺纹理键时抛 `Invalid BitmapText key`，缺**字形**时更坏——
  * 不抛错，把缺字形的字直接画成空白。现有门禁全看不见这条路径：
  *   scripts/e2e/prephase-canvas.mjs 只覆盖进房前的五态（其头注自认"游戏内画面/HUD 不重复造轮子"）；
  *   benchmark/visual-diff.mjs 比的是整帧画布对原版，缺字空白恰好混在噪声里且它跑的是原版对照；
@@ -85,9 +85,7 @@ const LEVEL = "forest_01";
 const OUTDIR = join(ROOT, "TEMP", "roomtext");
 const BASELINE_DIR = join(OUTDIR, "baseline");
 const DIFF_DIR = join(OUTDIR, "diff");
-const ROOM_PNG = join(ROOT, "assets", "fonts", "chinese", "font-room.png");
-const ROOM_FNT = join(ROOT, "assets", "fonts", "chinese", "font-room.fnt");
-// 参照侧=官方全量 font.png/.fnt（件1b 后产品不再装载它，页内补装做对拍/留档锚点）
+// 参照侧=官方全量 font.png/.fnt（产品侧 r27 起装清零版，页内补装官方做对拍/留档锚点）
 const OFF_PNG = join(ROOT, "assets", "fonts", "chinese", "font.png");
 const OFF_FNT = join(ROOT, "assets", "fonts", "chinese", "font.fnt");
 const CMP_URL = { png: "/assets/fonts/chinese/font.png", fnt: "/assets/fonts/chinese/font.fnt" };
@@ -474,7 +472,7 @@ function driver({ stepMs, cmpKey, cmpPng, cmpFnt }) {
 
 // ── Node 侧流程 ──────────────────────────────────────────────────────────────
 const fontFp = {};
-for (const f of ["font.png", "font.fnt", "font-prephase.png", "font-prephase.fnt", "font-room.png", "font-room.fnt"]) {
+for (const f of ["font.png", "font.fnt", "font-prephase.png", "font-prephase.fnt", "font-roomblank.png"]) {
   const p = join(ROOT, "assets", "fonts", "chinese", f);
   if (existsSync(p)) fontFp[f] = sha16(readFileSync(p));
 }
@@ -491,10 +489,6 @@ try {
 
 let mode = MODE;
 let modeNote = "";
-if (!(existsSync(ROOM_PNG) && existsSync(ROOM_FNT))) {
-  // r24 件1b 已回退（966e7a5），产品 FONT_FULL 指回官方；产物缺失不影响跑，只记一条
-  log("ℹ font-room.* 缺失：产品现役 FONT_FULL=官方，本次对拍两侧同源（面级应全同；若看子集差异需先换装）");
-}
 if (!(existsSync(OFF_PNG) && existsSync(OFF_FNT))) {
   throw new Error("官方参照面 font.png/.fnt 缺失：逐像素一致性的锚点没了（它在仓库受版本管理面，不该消失）");
 }
@@ -695,7 +689,7 @@ try {
     const ref = await shot(CMP_KEY); // 官方参照侧（font.png）——跨跑漂移只登记不判红（见头注）
     const row = { ...s, ref: { ink: ref.ink, size: [ref.w, ref.h], layout: ref.layout, sha: sha(fromB64(ref.png)) } };
     if (mode === "compare") {
-      const prod = await shot("font-full"); // 产品现役侧（内容随装载：r24 件1b 期间=font-room 子集）
+      const prod = await shot("font-full"); // 产品现役侧（内容随装载：r27 起=font-roomblank）
       const b64 = fromB64(prod.png);
       row.prod = { ink: prod.ink, size: [prod.w, prod.h], sha: sha(b64) };
       row.equal = prod.sha === row.ref.sha && prod.ink === row.ref.ink;

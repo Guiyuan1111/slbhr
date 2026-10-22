@@ -1,19 +1,19 @@
 /**
- * 房内字体子集链的静态防护网（r24 件1a）。与 font-prephase.test.ts 同形状，但守的是**房内**这条链：
+ * 房内字体链的静态防护网（r27 原地清零版）。与 font-prephase.test.ts 同形状，但守的是**房内**这条链：
  * 需求源来自 scripts/font-subset/room.mjs（关卡教学文本选中层 + 行钉字面量 + 动态数字点），
- * 产物是 assets/fonts/chinese/font-room.png + font-room.fnt。致命失效模式与前代一致：
+ * 产物是 assets/fonts/chinese/font-roomblank.png（官方 fnt 不动）。致命失效模式：
  *  1. 某处房内 FONT_FULL 文案的字不在集合内 ⇒ 换装载后那个字当场画空白；
  *  2. 教学层选取规则或某关文案改动 ⇒ 需求集变了但产物没跟着重建；
- *  3. png 与 fnt 是**一对**必须同时重建的产物 ⇒ 只重建一边就"字还在、位置错"的鬼影。
- * 期望值全部由「官方 font.png/font.fnt 的字节与坐标」＋「产物 font-room.fnt 声明的新坐标」独立回算，
- * 故意不调用生成器 build-font-room.mjs 的装配代码——生成器若口径出错，这里仍能独立发现。
+ *  3. 清零越界碰到保留字形或其 ring 环带 ⇒ 26/36px 采样核读到被抹掉的邻居。
+ * 产物语义与 r24 的货架重排相反：**只允许动保留面之外的像素**，所有坐标/幅面/fnt 逐字节不动。
+ * 期望值全部由「官方 font.png/font.fnt 的字节与坐标」独立回算，故意不调用生成器
+ * build-font-blank.mjs 的装配代码——生成器若口径出错，这里仍能独立发现。
  * 解析一律走 room.mjs / prephase.mjs 的导出，绝不在此重复实现字形集/关卡/fnt 解析。
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { decodePng } from "../../../../scripts/png-raw.mjs";
-import { loadFontAtlas, loadSpec, parseFnt } from "../../../../scripts/font-subset/prephase.mjs";
+import { loadFontAtlas, parseFnt } from "../../../../scripts/font-subset/prephase.mjs";
 import {
   ROOM_DYNAMIC_SITES,
   ROOM_LITERAL_SITES,
@@ -130,17 +130,12 @@ function region(img: { w: number; h: number; data: Buffer }, x: number, y: numbe
   return out;
 }
 
-const isPot = (n: number) => n > 0 && Number.isInteger(Math.log2(n));
-
 const fnt = parseFnt(path.join(ROOT, "assets/fonts/chinese/font.fnt"));
 const fontSrc = loadFontAtlas(path.join(ROOT, "assets/fonts/chinese/font.png"), fnt);
-const spec = loadSpec(ROOT);
-const ring = spec._ring;
-const roomFntPath = path.join(ROOT, "assets/fonts/chinese/font-room.fnt");
-const roomPngPath = path.join(ROOT, "assets/fonts/chinese/font-room.png");
-/** loadFontAtlas 顺带钉住"png 尺寸 == fnt scaleW/scaleH" */
-const roomFnt = parseFnt(roomFntPath);
-const roomPng = loadFontAtlas(roomPngPath, roomFnt);
+const ring = fnt.padding[0];
+const blankPngPath = path.join(ROOT, "assets/fonts/chinese/font-roomblank.png");
+/** loadFontAtlas 顺带钉住"png 尺寸 == 官方 fnt scaleW/scaleH"（原地清零不改幅面） */
+const blankPng = loadFontAtlas(blankPngPath, fnt);
 
 /** 需求集合/关卡文本要解析 TS，走 room.mjs 的动态 import；memo 化避免每个用例重算 */
 let _room: ReturnType<typeof roomChars> | undefined;
@@ -242,93 +237,48 @@ describe("房内 FONT_FULL 调用点分类", () => {
   }, TT);
 });
 
-describe("在库产物 font-room 的语义（png 与 fnt 必须同代）", () => {
-  it("每个保留字形的区域（帧 ∪ 环带）逐字节等于源图原坐标处字节", async () => {
+describe("在库产物 font-roomblank 的语义（原地清零：坐标/幅面/fnt 不动）", () => {
+  it("保留面（帧 ∪ ring 环带）逐字节等于官方原坐标；清零面全 0", async () => {
     const { kept } = await room();
-    for (const k of kept) {
-      const old = k.glyph;
-      if (old.width === 0 || old.height === 0) continue;
-      const now = roomFnt.glyphs.get(old.id)!;
-      const box = { w: old.width + 2 * ring, h: old.height + 2 * ring };
-      expect(region(roomPng, now.x - ring, now.y - ring, box.w, box.h), `字形 ${k.ch} 区域字节 != 源`).toEqual(
-        region(fontSrc, old.x - ring, old.y - ring, box.w, box.h),
+    const used = kept.filter((k) => k.glyph.width > 0 && k.glyph.height > 0);
+    expect(used.length).toBe(114);
+    const mask = new Uint8Array(blankPng.w * blankPng.h);
+    for (const k of used) {
+      const g = k.glyph;
+      const x0 = g.x - ring;
+      const y0 = g.y - ring;
+      const x1 = g.x + g.width + ring;
+      const y1 = g.y + g.height + ring;
+      expect(x0 >= 0 && y0 >= 0 && x1 <= blankPng.w && y1 <= blankPng.h, `字形 ${k.ch} 的环带越出画布`).toBe(true);
+      for (let y = y0; y < y1; y++) mask.fill(1, y * blankPng.w + x0, y * blankPng.w + x1);
+      expect(region(blankPng, x0, y0, x1 - x0, y1 - y0), `字形 ${k.ch} 区域字节 != 官方`).toEqual(
+        region(fontSrc, x0, y0, x1 - x0, y1 - y0),
       );
-    }
-    expect(kept.filter((k) => k.glyph.width > 0 && k.glyph.height > 0).length).toBe(114);
-  }, TT);
-
-  it("用产物 fnt 的新坐标回算：每个字形帧矩形都落在画布内（防只重建一边的鬼影）", async () => {
-    const { kept } = await room();
-    const keptCodes = new Set(kept.map((k) => k.code));
-    for (const k of kept) {
-      const old = k.glyph;
-      if (old.width === 0 || old.height === 0) continue;
-      const now = roomFnt.glyphs.get(old.id)!;
-      // 帧矩形与其 ring 授权区都必须整体在新画布内（与生成器同口径）
-      expect(now.x - ring, `字形 ${k.ch} 帧左超出`).toBeGreaterThanOrEqual(0);
-      expect(now.y - ring, `字形 ${k.ch} 帧上超出`).toBeGreaterThanOrEqual(0);
-      expect(now.x + now.width + ring, `字形 ${k.ch} 帧右超出`).toBeLessThanOrEqual(roomPng.w);
-      expect(now.y + now.height + ring, `字形 ${k.ch} 帧下超出`).toBeLessThanOrEqual(roomPng.h);
-      // 且新坐标回算的帧字节 = 源帧字节（不只是区域一致）
-      expect(region(roomPng, now.x, now.y, now.width, now.height), `字形 ${k.ch} 帧矩形 != 源`).toEqual(
-        region(fontSrc, old.x, old.y, old.width, old.height),
-      );
-    }
-    // 未保留声明（含 0×0）指向全零区：帧矩形整块必须全零
-    for (const g of fnt.glyphs.values()) {
-      if (keptCodes.has(g.id)) continue;
-      if (g.width === 0 || g.height === 0) continue;
-      const now = roomFnt.glyphs.get(g.id)!;
-      expect([...region(roomPng, now.x, now.y, now.width, now.height)].every((b) => b === 0), `未保留字形 ${g.id} 矩形里有非零字节`).toBe(true);
-    }
-  }, TT);
-
-  it("非零像素只可能来自保留区域；幅面缩小且非 2 的幂对", async () => {
-    const { kept } = await room();
-    const keptCodes = new Set(kept.map((k) => k.code));
-    const mask = new Uint8Array(roomPng.w * roomPng.h);
-    for (const g of roomFnt.glyphs.values()) {
-      if (g.width === 0 || g.height === 0) continue;
-      if (!keptCodes.has(g.id)) continue;
-      for (let r = -ring; r < g.height + ring; r++) {
-        for (let c = -ring; c < g.width + ring; c++) mask[(g.y + r) * roomPng.w + (g.x + c)] = 1;
-      }
     }
     let stray = 0;
-    for (let i = 0; i < roomPng.w * roomPng.h; i++) {
+    for (let i = 0; i < mask.length; i++) {
+      if (mask[i]) continue;
       const o = i * 4;
-      if ((roomPng.data[o] | roomPng.data[o + 1] | roomPng.data[o + 2] | roomPng.data[o + 3]) && !mask[i]) stray++;
+      if (blankPng.data[o] | blankPng.data[o + 1] | blankPng.data[o + 2] | blankPng.data[o + 3]) stray++;
     }
-    expect(stray, "区域外有残留非零像素（采样会读到计划外邻居）").toBe(0);
-    expect(roomPng.chunks).toBe(fontSrc.chunks);
-    expect(roomPng.w).toBeLessThan(fontSrc.w);
-    // 房内并集比房前子集大 ⇒ 换坐标后**宽度**缩、**高度**反而长过源，但面积（驻留）仍显著下降
-    expect(roomPng.w * roomPng.h).toBeLessThan((fontSrc.w * fontSrc.h) / 2);
-    expect(isPot(roomPng.w) && isPot(roomPng.h)).toBe(false);
-    // 幅面/墨迹按件0 口径钉死：改动需求集会让这里红（与生成器账目同数字）
-    expect(`${roomPng.w}x${roomPng.h}`).toBe("871x1179");
-    const framePixels = kept.reduce((s, k) => s + k.glyph.width * k.glyph.height, 0);
-    expect(framePixels).toBeGreaterThan(0);
+    expect(stray, "清零面有残留非零像素（会改变 26/36px 的采样邻域）").toBe(0);
   }, TT);
 
-  it("font-room.fnt 与官方 font.fnt 的 <char> 条数相等、除 x/y 外逐属性相等", () => {
-    expect(roomFnt.charLines).toBe(fnt.charLines);
-    expect(roomFnt.dupes.length).toBe(fnt.dupes.length);
-    expect(roomFnt.size).toBe(fnt.size);
-    expect(roomFnt.lineHeight).toBe(fnt.lineHeight);
-    expect(roomFnt.base).toBe(fnt.base);
-    expect(roomFnt.pages).toBe(fnt.pages);
-    expect(roomFnt.padding.join(",")).toBe(fnt.padding.join(","));
-    expect(roomFnt.scaleW).toBe(roomPng.w);
-    expect(roomFnt.scaleH).toBe(roomPng.h);
-    expect([...roomFnt.glyphs.keys()].sort()).toEqual([...fnt.glyphs.keys()].sort());
-    let moved = 0;
-    for (const [code, g] of fnt.glyphs) {
-      const n = roomFnt.glyphs.get(code)!;
-      expect([n.width, n.height, n.xoffset, n.yoffset, n.xadvance, n.id], `字形 ${code} 度量被改动`).toEqual([g.width, g.height, g.xoffset, g.yoffset, g.xadvance, g.id]);
-      if (n.x !== g.x || n.y !== g.y) moved++;
-    }
-    // 至少保留字形都换了坐标（否则等于没重排）
-    expect(moved).toBeGreaterThanOrEqual(114);
-  }, TT);
+  it("幅面/chunks 与官方一致；产品不带自己的 fnt（客户端装官方 font.fnt）", async () => {
+    expect(blankPng.w).toBe(fontSrc.w);
+    expect(blankPng.h).toBe(fontSrc.h);
+    expect(`${blankPng.w}x${blankPng.h}`).toBe("2191x1024");
+    expect(blankPng.chunks).toBe(fontSrc.chunks);
+    expect(existsSync(path.join(ROOT, "assets/fonts/chinese/font-roomblank.fnt"))).toBe(false);
+  });
+
+  it("冻结：产物体积/字形计数；loadFontFull 装 roomblank + 官方 fnt", () => {
+    expect(readFileSync(blankPngPath).length).toBe(795671);
+    expect([...fnt.glyphs.values()].filter((g) => g.width > 0 && g.height > 0).length).toBe(258);
+    const boot = SRC("packages/client/src/scenes/BootScene.ts");
+    expect(
+      boot.includes('load.bitmapFont(FONT_FULL, "/assets/fonts/chinese/font-roomblank.png", "/assets/fonts/chinese/font.fnt")'),
+    ).toBe(true);
+    expect(/load\.bitmapFont\(FONT_FULL[^)]*\/font\.png/.test(boot)).toBe(false);
+  });
 });
