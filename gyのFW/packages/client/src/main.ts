@@ -12,7 +12,7 @@ import { parseLevel, type LevelData } from "@fw/shared/level2";
 import { Net, type NetCallbacks } from "./net";
 import { KeyboardInput } from "./input";
 import { TouchControls } from "./touch";
-import { BootScene, bgWarmSettled, setWarmBgmFamily, warmMechFor, warmRoomFontFor } from "./scenes/BootScene";
+import { BootScene, bgWarmSettled, markEntryInFlight, setWarmBgmFamily, warmMechFor, warmRoomFontFor } from "./scenes/BootScene";
 import { MenuScene } from "./scenes/MenuScene";
 import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
@@ -350,6 +350,9 @@ function resumeWonIfNeeded(): void {
 
 async function enterGame(): Promise<void> {
   if (!net) throw new Error("未连接房间");
+  // r34 件2：进房在途标记——暖装门若在此后落定，门内 chars-play 预热让路给本关字体
+  // （刷新回座 tryResume 直进不走 start()，两处都置位；消费点只取一次）
+  markEntryInFlight();
   // join 方以房间的真实关卡为准（修 E14 双端路径分裂的最后一环）；拿不到回退 URL/默认
   const levelId = (await net.waitForLevelId()) || selectedLevel || urlLevel || DEFAULT_LEVEL_ID;
   const level = await fetchLevelCached(levelId);

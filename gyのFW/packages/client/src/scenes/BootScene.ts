@@ -210,6 +210,16 @@ export function loadPopupFinish(load: Phaser.Loader.LoaderPlugin, type?: string 
  *  避免「暖装仍在飞 + GameScene 兜底重复拉同一批文件」的双载竞态 */
 let warmState: { done: Promise<void>; resolve: () => void; scene: Phaser.Scene; settled: boolean } | null = null;
 
+/** 进房在途（r34 件2）：start() 点击后置位，暖装 complete 时消费一次。
+ *  暖装门落定可能早于关卡定出（小图集更快），此时再把 chars-play 442.7KB 踢进空队列，
+ *  会与门后 GameScene.preload 才声明的房内全量字体（教学关 777.3KB）抢同一条管道
+ *  ——r34 fast3g 实测两者重叠 4.2s，进房被拖慢 1.3s。门内预热只服务驻留路径；
+ *  进房在途时交给 GameScene.kickCharsPlay（create 之后、字体门之后）。 */
+let entryInFlight = false;
+export function markEntryInFlight(): void {
+  entryInFlight = true;
+}
+
 /** 暖装期 BGM 族猜测（r16 件A）：暖装发生在 Menu 驻留期，此时目标关卡通常未知，
  *  只能按缺省 general 猜（48 关里 38 关命中）。main.ts 在 temple.json 单例落定后
  *  若已能从 `?level=` 深链定出类型，则先于暖装写入本字段。暖装已启动后改它无效
@@ -286,6 +296,10 @@ export function startBgWarm(scene: Phaser.Scene, opts?: { menuBgm?: boolean }): 
     scene.load.start();
   };
   scene.load.once("complete", () => {
+    // r34 件2：进房在途时门内预热让路（见 entryInFlight 注）。消费点只取一次：
+    // 门落定早于点击的驻留路径照旧预缓存；点击后的快速路径不在这里抢管道。
+    const entryPending = entryInFlight;
+    entryInFlight = false;
     finish();
     // r23 件1：角色播放序列那张（CharAssetsPlay 442.4KB）排在**门落定之后**入队。它决定的是
     // 跑/跳/落/楼梯/死亡烟雾这些**状态画面**，不是房间首帧，所以不该占进房阻塞批（判据同 r21 循环曲，
@@ -293,8 +307,9 @@ export function startBgWarm(scene: Phaser.Scene, opts?: { menuBgm?: boolean }): 
     // 驻留路径（真人正常节奏）在这里就把它预缓存，进房即完整；快速建房/邀请深链那条路 Menu 在落定后
     // 几百毫秒被切走，LoaderPlugin 随场景 SHUTDOWN reset 队列、请求可能根本不发起 ⇒ 由
     // GameScene.kickCharsPlay 兜底。排在 thenLoop（1500ms 后的循环曲 1285.4KB）之前入队，是刻意的
-    // 优先级：画面比 BGM 早到位。
-    if (scene.sys.isActive()) {
+    // 优先级：画面比 BGM 早到位。r34：进房已点击（entryPending）时连入队都不做——此时门后
+    // GameScene.preload 的房内字体（教学关 777.3KB）才是关键路径，442.7KB 与它并行会互相拖慢。
+    if (scene.sys.isActive() && !entryPending) {
       loadCharsPlay(scene.load);
       scene.load.start();
     }

@@ -323,7 +323,14 @@ describe("r23 件1 拆分：装载批与调用点分类", () => {
   it("Play 张在门落定之后、循环曲之前入队；进房路径另有兜底声明且排在循环曲兜底之前", () => {
     const boot = stripComments(SRC("packages/client/src/scenes/BootScene.ts"));
     expect(boot.indexOf("loadCharsPlay(scene.load)")).toBeLessThan(boot.indexOf("scene.time.delayedCall(1500, thenLoop)"));
-    expect(boot).toContain("if (scene.sys.isActive()) {");
+    // r34 件2：进房在途时门内预热必须让路（与门后房内全量字体抢管道，fast3g 实测 +1.3s），
+    // 只剩驻留路径预缓存；进房侧由 GameScene.kickCharsPlay 兜底
+    expect(boot).toContain("if (scene.sys.isActive() && !entryPending) {");
+    expect(boot).toContain("const entryPending = entryInFlight;");
+    expect(boot).toContain("entryInFlight = false;");
+    const main = stripComments(SRC("packages/client/src/main.ts"));
+    expect(main).toContain("markEntryInFlight();");
+    expect(main.indexOf("markEntryInFlight();")).toBeGreaterThan(main.indexOf("async function enterGame"));
     const game = stripComments(SRC("packages/client/src/scenes/GameScene.ts"));
     const kick = body("packages/client/src/scenes/GameScene.ts", "private kickCharsPlay");
     expect(kick).toContain("this.textures.exists(ATLAS_CHARS_PLAY)"); // 已缓存就零请求
