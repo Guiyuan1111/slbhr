@@ -37,9 +37,14 @@ if (!Object.hasOwn(NET_PROFILES, NET_NAME)) {
 }
 const NET = NET_PROFILES[NET_NAME];
 const THROTTLED = NET_NAME !== "off";
-/** 到位等待上限：门后 BGM 批是"循环曲 1285.1KB ＋ 失败曲 159.6KB ＋ 本族终局曲 163.7KB"同一条管道，
- *  按档位带宽换算整批耗时再留一倍余量。slow3g ⇒ 1608.4KB ≈ 26.4s，拿 off 档的 20s 判会把"慢但正确"读成超时。 */
-const ARRIVE_CAP = 20000 + (THROTTLED ? 2 * Math.round((1000 * 1_650_000) / NET.down) : 0);
+/** 到位等待上限：create 里三条 kick 共用同一个 LoaderPlugin 队列（chars-play 442.4KB 排最前，
+ *  其后循环曲 1285.4KB、失败曲 159.6KB、本族终局曲 163.7KB ≈ 2051KB），按档位带宽换算整批。
+ *  倍数 8（＝名义批时 33.6s 的 8 倍）而不是历轮的 2 倍，是 slow3g 实测逼出来的：
+ *  名义口径下 2051KB ≈ 32.8s，但 1285.4KB 的循环曲实测 **120.0s** 才进缓存（两支终局曲 78.4s 到位），
+ *  即有效吞吐只有名义的 ~1/3.7——本用例同时挂着房主与加入者两个节流上下文，而且落定后这一页
+ *  还要付 font.png 1600.6KB、CharAssetsPlay 442.7KB 等一大票字节，队列根本不是按音频单算的。
+ *  旧口径 2×名义＝87.2s 把"慢但正确"读成超时（slow3g forest_01 一条 FAIL），系数按下限 2× 实测取。 */
+const ARRIVE_CAP = 20000 + (THROTTLED ? 8 * Math.round((1000 * 2_100_000) / NET.down) : 0);
 /** 档位等待倍率与 started 上限：口径与 charsplay.mjs 逐字同式（只放大等待，不放宽判据） */
 const WAIT_SCALE = { off: 1, cable: 2, "4g": 2, fast3g: 3, slow3g: 8 }[NET_NAME];
 const WAIT_START = THROTTLED ? 20000 + Math.round((1000 * 6_200_000) / NET.down) : 20000;
@@ -97,29 +102,39 @@ const probe = (page) =>
     { keys: KEYS },
   );
 
-/** 两支终局时刻曲（失败曲 + 本族终局曲）在 CAP 内全部入缓存；返回"自锚点到齐"的毫秒，超时返回 null */
-async function waitTerminal(page, keys, t0) {
-  try {
-    await page.waitForFunction(
-      ({ keys: ks }) => ks.every((k) => window.__fw.cache.audio.exists(k)),
-      { keys },
-      { timeout: ARRIVE_CAP, polling: 100 },
-    );
-  } catch {
-    return null;
-  }
-  return Date.now() - t0;
-}
+/** 到位观察器：一次页内轮询同时记录循环曲／失败曲／本族终局曲**各自**首次进缓存的页钟时刻。
+ *  为什么不串三次 `waitForFunction`：慢档第一次超时之后，后面两次读到的"自锚点毫秒"会把上一次
+ *  的空等整段算进窗口——本轮 slow3g 就这么读出过 119741ms 这种不可能的数（真实锚点是 started）。 */
+const startRecord = (page, keys) =>
+  page.evaluate(({ keys }) => {
+    const g = window.__fw;
+    const rec = { t0: performance.now(), seen: {}, timer: null };
+    window.__afRec = rec;
+    const tick = () => {
+      const now = Math.round(performance.now() - rec.t0);
+      for (const k of keys) if (rec.seen[k] === undefined && g.cache.audio.exists(k)) rec.seen[k] = now;
+      if (keys.every((k) => rec.seen[k] !== undefined)) clearInterval(rec.timer);
+    };
+    rec.timer = setInterval(tick, 50);
+    tick();
+  }, { keys });
 
-/** 循环曲入缓存的窗口（同一批被 r25 多塞 323.9KB，起点比门内时代晚——量出来才谈代价） */
-async function waitCached(page, key, t0) {
-  try {
-    await page.waitForFunction(({ key: k }) => window.__fw.cache.audio.exists(k), { key }, { timeout: ARRIVE_CAP, polling: 100 });
-  } catch {
-    return null;
-  }
-  return Date.now() - t0;
-}
+/** 读回三支的入缓存时刻（相对锚点＝started 的页钟）＋网络侧 responseEnd；未到的键为 null */
+const readRecord = (page, keys, names) =>
+  page.evaluate(({ keys, names }) => {
+    const rec = window.__afRec;
+    if (!rec) return { seen: {}, ended: {} };
+    clearInterval(rec.timer);
+    const ended = {};
+    for (const e of performance.getEntriesByType("resource")) {
+      const n = e.name.split("/").pop();
+      if (names.includes(n) && e.responseEnd > 0) ended[n] = Math.round(e.responseEnd - rec.t0);
+    }
+    const seen = {};
+    for (const k of keys) seen[k] = null;
+    for (const [k, v] of Object.entries(rec.seen)) seen[k] = v;
+    return { seen, ended };
+  }, { keys, names });
 
 /** 到位之后**真在播**（补起处理器 kickBgmLoop 的判据）：给两拍让 loader complete 走到补起 */
 async function waitPlayingKey(page, key) {
@@ -161,7 +176,9 @@ try {
     const { ctx: ctxB, page: pageB } = await mkPage();
     await enterAs(pageB, PORT, "join", code, level, WAIT_SCALE); // 单人房停 ready，等不到 started
     await waitForStarted(page, WAIT_START);
-    const tEntry = Date.now(); // 窗口锚点：started 这一刻起，死亡/通关若发生就落在窗口里
+    const keys3 = [on, "bgm_over", fin];
+    const names3 = [fam === "speed" ? "LevelMusic_speed" : "LevelMusic", "LevelMusicOver", fam === "speed" ? "LevelMusicFinish_speed" : "LevelMusicFinish"];
+    await startRecord(page, keys3); // 锚点＝started 这一刻的页钟；三支各记各的到位时刻
     await page.waitForTimeout(400); // BGM 起播在 create，给一拍让 WebAudio 实例就位
     const st = await probe(page);
     // 开局曲在进房这一刻：off 档沿用历轮口径（进房即在播）；节流档它是门后批里最大的一支
@@ -185,15 +202,22 @@ try {
     // r25 代价侧的**登记**（不是断言）：进房这两支要么已在缓存（驻留路径门后批跑完了），要么还没到
     // （快速进房：请求在飞时 XHR 条目整条缺席，缓存也空，两者读不出区别——见 perf-load 的三态口径）。
     log(`  [${level}] 进房即读 bgm_over=${st.has.bgm_over} ${fin}=${st.has[fin]} 请求面=${st.audioReqs.length} 条`);
-    const windowMs = await waitTerminal(page, ["bgm_over", fin], tEntry);
-    check(`${level} 终局时刻曲在 CAP 内到达（不许永远不来）`, windowMs !== null, `CAP=${ARRIVE_CAP}ms`);
-    // 窗口长度 = 进房到两支齐（锚点是 started）。这段里死亡/通关发生 ⇒ 曲子还没到，
-    // 失败曲不补起（时刻绑定）、终局曲由 catchUpFinish 补。perf-load 量不到长度，只能靠这里。
-    if (windowMs !== null) log(`  [${level}] 终局时刻曲到齐窗口 = 进房后 ${windowMs}ms（档 ${NET_NAME}）`);
-    // 同一条门后批里的循环曲：r25 的代价之一是它被 323.9KB 挤在后面，量出它的入缓存窗口与补起结果
-    const loopMs = await waitCached(page, on, tEntry);
-    check(`${level} 循环曲在 CAP 内入缓存（不许永远不来）`, loopMs !== null, `CAP=${ARRIVE_CAP}ms`);
-    if (loopMs !== null) log(`  [${level}] 循环曲入缓存窗口 = 进房后 ${loopMs}ms（档 ${NET_NAME}）`);
+    // 一次性等三支到齐，各自到位时刻由页内观察器记录（锚点＝started 的页钟）。
+    // 窗口长度＝进房到两支终局曲齐：这段里死亡/通关发生 ⇒ 失败曲不补（时刻绑定）、终局曲由 catchUpFinish 补。
+    // perf-load 量不到这个长度（请求在飞时 XHR 条目整条缺席），只能靠这里。
+    const allIn = await page
+      .waitForFunction(({ keys: ks }) => ks.every((k) => window.__afRec.seen[k] !== undefined), { keys: keys3 }, { timeout: ARRIVE_CAP, polling: 200 })
+      .then(() => true)
+      .catch(() => false);
+    const rec = await readRecord(page, keys3, names3);
+    const fmt = (k) => (rec.seen[k] === null ? "未到" : `${rec.seen[k]}ms`);
+    const termMs = rec.seen.bgm_over !== null && rec.seen[fin] !== null ? Math.max(rec.seen.bgm_over, rec.seen[fin]) : null;
+    check(
+      `${level} 门后三支在 CAP 内全部入缓存（不许永远不来）`,
+      allIn,
+      `CAP=${ARRIVE_CAP}ms 循环=${fmt(on)} 失败=${fmt("bgm_over")} 终局=${fmt(fin)} 网络侧=${JSON.stringify(rec.ended)}`,
+    );
+    log(`  [${level}] 到位窗口（进房后）：循环曲 ${fmt(on)} · 失败曲 ${fmt("bgm_over")} · 终局曲 ${fmt(fin)} ⇒ 终局时刻曲到齐窗口 ${termMs === null ? `CAP(${ARRIVE_CAP}ms) 内未到` : `${termMs}ms`}（档 ${NET_NAME}）`);
     const played = await waitPlayingKey(page, on);
     const st2 = await probe(page);
     check(`${level} 循环曲到位后在播（补起生效，不是永远无声）`, played, `playing=${st2.playing.join(",") || "无"} mute=${st2.soundMute}`);
