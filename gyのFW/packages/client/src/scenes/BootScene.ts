@@ -79,12 +79,14 @@ export const PLAYER_SCALE = 0.95;
  * r24 换装载尝试已回退：房内子集图集 font-room.{png,fnt}（871×1179、114 字、691.3KB、
  * 3.92MiB，对官方 1600.3KB/8.56MiB 省 909.4KB 线上与 4.64MiB 驻留）的 A/B/A 四档
  * gameActivePerfMs 分别 −168/−1873/−4688/−15356ms（4g 起三闸门全过）。图集侧静态核
- * （scripts/font-subset/build-font-room.mjs 的 `--check` 与 TEMP/r24/verify-room.mjs）显示
+ * （scripts/font-subset/build-font-room.mjs 的 `--check` 与 scripts/font-subset/verify-room.mjs）显示
  * 114 保留字帧矩形与 ring=4 环带逐字节照抄、其余像素全 0，fnt 260 条除 x/y 与
- * scaleW/scaleH 外逐属性等值、帧无越界——但 scripts/e2e/roomtext.mjs 用现役图集与参照图集
- * 各渲染一次读屏，暴露出图集像素等价并不蕴含位图字面渲染等价：22 条探针串一致地掉 1–2%
- * 墨迹，gameover/pause 面各差 407/52 像素（详见 r24 报告 §四）。缺字形会画空白而不报错，
- * "1-2% 墨迹"这类小面积像素偏移在真人眼里的观感不可预测，属于红线；未定位根因前
+ * scaleW/scaleH 外逐属性等值、帧无越界——但 scripts/e2e/roomtext.mjs 在同一轮内用现役图集与参照图集
+ * 各渲染一次读屏，暴露出图集像素等价并不蕴含位图字面渲染等价：18px 教学行、24px 时钟与结算面板
+ * 逐字节相同，而 36px 游戏结束标题差 407 像素、36/26px 暂停面板差 52 像素；独立相位探针
+ * （benchmark/font-phase-probe.mjs）归因到 26px/36px 的降采样核相位依赖字形在图集中的绝对位置
+ * （18/24/48px 在三种目标相位下 0 差，详见 r24 报告 §四）。缺字形会画空白而不报错，
+ * 这类小面积像素偏移在真人眼里的观感不可预测，属于红线；未定位可用的空间方案前
  * FONT_FULL 继续装载官方 font.png。生成器、图集产物、口径测试与量具都留在树上等下一轮。
  */
 export function loadFontFull(load: Phaser.Loader.LoaderPlugin): void {
