@@ -324,7 +324,7 @@ describe("r18 字体两段化：调用点分类", () => {
     }
   });
 
-  it("Boot 关键路径只装子集对；房内字体只声明一次且装的是房内子集，官方全量不进装载", () => {
+  it("Boot 关键路径只装子集对，1.6MB 全量字体只在延迟通道里声明一次", () => {
     const boot = SRC("packages/client/src/scenes/BootScene.ts");
     // png 与 fnt 必须成对钉死：重排版把 x/y 改写进新布局，FONT_MAIN 若配上源 font.fnt
     // 就是"用旧坐标读新图"——字还在但每个都画到别处，冷启动看着仍是中文。
@@ -338,18 +338,14 @@ describe("r18 字体两段化：调用点分类", () => {
     expect(declFn).toBeGreaterThan(-1);
     expect(fullLoad).toBeGreaterThan(declFn); // 唯一的声明语句在 loadFontFull 体内
     expect(boot.split("load.bitmapFont(FONT_FULL").length - 1).toBe(1); // 本文件不第二处
-    // r24：同一条声明换成房内子集对（键不变、URL 换），成对钉死同上理——
-    // font-room.png 的坐标只有配上 font-room.fnt 才对得上。
-    expect(
-      boot.slice(fullLoad, boot.indexOf("\n", fullLoad)).includes(
-        'load.bitmapFont(FONT_FULL, "/assets/fonts/chinese/font-room.png", "/assets/fonts/chinese/font-room.fnt")',
-      ),
-    ).toBe(true);
     const preload = boot.slice(boot.indexOf("preload(): void"), boot.indexOf("create(): void"));
+    expect(preload.includes("font.png")).toBe(false); // Boot 段再无那次 1.6MB 下载
     expect(preload.includes("font-prephase.png")).toBe(true);
     expect(preload.includes("font-prephase.fnt")).toBe(true);
-    // 全量字体路径字面量全局零处：别处硬编码=绕过 keyExists 跳过逻辑的第二下载源，
-    // 而 r24 之后官方 font.png 本就不该再被任何装载声明引用（它只服务生成器）。
+    // 源 font.fnt 只服务 FONT_FULL：出现在 loadFontFull 之后、preload 段之前=延迟通道之外
+    expect(preload.includes('chinese/font.fnt"')).toBe(false);
+    expect(boot.slice(fullLoad).includes('"/assets/fonts/chinese/font.fnt"')).toBe(true);
+    // 全量路径字面量全局只此一处：别处硬编码=绕过 keyExists 跳过逻辑的第二下载源
     const files = [
       "packages/client/src/scenes/BootScene.ts",
       "packages/client/src/scenes/GameScene.ts",
@@ -357,10 +353,11 @@ describe("r18 字体两段化：调用点分类", () => {
       "packages/client/src/main.ts",
     ];
     const count = (re: RegExp) => files.reduce((n, f) => n + (stripComments(SRC(f)).match(re)?.length ?? 0), 0);
-    expect(count(/fonts\/chinese\/font\.png/g)).toBe(0);
-    expect(count(/fonts\/chinese\/font\.fnt/g)).toBe(0);
+    expect(count(/fonts\/chinese\/font\.png/g)).toBe(1);
+    expect(count(/fonts\/chinese\/font\.fnt/g)).toBe(1);
     expect(count(/fonts\/chinese\/font-prephase\.fnt/g)).toBe(1);
-    expect(count(/fonts\/chinese\/font-room\.png/g)).toBe(1);
-    expect(count(/fonts\/chinese\/font-room\.fnt/g)).toBe(1);
+    // r24 件1b 已回退：房内子集产物留在库，但没有装载声明引用它。像素门禁
+    // （scripts/e2e/roomtext.mjs）在探针面上判 FAIL，根因未定位前不得接线。
+    expect(count(/fonts\/chinese\/font-room\./g)).toBe(0);
   });
 });

@@ -68,22 +68,27 @@ export const PLAYER_SCALE = 0.95;
 
 /**
  * 房内位图字体的装载声明（唯一一处，路径与键都只在这里）：房内文案（GameScene HUD、
- * 弹窗三件套）用的 FONT_FULL 由它进缓存。r24 换的是 URL 不是键——官方 font.png（2191×1024、
- * 线上 1600.6KB、解码驻留 8.56MiB）换成按房内真实需求生成的 font-room.png（871×1179、691.3KB、
- * 3.92MiB）：字形帧连同 ring=4 环带从官方图逐字节照抄、其余像素全 0，`.fnt` 只改写 260 条声明的
- * x/y 与 <common> 的 scaleW/scaleH，度量面（width/height/xoffset/yoffset/xadvance/padding）逐字不动
- * ⇒ 排版与墨迹与官方同像素。需求由 scripts/font-subset/room.mjs 从「48 关 parseLevel 的教学文本 ∪
- * 行钉字面量 ∪ 动态数字点」推导（114 字），生成器与静态测试共用同一份口径；缺字形会画空白而不报错，
- * 所以这条链的行钉＋像素门禁缺一不可。声明方一律是消费方自己的 preload：已入纹理缓存时
+ * 弹窗三件套）用的 FONT_FULL 由它进缓存。声明方一律是消费方自己的 preload：已入纹理缓存时
  * png 子文件静默跳过（不重下、不换纹理，机制见 FONT_FULL 注释），代价只有 .fnt 元数据再走一次
  * 条件复验（本机 0 字节 304）；若键已在缓存或队列里则本次不产生请求，队列空时 start() 当场
  * loadComplete（LoaderPlugin.js 的 `list.size === 0` 分支），所以既不重下也不多等一帧，
  * 无脑声明比"猜上游已经装过"便宜。0.3.43 实测教训：刷新回座 won/gameover 时 enterGame 的黑幕把
  * Game 起步压到淡入之后，而 resumeWonIfNeeded/onPhase 会先 start 弹窗场景，靠上游兜底就
  * 撞上 `Invalid BitmapText key: font-full`（create 中断，结算板开不出来）。
+ *
+ * r24 换装载尝试已回退：房内子集图集 font-room.{png,fnt}（871×1179、114 字、691.3KB、
+ * 3.92MiB，对官方 1600.3KB/8.56MiB 省 909.4KB 线上与 4.64MiB 驻留）的 A/B/A 四档
+ * gameActivePerfMs 分别 −168/−1873/−4688/−15356ms（4g 起三闸门全过）。图集侧静态核
+ * （scripts/font-subset/build-font-room.mjs 的 `--check` 与 TEMP/r24/verify-room.mjs）显示
+ * 114 保留字帧矩形与 ring=4 环带逐字节照抄、其余像素全 0，fnt 260 条除 x/y 与
+ * scaleW/scaleH 外逐属性等值、帧无越界——但 scripts/e2e/roomtext.mjs 用现役图集与参照图集
+ * 各渲染一次读屏，暴露出图集像素等价并不蕴含位图字面渲染等价：22 条探针串一致地掉 1–2%
+ * 墨迹，gameover/pause 面各差 407/52 像素（详见 r24 报告 §四）。缺字形会画空白而不报错，
+ * "1-2% 墨迹"这类小面积像素偏移在真人眼里的观感不可预测，属于红线；未定位根因前
+ * FONT_FULL 继续装载官方 font.png。生成器、图集产物、口径测试与量具都留在树上等下一轮。
  */
 export function loadFontFull(load: Phaser.Loader.LoaderPlugin): void {
-  load.bitmapFont(FONT_FULL, "/assets/fonts/chinese/font-room.png", "/assets/fonts/chinese/font-room.fnt");
+  load.bitmapFont(FONT_FULL, "/assets/fonts/chinese/font.png", "/assets/fonts/chinese/font.fnt");
 }
 
 /** 游戏内图集（Menu 首帧用不到）：进阶装载共用入口——已缓存的键 Phaser 自动跳过 */
