@@ -349,6 +349,9 @@ describe("在库产物：两个变体都按原地清零语义（坐标/幅面/fn
     expect(boot.includes('"/assets/fonts/chinese/font.fnt"')).toBe(true);
     expect(boot.includes('return (TUTORIAL_LEVEL_FILES as readonly string[]).includes(file) ? FONT_FULL : FONT_ROOM;')).toBe(true);
     expect(/load\.bitmapFont\(FONT_FULL[^)]*\/font\.png/.test(boot)).toBe(false);
+    // 双键互斥：跨变体换关（forest_01 → forest_02 的「继续」）不得在同一会话叠两份 8.97MB 解码
+    expect(boot.includes("const stale = key === FONT_FULL ? FONT_ROOM : FONT_FULL;")).toBe(true);
+    expect(boot.includes("if (load.scene.textures.exists(stale)) load.scene.textures.remove(stale);")).toBe(true);
     // 官方全量 font.png 在客户端源码里必须已无任何引用
     expect(stripComments(boot).match(/fonts\/chinese\/font\.png/g)).toBeNull();
   });

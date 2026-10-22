@@ -76,6 +76,12 @@ export function roomFontKey(levelFile?: string | null): string {
  */
 export function loadRoomFont(load: Phaser.Loader.LoaderPlugin): void {
   const key = roomFontKey();
+  // 两把键互斥（同一张 8,974,336B 解码画布）。正常「结算继续」就会跨变体
+  // （forest_01 → forest_02 是同一房间内的 advance 换关），不卸旧键会在一个会话里
+  // 叠加第二份解码驻留；本函数只在进房/面板 preload 调用，此刻旧关的 Game 与面板
+  // 都已停掉，旧键无活引用。
+  const stale = key === FONT_FULL ? FONT_ROOM : FONT_FULL;
+  if (load.scene.textures.exists(stale)) load.scene.textures.remove(stale);
   load.bitmapFont(
     key,
     key === FONT_FULL ? "/assets/fonts/chinese/font-roomblank.png" : "/assets/fonts/chinese/font-roombase.png",
