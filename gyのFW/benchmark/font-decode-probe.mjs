@@ -1,4 +1,4 @@
-// 字体位图解码探针（r18 归因件，常驻）：两张字体图（子集与全量，同尺寸 2191×1024）
+// 字体位图解码探针（r18 归因件，常驻）：三张字体图（全量、进房前子集、房内子集；前两张同尺寸 2191×1024）
 // 在真实 Chromium 里的解码/上传耗时，用来判定 perf-load 上「点击→Game」的 ms 差
 // 究竟来自位图还是传输（r18 结论：1600.3KB 传输在批内只占 36ms，解码差也比驻留差小）。
 // 用法：node benchmark/font-decode-probe.mjs  （临时端口 PROBE_PORT，缺省 3777）
@@ -17,6 +17,7 @@ await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: "domcontentloaded" });
 const urls = [
   "/assets/fonts/chinese/font.png",
   "/assets/fonts/chinese/font-prephase.png",
+  "/assets/fonts/chinese/font-room.png",
 ];
 for (const u of urls) {
   const r = await page.evaluate(async (href) => {

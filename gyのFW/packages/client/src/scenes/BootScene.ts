@@ -44,7 +44,7 @@ export const ATLAS_POPUP = "popup";
 export const ATLAS_MENU = "menu";
 export const ATLAS_PRELOADER = "preloader";
 export const FONT_MAIN = "font";
-/** 全量位图字体（r18 两段化）：Boot 关键路径只装 FONT_MAIN 子集，本键由消费方 preload
+/** 房内位图字体（键名 FULL 是 r18 两段化留下的，r24 起装载的是房内子集）：Boot 关键路径只装 FONT_MAIN 子集，本键由消费方 preload
  *  经 loadFontFull 装载——用第二个键而不是覆盖 "font"，因为 TextureManager.checkKey
  *  (:248) 拒绝同名重载并 console.error，addImage (:469) 随即早退——旧纹理与其上已挂的
  *  BitmapText 帧引用原样留着（换纹理只能 textures.remove，那会让在场字对象抛错）。
@@ -67,8 +67,14 @@ export const FONT_FULL = "font-full";
 export const PLAYER_SCALE = 0.95;
 
 /**
- * 全量位图字体的装载声明（唯一一处，路径与键都只在这里）：房内文案（GameScene HUD、
- * 弹窗三件套）用的 FONT_FULL 由它进缓存。声明方一律是消费方自己的 preload：已入纹理缓存时
+ * 房内位图字体的装载声明（唯一一处，路径与键都只在这里）：房内文案（GameScene HUD、
+ * 弹窗三件套）用的 FONT_FULL 由它进缓存。r24 换的是 URL 不是键——官方 font.png（2191×1024、
+ * 线上 1600.6KB、解码驻留 8.56MiB）换成按房内真实需求生成的 font-room.png（871×1179、691.3KB、
+ * 3.92MiB）：字形帧连同 ring=4 环带从官方图逐字节照抄、其余像素全 0，`.fnt` 只改写 260 条声明的
+ * x/y 与 <common> 的 scaleW/scaleH，度量面（width/height/xoffset/yoffset/xadvance/padding）逐字不动
+ * ⇒ 排版与墨迹与官方同像素。需求由 scripts/font-subset/room.mjs 从「48 关 parseLevel 的教学文本 ∪
+ * 行钉字面量 ∪ 动态数字点」推导（114 字），生成器与静态测试共用同一份口径；缺字形会画空白而不报错，
+ * 所以这条链的行钉＋像素门禁缺一不可。声明方一律是消费方自己的 preload：已入纹理缓存时
  * png 子文件静默跳过（不重下、不换纹理，机制见 FONT_FULL 注释），代价只有 .fnt 元数据再走一次
  * 条件复验（本机 0 字节 304）；若键已在缓存或队列里则本次不产生请求，队列空时 start() 当场
  * loadComplete（LoaderPlugin.js 的 `list.size === 0` 分支），所以既不重下也不多等一帧，
@@ -77,7 +83,7 @@ export const PLAYER_SCALE = 0.95;
  * 撞上 `Invalid BitmapText key: font-full`（create 中断，结算板开不出来）。
  */
 export function loadFontFull(load: Phaser.Loader.LoaderPlugin): void {
-  load.bitmapFont(FONT_FULL, "/assets/fonts/chinese/font.png", "/assets/fonts/chinese/font.fnt");
+  load.bitmapFont(FONT_FULL, "/assets/fonts/chinese/font-room.png", "/assets/fonts/chinese/font-room.fnt");
 }
 
 /** 游戏内图集（Menu 首帧用不到）：进阶装载共用入口——已缓存的键 Phaser 自动跳过 */
@@ -90,8 +96,8 @@ export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
   load.atlas(ATLAS_MECH, "/assets/atlasses/MechAssets.png", "/assets/atlasses/MechAssets.json");
   load.atlas(ATLAS_TEMPLE, "/assets/atlasses/Temples/forest/TempleAssets.png", "/assets/atlasses/Temples/forest/TempleAssets.json");
   load.atlas(ATLAS_POPUP, "/assets/atlasses/PopupAssets.png", "/assets/atlasses/PopupAssets.json");
-  // r18 件2b：全量位图字体同走这条延迟通道（Menu 驻留暖装 / GameScene.preload 兜底，
-  //  已缓存的键照旧静默跳过）。进房前文案一律 FONT_MAIN 子集，故房前不等这 1.6MB。
+  // r18 件2b：房内位图字体同走这条延迟通道（Menu 驻留暖装 / GameScene.preload 兜底，
+  //  已缓存的键照旧静默跳过）。进房前文案一律 FONT_MAIN 子集，故房前不等这一笔。
   loadFontFull(load);
 }
 
@@ -167,7 +173,7 @@ export function startBgWarm(scene: Phaser.Scene, opts?: { menuBgm?: boolean }): 
   warmState = { done, resolve };
   const finish = (): void => warmState?.resolve();
   // r21：关卡循环曲（LevelMusic 1285.4KB）不进落定门——它是"可玩"之前最大的一笔，却没有一帧靠它。
-  // 门只等必需集（四图集+全量字体+sfx）。循环曲与两支终局时刻曲（失败曲 159.6KB、本族终局曲
+  // 门只等必需集（四图集+房内字体+sfx）。循环曲与两支终局时刻曲（失败曲 159.6KB、本族终局曲
   // 163.7KB／speed 变体 68.9KB，r25）排在**门落定之后**再入队：快速建房/邀请深链那条路上 Menu 在落定后
   // 几百毫秒就被切走，定时器随场景停用作废、请求根本不发起，这几支改由 GameScene 的 kick* 在 create
   // 之后兜底；驻留路径（真人正常节奏）则在门后把它们预缓存，进房即有声，与今日等价。
