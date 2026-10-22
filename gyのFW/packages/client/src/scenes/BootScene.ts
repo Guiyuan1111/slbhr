@@ -50,60 +50,37 @@ export const ATLAS_MECH_PNG = "/assets/atlasses/MechAssetsSlim.png";
 export const ATLAS_TEMPLE_PNG = "/assets/atlasses/Temples/forest/TempleAssetsSlim.png";
 export const ATLAS_POPUP_PNG = "/assets/atlasses/PopupAssetsSlim.png";
 export const FONT_MAIN = "font";
-/** 房内位图字体（键名 FULL 是 r18 两段化留下的，r27 起装载官方图集的未用字形清零版）：Boot 关键路径只装 FONT_MAIN 子集，本键由消费方 preload
- *  经 loadFontFull 装载——用第二个键而不是覆盖 "font"，因为 TextureManager.checkKey
- *  (:248) 拒绝同名重载并 console.error，addImage (:469) 随即早退——旧纹理与其上已挂的
- *  BitmapText 帧引用原样留着（换纹理只能 textures.remove，那会让在场字对象抛错）。
- *  本键可被多处声明（Menu 暖装、GameScene.preload、弹窗三件套 preload，见 loadFontFull），
- *  这是安全的。机制在 BitmapFontFile：`loader.bitmapFont` 是把**两个子文件各自入队**
- *  （:234 `addFile(multifile.files)`），所以跳过判定按子文件分别做——png 子文件的
- *  hasCacheConflict 打 textureManager（ImageFile.js:66），第二次声明**既不重下 1.6MB 也不换纹理**；
- *  fnt 子文件打 cache.xml（XMLFile.js:56），而 BitmapFontFile.addToCache 只写
- *  cacheManager.bitmapFont（:105）、从不填 cache.xml ⇒ **元数据每次都会重新请求**
- *  （本机靠 r15 的 ETag 契约是 0 字节 304；四张图集的 *.json 从 r5 起就是同一形状，
- *  逐 URL 账为证）。重新解析也不会发生：MultiFile.pending 按子文件数初始化（:125）且只由
- *  真正加载完的子文件递减，png 缺席就永远 `isReadyToProcess()` 为假 ⇒ addToCache 直接返回；
- *  装载完成同样不受影响——被跳过的子文件根本没进队列，队列空则 start() 当场 loadComplete。 */
+/** 房内位图字体两把键（r28 按关分变体）：
+ *  - FONT_FULL：114 字全量（font-roomblank.png），只给带教学文本的 forest_01 / forest_bonus_1；
+ *  - FONT_ROOM：27 字基础集（font-roombase.png，三块面板字面量 + 时钟/结算数字），其余 46 关。
+ *  同一房间只装其中一把（解码驻留同为 8,974,336B）；换关时 GameScene 重新按本关声明，两把键
+ *  互不复用。必须用独立键：TextureManager.checkKey 拒绝同名重载，同键换 URL 会被缓存跳过，
+ *  把 27 字纹理带进教学关就是静默空白。png/fnt 的跳过与 304 机制同 r18/r27（见 git 历史注释）。 */
 export const FONT_FULL = "font-full";
+export const FONT_ROOM = "font-room";
+/** 带教学文本的关卡（scripts/font-subset/room.mjs 的 tutorialLevels 回算；静态网钉住这份名单）。
+ *  选关在进房前才确定，Menu 暖装无法预知 ⇒ r28 起 Menu 不声明房内字体，由 GameScene.preload 选。 */
+const TUTORIAL_LEVEL_FILES = ["tutorials/levels/forest_01.json", "forest/levels/forest_bonus_1.json"] as const;
+export function roomFontKey(levelFile?: string | null): string {
+  const file = levelFile ?? (globalThis as { __fwInit?: { templeEntry?: { filename?: string } | null } }).__fwInit?.templeEntry?.filename ?? "";
+  return (TUTORIAL_LEVEL_FILES as readonly string[]).includes(file) ? FONT_FULL : FONT_ROOM;
+}
 
 /**
- * 官方素材以高分辨率绘制。原版运行时角色帧缩放 0.95（帧含大量透明边距，
- * 可见内容 ≈ 2 瓦片高），门框 0.8，机关贴图保持原尺寸。
+ * 房内字体装载声明（路径只在这里）：消费方在 preload 里无脑声明本关那把键——已缓存时 png 子文件
+ * 静默跳过，fnt 元数据走一次条件复验（0 字节 304），队列空则当场 loadComplete。透明刷新回座时
+ * 弹窗可能先于 Game 起步，所以三块面板也各自声明，不能只靠 GameScene 兜底（0.3.43 的
+ * `Invalid BitmapText key: font-full` 教训）。
+ * r27 的 roomblank 是官方 font.png 未用字形原地清零（坐标/环带/幅面/fnt 全不动，115 处采样等价）；
+ * r28 按关再切一刀：46 关只需要基础 27 字（209.8KB），教学两关才装 777.0KB 全量。
  */
-export const PLAYER_SCALE = 0.95;
-
-/**
- * 房内位图字体的装载声明（唯一一处，路径与键都只在这里）：房内文案（GameScene HUD、
- * 弹窗三件套）用的 FONT_FULL 由它进缓存。声明方一律是消费方自己的 preload：已入纹理缓存时
- * png 子文件静默跳过（不重下、不换纹理，机制见 FONT_FULL 注释），代价只有 .fnt 元数据再走一次
- * 条件复验（本机 0 字节 304）；若键已在缓存或队列里则本次不产生请求，队列空时 start() 当场
- * loadComplete（LoaderPlugin.js 的 `list.size === 0` 分支），所以既不重下也不多等一帧，
- * 无脑声明比"猜上游已经装过"便宜。0.3.43 实测教训：刷新回座 won/gameover 时 enterGame 的黑幕把
- * Game 起步压到淡入之后，而 resumeWonIfNeeded/onPhase 会先 start 弹窗场景，靠上游兜底就
- * 撞上 `Invalid BitmapText key: font-full`（create 中断，结算板开不出来）。
- *
- * r24 换装载尝试已回退：房内子集图集 font-room.{png,fnt}（871×1179、114 字、691.3KB、
- * 3.92MiB，对官方 1600.3KB/8.56MiB 省 909.4KB 线上与 4.64MiB 驻留）的 A/B/A 四档
- * gameActivePerfMs 分别 −168/−1873/−4688/−15356ms（4g 起三闸门全过）。图集侧静态核
- * （scripts/font-subset/build-font-room.mjs 的 `--check` 与 scripts/font-subset/verify-room.mjs）显示
- * 114 保留字帧矩形与 ring=4 环带逐字节照抄、其余像素全 0，fnt 260 条除 x/y 与
- * scaleW/scaleH 外逐属性等值、帧无越界——但 scripts/e2e/roomtext.mjs 在同一轮内用现役图集与参照图集
- * 各渲染一次读屏，暴露出图集像素等价并不蕴含位图字面渲染等价：18px 教学行、24px 时钟与结算面板
- * 逐字节相同，而 36px 游戏结束标题差 407 像素、36/26px 暂停面板差 52 像素；独立相位探针
- * （benchmark/font-phase-probe.mjs）归因到 26px/36px 的降采样核相位依赖字形在图集中的绝对位置
- * （18/24/48px 在三种目标相位下 0 差，详见 r24 报告 §四）。缺字形会画空白而不报错，
- * 这类小面积像素偏移在真人眼里的观感不可预测，属于红线。r24 的生成器/产物/测试已随
- * font-roomblank 换代移除，roomtext 量具保留。
- *
- * r27 换装载（font-roomblank.png，脚本 scripts/font-subset/build-font-blank.mjs）：与 r24 的货架
- * 重排相反，**一个字形坐标都不改**——114 个房内字形的帧矩形照抄官方 x/y，四周 ring=4（= fnt padding）
- * 环带逐字节照抄，其余像素清零；画布 2191×1024、chunks 与官方 font.fnt 全部不动。每个字形的源矩形
- * 与滤波邻域逐字节不变，26/36px 的采样核相位按构造与官方相同（roomtext 六面逐字节，r27 报告）。
- * 线上 1600.3→777.0KB（−823.3KB）；驻留像素不变（8,974,336B）。缺字形仍是静默画空白，
- * 需求集与 FONT_FULL 调用点的对齐由 font-roomblank.test.ts 独立回算。
- */
-export function loadFontFull(load: Phaser.Loader.LoaderPlugin): void {
-  load.bitmapFont(FONT_FULL, "/assets/fonts/chinese/font-roomblank.png", "/assets/fonts/chinese/font.fnt");
+export function loadRoomFont(load: Phaser.Loader.LoaderPlugin): void {
+  const key = roomFontKey();
+  load.bitmapFont(
+    key,
+    key === FONT_FULL ? "/assets/fonts/chinese/font-roomblank.png" : "/assets/fonts/chinese/font-roombase.png",
+    "/assets/fonts/chinese/font.fnt",
+  );
 }
 
 /** 游戏内图集（Menu 首帧用不到）：进阶装载共用入口——已缓存的键 Phaser 自动跳过 */
@@ -116,10 +93,14 @@ export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
   load.atlas(ATLAS_MECH, ATLAS_MECH_PNG, "/assets/atlasses/MechAssets.json");
   load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, "/assets/atlasses/Temples/forest/TempleAssets.json");
   load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, "/assets/atlasses/PopupAssets.json");
-  // r18 件2b：房内位图字体同走这条延迟通道（Menu 驻留暖装 / GameScene.preload 兜底，
-  //  已缓存的键照旧静默跳过）。进房前文案一律 FONT_MAIN 子集，故房前不等这一笔。
-  loadFontFull(load);
+  // r28：房内字体不在这里——Menu 暖装不知道下一关，按关变体只能由 GameScene.preload 声明。
 }
+
+/**
+ * 官方素材以高分辨率绘制。原版运行时角色帧缩放 0.95（帧含大量透明边距，
+ * 可见内容 ≈ 2 瓦片高），门框 0.8，机关贴图保持原尺寸。
+ */
+export const PLAYER_SCALE = 0.95;
 
 /** 角色播放序列帧（r23 件1）：既不在 Boot 阻塞批也不在落定门，房间可玩之后才取。
  *  声明方有两处——`startBgWarm` 门落定后（驻留路径预缓存）与 `GameScene.kickCharsPlay`

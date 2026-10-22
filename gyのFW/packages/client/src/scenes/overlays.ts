@@ -10,7 +10,7 @@
  * 子元素一律用板内局部坐标（板中心 = (541,321)）；1280×960 下 screen = local + (99,159)。
  */
 import Phaser from "phaser";
-import { ATLAS_MENU, ATLAS_POPUP, FONT_FULL, FONT_MAIN, loadFontFull } from "./BootScene";
+import { ATLAS_MENU, ATLAS_POPUP, FONT_MAIN, loadRoomFont, roomFontKey } from "./BootScene";
 import { getSettings } from "../settings";
 
 /** 板原生尺寸（PopupBackground0000 帧 1082×642，sourceSize 实测；运行时以纹理帧为准） */
@@ -126,7 +126,7 @@ export function stoneButton(
     .image(x, y, ATLAS_MENU, "StoneButton0000")
     .setDisplaySize(252, 117)
     .setInteractive({ useHandCursor: true });
-  // 缺省 FONT_MAIN（进房前弹窗用的子集）；房内调用点显式传 FONT_FULL，否则缺字形的字会画空白。
+  // 缺省 FONT_MAIN（进房前弹窗用的子集）；房内调用点显式传 roomFontKey()，否则缺字形的字会画空白。
   const txt = scene.add
     .bitmapText(x, y - 14, opts?.fontKey ?? FONT_MAIN, label, 26)
     .setOrigin(0.5, 0.5);
@@ -157,12 +157,12 @@ export class PauseMenu extends Phaser.Scene {
   constructor() {
     super("PauseMenu");
   }
-  /** 三块面板的板内文案都用 FONT_FULL，而启动路径不止"Game 已在场"这一条：刷新回座
+  /** 三块面板的板内文案都用 roomFontKey()，而启动路径不止"Game 已在场"这一条：刷新回座
    *  won/gameover 时 enterGame 的黑幕把 Game 起步压到淡入之后，面板却会先被 start
    *  （0.3.42 的 L-02 补结算链）。故消费方各自声明装载——已缓存时队列空、start() 当场
-   *  loadComplete（LoaderPlugin.js），既不重下也不多等一帧。理由详见 BootScene.loadFontFull。 */
+   *  loadComplete（LoaderPlugin.js），既不重下也不多等一帧。理由详见 BootScene.loadRoomFont。 */
   preload(): void {
-    loadFontFull(this.load);
+    loadRoomFont(this.load);
   }
   /** 场景实例在 stop/start 间复用，create 前必须清掉上次弹簧关闭态：
    *  否则 closing 残留 true 会让第二次打开的 requestClose 被幂等守卫直接吞掉。 */
@@ -183,7 +183,7 @@ export class PauseMenu extends Phaser.Scene {
     });
     this.board = buildBoard(this);
     const board = this.board;
-    board.add(this.add.bitmapText(CX, 40, FONT_FULL, "暫停", 36).setOrigin(0.5, 0.5));
+    board.add(this.add.bitmapText(CX, 40, roomFontKey(), "暫停", 36).setOrigin(0.5, 0.5));
     // 再试/返回：oracle 为 fade 包络（:1909660/:1910067），面板由黑幕 ops 统一停，本地不抢停
     stoneButton(
       this,
@@ -194,7 +194,7 @@ export class PauseMenu extends Phaser.Scene {
       () => {
         handle().__fwRestart?.();
       },
-      { fontKey: FONT_FULL },
+      { fontKey: roomFontKey() },
     );
     stoneButton(
       this,
@@ -205,13 +205,13 @@ export class PauseMenu extends Phaser.Scene {
       () => {
         handle().__fwLeaveToMenu?.();
       },
-      { fontKey: FONT_FULL },
+      { fontKey: roomFontKey() },
     );
     stoneButton(this, board, CX, 241, "继续", () => {
       // F3：经 __fwTogglePause 发 resume 给服务端；菜单由 pause-changed 回声统一关闭
       // （本地不抢停——若对端已解除，回声早已关掉本面板，此钮不会存在）
       handle().__fwTogglePause?.();
-    }, { fontKey: FONT_FULL });
+    }, { fontKey: roomFontKey() });
   }
   /** 弹簧滑出关闭（oracle hide()→target=outside，近 outside 自动隐）。main.ts pause-changed
    *  回声路由至此；幂等，1.5s 兜底强停（防弹簧数值边缘不触发落位回调）。 */
@@ -230,7 +230,7 @@ export class EndMenu extends Phaser.Scene {
   }
   /** 装载理由同 PauseMenu.preload（刷新回座 won 时本面板先于 Game 起步） */
   preload(): void {
-    loadFontFull(this.load);
+    loadRoomFont(this.load);
   }
   create(): void {
     const d = (this.scene.settings.data ?? {}) as {
@@ -297,7 +297,7 @@ export class EndMenu extends Phaser.Scene {
       const s = d.timeLimitSec % 60;
       const limitStr = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
       board.add(
-        this.add.bitmapText(541 - 244, 321 + 55, FONT_FULL, limitStr, 18).setOrigin(0.5, 0.5).setAlpha(0.7)
+        this.add.bitmapText(541 - 244, 321 + 55, roomFontKey(), limitStr, 18).setOrigin(0.5, 0.5).setAlpha(0.7)
       );
     }
     // 星数由 main 按关卡类型算好传入（puzzle=银钻口径；general=1+钻石+限时）
@@ -337,7 +337,7 @@ export class EndMenu extends Phaser.Scene {
         if (h.__fwNextLevel) h.__fwNextLevel();
         else h.__fwLeaveToMenu?.();
       },
-      { disabled: () => !enabled || leaving, fontKey: FONT_FULL },
+      { disabled: () => !enabled || leaving, fontKey: roomFontKey() },
     );
   }
 }
@@ -349,11 +349,11 @@ export class GameOverMenu extends Phaser.Scene {
   }
   /** 装载理由同 PauseMenu（刷新回座 gameover 时 onPhase 先于 Game 起步启动本面板） */
   preload(): void {
-    loadFontFull(this.load);
+    loadRoomFont(this.load);
   }
   create(): void {
     const board = buildBoard(this);
-    board.add(this.add.bitmapText(CX, 40, FONT_FULL, "游戏结束", 36).setOrigin(0.5, 0.5));
+    board.add(this.add.bitmapText(CX, 40, roomFontKey(), "游戏结束", 36).setOrigin(0.5, 0.5));
     // 双钮：oracle 为 fade 包络（:1880672 Menu / :1909660 Retry），面板由黑幕 ops 统一停
     stoneButton(
       this,
@@ -364,7 +364,7 @@ export class GameOverMenu extends Phaser.Scene {
       () => {
         handle().__fwLeaveToMenu?.();
       },
-      { fontKey: FONT_FULL },
+      { fontKey: roomFontKey() },
     );
     stoneButton(
       this,
@@ -375,7 +375,7 @@ export class GameOverMenu extends Phaser.Scene {
       () => {
         handle().__fwRestart?.();
       },
-      { fontKey: FONT_FULL },
+      { fontKey: roomFontKey() },
     );
   }
 }

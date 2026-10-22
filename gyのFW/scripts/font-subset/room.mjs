@@ -30,12 +30,12 @@ export const ROOM_LITERAL_SITES = [
   { file: "packages/client/src/scenes/overlays.ts", line: 356, texts: ["游戏结束"], note: "GameOverMenu 标题" },
   { file: "packages/client/src/scenes/overlays.ts", line: 363, texts: ["返回菜单"], note: "GameOverMenu label" },
   { file: "packages/client/src/scenes/overlays.ts", line: 374, texts: ["再试一次"], note: "GameOverMenu label" },
-  { file: "packages/client/src/scenes/GameScene.ts", line: 1572, texts: ["00:00"], note: "时钟初值" },
+  { file: "packages/client/src/scenes/GameScene.ts", line: 1577, texts: ["00:00"], note: "时钟初值" },
 ];
 
 /** 动态点：只声明"这一行仍产出这种字符"，不声明具体串。 */
 export const ROOM_DYNAMIC_SITES = [
-  { file: "packages/client/src/scenes/GameScene.ts", line: 1610, re: /mmss\(clockSec\)/, chars: "0123456789:", note: "时钟 mm:ss（GameScene.ts:195 padStart(2,\"0\") + ':'）" },
+  { file: "packages/client/src/scenes/GameScene.ts", line: 1615, re: /mmss\(clockSec\)/, chars: "0123456789:", note: "时钟 mm:ss（GameScene.ts:195 padStart(2,\"0\") + ':'）" },
   { file: "packages/client/src/scenes/overlays.ts", line: 298, re: /padStart\(2, "0"\)/, chars: "0123456789:", note: "结算板时限文本 limitStr" },
 ];
 
@@ -121,24 +121,8 @@ export async function roomLevelTexts(root) {
   return levels;
 }
 
-/**
- * 房内会画的中文需求集合：教学文本（选中层）∪ 行钉字面量 ∪ 动态数字点。
- * 返回形状与 prephase.mjs 的 prephaseChars 一致：{ chars:Set, kept:[{ch,code,glyph,where}], noGlyph:[{ch,where}] }，
- * kept 按 code 升序。读取前先跑行钉断言。
- */
-export async function roomChars(root, fnt) {
-  assertRoomPins(root);
-  /** @type {Map<string, string>} */
-  const where = new Map();
-  const add = (ch, w) => {
-    if (!where.has(ch)) where.set(ch, w);
-  };
-  for (const l of await roomLevelTexts(root)) {
-    for (const text of l.texts) for (const ch of text) add(ch, `关卡 ${l.id}(${l.selectedLayer})`);
-  }
-  for (const s of ROOM_LITERAL_SITES) for (const t of s.texts) for (const ch of t) add(ch, `${s.file}:${s.line}`);
-  for (const s of ROOM_DYNAMIC_SITES) for (const ch of s.chars) add(ch, `${s.file}:${s.line}(动态)`);
-
+/** where 表 → 与 prephase.mjs 同形状的 { chars, kept, noGlyph }（kept 按 code 升序）。 */
+function materialize(where, fnt) {
   const kept = [];
   const noGlyph = [];
   for (const [ch, w] of where) {
@@ -149,6 +133,48 @@ export async function roomChars(root, fnt) {
   kept.sort((a, b) => a.code - b.code);
   noGlyph.sort((a, b) => a.ch.codePointAt(0) - b.ch.codePointAt(0));
   return { chars: new Set(where.keys()), kept, noGlyph };
+}
+
+function baseWhere() {
+  /** @type {Map<string, string>} */
+  const where = new Map();
+  const add = (ch, w) => {
+    if (!where.has(ch)) where.set(ch, w);
+  };
+  for (const s of ROOM_LITERAL_SITES) for (const t of s.texts) for (const ch of t) add(ch, `${s.file}:${s.line}`);
+  for (const s of ROOM_DYNAMIC_SITES) for (const ch of s.chars) add(ch, `${s.file}:${s.line}(动态)`);
+  return where;
+}
+
+/**
+ * 基础集（r28）：不依赖关卡的房内文案——三块面板字面量 ＋ 时钟/结算数字。
+ * 46/48 关只用它；有教学文本的两关才需要 roomChars 的全集。
+ */
+export function roomBaseChars(root, fnt) {
+  assertRoomPins(root);
+  return materialize(baseWhere(), fnt);
+}
+
+/**
+ * 房内会画的中文需求集合：教学文本（选中层）∪ 行钉字面量 ∪ 动态数字点。
+ * 返回形状与 prephase.mjs 的 prephaseChars 一致：{ chars:Set, kept:[{ch,code,glyph,where}], noGlyph:[{ch,where}] }，
+ * kept 按 code 升序。读取前先跑行钉断言。
+ */
+export async function roomChars(root, fnt) {
+  assertRoomPins(root);
+  const where = baseWhere();
+  const add = (ch, w) => {
+    if (!where.has(ch)) where.set(ch, w);
+  };
+  for (const l of await roomLevelTexts(root)) {
+    for (const text of l.texts) for (const ch of text) add(ch, `关卡 ${l.id}(${l.selectedLayer})`);
+  }
+  return materialize(where, fnt);
+}
+
+/** 有教学文本的关卡（客户端按关选字体变体的唯一依据；生成器/静态网共用）。 */
+export async function tutorialLevels(root) {
+  return (await roomLevelTexts(root)).filter((l) => l.texts.length > 0);
 }
 
 /** 便捷入口：读官方 font.fnt 后求房内字符集（测试与一次性脚本常用）。 */

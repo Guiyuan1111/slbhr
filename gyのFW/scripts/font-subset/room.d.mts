@@ -40,6 +40,14 @@ export function roomChars(root: string, fnt: Fnt): Promise<{
   kept: RoomKeptGlyph[];
   noGlyph: { ch: string; where: string }[];
 }>;
+/** 基础集（r28）：行钉字面量 + 动态数字点，不依赖关卡；46/48 关只装它。 */
+export function roomBaseChars(root: string, fnt: Fnt): {
+  chars: Set<string>;
+  kept: RoomKeptGlyph[];
+  noGlyph: { ch: string; where: string }[];
+};
+/** 有教学文本的关卡（客户端按关选字体变体的依据）。 */
+export function tutorialLevels(root: string): Promise<RoomLevel[]>;
 export function roomCharsFromOfficial(root: string, fntPath?: string): Promise<{
   fnt: Fnt;
   chars: Set<string>;

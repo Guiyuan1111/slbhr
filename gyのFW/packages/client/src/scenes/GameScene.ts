@@ -23,7 +23,7 @@ import { AUDIO_SFX, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadAudioPack } from 
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
-import { ATLAS_CHARS, ATLAS_CHARS_ENTRY, ATLAS_CHARS_PLAY, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_FULL, PLAYER_SCALE, buildGameAnims, ensureCharAnims, loadCharsPlay, loadGameAtlases } from "./BootScene";
+import { ATLAS_CHARS, ATLAS_CHARS_ENTRY, ATLAS_CHARS_PLAY, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_ROOM, PLAYER_SCALE, buildGameAnims, ensureCharAnims, loadCharsPlay, loadGameAtlases, loadRoomFont, roomFontKey } from "./BootScene";
 import { getSettings } from "../settings";
 import { loadTempleLevels } from "../templeData";
 import { validateSnapshot } from "../snapshotValidation";
@@ -197,6 +197,8 @@ function mmss(totalSec: number): string {
 
 export class GameScene extends Phaser.Scene {
   private d!: GameInit;
+  /** r28：本关字体键（教学两关 FONT_FULL 114 字，其余 FONT_ROOM 27 字）——init 按 templeEntry 定 */
+  private roomFont = FONT_ROOM;
   private myRole: Role | null = null;
   private views = new Map<Role, PlayerView>();
   private diamondSprites = new Map<string, Phaser.GameObjects.Image>();
@@ -330,6 +332,8 @@ export class GameScene extends Phaser.Scene {
     // MenuScene 后台暖装通常已就绪（此处静默跳过）；暖装被提前打断（快速建房/
     // 邀请深链直进）时在此补齐，保证 create 前纹理完备——与旧 Boot 全量装载等价。
     loadGameAtlases(this.load);
+    // r28：房内字体按关选变体（Menu 暖装不知道目标关，不能在那边声明）。
+    loadRoomFont(this.load);
   }
 
   init(): void {
@@ -365,6 +369,7 @@ export class GameScene extends Phaser.Scene {
     // 先回缺省再按条目赋值，create 里 fetchTempleTime 的异步结果仍可覆盖。
     this.templeType = "general";
     const entry = d.templeEntry;
+    this.roomFont = roomFontKey(entry?.filename);
     if (entry) {
       this.templeType = String(entry.type ?? "general");
       const t = Number(entry.time);
@@ -1469,7 +1474,7 @@ export class GameScene extends Phaser.Scene {
       const texts = step.textItems.map((t) => {
         // 世界 = 关卡 +PAD：文本与触发矩形同域（此前漏 +PAD 致文本相对地砖偏 32px，
         // 2026-10-12 用户报告第一关文字错位时实锤）
-        const bt = this.add.bitmapText(t.x + PAD, t.y + PAD, FONT_FULL, t.text, 18);
+        const bt = this.add.bitmapText(t.x + PAD, t.y + PAD, this.roomFont, t.text, 18);
         // 运行时接受 'left'|'center'|'right'（Phaser 3 字体排版），本仓 phaser 类型标注偏差强转
         bt.align = (t.halign ?? "left") as unknown as typeof bt.align;
         return bt.setMaxWidth(t.width).setDepth(0.8).setVisible(false).setAlpha(0);
@@ -1569,7 +1574,7 @@ export class GameScene extends Phaser.Scene {
     // 原版 LevelUI/Clock：TempleAssets Clock0000 + font 位图字（oracle 实拍 2026-10-12：字形 39px 高
     // ≈ 名义字号×1.6；旧 24 号只渲染 26px 高，偏小——注意文字 y=56 是文字区起点，加高后仍落在盘面内）
     this.clockText = this.add
-      .bitmapText(clockX, 56, FONT_FULL, "00:00", 24)
+      .bitmapText(clockX, 56, this.roomFont, "00:00", 24)
       .setOrigin(0.5, 0)
       .setDepth(9)
       .setScrollFactor(0);
