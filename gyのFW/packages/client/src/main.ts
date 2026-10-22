@@ -12,7 +12,7 @@ import { parseLevel, type LevelData } from "@fw/shared/level2";
 import { Net, type NetCallbacks } from "./net";
 import { KeyboardInput } from "./input";
 import { TouchControls } from "./touch";
-import { BootScene, bgWarmSettled, setWarmBgmFamily, warmRoomFontFor } from "./scenes/BootScene";
+import { BootScene, bgWarmSettled, setWarmBgmFamily, warmMechFor, warmRoomFontFor } from "./scenes/BootScene";
 import { MenuScene } from "./scenes/MenuScene";
 import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
@@ -449,6 +449,8 @@ async function enterGame(): Promise<void> {
   // 的一帧重合成）随场景切换一并发生，不再插进 fetch 段（实测早醒会拖慢 fetch）。
   // r28：教学目标关的全量字体在关卡定出后补进仍在飞的暖装门（非教学关 no-op）
   warmRoomFontFor(currentTempleEntry?.filename);
+  // r30：本关机关变体同批补进（暖装已落定则 no-op，GameScene.preload 兜底）
+  warmMechFor(currentLevel);
   phaser?.loop.wake();
   await bgWarmSettled();
   // 切入游戏场景（Game 若已在跑则重启以载入关卡数据）；黑幕包络

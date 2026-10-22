@@ -82,14 +82,24 @@ function walk(dir: string): string[] {
 }
 
 describe("装载 URL 收敛（Slim PNG + 官方 JSON）", () => {
-  it("BootScene 的三条装载用 *_PNG 常量，常量指向 Slim；JSON 仍是官方", () => {
+  it("BootScene 的两条进房图集装载用 *_PNG 常量，常量指向 Slim；JSON 仍是官方", () => {
     const boot = stripComments(SRC("packages/client/src/scenes/BootScene.ts"));
-    expect(boot).toContain('export const ATLAS_MECH_PNG = "/assets/atlasses/MechAssetsSlim.png"');
     expect(boot).toContain('export const ATLAS_TEMPLE_PNG = "/assets/atlasses/Temples/forest/TempleAssetsSlim.png"');
     expect(boot).toContain('export const ATLAS_POPUP_PNG = "/assets/atlasses/PopupAssetsSlim.png"');
-    expect(boot).toContain('load.atlas(ATLAS_MECH, ATLAS_MECH_PNG, "/assets/atlasses/MechAssets.json")');
     expect(boot).toContain('load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, "/assets/atlasses/Temples/forest/TempleAssets.json")');
     expect(boot).toContain('load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, "/assets/atlasses/PopupAssets.json")');
+  });
+
+  it("机关图集不再走整关 Slim：loadGameAtlases 不声明 mech，变体 URL 由运行时 id 拼出", () => {
+    const boot = stripComments(SRC("packages/client/src/scenes/BootScene.ts"));
+    const gate = boot.slice(boot.indexOf("export function loadGameAtlases"), boot.indexOf("export function loadMechAtlas"));
+    expect(gate).not.toContain("ATLAS_MECH");
+    expect(boot).toContain("export function loadMechAtlas(load: Phaser.Loader.LoaderPlugin, level: MechLevel): void");
+    expect(boot).toContain('load.atlas(ATLAS_MECH, `/assets/atlasses/mech/MechAssets-${id}.png`, `/assets/atlasses/mech/MechAssets-${id}.json`)');
+    expect(boot).toContain("mechVariantId(level)");
+    // 同键重载会被 TextureManager.checkKey 静默跳过 ⇒ 换变体前必须卸纹理（r30 的换关正确性）
+    expect(boot).toContain("load.scene.textures.remove(ATLAS_MECH)");
+    expect(boot).not.toContain("MechAssetsSlim");
   });
 
   it("TempleScene / CompleteScene 的兜底装载用同一常量（混用会让 Slim 取决于装载序）", () => {

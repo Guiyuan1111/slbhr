@@ -23,7 +23,7 @@ import { AUDIO_SFX, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadAudioPack } from 
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
-import { ATLAS_CHARS, ATLAS_CHARS_ENTRY, ATLAS_CHARS_PLAY, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_ROOM, PLAYER_SCALE, buildGameAnims, ensureCharAnims, loadCharsPlay, loadGameAtlases, loadPopupFinish, loadRoomFont, popupFinishKey, roomFontKey } from "./BootScene";
+import { ATLAS_CHARS, ATLAS_CHARS_ENTRY, ATLAS_CHARS_PLAY, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_ROOM, PLAYER_SCALE, buildGameAnims, ensureCharAnims, loadCharsPlay, loadGameAtlases, loadMechAtlas, loadPopupFinish, loadRoomFont, popupFinishKey, roomFontKey } from "./BootScene";
 import { getSettings } from "../settings";
 import { loadTempleLevels } from "../templeData";
 import { validateSnapshot } from "../snapshotValidation";
@@ -332,6 +332,9 @@ export class GameScene extends Phaser.Scene {
     // MenuScene 后台暖装通常已就绪（此处静默跳过）；暖装被提前打断（快速建房/
     // 邀请深链直进）时在此补齐，保证 create 前纹理完备——与旧 Boot 全量装载等价。
     loadGameAtlases(this.load);
+    // r30：本关机关变体（暖装已落定/被切断时在此兜底；同一会话重入同变体零传输，
+    // 换变体时先卸旧纹理与风动画，见 loadMechAtlas）。
+    loadMechAtlas(this.load, this.d.level);
     // r28：房内字体按关选变体（Menu 暖装不知道目标关，不能在那边声明）。
     loadRoomFont(this.load);
   }
@@ -415,7 +418,9 @@ export class GameScene extends Phaser.Scene {
     const { level } = this.d;
     // 游戏内动画注册（r5 随装载序从 BootScene 迁来：wind/liquid/finish_stone 的帧在
     // ground/mech/popup 图集，Boot 阶段尚未装载；exists 幂等，重开/换关不重复建）
-    buildGameAnims(this.anims);
+    // r30：风区两式只在本关有风且变体纹理已到位时注册——无风关卡的变体不含那 34 帧，
+    // 无条件注册会让帧名解析成 __BASE（整张图集当一帧贴满屏）。
+    buildGameAnims(this.anims, { wind: level.winds.length > 0 && this.textures.exists(ATLAS_MECH) });
     // r23 件1：角色房内十一式（跑步/跳跃/坠落/上升/楼梯序列/烟雾序列）的帧改挂 CharAssetsPlay——
     // 那张不再进落定门，注册必须等它落地（已在缓存时当场注册），早一步就是把整张图集当一帧绑进动画。
     // 钻石与 smoke/stairs 的 0000 帧在 Entry 张、随 loadGameAtlases 进缓存，构造期照常解析。

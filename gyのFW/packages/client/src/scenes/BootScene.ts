@@ -19,6 +19,7 @@
  * 的串行段（blob→Image ~180ms）而非网络（19 请求全并行仅 ~55ms）。
  */
 import Phaser from "phaser";
+import { type MechLevel, mechVariantId } from "@fw/shared/mech-needs";
 import { AUDIO_MENU, AUDIO_SFX, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadAudioPack, type BgmFamily } from "../audio.js";
 import { getSettings } from "../settings.js";
 
@@ -43,10 +44,11 @@ export const ATLAS_TEMPLE = "temple";
 export const ATLAS_POPUP = "popup";
 export const ATLAS_MENU = "menu";
 export const ATLAS_PRELOADER = "preloader";
-/** r26：三张进房图集的 Slim PNG（scripts/atlas-slim：零消费帧原地清零，坐标与官方 JSON 都不动）。
- *  三处装载——此处 loadGameAtlases、TempleScene.preload、CompleteScene.preload——必须用同一 URL：
- *  先跑的一处会把图装进缓存，其余处按"键已存在"静默跳过，混用会让 Slim 是否生效取决于装载序。 */
-export const ATLAS_MECH_PNG = "/assets/atlasses/MechAssetsSlim.png";
+/** r26：两张进房图集的 Slim PNG（scripts/atlas-slim：零消费帧原地清零，坐标与官方 JSON 都不动）。
+ *  两处装载——此处 loadGameAtlases、TempleScene.preload——必须用同一 URL：
+ *  先跑的一处会把图装进缓存，其余处按"键已存在"静默跳过，混用会让 Slim 是否生效取决于装载序。
+ *  r30 起机关图集不再有整关共用的 Slim：48 关按消费帧集分成 24 个变体，由 `loadMechAtlas`
+ *  用运行时算出的 id 取 `mech/MechAssets-<id>.{png,json}`（生成器 scripts/split-mech-atlas.mjs）。 */
 export const ATLAS_TEMPLE_PNG = "/assets/atlasses/Temples/forest/TempleAssetsSlim.png";
 export const ATLAS_POPUP_PNG = "/assets/atlasses/PopupAssetsSlim.png";
 /** 结算面板按关类型的三张图集（r29；生成器 `scripts/split-popup-finish.mjs`）：
@@ -126,10 +128,32 @@ export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
   // 461.9KB 整张进落定门，房间首帧其实只画得上其中四帧。
   load.atlas(ATLAS_CHARS_ENTRY, "/assets/atlasses/CharAssetsEntry.png", "/assets/atlasses/CharAssetsEntry.json");
   load.atlas(ATLAS_GROUND, "/assets/atlasses/GroundAssets.png", "/assets/atlasses/GroundAssets.json");
-  load.atlas(ATLAS_MECH, ATLAS_MECH_PNG, "/assets/atlasses/MechAssets.json");
   load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, "/assets/atlasses/Temples/forest/TempleAssets.json");
   load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, "/assets/atlasses/PopupAssets.json");
+  // r30：机关图集不在这里——它按关卡变体（loadMechAtlas），由关卡定出后声明。
   // r28：房内字体不在这里——Menu 暖装不知道下一关，按关变体只能由 GameScene.preload 声明。
+}
+
+/** 纹理键 `mech` 里当前装着哪个按关变体（r30）。Phaser 的 TextureManager.checkKey 拒绝同键重载，
+ *  换关时若只声明不卸旧纹理，新关的帧集根本不会装入——缺的机制帧静默画透明。 */
+let mechVariant: string | null = null;
+const WIND_ANIM_KEYS = ["wind_base", "wind_effect"] as const;
+
+/** 本关机关图集装载（r30 唯一路径；生成器 scripts/split-mech-atlas.mjs）：
+ *  48 关 → 24 个帧子集（`@fw/shared/mech-needs` 的 mechAtlasFrames），画布仍是 2048²、保留帧
+ *  坐标与像素逐字节照抄 Slim，只把本关不消费的帧原地清零。风区 34 帧（110.2KB）只进 15 个有风
+ *  关卡；零机关关卡（forest_06 / forest_06_1）用 1×1 透明占位帧，保证纹理至少有一帧。
+ *  同一会话换关（结算「继续」advance）：旧变体的解码画布是 16.8MB 且键固定，必须先卸纹理再声明；
+ *  风动画的 AnimationFrame 在注册时已解析成旧纹理的 Frame（Animation.js:454），也必须一并移除，
+ *  由下一次 `buildGameAnims(a,{wind})` 按新关重新注册（未卸干净会继续播旧变体的帧）。
+ *  变体 id 由关卡数据当场算出，装载 URL 不存在清单文件；同变体重入（重开同关）零传输。 */
+export function loadMechAtlas(load: Phaser.Loader.LoaderPlugin, level: MechLevel): void {
+  const id = mechVariantId(level);
+  if (mechVariant === id && load.scene.textures.exists(ATLAS_MECH)) return;
+  if (load.scene.textures.exists(ATLAS_MECH)) load.scene.textures.remove(ATLAS_MECH);
+  for (const key of WIND_ANIM_KEYS) if (load.scene.anims.exists(key)) load.scene.anims.remove(key);
+  mechVariant = id;
+  load.atlas(ATLAS_MECH, `/assets/atlasses/mech/MechAssets-${id}.png`, `/assets/atlasses/mech/MechAssets-${id}.json`);
 }
 
 /**
@@ -228,7 +252,7 @@ export function startBgWarm(scene: Phaser.Scene, opts?: { menuBgm?: boolean }): 
     warmState.resolve();
   };
   // r21：关卡循环曲（LevelMusic 1285.4KB）不进落定门——它是"可玩"之前最大的一笔，却没有一帧靠它。
-  // 门只等必需集（四图集+房内字体+sfx）。循环曲与两支终局时刻曲（失败曲 159.6KB、本族终局曲
+  // 门只等必需集（四图集+房内字体+sfx；r30 起机关图集是关卡定出后补进门的本关变体）。循环曲与两支终局时刻曲（失败曲 159.6KB、本族终局曲
   // 163.7KB／speed 变体 68.9KB，r25）排在**门落定之后**再入队：快速建房/邀请深链那条路上 Menu 在落定后
   // 几百毫秒就被切走，定时器随场景停用作废、请求根本不发起，这几支改由 GameScene 的 kick* 在 create
   // 之后兜底；驻留路径（真人正常节奏）则在门后把它们预缓存，进房即有声，与今日等价。
@@ -294,6 +318,18 @@ export function warmRoomFontFor(levelFile?: string | null): void {
   if (roomFontKey(levelFile) !== FONT_FULL) return;
   if (!warmState.scene.sys.isActive()) return;
   loadRoomFont(warmState.scene.load, levelFile);
+  warmState.scene.load.start();
+}
+
+/** 本关机关变体在关卡定出后补进仍在飞的暖装门（r30，形状同 warmRoomFontFor）：
+ *  正常节奏（选关/建房/受邀）关卡确定时暖装多半还在跑，这份 36–135KB 与其余必需集并行；
+ *  暖装已落定/未启动时 no-op，由 GameScene.preload 照常兜底——那时它落在进房阻塞批，
+ *  与 r30 前整张 152.9KB 进门的区别只是字节数。 */
+export function warmMechFor(level?: MechLevel | null): void {
+  if (!warmState || warmState.settled) return;
+  if (!level) return;
+  if (!warmState.scene.sys.isActive()) return;
+  loadMechAtlas(warmState.scene.load, level);
   warmState.scene.load.start();
 }
 
@@ -461,13 +497,18 @@ export function ensureCharAnims(scene: Phaser.Scene, onReady?: () => void): void
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.load.off(evt, arrive));
 }
 
-/** 游戏内动画（ground/mech/popup 帧——图集随 GameScene 装载后再注册，r5 随装载序迁移） */
-export function buildGameAnims(a: Phaser.Animations.AnimationManager): void {
+/** 游戏内动画（ground/mech/popup 帧——图集随 GameScene 装载后再注册，r5 随装载序迁移）。
+ *  r30：风区两式只在有风关卡注册——34 帧只存在于有风关卡的机关变体里，无条件注册会把
+ *  帧名解析成 `__BASE`（Animation.js:454），整张图集当一帧贴满屏。调用方按 `level.winds`
+ *  与本关纹理是否到位传 `wind`。 */
+export function buildGameAnims(a: Phaser.Animations.AnimationManager, opts?: { wind?: boolean }): void {
   const seq = buildSeq(a);
-  // 风区机身（原版 Wind：generateFrameNames("wind_base",0,4)@30fps 循环；图集实有 0..3）
-  seq("wind_base", ATLAS_MECH, "wind_base", 0, 3, 30, -1);
-  // 风区尾迹（原版 Wind：wind_effect 0..30@30fps 循环，图集实有 0..29；随机起始帧由场景侧 setProgress）
-  seq("wind_effect", ATLAS_MECH, "wind_effect", 0, 29, 30, -1);
+  if (opts?.wind) {
+    // 风区机身（原版 Wind：generateFrameNames("wind_base",0,4)@30fps 循环；图集实有 0..3）
+    seq("wind_base", ATLAS_MECH, "wind_base", 0, 3, 30, -1);
+    // 风区尾迹（原版 Wind：wind_effect 0..30@30fps 循环，图集实有 0..29；随机起始帧由场景侧 setProgress）
+    seq("wind_effect", ATLAS_MECH, "wind_effect", 0, 29, 30, -1);
+  }
   // 液体三段各 15 帧 30fps 循环（Left/中/Right）
   for (const [key, base] of [
     ["water", "WaterBox"],
