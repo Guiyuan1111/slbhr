@@ -193,6 +193,12 @@ function driver({ stepMs, cmpKey, cmpPng, cmpFnt }) {
   pp.step = (n) => {
     const g = pp.game;
     if (!g) return false;
+    // 必须等 Phaser 启动链走完再驱动：Game.step 无 isRunning 闸，SceneManager.update 会先跑
+    // processQueue；若此时 bootQueue 尚未执行（isBooted=false），add() 把 11 个场景原样压回
+    // _pending，紧接着 processQueue 清空 _pending ⇒ scenes 永久为空、bootQueue 空转。
+    // 这是泵与 3 张内置 base64 图 onload 的竞速（实测可复现的偶发失败：scenes 恒空、
+    // texPending=0、running=true），产品侧手动步进不存在此路径。
+    if (!g.isRunning || !g.scene.isBooted) return false;
     for (let i = 0; i < n; i++) {
       pp.clock += stepMs;
       pp.steps++;
@@ -510,6 +516,7 @@ const browser = await chromium.launch({
 const fails = [];
 const warnLines = [];
 const errLines = [];
+const navLog = [];
 let pumping = false;
 let pageA = null;
 let live = "";
@@ -528,6 +535,12 @@ try {
   const ctxA = await browser.newContext({ viewport: { width: 1280, height: 960 }, deviceScaleFactor: 1 });
   pageA = await ctxA.newPage();
   pageA.on("pageerror", (e) => fails.push(`A pageerror: ${e}`));
+  // 导航/崩溃留痕：泵的 evaluate 逢导航必抛 "Execution context was destroyed"，
+  // 但该文案分不清"预期内的第二次 goto"与"运行中意外重载/崩溃页"，失败时要有导航流水可查。
+  pageA.on("framenavigated", (f) => {
+    if (f === pageA.mainFrame()) navLog.push(`${new Date().toISOString()} ${f.url()}`);
+  });
+  pageA.on("crash", () => fails.push("A page crash（渲染进程崩溃）"));
   pageA.on("console", (m) => {
     if (m.type() === "error" && errLines.length < 20) errLines.push(m.text());
     if ((m.type() === "warning" || m.type() === "error") && TEX_WARN.test(m.text())) warnLines.push(`A console.${m.type()}: ${m.text()}`);
@@ -550,7 +563,7 @@ try {
           }
         }, 30)
         .catch((e) => {
-          if (errLines.length < 20) errLines.push(`pump ${String((e && e.message) || e).slice(0, 500)}`);
+          if (errLines.length < 20) errLines.push(`pump@${new Date().toISOString()} ${pageA.url()} ${String((e && e.message) || e).slice(0, 200)}`);
         });
       await sleep(60);
     }
@@ -751,6 +764,34 @@ try {
   log(`诊断：异常 ${String((e && e.stack) || e).split("\n").slice(0, 3).join(" / ")}`);
   const ginfo = pageA && (await pageA.evaluate(() => globalThis.__rt.info()).catch(() => null));
   if (ginfo) log(`诊断 info：${JSON.stringify(ginfo)}`);
+  // 启动链现场：scenes 空既可能是"场景全停"，也可能是 Phaser.Game 构造了但 boot/processQueue 没走完——
+  // 两者处置完全不同，必须把 isBooted/isRunning/SceneManager 队列与文档就绪态分开读。
+  const genv = pageA && (await pageA
+    .evaluate(() => {
+      const g = globalThis.__pp && globalThis.__pp.game;
+      const sm = g && g.scene;
+      return {
+        href: location.href,
+        ready: document.readyState,
+        navs: performance.getEntriesByType("navigation").map((e) => e.type),
+        booted: !!(g && g.isBooted),
+        running: !!(g && g.isRunning),
+        processing: !!(sm && sm.isProcessing),
+        // TextureManager 三张内置 base64 图未齐 → Game READY 不发 → SceneManager.bootQueue 不跑 →
+        // scenes 永远空。_pending 停在 3/2/1 分别指向"boot 没跑/某张解码挂住"。
+        texPending: g && g.textures ? g.textures._pending : "无",
+        texKeys: g && g.textures ? Object.keys(g.textures.list) : "无",
+        scenes: sm ? sm.scenes.map((x) => `${x.scene.key}:${x.scene.settings.status}${x.scene.settings.active ? "A" : "I"}`) : "无 scene",
+        pending: sm && Array.isArray(sm._pending) ? sm._pending.map((x) => x.key) : "无",
+        queuedStart: sm && Array.isArray(sm._start) ? sm._start.map((x) => x.key) : "无",
+        fw: typeof globalThis.__fw,
+        fwInit: typeof globalThis.__fwInit,
+        ppSteps: globalThis.__pp ? globalThis.__pp.steps : -1,
+      };
+    })
+    .catch((e) => ({ err: String(e).slice(0, 300) })));
+  if (genv) log(`诊断 页面环境：${JSON.stringify(genv)}`);
+  log(`诊断 主帧导航（全部）：${navLog.length ? navLog.join(" | ") : "(未记录)"}`);
   const scs = pageA && (await pageA.evaluate(() => `${globalThis.__pp.steps} 步；` + globalThis.__pp.game.scene.getScenes(false).map((x) => `${x.scene.key}:${x.scene.settings.active ? "A" : "I"}`).join(" ")).catch(() => "(不可读)"));
   log(`诊断 步进数与场景（A=活动 I=闲置）：${scs}`);
   for (const x of [...fails, ...warnLines, ...errLines].slice(0, 12)) log(`诊断 页侧：${String(x).slice(0, 300)}`);
