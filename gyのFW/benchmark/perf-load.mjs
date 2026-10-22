@@ -386,6 +386,18 @@ async function measureRound(browser, round) {
   cold.charsPlayArrivalAfterGateMs = charsPlay.length
     ? Math.round(Math.max(...charsPlay.map((i) => i.endMs)) - gameActivePerfMs)
     : null;
+  // r25 件1 出口侧：两支终局时刻曲（失败曲 LevelMusicOver + 本族终局曲 LevelMusicFinish[_speed]）
+  // 离开落定门后同用三态口径登记。布尔在这里会单边失真：节流档下 XHR 在飞时条目整条缺席，
+  // 空数组既可能是"还在飞"也可能是"Menu 被切走后由 Game 侧兜底才发起"。
+  // `bgmTerminalPreGateKB` 才是本轮的字节判据：这三支在"可玩"之前实际过网的 KB——臂A（门内）≈面额，
+  // 臂B（门后）应为 0（条目要么缺席、要么 endMs 晚于进房时刻）。
+  const terminal = cold.resourcesAfterGame.items.filter((i) => /\/s\/(LevelMusicOver|LevelMusicFinish)(_speed)?$/.test(i.url));
+  cold.bgmTerminalInWindow =
+    terminal.length === 0 ? "none" : terminal.every((i) => i.endMs <= gameActivePerfMs) ? "before-gate" : "after-gate";
+  cold.bgmTerminalArrivalAfterGateMs = terminal.length
+    ? Math.round(Math.max(...terminal.map((i) => i.endMs)) - gameActivePerfMs)
+    : null;
+  cold.bgmTerminalPreGateKB = +terminal.filter((i) => i.endMs <= gameActivePerfMs).reduce((s, i) => s + i.transferKB, 0).toFixed(1);
   cold.headers = [...headers.values()];
 
   // reload（同 context，浏览器有缓存）→ Menu active 与传输字节
@@ -490,6 +502,13 @@ results.summary = {
       r1.cold.charsPlayArrivalAfterGateMs === null || r2.cold.charsPlayArrivalAfterGateMs === null
         ? null
         : avg2(r1.cold.charsPlayArrivalAfterGateMs, r2.cold.charsPlayArrivalAfterGateMs),
+    // r25：两支终局时刻曲同口径（三态照录 + 任一轮无条目记 null）；preGateKB 是本轮字节的通过条件
+    bgmTerminalInWindow: `${r1.cold.bgmTerminalInWindow}/${r2.cold.bgmTerminalInWindow}`,
+    bgmTerminalArrivalAfterGateMs:
+      r1.cold.bgmTerminalArrivalAfterGateMs === null || r2.cold.bgmTerminalArrivalAfterGateMs === null
+        ? null
+        : avg2(r1.cold.bgmTerminalArrivalAfterGateMs, r2.cold.bgmTerminalArrivalAfterGateMs),
+    bgmTerminalPreGateKB: avg2(r1.cold.bgmTerminalPreGateKB, r2.cold.bgmTerminalPreGateKB),
     audio: {
       count: Math.round((a1.count + a2.count) / 2),
       totalKB: avg2(a1.totalKB, a2.totalKB),
@@ -530,6 +549,9 @@ console.log(`循环曲落点：${results.summary.cold.loopDeferred ? "门外（�
 // r23：三态照录，不判好坏——none 只说明"可玩那一刻条目还没入表"，窗口长度由 scripts/e2e/charsplay.mjs 量
 const cg = results.summary.cold.charsPlayArrivalAfterGateMs;
 console.log(`播放图集（chars-play）：快照内条目=${results.summary.cold.charsPlayInWindow}  落点=进房后 ${cg === null ? "快照时条目未入表" : `${cg}ms`}（负=进房前已就绪）`);
+// r25：两支终局时刻曲的"可玩前过网字节"就是本轮的出口判据（门内≈面额 323.3KB／门后=0）
+const tg = results.summary.cold.bgmTerminalArrivalAfterGateMs;
+console.log(`终局时刻曲（Over+Finish）：快照内条目=${results.summary.cold.bgmTerminalInWindow}  可玩前过网=${results.summary.cold.bgmTerminalPreGateKB}KB  落点=进房后 ${tg === null ? "快照时条目未入表" : `${tg}ms`}（负=进房前已就绪）`);
 for (const i of table) {
   console.log(`  ${String(i.transferKB).padStart(7)}KB→${String(i.decodedKB).padStart(8)}KB  ${i.phase.padEnd(4)} ${i.type.padEnd(7)} @${String(i.startMs).padStart(5)}-${String(i.endMs).padStart(5)}ms  ${i.url}`);
 }
