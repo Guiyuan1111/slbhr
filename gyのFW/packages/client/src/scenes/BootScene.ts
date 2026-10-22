@@ -51,8 +51,16 @@ export const ATLAS_PRELOADER = "preloader";
  *  用运行时算出的 id 取 `mech/MechAssets-<id>.{png,json}`（生成器 scripts/split-mech-atlas.mjs）。
  *  r31 起菜单图集同样走原地清零（Boot 批：195,797→84,297B），只有 Boot 这一处装载。
  *  r32 起弹窗主图集不再用 2048² 的 Slim：6 个真帧重打包到 1086×696、清零帧别名到透明块
- *  （生成器 `scripts/shrink-popup-main.mjs`），进房批解码 16.00→2.88MiB，帧名全部保留。 */
-export const ATLAS_TEMPLE_PNG = "/assets/atlasses/Temples/forest/TempleAssetsSlim.png";
+ *  （生成器 `scripts/shrink-popup-main.mjs`），进房批解码 16.00→2.88MiB，帧名全部保留。
+ *  r34 起庙宇图集按使用时机拆两张（生成器 `scripts/split-temple-atlas.mjs`）：Core 只留落定门内
+ *  必需的 14 帧（786×876，解码 2.63MiB），两扇门的 42 帧开门动画拆到 Finish 图集、create 之后由
+ *  `GameScene.kickTempleFinish` 取。Core 的 JSON 仍声明全部 60 个帧名（42 Finish + 4 零消费帧
+ *  别名到 4×4 透明块），漏改的按名取帧只会画透明，不会落进 `__BASE` 整张铺屏。 */
+export const ATLAS_TEMPLE_PNG = "/assets/atlasses/Temples/forest/TempleAssetsCore.png";
+export const ATLAS_TEMPLE_JSON = "/assets/atlasses/Temples/forest/TempleAssetsCore.json";
+export const ATLAS_TEMPLE_FINISH = "temple-finish";
+export const ATLAS_TEMPLE_FINISH_PNG = "/assets/atlasses/Temples/forest/TempleAssetsFinish.png";
+export const ATLAS_TEMPLE_FINISH_JSON = "/assets/atlasses/Temples/forest/TempleAssetsFinish.json";
 export const ATLAS_POPUP_PNG = "/assets/atlasses/PopupAssetsMini.png";
 export const ATLAS_POPUP_JSON = "/assets/atlasses/PopupAssetsMini.json";
 export const ATLAS_MENU_PNG = "/assets/atlasses/MenuAssetsSlim.png";
@@ -133,7 +141,7 @@ export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
   // 461.9KB 整张进落定门，房间首帧其实只画得上其中四帧。
   load.atlas(ATLAS_CHARS_ENTRY, "/assets/atlasses/CharAssetsEntry.png", "/assets/atlasses/CharAssetsEntry.json");
   load.atlas(ATLAS_GROUND, "/assets/atlasses/GroundAssets.png", "/assets/atlasses/GroundAssets.json");
-  load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, "/assets/atlasses/Temples/forest/TempleAssets.json");
+  load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, ATLAS_TEMPLE_JSON);
   load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, ATLAS_POPUP_JSON);
   // r30：机关图集不在这里——它按关卡变体（loadMechAtlas），由关卡定出后声明。
   // r28：房内字体不在这里——Menu 暖装不知道下一关，按关变体只能由 GameScene.preload 声明。
@@ -174,6 +182,14 @@ export const PLAYER_SCALE = 0.95;
  *  与循环曲不同的是：这一张**决定画面**，所以消费它的动画注册必须等它落地（`ensureCharAnims`）。 */
 export function loadCharsPlay(load: Phaser.Loader.LoaderPlugin): void {
   load.atlas(ATLAS_CHARS_PLAY, "/assets/atlasses/CharAssetsPlay.png", "/assets/atlasses/CharAssetsPlay.json");
+}
+
+/** 庙宇门动画图集装载（r34，唯一路径）：两扇门 FinishBoy/Girl 0001..0021 共 42 帧（992×982，
+ *  解码 3.72MiB）。它不在落定门里——门开只发生在玩家踩门那一刻，create 时房间已经可玩。
+ *  调用方是 GameScene.kickTempleFinish（create 之后）；离房由 main.ts 调
+ *  `GameScene.releaseTempleFinish` 还回，选关大厅不为这 3.72MiB 买单。已缓存时静默跳过。 */
+export function loadTempleFinish(load: Phaser.Loader.LoaderPlugin): void {
+  load.atlas(ATLAS_TEMPLE_FINISH, ATLAS_TEMPLE_FINISH_PNG, ATLAS_TEMPLE_FINISH_JSON);
 }
 
 /** 结算图集装载（r29，唯一路径）：先清掉另外两个变体（同一张 ~1.9MB 解码画布，一个会话只留

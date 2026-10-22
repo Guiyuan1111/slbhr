@@ -23,7 +23,7 @@ import { AUDIO_SFX, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadAudioPack } from 
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
-import { ATLAS_CHARS, ATLAS_CHARS_ENTRY, ATLAS_CHARS_PLAY, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_ROOM, PLAYER_SCALE, buildGameAnims, ensureCharAnims, loadCharsPlay, loadGameAtlases, loadMechAtlas, loadPopupFinish, loadRoomFont, popupFinishKey, roomFontKey } from "./BootScene";
+import { ATLAS_CHARS, ATLAS_CHARS_ENTRY, ATLAS_CHARS_PLAY, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, ATLAS_TEMPLE_FINISH, FONT_ROOM, PLAYER_SCALE, buildGameAnims, ensureCharAnims, loadCharsPlay, loadGameAtlases, loadMechAtlas, loadPopupFinish, loadRoomFont, loadTempleFinish, popupFinishKey, roomFontKey } from "./BootScene";
 import { getSettings } from "../settings";
 import { loadTempleLevels } from "../templeData";
 import { validateSnapshot } from "../snapshotValidation";
@@ -502,6 +502,7 @@ export class GameScene extends Phaser.Scene {
     this.sound.mute = !getSettings().fx;
     this.sfx(this.bgmKey(), { loop: true });
     this.kickCharsPlay(); // 先声明：与循环曲同批并发时，让决定画面的那张排在队头
+    this.kickTempleFinish(); // 门动画图集：房间可玩之后取，远早于第一次踩门
     this.kickPopupFinish(); // 结算图集：房间可玩之后取，远早于首次开板
     this.kickBgmLoop();
     this.kickBgmTerminal();
@@ -581,6 +582,17 @@ export class GameScene extends Phaser.Scene {
   private kickCharsPlay(): void {
     if (this.textures.exists(ATLAS_CHARS_PLAY)) return;
     loadCharsPlay(this.load);
+    this.load.start();
+  }
+
+  /** r34：门动画图集（TempleAssetsFinish，42 帧 121.9KB / 解码 3.72MiB）的预取点——
+   *  开门只发生在玩家踩门那一刻，与 r29 结算图集同判据：不占落定门，房间可玩之后取。
+   *  门精灵始终留在 Core 图集的 0000 静帧上，帧号由快照驱动、`applyDoorFrame` 在图集未到位时
+   *  回落 0000 并在下一拍补帧；所以这条队列迟到/失败只影响开门动画，不影响门的存在。
+   *  驻留路径（Menu 暖装不装这张）每次进房都会取一次；同会话换关/重开命中缓存零请求。 */
+  private kickTempleFinish(): void {
+    if (this.textures.exists(ATLAS_TEMPLE_FINISH)) return;
+    loadTempleFinish(this.load);
     this.load.start();
   }
 
@@ -666,6 +678,12 @@ export class GameScene extends Phaser.Scene {
   static releaseGrounds(textures: Phaser.Textures.TextureManager): void {
     if (textures.exists("groundTex")) textures.remove("groundTex");
     GameScene.grounds.clear();
+  }
+
+  /** r34：离房回选关（main.ts leaveToMenu 在 sm.stop("Game") 之后调用）：门动画图集只服务
+   *  房内，3.72MiB 解码画布不留在选关大厅。重进同关由 kickTempleFinish 重取（121.9KB）。 */
+  static releaseTempleFinish(textures: Phaser.Textures.TextureManager): void {
+    if (textures.exists(ATLAS_TEMPLE_FINISH)) textures.remove(ATLAS_TEMPLE_FINISH);
   }
 
   /** 地面：岩壁纹理 × 蒙版合成 + 黑外描边 + 右下软投影（canvas 一次性合成） */
@@ -1132,6 +1150,23 @@ export class GameScene extends Phaser.Scene {
         }
       }
     }
+  }
+
+  /** 门帧绘制（r34）：0000 静帧在 Core 图集；0001..0021 开门动画在门后装载的 Finish 图集。
+   *  Finish 未到位（弱网/装载失败）时回落 0000 并返回 false，由快照下一拍重试——门不会画成透明，
+   *  也不会把整张图集当一帧贴出去。返回值 = 请求的帧是否已经真正上屏。 */
+  private applyDoorFrame(role: Role, frame: number): boolean {
+    const s = this.doorSprites.get(role);
+    if (!s) return false;
+    const prefix = role === "fireboy" ? "FinishBoy" : "FinishGirl";
+    if (frame > 0 && this.textures.exists(ATLAS_TEMPLE_FINISH)) {
+      s.setTexture(ATLAS_TEMPLE_FINISH, `${prefix}${String(frame).padStart(4, "0")}`);
+      return true;
+    }
+    if (s.texture.key !== ATLAS_TEMPLE || s.frame.name !== `${prefix}0000`) {
+      s.setTexture(ATLAS_TEMPLE, `${prefix}0000`);
+    }
+    return frame === 0;
   }
 
   /** 门：FinishBoy/Girl 0000 静帧，scale 0.8，anchor(0.5,0.99)，位置=(中心, 底边+4)；帧号由快照驱动 */
@@ -1710,7 +1745,8 @@ export class GameScene extends Phaser.Scene {
     this.finishLayer = null;
     this.doorFrames.clear();
     for (const role of ROLES) {
-      this.doorSprites.get(role)?.setFrame(role === "fireboy" ? "FinishBoy0000" : "FinishGirl0000");
+      // 门精灵可能已切到 Finish 纹理（上一轮开过门）；必须先切回 Core 的 0000，setFrame 不会跨图集。
+      this.applyDoorFrame(role, 0);
       this.stairsSprites.get(role)?.destroy();
       this.stairsSprites.delete(role);
       const view = this.views.get(role);
@@ -1908,11 +1944,12 @@ export class GameScene extends Phaser.Scene {
       const frame = Math.max(0, Math.min(DOOR.frames, Math.round(Number(ps.doorFrame) || 0)));
       const prev = this.doorFrames.get(role) ?? 0;
       if (frame !== prev) {
-        this.doorSprites.get(role)?.setFrame(`${role === "fireboy" ? "FinishBoy" : "FinishGirl"}${String(frame).padStart(4, "0")}`);
+        const applied = this.applyDoorFrame(role, frame);
         // 原版 Door.update（38465-38485）：开/关移动全程维持门音实例，到 0/21 帧停
         if (frame > 0 && frame < 21 && !this.sound.isPlaying("sfx_door")) this.sfx("sfx_door");
         if ((frame === 0 || frame === 21) && this.sound.isPlaying("sfx_door")) this.sound.stopByKey("sfx_door");
-        this.doorFrames.set(role, frame);
+        // Finish 图集未到位时不记帧号：下一拍快照会再次进这里，图集落地后补上开门动画。
+        if (applied) this.doorFrames.set(role, frame);
       }
     }
   }

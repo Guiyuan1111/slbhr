@@ -11,7 +11,7 @@
  * 点可玩关卡 → registry "onLevelPicked"(levelId, filename) → main.ts 弹出联机面板。
  */
 import Phaser from "phaser";
-import { ATLAS_MENU, ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, ensureMenuBgm, FONT_MAIN } from "./BootScene";
+import { ATLAS_MENU, ATLAS_TEMPLE, ATLAS_TEMPLE_JSON, ATLAS_TEMPLE_PNG, ensureMenuBgm, FONT_MAIN } from "./BootScene";
 import { clickSfx } from "./overlays";
 import { fadeSwitch } from "./transition";
 import { loadPlayed, loadProgress, starsOf, takeFirstComplete } from "../progress";
@@ -53,7 +53,7 @@ export class TempleScene extends Phaser.Scene {
     this.load.json("templeData", "/data/forest/temple.json");
     // r5 装载序兜底：temple 图集随游戏内批次延迟装载（MenuScene 后台暖装通常已就绪，
     // 此处静默跳过）；极快速进入选关时在此补齐
-    this.load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, "/assets/atlasses/Temples/forest/TempleAssets.json");
+    this.load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, ATLAS_TEMPLE_JSON);
   }
 
   create(): void {

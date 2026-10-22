@@ -413,6 +413,8 @@ async function enterGame(): Promise<void> {
       // r14 件B：Game 已停，地面位图与它的 game 级纹理在此后无人引用；
       // 选关树驻留期把这 ≈5MB/张 交回（重进同关重烘 ≈12ms，入房链不可见）。
       GameScene.releaseGrounds(phaser!.textures);
+      // r34：门动画图集（3.72MiB 解码）只服务房内；选关大厅不为它买单，重进由 kickTempleFinish 重取。
+      GameScene.releaseTempleFinish(phaser!.textures);
       sm.start("Temple");
       const hud = document.querySelector("#hud");
       if (hud) hud.classList.add("hidden");

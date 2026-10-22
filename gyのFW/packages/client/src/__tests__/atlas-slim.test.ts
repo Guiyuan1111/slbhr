@@ -86,13 +86,14 @@ function walk(dir: string): string[] {
 }
 
 describe("装载 URL 收敛（Slim／Mini PNG + 官方或派生 JSON）", () => {
-  it("BootScene 的图集装载用 *_PNG 常量：庙宇/菜单指向 Slim，弹窗指向 Mini（r32 画布收缩）", () => {
+  it("BootScene 的图集装载用 *_PNG 常量：庙宇指向 r34 Core，弹窗/菜单指向 Mini/Slim", () => {
     const boot = stripComments(SRC("packages/client/src/scenes/BootScene.ts"));
-    expect(boot).toContain('export const ATLAS_TEMPLE_PNG = "/assets/atlasses/Temples/forest/TempleAssetsSlim.png"');
+    expect(boot).toContain('export const ATLAS_TEMPLE_PNG = "/assets/atlasses/Temples/forest/TempleAssetsCore.png"');
+    expect(boot).toContain('export const ATLAS_TEMPLE_JSON = "/assets/atlasses/Temples/forest/TempleAssetsCore.json"');
     expect(boot).toContain('export const ATLAS_POPUP_PNG = "/assets/atlasses/PopupAssetsMini.png"');
     expect(boot).toContain('export const ATLAS_POPUP_JSON = "/assets/atlasses/PopupAssetsMini.json"');
     expect(boot).toContain('export const ATLAS_MENU_PNG = "/assets/atlasses/MenuAssetsSlim.png"');
-    expect(boot).toContain('load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, "/assets/atlasses/Temples/forest/TempleAssets.json")');
+    expect(boot).toContain("load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, ATLAS_TEMPLE_JSON)");
     expect(boot).toContain("load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, ATLAS_POPUP_JSON)");
     expect(boot).toContain('load.atlas(ATLAS_MENU, ATLAS_MENU_PNG, "/assets/atlasses/MenuAssets.json")');
   });
@@ -112,9 +113,10 @@ describe("装载 URL 收敛（Slim／Mini PNG + 官方或派生 JSON）", () => 
   it("TempleScene / CompleteScene 的兜底装载用同一常量（混用会让 Slim 取决于装载序）", () => {
     const temple = stripComments(SRC("packages/client/src/scenes/TempleScene.ts"));
     const menus = stripComments(SRC("packages/client/src/scenes/menus.ts"));
-    expect(temple).toContain('this.load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, "/assets/atlasses/Temples/forest/TempleAssets.json")');
+    expect(temple).toContain("this.load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, ATLAS_TEMPLE_JSON)");
     expect(menus).toContain("this.load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, ATLAS_POPUP_JSON)");
     expect(temple).toMatch(/import \{[^}]*ATLAS_TEMPLE_PNG[^}]*\} from "\.\/BootScene"/);
+    expect(temple).toMatch(/import \{[^}]*ATLAS_TEMPLE_JSON[^}]*\} from "\.\/BootScene"/);
     expect(menus).toMatch(/import \{[^}]*ATLAS_POPUP_JSON[^}]*\} from "\.\/BootScene"/);
   });
 
