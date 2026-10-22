@@ -576,3 +576,25 @@ M12 相机与共享 DTO 拆分照旧。
 `node benchmark/load-ab-bands.mjs <档> <链[,链…]> [指标…]` 直接打均值带/配对带/最差带、臂A/臂B 散布、
 逐轮样本与闸门①②③的判定，末尾附四档字节窗口表；高漂移档轮数不足时它拒绝给"可主张"。
 r22 的全部主张与两条作废读数都能用它复算（`4g r22c,r22d,r22e,r22f,r22g`／`off r22c,r22d,r22e,r22f,r22g`／`off r22`／`off r22b`）。
+
+## 二十、r23 增补（2026-10-22，把角色播放序列那张图搬出落定门）
+
+> 报告 `2026-10-22-r23-chars-play-out-of-gate.md`。r22 把 `CharAssets` 按消费点拆成 Menu/Game 两张，
+> 本轮再切一刀并把**播放序列那 182 帧整体搬出门**：`CharAssetsEntry`（7 帧 28.3KB，留落定门）＋
+> `CharAssetsPlay`（182 帧 442.4KB，房间可玩之后才取）。代 A=`acc044f`，代 B=当前 HEAD。
+
+| 轮 | 焦点 | commit | 关键数字（同机同口径） | 门禁 |
+|---|---|---|---|---|
+| r23 件1 | chars-play 出落定门：Entry 留门、Play 出门；Play 张声明方两处（`startBgWarm` complete 后门落定时入队＋`GameScene.kickCharsPlay`）；房内十一式注册改为**到位即建**（只等 `filecomplete-atlasjson-chars-play`） | `40b20ba`＋`2a82051`＋`561c462` | 落定门线上 **463.5→28.7KB（−434.8KB）**、门后 +443.9KB、会话合计 **+9.1KB**、驻留纹理 **+0.30MB**、门内条目 3→5；`gameActivePerfMs` Δ＝4g **−819.1ms**（6 轮/臂，最差带 351 的 2.3×，面额 −890 兑现 92.0%）、fast3g **−2195.8ms**（带 244 的 9.0×，兑现 98.6%）、slow3g **−6985.3ms**（带 398 的 17.6×，兑现 98.1%）、off +21.8ms（最差带 967、臂B 自身散布 404 ⇒ 带内）；`Menu active` 四档全带内（阻塞批 Δ 0.0KB，本轮自带对照） | det **48/48**、`split-char-atlas --check` 六件逐字节、canvas **5/5** 逐字节（本轮**未**换代）、domskin 4/4、charsplay 21 项、treebake 9/9、groundcache 6/6、journey 3/3·6/6·4/4·3/3、route 双关 won、regression errors=0 缺帧警告=0 |
+| r23 件1b | 代价侧专用量具：`perf-load` 的冷启快照看不见"门落定之后才入队"的请求（视界内**整条条目不存在**），故窗口改由 `scripts/e2e/charsplay.mjs` 用例二在自然路径上量 | `48ad05f`＋`f515026`＋`296d42a` | 窗口＝4g **+2053ms** / fast3g **+6753ms** / slow3g **+22183ms** / off **−3135ms**（负＝窗口不存在）；注册上界比 png 落定晚 250~300ms；`charsPlayInWindow` 由三值布尔升为三态观测 `none｜before-gate｜after-gate` ＋ `charsPlayArrivalAfterGateMs`，库里不留恒假字段 | charsplay 四档（含三档节流"真的生效"对照：最大单笔 font.png 体耗时 5985/19843/70342ms）全绿 |
+| r23 附带修复 | 把入场链放到节流档，第一次撞出**换屏黑幕静默挂死**（与 r23 无关）：4g 早入场时 `FadeScene.create` 抛 `Invalid BitmapText key: font`，场景永久钉在 CREATING ⇒ 幕下 ops 永不执行 ⇒ 房间再也进不去 | `959db74`＋`8682956` | HEAD 与 `acc044f` 两条代次**同一条栈**复现（@3384ms／@3345ms，钉死 ≥40s）；加 `textures.exists(FONT_MAIN)` 卫后 `exit-ok`→ops 消费→XFade=8→Game 3→5（页钟 13.4s）零错误。历轮看不见它：off 档 Boot 批 ~0.6s 落定，而 `perf-load` 单坐路径等过 `Menu active` 才点建房 | 修复后代次 18 步套件 16 步当场绿；两步红在 `prephase-chars.json` 的**行钉**（源码加注释即漂移），同步行号后 reflow-check `--check` 产物逐字节不变、vitest **20 文件/215 用例** |
+
+**本轮三条可复用结论**：
+① **"搬窗口"的代价形状里有一种量具根本看不见的类型**——资源在快照之后才入队时，Resource Timing 里不是
+`pending`、不是"晚于进房"，而是**没有条目**。任何"门外/延迟"类改动若把断言写成 `list.length > 0`，
+在正确行为下恒假。修法：字段照录三态观测、判定交给专用探针（锚在"确实上屏"那一刻），并保留一条阴性对照。
+② **注册时机是 r22 那条急切解析陷阱的时间版**：`anims.create → Animation.getFrames` 在注册那一刻解析全部帧名，
+早一步就各自绑 `__BASE`（只 `console.warn`）且 `exists` 幂等卫禁止重建 ⇒ 错帧一路带着播。窗口期行为是良性降级
+（`Missing animation` 后原样留着当前帧，形状＝"以 idle 的样子跑跳"），静态网把 Entry∩Play 的三个 0000 帧交集钉成精确集合相等。
+③ **行钉式静态网的税**：`prephase-chars.json` 以"文件＋绝对行号＋该行必须含该文案"绑定子集与源码，
+加注释就会红（本轮红了两步）。这是刻意的防漏字设计，暂不改口径；若要改成"锚点符号±窗口"属于口径变更，需另立一轮补测。
