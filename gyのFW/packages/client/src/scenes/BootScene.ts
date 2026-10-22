@@ -44,13 +44,15 @@ export const ATLAS_TEMPLE = "temple";
 export const ATLAS_POPUP = "popup";
 export const ATLAS_MENU = "menu";
 export const ATLAS_PRELOADER = "preloader";
-/** r26：两张进房图集的 Slim PNG（scripts/atlas-slim：零消费帧原地清零，坐标与官方 JSON 都不动）。
- *  两处装载——此处 loadGameAtlases、TempleScene.preload——必须用同一 URL：
+/** r26：进房图集的 Slim PNG（scripts/atlas-slim：零消费帧原地清零，坐标与官方 JSON 都不动）。
+ *  同一键的两处装载——此处 loadGameAtlases、TempleScene.preload——必须用同一 URL：
  *  先跑的一处会把图装进缓存，其余处按"键已存在"静默跳过，混用会让 Slim 是否生效取决于装载序。
  *  r30 起机关图集不再有整关共用的 Slim：48 关按消费帧集分成 24 个变体，由 `loadMechAtlas`
- *  用运行时算出的 id 取 `mech/MechAssets-<id>.{png,json}`（生成器 scripts/split-mech-atlas.mjs）。 */
+ *  用运行时算出的 id 取 `mech/MechAssets-<id>.{png,json}`（生成器 scripts/split-mech-atlas.mjs）。
+ *  r31 起菜单图集同样走原地清零（Boot 批：195,797→91,721B），只有 Boot 这一处装载。 */
 export const ATLAS_TEMPLE_PNG = "/assets/atlasses/Temples/forest/TempleAssetsSlim.png";
 export const ATLAS_POPUP_PNG = "/assets/atlasses/PopupAssetsSlim.png";
+export const ATLAS_MENU_PNG = "/assets/atlasses/MenuAssetsSlim.png";
 /** 结算面板按关类型的三张图集（r29；生成器 `scripts/split-popup-finish.mjs`）：
  *  主图集 Slim 只留进房就会上屏的 PauseButton/PopupBackground/Confetti，结算板的图标、箭头与
  *  星碑（每类型 ~70KB）拆成按需图集，房间可玩之后由 `kickPopupFinish` 预取（不占进房阻塞批）。
@@ -348,7 +350,7 @@ export class BootScene extends Phaser.Scene {
     // r23 件1 再切一刀：房内首帧/构造期要解析的 7 帧（钻石四式 + smoke/stairs 的 0000，28.3KB）走
     // loadGameAtlases，播放序列的 182 帧（442.4KB）走 loadCharsPlay——Boot 批一个字节也没多付。
     this.load.atlas(ATLAS_CHARS, "/assets/atlasses/CharAssetsMenu.png", "/assets/atlasses/CharAssetsMenu.json");
-    this.load.atlas(ATLAS_MENU, "/assets/atlasses/MenuAssets.png", "/assets/atlasses/MenuAssets.json");
+    this.load.atlas(ATLAS_MENU, ATLAS_MENU_PNG, "/assets/atlasses/MenuAssets.json");
     // 原版画布内时钟的位图字（font 48 基准，LevelUI Clock 用 24 号 = 半缩放）
     // 进房前字体子集（r18 件1 生成器 scripts/font-subset/build-font-prephase.mjs；
     // r19 件1 重排版 scripts/font-subset/reflow-prephase.mjs）：帧坐标改写后的紧凑图集

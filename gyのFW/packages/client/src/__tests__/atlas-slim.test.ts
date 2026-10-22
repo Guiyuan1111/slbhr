@@ -1,9 +1,9 @@
 /**
- * r26 件1：三张进房图集"零消费帧原地清零"的静态网（Slim PNG + 装载 URL + 消费口径）。
+ * r26 件1：客户端图集"零消费帧原地清零"的静态网（Slim PNG + 装载 URL + 消费口径）。
  *
  * 这套优化的致命失效模式：keep 口径漏了某个消费点 ⇒ 该帧被清零 ⇒ 运行时画成透明且**不报错**。
  * 所以这里守四层：
- *  1) 装载 URL 收敛：三张图集的三处装载必须都用 *_PNG 常量，且客户端源码里不再出现官方 PNG 路径；
+ *  1) 装载 URL 收敛：图集的装载必须都用 *_PNG 常量，且客户端源码里不再出现官方 PNG 路径；
  *  2) 需求口径：48 关 parseLevel + 固定/动态消费点算出的 keep 与在库 Slim 的 keep 完全一致，
  *     清零面必须全部落在 needs.mjs 的 DEAD 名单里；森林无 dark 关（否则 FinishStoneDark 不能清零）；
  *  3) 像素账：keep 帧在官方/Slim 同一坐标处逐字节相同，blank 帧矩形全 0，blank 之外逐像素 0 差异，
@@ -26,11 +26,14 @@ const TT = 180000;
 
 /** 冻结账目：数字一改（需求集/图集/代码）这里先红，逼着复核后同步更新
  *  r29 起 popup 只剩进房即上屏的 6 帧（暂停键/板底/彩带 4 帧），结算面拆到 PopupFinish* 三张，
- *  清零面因此从 31 涨到 105（74 结算帧 + 31 旧零消费帧）。拆出面的像素账在 popup-finish.test.ts。 */
+ *  清零面因此从 31 涨到 105（74 结算帧 + 31 旧零消费帧）。拆出面的像素账在 popup-finish.test.ts。
+ *  r31 起 menu 33 keep／27 blank：选关星碑四套（16 帧）+ 四张底座 + 按钮/HUD 13 帧；
+ *  清零的是原版设置/触屏/振动/解锁 UI 族（含 12 帧 ToggleSingleScreen）。 */
 const FROZEN = {
   mech: { declared: 163, keep: 67, blank: 96 },
   temple: { declared: 60, keep: 56, blank: 4 },
   popup: { declared: 111, keep: 6, blank: 105 },
+  menu: { declared: 60, keep: 33, blank: 27 },
 };
 
 type Inspect = Awaited<ReturnType<typeof inspect>>;
@@ -82,12 +85,14 @@ function walk(dir: string): string[] {
 }
 
 describe("装载 URL 收敛（Slim PNG + 官方 JSON）", () => {
-  it("BootScene 的两条进房图集装载用 *_PNG 常量，常量指向 Slim；JSON 仍是官方", () => {
+  it("BootScene 的图集装载用 *_PNG 常量，常量指向 Slim；JSON 仍是官方", () => {
     const boot = stripComments(SRC("packages/client/src/scenes/BootScene.ts"));
     expect(boot).toContain('export const ATLAS_TEMPLE_PNG = "/assets/atlasses/Temples/forest/TempleAssetsSlim.png"');
     expect(boot).toContain('export const ATLAS_POPUP_PNG = "/assets/atlasses/PopupAssetsSlim.png"');
+    expect(boot).toContain('export const ATLAS_MENU_PNG = "/assets/atlasses/MenuAssetsSlim.png"');
     expect(boot).toContain('load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, "/assets/atlasses/Temples/forest/TempleAssets.json")');
     expect(boot).toContain('load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, "/assets/atlasses/PopupAssets.json")');
+    expect(boot).toContain('load.atlas(ATLAS_MENU, ATLAS_MENU_PNG, "/assets/atlasses/MenuAssets.json")');
   });
 
   it("机关图集不再走整关 Slim：loadGameAtlases 不声明 mech，变体 URL 由运行时 id 拼出", () => {
@@ -111,7 +116,7 @@ describe("装载 URL 收敛（Slim PNG + 官方 JSON）", () => {
     expect(menus).toMatch(/import \{[^}]*ATLAS_POPUP_PNG[^}]*\} from "\.\/BootScene"/);
   });
 
-  it("客户端源码里不再出现三张官方 PNG 的 URL（Slim 是唯一进房路径）", () => {
+  it("客户端源码里不再出现四张官方 PNG 的 URL（Slim 是唯一路径）", () => {
     const bad: string[] = [];
     for (const file of walk(path.join(ROOT, "packages/client/src"))) {
       const src = stripComments(readFileSync(file, "utf8"));
@@ -125,7 +130,7 @@ describe("装载 URL 收敛（Slim PNG + 官方 JSON）", () => {
 });
 
 describe("需求口径与清零面", () => {
-  it("三张图集的 declared/keep/blank 与冻结账目一致", () => {
+  it("四张图集的 declared/keep/blank 与冻结账目一致", () => {
     for (const key of Object.keys(FROZEN) as Array<keyof typeof FROZEN>) {
       const a = needs.atlases[key];
       expect({ declared: a.declared.length, keep: a.keep.length, blank: a.blank.length }, `${key} 账目`).toEqual(FROZEN[key]);
@@ -143,6 +148,26 @@ describe("需求口径与清零面", () => {
     for (let i = 0; i < 4; i++) expect(needs.atlases.popup.keep).toContain(`Confetti${String(i).padStart(4, "0")}`);
   });
 
+  it("菜单图集：选关星碑四套/底座与按钮留在 keep，原版未用 UI 族清零", () => {
+    const keep = needs.atlases.menu.keep;
+    for (const p of ["Diamond", "DiamondSpeed", "DiamondPuzzle", "DiamondDark"]) {
+      for (let i = 0; i < 4; i++) expect(keep, `${p}${String(i).padStart(4, "0")}`).toContain(`${p}${String(i).padStart(4, "0")}`);
+      expect(keep, `${p}_Bkg_Mask0000`).toContain(`${p}_Bkg_Mask0000`);
+    }
+    for (const n of [
+      "MusicButton0000", "MusicButton0001", "FxButton0000", "FxButton0001",
+      "SettingsButton0002", "SettingsButton0003", "StoneButton0000", "StoneButton0001",
+      "Lock0000", "NewSign0000", "BackButton0000", "BackButton0001", "Navy0000",
+    ]) expect(keep, n).toContain(n);
+    const blank = new Set(needs.atlases.menu.blank);
+    for (let i = 0; i < 12; i++) expect(blank, `ToggleSingleScreen${String(i).padStart(4, "0")}`).toContain(`ToggleSingleScreen${String(i).padStart(4, "0")}`);
+    for (const n of [
+      "SettingsButton0000", "SettingsButton0001", "MuteButton0000", "MuteButton0001",
+      "VibrateButton0000", "VibrateButton0001", "GoldLock0000", "UnlockButton0000",
+      "BackButtonFull0000", "BackButtonFull0001", "_default0000",
+    ]) expect(blank, n).toContain(n);
+  });
+
   it("逐关需求（机关/装饰/弹窗）全部落在 keep 内", () => {
     for (const l of needs.levels) {
       // 逐关的需求已在 needs.inspect 内并集；这里抽样钉住"每关都有机关与弹窗面"的口径
@@ -154,7 +179,7 @@ describe("需求口径与清零面", () => {
   });
 
   it("静态帧名与图集常量同行的字面量消费点都在 keep 内", () => {
-    const atlases = { mech: "ATLAS_MECH", temple: "ATLAS_TEMPLE", popup: "ATLAS_POPUP" } as const;
+    const atlases = { mech: "ATLAS_MECH", temple: "ATLAS_TEMPLE", popup: "ATLAS_POPUP", menu: "ATLAS_MENU" } as const;
     const violations: string[] = [];
     for (const file of walk(path.join(ROOT, "packages/client/src"))) {
       const rel = path.relative(ROOT, file);
@@ -176,7 +201,7 @@ describe("需求口径与清零面", () => {
 });
 
 describe("Slim PNG 像素账", () => {
-  it("三张 Slim 与官方同幅面，且比官方小", () => {
+  it("四张 Slim 与官方同幅面，且比官方小", () => {
     for (const r of built) {
       const official = decodePng(readFileSync(path.join(ROOT, r.spec.officialPng)), `${r.key}-official`);
       const slim = decodePng(readFileSync(path.join(ROOT, r.spec.slimPng)), `${r.key}-slim`);

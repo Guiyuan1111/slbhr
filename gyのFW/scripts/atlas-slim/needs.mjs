@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * r26 件1：三张进房图集"可上屏帧"的唯一口径（生成器与静态网共用）。
+ * r26 件1：客户端四张图集"可上屏帧"的唯一口径（生成器与静态网共用；r31 起含 MenuAssets）。
  *
  * Slim 图集把永不上屏的帧原地清零、坐标与 JSON 都不动；漏算一个消费点，那一帧就会静默画成
  * 透明（Phaser 画帧不校验像素）。所以 keep 集合是这套优化的全部风险面，需求源只有两类：
@@ -19,6 +19,10 @@
  * 按关类型重打包成三张 `PopupFinish*.{png,json}`，房间可玩之后由 GameScene 预取。
  * keep 口径因此从"48 关并集"收窄成"主图集消费面"；拆出帧的消费面由 `__tests__/popup-finish.test.ts`
  * 与生成器的覆盖断言独立兜住（本文件仍导出 `popupFinishNeed` 作为唯一帧集合口径）。
+ *
+ * r31 起 MenuAssets（选关大厅/设置/暂停板共用的 UI 图集，1024²）纳入同一口径：keep 是
+ * 选关星碑四套（含森林不存在的 Dark——烘焙 masks 表按四前缀静态取底座）、按钮与 HUD 帧；
+ * 原版的设置/触屏/静音/振动/解锁等 UI 族在复刻里没有消费点，整族清零。
  *
  * 清零面必须落在 DEAD 名单里：图集新增了没人消费的帧、或关卡新增了机制，生成器会先报错，
  * 逼着人先裁定再清零，而不是悄悄把活帧抹掉。
@@ -48,6 +52,11 @@ export const ATLAS_SPECS = {
     officialPng: "assets/atlasses/PopupAssets.png",
     slimPng: "assets/atlasses/PopupAssetsSlim.png",
   },
+  menu: {
+    json: "assets/atlasses/MenuAssets.json",
+    officialPng: "assets/atlasses/MenuAssets.png",
+    slimPng: "assets/atlasses/MenuAssetsSlim.png",
+  },
 };
 
 const pad4 = (n) => String(n).padStart(4, "0");
@@ -62,6 +71,30 @@ export const TEMPLE_FIXED = ["BackGround0000", "ForeGround0000", "Clock0000", "F
 /** 主图集（Slim）保留的弹窗面：进房就会上屏的 HUD 暂停键与结算板底，以及选关大厅的三星彩带
  *  （CompleteScene）。r29 起结算板的图标/箭头/星碑全部拆到按关类型的 PopupFinish 图集。 */
 export const POPUP_EARLY = ["PauseButton0000", "PopupBackground0000", ...seq4("Confetti", 0, 3)];
+
+/** 选关/设置/暂停面的固定帧（r31）：MenuAssets 里与关卡数据无关的消费点。
+ *  - 星级与底座按类型前缀拼：TempleScene.prefixOf 的四种（speed/puzzle/dark/默认）都留；
+ *    Dark 在森林 48 关不存在，但 `templeTreeBake` 的 masks 表按四前缀静态取 `_Bkg_Mask0000`，
+ *    不是可选消费。
+ *  - Music/Fx/StoneButton 的 0000/0001 是开关与按压态；SettingsButton 只留 0002/0003
+ *    （0000/0001 是原版旧齿轮，复刻直接用 0002 作静止帧）。 */
+export const MENU_TYPE_PREFIXES = ["Diamond", "DiamondSpeed", "DiamondPuzzle", "DiamondDark"];
+export const MENU_FIXED = [
+  "BackButton0000",
+  "BackButton0001",
+  "Lock0000",
+  "MusicButton0000",
+  "MusicButton0001",
+  "FxButton0000",
+  "FxButton0001",
+  "Navy0000",
+  "NewSign0000",
+  "SettingsButton0002",
+  "SettingsButton0003",
+  "StoneButton0000",
+  "StoneButton0001",
+  ...MENU_TYPE_PREFIXES.flatMap((p) => [...seq4(p, 0, 3), `${p}_Bkg_Mask0000`]),
+];
 
 /** 结算面板按关类型的帧集合（r29 拆张的唯一帧口径，生成器与静态网共用）：
  *  星碑 22 帧（0000 初始帧 + 1..21 三段动画）+ 该类型实际绘制的图标/箭头。
@@ -128,6 +161,21 @@ export const DEAD_RULES = {
       "CrossIcon0000",
       "popupArrow0000",
       "popupArrow0001",
+    ],
+  },
+  menu: {
+    // 原版设置/触屏控制 UI 族，复刻的 SettingsScene 只用 Music/Fx 双开关，无这些控件
+    families: ["BackButtonFull", "ToggleControlButtonDual", "ToggleControlButtonSingle", "ToggleSingleScreen"],
+    exact: [
+      "GoldLock0000", // 原版付费锁；森林进度锁只用 Lock0000
+      "MuteButton0000",
+      "MuteButton0001", // 静音在设置面板用 FxButton 表达
+      "SettingsButton0000",
+      "SettingsButton0001", // 旧齿轮两帧；MenuScene 直接用 0002/0003
+      "UnlockButton0000",
+      "VibrateButton0000",
+      "VibrateButton0001",
+      "_default0000", // Phaser 缺帧兜底帧，任何上屏都算 bug
     ],
   },
 };
@@ -205,6 +253,29 @@ const PINS = [
   { file: "packages/client/src/scenes/BootScene.ts", has: 'file: "PopupFinishGeneral"' },
   { file: "packages/client/src/scenes/BootScene.ts", has: 'file: "PopupFinishSpeed"' },
   { file: "packages/client/src/scenes/BootScene.ts", has: 'file: "PopupFinishPuzzle"' },
+  // ── 菜单图集（r31：选关大厅/设置/暂停板）──
+  { file: "packages/client/src/scenes/TempleScene.ts", has: 'type === "speed" ? "DiamondSpeed" : type === "puzzle" ? "DiamondPuzzle" : type === "dark" ? "DiamondDark" : "Diamond"' },
+  { file: "packages/client/src/scenes/TempleScene.ts", has: '`${prefixOf(lv.type)}${String(Math.min(stars, 3)).padStart(4, "0")}`' },
+  { file: "packages/client/src/scenes/TempleScene.ts", has: 'menuTex.get(`${prefix}_Bkg_Mask0000`)' },
+  { file: "packages/client/src/scenes/TempleScene.ts", has: '`${prefixOf(lv.type)}_Bkg_Mask0000`', min: 2 },
+  { file: "packages/client/src/scenes/TempleScene.ts", has: '(["Diamond", "DiamondSpeed", "DiamondPuzzle", "DiamondDark"] as const)' },
+  { file: "packages/client/src/scenes/TempleScene.ts", has: 'ATLAS_MENU, "Lock0000"' },
+  { file: "packages/client/src/scenes/TempleScene.ts", has: 'ATLAS_MENU, "NewSign0000"' },
+  { file: "packages/client/src/scenes/TempleScene.ts", has: 'ATLAS_MENU, "BackButton0000"' },
+  { file: "packages/client/src/scenes/TempleScene.ts", has: 'back.setFrame("BackButton0001")' },
+  { file: "packages/client/src/scenes/TempleScene.ts", has: 'back.setFrame("BackButton0000")', min: 2 },
+  { file: "packages/client/src/scenes/MenuScene.ts", has: 'ATLAS_MENU, "Navy0000"' },
+  { file: "packages/client/src/scenes/MenuScene.ts", has: 'ATLAS_MENU, "SettingsButton0002"' },
+  { file: "packages/client/src/scenes/MenuScene.ts", has: 'gear.setFrame("SettingsButton0003")' },
+  { file: "packages/client/src/scenes/MenuScene.ts", has: 'gear.setFrame("SettingsButton0002")', min: 2 },
+  { file: "packages/client/src/scenes/GameScene.ts", has: 'ATLAS_MENU, "Navy0000"' },
+  { file: "packages/client/src/scenes/overlays.ts", has: 'ATLAS_MENU, "StoneButton0000"' },
+  { file: "packages/client/src/scenes/overlays.ts", has: 'btn.setFrame("StoneButton0001")' },
+  { file: "packages/client/src/scenes/overlays.ts", has: 'btn.setFrame("StoneButton0000")', min: 2 },
+  { file: "packages/client/src/scenes/menus.ts", has: 'ATLAS_MENU, `${label}Button${getSettings()[key] ? "0000" : "0001"}`' },
+  { file: "packages/client/src/scenes/menus.ts", has: 'img.setFrame(`${label}Button${next[key] ? "0000" : "0001"}`)' },
+  { file: "packages/client/src/scenes/menus.ts", has: 'toggleRow(CY0() - 60, "Music", "music", "音乐")' },
+  { file: "packages/client/src/scenes/menus.ts", has: 'toggleRow(CY0() + 60, "Fx", "fx", "音效")' },
 ];
 
 export function verifyPins(root = REPO_ROOT) {
@@ -337,6 +408,7 @@ export async function inspect(root = REPO_ROOT) {
     mech: new Set(MECH_FIXED),
     temple: new Set([...TEMPLE_FIXED, ...seq4("FinishBoy", 1, doorFrames), ...seq4("FinishGirl", 1, doorFrames)]),
     popup: new Set(POPUP_EARLY),
+    menu: new Set(MENU_FIXED),
   };
   for (const l of levels) {
     const m = mechNeed(l.parsed);
