@@ -863,3 +863,36 @@ MenuAssets 1024² 画布随 29 帧缩小（驻留侧，先做 bitmap 字相位�
 **下一轮候选**：换关链（advance）的机关纹理重解码代价入账、MenuAssets 1024² 画布随 29 帧缩小
 （驻留侧，先做 bitmap 字相位核验）、删除/降级已被 Mini 取代的 `PopupAssetsSlim.png`。
 素材再编码（任务 #42）仍是用户保留项，未经裁决不动。
+
+## 三十一、r34 增补（2026-10-23，Temple 图集核心/结算拆张）
+
+> 报告 `2026-10-23-r34-temple-core-finish-split.md`。60 帧的 `TempleAssetsSlim.png`（1024×2048，
+> 解码 8.00MiB）里 42 帧是只在踩门时播放的开门动画，却随落定门整张装载。本轮按
+> **"第一次可能需要上屏的时刻"**拆成 Core（14 真帧＋46 透明别名，786×876，2.63MiB，随落定门）
+> 与 Finish（42 帧，992×982，3.72MiB，`GameScene.create` 后单独取）；Core 的 JSON 仍声明
+> 官方全部 60 个帧名，漏改的按名取帧只会画透明。离房回选关释放 Finish，换关切关保留。
+
+| 件 | 内容 | commit | 关键数字 |
+|---|---|---|---|
+| r34 件1 | `split-temple-atlas.mjs`：帧像素从 Slim 官方矩形逐字节搬运，两张画布按 `MAX_W=1024`／`GUT=2`／`PAD=1` 确定性货架重打包；42 个 Finish 帧与 4 个零消费帧以 `mainAlias` 指向同一 4×4 透明块；Core 随 `loadGameAtlases` 落定门（Temple 兜底同键），Finish 由 `kickTempleFinish` 在 create 后取、`applyDoorFrame` 未到位回落 0000 静帧、`leaveToMenu` 释放；`temple-split.test.ts` 10 例静态网 | `3f0c4ed` | Core **786×876／65,217B＋9,349B／2.63MiB**，Finish **992×982／121,925＋7,836B／3.72MiB**；落定门线上 **247,358→74,566B（−172,792B，−69.9%）**，单关总量 **247,358→204,327B（−43,031B，−17.4%）**；两件 PNG 合计比 Slim 轻 47,879B |
+| r34 件2a | 首版四档 A/B/A 暴露 fast3g **+875.8ms** 回归：Core 变小后暖装门早于关卡定出即落定（≈12.97s），`warmRoomFontFor` 空转，777.3KB 房内字体落到门后 `GameScene.preload`；暖装 complete 的 chars-play 442.7KB 预热与它抢同一条 1.6Mbps 管道，重叠约 4.2s，落定门被推到 19.724s | `177dd99` | 对照臂落定门 18.8s |
+| r34 件2b | `BootScene` 增 `entryInFlight`（`main.ts enterGame` 置位、暖装 complete 消费一次），进房在途时跳过门内 chars-play 预缓存，交给 `GameScene.kickCharsPlay` 原兜底路径；修复后同链字体 13.593–17.886s、落定门 **18.035s**、`charsPlayInWindow=none` | `177dd99` | fast3g 由 +875.8 转为 **−754.5ms** |
+| r34 件3 | 四档 A/B/A（2 轮/臂；off 池化 r34e/f/g/h 到 n=8/臂）＋驻留 A/B/A＋像素/几何门禁 | 快照 `load-r34*`（42 份）、`resident-r34-resident-{a,b,c}.json` | `gameActivePerfMs` Δ＝slow3g **−2519.8ms**（最差带 172 的 14.6×，兑现 91.1%）、fast3g **−754.5ms**（带 196 的 3.8×，兑现 87.3%）；4g −372.3（带 842）、off −155.7（带 638，n=8）均带内不主张；`menuActiveMs` 四档全带内；稳定档房内窗 **1595→1427KB／38→35–36 条**；驻留 Menu **46.33→40.96MB**、temple **61.26→55.89MB**、Game **66.80→65.14MB**、离房后 **72.34→66.97MB**，`heapGCMB` 逐项不变 |
+| r34 件3 | 末轮门禁与文档收口 | `docs` | typecheck 0 错、九项 `--check` 逐字节、build `index-ELteDsHK` 105.34KB／gzip 35.96KB、vitest **26 文件/286 例**、det **48/48**、roomtext **6/6·5/5**、canvas 5/5 连跑两次、domskin 4/4、audiofamily／charsplay ALL PASS、treebake 9/9、groundcache 6/6、journey 3/3·6/6·4/4·3/3、route 双关 won（39,507／13,466ms）、regression won=true 零错零缺帧；42 份 load＋3 份 resident 快照页错 0、真双载 0 |
+
+**三条可复用结论**：
+① **拆张边界取"第一次可能需要上屏的时刻"，不是按帧数均分**：42 帧开门动画占全图 70% 的帧、
+却是最晚才可能上屏的一组；把它们移出落定门，线上 −69.9%，而房内驻留只降 1.66MiB
+（Finish 在房内仍驻留）。要再降 Game 驻留，只能动房内真正使用的那部分解码面。
+② **小图集有二阶效应：装载窗口的改动会改变"门何时落定"，从而改变门后预热的时序**。件2 的
+fast3g +875.8ms 不是拆张本身，而是"暖装提前落定 → 房内字体落到门后 → 与门内预热抢管道"。
+修法沿用 r23 已写明的设计（快进房路径由 create 后兜底），新增进房在途标志让预热让路；
+修复后同档 −754.5ms。任何"把某笔移出关键路径"的改动都必须连同落定时刻与后续预热一起看。
+③ **字节账要分"落定门"和"单关总量"两本**：落定门 247,358→74,566B（−172.8KB）是 1.6Mbps 管道上
+关键路径的减少；Finish 129,761B 只是改到 create 后付，单关总量只降 43.0KB。稳定档兑现
+91.1%／87.3%，与面额（2764.7／864.0ms）同量级；4g 的面额被 842ms 带吞掉，按口径不主张。
+
+**下一轮候选**：换关链（advance）的纹理重解码/驻留入账（Finish 目前在换关间保留，可量
+"是否该在换关前释放"）、MenuAssets 1024² 画布随 29 帧缩小（驻留侧，先做 bitmap 字相位核验）、
+删除/降级已被 Mini 取代的 `PopupAssetsSlim.png`。素材再编码（任务 #42）仍是用户保留项，
+未经裁决不动。
