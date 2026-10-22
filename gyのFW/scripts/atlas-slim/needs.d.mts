@@ -30,8 +30,9 @@ export const MECH_FIXED: string[];
 export const TEMPLE_FIXED: string[];
 /** r29：主图集保留的进房即上屏面（暂停键/板底/彩带） */
 export const POPUP_EARLY: string[];
-/** r31：MenuAssets 的固定消费面（选关星碑四套 + 底座 + 按钮/HUD） */
-export const MENU_TYPE_PREFIXES: readonly string[];
+/** r31：MenuAssets 的固定消费面（选关星碑三型 + 四型底座 + 按钮/HUD） */
+export const MENU_STAR_PREFIXES: readonly string[];
+export const MENU_MASK_PREFIXES: readonly string[];
 export const MENU_FIXED: string[];
 /** 结算图集按关类型的星碑前缀（general 无类型后缀；speed/puzzle 带） */
 export const FINISH_STONE_PREFIX: Record<"general" | "speed" | "puzzle", string>;

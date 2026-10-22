@@ -73,12 +73,13 @@ export const TEMPLE_FIXED = ["BackGround0000", "ForeGround0000", "Clock0000", "F
 export const POPUP_EARLY = ["PauseButton0000", "PopupBackground0000", ...seq4("Confetti", 0, 3)];
 
 /** 选关/设置/暂停面的固定帧（r31）：MenuAssets 里与关卡数据无关的消费点。
- *  - 星级与底座按类型前缀拼：TempleScene.prefixOf 的四种（speed/puzzle/dark/默认）都留；
- *    Dark 在森林 48 关不存在，但 `templeTreeBake` 的 masks 表按四前缀静态取 `_Bkg_Mask0000`，
- *    不是可选消费。
+ *  - 星级与底座按类型前缀拼：TempleScene.prefixOf 的四种（speed/puzzle/dark/默认）都能拼出来，
+ *    但森林 48 关只有 general/speed/puzzle（inspect 对关卡类型有断言），dark 星碑永不绘制；
+ *    底座例外——`templeTreeBake` 的 masks 表按四前缀静态取 `_Bkg_Mask0000`，dark 底座仍要保留。
  *  - Music/Fx/StoneButton 的 0000/0001 是开关与按压态；SettingsButton 只留 0002/0003
  *    （0000/0001 是原版旧齿轮，复刻直接用 0002 作静止帧）。 */
-export const MENU_TYPE_PREFIXES = ["Diamond", "DiamondSpeed", "DiamondPuzzle", "DiamondDark"];
+export const MENU_STAR_PREFIXES = ["Diamond", "DiamondSpeed", "DiamondPuzzle"];
+export const MENU_MASK_PREFIXES = [...MENU_STAR_PREFIXES, "DiamondDark"];
 export const MENU_FIXED = [
   "BackButton0000",
   "BackButton0001",
@@ -93,7 +94,8 @@ export const MENU_FIXED = [
   "SettingsButton0003",
   "StoneButton0000",
   "StoneButton0001",
-  ...MENU_TYPE_PREFIXES.flatMap((p) => [...seq4(p, 0, 3), `${p}_Bkg_Mask0000`]),
+  ...MENU_STAR_PREFIXES.flatMap((p) => seq4(p, 0, 3)),
+  ...MENU_MASK_PREFIXES.map((p) => `${p}_Bkg_Mask0000`),
 ];
 
 /** 结算面板按关类型的帧集合（r29 拆张的唯一帧口径，生成器与静态网共用）：
@@ -172,6 +174,10 @@ export const DEAD_RULES = {
       "MuteButton0001", // 静音在设置面板用 FxButton 表达
       "SettingsButton0000",
       "SettingsButton0001", // 旧齿轮两帧；MenuScene 直接用 0002/0003
+      "DiamondDark0000", // 森林无 dark 关（inspect 断言类型只有 general/speed/puzzle）
+      "DiamondDark0001",
+      "DiamondDark0002",
+      "DiamondDark0003", // 底座 DiamondDark_Bkg_Mask0000 例外：树烘焙静态取四前缀
       "UnlockButton0000",
       "VibrateButton0000",
       "VibrateButton0001",

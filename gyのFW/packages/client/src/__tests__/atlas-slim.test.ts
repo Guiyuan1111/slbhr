@@ -27,13 +27,14 @@ const TT = 180000;
 /** 冻结账目：数字一改（需求集/图集/代码）这里先红，逼着复核后同步更新
  *  r29 起 popup 只剩进房即上屏的 6 帧（暂停键/板底/彩带 4 帧），结算面拆到 PopupFinish* 三张，
  *  清零面因此从 31 涨到 105（74 结算帧 + 31 旧零消费帧）。拆出面的像素账在 popup-finish.test.ts。
- *  r31 起 menu 33 keep／27 blank：选关星碑四套（16 帧）+ 四张底座 + 按钮/HUD 13 帧；
- *  清零的是原版设置/触屏/振动/解锁 UI 族（含 12 帧 ToggleSingleScreen）。 */
+ *  r31 起 menu 29 keep／31 blank：选关星碑三型（12 帧，森林无 dark）+ 四张底座 + 按钮/HUD 13 帧；
+ *  清零的是原版设置/触屏/振动/解锁 UI 族（含 12 帧 ToggleSingleScreen）与 dark 星碑 4 帧
+ *  （底座 DiamondDark_Bkg_Mask0000 例外：树烘焙按四前缀静态取）。 */
 const FROZEN = {
   mech: { declared: 163, keep: 67, blank: 96 },
   temple: { declared: 60, keep: 56, blank: 4 },
   popup: { declared: 111, keep: 6, blank: 105 },
-  menu: { declared: 60, keep: 33, blank: 27 },
+  menu: { declared: 60, keep: 29, blank: 31 },
 };
 
 type Inspect = Awaited<ReturnType<typeof inspect>>;
@@ -148,12 +149,14 @@ describe("需求口径与清零面", () => {
     for (let i = 0; i < 4; i++) expect(needs.atlases.popup.keep).toContain(`Confetti${String(i).padStart(4, "0")}`);
   });
 
-  it("菜单图集：选关星碑四套/底座与按钮留在 keep，原版未用 UI 族清零", () => {
+  it("菜单图集：选关星碑/底座与按钮留在 keep，原版未用 UI 族与 dark 星碑清零", () => {
     const keep = needs.atlases.menu.keep;
-    for (const p of ["Diamond", "DiamondSpeed", "DiamondPuzzle", "DiamondDark"]) {
+    for (const p of ["Diamond", "DiamondSpeed", "DiamondPuzzle"]) {
       for (let i = 0; i < 4; i++) expect(keep, `${p}${String(i).padStart(4, "0")}`).toContain(`${p}${String(i).padStart(4, "0")}`);
       expect(keep, `${p}_Bkg_Mask0000`).toContain(`${p}_Bkg_Mask0000`);
     }
+    // dark 星碑不可达（森林类型断言），底座因树烘焙静态取四前缀而保留
+    expect(keep, "DiamondDark_Bkg_Mask0000").toContain("DiamondDark_Bkg_Mask0000");
     for (const n of [
       "MusicButton0000", "MusicButton0001", "FxButton0000", "FxButton0001",
       "SettingsButton0002", "SettingsButton0003", "StoneButton0000", "StoneButton0001",
@@ -165,6 +168,7 @@ describe("需求口径与清零面", () => {
       "SettingsButton0000", "SettingsButton0001", "MuteButton0000", "MuteButton0001",
       "VibrateButton0000", "VibrateButton0001", "GoldLock0000", "UnlockButton0000",
       "BackButtonFull0000", "BackButtonFull0001", "_default0000",
+      "DiamondDark0000", "DiamondDark0001", "DiamondDark0002", "DiamondDark0003",
     ]) expect(blank, n).toContain(n);
   });
 

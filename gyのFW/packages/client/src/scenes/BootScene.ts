@@ -49,7 +49,7 @@ export const ATLAS_PRELOADER = "preloader";
  *  先跑的一处会把图装进缓存，其余处按"键已存在"静默跳过，混用会让 Slim 是否生效取决于装载序。
  *  r30 起机关图集不再有整关共用的 Slim：48 关按消费帧集分成 24 个变体，由 `loadMechAtlas`
  *  用运行时算出的 id 取 `mech/MechAssets-<id>.{png,json}`（生成器 scripts/split-mech-atlas.mjs）。
- *  r31 起菜单图集同样走原地清零（Boot 批：195,797→91,721B），只有 Boot 这一处装载。 */
+ *  r31 起菜单图集同样走原地清零（Boot 批：195,797→84,297B），只有 Boot 这一处装载。 */
 export const ATLAS_TEMPLE_PNG = "/assets/atlasses/Temples/forest/TempleAssetsSlim.png";
 export const ATLAS_POPUP_PNG = "/assets/atlasses/PopupAssetsSlim.png";
 export const ATLAS_MENU_PNG = "/assets/atlasses/MenuAssetsSlim.png";
