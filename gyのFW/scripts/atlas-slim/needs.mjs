@@ -12,7 +12,13 @@
  *
  * 门外场景的消费者也在 keep 里：选关大厅背景 MenuBackground0000（TempleScene.ts:69）与
  * 三星彩带 Confetti0000-0003（menus.ts:109）。Slim 只按"这张图集在哪些场景被装载"切，
- * 不按"这一关用不用"切——拆分张是另一件事（r26 不做）。
+ * 不按"这一关用不用"切——按关拆张是另一件事。
+ *
+ * r29 起弹窗图集只有三帧组留在主图集（进房就会上屏：HUD 暂停键/结算板底/选关彩带），
+ * 结算面板的内容帧（星碑 88 帧 + 图标箭头 8 帧）全部清零，改由 `scripts/split-popup-finish.mjs`
+ * 按关类型重打包成三张 `PopupFinish*.{png,json}`，房间可玩之后由 GameScene 预取。
+ * keep 口径因此从"48 关并集"收窄成"主图集消费面"；拆出帧的消费面由 `__tests__/popup-finish.test.ts`
+ * 与生成器的覆盖断言独立兜住（本文件仍导出 `popupFinishNeed` 作为唯一帧集合口径）。
  *
  * 清零面必须落在 DEAD 名单里：图集新增了没人消费的帧、或关卡新增了机制，生成器会先报错，
  * 逼着人先裁定再清零，而不是悄悄把活帧抹掉。
@@ -50,22 +56,32 @@ export const MECH_FIXED = [...seq4("wind_base", 0, 3), ...seq4("wind_effect", 0,
 /** 与关卡无关的庙宇面：整幅背景/岩壁、HUD 时钟、两扇门的静态帧、选关大厅背景 */
 export const TEMPLE_FIXED = ["BackGround0000", "ForeGround0000", "Clock0000", "FinishBoy0000", "FinishGirl0000", "MenuBackground0000"];
 
-/** 与关卡类型无关的弹窗面：HUD 暂停键、结算板、勾叉/成就图标、三星彩带（CompleteScene） */
-export const POPUP_FIXED = [
-  "PauseButton0000",
-  "PopupBackground0000",
-  "popupArrow0000",
-  "popupArrow0001",
-  "TickIcon0000",
-  "CrossIcon0000",
-  "FinishIcon0000",
-  ...seq4("Confetti", 0, 3),
-];
+/** 主图集（Slim）保留的弹窗面：进房就会上屏的 HUD 暂停键与结算板底，以及选关大厅的三星彩带
+ *  （CompleteScene）。r29 起结算板的图标/箭头/星碑全部拆到按关类型的 PopupFinish 图集。 */
+export const POPUP_EARLY = ["PauseButton0000", "PopupBackground0000", ...seq4("Confetti", 0, 3)];
+
+/** 结算面板按关类型的帧集合（r29 拆张的唯一帧口径，生成器与静态网共用）：
+ *  星碑 22 帧（0000 初始帧 + 1..21 三段动画）+ 该类型实际绘制的图标/箭头。
+ *  puzzle 是两行布局（钻石行隐藏、银钻替代计时），不画 Diamonds/Time 图标；
+ *  general/speed 三行全画。dark 在森林 48 关不存在（inspect 断言），归一到 general。 */
+export const FINISH_STONE_PREFIX = { general: "FinishStone", speed: "FinishStoneSpeed", puzzle: "FinishStonePuzzle" };
+export const POPUP_FINISH_TYPES = ["general", "speed", "puzzle"];
+const FINISH_ICONS_COMMON = ["FinishIcon0000", "TickIcon0000", "CrossIcon0000", "popupArrow0000", "popupArrow0001"];
+const FINISH_ICONS_PUZZLE = [...FINISH_ICONS_COMMON, "SilverIcon0000"];
+const FINISH_ICONS_SCORED = [...FINISH_ICONS_COMMON, "DiamondsIcon0000", "TimeIcon0000"];
+export function finishVariant(type) {
+  return type === "speed" || type === "puzzle" ? type : "general";
+}
+export function popupFinishNeed(type) {
+  const t = finishVariant(type);
+  return [...seq4(FINISH_STONE_PREFIX[t], 0, 21), ...(t === "puzzle" ? FINISH_ICONS_PUZZLE : FINISH_ICONS_SCORED)];
+}
 
 /**
  * 允许清零的帧。families 是森林 48 关根本不解析的机制族（level2.ts 里没有对应字段或在注释里
- * 标明森林未用）；exact 是逐个裁定的零消费帧。FinishStoneDark 例外地按族清零：
- * 48 关类型只有 general/speed/puzzle（inspect() 每次都会断言），dark 分支永不执行。
+ * 标明森林未用）；exact 是逐个裁定的零消费帧。FinishStone 整族按前缀清零：r29 起星碑（含
+ * general/speed/puzzle 三种与永不出现的 dark）全部搬进按关类型的 PopupFinish 图集，主图集
+ * 一个星碑帧都不留；图标/箭头同理（结算板的消费点改用 PopupFinish 键）。
  */
 export const DEAD_RULES = {
   mech: {
@@ -90,7 +106,7 @@ export const DEAD_RULES = {
     exact: ["Icon0000", "Icon0001", "Icon0002", "Diamond1_Bkg_Empty0000"],
   },
   popup: {
-    families: ["FinishStoneDark"],
+    families: ["FinishStone"],
     exact: [
       "Clock0000",
       "CursorToggle0000",
@@ -101,6 +117,14 @@ export const DEAD_RULES = {
       "MuteButton0000",
       "MuteButton0001",
       "_default0000",
+      "FinishIcon0000",
+      "DiamondsIcon0000",
+      "SilverIcon0000",
+      "TimeIcon0000",
+      "TickIcon0000",
+      "CrossIcon0000",
+      "popupArrow0000",
+      "popupArrow0001",
     ],
   },
 };
@@ -157,21 +181,27 @@ const PINS = [
   { file: "packages/client/src/scenes/GameScene.ts", has: '"decor_X0000"' },
   { file: "packages/client/src/scenes/GameScene.ts", has: '"decor_A0000"' },
   { file: "packages/client/src/scenes/GameScene.ts", has: '"decor_V0000"' },
-  // ── 弹窗 ──
+  // ── 弹窗（主图集：暂停键/板底/彩带）──
   { file: "packages/client/src/scenes/GameScene.ts", has: 'ATLAS_POPUP, "PauseButton0000"' },
   { file: "packages/client/src/scenes/overlays.ts", has: '"PopupBackground0000"', min: 2 },
+  { file: "packages/client/src/scenes/menus.ts", has: "Confetti${String(i % 4).padStart(4, \"0\")}" },
+  // ── 弹窗（r29 结算图集：图标/箭头/星碑）──
   { file: "packages/client/src/scenes/overlays.ts", has: 'row.ok ? "TickIcon0000" : "CrossIcon0000"' },
   { file: "packages/client/src/scenes/overlays.ts", has: 'd.type === "puzzle" ? "SilverIcon0000" : "TimeIcon0000"' },
   { file: "packages/client/src/scenes/overlays.ts", has: 'icon: "DiamondsIcon0000"' },
-  { file: "packages/client/src/scenes/overlays.ts", has: 'd.type === "puzzle" ? "FinishStonePuzzle" : d.type === "speed" ? "FinishStoneSpeed" : d.type === "dark" ? "FinishStoneDark" : "FinishStone"' },
+  { file: "packages/client/src/scenes/overlays.ts", has: "const stonePrefix = finishStonePrefix(d.type)" },
+  { file: "packages/client/src/scenes/overlays.ts", has: "const stoneKey = finishStoneAnimKey(d.type, stars)" },
   { file: "packages/client/src/scenes/overlays.ts", has: "stonePrefix + \"0000\"" },
-  { file: "packages/client/src/scenes/overlays.ts", has: 'ATLAS_POPUP, "popupArrow0000"' },
+  { file: "packages/client/src/scenes/overlays.ts", has: 'uiAtlas, "popupArrow0000"' },
   { file: "packages/client/src/scenes/overlays.ts", has: 'arrow.setFrame("popupArrow0001")' },
-  { file: "packages/client/src/scenes/BootScene.ts", has: 'seq("finish_stone_1", ATLAS_POPUP, "FinishStone", 1, 7, 30, 0)' },
-  { file: "packages/client/src/scenes/BootScene.ts", has: '["puzzle", "FinishStonePuzzle"]' },
-  { file: "packages/client/src/scenes/BootScene.ts", has: '["speed", "FinishStoneSpeed"]' },
-  { file: "packages/client/src/scenes/BootScene.ts", has: '["dark", "FinishStoneDark"]' },
-  { file: "packages/client/src/scenes/menus.ts", has: "Confetti${String(i % 4).padStart(4, \"0\")}" },
+  { file: "packages/client/src/scenes/overlays.ts", has: "loadPopupFinish(this.load, this.result().type)" },
+  { file: "packages/client/src/scenes/overlays.ts", has: "buildFinishAnims(this, d.type)" },
+  { file: "packages/client/src/scenes/GameScene.ts", has: "this.kickPopupFinish()" },
+  { file: "packages/client/src/scenes/BootScene.ts", has: 'seq(`finish_stone_${tag}1`, key, base, 1, 7, 30, 0)' },
+  { file: "packages/client/src/scenes/BootScene.ts", has: 'seq(`finish_stone_${tag}3`, key, base, 15, 21, 30, 0)' },
+  { file: "packages/client/src/scenes/BootScene.ts", has: 'file: "PopupFinishGeneral"' },
+  { file: "packages/client/src/scenes/BootScene.ts", has: 'file: "PopupFinishSpeed"' },
+  { file: "packages/client/src/scenes/BootScene.ts", has: 'file: "PopupFinishPuzzle"' },
 ];
 
 export function verifyPins(root = REPO_ROOT) {
@@ -288,16 +318,6 @@ export function mechNeed(level) {
   return { first, event };
 }
 
-/** 弹窗帧：面板全类型共用 + 结算行图标（两行类型隐藏钻石行）+ 星碑（按类型） */
-export function popupNeed(type) {
-  const frames = POPUP_FIXED.filter((n) => !n.startsWith("Confetti"));
-  frames.push(type === "puzzle" ? "SilverIcon0000" : "TimeIcon0000");
-  if (type !== "puzzle" && type !== "dark") frames.push("DiamondsIcon0000");
-  const stone = type === "puzzle" ? "FinishStonePuzzle" : type === "speed" ? "FinishStoneSpeed" : type === "dark" ? "FinishStoneDark" : "FinishStone";
-  frames.push(...seq4(stone, 0, 21));
-  return frames;
-}
-
 async function loadLevels(root) {
   const { parseLevel } = await import(pathToFileURL(join(root, "packages/shared/src/level2.ts")).href);
   const { createSeedrandomFactory } = await import(pathToFileURL(join(root, "packages/client/src/vendor/seedrandom.ts")).href);
@@ -326,26 +346,26 @@ async function loadLevels(root) {
 /**
  * 计算三张图集的 keep/blank。返回 {levels, keep, atlases}：
  *  atlases[key] = {declared, keep, blank, meta}（均为帧名数组，顺序照官方 JSON）。
- * 类型面断言：森林 48 关出现 dark 会让 FinishStoneDark 进需求，而它已被清零——直接抛。
+ * 类型面断言：48 关只允许结算图集的三种类型（general/speed/puzzle）；第四种出现时
+ * FinishStone* 的拆张口径需重新裁定——直接抛。
  */
 export async function inspect(root = REPO_ROOT) {
   verifyPins(root);
   const { levels, doorFrames } = await loadLevels(root);
   const types = new Set(levels.map((l) => l.type));
-  const unknownTypes = [...types].filter((t) => !["general", "speed", "puzzle"].includes(t));
+  const unknownTypes = [...types].filter((t) => !POPUP_FINISH_TYPES.includes(t));
   if (unknownTypes.length) {
-    throw new Error(`atlas-slim：关卡类型出现 ${unknownTypes.join(",")}——弹窗星碑/两行口径需重新裁定（FinishStoneDark 是否清零）`);
+    throw new Error(`atlas-slim：关卡类型出现 ${unknownTypes.join(",")}——结算图集只有 ${POPUP_FINISH_TYPES.join("/")} 三张，需重新裁定`);
   }
   const keep = {
     mech: new Set(MECH_FIXED),
     temple: new Set([...TEMPLE_FIXED, ...seq4("FinishBoy", 1, doorFrames), ...seq4("FinishGirl", 1, doorFrames)]),
-    popup: new Set(POPUP_FIXED),
+    popup: new Set(POPUP_EARLY),
   };
   for (const l of levels) {
     const m = mechNeed(l.parsed);
     for (const n of [...m.first, ...m.event]) keep.mech.add(n);
     for (const n of l.decor) keep.temple.add(n);
-    for (const n of popupNeed(l.type)) keep.popup.add(n);
   }
   const atlases = {};
   for (const [key, spec] of Object.entries(ATLAS_SPECS)) {

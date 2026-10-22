@@ -10,7 +10,7 @@
  * 子元素一律用板内局部坐标（板中心 = (541,321)）；1280×960 下 screen = local + (99,159)。
  */
 import Phaser from "phaser";
-import { ATLAS_MENU, ATLAS_POPUP, FONT_MAIN, loadRoomFont, roomFontKey } from "./BootScene";
+import { ATLAS_MENU, ATLAS_POPUP, FONT_MAIN, buildFinishAnims, finishStoneAnimKey, finishStonePrefix, loadPopupFinish, loadRoomFont, popupFinishKey, roomFontKey } from "./BootScene";
 import { getSettings } from "../settings";
 
 /** 板原生尺寸（PopupBackground0000 帧 1082×642，sourceSize 实测；运行时以纹理帧为准） */
@@ -228,12 +228,17 @@ export class EndMenu extends Phaser.Scene {
   constructor() {
     super("EndMenu");
   }
-  /** 装载理由同 PauseMenu.preload（刷新回座 won 时本面板先于 Game 起步） */
-  preload(): void {
-    loadRoomFont(this.load);
-  }
-  create(): void {
-    const d = (this.scene.settings.data ?? {}) as {
+  /** 入参（main.ts openEndMenu 按权威结算算好；刷新回座补结算走同一入口） */
+  private result(): {
+    diamonds: number;
+    diamondsTotal: number;
+    silver: number;
+    timeSec: number;
+    timeLimitSec: number;
+    type: string;
+    stars: number;
+  } {
+    return (this.scene.settings.data ?? {}) as {
       diamonds: number;
       diamondsTotal: number;
       silver: number;
@@ -242,6 +247,16 @@ export class EndMenu extends Phaser.Scene {
       type: string;
       stars: number;
     };
+  }
+  /** 装载理由同 PauseMenu.preload（刷新回座 won 时本面板先于 Game 起步）；r29 起结算图集
+   *  （按关类型的 PopupFinish，~70KB）的兜底声明也在这里——正常路径 GameScene 已预取、
+   *  此处静默跳过；快赢/刷新回座时由本场景补齐，create 的动画注册依赖它落地。 */
+  preload(): void {
+    loadRoomFont(this.load);
+    loadPopupFinish(this.load, this.result().type);
+  }
+  create(): void {
+    const d = this.result();
     const board = buildBoard(this);
     // 原版 EndMenu @1917750（renderContent + layoutContent @1919230）：
     //   行 y = 板中心 + (−0.5·halfHeight + {20,100,180})（general 三行；halfHeight=板高/2=321 → +180.5/260.5/340.5）；
@@ -255,6 +270,12 @@ export class EndMenu extends Phaser.Scene {
     //  语义恢复时限；行组/勾叉/星碑/箭头/Continue 坐标全部与实拍一致（行 −140/−60/+20、
     //  星碑 (180,−60)、箭头 (5,−60)、Continue (0,181)）。）
     const twoRows = d.type === "puzzle" || d.type === "dark";
+    // r29：结算图集（preload 已声明本关类型那张；正常路径 GameScene.kickPopupFinish 早已预取）。
+    // 面板的星碑初始帧、行图标、勾叉、箭头全部取这张。装载失败时退回主图集同名帧——那些像素
+    // 已清零，等于面板可用、只缺图标，不会落到 `__MISSING`（主图集 JSON 仍声明全部帧名）。
+    const finishKey = popupFinishKey(d.type);
+    const uiAtlas = this.textures.exists(finishKey) ? finishKey : ATLAS_POPUP;
+    if (uiAtlas === finishKey) buildFinishAnims(this, d.type);
     const rows: Array<{ icon: string; ok: boolean; hide?: boolean }> = [
       { icon: "FinishIcon0000", ok: true },
       { icon: "DiamondsIcon0000", ok: d.diamonds >= d.diamondsTotal, hide: twoRows },
@@ -272,9 +293,9 @@ export class EndMenu extends Phaser.Scene {
         rowTicks.push(() => {});
         return;
       }
-      board.add(this.add.image(294.5, y, ATLAS_POPUP, row.icon).setOrigin(0.5));
+      board.add(this.add.image(294.5, y, uiAtlas, row.icon).setOrigin(0.5));
       const tick = this.add
-        .image(387.5, y, ATLAS_POPUP, row.ok ? "TickIcon0000" : "CrossIcon0000")
+        .image(387.5, y, uiAtlas, row.ok ? "TickIcon0000" : "CrossIcon0000")
         .setOrigin(0.5)
         .setVisible(false);
       board.add(tick);
@@ -302,15 +323,17 @@ export class EndMenu extends Phaser.Scene {
     }
     // 星数由 main 按关卡类型算好传入（puzzle=银钻口径；general=1+钻石+限时）
     const stars = Math.max(1, Math.min(3, d.stars || 1));
-    // 星碑贴图按关卡类型选变体（原版 44320-22：general/speed/puzzle/dark）；播分段键 to_N
-    // （oracle :1876428 注册 1-7/8-14/15-21 @30fps once、:1877727 play("to_"+stars)——键注册于 BootScene）
-    const stonePrefix = d.type === "puzzle" ? "FinishStonePuzzle" : d.type === "speed" ? "FinishStoneSpeed" : d.type === "dark" ? "FinishStoneDark" : "FinishStone";
-    const stoneKey = stonePrefix === "FinishStone" ? `finish_stone_${stars}` : `finish_stone_${d.type}_${stars}`;
-    const stone = this.add.sprite(721, 261, ATLAS_POPUP, stonePrefix + "0000").setOrigin(0.5);
+    // 星碑贴图按关卡类型选变体（原版 44320-22：general/speed/puzzle/dark；森林只有前三种，
+    // dark 归一到 general——r26 起其帧本就清零）；播分段键 to_N（oracle :1876428 注册
+    // 1-7/8-14/15-21 @30fps once、:1877727 play("to_"+stars)）。r29 起帧在按类型的 PopupFinish
+    // 图集里，分段键由本方法开头的 buildFinishAnims 注册（那时纹理已落地）。
+    const stonePrefix = finishStonePrefix(d.type);
+    const stoneKey = finishStoneAnimKey(d.type, stars);
+    const stone = this.add.sprite(721, 261, uiAtlas, stonePrefix + "0000").setOrigin(0.5);
     board.add(stone);
     // 原版指示箭头 popupArrow (5,−60)：指向星碑；末拍单帧 0001 恒亮（:1877517，全 bundle 仅
     // 生成/末拍两处引用、无动画注册——非闪烁，13 号档 #30）
-    const arrow = this.add.sprite(546, 261, ATLAS_POPUP, "popupArrow0000").setOrigin(0.5);
+    const arrow = this.add.sprite(546, 261, uiAtlas, "popupArrow0000").setOrigin(0.5);
     board.add(arrow);
     // 末拍同回调（oracle :1877700 内联序）：endDiamond 音 → 箭头 0001 → 星碑分段播放 → Continue 启用
     const finalAt = 700 + 700 + (twoRows ? 0 : 700) + 700;

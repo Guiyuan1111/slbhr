@@ -49,6 +49,35 @@ export const ATLAS_PRELOADER = "preloader";
 export const ATLAS_MECH_PNG = "/assets/atlasses/MechAssetsSlim.png";
 export const ATLAS_TEMPLE_PNG = "/assets/atlasses/Temples/forest/TempleAssetsSlim.png";
 export const ATLAS_POPUP_PNG = "/assets/atlasses/PopupAssetsSlim.png";
+/** 结算面板按关类型的三张图集（r29；生成器 `scripts/split-popup-finish.mjs`）：
+ *  主图集 Slim 只留进房就会上屏的 PauseButton/PopupBackground/Confetti，结算板的图标、箭头与
+ *  星碑（每类型 ~70KB）拆成按需图集，房间可玩之后由 `kickPopupFinish` 预取（不占进房阻塞批）。
+ *  失效模式与 r23 chars-play 同形：缺帧走 `Texture.get` 的 `__BASE` 分支，所以星碑动画必须在
+ *  该张落地之后注册（`buildFinishAnims` 的唯一调用点在 EndMenu.create，`loadPopupFinish` 已
+ *  在 preload 保证纹理到位；装载失败时调用方跳过注册并退回主图集的同名空帧）。 */
+export const ATLAS_FINISH_GENERAL = "popup-finish-general";
+export const ATLAS_FINISH_SPEED = "popup-finish-speed";
+export const ATLAS_FINISH_PUZZLE = "popup-finish-puzzle";
+const FINISH_ATLASES = {
+  general: { key: ATLAS_FINISH_GENERAL, file: "PopupFinishGeneral", stone: "FinishStone" },
+  speed: { key: ATLAS_FINISH_SPEED, file: "PopupFinishSpeed", stone: "FinishStoneSpeed" },
+  puzzle: { key: ATLAS_FINISH_PUZZLE, file: "PopupFinishPuzzle", stone: "FinishStonePuzzle" },
+} as const;
+export type FinishVariant = keyof typeof FINISH_ATLASES;
+/** 关卡类型 → 结算图集变体：48 关只有三种；dark 在森林不存在，归一到 general（r26 起其帧本就清零） */
+export function finishVariantOf(type?: string | null): FinishVariant {
+  return type === "speed" || type === "puzzle" ? type : "general";
+}
+export function popupFinishKey(type?: string | null): string {
+  return FINISH_ATLASES[finishVariantOf(type)].key;
+}
+export function finishStonePrefix(type?: string | null): string {
+  return FINISH_ATLASES[finishVariantOf(type)].stone;
+}
+export function finishStoneAnimKey(type: string | null | undefined, stars: number): string {
+  const v = finishVariantOf(type);
+  return v === "general" ? `finish_stone_${stars}` : `finish_stone_${v}_${stars}`;
+}
 export const FONT_MAIN = "font";
 /** 房内位图字体两把键（r28 按关分变体）：
  *  - FONT_FULL：114 字全量（font-roomblank.png），只给带教学文本的 forest_01 / forest_bonus_1；
@@ -115,6 +144,20 @@ export const PLAYER_SCALE = 0.95;
  *  与循环曲不同的是：这一张**决定画面**，所以消费它的动画注册必须等它落地（`ensureCharAnims`）。 */
 export function loadCharsPlay(load: Phaser.Loader.LoaderPlugin): void {
   load.atlas(ATLAS_CHARS_PLAY, "/assets/atlasses/CharAssetsPlay.png", "/assets/atlasses/CharAssetsPlay.json");
+}
+
+/** 结算图集装载（r29，唯一路径）：先清掉另外两个变体（同一张 ~1.9MB 解码画布，一个会话只留
+ *  本关这张），再声明本关的这张——已缓存时 Phaser 静默跳过，所以 GameScene 的预取与
+ *  EndMenu.preload 的兜底可以重复调用。清变体的前提是调用点都在旧面板已停之后：
+ *  预取在 GameScene.create（换关时 EndMenu 已 stop），兜底在 EndMenu.preload（本面板还没有精灵）。 */
+export function loadPopupFinish(load: Phaser.Loader.LoaderPlugin, type?: string | null): string {
+  const variant = finishVariantOf(type);
+  const { key, file } = FINISH_ATLASES[variant];
+  for (const [v, a] of Object.entries(FINISH_ATLASES)) {
+    if (v !== variant && load.scene.textures.exists(a.key)) load.scene.textures.remove(a.key);
+  }
+  load.atlas(key, `/assets/atlasses/${file}.png`, `/assets/atlasses/${file}.json`);
+  return key;
 }
 
 /** 后台暖装落定状态（r5）：MenuScene 启动暖装时登记，进 Game 前等待其落定，
@@ -372,6 +415,22 @@ export function buildCharAnims(a: Phaser.Animations.AnimationManager): void {
   seq("smoke", ATLAS_CHARS_PLAY, "death_smoke", 0, 44, 30, 0);
 }
 
+/** 结算星碑三段动画（r29 从 buildGameAnims 拆出）：帧全在按关类型的结算图集里，注册必须等
+ *  该张落地（缺帧会让整张图集当成一帧贴满屏）。唯一调用点在 EndMenu.create——preload 用
+ *  `loadPopupFinish` 声明过，正常路径此时已缓存；`GameScene.kickPopupFinish` 是更早的预取。
+ *  键集与拆前逐字相同：general=`finish_stone_{1,2,3}`，speed/puzzle=`finish_stone_{tag}_{1,2,3}`，
+ *  oracle 分段 1-7/8-14/15-21 @30fps once。 */
+export function buildFinishAnims(scene: Phaser.Scene, type?: string | null): void {
+  const key = popupFinishKey(type);
+  if (!scene.textures.exists(key)) return;
+  const seq = buildSeq(scene.anims);
+  const base = finishStonePrefix(type);
+  const tag = finishVariantOf(type) === "general" ? "" : `${finishVariantOf(type)}_`;
+  seq(`finish_stone_${tag}1`, key, base, 1, 7, 30, 0);
+  seq(`finish_stone_${tag}2`, key, base, 8, 14, 30, 0);
+  seq(`finish_stone_${tag}3`, key, base, 15, 21, 30, 0);
+}
+
 /**
  * 角色播放动画的"到位即注册"（r23 件1）：纹理已在缓存（驻留暖装跑完、换关重进）就当场注册；
  * 还在飞就只等它那一个 json 文件（atlasjson 子文件完成 ⇒ MultiFile 两子文件齐、JSONArray 已把帧
@@ -419,19 +478,8 @@ export function buildGameAnims(a: Phaser.Animations.AnimationManager): void {
     seq(`liquid_${key}_left`, ATLAS_GROUND, `${base}Left`, 0, 14, 30, -1);
     seq(`liquid_${key}_right`, ATLAS_GROUND, `${base}Right`, 0, 14, 30, -1);
   }
-  // 结算星级石碑分段（oracle EndMenu renderContent :1876428：to_1/2/3 = 帧 1-7/8-14/15-21 @30fps once，
-  // 前缀按关卡类型 FinishStone{,Puzzle,Speed,Dark}；13 号档 #29——此前累计播法使分段键成死代码）
+  // 结算星级石碑三段动画（oracle EndMenu renderContent :1876428：to_1/2/3 = 帧 1-7/8-14/15-21
+  // @30fps once，前缀按关卡类型 FinishStone{,Puzzle,Speed}）r29 起随结算图集移到
+  // buildFinishAnims（帧已从主图集清零，这里注册会绑到透明帧）。
   // 门动画键不再注册（E10：门改按快照 doorFrame 逐帧 setFrame，动画键会与帧驱动打架）
-  seq("finish_stone_1", ATLAS_POPUP, "FinishStone", 1, 7, 30, 0);
-  seq("finish_stone_2", ATLAS_POPUP, "FinishStone", 8, 14, 30, 0);
-  seq("finish_stone_3", ATLAS_POPUP, "FinishStone", 15, 21, 30, 0);
-  for (const [tag, base] of [
-    ["puzzle", "FinishStonePuzzle"],
-    ["speed", "FinishStoneSpeed"],
-    ["dark", "FinishStoneDark"],
-  ] as const) {
-    seq(`finish_stone_${tag}_1`, ATLAS_POPUP, base, 1, 7, 30, 0);
-    seq(`finish_stone_${tag}_2`, ATLAS_POPUP, base, 8, 14, 30, 0);
-    seq(`finish_stone_${tag}_3`, ATLAS_POPUP, base, 15, 21, 30, 0);
-  }
 }

@@ -24,11 +24,13 @@ const ROOT = path.resolve(import.meta.dirname, "..", "..", "..", "..");
 const SRC = (p: string) => readFileSync(path.join(ROOT, p), "utf8");
 const TT = 180000;
 
-/** 冻结账目：数字一改（需求集/图集/代码）这里先红，逼着复核后同步更新 */
+/** 冻结账目：数字一改（需求集/图集/代码）这里先红，逼着复核后同步更新
+ *  r29 起 popup 只剩进房即上屏的 6 帧（暂停键/板底/彩带 4 帧），结算面拆到 PopupFinish* 三张，
+ *  清零面因此从 31 涨到 105（74 结算帧 + 31 旧零消费帧）。拆出面的像素账在 popup-finish.test.ts。 */
 const FROZEN = {
   mech: { declared: 163, keep: 67, blank: 96 },
   temple: { declared: 60, keep: 56, blank: 4 },
-  popup: { declared: 111, keep: 80, blank: 31 },
+  popup: { declared: 111, keep: 6, blank: 105 },
 };
 
 type Inspect = Awaited<ReturnType<typeof inspect>>;

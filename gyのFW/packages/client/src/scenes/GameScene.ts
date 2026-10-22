@@ -23,7 +23,7 @@ import { AUDIO_SFX, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadAudioPack } from 
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
-import { ATLAS_CHARS, ATLAS_CHARS_ENTRY, ATLAS_CHARS_PLAY, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_ROOM, PLAYER_SCALE, buildGameAnims, ensureCharAnims, loadCharsPlay, loadGameAtlases, loadRoomFont, roomFontKey } from "./BootScene";
+import { ATLAS_CHARS, ATLAS_CHARS_ENTRY, ATLAS_CHARS_PLAY, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_ROOM, PLAYER_SCALE, buildGameAnims, ensureCharAnims, loadCharsPlay, loadGameAtlases, loadPopupFinish, loadRoomFont, popupFinishKey, roomFontKey } from "./BootScene";
 import { getSettings } from "../settings";
 import { loadTempleLevels } from "../templeData";
 import { validateSnapshot } from "../snapshotValidation";
@@ -497,6 +497,7 @@ export class GameScene extends Phaser.Scene {
     this.sound.mute = !getSettings().fx;
     this.sfx(this.bgmKey(), { loop: true });
     this.kickCharsPlay(); // 先声明：与循环曲同批并发时，让决定画面的那张排在队头
+    this.kickPopupFinish(); // 结算图集：房间可玩之后取，远早于首次开板
     this.kickBgmLoop();
     this.kickBgmTerminal();
 
@@ -576,6 +577,16 @@ export class GameScene extends Phaser.Scene {
     if (this.textures.exists(ATLAS_CHARS_PLAY)) return;
     loadCharsPlay(this.load);
     this.load.start();
+  }
+
+  /** r29：结算图集（PopupFinish*，每类型 ~70KB）的预取点——不占进房阻塞批，房间可玩之后取；
+   *  类型在 init 已从 `__fwInit.templeEntry.type` 定出。到手时刻远早于首次开结算板（EndMenu.preload
+   *  另有一次兜底声明）。已缓存时只做变体清理、不发请求：同类型换关零字节，跨类型换关清掉旧变体
+   *  （同一张 ~1.9MB 解码画布，一个会话只留本关这张）。 */
+  private kickPopupFinish(): void {
+    const cached = this.textures.exists(popupFinishKey(this.templeType));
+    loadPopupFinish(this.load, this.templeType);
+    if (!cached) this.load.start();
   }
 
   /** 关卡 BGM 键：speed 关用专属曲（原版 preloadAudioFiles 按 levelData.type 换曲） */

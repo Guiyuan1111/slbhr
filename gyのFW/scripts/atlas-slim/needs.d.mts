@@ -28,7 +28,13 @@ export const ATLAS_SPECS: Record<"mech" | "temple" | "popup", AtlasSpec>;
 export type AtlasKey = keyof typeof ATLAS_SPECS;
 export const MECH_FIXED: string[];
 export const TEMPLE_FIXED: string[];
-export const POPUP_FIXED: string[];
+/** r29：主图集保留的进房即上屏面（暂停键/板底/彩带） */
+export const POPUP_EARLY: string[];
+/** 结算图集按关类型的星碑前缀（general 无类型后缀；speed/puzzle 带） */
+export const FINISH_STONE_PREFIX: Record<"general" | "speed" | "puzzle", string>;
+export const POPUP_FINISH_TYPES: readonly ("general" | "speed" | "puzzle")[];
+export function finishVariant(type?: string | null): "general" | "speed" | "puzzle";
+export function popupFinishNeed(type?: string | null): string[];
 export const DEAD_RULES: Record<AtlasKey, { families: string[]; exact: string[] }>;
 
 export interface LevelEntry {
@@ -56,5 +62,4 @@ export interface Inspection {
 export function verifyPins(root?: string): void;
 export function decorFrames(level: any, makeRng: (seed: string) => () => number): string[];
 export function mechNeed(level: any): { first: string[]; event: string[] };
-export function popupNeed(type: string): string[];
 export function inspect(root?: string): Promise<Inspection>;
