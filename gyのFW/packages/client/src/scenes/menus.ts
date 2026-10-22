@@ -8,7 +8,7 @@
  * - CompleteScene：48 关全 3 星首通一次性彩带雨（Confetti0000-3）+ 恭喜弹窗（bundle:45603-45721）。
  */
 import Phaser from "phaser";
-import { ATLAS_MENU, ATLAS_POPUP, ensureMenuBgm, FONT_MAIN } from "./BootScene";
+import { ATLAS_MENU, ATLAS_POPUP, ATLAS_POPUP_PNG, ensureMenuBgm, FONT_MAIN } from "./BootScene";
 import { buildBoard, stoneButton } from "./overlays";
 import { getSettings, setSettings } from "../settings";
 
@@ -99,7 +99,7 @@ export class CompleteScene extends Phaser.Scene {
   }
   preload(): void {
     // r5 装载序兜底：popup 图集延迟装载后保证彩带帧就绪（暖装已就绪则静默跳过）
-    this.load.atlas(ATLAS_POPUP, "/assets/atlasses/PopupAssets.png", "/assets/atlasses/PopupAssets.json");
+    this.load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, "/assets/atlasses/PopupAssets.json");
   }
   create(): void {
     const board = buildBoard(this);

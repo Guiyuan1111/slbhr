@@ -43,6 +43,12 @@ export const ATLAS_TEMPLE = "temple";
 export const ATLAS_POPUP = "popup";
 export const ATLAS_MENU = "menu";
 export const ATLAS_PRELOADER = "preloader";
+/** r26：三张进房图集的 Slim PNG（scripts/atlas-slim：零消费帧原地清零，坐标与官方 JSON 都不动）。
+ *  三处装载——此处 loadGameAtlases、TempleScene.preload、CompleteScene.preload——必须用同一 URL：
+ *  先跑的一处会把图装进缓存，其余处按"键已存在"静默跳过，混用会让 Slim 是否生效取决于装载序。 */
+export const ATLAS_MECH_PNG = "/assets/atlasses/MechAssetsSlim.png";
+export const ATLAS_TEMPLE_PNG = "/assets/atlasses/Temples/forest/TempleAssetsSlim.png";
+export const ATLAS_POPUP_PNG = "/assets/atlasses/PopupAssetsSlim.png";
 export const FONT_MAIN = "font";
 /** 房内位图字体（键名 FULL 是 r18 两段化留下的，r24 起装载的是房内子集）：Boot 关键路径只装 FONT_MAIN 子集，本键由消费方 preload
  *  经 loadFontFull 装载——用第二个键而不是覆盖 "font"，因为 TextureManager.checkKey
@@ -100,9 +106,9 @@ export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
   // 461.9KB 整张进落定门，房间首帧其实只画得上其中四帧。
   load.atlas(ATLAS_CHARS_ENTRY, "/assets/atlasses/CharAssetsEntry.png", "/assets/atlasses/CharAssetsEntry.json");
   load.atlas(ATLAS_GROUND, "/assets/atlasses/GroundAssets.png", "/assets/atlasses/GroundAssets.json");
-  load.atlas(ATLAS_MECH, "/assets/atlasses/MechAssets.png", "/assets/atlasses/MechAssets.json");
-  load.atlas(ATLAS_TEMPLE, "/assets/atlasses/Temples/forest/TempleAssets.png", "/assets/atlasses/Temples/forest/TempleAssets.json");
-  load.atlas(ATLAS_POPUP, "/assets/atlasses/PopupAssets.png", "/assets/atlasses/PopupAssets.json");
+  load.atlas(ATLAS_MECH, ATLAS_MECH_PNG, "/assets/atlasses/MechAssets.json");
+  load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, "/assets/atlasses/Temples/forest/TempleAssets.json");
+  load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, "/assets/atlasses/PopupAssets.json");
   // r18 件2b：房内位图字体同走这条延迟通道（Menu 驻留暖装 / GameScene.preload 兜底，
   //  已缓存的键照旧静默跳过）。进房前文案一律 FONT_MAIN 子集，故房前不等这一笔。
   loadFontFull(load);
