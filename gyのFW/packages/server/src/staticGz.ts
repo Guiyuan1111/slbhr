@@ -31,11 +31,27 @@ const GZ_EXT = /\.(js|mjs|json|html|css|svg|fnt|txt|xml)$/;
 /** Vite 产物哈希：`-` + 8 位以上 [A-Za-z0-9_-] + .js/.mjs/.css（点必须转义）。
  *  实际产物含大小写/非十六进制（index-CnbrvQg2.js），旧的 `-[0-9a-f]{8}.` 会漏判。 */
 const HASHED_EXT = /-[A-Za-z0-9_-]{8,}\.(js|mjs|css)$/;
+/** r37 客户端内容寻址参数：`?v=` + 8 位小写十六进制（scripts/asset-versions.mjs 产物）。
+ *  URL 随字节变化，故可 immutable；其他形式的 v 不升级缓存策略。 */
+const VERSIONED_QUERY = /[?&]v=[0-9a-f]{8}(?:&|$)/;
 
-export function cachePolicy(urlPath: string): string {
+export function isVersionedUrl(url: string): boolean {
+  return VERSIONED_QUERY.test(url);
+}
+
+export function cachePolicy(urlPath: string, versioned = false): string {
   if (urlPath.endsWith(".html")) return "no-cache";
+  if (versioned) return "public, max-age=31536000, immutable";
   if (HASHED_EXT.test(urlPath)) return "public, max-age=31536000, immutable";
   return "public, max-age=86400";
+}
+
+/** express.static 兜底路径（二进制/小文本/不协商压缩）：未版本化二进制必须保持
+ *  max-age=0——图集帧布局与客户端代码同版本耦合，吃新鲜期会"新版 JS + 旧版图集"
+ *  错位；带内容哈希 v 的 URL 例外（字节变则 URL 变）。 */
+export function fallbackCachePolicy(urlPath: string, versioned: boolean): string {
+  if (urlPath.endsWith(".html")) return "no-cache";
+  return versioned ? "public, max-age=31536000, immutable" : "public, max-age=0";
 }
 
 /** 强 ETag：编码 + mtime(16 进制) + 字节数。编码进标签 = 每种表示各自有身份。 */
@@ -77,7 +93,9 @@ interface CompCacheEntry {
 const compCache = new Map<string, CompCacheEntry>();
 
 export function staticGz(root: string) {
-  const fallback = express.static(root);
+  // cacheControl:false：兜底路径的缓存头由 fallbackCachePolicy 统一给（r37 版本感知），
+  // 否则 express.static 会用 max-age=0 覆盖掉版本化 URL 的 immutable。
+  const fallback = express.static(root, { cacheControl: false });
   // 根前缀锚点（M-02）：resolve 归一化后必须仍落在 root 内。rootAbs 恰好等于根时放行
   // （urlPath="/" 场景），其余一律要求 rootAbs + sep 前缀——Windows 下 `..%5c` 反斜杠
   // 穿越同样被 resolve+前缀检查拦下。
@@ -92,7 +110,9 @@ export function staticGz(root: string) {
       urlPath = req.url ?? "";
     }
     const wantBr = enc.includes("br");
+    const versioned = isVersionedUrl(req.url ?? "");
     if ((!wantBr && !enc.includes("gzip")) || !GZ_EXT.test(urlPath)) {
+      res.setHeader("Cache-Control", fallbackCachePolicy(urlPath, versioned));
       fallback(req, res, next);
       return;
     }
@@ -105,6 +125,8 @@ export function staticGz(root: string) {
     try {
       st = fs.statSync(fpAbs);
       if (!st.isFile() || st.size < 1024 || st.size > 8 << 20) {
+        // 小文本/超限文件也走兜底：缓存头同样由统一策略给（cacheControl:false 不再代劳）
+        res.setHeader("Cache-Control", fallbackCachePolicy(urlPath, versioned));
         fallback(req, res, next);
         return;
       }
@@ -137,7 +159,7 @@ export function staticGz(root: string) {
               : "application/octet-stream";
     const etag = entityTag(st, wantBr ? "br" : "gzip");
     res.setHeader("Content-Type", ctype);
-    res.setHeader("Cache-Control", cachePolicy(urlPath));
+    res.setHeader("Cache-Control", cachePolicy(urlPath, versioned));
     res.setHeader("Vary", "Accept-Encoding");
     res.setHeader("ETag", etag);
     res.setHeader("Last-Modified", new Date(st.mtimeMs).toUTCString());

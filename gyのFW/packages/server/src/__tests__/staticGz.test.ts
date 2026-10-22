@@ -18,7 +18,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import express from "express";
-import { cachePolicy, entityTag, staticGz } from "../staticGz.js";
+import { cachePolicy, entityTag, fallbackCachePolicy, isVersionedUrl, staticGz } from "../staticGz.js";
 
 let server: http.Server;
 let port = 0;
@@ -33,6 +33,7 @@ beforeAll(async () => {
   mkdirSync(join(root, "dist"));
   writeFileSync(join(root, "dist", "data.json"), DATA_JSON);
   writeFileSync(join(root, "dist", "tiny.json"), "x"); // <1KB 走 fallback
+  writeFileSync(join(root, "dist", "logo.png"), Buffer.alloc(2048, 7)); // 二进制走 fallback
   // 穿越目标：根目录的兄弟文件（模拟仓库内 package.json 等越界文件）
   secretName = `fw-staticgz-secret-${Date.now()}.json`;
   secretPath = join(root, "..", secretName);
@@ -91,6 +92,46 @@ describe("cachePolicy（M8 Vite 哈希产物）", () => {
 
   it("短横线后缀不足 8 位不误判 immutable", () => {
     expect(cachePolicy("/assets/app-abc123.js")).toBe("public, max-age=86400");
+  });
+});
+
+describe("r37 内容寻址 v= 的缓存分级", () => {
+  it("只认 8 位小写十六进制 v", () => {
+    expect(isVersionedUrl("/a.png?v=abcdef12")).toBe(true);
+    expect(isVersionedUrl("/a.png?x=1&v=0123abcd")).toBe(true);
+    expect(isVersionedUrl("/a.png?v=ABCDEF12")).toBe(false);
+    expect(isVersionedUrl("/a.png?v=abcdef1")).toBe(false);
+    expect(isVersionedUrl("/a.png?v=abcdef123")).toBe(false);
+  });
+
+  it("版本化 URL 文本与二进制都 immutable；HTML 永远 no-cache", () => {
+    expect(cachePolicy("/data.json", true)).toBe("public, max-age=31536000, immutable");
+    expect(cachePolicy("/index.html", true)).toBe("no-cache");
+    expect(fallbackCachePolicy("/logo.png", true)).toBe("public, max-age=31536000, immutable");
+    expect(fallbackCachePolicy("/index.html", true)).toBe("no-cache");
+  });
+
+  it("未版本化二进制仍是 max-age=0（图集布局与 JS 同版本耦合）", () => {
+    expect(fallbackCachePolicy("/logo.png", false)).toBe("public, max-age=0");
+  });
+
+  it("二进制带 v：immutable；不带的保持 0；小文本同理", async () => {
+    const plain = await rawGet("/dist/logo.png", "identity");
+    expect(plain.status).toBe(200);
+    expect(plain.headers["cache-control"]).toBe("public, max-age=0");
+    const versioned = await rawGet("/dist/logo.png?v=abcdef12", "identity");
+    expect(versioned.status).toBe(200);
+    expect(versioned.headers["cache-control"]).toBe("public, max-age=31536000, immutable");
+    const tiny = await rawGet("/dist/tiny.json?v=abcdef12", "identity");
+    expect(tiny.headers["cache-control"]).toBe("public, max-age=31536000, immutable");
+  });
+
+  it("文本压缩路径同样识别 v；无 v 仍 1 天", async () => {
+    const plain = await rawGet("/dist/data.json", "gzip");
+    expect(plain.headers["cache-control"]).toBe("public, max-age=86400");
+    const versioned = await rawGet("/dist/data.json?v=abcdef12", "gzip");
+    expect(versioned.status).toBe(200);
+    expect(versioned.headers["cache-control"]).toBe("public, max-age=31536000, immutable");
   });
 });
 

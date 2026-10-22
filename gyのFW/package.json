@@ -9,9 +9,10 @@
   ],
   "scripts": {
     "sync-assets": "node scripts/sync-assets.mjs",
-    "dev:client": "node scripts/sync-assets.mjs && vite",
+    "asset-versions": "node scripts/asset-versions.mjs",
+    "dev:client": "node scripts/sync-assets.mjs && node scripts/asset-versions.mjs && vite",
     "dev:server": "tsx watch packages/server/src/index.ts",
-    "build": "node scripts/sync-assets.mjs && vite build",
+    "build": "node scripts/sync-assets.mjs && node scripts/asset-versions.mjs && vite build",
     "start": "tsx packages/server/src/index.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json --incremental --tsBuildInfoFile node_modules/.cache/tsconfig.tsbuildinfo",
     "test": "vitest run"

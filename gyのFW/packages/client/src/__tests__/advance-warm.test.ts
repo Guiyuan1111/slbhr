@@ -3,8 +3,8 @@
  *
  * 换关链（结算「继续」→ 下一关可玩）在 r13 后只剩两类**必须现拉**的字节：机关变体
  * PNG/JSON（每关必换）与房内字体 PNG（只在 roombase↔blank 变体切换时）。r36 在 won 空闲窗
- * 用 `fetch(..., {cache:"force-cache"})` 先把它们灌进 HTTP 缓存，链上 Phaser 原样声明：
- * 文本 JSON 吃 1 天新鲜期零请求，二进制 PNG 只付一次 304 复验。
+ * 用 `fetch(..., {cache:"force-cache"})` 先把它们灌进 HTTP 缓存；r37 起这些 URL 带内容哈希
+ * `?v=` 与 immutable，链上 Phaser 按同一 URL 声明即零请求（不再有 304 复验）。
  *
  * 失效模式都不报错：
  *  1) 预热 URL 与 preload 装载 URL 分叉 ⇒ 预热了另一份文件，链上照旧现拉，白耗带宽且

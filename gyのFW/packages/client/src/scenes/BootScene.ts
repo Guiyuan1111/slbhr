@@ -22,6 +22,7 @@ import Phaser from "phaser";
 import { type MechLevel, mechVariantId } from "@fw/shared/mech-needs";
 import { AUDIO_MENU, AUDIO_SFX, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadAudioPack, type BgmFamily } from "../audio.js";
 import { getSettings } from "../settings.js";
+import { ASSET_VERSIONS } from "../asset-versions.js";
 
 export const ATLAS_CHARS = "chars";
 /** 角色图集按"可玩之前是否需要"切成三张（r22 件2 两张，r23 件1 再切一刀；生成器
@@ -114,12 +115,22 @@ export function roomFontKey(levelFile?: string | null): string {
   return (TUTORIAL_LEVEL_FILES as readonly string[]).includes(file) ? FONT_FULL : FONT_ROOM;
 }
 
+/** 内容寻址版本参数（r37）：清单由 scripts/asset-versions.mjs 从文件字节生成（`--check` 进门禁），
+ *  服务端对带 `v` 的 URL 给 immutable。字节变则 URL 变、URL 不变则字节不变——既消除链上
+ *  304 复验，也避免"新 PNG + 旧 JSON"跨代混用。未登记的 URL 原样返回。 */
+export function versionedAsset(url: string): string {
+  const v = ASSET_VERSIONS[url];
+  return v ? `${url}?v=${v}` : url;
+}
+
 /** 房内字体 PNG 路径（唯一出处：loadRoomFont 与 r36 结算窗预热共用）。
  *  两变体互斥、共用同一份 fnt 元数据；换 URL 必须换键（见 FONT_FULL/FONT_ROOM 注释）。 */
 export function roomFontPng(key: string): string {
-  return key === FONT_FULL ? "/assets/fonts/chinese/font-roomblank.png" : "/assets/fonts/chinese/font-roombase.png";
+  return versionedAsset(
+    key === FONT_FULL ? "/assets/fonts/chinese/font-roomblank.png" : "/assets/fonts/chinese/font-roombase.png",
+  );
 }
-const FONT_FNT = "/assets/fonts/chinese/font.fnt";
+const FONT_FNT = versionedAsset("/assets/fonts/chinese/font.fnt");
 
 /**
  * 房内字体装载声明（路径只在这里）：消费方在 preload 里无脑声明本关那把键——已缓存时 png 子文件
@@ -158,10 +169,11 @@ export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
 let mechVariant: string | null = null;
 const WIND_ANIM_KEYS = ["wind_base", "wind_effect"] as const;
 
-/** 机关变体 PNG/JSON 路径（唯一出处：loadMechAtlas 与 r36 结算窗预热共用）。 */
+/** 机关变体 PNG/JSON 路径（唯一出处：loadMechAtlas 与 r36 结算窗预热共用）。
+ *  r37 起带内容哈希：PNG/JSON 各自寻址，换关链与结算窗预热都吃 immutable，零复验。 */
 export function mechAtlasUrls(id: string): [string, string] {
   const base = `/assets/atlasses/mech/MechAssets-${id}`;
-  return [`${base}.png`, `${base}.json`];
+  return [versionedAsset(`${base}.png`), versionedAsset(`${base}.json`)];
 }
 
 /** 本关机关图集装载（r30 唯一路径；生成器 scripts/split-mech-atlas.mjs）：
