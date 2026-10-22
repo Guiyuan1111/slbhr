@@ -165,7 +165,7 @@ describe("房内需求集合与行钉", () => {
     for (const d of ROOM_DYNAMIC_SITES) {
       for (const ch of d.chars) expect(chars.has(ch), `${d.file}:${d.line} 的 ${ch}`).toBe(true);
     }
-  });
+  }, TT);
 
   it("房内需求恰为 114 字符、全部有帧（今日无漏字）", async () => {
     const { chars, kept, noGlyph } = await room();
@@ -176,7 +176,7 @@ describe("房内需求集合与行钉", () => {
     // kept 必须按 code 升序（生成器与集合口径都依赖这个序）
     const codes = kept.map((k) => k.code);
     expect(codes).toEqual([...codes].sort((a, b) => a - b));
-  });
+  }, TT);
 
   it("关卡磁盘集合 == temple.json 列表（按关出图/漏字检测的地基）", async () => {
     const ls = await levels();
@@ -185,7 +185,7 @@ describe("房内需求集合与行钉", () => {
     const disk = diskLevelPaths(ROOT);
     expect([...listed].sort()).toEqual([...disk].sort());
     expect(listed.size).toBe(disk.size);
-  });
+  }, TT);
 
   it("48 关教学文本（选中层）每字符在集合内；选取规则钉住", async () => {
     const { chars } = await room();
@@ -197,7 +197,7 @@ describe("房内需求集合与行钉", () => {
     // 其余 46 关确无教学层文本（一旦某关新增 Tutorial_ 层却没进上面名单，这里红）
     const noText = (await levels()).filter((l) => l.texts.length === 0);
     expect(noText.length).toBe(46);
-  });
+  }, TT);
 });
 
 describe("房内 FONT_FULL 调用点分类", () => {
@@ -227,7 +227,7 @@ describe("房内 FONT_FULL 调用点分类", () => {
     expect(fullSites).toBe(5); // 1472 t.text / 1572 "00:00" / 186 暫停 / 300 limitStr / 356 游戏结束
     // 参数化点只能是被 sites/关卡文本交代的那两处
     expect(parameterised.sort()).toEqual([...PARAMETERISED].sort());
-  });
+  }, TT);
 
   it("stoneButton 房内六处显式 FONT_FULL，且 label 字面量字符都在集合内", async () => {
     const { chars } = await room();
@@ -239,7 +239,7 @@ describe("房内 FONT_FULL 调用点分类", () => {
       expect(text, `overlays.ts:${c.line} 的 label 应为字面量`).not.toBeNull();
       for (const ch of text!) expect(chars.has(ch), `overlays.ts:${c.line} 的 ${ch} 不在房内集合`).toBe(true);
     }
-  });
+  }, TT);
 });
 
 describe("在库产物 font-room 的语义（png 与 fnt 必须同代）", () => {
@@ -309,7 +309,7 @@ describe("在库产物 font-room 的语义（png 与 fnt 必须同代）", () =>
     expect(`${roomPng.w}x${roomPng.h}`).toBe("871x1179");
     const framePixels = kept.reduce((s, k) => s + k.glyph.width * k.glyph.height, 0);
     expect(framePixels).toBeGreaterThan(0);
-  });
+  }, TT);
 
   it("font-room.fnt 与官方 font.fnt 的 <char> 条数相等、除 x/y 外逐属性相等", () => {
     expect(roomFnt.charLines).toBe(fnt.charLines);
@@ -330,5 +330,5 @@ describe("在库产物 font-room 的语义（png 与 fnt 必须同代）", () =>
     }
     // 至少保留字形都换了坐标（否则等于没重排）
     expect(moved).toBeGreaterThanOrEqual(114);
-  });
+  }, TT);
 });
