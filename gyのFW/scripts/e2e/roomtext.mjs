@@ -1,15 +1,17 @@
 /**
  * 房内中文位图字逐像素对拍（r24 门禁件）。
  *
- * 为什么要有它：房内字体键 FONT_FULL 在 r24 试过"货架重排"的 font-room 子集（判负回退），
+ * 为什么要有它：房内字体键在 r24 试过"货架重排"的 font-room 子集（判负回退），
  * 在 r27 换成官方图集的原地清零版 font-roomblank.png（画布/fnt/全部字形坐标不动，只清零房内
- * 用不到的像素）。这类改动的失效模式极其隐蔽：Phaser 位图字缺纹理键时抛 `Invalid BitmapText key`，缺**字形**时更坏——
+ * 用不到的像素）；r28 起按关两把变体：教学两关 font-full（114 字，font-roomblank.png）、
+ * 其余 46 关 font-room（27 字，font-roombase.png），由 `--level` 决定本工具比对哪一把。
+ * 这类改动的失效模式极其隐蔽：Phaser 位图字缺纹理键时抛 `Invalid BitmapText key`，缺**字形**时更坏——
  * 不抛错，把缺字形的字直接画成空白。现有门禁全看不见这条路径：
  *   scripts/e2e/prephase-canvas.mjs 只覆盖进房前的五态（其头注自认"游戏内画面/HUD 不重复造轮子"）；
  *   benchmark/visual-diff.mjs 比的是整帧画布对原版，缺字空白恰好混在噪声里且它跑的是原版对照；
  *   冷启动/det/regression 只看 phase/纹理/零错误，位图字内容一概不上屏断言。
  * 本工具把房内**每一个会画中文的面**（时钟、教学文本、暂停/失败/结算三面板）都真的画上屏，
- * 在"产品现役键（'font-full'——指向哪张图集由当轮装载决定）"
+ * 在"产品现役键（`--level` 选的 'font-full'/'font-room'，指向哪张图集由当轮装载决定）"
  * 与"官方参照侧（页内补装 'font-cmp' = font.png/.fnt，不经产品装载路径）"下各渲染一次，
  * 取画布矩形逐字节对拍。**这一半是判据**：真实对象与同坐标官方复制体必须逐字节相同。
  *
@@ -18,7 +20,7 @@
  *     存在与图集无关的系统性差异，不能把差值归因给图集；
  *   - 官方参照侧跨跑也不可复现：同 head/同 bundle 的两次运行 22 条里 21 条 ref sha 不同，
  *     且全部是后跑少墨（−16～−169）。
- *   - 回退后的官方↔官方对照（产品键 font-full 与参照键 font-cmp 装同一张官方图集）：
+ *   - r24 回退后的官方↔官方对照（产品键与参照键 font-cmp 装同一张官方图集）：
  *     6/6 面逐字节相同，22/22 串探针仍全部不同（prod 侧少 1.1%～2.0% 墨迹）⇒ 串级偏差与图集无关。
  *   探针产物（glyph_* 与 manifest）只用于人工看趋势与定位，本工具不据此判红。
  *
@@ -32,12 +34,13 @@
  *       探针逐串只登记 ink/sha 与存档，不作判据。
  *
  * 用法：
- *   node scripts/e2e/roomtext.mjs [--baseline|--compare] [--port 3641] [--help]
+ *   node scripts/e2e/roomtext.mjs [--baseline|--compare] [--level forest_01] [--port 3641] [--help]
+ *   --level 取关卡文件名（缺省 forest_01）：决定房间深链、结算时限与产品侧变体键。
  *   端口缺省 3641（FW_ROOMTEXT_PORT 可覆盖；起服前请 `ss -ltn` 确认未被占用）。
  *   产物一律落 TEMP/roomtext/（gitignore 面），不改任何仓库受版本管理的文件；本工具不构建、不 commit。
  *
  * 机制（全部复用现成件，不新造产品行为）：
- *   - 入场：lib.mjs enterAs/waitForStarted 双页真联机（A=房主、B=加入方），level=forest_01。
+ *   - 入场：lib.mjs enterAs/waitForStarted 双页真联机（A=房主、B=加入方），level 由 --level 指定。
  *   - 冻屏：prephase-canvas.mjs 的 DRIVER 三路封死 Phaser 自驱动（raf.start/loop.wake/loop.step），
  *     世界只按页内 __pp.step 喂合成 1000/60ms 时钟；Math.random 换 mulberry32 定种。
  *     截图前一律"只渲染不步进"（renderer.preRender→scene.render→postRender），显示列表原地不动，
@@ -70,10 +73,20 @@ import { chromium } from "playwright";
 import { PASSWORD, ROOT, enterAs, log, startServer, waitForStarted } from "./lib.mjs";
 
 const argv = process.argv.slice(2);
+/** `--name value` 取值（下一项是另一个开关或缺失即报错，避免把 `--baseline` 当成 level） */
+function argOf(name, fallback) {
+  const i = argv.indexOf(name);
+  if (i < 0) return fallback;
+  const v = argv[i + 1];
+  if (!v || v.startsWith("--")) throw new Error(`${name} 缺参数值`);
+  return v;
+}
+const LEVEL = argOf("--level", "forest_01");
 if (argv.includes("--help") || argv.includes("-h")) {
-  log("用法：node scripts/e2e/roomtext.mjs [--baseline|--compare] [--port 3641]");
-  log("  --compare 缺省：产品侧（font-full，内容随当轮装载）对官方参照侧（页内 'font-cmp'=font.png）逐像素硬对拍");
+  log("用法：node scripts/e2e/roomtext.mjs [--baseline|--compare] [--level forest_01] [--port 3641]");
+  log("  --compare 缺省：产品侧（--level 决定的 font-full/font-room）对官方参照侧（页内 'font-cmp'=font.png）逐像素硬对拍");
   log("  --baseline ：只把官方参照侧各面裁剪像素落 TEMP/roomtext/baseline/ + sha256 清单（仅存档，非判定基线）");
+  log("  --level    ：关卡文件名（缺省 forest_01；forest_12 等无教学层的关装 font-room 变体）");
   process.exit(0);
 }
 const MODE = argv.includes("--baseline") ? "baseline" : "compare";
@@ -81,7 +94,6 @@ const PORT_IDX = argv.indexOf("--port");
 const PORT = Number(PORT_IDX >= 0 ? argv[PORT_IDX + 1] : process.env.FW_ROOMTEXT_PORT || 3641);
 if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) throw new Error(`端口不合法：${argv[PORT_IDX + 1]}`);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
-const LEVEL = "forest_01";
 const OUTDIR = join(ROOT, "TEMP", "roomtext");
 const BASELINE_DIR = join(OUTDIR, "baseline");
 const DIFF_DIR = join(OUTDIR, "diff");
@@ -101,42 +113,46 @@ const fromB64 = (du) => Buffer.from(du.slice(du.indexOf(",") + 1), "base64");
 
 // ── 数据侧事实（Node 直接读仓库 JSON，页面只认这份） ────────────────────────────
 const TEMPLE = JSON.parse(readFileSync(join(ROOT, "data", "forest", "temple.json"), "utf8"));
-const F01_ENTRY = TEMPLE.levels.find((l) => l.filename === "tutorials/levels/forest_01.json");
-const F01_LIMIT = Number(F01_ENTRY?.time ?? 40); // 00:40：Part A EndMenu 传参与 Part B 规范串同口径
-/** 全部关卡教学文本（48 关= tutorials 1 + forest 47；实测仅 forest_01 与 forest_bonus_1 带 Tutorial 层） */
-function collectTutorialStrings() {
+const LEVEL_ENTRY = TEMPLE.levels.find((l) => String(l.filename ?? "").endsWith(`/${LEVEL}.json`));
+if (!LEVEL_ENTRY) {
+  const known = TEMPLE.levels.map((l) => String(l.filename).replace(/^.*\//, "").replace(/\.json$/, ""));
+  throw new Error(`--level ${LEVEL} 不在 temple.json（可用：${known.join(", ")}）`);
+}
+const LEVEL_LIMIT = Number(LEVEL_ENTRY.time ?? 0); // 该关时限：Part A EndMenu 传参与 Part B 规范串同口径
+/** 本关教学文本（客户端只取选中层的文本对象；无 Tutorial 层的关返回空） */
+function collectTutorialStrings(relFile) {
+  const d = JSON.parse(readFileSync(join(ROOT, "data", relFile), "utf8"));
+  const layers = (d.layers ?? []).filter((L) => String(L.name ?? "").startsWith("Tutorial_"));
+  // 选取规则同 level2.ts:590-595：keyboard→dual→single→首个
+  const names = layers.map((L) => L.name);
+  const sel = ["Tutorial_keyboard", "Tutorial_dual", "Tutorial_single"].find((n) => names.includes(n)) ?? names[0];
+  const layer = layers.find((L) => L.name === sel);
   const seen = new Map();
-  const dirs = [join(ROOT, "data", "tutorials", "levels"), join(ROOT, "data", "forest", "levels")];
-  const files = dirs.flatMap((d) => readdirSync(d).filter((f) => f.endsWith(".json")).map((f) => join(d, f)));
-  for (const p of files) {
-    const d = JSON.parse(readFileSync(p, "utf8"));
-    for (const L of d.layers ?? []) {
-      if (!String(L.name ?? "").startsWith("Tutorial_")) continue;
-      for (const o of L.objects ?? []) {
-        const t = o.text?.text;
-        if (!t) continue;
-        // buildTutorial（GameScene.ts:1469-1476）口径：size=18，align=halign??'left'，maxWidth=对象宽
-        const spec = { text: String(t), size: 18, align: o.text.halign ?? "left", maxWidth: Number(o.width) || 0 };
-        seen.set(`${spec.text}|${spec.size}|${spec.align}|${spec.maxWidth}`, spec);
-      }
-    }
+  for (const o of layer?.objects ?? []) {
+    const t = o.text?.text;
+    if (!t) continue;
+    // buildTutorial（GameScene.ts:1471-1477）口径：size=18，align=halign??'left'，maxWidth=对象宽
+    const spec = { text: String(t), size: 18, align: o.text.halign ?? "left", maxWidth: Number(o.width) || 0 };
+    seen.set(`${spec.text}|${spec.size}|${spec.align}|${spec.maxWidth}`, spec);
   }
   return [...seen.values()];
 }
-const TUT_STRINGS = collectTutorialStrings();
+const TUT_STRINGS = collectTutorialStrings(LEVEL_ENTRY.filename);
+/** 本关产品侧变体键：与 BootScene.roomFontKey 同判据（有教学文本→全量，否则基础集） */
+const PROD_KEY = TUT_STRINGS.length > 0 ? "font-full" : "font-room";
 
-/** EndMenu create 的 scene.start 数据（形状照 main.ts:327-335 openEndMenu；时限=temple.forest_01.time） */
+/** EndMenu create 的 scene.start 数据（形状照 main.ts:327-335 openEndMenu；时限=本关 temple.time） */
 const ENDMENU_DATA = {
   diamonds: 7,
   diamondsTotal: 7,
   silver: 0,
   timeSec: 25,
-  timeLimitSec: F01_LIMIT,
+  timeLimitSec: LEVEL_LIMIT,
   type: "general",
   stars: 3,
 };
 
-/** Part B 硬断言的字符串全集：面板规范串 + 时钟（00:00 + 现场跑出的某一刻）+ 全部教学文本 */
+/** Part B 硬断言的字符串全集：面板规范串 + 时钟（00:00 + 现场跑出的某一刻）+ 本关教学文本 */
 function buildStringList(liveClock) {
   const list = [
     { group: "clock", text: "00:00", size: 24 },
@@ -145,7 +161,7 @@ function buildStringList(liveClock) {
     { group: "panel", text: "再试一次", size: 26, align: "center" },
     { group: "panel", text: "返回菜单", size: 26, align: "center" },
     { group: "panel", text: "继续", size: 26, align: "center" },
-    { group: "panel", text: mmss(F01_LIMIT), size: 18, align: "center", alpha: 0.7 }, // EndMenu 时限（overlays.ts:298-303）
+    { group: "panel", text: mmss(LEVEL_LIMIT), size: 18, align: "center", alpha: 0.7 }, // EndMenu 时限（overlays.ts:298-303）
   ];
   if (liveClock && liveClock !== "00:00") list.unshift({ group: "clock", text: liveClock, size: 24 });
   for (const t of TUT_STRINGS) list.push({ group: "tutorial", ...t });
@@ -159,7 +175,7 @@ function buildStringList(liveClock) {
 }
 
 // ── 页内驱动（prephase-canvas.mjs DRIVER 同型：三路封死自驱动 + 合成步进；再加房内量具件） ──
-function driver({ stepMs, cmpKey, cmpPng, cmpFnt }) {
+function driver({ stepMs, cmpKey, cmpPng, cmpFnt, prodKey }) {
   let s = 0x5eed1e >>> 0;
   const rand = () => {
     s = (s + 0x6d2b79f5) >>> 0;
@@ -220,7 +236,7 @@ function driver({ stepMs, cmpKey, cmpPng, cmpFnt }) {
   pp.active = (k) => !!pp.game && pp.game.scene.isActive(k);
 
   // ── roomtext 量具件 ──
-  const rt = { cmpKey, cmpPng, cmpFnt, probeBt: null };
+  const rt = { prodKey, cmpKey, cmpPng, cmpFnt, probeBt: null };
   globalThis.__rt = rt;
   const game = () => pp.game;
   /** 只渲染不步进：preRender(清屏)→逐场景 render→postRender，等价 Game.step 的渲染半段 */
@@ -241,13 +257,14 @@ function driver({ stepMs, cmpKey, cmpPng, cmpFnt }) {
       cw: cv.width,
       ch: cv.height,
       scenes: g.scene.getScenes(true).map((x) => x.scene.key),
-      hasFull: g.textures.exists("font-full"),
+      prodKey,
+      hasProd: g.textures.exists(prodKey),
       hasCmp: g.textures.exists(cmpKey),
-      fullSrc: g.textures.exists("font-full") ? (() => { const so = g.textures.get("font-full").source[0]; return so.width + "x" + so.height; })() : "-",
+      prodSrc: g.textures.exists(prodKey) ? (() => { const so = g.textures.get(prodKey).source[0]; return so.width + "x" + so.height; })() : "-",
       cmpSrc: g.textures.exists(cmpKey) ? (() => { const so = g.textures.get(cmpKey).source[0]; return so.width + "x" + so.height; })() : "-",
       // 位图字 .fnt 元数据在解析后即成纹理帧，cache.text 里并无它——字数按 frames 计（去掉 __BASE）
       cmpChars: g.textures.exists(cmpKey) ? Object.keys(g.textures.get(cmpKey).frames).length - 1 : -1,
-      fullChars: g.textures.exists("font-full") ? Object.keys(g.textures.get("font-full").frames).length - 1 : -1,
+      prodChars: g.textures.exists(prodKey) ? Object.keys(g.textures.get(prodKey).frames).length - 1 : -1,
     };
   };
   /** 页内补装第二图集（Loader 事件驱动，步进封死也到齐）；返回 Promise 结果轮询用 exists() */
@@ -384,7 +401,7 @@ function driver({ stepMs, cmpKey, cmpPng, cmpFnt }) {
     return off.toDataURL("image/png");
   };
   /**
-   * 一面三拍：A=真实对象（现役 FONT_FULL 产物路径）；bare=真实隐藏；B=真实隐藏+cmp 复制体。
+   * 一面三拍：A=真实对象（现役产品变体键）；bare=真实隐藏；B=真实隐藏+cmp 复制体。
    * 全部只 render 不 step；返回 A/B 逐字节等、ink（bare→A）、差异 bbox、裁剪 PNG(base64)。
    */
   rt.measureFace = (spec) => {
@@ -478,7 +495,7 @@ function driver({ stepMs, cmpKey, cmpPng, cmpFnt }) {
 
 // ── Node 侧流程 ──────────────────────────────────────────────────────────────
 const fontFp = {};
-for (const f of ["font.png", "font.fnt", "font-prephase.png", "font-prephase.fnt", "font-roomblank.png"]) {
+for (const f of ["font.png", "font.fnt", "font-prephase.png", "font-prephase.fnt", "font-roomblank.png", "font-roombase.png"]) {
   const p = join(ROOT, "assets", "fonts", "chinese", f);
   if (existsSync(p)) fontFp[f] = sha16(readFileSync(p));
 }
@@ -499,9 +516,10 @@ if (!(existsSync(OFF_PNG) && existsSync(OFF_FNT))) {
   throw new Error("官方参照面 font.png/.fnt 缺失：逐像素一致性的锚点没了（它在仓库受版本管理面，不该消失）");
 }
 if (mode === "baseline") modeNote = "baseline：仅官方参照侧（'font-cmp'=font.png）存档（TEMP/roomtext/baseline/），不做判据";
-else modeNote = "compare：产品现役键（font-full）对官方参照侧逐像素对拍；串级探针只诊断";
+else modeNote = `compare：产品现役键（${PROD_KEY}@${LEVEL}）对官方参照侧逐像素对拍；串级探针只诊断`;
 
 log(`模式=${MODE}→实际=${mode}（${modeNote}）`);
+log(`关卡=${LEVEL}（${LEVEL_ENTRY.filename}，时限 ${LEVEL_LIMIT}s），产品键=${PROD_KEY}，教学串 ${TUT_STRINGS.length} 条`);
 log(`字体指纹：${JSON.stringify(fontFp)}`);
 if (bundle) log(`dist 产物：${bundle.chunk}=${bundle.chunkSha}`);
 
@@ -545,7 +563,7 @@ try {
     if (m.type() === "error" && errLines.length < 20) errLines.push(m.text());
     if ((m.type() === "warning" || m.type() === "error") && TEX_WARN.test(m.text())) warnLines.push(`A console.${m.type()}: ${m.text()}`);
   });
-  await pageA.addInitScript(driver, { stepMs: STEP_MS, cmpKey: CMP_KEY, cmpPng: CMP_URL.png, cmpFnt: CMP_URL.fnt });
+  await pageA.addInitScript(driver, { stepMs: STEP_MS, cmpKey: CMP_KEY, cmpPng: CMP_URL.png, cmpFnt: CMP_URL.fnt, prodKey: PROD_KEY });
   await pageA.goto(`${BASE_URL}/?level=${LEVEL}`, { waitUntil: "domcontentloaded" });
   await pageA.waitForFunction(() => !!globalThis.__pp && !!globalThis.__pp.game && !!globalThis.__pp.game.renderer, null, { timeout: 30000, polling: 20 });
 
@@ -588,8 +606,8 @@ try {
   if (info.renderer !== "Canvas") throw new Error(`renderer=${info.renderer}（量具要求 Canvas：--disable-webgl 未生效？换键读像素口径失效）`);
   if (info.paused) throw new Error("game.isPaused=true（页面被判为不可见），合成时钟推不动世界");
   if (info.cw !== 1280 || info.ch !== 960) throw new Error(`画布缓冲非 1280×960（${info.cw}×${info.ch}）`);
-  if (!info.hasFull) throw new Error("房内字体键 font-full 未装载（Game 未真进房？或其装载失败？）");
-  log(`房内就绪：产品侧 font-full=${info.fullSrc}（${info.fullChars} 字形帧），场景=${info.scenes.join(",")}`);
+  if (!info.hasProd) throw new Error(`房内字体键 ${PROD_KEY} 未装载（Game 未真进房？或按关变体选错/装载失败？）`);
+  log(`房内就绪：产品侧 ${PROD_KEY}=${info.prodSrc}（${info.prodChars} 字形帧），场景=${info.scenes.join(",")}`);
 
   // 参照侧（官方 font.png/.fnt）两模式都装：compare 用它对拍，baseline 用它留档
   await pageA.evaluate(() => globalThis.__rt.loadCmp());
@@ -609,18 +627,22 @@ try {
   const faces = [
     { id: "clock-live", desc: "时钟（started 后 mmss 跑到的某一刻，真实权威读数）", spec: { kind: "clock" }, stage: null },
     { id: "clock-initial", desc: "时钟初始 00:00（量具侧 setText 强制，非产品行为）", spec: { kind: "clock" }, stage: "init" },
-    { id: "tutorial-forest01", desc: "forest_01 Tutorial_keyboard 教学文本（量具侧强制整组显影，非产品行为）", spec: { kind: "tutorial" }, stage: "tut" },
+  ];
+  if (TUT_STRINGS.length > 0) {
+    faces.push({ id: `tutorial-${LEVEL}`, desc: `${LEVEL} 选中 Tutorial 层教学文本（量具侧强制整组显影，非产品行为）`, spec: { kind: "tutorial" }, stage: "tut" });
+  }
+  faces.push(
     { id: "gameover", desc: "失败面板 GameOverMenu：游戏结束 + 返回菜单/再试一次（game.scene.start 运行时手段）", spec: { kind: "scene", scene: "GameOverMenu" }, stage: "go" },
     { id: "end", desc: "结算面板 EndMenu：时限 + 继续（game.scene.start(data) 量具侧补开，非真通关）", spec: { kind: "scene", scene: "EndMenu" }, stage: "end" },
     { id: "pause", desc: "暂停面板 PauseMenu：暫停 + 三 StoneButton（产品路径 __fwTogglePause）", spec: { kind: "scene", scene: "PauseMenu" }, stage: "pause" },
-  ];
+  );
   const STAGE = {
     async init() {
       await pageA.evaluate(() => globalThis.__rt.forceClockInit());
     },
     async tut() {
       const n = await pageA.evaluate(() => globalThis.__rt.forceTutorial());
-      if (n === 0) throw new Error("forest_01 教学文本为 0 条（Tutorial 层解析失效？）");
+      if (n === 0) throw new Error(`${LEVEL} 教学文本为 0 条（Tutorial 层解析失效？）`);
     },
     async go() {
       await pageA.evaluate(() => globalThis.__pp.game.scene.start("GameOverMenu"));
@@ -650,7 +672,7 @@ try {
   };
   /**
    * 弹簧入场收敛：分轮步进（每轮 30 步一次往返，轮间让出事件循环）。
-   * 必须分轮的原因：弹窗场景（EndMenu/GameOverMenu）的 preload 会再声明一次 FONT_FULL 的
+   * 必须分轮的原因：弹窗场景（EndMenu/GameOverMenu）的 preload 会再声明一次本关变体键的
    * .fnt 元数据请求（r18 注释：png 子文件静默跳过、fnt 每次重走条件复验）——XHR 回调只能在
    * evaluate 往返之间落地，单条连续 step(422) 里 create 会排在步进结束之后，板永远停在屏外。
    * ≥8 轮（≈240 步≈4s 场景时）同时盖住 EndMenu 勾叉节拍链（700/1400/2100/2800ms）与
@@ -694,7 +716,7 @@ try {
 
   // ── Part B：全部待画字符串逐条双键硬断言（探针场景，黑底确定性裁剪） ──
   const strings = buildStringList(live);
-  log(`[Part B] 待断言字符串 ${strings.length} 条（时钟/面板规范串 + 48 关教学文本去重）`);
+  log(`[Part B] 待断言字符串 ${strings.length} 条（时钟/面板规范串 + ${LEVEL} 教学文本去重）`);
   await pageA.evaluate(() => globalThis.__rt.probeInit());
   await pageA.waitForFunction(() => globalThis.__rt.probeReady(), null, { timeout: 15000 });
   for (const s of strings) {
@@ -702,7 +724,7 @@ try {
     const ref = await shot(CMP_KEY); // 官方参照侧（font.png）——跨跑漂移只登记不判红（见头注）
     const row = { ...s, ref: { ink: ref.ink, size: [ref.w, ref.h], layout: ref.layout, sha: sha(fromB64(ref.png)) } };
     if (mode === "compare") {
-      const prod = await shot("font-full"); // 产品现役侧（内容随装载：r27 起=font-roomblank）
+      const prod = await shot(PROD_KEY); // 产品现役侧（内容随装载：教学关=roomblank，其余=roombase）
       const b64 = fromB64(prod.png);
       row.prod = { ink: prod.ink, size: [prod.w, prod.h], sha: sha(b64) };
       row.equal = prod.sha === row.ref.sha && prod.ink === row.ref.ink;
@@ -742,6 +764,8 @@ try {
     head: HEAD,
     port: PORT,
     level: LEVEL,
+    levelFile: LEVEL_ENTRY.filename,
+    prodKey: PROD_KEY,
     liveClock: live,
     bundle,
     fontFiles: fontFp,

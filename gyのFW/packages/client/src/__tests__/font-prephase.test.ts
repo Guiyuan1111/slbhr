@@ -2,9 +2,10 @@
  * 进房前字体链的静态防护网（r18 两段化 + r19 图集重排，两件一体：产物语义 + 代码里 FONT_MAIN/FONT_FULL 的用法）。
  *
  * 为什么需要它：进房前只装子集图集（r18 件1 生成、r19 件1 重排：assets/fonts/chinese/font-prephase.png
- * ＋同目录 font-prephase.fnt），全量 font.png 改由延迟通道以 font-full 键装载。这条链致命的失效模式有三类：
+ * ＋同目录 font-prephase.fnt），房内字体改由延迟通道按关装两把变体（r28）：
+ * 教学两关 font-full 777KB / 其余 46 关 font-room 209.8KB。这条链致命的失效模式有三类：
  *  1. 某处房内文案仍用 FONT_MAIN ⇒ 那个字当场画空白，而冷启动一切正常；
- *  2. 某处进房前文案用了 FONT_FULL ⇒ 白等房内字体（r27 起 777KB）；
+ *  2. 某处进房前文案用了房内变体 ⇒ 白等 209.8～777KB 的房内字体；
  *  3.（r19 新增）png 与 fnt 是**一对**必须同时重建的产物 ⇒ 只重建一边就会把字形搬到错位置，
  *     画出来是"字还在、位置错"的鬼影，比空白更难发现。
  * 三种错都不出现在报错里，只能靠按调用点分类＋逐像素回算的静态断言挡住。
@@ -35,7 +36,7 @@ const PRE_ROOM_FILES = [
   "packages/client/src/scenes/TempleScene.ts",
   "packages/client/src/scenes/transition.ts",
 ];
-/** 房内场景：位图字一律 FONT_FULL，否则缺字形即画空白 */
+/** 房内场景：位图字按本关变体取键（r28），否则缺字形即画空白 */
 const IN_ROOM_FILES = ["packages/client/src/scenes/GameScene.ts", "packages/client/src/scenes/overlays.ts"];
 const PRE_ROOM_SITES = 12;
 /** 参数化实参的位图字：字形来源由 prephase-chars.json 的调用侧声明交代 */
@@ -269,35 +270,36 @@ describe("r18 字体两段化：调用点分类", () => {
     expect(found.sort()).toEqual([...PARAMETERISED].sort());
   });
 
-  it("房内两个文件的位图字全部用 FONT_FULL（唯一例外是 stoneButton 内部的 opts?.fontKey 缺省）", () => {
+  it("房内两个文件的位图字全部走本关变体（唯一例外是 stoneButton 内部的 opts?.fontKey 缺省）", () => {
     let sites = 0;
     for (const file of IN_ROOM_FILES) {
+      const expectedKey = file.endsWith("GameScene.ts") ? "this.roomFont" : "roomFontKey()";
       for (const call of bitmapTextCalls(file)) {
         sites++;
         const viaButtonHelper = call.parts[2]?.includes("opts?.fontKey") ?? false;
         expect(
-          viaButtonHelper || call.parts[2] === "FONT_FULL",
-          `${file}:${call.line} 用了 ${call.raw}——房内文案必须显式 FONT_FULL`,
+          viaButtonHelper || call.parts[2] === expectedKey,
+          `${file}:${call.line} 用了 ${call.raw}——房内文案必须走本关变体键 ${expectedKey}`,
         ).toBe(true);
       }
     }
     expect(sites).toBe(6); // GameScene 2 + overlays 4（stoneButton 内 1、暫停、时限、游戏结束）
   });
 
-  it("凡画 FONT_FULL 的场景都在自己的 preload 里声明装载（消费方自备，不靠上游兜底）", () => {
+  it("凡画房内变体的场景都在自己的 preload 里声明装载（消费方自备，不靠上游兜底）", () => {
     // 失效模式（本轮实测抓到）：面板/ HUD 可以在"Game 的装载队列还没跑"的路径上被启动——
     // 刷新回座 won/gameover 时 enterGame 的黑幕把 Game 起步压到淡入之后，而 resumeWonIfNeeded
-    // 与 onPhase("gameover") 已经 scene.start 了面板。此时 FONT_FULL 未进缓存，
+    // 与 onPhase("gameover") 已经 scene.start 了面板。此时变体键未进缓存，
     // add.bitmapText 抛 Invalid BitmapText key、create 中断，结算/失败面板开不出来。
     // 已缓存时声明也零成本：addFile(:532)→keyExists(:568) 跳过，队列空则 start() 当场 loadComplete。
     const declarers: string[] = [];
     for (const file of IN_ROOM_FILES) {
       for (const cls of sceneClassBodies(stripComments(SRC(file)))) {
-        if (!/\bFONT_FULL\b/.test(cls.body)) continue;
+        if (!/roomFontKey\(|this\.roomFont\b/.test(cls.body)) continue;
         declarers.push(`${file.split("/").pop()}:${cls.name}`);
         const body = cls.body.match(/preload\(\): void \{([\s\S]*?)\n  \}/)?.[1] ?? "";
-        const declares = /loadFontFull\(this\.load\)|loadGameAtlases\(this\.load\)/.test(body);
-        expect(declares, `${cls.name} 画 FONT_FULL 却没在自己的 preload 里声明装载`).toBe(true);
+        const declares = /loadRoomFont\(this\.load\)|loadGameAtlases\(this\.load\)/.test(body);
+        expect(declares, `${cls.name} 画房内变体却没在自己的 preload 里声明装载`).toBe(true);
       }
     }
     expect(declarers.sort()).toEqual([
@@ -308,11 +310,11 @@ describe("r18 字体两段化：调用点分类", () => {
     ]);
   });
 
-  it("stoneButton 调用：房内六处显式 FONT_FULL，进房前三处用缺省子集且 label 在子集内", () => {
+  it("stoneButton 调用：房内六处显式 roomFontKey()，进房前三处用缺省子集且 label 在子集内", () => {
     const inRoom = stoneButtonCalls("packages/client/src/scenes/overlays.ts");
     expect(inRoom.length).toBe(6);
     for (const c of inRoom) {
-      expect(c.opts.includes("fontKey: FONT_FULL"), `overlays.ts:${c.line} 的 opts=${c.opts || "（无）"} 未声明 FONT_FULL`).toBe(true);
+      expect(c.opts.includes("fontKey: roomFontKey()"), `overlays.ts:${c.line} 的 opts=${c.opts || "（无）"} 未声明本关变体`).toBe(true);
     }
     const preRoom = stoneButtonCalls("packages/client/src/scenes/menus.ts");
     expect(preRoom.length).toBe(3);
@@ -324,7 +326,7 @@ describe("r18 字体两段化：调用点分类", () => {
     }
   });
 
-  it("Boot 关键路径只装子集对，房内清零字体只在延迟通道里声明一次", () => {
+  it("Boot 关键路径只装子集对，房内两把变体只在 loadRoomFont 里声明一次", () => {
     const boot = SRC("packages/client/src/scenes/BootScene.ts");
     // png 与 fnt 必须成对钉死：重排版把 x/y 改写进新布局，FONT_MAIN 若配上源 font.fnt
     // 就是"用旧坐标读新图"——字还在但每个都画到别处，冷启动看着仍是中文。
@@ -333,20 +335,26 @@ describe("r18 字体两段化：调用点分类", () => {
         'this.load.bitmapFont(FONT_MAIN, "/assets/fonts/chinese/font-prephase.png", "/assets/fonts/chinese/font-prephase.fnt")',
       ),
     ).toBe(true);
-    const declFn = boot.indexOf("export function loadFontFull");
-    const fullLoad = boot.indexOf("load.bitmapFont(FONT_FULL");
+    const declFn = boot.indexOf("export function loadRoomFont");
+    const atlasFnStart = boot.indexOf("export function loadGameAtlases");
     expect(declFn).toBeGreaterThan(-1);
-    expect(fullLoad).toBeGreaterThan(declFn); // 唯一的声明语句在 loadFontFull 体内
-    expect(boot.split("load.bitmapFont(FONT_FULL").length - 1).toBe(1); // 本文件不第二处
+    expect(atlasFnStart).toBeGreaterThan(declFn);
+    const roomFn = boot.slice(declFn, atlasFnStart);
+    // 两把变体的 URL 与官方 fnt 都在 loadRoomFont 体内，且各只一处
+    expect(roomFn.includes("/assets/fonts/chinese/font-roomblank.png")).toBe(true);
+    expect(roomFn.includes("/assets/fonts/chinese/font-roombase.png")).toBe(true);
+    expect(roomFn.split('"/assets/fonts/chinese/font.fnt"').length - 1).toBe(1);
+    // r28：Menu 暖装不知道下一关 ⇒ loadGameAtlases 不得再声明房内字体
+    const atlasFn = boot.slice(atlasFnStart, boot.indexOf("export function loadCharsPlay", atlasFnStart));
+    expect(atlasFn.includes("bitmapFont")).toBe(false);
     const preload = boot.slice(boot.indexOf("preload(): void"), boot.indexOf("create(): void"));
     expect(preload.includes("font.png")).toBe(false); // Boot 段再无房内字体下载
     expect(preload.includes("font-prephase.png")).toBe(true);
     expect(preload.includes("font-prephase.fnt")).toBe(true);
-    // 源 font.fnt 只服务 FONT_FULL：出现在 loadFontFull 之后、preload 段之前=延迟通道之外
+    // 源 font.fnt 只服务房内两把变体：出现在 loadRoomFont 体内、Boot 的 preload 之外
     expect(preload.includes('chinese/font.fnt"')).toBe(false);
-    expect(boot.slice(fullLoad).includes('"/assets/fonts/chinese/font.fnt"')).toBe(true);
     // 房内路径字面量全局只此一处：别处硬编码=绕过 keyExists 跳过逻辑的第二下载源。
-    // r27 起 FONT_FULL 装原地清零版；官方全量 font.png 在客户端源码里已无任何引用。
+    // 官方全量 font.png 在客户端源码里已无任何引用。
     const files = [
       "packages/client/src/scenes/BootScene.ts",
       "packages/client/src/scenes/GameScene.ts",
@@ -356,6 +364,7 @@ describe("r18 字体两段化：调用点分类", () => {
     const count = (re: RegExp) => files.reduce((n, f) => n + (stripComments(SRC(f)).match(re)?.length ?? 0), 0);
     expect(count(/fonts\/chinese\/font\.png/g)).toBe(0);
     expect(count(/fonts\/chinese\/font-roomblank\.png/g)).toBe(1);
+    expect(count(/fonts\/chinese\/font-roombase\.png/g)).toBe(1);
     expect(count(/fonts\/chinese\/font\.fnt/g)).toBe(1);
     expect(count(/fonts\/chinese\/font-prephase\.fnt/g)).toBe(1);
   });

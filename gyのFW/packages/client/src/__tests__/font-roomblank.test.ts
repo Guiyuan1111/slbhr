@@ -1,10 +1,12 @@
 /**
- * 房内字体链的静态防护网（r27 原地清零版）。与 font-prephase.test.ts 同形状，但守的是**房内**这条链：
- * 需求源来自 scripts/font-subset/room.mjs（关卡教学文本选中层 + 行钉字面量 + 动态数字点），
- * 产物是 assets/fonts/chinese/font-roomblank.png（官方 fnt 不动）。致命失效模式：
- *  1. 某处房内 FONT_FULL 文案的字不在集合内 ⇒ 换装载后那个字当场画空白；
- *  2. 教学层选取规则或某关文案改动 ⇒ 需求集变了但产物没跟着重建；
- *  3. 清零越界碰到保留字形或其 ring 环带 ⇒ 26/36px 采样核读到被抹掉的邻居。
+ * 房内字体链的静态防护网（r28 按关双变体：font-roomblank 114 字 / font-roombase 27 字）。
+ * 与 font-prephase.test.ts 同形状，但守的是**房内**这条链：
+ * 需求源来自 scripts/font-subset/room.mjs（基础集 = 行钉字面量 + 动态数字点；全集再加关卡教学文本），
+ * 产物是 assets/fonts/chinese/font-roomblank.png 与 font-roombase.png（官方 fnt 不动）。致命失效模式：
+ *  1. 某处房内文案的字不在本关装载的变体内 ⇒ 换装载后那个字当场画空白；
+ *  2. 教学层选取规则或某关文案改动 ⇒ 需求集变了但产物/名单没跟着重建；
+ *  3. 清零越界碰到保留字形或其 ring 环带 ⇒ 26/36px 采样核读到被抹掉的邻居；
+ *  4. BootScene 的教学关名单与 room.mjs 回算结果漂移 ⇒ 教学关装了 27 字变体。
  * 产物语义与 r24 的货架重排相反：**只允许动保留面之外的像素**，所有坐标/幅面/fnt 逐字节不动。
  * 期望值全部由「官方 font.png/font.fnt 的字节与坐标」独立回算，故意不调用生成器
  * build-font-blank.mjs 的装配代码——生成器若口径出错，这里仍能独立发现。
@@ -19,18 +21,20 @@ import {
   ROOM_LITERAL_SITES,
   assertRoomPins,
   diskLevelPaths,
+  roomBaseChars,
   roomChars,
   roomLevelTexts,
+  tutorialLevels,
 } from "../../../../scripts/font-subset/room.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "..", "..", "..", "..");
 const SRC = (p: string) => readFileSync(path.join(ROOT, p), "utf8");
 
-/** 房内文件：位图字一律 FONT_FULL（GameScene + 三块面板 overlays） */
+/** 房内文件：位图字按本关变体取键（GameScene `this.roomFont` / overlays `roomFontKey()`） */
 const IN_ROOM_FILES = ["packages/client/src/scenes/GameScene.ts", "packages/client/src/scenes/overlays.ts"];
 /** 房内参数化实参的位图字：字形来源由 room.mjs 的 sites / 关卡教学文本交代 */
 const PARAMETERISED = [
-  "packages/client/src/scenes/GameScene.ts:1472", // t.text ← 关卡教学文本（roomLevelTexts）
+  "packages/client/src/scenes/GameScene.ts:1477", // t.text ← 关卡教学文本（roomLevelTexts）
   "packages/client/src/scenes/overlays.ts:300", // limitStr ← ROOM_DYNAMIC_SITES 结算板时限
 ];
 /** 今日有教学文本、会进房内位图字的关卡（其余 46 关无教学层）：新增/改文案这里要红 */
@@ -38,6 +42,8 @@ const TUT_LEVELS = [
   { id: 1, filename: "tutorials/levels/forest_01.json", selectedLayer: "Tutorial_keyboard" },
   { id: 64, filename: "forest/levels/forest_bonus_1.json", selectedLayer: "Tutorial_keyboard" },
 ];
+/** 基础集 27 字的独立字面量（不经过 room.mjs：测试自己再数一遍） */
+const BASE_EXPECTED = "暫停再试一次返回菜单继续游戏结束0:123456789";
 
 /** 剥掉注释（长度不变、换行保留，行号仍可映射）：不剥的话注释里的示例调用点会被当成真调用。 */
 function stripComments(src: string): string {
@@ -134,24 +140,54 @@ const fnt = parseFnt(path.join(ROOT, "assets/fonts/chinese/font.fnt"));
 const fontSrc = loadFontAtlas(path.join(ROOT, "assets/fonts/chinese/font.png"), fnt);
 const ring = fnt.padding[0];
 const blankPngPath = path.join(ROOT, "assets/fonts/chinese/font-roomblank.png");
+const basePngPath = path.join(ROOT, "assets/fonts/chinese/font-roombase.png");
 /** loadFontAtlas 顺带钉住"png 尺寸 == 官方 fnt scaleW/scaleH"（原地清零不改幅面） */
 const blankPng = loadFontAtlas(blankPngPath, fnt);
+const basePng = loadFontAtlas(basePngPath, fnt);
 
 /** 需求集合/关卡文本要解析 TS，走 room.mjs 的动态 import；memo 化避免每个用例重算 */
 let _room: ReturnType<typeof roomChars> | undefined;
 const room = () => (_room ??= roomChars(ROOT, fnt));
 let _levels: ReturnType<typeof roomLevelTexts> | undefined;
 const levels = () => (_levels ??= roomLevelTexts(ROOT));
+let _base: ReturnType<typeof roomBaseChars> | undefined;
+const base = () => (_base ??= roomBaseChars(ROOT, fnt));
 
-/** 48 关 parseLevel ＋两张 2191×1024 图集解码会超过 vitest 默认 5s，这里预热一次共用 memo。 */
+/** 48 关 parseLevel ＋三张 2191×1024 图集解码会超过 vitest 默认 5s，这里预热一次共用 memo。 */
 const TT = 180000;
 beforeAll(async () => {
   await room();
   await levels();
+  base();
 }, TT);
 
+/** 原地清零产物语义：保留面（帧 ∪ ring 环带）逐字节等于官方原坐标；清零面全 0。返回保留掩码。 */
+function assertInPlace(img: { w: number; h: number; data: Buffer }, used: { ch: string; glyph: { x: number; y: number; width: number; height: number } }[], label: string): Uint8Array {
+  const mask = new Uint8Array(img.w * img.h);
+  for (const k of used) {
+    const g = k.glyph;
+    const x0 = g.x - ring;
+    const y0 = g.y - ring;
+    const x1 = g.x + g.width + ring;
+    const y1 = g.y + g.height + ring;
+    expect(x0 >= 0 && y0 >= 0 && x1 <= img.w && y1 <= img.h, `${label} 字形 ${k.ch} 的环带越出画布`).toBe(true);
+    for (let y = y0; y < y1; y++) mask.fill(1, y * img.w + x0, y * img.w + x1);
+    expect(region(img, x0, y0, x1 - x0, y1 - y0), `${label} 字形 ${k.ch} 区域字节 != 官方`).toEqual(
+      region(fontSrc, x0, y0, x1 - x0, y1 - y0),
+    );
+  }
+  let stray = 0;
+  for (let i = 0; i < mask.length; i++) {
+    if (mask[i]) continue;
+    const o = i * 4;
+    if (img.data[o] | img.data[o + 1] | img.data[o + 2] | img.data[o + 3]) stray++;
+  }
+  expect(stray, `${label} 清零面有残留非零像素（会改变 26/36px 的采样邻域）`).toBe(0);
+  return mask;
+}
+
 describe("房内需求集合与行钉", () => {
-  it("行钉不漂移：所有字面量/动态点的字符都在房内集合内", async () => {
+  it("行钉不漂移：所有字面量/动态点的字符都在房内全集内", async () => {
     assertRoomPins(ROOT); // 文案/行号一改就抛
     const { chars } = await room();
     for (const s of ROOM_LITERAL_SITES) {
@@ -162,7 +198,20 @@ describe("房内需求集合与行钉", () => {
     }
   }, TT);
 
-  it("房内需求恰为 114 字符、全部有帧（今日无漏字）", async () => {
+  it("基础集恰为 27 字、全部有帧；与独立字面量一致且是全集子集", async () => {
+    const b = base();
+    const full = await room();
+    expect([...b.chars].sort()).toEqual([...new Set(BASE_EXPECTED)].sort());
+    expect(b.chars.size).toBe(27);
+    expect(b.kept.length).toBe(27);
+    expect(b.noGlyph).toEqual([]);
+    expect([...b.kept].every((k) => k.code === k.glyph.id && k.glyph.width > 0 && k.glyph.height > 0)).toBe(true);
+    const codes = b.kept.map((k) => k.code);
+    expect(codes).toEqual([...codes].sort((a, b) => a - b)); // 生成器依赖 code 升序
+    for (const ch of b.chars) expect(full.chars.has(ch), `基础字 ${ch} 不在房内全集`).toBe(true);
+  }, TT);
+
+  it("房内全集恰为 114 字符、全部有帧（今日无漏字）", async () => {
     const { chars, kept, noGlyph } = await room();
     expect(chars.size).toBe(114);
     expect(kept.length).toBe(114);
@@ -182,103 +231,125 @@ describe("房内需求集合与行钉", () => {
     expect(listed.size).toBe(disk.size);
   }, TT);
 
-  it("48 关教学文本（选中层）每字符在集合内；选取规则钉住", async () => {
+  it("48 关教学文本（选中层）每字符在全集内；选取规则钉住", async () => {
     const { chars } = await room();
-    const withText = (await levels()).filter((l) => l.texts.length > 0);
+    const withText = await tutorialLevels(ROOT);
     expect(withText.map((l) => ({ id: l.id, filename: l.filename, selectedLayer: l.selectedLayer }))).toEqual(TUT_LEVELS);
     for (const l of withText) {
-      for (const t of l.texts) for (const ch of t) expect(chars.has(ch), `关卡 ${l.id} 的 ${ch} 不在房内集合`).toBe(true);
+      for (const t of l.texts) for (const ch of t) expect(chars.has(ch), `关卡 ${l.id} 的 ${ch} 不在房内全集`).toBe(true);
     }
     // 其余 46 关确无教学层文本（一旦某关新增 Tutorial_ 层却没进上面名单，这里红）
     const noText = (await levels()).filter((l) => l.texts.length === 0);
     expect(noText.length).toBe(46);
   }, TT);
+
+  it("BootScene 的教学关名单与 room.mjs 回算一致（否则教学关会装 27 字变体）", async () => {
+    const boot = stripComments(SRC("packages/client/src/scenes/BootScene.ts"));
+    const m = /const TUTORIAL_LEVEL_FILES = \[([^\]]*)\] as const;/.exec(boot);
+    expect(m, "BootScene 的 TUTORIAL_LEVEL_FILES 声明不见了").not.toBeNull();
+    const pinned = [...m![1].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
+    const recomputed = (await tutorialLevels(ROOT)).map((l) => l.filename);
+    expect(pinned).toEqual(recomputed);
+    expect(pinned).toEqual(TUT_LEVELS.map((l) => l.filename));
+  }, TT);
 });
 
-describe("房内 FONT_FULL 调用点分类", () => {
-  it("房内位图字只有 FONT_FULL 与 stoneButton 内部缺省两类；FONT_FULL 字面量字符都在集合内", async () => {
-    const { chars } = await room();
+describe("房内变体调用点分类", () => {
+  it("GameScene 用 this.roomFont、overlays 用 roomFontKey()；字面量字符都在基础集内", async () => {
+    const b = base();
     const parameterised: string[] = [];
-    let fullSites = 0;
+    let keyed = 0;
     let internalDefaults = 0;
     for (const file of IN_ROOM_FILES) {
+      const expectedKey = file.endsWith("GameScene.ts") ? "this.roomFont" : "roomFontKey()";
       for (const call of bitmapTextCalls(file)) {
         const key = call.parts[2] ?? "";
         if (key.includes("opts?.fontKey")) {
           internalDefaults++; // overlays.ts:131 stoneButton 内部缺省，字体由调用方 opts.fontKey 决定
           continue;
         }
-        expect(key, `${file}:${call.line} 用了 ${call.raw}——房内文案必须显式 FONT_FULL`).toBe("FONT_FULL");
-        fullSites++;
+        expect(key, `${file}:${call.line} 用了 ${call.raw}——房内文案必须走本关变体键 ${expectedKey}`).toBe(expectedKey);
+        keyed++;
         const text = literal(call.parts[3] ?? "");
         if (text === null) {
           parameterised.push(`${file}:${call.line}`);
           continue;
         }
-        for (const ch of text) expect(chars.has(ch), `${file}:${call.line} 的 ${ch} 不在房内集合`).toBe(true);
+        for (const ch of text) expect(b.chars.has(ch), `${file}:${call.line} 的 ${ch} 不在基础集`).toBe(true);
       }
     }
     expect(internalDefaults).toBe(1); // 只此一处 stoneButton 内部
-    expect(fullSites).toBe(5); // 1472 t.text / 1572 "00:00" / 186 暫停 / 300 limitStr / 356 游戏结束
+    expect(keyed).toBe(5); // GameScene 2（教学文本/时钟）+ overlays 3（暫停/limitStr/游戏结束）
     // 参数化点只能是被 sites/关卡文本交代的那两处
     expect(parameterised.sort()).toEqual([...PARAMETERISED].sort());
   }, TT);
 
-  it("stoneButton 房内六处显式 FONT_FULL，且 label 字面量字符都在集合内", async () => {
-    const { chars } = await room();
+  it("stoneButton 房内六处显式 roomFontKey()，且 label 字面量字符都在基础集内", async () => {
+    const b = base();
     const inRoom = stoneButtonCalls("packages/client/src/scenes/overlays.ts");
     expect(inRoom.length).toBe(6);
     for (const c of inRoom) {
-      expect(c.opts.includes("fontKey: FONT_FULL"), `overlays.ts:${c.line} 的 opts=${c.opts || "（无）"} 未声明 FONT_FULL`).toBe(true);
+      expect(c.opts.includes("fontKey: roomFontKey()"), `overlays.ts:${c.line} 的 opts=${c.opts || "（无）"} 未声明本关变体`).toBe(true);
       const text = literal(c.label);
       expect(text, `overlays.ts:${c.line} 的 label 应为字面量`).not.toBeNull();
-      for (const ch of text!) expect(chars.has(ch), `overlays.ts:${c.line} 的 ${ch} 不在房内集合`).toBe(true);
+      for (const ch of text!) expect(b.chars.has(ch), `overlays.ts:${c.line} 的 ${ch} 不在基础集`).toBe(true);
     }
   }, TT);
 });
 
-describe("在库产物 font-roomblank 的语义（原地清零：坐标/幅面/fnt 不动）", () => {
-  it("保留面（帧 ∪ ring 环带）逐字节等于官方原坐标；清零面全 0", async () => {
+describe("在库产物：两个变体都按原地清零语义（坐标/幅面/fnt 不动）", () => {
+  it("font-roomblank（114 字）：保留面逐字节等于官方，清零面全 0", async () => {
     const { kept } = await room();
     const used = kept.filter((k) => k.glyph.width > 0 && k.glyph.height > 0);
     expect(used.length).toBe(114);
-    const mask = new Uint8Array(blankPng.w * blankPng.h);
+    assertInPlace(blankPng, used, "font-roomblank");
+  }, TT);
+
+  it("font-roombase（27 字）：保留面逐字节等于官方，清零面全 0，且与全量变体同矩形同字节", () => {
+    const b = base();
+    const used = b.kept.filter((k) => k.glyph.width > 0 && k.glyph.height > 0);
+    expect(used.length).toBe(27);
+    assertInPlace(basePng, used, "font-roombase");
+    // 两个变体在基础字形的环带矩形上必须同字节（都照抄官方；任何一边算法漂移都会在这里现形）
     for (const k of used) {
       const g = k.glyph;
       const x0 = g.x - ring;
       const y0 = g.y - ring;
-      const x1 = g.x + g.width + ring;
-      const y1 = g.y + g.height + ring;
-      expect(x0 >= 0 && y0 >= 0 && x1 <= blankPng.w && y1 <= blankPng.h, `字形 ${k.ch} 的环带越出画布`).toBe(true);
-      for (let y = y0; y < y1; y++) mask.fill(1, y * blankPng.w + x0, y * blankPng.w + x1);
-      expect(region(blankPng, x0, y0, x1 - x0, y1 - y0), `字形 ${k.ch} 区域字节 != 官方`).toEqual(
-        region(fontSrc, x0, y0, x1 - x0, y1 - y0),
-      );
+      const w = g.width + 2 * ring;
+      const h = g.height + 2 * ring;
+      expect(region(basePng, x0, y0, w, h), `字形 ${k.ch} 两变体字节不同`).toEqual(region(blankPng, x0, y0, w, h));
     }
-    let stray = 0;
-    for (let i = 0; i < mask.length; i++) {
-      if (mask[i]) continue;
-      const o = i * 4;
-      if (blankPng.data[o] | blankPng.data[o + 1] | blankPng.data[o + 2] | blankPng.data[o + 3]) stray++;
-    }
-    expect(stray, "清零面有残留非零像素（会改变 26/36px 的采样邻域）").toBe(0);
-  }, TT);
-
-  it("幅面/chunks 与官方一致；产品不带自己的 fnt（客户端装官方 font.fnt）", async () => {
-    expect(blankPng.w).toBe(fontSrc.w);
-    expect(blankPng.h).toBe(fontSrc.h);
-    expect(`${blankPng.w}x${blankPng.h}`).toBe("2191x1024");
-    expect(blankPng.chunks).toBe(fontSrc.chunks);
-    expect(existsSync(path.join(ROOT, "assets/fonts/chinese/font-roomblank.fnt"))).toBe(false);
   });
 
-  it("冻结：产物体积/字形计数；loadFontFull 装 roomblank + 官方 fnt", () => {
-    expect(readFileSync(blankPngPath).length).toBe(795671);
+  it("两变体幅面/chunks 与官方一致；产品不带自己的 fnt（客户端装官方 font.fnt）", () => {
+    for (const [label, img] of [["font-roomblank", blankPng], ["font-roombase", basePng]] as const) {
+      expect(img.w, label).toBe(fontSrc.w);
+      expect(img.h, label).toBe(fontSrc.h);
+      expect(`${img.w}x${img.h}`, label).toBe("2191x1024");
+      expect(img.chunks, label).toBe(fontSrc.chunks);
+    }
+    expect(existsSync(path.join(ROOT, "assets/fonts/chinese/font-roomblank.fnt"))).toBe(false);
+    expect(existsSync(path.join(ROOT, "assets/fonts/chinese/font-roombase.fnt"))).toBe(false);
+  });
+
+  it("冻结：两产物体积/字形计数；loadRoomFont 按关选 URL 并装官方 fnt", () => {
+    const fullBytes = readFileSync(blankPngPath).length;
+    const baseBytes = readFileSync(basePngPath).length;
+    expect(fullBytes).toBe(795671);
+    expect(baseBytes).toBe(214876);
+    expect(baseBytes).toBeLessThan(fullBytes * 0.3); // 27/258 字形账，掉回全量说明清零口径坏了
     expect([...fnt.glyphs.values()].filter((g) => g.width > 0 && g.height > 0).length).toBe(258);
-    const boot = SRC("packages/client/src/scenes/BootScene.ts");
+    const boot = stripComments(SRC("packages/client/src/scenes/BootScene.ts"));
     expect(
-      boot.includes('load.bitmapFont(FONT_FULL, "/assets/fonts/chinese/font-roomblank.png", "/assets/fonts/chinese/font.fnt")'),
+      boot.includes(
+        'key === FONT_FULL ? "/assets/fonts/chinese/font-roomblank.png" : "/assets/fonts/chinese/font-roombase.png"',
+      ),
+      "loadRoomFont 的变体选择表达式漂移",
     ).toBe(true);
+    expect(boot.includes('"/assets/fonts/chinese/font.fnt"')).toBe(true);
+    expect(boot.includes('return (TUTORIAL_LEVEL_FILES as readonly string[]).includes(file) ? FONT_FULL : FONT_ROOM;')).toBe(true);
     expect(/load\.bitmapFont\(FONT_FULL[^)]*\/font\.png/.test(boot)).toBe(false);
+    // 官方全量 font.png 在客户端源码里必须已无任何引用
+    expect(stripComments(boot).match(/fonts\/chinese\/font\.png/g)).toBeNull();
   });
 });
