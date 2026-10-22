@@ -104,6 +104,10 @@ export class ForestRoom extends Room<RoomState> {
   private debugTimers: NodeJS.Timeout[] = [];
   /** 已就绪开钟标记（避免重复调度） */
   private startedOnce = false;
+  /** r36 量具（FW_DEBUG_ARM_WIN=1）：强制开门改为"武装后生效"。旧钩子 started 即开门，
+   *  弱网下新关客户端尚未加载完服务端就已判胜——下一关预取在换关链内起跳、结算窗与链
+   *  重叠，读数不可归因。仅基准使用；FW_DEBUG_FORCE_DOORS 单独开启时行为不变（e2e 依赖）。 */
+  private winArmed = false;
   /** FW_DUMP=1 诊断：内存缓冲、每 30 帧一次批量落盘（每步 appendFileSync 在 Windows
    * 上的阻塞会反过来污染输入到达时刻，诊断工具不得干扰被测系统） */
   private dumpBuf: string[] = [];
@@ -262,10 +266,17 @@ export class ForestRoom extends Room<RoomState> {
       }, 2000));
     }
     // 调试钩子（FW_DEBUG_FORCE_DOORS=1）：每 500ms 置双门 isOpen=true（模拟双角色站门内），
-    // 驱动真实的 25fps 扫帧 → isUp → win 判定路径（区别于 AUTO_WIN 直接注入 win 事件）
+    // 驱动真实的 25fps 扫帧 → isUp → win 判定路径（区别于 AUTO_WIN 直接注入 win 事件）。
+    // FW_DEBUG_ARM_WIN=1（r36 量具）：开门等 benchmark 在可玩帧后发 debug-arm-win，
+    // 否则 started 即判胜会把换关链与结算窗搅在一起（见 winArmed 字段注释）。
+    this.onMessage("debug-arm-win", () => {
+      if (process.env.FW_DEBUG_ARM_WIN === "1") this.winArmed = true;
+    });
     if (process.env.FW_DEBUG_FORCE_DOORS === "1") {
+      const requireArm = process.env.FW_DEBUG_ARM_WIN === "1";
       this.debugTimers.push(setInterval(() => {
         if (this.state.phase !== "started") return;
+        if (requireArm && !this.winArmed) return;
         this.world.doors.fireboy.isOpen = true;
         this.world.doors.watergirl.isOpen = true;
       }, 500));
@@ -451,6 +462,7 @@ export class ForestRoom extends Room<RoomState> {
     // 两钟并存会先到者开钟、后到者再开一次（相位机错乱）
     if (this.readyTimer) clearTimeout(this.readyTimer);
     this.state.phase = "ready";
+    this.winArmed = false;
     this.syncState();
     // 纯观测时间戳（e2e 路由回放的 t0 锚点）：不参与任何逻辑分支
     console.log(`[phase] ready @${Date.now()}`);
@@ -482,6 +494,7 @@ export class ForestRoom extends Room<RoomState> {
     this.userPaused = false;
     this.userPausedBy = null;
     this.state.phase = "ready";
+    this.winArmed = false;
     this.syncState();
     this.readyTimer = setTimeout(() => {
       if (this.state.phase !== "ready" || this.roles.size !== 2) return; // H-02 守卫，同 beginReady
