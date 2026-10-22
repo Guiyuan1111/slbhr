@@ -7,7 +7,7 @@
  * `.fnt` 侧只改写 <char> 的 x/y 与 <common> 的 scaleW/scaleH，度量面零变更。
  * 这里的职责只到"房内会画的中文需求到底是哪些字符"，像素合成由 build-font-room.mjs 做。
  *
- * 需求来自三类（件0 实测，见 TEMP/r24/census-room.mjs）：
+ * 需求来自三类（件0 实测，见 note/report/perf/2026-10-22-r24-room-font-subset.md）：
  *  1. 关卡教学文本：只有 tutorial 层的文本对象会进位图字，且客户端只取"选中的那一层"
  *     （level2.ts:590-595 Tutorial_keyboard ?? Tutorial_dual ?? Tutorial_single ?? 首个）。
  *  2. 行钉字面量：overlays/GameScene 里写死的几处中文。
