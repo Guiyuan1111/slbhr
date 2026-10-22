@@ -988,3 +988,33 @@ immutable；若素材替换而清单没重算，就会把旧哈希发给新文�
 **下一轮候选**：换关时 Phaser `sourceSize` 空引用的根因（旧纹理帧在动画/显示对象上的引用时序，
 两臂同型、基线既有）；换关落定后 Temple Finish 的保留/释放再账；4g 档小收益需更多轮次。
 素材再编码（任务 #42）仍是用户保留项，未经裁决不动。
+
+## 三十五、r38 增补（2026-10-23，WebGL TileSprite 私有画布 1×1 化）
+
+> 报告 `2026-10-23-r38-tilesprite-canvas.md`。Phaser 3.80 的 TileSprite 构造器按显示尺寸建一张
+> 私有 canvas（TileSprite.js:181），`CanvasTexture` 构造时再整幅 `getImageData`（CanvasTexture.js:118）；
+> 这张画布只在 Canvas 渲染器里当 `fillPattern` 底片，WebGL 渲染器只消费 pot 尺寸的 `fillPattern`。
+> forest_01 背景 1248×928 因此白占 **4.42MB canvas＋4.42MB ImageData**，且每次换关重复。本轮在
+> WebGL 下按 1×1 构造、撑回构造器本会落到的尺寸并停掉每帧画布重铺；Canvas 回退路径原样。像素
+> 门禁用同坐标原版全尺寸复制体对拍，覆盖背景、吊绳、罗马部件、容器子级与选关大厅。
+
+| 件 | 内容 | commit | 关键数字 |
+|---|---|---|---|
+| r38 件1 | `scenes/tileSprite.ts` 新增 `tileSpriteSize()`／`makeTileSprite()`：WebGL 检测、1×1 构造、宽度撑回、`updateDisplayOrigin()`、实例级 `updateCanvas` 只清 dirty；GameScene 5 处（背景/吊绳×2/罗马底座/容器内罗马杠）与 TempleScene 1 处（选关大厅）全改走 helper；`tile-sprite.test.ts` 9 例静态网＋行为网；`scripts/e2e/tilesprite.mjs` 新增 WebGL 逐对象像素门禁（A/B 整幅 RGBA、`ink>0`、私有画布 ≤4px²、`--temple` 走真实离房路径）；行号钉随 ±行数同步 | 本轮 | 每张 1248×928 背景不再分配 4.42MB canvas＋4.42MB ImageData；Canvas 渲染器路径不变 |
+| r38 件2 | 量具沿用 r36/r37（武装判胜＋结算窗静网门＋三窗拆账＋驻留快照），四档 A/B/A、每臂 2 会话×5 次换关；臂 A/A′＝r37 构建、B＝r38 | 快照本轮 24 份 `advance-r38-*` | 换关落定驻留逐次 **−4.42～−4.56MB**；UUID 私有纹理 A/A′ **80/80** → B **0/40**；换关→可玩 off **1111.7→1055.4ms（−56.3ms，−5.1%）**，B 低于 A/A′ 全部会话均值；4g −31.1／fast3g −44.2／slow3g +3.2ms 在散布内不主张；像素门禁 forest_01 Game 1/1＋Temple 1/1、forest_24 8/8，ndiff 全 0、私有画布全 1×1 |
+| r38 件3 | 末轮门禁与文档收口 | `docs` | typecheck 0 错、十一项 `--check` 逐字节、build `index-DEytQHYW` 109.12KB／gzip 36.96KB、vitest **30 文件/322 例**、det **48/48**、fixtures 6/6、prephase 5/5、roomtext 6/6·5/5、domskin 4/4、audiofamily／charsplay ALL PASS、treebake／groundcache ALL PASS、journey 7/7·3/3·6/6·4/4·3/3、route 双关 won（40,004／13,462ms）、regression won=true 零错零缺帧；`sourceSize` 页错三臂同量级（A 916／A′ 849／B 888 条），随会话换关次数增长，非本轮引入 |
+
+**三条可复用结论**：
+① **库对象的内存要分"账内/账外"两层看**：`textures.list` 的 `w·h·4` 只记 canvas，CanvasTexture
+同时持有的等大 ImageData 不在账内；forest 背景的实际白占是 4.42MB 的 2 倍。只看纹理账会低估
+一半，只盯堆快照又会漏掉 GPU 侧的纹理对象——两边都要对。
+② **"按小尺寸构造再撑回"必须复刻构造器语义并配像素门禁**：宽度取整/零回退、displayOrigin、
+`updateCanvas` 每帧重铺，任何一处漏掉都不报错（背景偏移半幅、首帧撑回整幅、Canvas 全黑）。
+用同坐标原版全尺寸复制体做整幅 RGBA 对拍，再加"私有画布 ≤4px²"的断言，才能同时锁住"画面不变"
+与"内存真的省了"。
+③ **这类固定成本的时序收益会被 RTT 与 fade 包络掩盖**：off 档能分离出 −56ms，4g/fast3g/slow3g
+在会话散布内；驻留（逐关重复、四档一致）才是本轮可强主张的收益，时序只作方向性结论。
+
+**下一轮候选**：`sourceSize` 空引用根因（页错随单会话换关次数增长，三臂同型、基线既有）；
+换关落定后 Temple Finish 的保留/释放再账；4g 档小于 100ms 的收益需更多轮次。素材再编码
+（任务 #42）仍是用户保留项，未经裁决不动。
