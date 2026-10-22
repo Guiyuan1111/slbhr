@@ -14,6 +14,10 @@
  * enterGame→Game、leaveToMenu→Temple、reloadLevel(advance 回声)→Game、__fwRestart→Game。
  * 不加黑幕（oracle bare start 同构）：EndMenu/GameOverMenu 出现、Boot→Menu 首入链、
  * PauseMenu 进出、CompleteScene launch。
+ *
+ * 位图字是可选件：FONT_MAIN 归 Boot 阻塞批，而弱网早入场那条路本场景会先于它起跑，
+ * 缺纹理时 add.bitmapText 抛错会把场景永久钉在 CREATING（幕下 ops 永不执行 = 进不了房），
+ * 所以按 exists 卫跳过——代价只是淡入段少一行字。
  */
 import Phaser from "phaser";
 import { FONT_MAIN } from "./BootScene";
@@ -27,7 +31,7 @@ const DOTS = ["Loading...", "Loading", "Loading.", "Loading.."];
 
 export class FadeScene extends Phaser.Scene {
   private shade!: Phaser.GameObjects.Rectangle;
-  private label!: Phaser.GameObjects.BitmapText;
+  private label: Phaser.GameObjects.BitmapText | null = null;
   private t0 = 0;
   private switched = false;
 
@@ -40,8 +44,15 @@ export class FadeScene extends Phaser.Scene {
     this.t0 = this.time.now;
     this.shade = this.add.rectangle(640, 480, 1280, 960, 0x000000, 1).setDepth(1000).setInteractive();
     this.shade.alpha = 0;
-    this.label = this.add.bitmapText(640, 480, FONT_MAIN, "Loading...", 30).setOrigin(0.5, 0.5).setDepth(1001);
-    this.label.alpha = 0;
+    // FONT_MAIN 由 Boot 阻塞批装载，而换屏可以早于它落定：弱网下立刻点建房、邀请深链直进
+    // 那条路上 enterGame 的暖装门在"暖装从未启动"时立即返回（main.ts:445），本场景于是先于
+    // Boot 的批起跑。此时 add.bitmapText 抛 `Invalid BitmapText key: font`（BitmapText 构造
+    // 在入显示列表之前），SceneManager.create 把状态钉死在 CREATING ⇒ 幕下的 ops 永不执行，
+    // 房间再也进不去。这张纹理缺不缺只决定淡入段有没有字，抛错却决定整条入场链活着还是死。
+    this.label = this.textures.exists(FONT_MAIN)
+      ? this.add.bitmapText(640, 480, FONT_MAIN, "Loading...", 30).setOrigin(0.5, 0.5).setDepth(1001)
+      : null;
+    if (this.label) this.label.alpha = 0;
     this.tweens.add({
       targets: this.shade,
       alpha: 1,
@@ -54,7 +65,7 @@ export class FadeScene extends Phaser.Scene {
         ops?.();
         this.switched = true;
         // oracle：旧 overlay（含文字）kill，新 overlay showText:false、alpha=1，下一 rAF 才起 q()
-        this.label.alpha = 0;
+        if (this.label) this.label.alpha = 0;
         this.time.delayedCall(0, () => {
           this.tweens.add({
             targets: this.shade,
@@ -71,7 +82,7 @@ export class FadeScene extends Phaser.Scene {
   update(): void {
     if (this.switched) return;
     const d = this.time.now - this.t0;
-    if (d > TEXT_DELAY_MS) {
+    if (d > TEXT_DELAY_MS && this.label) {
       this.label.alpha = 1;
       this.label.text = DOTS[Math.floor((d - TEXT_DELAY_MS) / DOT_MS) % 4];
     }
