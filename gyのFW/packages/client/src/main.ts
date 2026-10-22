@@ -9,10 +9,11 @@
 import Phaser from "phaser";
 import { type Role } from "@fw/shared";
 import { parseLevel, type LevelData } from "@fw/shared/level2";
+import { mechVariantId } from "@fw/shared/mech-needs";
 import { Net, type NetCallbacks } from "./net";
 import { KeyboardInput } from "./input";
 import { TouchControls } from "./touch";
-import { BootScene, bgWarmSettled, markEntryInFlight, setWarmBgmFamily, warmMechFor, warmRoomFontFor } from "./scenes/BootScene";
+import { BootScene, bgWarmSettled, markEntryInFlight, mechAtlasUrls, roomFontKey, roomFontPng, setWarmBgmFamily, warmMechFor, warmRoomFontFor } from "./scenes/BootScene";
 import { MenuScene } from "./scenes/MenuScene";
 import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
@@ -206,26 +207,56 @@ function show(err?: string): void {
   el.textContent = err ?? "";
 }
 
-/** 下一关 id（temple.json 序）：结算「继续」与 won 期预取共用同一口径——两处若算法
- *  分叉，预烘的就是另一关，等于白烘。无后继返回 undefined（原版最后一关无 Continue）。 */
-function nextTempleLevelId(fromEntry: { filename: string } | null): string | undefined {
+/** 下一关条目（temple.json 序）：结算「继续」与 won 期预取共用同一口径——两处若算法
+ *  分叉，预烘/预热的就是另一关，等于白做。无后继返回 undefined（原版最后一关无 Continue）。 */
+function nextTempleEntry(fromEntry: { filename: string } | null): { filename: string } | undefined {
   const idx = templeLevels.findIndex((lv) => lv.filename === fromEntry?.filename);
-  const next = idx >= 0 ? templeLevels[idx + 1] : undefined;
-  return next?.filename?.split("/").pop()?.replace(".json", "");
+  return idx >= 0 ? templeLevels[idx + 1] : undefined;
+}
+function nextTempleLevelId(fromEntry: { filename: string } | null): string | undefined {
+  return nextTempleEntry(fromEntry)?.filename.split("/").pop()?.replace(".json", "");
 }
 
-/** 结算期预取（r13）：won 之后到玩家点「继续」之间是纯空闲，把换关链里最重的两笔——
- *  关卡 JSON 拉取（基线 5–98ms）+ 整关地面烘焙（基线均值 66ms，落在帧间，表现为换关
- *  瞬间一次 146–182ms 掉帧）——挪进这段空闲。延后 500ms 起跳，避开 EndMenu 开板与星碑
- *  动效；预取失败或被离房取消一律静默（换关链自身仍会现拉现烘，正确性不依赖预取）。 */
+/** 换关字节预热（r36）：把下一关 preload 链上**必须现拉**的字节提前灌进 HTTP 缓存。
+ *  - 机关变体 PNG/JSON：每关必换（PNG 1–95KB、JSON ~0.7KB）；
+ *  - 房内字体 PNG：只在变体切换时（forest_01 / forest_bonus_1 ↔ 其余 46 关，
+ *    roombase 210.1KB / roomblank 795.7KB）；fnt 元数据跨变体共用，不预热。
+ *  链上 Phaser 仍按原路径声明装载：文本 JSON 吃服务端 1 天新鲜期（零请求），二进制 PNG
+ *  因 max-age=0 只付一次 304 复验（无正文）。本函数只碰 HTTP 缓存，不建纹理、不动键——
+ *  引擎侧装载与正确性完全不依赖它，失败静默。只预热 preload 链；建场后的音乐/结算板
+ *  不在此列（r34 件2：与房内字体抢管道实测拖慢进房 1.3s）。 */
+function warmNextLevelBytes(lv: LevelData, nextFile: string): void {
+  const urls = [...mechAtlasUrls(mechVariantId(lv))];
+  const nextFont = roomFontKey(nextFile);
+  if (nextFont !== roomFontKey(currentTempleEntry?.filename)) urls.push(roomFontPng(nextFont));
+  for (const url of urls) {
+    void fetch(url, { cache: "force-cache" })
+      .then((r) => r.arrayBuffer())
+      .catch(() => {
+        // 预热失败无副作用：换关链仍会按原路径现拉
+      });
+  }
+}
+
+/** 结算期预取（r13/r36）：won 之后到玩家点「继续」之间是纯空闲。r13 把关卡 JSON 拉取与
+ *  整关地面烘焙挪进这段空闲（延后 500ms，避开 EndMenu 开板与星碑动效）；r36 起把链上
+ *  现拉字节（机关变体 + 变体切换时的房内字体）当场起跳——下载越早开始，越能整笔藏进
+ *  结算停留。预取/预热失败一律静默（换关链自身仍会现拉现烘，正确性不依赖预取）。 */
 let groundPrefetchTimer: number | undefined;
 function prefetchNextLevel(): void {
   if (!phaser || !net) return;
-  const nextId = nextTempleLevelId(currentTempleEntry);
-  if (!nextId) return;
+  const next = nextTempleEntry(currentTempleEntry);
+  const nextId = next?.filename.split("/").pop()?.replace(".json", "");
+  if (!next || !nextId) return;
+  const lvP = fetchLevelCached(nextId);
+  void lvP
+    .then((lv) => {
+      if (phaser) warmNextLevelBytes(lv, next.filename);
+    })
+    .catch(() => {});
   window.clearTimeout(groundPrefetchTimer);
   groundPrefetchTimer = window.setTimeout(() => {
-    void fetchLevelCached(nextId)
+    void lvP
       .then((lv) => {
         if (phaser) GameScene.prepareGround(nextId, lv, phaser.textures);
       })

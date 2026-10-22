@@ -114,6 +114,13 @@ export function roomFontKey(levelFile?: string | null): string {
   return (TUTORIAL_LEVEL_FILES as readonly string[]).includes(file) ? FONT_FULL : FONT_ROOM;
 }
 
+/** 房内字体 PNG 路径（唯一出处：loadRoomFont 与 r36 结算窗预热共用）。
+ *  两变体互斥、共用同一份 fnt 元数据；换 URL 必须换键（见 FONT_FULL/FONT_ROOM 注释）。 */
+export function roomFontPng(key: string): string {
+  return key === FONT_FULL ? "/assets/fonts/chinese/font-roomblank.png" : "/assets/fonts/chinese/font-roombase.png";
+}
+const FONT_FNT = "/assets/fonts/chinese/font.fnt";
+
 /**
  * 房内字体装载声明（路径只在这里）：消费方在 preload 里无脑声明本关那把键——已缓存时 png 子文件
  * 静默跳过，fnt 元数据走一次条件复验（0 字节 304），队列空则当场 loadComplete。透明刷新回座时
@@ -130,11 +137,7 @@ export function loadRoomFont(load: Phaser.Loader.LoaderPlugin, levelFile?: strin
   // 都已停掉，旧键无活引用。
   const stale = key === FONT_FULL ? FONT_ROOM : FONT_FULL;
   if (load.scene.textures.exists(stale)) load.scene.textures.remove(stale);
-  load.bitmapFont(
-    key,
-    key === FONT_FULL ? "/assets/fonts/chinese/font-roomblank.png" : "/assets/fonts/chinese/font-roombase.png",
-    "/assets/fonts/chinese/font.fnt",
-  );
+  load.bitmapFont(key, roomFontPng(key), FONT_FNT);
 }
 
 /** 游戏内图集（Menu 首帧用不到）：进阶装载共用入口——已缓存的键 Phaser 自动跳过 */
@@ -155,6 +158,12 @@ export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
 let mechVariant: string | null = null;
 const WIND_ANIM_KEYS = ["wind_base", "wind_effect"] as const;
 
+/** 机关变体 PNG/JSON 路径（唯一出处：loadMechAtlas 与 r36 结算窗预热共用）。 */
+export function mechAtlasUrls(id: string): [string, string] {
+  const base = `/assets/atlasses/mech/MechAssets-${id}`;
+  return [`${base}.png`, `${base}.json`];
+}
+
 /** 本关机关图集装载（r30 唯一路径；生成器 scripts/split-mech-atlas.mjs）：
  *  48 关 → 24 个帧子集（`@fw/shared/mech-needs` 的 mechAtlasFrames）。r33 起每张变体把保留帧
  *  从 Slim 重打包到最小画布（1px 外框 + 间距，像素逐字节照抄；解码平均 1.75MiB，旧口径固定
@@ -170,7 +179,8 @@ export function loadMechAtlas(load: Phaser.Loader.LoaderPlugin, level: MechLevel
   if (load.scene.textures.exists(ATLAS_MECH)) load.scene.textures.remove(ATLAS_MECH);
   for (const key of WIND_ANIM_KEYS) if (load.scene.anims.exists(key)) load.scene.anims.remove(key);
   mechVariant = id;
-  load.atlas(ATLAS_MECH, `/assets/atlasses/mech/MechAssets-${id}.png`, `/assets/atlasses/mech/MechAssets-${id}.json`);
+  const [png, json] = mechAtlasUrls(id);
+  load.atlas(ATLAS_MECH, png, json);
 }
 
 /**

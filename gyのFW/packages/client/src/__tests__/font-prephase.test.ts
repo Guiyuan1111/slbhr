@@ -336,14 +336,19 @@ describe("r18 字体两段化：调用点分类", () => {
       ),
     ).toBe(true);
     const declFn = boot.indexOf("export function loadRoomFont");
+    const urlFn = boot.indexOf("export function roomFontPng");
     const atlasFnStart = boot.indexOf("export function loadGameAtlases");
     expect(declFn).toBeGreaterThan(-1);
+    expect(urlFn).toBeGreaterThan(-1);
+    expect(urlFn).toBeLessThan(declFn);
     expect(atlasFnStart).toBeGreaterThan(declFn);
-    const roomFn = boot.slice(declFn, atlasFnStart);
-    // 两把变体的 URL 与官方 fnt 都在 loadRoomFont 体内，且各只一处
+    // r36：两把变体的 URL 收进 roomFontPng（结算窗预热共用同一出处），
+    // 与官方 fnt 一起都落在 font 段内，且各只一处。
+    const roomFn = boot.slice(urlFn, atlasFnStart);
     expect(roomFn.includes("/assets/fonts/chinese/font-roomblank.png")).toBe(true);
     expect(roomFn.includes("/assets/fonts/chinese/font-roombase.png")).toBe(true);
     expect(roomFn.split('"/assets/fonts/chinese/font.fnt"').length - 1).toBe(1);
+    expect(roomFn).toContain("load.bitmapFont(key, roomFontPng(key), FONT_FNT)");
     // r28：Menu 暖装不知道下一关 ⇒ loadGameAtlases 不得再声明房内字体
     const atlasFn = boot.slice(atlasFnStart, boot.indexOf("export function loadCharsPlay", atlasFnStart));
     expect(atlasFn.includes("bitmapFont")).toBe(false);

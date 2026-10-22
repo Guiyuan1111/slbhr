@@ -319,7 +319,10 @@ describe("r30 装载点（客户端接线）", () => {
     expect(load).toContain("load.scene.textures.remove(ATLAS_MECH)");
     expect(load).toContain("load.scene.anims.remove(key)");
     expect(boot).toContain('const WIND_ANIM_KEYS = ["wind_base", "wind_effect"] as const');
-    expect(load).toContain('load.atlas(ATLAS_MECH, `/assets/atlasses/mech/MechAssets-${id}.png`, `/assets/atlasses/mech/MechAssets-${id}.json`)');
+    // r36：URL 由 mechAtlasUrls 单点构造（同源给结算窗预热），本处只消费
+    expect(boot).toContain("export function mechAtlasUrls(");
+    expect(load).toContain("const [png, json] = mechAtlasUrls(id)");
+    expect(load).toContain("load.atlas(ATLAS_MECH, png, json)");
   });
 
   it("GameScene.preload 声明本关变体；main.ts 在暖装门内补声明（落定后 no-op）", () => {

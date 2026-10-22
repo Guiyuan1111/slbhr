@@ -104,7 +104,9 @@ describe("装载 URL 收敛（Slim／Mini PNG + 官方或派生 JSON）", () => 
     const gate = boot.slice(boot.indexOf("export function loadGameAtlases"), boot.indexOf("export function loadMechAtlas"));
     expect(gate).not.toContain("ATLAS_MECH");
     expect(boot).toContain("export function loadMechAtlas(load: Phaser.Loader.LoaderPlugin, level: MechLevel): void");
-    expect(boot).toContain('load.atlas(ATLAS_MECH, `/assets/atlasses/mech/MechAssets-${id}.png`, `/assets/atlasses/mech/MechAssets-${id}.json`)');
+    // r36：变体 URL 由 mechAtlasUrls 单点拼出（装载与结算窗预热同源）
+    expect(boot).toContain("export function mechAtlasUrls(");
+    expect(boot).toContain("load.atlas(ATLAS_MECH, png, json)");
     expect(boot).toContain("mechVariantId(level)");
     // 同键重载会被 TextureManager.checkKey 静默跳过 ⇒ 换变体前必须卸纹理（r30 的换关正确性）
     expect(boot).toContain("load.scene.textures.remove(ATLAS_MECH)");
