@@ -10,6 +10,8 @@
 # 臂B 恒为当前工作树源码。
 # 档位透传：EXTRA_ARGS="--net 4g" 让三臂跑同一节流档（r21 加，与 ab-assets.sh 同式；
 # 换臂不动它，故三臂档位一致——弱网档的漂移带比本机 off 窄一个量级，见 r20 §五之一）。
+# 量具选择（r34 加）：TOOL=perf-load（默认）或 perf-resident——两者都支持 --no-build/--save，
+# 且都按同一 FILES 换臂；驻留档的档位参数无意义，EXTRA_ARGS 留空即可。
 #
 # 安全约束：本脚本会用 `git checkout <rev> -- $FILES` 临时改写工作树并在收尾恢复。
 # 共享工作树里这有风险，故开工前强制要求 $FILES 无未提交改动，否则直接退出。
@@ -22,6 +24,7 @@ LABEL_A="${LABEL_A:-era-a}"
 LABEL_B="${LABEL_B:-era-b}"
 LABEL_C="${LABEL_C:-era-a2}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
+TOOL="${TOOL:-perf-load}"
 
 dirty=$(git status --porcelain -- $FILES)
 if [ -n "$dirty" ]; then
@@ -46,7 +49,7 @@ build_and_measure () { # $1 = label, $2 = 说明
   npm run build >/dev/null 2>&1 || { echo "构建失败 $1"; exit 1; }
   local chunk; chunk=$(ls packages/client/dist/assets/index-*.js | head -1)
   echo "[$1] dist 入口=$(basename "$chunk") $2"
-  node --import tsx benchmark/perf-load.mjs --no-build --save "$1" $EXTRA_ARGS 2>&1 | tail -3
+  node --import tsx "benchmark/$TOOL.mjs" --no-build --save "$1" $EXTRA_ARGS 2>&1 | tail -3
 }
 
 echo "===== 臂1 $LABEL_A（源码代 $ERA_A）====="
