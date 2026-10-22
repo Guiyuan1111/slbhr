@@ -85,14 +85,15 @@ function walk(dir: string): string[] {
   return out;
 }
 
-describe("装载 URL 收敛（Slim PNG + 官方 JSON）", () => {
-  it("BootScene 的图集装载用 *_PNG 常量，常量指向 Slim；JSON 仍是官方", () => {
+describe("装载 URL 收敛（Slim／Mini PNG + 官方或派生 JSON）", () => {
+  it("BootScene 的图集装载用 *_PNG 常量：庙宇/菜单指向 Slim，弹窗指向 Mini（r32 画布收缩）", () => {
     const boot = stripComments(SRC("packages/client/src/scenes/BootScene.ts"));
     expect(boot).toContain('export const ATLAS_TEMPLE_PNG = "/assets/atlasses/Temples/forest/TempleAssetsSlim.png"');
-    expect(boot).toContain('export const ATLAS_POPUP_PNG = "/assets/atlasses/PopupAssetsSlim.png"');
+    expect(boot).toContain('export const ATLAS_POPUP_PNG = "/assets/atlasses/PopupAssetsMini.png"');
+    expect(boot).toContain('export const ATLAS_POPUP_JSON = "/assets/atlasses/PopupAssetsMini.json"');
     expect(boot).toContain('export const ATLAS_MENU_PNG = "/assets/atlasses/MenuAssetsSlim.png"');
     expect(boot).toContain('load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, "/assets/atlasses/Temples/forest/TempleAssets.json")');
-    expect(boot).toContain('load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, "/assets/atlasses/PopupAssets.json")');
+    expect(boot).toContain("load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, ATLAS_POPUP_JSON)");
     expect(boot).toContain('load.atlas(ATLAS_MENU, ATLAS_MENU_PNG, "/assets/atlasses/MenuAssets.json")');
   });
 
@@ -112,9 +113,9 @@ describe("装载 URL 收敛（Slim PNG + 官方 JSON）", () => {
     const temple = stripComments(SRC("packages/client/src/scenes/TempleScene.ts"));
     const menus = stripComments(SRC("packages/client/src/scenes/menus.ts"));
     expect(temple).toContain('this.load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, "/assets/atlasses/Temples/forest/TempleAssets.json")');
-    expect(menus).toContain('this.load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, "/assets/atlasses/PopupAssets.json")');
+    expect(menus).toContain("this.load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, ATLAS_POPUP_JSON)");
     expect(temple).toMatch(/import \{[^}]*ATLAS_TEMPLE_PNG[^}]*\} from "\.\/BootScene"/);
-    expect(menus).toMatch(/import \{[^}]*ATLAS_POPUP_PNG[^}]*\} from "\.\/BootScene"/);
+    expect(menus).toMatch(/import \{[^}]*ATLAS_POPUP_JSON[^}]*\} from "\.\/BootScene"/);
   });
 
   it("客户端源码里不再出现四张官方 PNG 的 URL（Slim 是唯一路径）", () => {

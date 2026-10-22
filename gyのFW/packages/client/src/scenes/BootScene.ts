@@ -49,12 +49,15 @@ export const ATLAS_PRELOADER = "preloader";
  *  先跑的一处会把图装进缓存，其余处按"键已存在"静默跳过，混用会让 Slim 是否生效取决于装载序。
  *  r30 起机关图集不再有整关共用的 Slim：48 关按消费帧集分成 24 个变体，由 `loadMechAtlas`
  *  用运行时算出的 id 取 `mech/MechAssets-<id>.{png,json}`（生成器 scripts/split-mech-atlas.mjs）。
- *  r31 起菜单图集同样走原地清零（Boot 批：195,797→84,297B），只有 Boot 这一处装载。 */
+ *  r31 起菜单图集同样走原地清零（Boot 批：195,797→84,297B），只有 Boot 这一处装载。
+ *  r32 起弹窗主图集不再用 2048² 的 Slim：6 个真帧重打包到 1086×696、清零帧别名到透明块
+ *  （生成器 `scripts/shrink-popup-main.mjs`），进房批解码 16.00→2.88MiB，帧名全部保留。 */
 export const ATLAS_TEMPLE_PNG = "/assets/atlasses/Temples/forest/TempleAssetsSlim.png";
-export const ATLAS_POPUP_PNG = "/assets/atlasses/PopupAssetsSlim.png";
+export const ATLAS_POPUP_PNG = "/assets/atlasses/PopupAssetsMini.png";
+export const ATLAS_POPUP_JSON = "/assets/atlasses/PopupAssetsMini.json";
 export const ATLAS_MENU_PNG = "/assets/atlasses/MenuAssetsSlim.png";
 /** 结算面板按关类型的三张图集（r29；生成器 `scripts/split-popup-finish.mjs`）：
- *  主图集 Slim 只留进房就会上屏的 PauseButton/PopupBackground/Confetti，结算板的图标、箭头与
+ *  主图集只留进房就会上屏的 PauseButton/PopupBackground/Confetti，结算板的图标、箭头与
  *  星碑（每类型 ~70KB）拆成按需图集，房间可玩之后由 `kickPopupFinish` 预取（不占进房阻塞批）。
  *  失效模式与 r23 chars-play 同形：缺帧走 `Texture.get` 的 `__BASE` 分支，所以星碑动画必须在
  *  该张落地之后注册（`buildFinishAnims` 的唯一调用点在 EndMenu.create，`loadPopupFinish` 已
@@ -131,7 +134,7 @@ export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
   load.atlas(ATLAS_CHARS_ENTRY, "/assets/atlasses/CharAssetsEntry.png", "/assets/atlasses/CharAssetsEntry.json");
   load.atlas(ATLAS_GROUND, "/assets/atlasses/GroundAssets.png", "/assets/atlasses/GroundAssets.json");
   load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, "/assets/atlasses/Temples/forest/TempleAssets.json");
-  load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, "/assets/atlasses/PopupAssets.json");
+  load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, ATLAS_POPUP_JSON);
   // r30：机关图集不在这里——它按关卡变体（loadMechAtlas），由关卡定出后声明。
   // r28：房内字体不在这里——Menu 暖装不知道下一关，按关变体只能由 GameScene.preload 声明。
 }
