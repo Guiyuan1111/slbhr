@@ -275,7 +275,9 @@ export class EndMenu extends Phaser.Scene {
     // 已清零，等于面板可用、只缺图标，不会落到 `__MISSING`（主图集 JSON 仍声明全部帧名）。
     const finishKey = popupFinishKey(d.type);
     const uiAtlas = this.textures.exists(finishKey) ? finishKey : ATLAS_POPUP;
-    if (uiAtlas === finishKey) buildFinishAnims(this, d.type);
+    // r39：无条件调用。纹理缺失时它会先摘掉指向已卸纹理的旧动画键再静默返回——若跳过，
+    // finalAt 的 stone.play 会每帧抛 sourceSize 空引用并中断回调，「继续」永不启用。
+    buildFinishAnims(this, d.type);
     const rows: Array<{ icon: string; ok: boolean; hide?: boolean }> = [
       { icon: "FinishIcon0000", ok: true },
       { icon: "DiamondsIcon0000", ok: d.diamonds >= d.diamondsTotal, hide: twoRows },

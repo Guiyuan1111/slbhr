@@ -73,7 +73,8 @@ export const ATLAS_MENU_JSON = "/assets/atlasses/MenuAssetsMini.json";
  *  星碑（每类型 ~70KB）拆成按需图集，房间可玩之后由 `kickPopupFinish` 预取（不占进房阻塞批）。
  *  失效模式与 r23 chars-play 同形：缺帧走 `Texture.get` 的 `__BASE` 分支，所以星碑动画必须在
  *  该张落地之后注册（`buildFinishAnims` 的唯一调用点在 EndMenu.create，`loadPopupFinish` 已
- *  在 preload 保证纹理到位；装载失败时调用方跳过注册并退回主图集的同名空帧）。 */
+ *  在 preload 保证纹理到位）。装载失败时 buildFinishAnims 摘掉旧键后静默返回：面板退回主图集
+ *  的同名空帧、星碑不播动画，但不会带着旧纹理的 Frame 去播（r39）。 */
 export const ATLAS_FINISH_GENERAL = "popup-finish-general";
 export const ATLAS_FINISH_SPEED = "popup-finish-speed";
 export const ATLAS_FINISH_PUZZLE = "popup-finish-puzzle";
@@ -517,9 +518,22 @@ export function buildCharAnims(a: Phaser.Animations.AnimationManager): void {
  *  该张落地（缺帧会让整张图集当成一帧贴满屏）。唯一调用点在 EndMenu.create——preload 用
  *  `loadPopupFinish` 声明过，正常路径此时已缓存；`GameScene.kickPopupFinish` 是更早的预取。
  *  键集与拆前逐字相同：general=`finish_stone_{1,2,3}`，speed/puzzle=`finish_stone_{tag}_{1,2,3}`，
- *  oracle 分段 1-7/8-14/15-21 @30fps once。 */
+ *  oracle 分段 1-7/8-14/15-21 @30fps once。
+ *
+ *  r39：这些键在全局 AnimationManager 里**跨面板存活**，而换关会卸掉另一种变体的纹理
+ *  （loadPopupFinish）。Animation 在 create 时已把帧名解析成 Frame 对象（Animation.js:454），
+ *  纹理一卸，旧键里的 Frame.data 即为 null；buildSeq 的 `exists` 幂等卫会让重建被跳过，
+ *  星碑 play 时 AnimationState.handleStart 读 `frame.data.sourceSize` 抛 TypeError，且每帧重试
+ *  （isPlaying 已置、hasStarted 停在 false），finalAt 回调中断 ⇒「继续」永不启用。
+ *  故每次开板先把三张变体的全部 9 个键摘掉，再按当前纹理重建。 */
 export function buildFinishAnims(scene: Phaser.Scene, type?: string | null): void {
   const key = popupFinishKey(type);
+  for (const v of Object.keys(FINISH_ATLASES) as FinishVariant[]) {
+    for (let stars = 1; stars <= 3; stars++) {
+      const stale = finishStoneAnimKey(v, stars);
+      if (scene.anims.exists(stale)) scene.anims.remove(stale);
+    }
+  }
   if (!scene.textures.exists(key)) return;
   const seq = buildSeq(scene.anims);
   const base = finishStonePrefix(type);

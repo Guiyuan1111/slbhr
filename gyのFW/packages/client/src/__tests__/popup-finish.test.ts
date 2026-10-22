@@ -331,7 +331,8 @@ describe("r29 装载批与调用点：结算图集只在可玩后取，动画只
     expect(preload.indexOf("loadRoomFont")).toBeLessThan(preload.indexOf("loadPopupFinish"));
     expect(endmenu).toContain("const finishKey = popupFinishKey(d.type)");
     expect(endmenu).toContain("const uiAtlas = this.textures.exists(finishKey) ? finishKey : ATLAS_POPUP;");
-    expect(endmenu).toContain("if (uiAtlas === finishKey) buildFinishAnims(this, d.type)");
+    expect(endmenu).toContain("buildFinishAnims(this, d.type);");
+    expect(endmenu).not.toContain("if (uiAtlas === finishKey) buildFinishAnims");
     // 类内 ATLAS_POPUP 只许出现在退回分支：别处出现即"结算板还在画清零帧"
     expect(endmenu.match(/ATLAS_POPUP/g)?.length).toBe(1);
     expect(endmenu).toContain("this.add.image(294.5, y, uiAtlas, row.icon)");
@@ -353,6 +354,12 @@ describe("r29 装载批与调用点：结算图集只在可玩后取，动画只
     expect([...build.matchAll(/seq\(`finish_stone_\$\{tag\}(\d)`/g)].map((m) => m[1])).toEqual(["1", "2", "3"]);
     for (const range of ["base, 1, 7, 30, 0", "base, 8, 14, 30, 0", "base, 15, 21, 30, 0"]) expect(build).toContain(range);
     expect(build).toContain('const tag = finishVariantOf(type) === "general" ? "" :');
+    // r39：换变体会卸掉旧纹理，动画键却跨面板存活；重建前必须把三张变体的 9 个键全摘掉，
+    // 且摘除要排在纹理存在守卫之前（守卫提前返回时也不能留下指向已销毁 Frame 的旧键）。
+    expect(build).toContain("for (const v of Object.keys(FINISH_ATLASES) as FinishVariant[])");
+    expect(build).toContain("for (let stars = 1; stars <= 3; stars++)");
+    expect(build).toContain("if (scene.anims.exists(stale)) scene.anims.remove(stale)");
+    expect(build.indexOf("scene.anims.remove(stale)")).toBeLessThan(build.indexOf("if (!scene.textures.exists(key)) return;"));
   });
 
   it("键集与拆前逐字相同：general=finish_stone_N，speed/puzzle=finish_stone_<v>_N；buildGameAnims 不再注册", () => {

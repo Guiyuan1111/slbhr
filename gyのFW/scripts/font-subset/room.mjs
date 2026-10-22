@@ -26,17 +26,17 @@ export const ROOM_LITERAL_SITES = [
   { file: "packages/client/src/scenes/overlays.ts", line: 193, texts: ["再试一次"], note: "PauseMenu stoneButton label" },
   { file: "packages/client/src/scenes/overlays.ts", line: 204, texts: ["返回菜单"], note: "PauseMenu stoneButton label" },
   { file: "packages/client/src/scenes/overlays.ts", line: 210, texts: ["继续"], note: "PauseMenu stoneButton label" },
-  { file: "packages/client/src/scenes/overlays.ts", line: 355, texts: ["继续"], note: "EndMenu stoneButton label" },
-  { file: "packages/client/src/scenes/overlays.ts", line: 379, texts: ["游戏结束"], note: "GameOverMenu 标题" },
-  { file: "packages/client/src/scenes/overlays.ts", line: 386, texts: ["返回菜单"], note: "GameOverMenu label" },
-  { file: "packages/client/src/scenes/overlays.ts", line: 397, texts: ["再试一次"], note: "GameOverMenu label" },
+  { file: "packages/client/src/scenes/overlays.ts", line: 357, texts: ["继续"], note: "EndMenu stoneButton label" },
+  { file: "packages/client/src/scenes/overlays.ts", line: 381, texts: ["游戏结束"], note: "GameOverMenu 标题" },
+  { file: "packages/client/src/scenes/overlays.ts", line: 388, texts: ["返回菜单"], note: "GameOverMenu label" },
+  { file: "packages/client/src/scenes/overlays.ts", line: 399, texts: ["再试一次"], note: "GameOverMenu label" },
   { file: "packages/client/src/scenes/GameScene.ts", line: 1625, texts: ["00:00"], note: "时钟初值" },
 ];
 
 /** 动态点：只声明"这一行仍产出这种字符"，不声明具体串。 */
 export const ROOM_DYNAMIC_SITES = [
   { file: "packages/client/src/scenes/GameScene.ts", line: 1663, re: /mmss\(clockSec\)/, chars: "0123456789:", note: "时钟 mm:ss（GameScene.ts:195 padStart(2,\"0\") + ':'）" },
-  { file: "packages/client/src/scenes/overlays.ts", line: 319, re: /padStart\(2, "0"\)/, chars: "0123456789:", note: "结算板时限文本 limitStr" },
+  { file: "packages/client/src/scenes/overlays.ts", line: 321, re: /padStart\(2, "0"\)/, chars: "0123456789:", note: "结算板时限文本 limitStr" },
 ];
 
 const lineOf = (root, file, line) => readFileSync(join(root, file), "utf8").split("\n")[line - 1];
