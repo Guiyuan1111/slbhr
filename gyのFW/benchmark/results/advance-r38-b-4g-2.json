@@ -1,0 +1,2914 @@
+{
+  "meta": {
+    "label": "r38-b-4g-2",
+    "runs": 5,
+    "git": "40add18",
+    "date": "2026-10-22T22:36:06.691Z",
+    "node": "v22.22.1",
+    "forceDoors": true,
+    "net": "4g",
+    "startLevel": "forest_01",
+    "dwellMs": 1200,
+    "note": "FW_DEBUG_FORCE_DOORS+ARM_WIN：可玩帧后才判胜；__fwNextLevel 直调=「继续」按钮本体；结算窗=won→点继续（静网 1.2s 后起算 dwell）；黑幕包络(500ms×2)计入墙钟不计入工作量"
+  },
+  "runs": [
+    {
+      "from": "forest_01",
+      "to": "forest_02",
+      "target": "forest_02",
+      "bakeMs": 95,
+      "bakeCount": 1,
+      "fetchCount": 0,
+      "advanceCount": 1,
+      "fetchMs": 0,
+      "advanceToFetch": null,
+      "sceneStopped": 957,
+      "sceneStarted": 1285.2,
+      "firstRenderMs": 1425.8,
+      "bakeToStart": 153.5,
+      "worstFrameMs": 9.4,
+      "worstGapMs": 189.6,
+      "gapBuildMs": 189.6,
+      "gapAfterMs": 140.5,
+      "callAtRaw": 15539.3,
+      "wonAtRaw": 9085.7,
+      "winToCallMs": 6453.6,
+      "idleMs": 5035,
+      "bakeStartRaw": 16671,
+      "tex": {
+        "totalMB": 58.02,
+        "big": [
+          [
+            "chars-play",
+            10.75
+          ],
+          [
+            "font-room",
+            8.56
+          ],
+          [
+            "ground",
+            8
+          ],
+          [
+            "chars",
+            5.07
+          ],
+          [
+            "groundTex",
+            4.96
+          ],
+          [
+            "TempleHall",
+            4
+          ],
+          [
+            "temple-finish",
+            3.72
+          ],
+          [
+            "popup",
+            2.88
+          ],
+          [
+            "temple",
+            2.63
+          ],
+          [
+            "popup-finish-general",
+            1.97
+          ],
+          [
+            "menu",
+            1.66
+          ],
+          [
+            "font",
+            1.45
+          ],
+          [
+            "GameName",
+            0.89
+          ],
+          [
+            "Beam",
+            0.51
+          ]
+        ]
+      },
+      "res": [
+        {
+          "u": "/assets/atlasses/CharAssetsEntry.json",
+          "s": 952,
+          "d": 11,
+          "ts": 0,
+          "eb": 361,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/GroundAssets.json",
+          "s": 952,
+          "d": 18,
+          "ts": 0,
+          "eb": 2210,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/Temples/forest/TempleAssetsCore.json",
+          "s": 952,
+          "d": 11,
+          "ts": 0,
+          "eb": 650,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/PopupAssetsMini.json",
+          "s": 952,
+          "d": 18,
+          "ts": 0,
+          "eb": 752,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-6e517153.png?v=56c795d7",
+          "s": 956,
+          "d": 14,
+          "ts": 0,
+          "eb": 11041,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-6e517153.json?v=9721cd90",
+          "s": 956,
+          "d": 15,
+          "ts": 0,
+          "eb": 461,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/fonts/chinese/font-roombase.png?v=15fddcdb",
+          "s": 956,
+          "d": 15,
+          "ts": 0,
+          "eb": 214876,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/fonts/chinese/font.fnt?v=f7e2c673",
+          "s": 957,
+          "d": 14,
+          "ts": 0,
+          "eb": 3580,
+          "w": "chain"
+        }
+      ],
+      "resKB": 0,
+      "chainKB": 0,
+      "postKB": 0,
+      "settle": [
+        {
+          "u": "/assets/fonts/chinese/font.fnt?v=f7e2c673",
+          "s": -477,
+          "d": 1,
+          "ts": 0,
+          "eb": 3580
+        },
+        {
+          "u": "/assets/atlasses/PopupFinishGeneral.json",
+          "s": -476,
+          "d": 2,
+          "ts": 0,
+          "eb": 502
+        },
+        {
+          "u": "/api/level/forest_02",
+          "s": -476,
+          "d": 106,
+          "ts": 1123,
+          "eb": 823
+        },
+        {
+          "u": "/assets/tilemaps/tilesets/Ground.json",
+          "s": -265,
+          "d": 4,
+          "ts": 0,
+          "eb": 293
+        },
+        {
+          "u": "/assets/tilemaps/tilesets/Chars.json",
+          "s": -265,
+          "d": 4,
+          "ts": 0,
+          "eb": 250
+        },
+        {
+          "u": "/assets/tilemaps/tilesets/Objects.json",
+          "s": -265,
+          "d": 4,
+          "ts": 0,
+          "eb": 406
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-6e517153.png?v=56c795d7",
+          "s": -256,
+          "d": 212,
+          "ts": 11341,
+          "eb": 11041
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-6e517153.json?v=9721cd90",
+          "s": -256,
+          "d": 104,
+          "ts": 761,
+          "eb": 461
+        },
+        {
+          "u": "/assets/fonts/chinese/font-roombase.png?v=15fddcdb",
+          "s": -256,
+          "d": 1631,
+          "ts": 215176,
+          "eb": 214876
+        }
+      ],
+      "settleKB": 223
+    },
+    {
+      "from": "forest_02",
+      "to": "forest_03",
+      "target": "forest_03",
+      "bakeMs": 20.3,
+      "bakeCount": 1,
+      "fetchCount": 0,
+      "advanceCount": 1,
+      "fetchMs": 0,
+      "advanceToFetch": null,
+      "sceneStopped": 904,
+      "sceneStarted": 1176,
+      "firstRenderMs": 1332.2,
+      "bakeToStart": 68.8,
+      "worstFrameMs": 11.1,
+      "worstGapMs": 211.1,
+      "gapBuildMs": 211.1,
+      "gapAfterMs": 156.1,
+      "callAtRaw": 22979,
+      "wonAtRaw": 19213.7,
+      "winToCallMs": 3765.3,
+      "idleMs": 2513,
+      "bakeStartRaw": 24086.2,
+      "tex": {
+        "totalMB": 61.96,
+        "big": [
+          [
+            "chars-play",
+            10.75
+          ],
+          [
+            "font-room",
+            8.56
+          ],
+          [
+            "ground",
+            8
+          ],
+          [
+            "chars",
+            5.07
+          ],
+          [
+            "groundTex",
+            4.96
+          ],
+          [
+            "mech",
+            4.14
+          ],
+          [
+            "TempleHall",
+            4
+          ],
+          [
+            "temple-finish",
+            3.72
+          ],
+          [
+            "popup",
+            2.88
+          ],
+          [
+            "temple",
+            2.63
+          ],
+          [
+            "popup-finish-speed",
+            1.97
+          ],
+          [
+            "menu",
+            1.66
+          ],
+          [
+            "font",
+            1.45
+          ],
+          [
+            "GameName",
+            0.89
+          ],
+          [
+            "Beam",
+            0.51
+          ]
+        ]
+      },
+      "res": [
+        {
+          "u": "/assets/atlasses/CharAssetsEntry.json",
+          "s": 900,
+          "d": 2,
+          "ts": 0,
+          "eb": 361,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/GroundAssets.json",
+          "s": 901,
+          "d": 14,
+          "ts": 0,
+          "eb": 2210,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/Temples/forest/TempleAssetsCore.json",
+          "s": 901,
+          "d": 13,
+          "ts": 0,
+          "eb": 650,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/PopupAssetsMini.json",
+          "s": 902,
+          "d": 12,
+          "ts": 0,
+          "eb": 752,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-84cba11e.png?v=b78c9b90",
+          "s": 902,
+          "d": 12,
+          "ts": 0,
+          "eb": 97167,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-84cba11e.json?v=39f61a80",
+          "s": 903,
+          "d": 12,
+          "ts": 0,
+          "eb": 455,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/fonts/chinese/font.fnt?v=f7e2c673",
+          "s": 903,
+          "d": 12,
+          "ts": 0,
+          "eb": 3580,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/PopupFinishSpeed.png",
+          "s": 1131,
+          "d": 447,
+          "ts": 69336,
+          "eb": 69036,
+          "w": "post"
+        },
+        {
+          "u": "/assets/atlasses/PopupFinishSpeed.json",
+          "s": 1131,
+          "d": 91,
+          "ts": 809,
+          "eb": 509,
+          "w": "post"
+        },
+        {
+          "u": "/assets/audio/s/LevelMusic_speed",
+          "s": 1175,
+          "d": 565,
+          "ts": 110124,
+          "eb": 109824,
+          "w": "post"
+        },
+        {
+          "u": "/assets/audio/s/LevelMusicFinish_speed",
+          "s": 1175,
+          "d": 482,
+          "ts": 70830,
+          "eb": 70530,
+          "w": "post"
+        }
+      ],
+      "resKB": 245.2,
+      "chainKB": 0,
+      "postKB": 245.2,
+      "settle": [
+        {
+          "u": "/assets/fonts/chinese/font.fnt?v=f7e2c673",
+          "s": -539,
+          "d": 7,
+          "ts": 0,
+          "eb": 3580
+        },
+        {
+          "u": "/assets/atlasses/PopupFinishGeneral.json",
+          "s": -539,
+          "d": 7,
+          "ts": 0,
+          "eb": 502
+        },
+        {
+          "u": "/api/level/forest_03",
+          "s": -539,
+          "d": 96,
+          "ts": 1112,
+          "eb": 812
+        },
+        {
+          "u": "/assets/tilemaps/tilesets/Ground.json",
+          "s": -303,
+          "d": 5,
+          "ts": 0,
+          "eb": 293
+        },
+        {
+          "u": "/assets/tilemaps/tilesets/Chars.json",
+          "s": -301,
+          "d": 6,
+          "ts": 0,
+          "eb": 250
+        },
+        {
+          "u": "/assets/tilemaps/tilesets/LargeObjects.json",
+          "s": -301,
+          "d": 95,
+          "ts": 549,
+          "eb": 249
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-84cba11e.png?v=b78c9b90",
+          "s": -154,
+          "d": 296,
+          "ts": 97467,
+          "eb": 97167
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-84cba11e.json?v=39f61a80",
+          "s": -154,
+          "d": 95,
+          "ts": 755,
+          "eb": 455
+        }
+      ],
+      "settleKB": 97.5
+    },
+    {
+      "from": "forest_03",
+      "to": "forest_04",
+      "target": "forest_04",
+      "bakeMs": 8.4,
+      "bakeCount": 1,
+      "fetchCount": 0,
+      "advanceCount": 1,
+      "fetchMs": 0,
+      "advanceToFetch": null,
+      "sceneStopped": 970.9,
+      "sceneStarted": 1234.2,
+      "firstRenderMs": 1351.2,
+      "bakeToStart": 85.4,
+      "worstFrameMs": 13,
+      "worstGapMs": 244.6,
+      "gapBuildMs": 244.6,
+      "gapAfterMs": 153,
+      "callAtRaw": 30123.1,
+      "wonAtRaw": 26349.9,
+      "winToCallMs": 3773.2,
+      "idleMs": 2512,
+      "bakeStartRaw": 31271.9,
+      "tex": {
+        "totalMB": 58.47,
+        "big": [
+          [
+            "chars-play",
+            10.75
+          ],
+          [
+            "font-room",
+            8.56
+          ],
+          [
+            "ground",
+            8
+          ],
+          [
+            "chars",
+            5.07
+          ],
+          [
+            "groundTex",
+            4.96
+          ],
+          [
+            "TempleHall",
+            4
+          ],
+          [
+            "temple-finish",
+            3.72
+          ],
+          [
+            "popup",
+            2.88
+          ],
+          [
+            "temple",
+            2.63
+          ],
+          [
+            "popup-finish-general",
+            1.97
+          ],
+          [
+            "menu",
+            1.66
+          ],
+          [
+            "font",
+            1.45
+          ],
+          [
+            "GameName",
+            0.89
+          ],
+          [
+            "mech",
+            0.65
+          ],
+          [
+            "Beam",
+            0.51
+          ]
+        ]
+      },
+      "res": [
+        {
+          "u": "/assets/atlasses/CharAssetsEntry.json",
+          "s": 962,
+          "d": 8,
+          "ts": 0,
+          "eb": 361,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/GroundAssets.json",
+          "s": 966,
+          "d": 22,
+          "ts": 0,
+          "eb": 2210,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/Temples/forest/TempleAssetsCore.json",
+          "s": 966,
+          "d": 22,
+          "ts": 0,
+          "eb": 650,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/PopupAssetsMini.json",
+          "s": 966,
+          "d": 22,
+          "ts": 0,
+          "eb": 752,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-e58ac064.json?v=6eaabc1f",
+          "s": 966,
+          "d": 22,
+          "ts": 0,
+          "eb": 565,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-e58ac064.png?v=ad054406",
+          "s": 966,
+          "d": 22,
+          "ts": 0,
+          "eb": 23852,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/fonts/chinese/font.fnt?v=f7e2c673",
+          "s": 967,
+          "d": 22,
+          "ts": 0,
+          "eb": 3580,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/PopupFinishGeneral.png",
+          "s": 1162,
+          "d": 87,
+          "ts": 300,
+          "eb": 71857,
+          "w": "post"
+        },
+        {
+          "u": "/assets/atlasses/PopupFinishGeneral.json",
+          "s": 1163,
+          "d": 4,
+          "ts": 0,
+          "eb": 502,
+          "w": "post"
+        }
+      ],
+      "resKB": 0.3,
+      "chainKB": 0,
+      "postKB": 0.3,
+      "settle": [
+        {
+          "u": "/assets/fonts/chinese/font.fnt?v=f7e2c673",
+          "s": -132,
+          "d": 7,
+          "ts": 0,
+          "eb": 3580
+        },
+        {
+          "u": "/assets/atlasses/PopupFinishSpeed.json",
+          "s": -132,
+          "d": 8,
+          "ts": 0,
+          "eb": 509
+        },
+        {
+          "u": "/api/level/forest_04",
+          "s": -132,
+          "d": 91,
+          "ts": 1169,
+          "eb": 869
+        },
+        {
+          "u": "/assets/tilemaps/tilesets/Ground.json",
+          "s": -6,
+          "d": 6,
+          "ts": 0,
+          "eb": 293
+        },
+        {
+          "u": "/assets/tilemaps/tilesets/Chars.json",
+          "s": -6,
+          "d": 7,
+          "ts": 0,
+          "eb": 250
+        },
+        {
+          "u": "/assets/tilemaps/tilesets/Objects.json",
+          "s": -6,
+          "d": 7,
+          "ts": 0,
+          "eb": 406
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-e58ac064.json?v=6eaabc1f",
+          "s": 111,
+          "d": 89,
+          "ts": 865,
+          "eb": 565
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-e58ac064.png?v=ad054406",
+          "s": 111,
+          "d": 136,
+          "ts": 24152,
+          "eb": 23852
+        }
+      ],
+      "settleKB": 25.6
+    },
+    {
+      "from": "forest_04",
+      "to": "forest_05",
+      "target": "forest_05",
+      "bakeMs": 13.6,
+      "bakeCount": 1,
+      "fetchCount": 0,
+      "advanceCount": 1,
+      "fetchMs": 0,
+      "advanceToFetch": null,
+      "sceneStopped": 711.9,
+      "sceneStarted": 972.3,
+      "firstRenderMs": 1063.7,
+      "bakeToStart": 79.2,
+      "worstFrameMs": 7,
+      "worstGapMs": 1259.5,
+      "gapBuildMs": 1259.5,
+      "gapAfterMs": 124.8,
+      "callAtRaw": 37472.5,
+      "wonAtRaw": 33751.9,
+      "winToCallMs": 3720.6,
+      "idleMs": 2514,
+      "bakeStartRaw": 38365.6,
+      "tex": {
+        "totalMB": 58.4,
+        "big": [
+          [
+            "chars-play",
+            10.75
+          ],
+          [
+            "font-room",
+            8.56
+          ],
+          [
+            "ground",
+            8
+          ],
+          [
+            "chars",
+            5.07
+          ],
+          [
+            "groundTex",
+            4.96
+          ],
+          [
+            "TempleHall",
+            4
+          ],
+          [
+            "temple-finish",
+            3.72
+          ],
+          [
+            "popup",
+            2.88
+          ],
+          [
+            "temple",
+            2.63
+          ],
+          [
+            "popup-finish-general",
+            1.97
+          ],
+          [
+            "menu",
+            1.66
+          ],
+          [
+            "font",
+            1.45
+          ],
+          [
+            "GameName",
+            0.89
+          ],
+          [
+            "mech",
+            0.57
+          ],
+          [
+            "Beam",
+            0.51
+          ]
+        ]
+      },
+      "res": [
+        {
+          "u": "/assets/atlasses/CharAssetsEntry.json",
+          "s": 706,
+          "d": 7,
+          "ts": 0,
+          "eb": 361,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/GroundAssets.json",
+          "s": 711,
+          "d": 20,
+          "ts": 0,
+          "eb": 2210,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/Temples/forest/TempleAssetsCore.json",
+          "s": 711,
+          "d": 16,
+          "ts": 0,
+          "eb": 650,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/PopupAssetsMini.json",
+          "s": 711,
+          "d": 19,
+          "ts": 0,
+          "eb": 752,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-2a27ddd0.json?v=959e2539",
+          "s": 711,
+          "d": 19,
+          "ts": 0,
+          "eb": 504,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-2a27ddd0.png?v=70fc7ffa",
+          "s": 711,
+          "d": 19,
+          "ts": 0,
+          "eb": 17874,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/fonts/chinese/font.fnt?v=f7e2c673",
+          "s": 712,
+          "d": 20,
+          "ts": 0,
+          "eb": 3580,
+          "w": "chain"
+        }
+      ],
+      "resKB": 0,
+      "chainKB": 0,
+      "postKB": 0,
+      "settle": [
+        {
+          "u": "/assets/fonts/chinese/font.fnt?v=f7e2c673",
+          "s": -606,
+          "d": 2,
+          "ts": 0,
+          "eb": 3580
+        },
+        {
+          "u": "/assets/atlasses/PopupFinishGeneral.json",
+          "s": -606,
+          "d": 3,
+          "ts": 0,
+          "eb": 502
+        },
+        {
+          "u": "/api/level/forest_05",
+          "s": -605,
+          "d": 88,
+          "ts": 1130,
+          "eb": 830
+        },
+        {
+          "u": "/assets/tilemaps/tilesets/Ground.json",
+          "s": -401,
+          "d": 2,
+          "ts": 0,
+          "eb": 293
+        },
+        {
+          "u": "/assets/tilemaps/tilesets/Chars.json",
+          "s": -400,
+          "d": 3,
+          "ts": 0,
+          "eb": 250
+        },
+        {
+          "u": "/assets/tilemaps/tilesets/Objects.json",
+          "s": -400,
+          "d": 3,
+          "ts": 0,
+          "eb": 406
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-2a27ddd0.png?v=70fc7ffa",
+          "s": -277,
+          "d": 130,
+          "ts": 18174,
+          "eb": 17874
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-2a27ddd0.json?v=959e2539",
+          "s": -277,
+          "d": 89,
+          "ts": 804,
+          "eb": 504
+        }
+      ],
+      "settleKB": 19.6
+    },
+    {
+      "from": "forest_05",
+      "to": "forest_06",
+      "target": "forest_06",
+      "bakeMs": 6.4,
+      "bakeCount": 1,
+      "fetchCount": 0,
+      "advanceCount": 1,
+      "fetchMs": 0,
+      "advanceToFetch": null,
+      "sceneStopped": 683.7,
+      "sceneStarted": 832.8,
+      "firstRenderMs": 925.8,
+      "bakeToStart": 9.6,
+      "worstFrameMs": 3,
+      "worstGapMs": 1122.9,
+      "gapBuildMs": 1122.9,
+      "gapAfterMs": 133.1,
+      "callAtRaw": 44998.5,
+      "wonAtRaw": 41272.2,
+      "winToCallMs": 3726.3,
+      "idleMs": 2520,
+      "bakeStartRaw": 45821.7,
+      "tex": {
+        "totalMB": 57.82,
+        "big": [
+          [
+            "chars-play",
+            10.75
+          ],
+          [
+            "font-room",
+            8.56
+          ],
+          [
+            "ground",
+            8
+          ],
+          [
+            "chars",
+            5.07
+          ],
+          [
+            "groundTex",
+            4.96
+          ],
+          [
+            "TempleHall",
+            4
+          ],
+          [
+            "temple-finish",
+            3.72
+          ],
+          [
+            "popup",
+            2.88
+          ],
+          [
+            "temple",
+            2.63
+          ],
+          [
+            "popup-finish-speed",
+            1.97
+          ],
+          [
+            "menu",
+            1.66
+          ],
+          [
+            "font",
+            1.45
+          ],
+          [
+            "GameName",
+            0.89
+          ],
+          [
+            "Beam",
+            0.51
+          ]
+        ]
+      },
+      "res": [
+        {
+          "u": "/assets/atlasses/CharAssetsEntry.json",
+          "s": 683,
+          "d": 4,
+          "ts": 0,
+          "eb": 361,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/GroundAssets.json",
+          "s": 683,
+          "d": 13,
+          "ts": 0,
+          "eb": 2210,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/Temples/forest/TempleAssetsCore.json",
+          "s": 683,
+          "d": 8,
+          "ts": 0,
+          "eb": 650,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/PopupAssetsMini.json",
+          "s": 683,
+          "d": 12,
+          "ts": 0,
+          "eb": 752,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-57dee462.png?v=528666cc",
+          "s": 683,
+          "d": 12,
+          "ts": 0,
+          "eb": 68,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-57dee462.json?v=3d4b993a",
+          "s": 683,
+          "d": 12,
+          "ts": 0,
+          "eb": 323,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/fonts/chinese/font.fnt?v=f7e2c673",
+          "s": 683,
+          "d": 12,
+          "ts": 0,
+          "eb": 3580,
+          "w": "chain"
+        },
+        {
+          "u": "/assets/atlasses/PopupFinishSpeed.png",
+          "s": 832,
+          "d": 85,
+          "ts": 300,
+          "eb": 69036,
+          "w": "post"
+        },
+        {
+          "u": "/assets/atlasses/PopupFinishSpeed.json",
+          "s": 832,
+          "d": 4,
+          "ts": 0,
+          "eb": 509,
+          "w": "post"
+        }
+      ],
+      "resKB": 0.3,
+      "chainKB": 0,
+      "postKB": 0.3,
+      "settle": [
+        {
+          "u": "/assets/fonts/chinese/font.fnt?v=f7e2c673",
+          "s": -536,
+          "d": 4,
+          "ts": 0,
+          "eb": 3580
+        },
+        {
+          "u": "/assets/atlasses/PopupFinishGeneral.json",
+          "s": -536,
+          "d": 4,
+          "ts": 0,
+          "eb": 502
+        },
+        {
+          "u": "/api/level/forest_06",
+          "s": -535,
+          "d": 92,
+          "ts": 1033,
+          "eb": 733
+        },
+        {
+          "u": "/assets/tilemaps/tilesets/Ground.json",
+          "s": -371,
+          "d": 3,
+          "ts": 0,
+          "eb": 293
+        },
+        {
+          "u": "/assets/tilemaps/tilesets/Chars.json",
+          "s": -371,
+          "d": 3,
+          "ts": 0,
+          "eb": 250
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-57dee462.png?v=528666cc",
+          "s": -362,
+          "d": 89,
+          "ts": 368,
+          "eb": 68
+        },
+        {
+          "u": "/assets/atlasses/mech/MechAssets-57dee462.json?v=3d4b993a",
+          "s": -362,
+          "d": 91,
+          "ts": 623,
+          "eb": 323
+        }
+      ],
+      "settleKB": 2
+    }
+  ],
+  "phaseLog": [
+    {
+      "t": 594,
+      "phase": "",
+      "open": true
+    },
+    {
+      "t": 3614,
+      "phase": "lobby",
+      "open": true
+    },
+    {
+      "t": 5770,
+      "phase": "ready",
+      "open": true
+    },
+    {
+      "t": 7220,
+      "phase": "started",
+      "open": true
+    },
+    {
+      "t": 9099,
+      "phase": "won",
+      "open": true
+    },
+    {
+      "t": 15705,
+      "phase": "ready",
+      "open": true
+    },
+    {
+      "t": 18114,
+      "phase": "started",
+      "open": true
+    },
+    {
+      "t": 19216,
+      "phase": "won",
+      "open": true
+    },
+    {
+      "t": 23151,
+      "phase": "ready",
+      "open": true
+    },
+    {
+      "t": 25139,
+      "phase": "started",
+      "open": true
+    },
+    {
+      "t": 26731,
+      "phase": "won",
+      "open": true
+    },
+    {
+      "t": 30805,
+      "phase": "ready",
+      "open": true
+    },
+    {
+      "t": 32640,
+      "phase": "started",
+      "open": true
+    },
+    {
+      "t": 33613,
+      "phase": "won",
+      "open": true
+    },
+    {
+      "t": 37671,
+      "phase": "ready",
+      "open": true
+    },
+    {
+      "t": 39702,
+      "phase": "started",
+      "open": true
+    },
+    {
+      "t": 41140,
+      "phase": "won",
+      "open": true
+    },
+    {
+      "t": 45131,
+      "phase": "ready",
+      "open": true
+    }
+  ],
+  "summary": {
+    "bakeMsMean": 28.7,
+    "bakeMsMedian": 13.6,
+    "fetchMsMean": 0,
+    "firstRenderMsMean": 1219.7,
+    "firstRenderMsMedian": 1332.2,
+    "sceneStartedMsMean": 1100.1,
+    "worstFrameMsMean": 8.7,
+    "worstFrameMsMax": 13,
+    "worstGapMsMean": 605.5,
+    "worstGapMsMax": 1259.5,
+    "gapBuildMsMean": 605.5,
+    "gapAfterMsMean": 141.5,
+    "bakeCountTotal": 5,
+    "zeroNetworkRuns": 5,
+    "hitchChain": 44,
+    "hitchChainMsMax": 1259.5,
+    "hitchIdle": 238,
+    "hitchIdleMsMax": 1314.7,
+    "resKBMean": 49.2,
+    "chainKBMean": 0,
+    "settleKBMean": 73.5,
+    "postKBMean": 49.2,
+    "resReqMean": 8.8,
+    "texMBMean": 58.9
+  },
+  "assets": [
+    {
+      "url": "/assets/fonts/chinese/font-roombase.png?v=15fddcdb",
+      "hits": [
+        {
+          "run": 1,
+          "w": "settle",
+          "kb": 210.1
+        }
+      ]
+    },
+    {
+      "url": "/assets/audio/s/LevelMusic_speed",
+      "hits": [
+        {
+          "run": 2,
+          "w": "post",
+          "kb": 107.5
+        }
+      ]
+    },
+    {
+      "url": "/assets/atlasses/mech/MechAssets-84cba11e.png?v=b78c9b90",
+      "hits": [
+        {
+          "run": 2,
+          "w": "settle",
+          "kb": 95.2
+        }
+      ]
+    },
+    {
+      "url": "/assets/audio/s/LevelMusicFinish_speed",
+      "hits": [
+        {
+          "run": 2,
+          "w": "post",
+          "kb": 69.2
+        }
+      ]
+    },
+    {
+      "url": "/assets/atlasses/PopupFinishSpeed.png",
+      "hits": [
+        {
+          "run": 2,
+          "w": "post",
+          "kb": 67.7
+        }
+      ]
+    },
+    {
+      "url": "/assets/atlasses/mech/MechAssets-e58ac064.png?v=ad054406",
+      "hits": [
+        {
+          "run": 3,
+          "w": "settle",
+          "kb": 23.6
+        }
+      ]
+    },
+    {
+      "url": "/assets/atlasses/mech/MechAssets-2a27ddd0.png?v=70fc7ffa",
+      "hits": [
+        {
+          "run": 4,
+          "w": "settle",
+          "kb": 17.7
+        }
+      ]
+    },
+    {
+      "url": "/assets/atlasses/mech/MechAssets-6e517153.png?v=56c795d7",
+      "hits": [
+        {
+          "run": 1,
+          "w": "settle",
+          "kb": 11.1
+        }
+      ]
+    },
+    {
+      "url": "/api/level/forest_02",
+      "hits": [
+        {
+          "run": 1,
+          "w": "settle",
+          "kb": 1.1
+        }
+      ]
+    },
+    {
+      "url": "/api/level/forest_03",
+      "hits": [
+        {
+          "run": 2,
+          "w": "settle",
+          "kb": 1.1
+        }
+      ]
+    },
+    {
+      "url": "/api/level/forest_04",
+      "hits": [
+        {
+          "run": 3,
+          "w": "settle",
+          "kb": 1.1
+        }
+      ]
+    },
+    {
+      "url": "/api/level/forest_05",
+      "hits": [
+        {
+          "run": 4,
+          "w": "settle",
+          "kb": 1.1
+        }
+      ]
+    },
+    {
+      "url": "/api/level/forest_06",
+      "hits": [
+        {
+          "run": 5,
+          "w": "settle",
+          "kb": 1
+        }
+      ]
+    }
+  ],
+  "hitches": [
+    {
+      "t": 3096.9,
+      "gap": 1314.7,
+      "phase": "idle"
+    },
+    {
+      "t": 3244,
+      "gap": 111.9,
+      "phase": "idle"
+    },
+    {
+      "t": 3565,
+      "gap": 88.5,
+      "phase": "idle"
+    },
+    {
+      "t": 3750.8,
+      "gap": 105.7,
+      "phase": "idle"
+    },
+    {
+      "t": 4015.1,
+      "gap": 89.2,
+      "phase": "idle"
+    },
+    {
+      "t": 4140.1,
+      "gap": 92.3,
+      "phase": "idle"
+    },
+    {
+      "t": 4434,
+      "gap": 133.9,
+      "phase": "idle"
+    },
+    {
+      "t": 4709.3,
+      "gap": 172.4,
+      "phase": "idle"
+    },
+    {
+      "t": 4862.1,
+      "gap": 136.3,
+      "phase": "idle"
+    },
+    {
+      "t": 5105.1,
+      "gap": 165.8,
+      "phase": "idle"
+    },
+    {
+      "t": 5233.5,
+      "gap": 128.4,
+      "phase": "idle"
+    },
+    {
+      "t": 5519.5,
+      "gap": 220.8,
+      "phase": "idle"
+    },
+    {
+      "t": 5768.7,
+      "gap": 231.4,
+      "phase": "idle"
+    },
+    {
+      "t": 5934,
+      "gap": 130.2,
+      "phase": "idle"
+    },
+    {
+      "t": 6387.3,
+      "gap": 114.2,
+      "phase": "idle"
+    },
+    {
+      "t": 6493.3,
+      "gap": 106,
+      "phase": "idle"
+    },
+    {
+      "t": 6581.3,
+      "gap": 88,
+      "phase": "idle"
+    },
+    {
+      "t": 6692.8,
+      "gap": 94.5,
+      "phase": "idle"
+    },
+    {
+      "t": 6779.7,
+      "gap": 86.9,
+      "phase": "idle"
+    },
+    {
+      "t": 7219.7,
+      "gap": 225.4,
+      "phase": "idle"
+    },
+    {
+      "t": 7302.3,
+      "gap": 82.6,
+      "phase": "idle"
+    },
+    {
+      "t": 7445.1,
+      "gap": 142.8,
+      "phase": "idle"
+    },
+    {
+      "t": 7553.4,
+      "gap": 108.3,
+      "phase": "idle"
+    },
+    {
+      "t": 7665.4,
+      "gap": 112,
+      "phase": "idle"
+    },
+    {
+      "t": 7771.1,
+      "gap": 105.7,
+      "phase": "idle"
+    },
+    {
+      "t": 7882.1,
+      "gap": 111,
+      "phase": "idle"
+    },
+    {
+      "t": 7979.5,
+      "gap": 97.4,
+      "phase": "idle"
+    },
+    {
+      "t": 8079.8,
+      "gap": 100.3,
+      "phase": "idle"
+    },
+    {
+      "t": 8181.3,
+      "gap": 101.5,
+      "phase": "idle"
+    },
+    {
+      "t": 8287,
+      "gap": 105.7,
+      "phase": "idle"
+    },
+    {
+      "t": 8387.7,
+      "gap": 100.7,
+      "phase": "idle"
+    },
+    {
+      "t": 8499.7,
+      "gap": 112,
+      "phase": "idle"
+    },
+    {
+      "t": 8601.4,
+      "gap": 101.7,
+      "phase": "idle"
+    },
+    {
+      "t": 8711,
+      "gap": 109.6,
+      "phase": "idle"
+    },
+    {
+      "t": 8819.4,
+      "gap": 108.4,
+      "phase": "idle"
+    },
+    {
+      "t": 8944.8,
+      "gap": 125.4,
+      "phase": "idle"
+    },
+    {
+      "t": 9081.7,
+      "gap": 136.9,
+      "phase": "idle"
+    },
+    {
+      "t": 9301.4,
+      "gap": 203,
+      "phase": "idle"
+    },
+    {
+      "t": 9459.3,
+      "gap": 157.9,
+      "phase": "idle"
+    },
+    {
+      "t": 9591.3,
+      "gap": 132,
+      "phase": "idle"
+    },
+    {
+      "t": 9721.2,
+      "gap": 129.9,
+      "phase": "idle"
+    },
+    {
+      "t": 9905.9,
+      "gap": 184.7,
+      "phase": "idle"
+    },
+    {
+      "t": 10053.7,
+      "gap": 147.8,
+      "phase": "idle"
+    },
+    {
+      "t": 10195.2,
+      "gap": 141.5,
+      "phase": "idle"
+    },
+    {
+      "t": 10348,
+      "gap": 152.8,
+      "phase": "idle"
+    },
+    {
+      "t": 10587.5,
+      "gap": 223.8,
+      "phase": "idle"
+    },
+    {
+      "t": 10739.8,
+      "gap": 152.3,
+      "phase": "idle"
+    },
+    {
+      "t": 10891.4,
+      "gap": 151.6,
+      "phase": "idle"
+    },
+    {
+      "t": 11103.6,
+      "gap": 212.2,
+      "phase": "idle"
+    },
+    {
+      "t": 11198.8,
+      "gap": 95.2,
+      "phase": "idle"
+    },
+    {
+      "t": 11344,
+      "gap": 145.2,
+      "phase": "idle"
+    },
+    {
+      "t": 11495.9,
+      "gap": 151.9,
+      "phase": "idle"
+    },
+    {
+      "t": 11643.8,
+      "gap": 147.9,
+      "phase": "idle"
+    },
+    {
+      "t": 11796.3,
+      "gap": 152.5,
+      "phase": "idle"
+    },
+    {
+      "t": 11940.4,
+      "gap": 144.1,
+      "phase": "idle"
+    },
+    {
+      "t": 12085.9,
+      "gap": 145.5,
+      "phase": "idle"
+    },
+    {
+      "t": 12236.7,
+      "gap": 150.8,
+      "phase": "idle"
+    },
+    {
+      "t": 12393.3,
+      "gap": 156.6,
+      "phase": "idle"
+    },
+    {
+      "t": 12543.6,
+      "gap": 150.3,
+      "phase": "idle"
+    },
+    {
+      "t": 12703.7,
+      "gap": 160.1,
+      "phase": "idle"
+    },
+    {
+      "t": 12850.6,
+      "gap": 146.9,
+      "phase": "idle"
+    },
+    {
+      "t": 13004.3,
+      "gap": 153.7,
+      "phase": "idle"
+    },
+    {
+      "t": 13149.5,
+      "gap": 145.2,
+      "phase": "idle"
+    },
+    {
+      "t": 13287.4,
+      "gap": 137.9,
+      "phase": "idle"
+    },
+    {
+      "t": 13434.2,
+      "gap": 146.8,
+      "phase": "idle"
+    },
+    {
+      "t": 13579,
+      "gap": 144.8,
+      "phase": "idle"
+    },
+    {
+      "t": 13782.3,
+      "gap": 203.3,
+      "phase": "idle"
+    },
+    {
+      "t": 13921.5,
+      "gap": 139.2,
+      "phase": "idle"
+    },
+    {
+      "t": 14056.1,
+      "gap": 134.6,
+      "phase": "idle"
+    },
+    {
+      "t": 14203.1,
+      "gap": 147,
+      "phase": "idle"
+    },
+    {
+      "t": 14362.7,
+      "gap": 159.6,
+      "phase": "idle"
+    },
+    {
+      "t": 14625.7,
+      "gap": 245.1,
+      "phase": "idle"
+    },
+    {
+      "t": 14773.9,
+      "gap": 148.2,
+      "phase": "idle"
+    },
+    {
+      "t": 14937.6,
+      "gap": 163.7,
+      "phase": "idle"
+    },
+    {
+      "t": 15094.9,
+      "gap": 157.3,
+      "phase": "idle"
+    },
+    {
+      "t": 15235.7,
+      "gap": 140.8,
+      "phase": "idle"
+    },
+    {
+      "t": 15393.5,
+      "gap": 157.8,
+      "phase": "idle"
+    },
+    {
+      "t": 15537.5,
+      "gap": 144,
+      "phase": "idle"
+    },
+    {
+      "t": 15704.5,
+      "gap": 167,
+      "phase": "chain#1"
+    },
+    {
+      "t": 15797.6,
+      "gap": 93.1,
+      "phase": "chain#1"
+    },
+    {
+      "t": 15895.2,
+      "gap": 97.6,
+      "phase": "chain#1"
+    },
+    {
+      "t": 15987.3,
+      "gap": 92.1,
+      "phase": "chain#1"
+    },
+    {
+      "t": 16114.3,
+      "gap": 127,
+      "phase": "chain#1"
+    },
+    {
+      "t": 16310.1,
+      "gap": 179.9,
+      "phase": "chain#1"
+    },
+    {
+      "t": 16496.3,
+      "gap": 186.2,
+      "phase": "chain#1"
+    },
+    {
+      "t": 16824.5,
+      "gap": 189.6,
+      "phase": "chain#1"
+    },
+    {
+      "t": 16965,
+      "gap": 140.5,
+      "phase": "chain#1"
+    },
+    {
+      "t": 17098.7,
+      "gap": 133.7,
+      "phase": "idle"
+    },
+    {
+      "t": 17204.2,
+      "gap": 105.5,
+      "phase": "idle"
+    },
+    {
+      "t": 17303,
+      "gap": 98.8,
+      "phase": "idle"
+    },
+    {
+      "t": 17404.6,
+      "gap": 101.6,
+      "phase": "idle"
+    },
+    {
+      "t": 17504.4,
+      "gap": 99.8,
+      "phase": "idle"
+    },
+    {
+      "t": 17613.3,
+      "gap": 108.9,
+      "phase": "idle"
+    },
+    {
+      "t": 17782,
+      "gap": 152.3,
+      "phase": "idle"
+    },
+    {
+      "t": 17891.4,
+      "gap": 109.4,
+      "phase": "idle"
+    },
+    {
+      "t": 17997.6,
+      "gap": 106.2,
+      "phase": "idle"
+    },
+    {
+      "t": 18113.5,
+      "gap": 115.9,
+      "phase": "idle"
+    },
+    {
+      "t": 18222.3,
+      "gap": 108.8,
+      "phase": "idle"
+    },
+    {
+      "t": 18323.2,
+      "gap": 100.9,
+      "phase": "idle"
+    },
+    {
+      "t": 18444.7,
+      "gap": 121.5,
+      "phase": "idle"
+    },
+    {
+      "t": 18556.6,
+      "gap": 111.9,
+      "phase": "idle"
+    },
+    {
+      "t": 18673.3,
+      "gap": 116.7,
+      "phase": "idle"
+    },
+    {
+      "t": 18800.2,
+      "gap": 126.9,
+      "phase": "idle"
+    },
+    {
+      "t": 18914,
+      "gap": 113.8,
+      "phase": "idle"
+    },
+    {
+      "t": 19056.5,
+      "gap": 142.5,
+      "phase": "idle"
+    },
+    {
+      "t": 19216.1,
+      "gap": 159.6,
+      "phase": "idle"
+    },
+    {
+      "t": 19436.8,
+      "gap": 220.7,
+      "phase": "idle"
+    },
+    {
+      "t": 19591.3,
+      "gap": 154.5,
+      "phase": "idle"
+    },
+    {
+      "t": 19792,
+      "gap": 200.7,
+      "phase": "idle"
+    },
+    {
+      "t": 19948,
+      "gap": 156,
+      "phase": "idle"
+    },
+    {
+      "t": 20089.4,
+      "gap": 141.4,
+      "phase": "idle"
+    },
+    {
+      "t": 20247.7,
+      "gap": 158.3,
+      "phase": "idle"
+    },
+    {
+      "t": 20395.6,
+      "gap": 147.9,
+      "phase": "idle"
+    },
+    {
+      "t": 20644.7,
+      "gap": 229.9,
+      "phase": "idle"
+    },
+    {
+      "t": 20803.4,
+      "gap": 158.7,
+      "phase": "idle"
+    },
+    {
+      "t": 20957.1,
+      "gap": 153.7,
+      "phase": "idle"
+    },
+    {
+      "t": 21110.6,
+      "gap": 153.5,
+      "phase": "idle"
+    },
+    {
+      "t": 21268.1,
+      "gap": 157.5,
+      "phase": "idle"
+    },
+    {
+      "t": 21421.1,
+      "gap": 153,
+      "phase": "idle"
+    },
+    {
+      "t": 21584.7,
+      "gap": 163.6,
+      "phase": "idle"
+    },
+    {
+      "t": 21730,
+      "gap": 145.3,
+      "phase": "idle"
+    },
+    {
+      "t": 21884.8,
+      "gap": 154.8,
+      "phase": "idle"
+    },
+    {
+      "t": 22041.4,
+      "gap": 156.6,
+      "phase": "idle"
+    },
+    {
+      "t": 22192.7,
+      "gap": 151.3,
+      "phase": "idle"
+    },
+    {
+      "t": 22341.9,
+      "gap": 149.2,
+      "phase": "idle"
+    },
+    {
+      "t": 22497.7,
+      "gap": 155.8,
+      "phase": "idle"
+    },
+    {
+      "t": 22653.2,
+      "gap": 155.5,
+      "phase": "idle"
+    },
+    {
+      "t": 22809.4,
+      "gap": 156.2,
+      "phase": "idle"
+    },
+    {
+      "t": 22976.7,
+      "gap": 167.3,
+      "phase": "idle"
+    },
+    {
+      "t": 23151.2,
+      "gap": 174.5,
+      "phase": "chain#2"
+    },
+    {
+      "t": 23251.9,
+      "gap": 100.7,
+      "phase": "chain#2"
+    },
+    {
+      "t": 23357.5,
+      "gap": 105.6,
+      "phase": "chain#2"
+    },
+    {
+      "t": 23601.5,
+      "gap": 211.1,
+      "phase": "chain#2"
+    },
+    {
+      "t": 23734.3,
+      "gap": 132.8,
+      "phase": "chain#2"
+    },
+    {
+      "t": 23883,
+      "gap": 148.7,
+      "phase": "chain#2"
+    },
+    {
+      "t": 23995.1,
+      "gap": 112.1,
+      "phase": "chain#2"
+    },
+    {
+      "t": 24155,
+      "gap": 82.8,
+      "phase": "chain#2"
+    },
+    {
+      "t": 24311.1,
+      "gap": 156.1,
+      "phase": "chain#2"
+    },
+    {
+      "t": 24441.9,
+      "gap": 130.8,
+      "phase": "idle"
+    },
+    {
+      "t": 24569.9,
+      "gap": 128,
+      "phase": "idle"
+    },
+    {
+      "t": 24680.1,
+      "gap": 110.2,
+      "phase": "idle"
+    },
+    {
+      "t": 24819.7,
+      "gap": 139.6,
+      "phase": "idle"
+    },
+    {
+      "t": 24932.2,
+      "gap": 112.5,
+      "phase": "idle"
+    },
+    {
+      "t": 25034.4,
+      "gap": 102.2,
+      "phase": "idle"
+    },
+    {
+      "t": 25138.4,
+      "gap": 104,
+      "phase": "idle"
+    },
+    {
+      "t": 25245.6,
+      "gap": 107.2,
+      "phase": "idle"
+    },
+    {
+      "t": 25405.4,
+      "gap": 142.8,
+      "phase": "idle"
+    },
+    {
+      "t": 25516.4,
+      "gap": 111,
+      "phase": "idle"
+    },
+    {
+      "t": 25620.8,
+      "gap": 104.4,
+      "phase": "idle"
+    },
+    {
+      "t": 25724.9,
+      "gap": 104.1,
+      "phase": "idle"
+    },
+    {
+      "t": 25832.2,
+      "gap": 107.3,
+      "phase": "idle"
+    },
+    {
+      "t": 25935.6,
+      "gap": 103.4,
+      "phase": "idle"
+    },
+    {
+      "t": 26044.6,
+      "gap": 109,
+      "phase": "idle"
+    },
+    {
+      "t": 26216.2,
+      "gap": 151.2,
+      "phase": "idle"
+    },
+    {
+      "t": 26342.1,
+      "gap": 125.9,
+      "phase": "idle"
+    },
+    {
+      "t": 26457.9,
+      "gap": 115.8,
+      "phase": "idle"
+    },
+    {
+      "t": 26585.3,
+      "gap": 127.4,
+      "phase": "idle"
+    },
+    {
+      "t": 26730.7,
+      "gap": 145.4,
+      "phase": "idle"
+    },
+    {
+      "t": 26911.7,
+      "gap": 181,
+      "phase": "idle"
+    },
+    {
+      "t": 27067.2,
+      "gap": 155.5,
+      "phase": "idle"
+    },
+    {
+      "t": 27210.3,
+      "gap": 143.1,
+      "phase": "idle"
+    },
+    {
+      "t": 27393.6,
+      "gap": 183.3,
+      "phase": "idle"
+    },
+    {
+      "t": 27547.5,
+      "gap": 153.9,
+      "phase": "idle"
+    },
+    {
+      "t": 27694.6,
+      "gap": 147.1,
+      "phase": "idle"
+    },
+    {
+      "t": 27934.5,
+      "gap": 223.3,
+      "phase": "idle"
+    },
+    {
+      "t": 28089.8,
+      "gap": 155.3,
+      "phase": "idle"
+    },
+    {
+      "t": 28247.3,
+      "gap": 157.5,
+      "phase": "idle"
+    },
+    {
+      "t": 28487,
+      "gap": 220.2,
+      "phase": "idle"
+    },
+    {
+      "t": 28703.3,
+      "gap": 216.3,
+      "phase": "idle"
+    },
+    {
+      "t": 28860.8,
+      "gap": 157.5,
+      "phase": "idle"
+    },
+    {
+      "t": 29027.3,
+      "gap": 166.5,
+      "phase": "idle"
+    },
+    {
+      "t": 29174.7,
+      "gap": 147.4,
+      "phase": "idle"
+    },
+    {
+      "t": 29332.2,
+      "gap": 157.5,
+      "phase": "idle"
+    },
+    {
+      "t": 29494.6,
+      "gap": 162.4,
+      "phase": "idle"
+    },
+    {
+      "t": 29643.3,
+      "gap": 148.7,
+      "phase": "idle"
+    },
+    {
+      "t": 29803.6,
+      "gap": 160.3,
+      "phase": "idle"
+    },
+    {
+      "t": 29957.2,
+      "gap": 153.6,
+      "phase": "idle"
+    },
+    {
+      "t": 30118.7,
+      "gap": 161.5,
+      "phase": "idle"
+    },
+    {
+      "t": 30334,
+      "gap": 215.3,
+      "phase": "chain#3"
+    },
+    {
+      "t": 30455.3,
+      "gap": 121.3,
+      "phase": "chain#3"
+    },
+    {
+      "t": 30560.3,
+      "gap": 105,
+      "phase": "chain#3"
+    },
+    {
+      "t": 30804.9,
+      "gap": 244.6,
+      "phase": "chain#3"
+    },
+    {
+      "t": 30936,
+      "gap": 131.1,
+      "phase": "chain#3"
+    },
+    {
+      "t": 31094,
+      "gap": 158,
+      "phase": "chain#3"
+    },
+    {
+      "t": 31198.6,
+      "gap": 104.6,
+      "phase": "chain#3"
+    },
+    {
+      "t": 31357.2,
+      "gap": 92.9,
+      "phase": "chain#3"
+    },
+    {
+      "t": 31474.2,
+      "gap": 117,
+      "phase": "chain#3"
+    },
+    {
+      "t": 31627.2,
+      "gap": 153,
+      "phase": "idle"
+    },
+    {
+      "t": 31763,
+      "gap": 135.8,
+      "phase": "idle"
+    },
+    {
+      "t": 31886.3,
+      "gap": 123.3,
+      "phase": "idle"
+    },
+    {
+      "t": 31985.9,
+      "gap": 99.6,
+      "phase": "idle"
+    },
+    {
+      "t": 32092.6,
+      "gap": 106.7,
+      "phase": "idle"
+    },
+    {
+      "t": 32201.6,
+      "gap": 109,
+      "phase": "idle"
+    },
+    {
+      "t": 32305.3,
+      "gap": 103.7,
+      "phase": "idle"
+    },
+    {
+      "t": 32540.8,
+      "gap": 200.2,
+      "phase": "idle"
+    },
+    {
+      "t": 32639.8,
+      "gap": 99,
+      "phase": "idle"
+    },
+    {
+      "t": 32736.7,
+      "gap": 96.9,
+      "phase": "idle"
+    },
+    {
+      "t": 32843,
+      "gap": 106.3,
+      "phase": "idle"
+    },
+    {
+      "t": 32949.1,
+      "gap": 106.1,
+      "phase": "idle"
+    },
+    {
+      "t": 33044.2,
+      "gap": 95.1,
+      "phase": "idle"
+    },
+    {
+      "t": 33144,
+      "gap": 99.8,
+      "phase": "idle"
+    },
+    {
+      "t": 33262,
+      "gap": 118,
+      "phase": "idle"
+    },
+    {
+      "t": 33352.6,
+      "gap": 90.6,
+      "phase": "idle"
+    },
+    {
+      "t": 33476.2,
+      "gap": 123.6,
+      "phase": "idle"
+    },
+    {
+      "t": 33612.4,
+      "gap": 136.2,
+      "phase": "idle"
+    },
+    {
+      "t": 33753,
+      "gap": 140.6,
+      "phase": "idle"
+    },
+    {
+      "t": 33942.4,
+      "gap": 189.4,
+      "phase": "idle"
+    },
+    {
+      "t": 34091.5,
+      "gap": 149.1,
+      "phase": "idle"
+    },
+    {
+      "t": 34247.2,
+      "gap": 155.7,
+      "phase": "idle"
+    },
+    {
+      "t": 34414.8,
+      "gap": 167.6,
+      "phase": "idle"
+    },
+    {
+      "t": 34559.4,
+      "gap": 144.6,
+      "phase": "idle"
+    },
+    {
+      "t": 34713.1,
+      "gap": 153.7,
+      "phase": "idle"
+    },
+    {
+      "t": 34864.7,
+      "gap": 151.6,
+      "phase": "idle"
+    },
+    {
+      "t": 35075.3,
+      "gap": 210.6,
+      "phase": "idle"
+    },
+    {
+      "t": 35244.6,
+      "gap": 169.3,
+      "phase": "idle"
+    },
+    {
+      "t": 35483.1,
+      "gap": 222.4,
+      "phase": "idle"
+    },
+    {
+      "t": 35648.6,
+      "gap": 165.5,
+      "phase": "idle"
+    },
+    {
+      "t": 35799.7,
+      "gap": 151.1,
+      "phase": "idle"
+    },
+    {
+      "t": 35949.8,
+      "gap": 150.1,
+      "phase": "idle"
+    },
+    {
+      "t": 36096.7,
+      "gap": 146.9,
+      "phase": "idle"
+    },
+    {
+      "t": 36248.5,
+      "gap": 151.8,
+      "phase": "idle"
+    },
+    {
+      "t": 37508,
+      "gap": 1259.5,
+      "phase": "chain#4"
+    },
+    {
+      "t": 37670.7,
+      "gap": 95.5,
+      "phase": "chain#4"
+    },
+    {
+      "t": 37783.5,
+      "gap": 112.8,
+      "phase": "chain#4"
+    },
+    {
+      "t": 37909.8,
+      "gap": 126.3,
+      "phase": "chain#4"
+    },
+    {
+      "t": 38184.4,
+      "gap": 238.3,
+      "phase": "chain#4"
+    },
+    {
+      "t": 38281.6,
+      "gap": 97.2,
+      "phase": "chain#4"
+    },
+    {
+      "t": 38444.8,
+      "gap": 96.1,
+      "phase": "chain#4"
+    },
+    {
+      "t": 38536.2,
+      "gap": 91.4,
+      "phase": "chain#4"
+    },
+    {
+      "t": 38661,
+      "gap": 124.8,
+      "phase": "idle"
+    },
+    {
+      "t": 38852.7,
+      "gap": 174.9,
+      "phase": "idle"
+    },
+    {
+      "t": 38967.8,
+      "gap": 115.1,
+      "phase": "idle"
+    },
+    {
+      "t": 39074.3,
+      "gap": 106.5,
+      "phase": "idle"
+    },
+    {
+      "t": 39167.3,
+      "gap": 93,
+      "phase": "idle"
+    },
+    {
+      "t": 39281.3,
+      "gap": 114,
+      "phase": "idle"
+    },
+    {
+      "t": 39386.6,
+      "gap": 105.3,
+      "phase": "idle"
+    },
+    {
+      "t": 39491.4,
+      "gap": 104.8,
+      "phase": "idle"
+    },
+    {
+      "t": 39593.6,
+      "gap": 102.2,
+      "phase": "idle"
+    },
+    {
+      "t": 39702.5,
+      "gap": 108.9,
+      "phase": "idle"
+    },
+    {
+      "t": 39810.9,
+      "gap": 108.4,
+      "phase": "idle"
+    },
+    {
+      "t": 39906.5,
+      "gap": 95.6,
+      "phase": "idle"
+    },
+    {
+      "t": 40019.8,
+      "gap": 113.3,
+      "phase": "idle"
+    },
+    {
+      "t": 40122.9,
+      "gap": 103.1,
+      "phase": "idle"
+    },
+    {
+      "t": 40224.6,
+      "gap": 101.7,
+      "phase": "idle"
+    },
+    {
+      "t": 40325.1,
+      "gap": 100.5,
+      "phase": "idle"
+    },
+    {
+      "t": 40427.4,
+      "gap": 102.3,
+      "phase": "idle"
+    },
+    {
+      "t": 40532,
+      "gap": 104.6,
+      "phase": "idle"
+    },
+    {
+      "t": 40630.9,
+      "gap": 98.9,
+      "phase": "idle"
+    },
+    {
+      "t": 40730,
+      "gap": 99.1,
+      "phase": "idle"
+    },
+    {
+      "t": 40900,
+      "gap": 154.3,
+      "phase": "idle"
+    },
+    {
+      "t": 41005,
+      "gap": 105,
+      "phase": "idle"
+    },
+    {
+      "t": 41140.2,
+      "gap": 135.2,
+      "phase": "idle"
+    },
+    {
+      "t": 41273.1,
+      "gap": 132.9,
+      "phase": "idle"
+    },
+    {
+      "t": 41430.3,
+      "gap": 157.2,
+      "phase": "idle"
+    },
+    {
+      "t": 41572.8,
+      "gap": 142.5,
+      "phase": "idle"
+    },
+    {
+      "t": 41720,
+      "gap": 147.2,
+      "phase": "idle"
+    },
+    {
+      "t": 41867.8,
+      "gap": 147.8,
+      "phase": "idle"
+    },
+    {
+      "t": 42027.8,
+      "gap": 160,
+      "phase": "idle"
+    },
+    {
+      "t": 42180.2,
+      "gap": 152.4,
+      "phase": "idle"
+    },
+    {
+      "t": 42347.5,
+      "gap": 167.3,
+      "phase": "idle"
+    },
+    {
+      "t": 42591.9,
+      "gap": 225.5,
+      "phase": "idle"
+    },
+    {
+      "t": 42756.9,
+      "gap": 165,
+      "phase": "idle"
+    },
+    {
+      "t": 42905.4,
+      "gap": 148.5,
+      "phase": "idle"
+    },
+    {
+      "t": 43069.6,
+      "gap": 164.2,
+      "phase": "idle"
+    },
+    {
+      "t": 43285.6,
+      "gap": 216,
+      "phase": "idle"
+    },
+    {
+      "t": 43437.5,
+      "gap": 151.9,
+      "phase": "idle"
+    },
+    {
+      "t": 43588.7,
+      "gap": 151.2,
+      "phase": "idle"
+    },
+    {
+      "t": 43745.3,
+      "gap": 156.6,
+      "phase": "idle"
+    },
+    {
+      "t": 43908,
+      "gap": 162.7,
+      "phase": "idle"
+    },
+    {
+      "t": 45030.9,
+      "gap": 1122.9,
+      "phase": "chain#5"
+    },
+    {
+      "t": 45130.4,
+      "gap": 99.5,
+      "phase": "chain#5"
+    },
+    {
+      "t": 45223.1,
+      "gap": 92.7,
+      "phase": "chain#5"
+    },
+    {
+      "t": 45351.5,
+      "gap": 128.4,
+      "phase": "chain#5"
+    },
+    {
+      "t": 45478.9,
+      "gap": 127.4,
+      "phase": "chain#5"
+    },
+    {
+      "t": 45682.2,
+      "gap": 185.2,
+      "phase": "chain#5"
+    },
+    {
+      "t": 45831.3,
+      "gap": 127.2,
+      "phase": "chain#5"
+    },
+    {
+      "t": 45924.3,
+      "gap": 93,
+      "phase": "chain#5"
+    },
+    {
+      "t": 46021.8,
+      "gap": 97.5,
+      "phase": "chain#5"
+    },
+    {
+      "t": 46154.9,
+      "gap": 133.1,
+      "phase": "idle"
+    },
+    {
+      "t": 46275.6,
+      "gap": 120.7,
+      "phase": "idle"
+    },
+    {
+      "t": 46390.1,
+      "gap": 114.5,
+      "phase": "idle"
+    },
+    {
+      "t": 46512.7,
+      "gap": 122.6,
+      "phase": "idle"
+    }
+  ],
+  "pageErrors": [
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')",
+    "TypeError: Cannot read properties of null (reading 'sourceSize')"
+  ]
+}
