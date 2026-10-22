@@ -1018,3 +1018,34 @@ immutable；若素材替换而清单没重算，就会把旧哈希发给新文�
 **下一轮候选**：`sourceSize` 空引用根因（页错随单会话换关次数增长，三臂同型、基线既有）；
 换关落定后 Temple Finish 的保留/释放再账；4g 档小于 100ms 的收益需更多轮次。素材再编码
 （任务 #42）仍是用户保留项，未经裁决不动。
+
+## 三十六、r39 增补（2026-10-23，结算星碑动画跨变体重绑）
+
+> 报告 `2026-10-23-r39-finish-anim-rebind.md`。r29 把结算图集拆成 general/speed/puzzle 三张后，
+> `finish_stone_*` 动画键在全局 AnimationManager 里跨面板存活，而换关会卸掉另外两种变体的纹理。
+> Animation 在 create 时已把帧名解析成 Frame 对象（Animation.js:80/:454），纹理一卸 Frame.destroy
+> 把 `data` 置空（Frame.js:824-829）；`buildSeq` 的 `exists` 幂等卫又跳过重建。于是
+> `speed → general` 换关后的结算板上，星碑 `play()` 在 `handleStart → setCurrentFrame →
+> setSizeToFrame → realWidth` 读 `data.sourceSize` 抛错，`hasStarted` 永远停在 false、
+> `update` 每帧重试，`finalAt` 中断使 `enabled` 不置真——「继续」死锁。这是 r36/r37/r38
+> 报告中"随换关次数增长"的 `sourceSize` 页错的根因，属基线既有缺陷。
+
+| 件 | 内容 | commit | 关键数字 |
+|---|---|---|---|
+| r39 件1 | `BootScene.buildFinishAnims` 注册前先摘掉三张变体 1–3 星共 9 个旧键，再按当前纹理重建；`EndMenu.create` 改为无条件调用（纹理缺失也会先摘 stale 键再返回，退回主图集同名空帧且继续可用）；`popup-finish.test.ts` 新增摘键顺序/覆盖断言；房内字体行钉随 +2 行同步；新增 `scripts/e2e/finish-anims.mjs`（第 4 块板采样星碑、真实 pointer 事件点「继续」、整场页错） | 本轮 | 专项门禁 r38 构建 **2/8**（92 条/1.8s、整场 1311 条页错、继续点不动）→ r39 **8/8**（3 帧、0 页错、forest_04→forest_05）；客户端 +99B raw／+39B gzip-9 |
+| r39 件2 | 量具沿用 r36–r38（武装判胜＋结算窗静网门＋三窗拆账），off 档 5 次换关 A/B；修复前误差风暴污染时序，故加双臂各 2 会话×3 次换关控制组 | `advance-r39-off-*`（6 份）＋`advance-r39-ctl-*`（4 份）＋门禁前后现场 2 份 | 页错 **125/152/103/96 → 0/0**；链内最大帧隔 **1234.2/1558.5/1079.8/1109.3 → 199.9/195.4ms**；控制组（两臂 0 页错）换关→可玩 A **1125.8ms**／B **1098.3ms（−27.4ms，−2.4%）**，在散布内不主张；链内 0KB、结算窗 73.5KB、驻留 58.9MB 逐项不变 |
+| r39 件3 | 末轮门禁与文档收口 | `docs` | typecheck 0 错、十一项 `--check` 逐字节、build `index-De_FGfdb` 109.22KB／gzip 36.90KB、vitest **30 文件/322 例**、det **48/48**、fixtures 6/6、prephase 5/5、roomtext 6/6·5/5、domskin 4/4、audiofamily／charsplay ALL PASS、treebake／groundcache ALL PASS、journey 7/7·3/3·6/6·4/4·3/3、route 双关 won（39,508／12,978ms）、regression won=true 零错零缺帧、tilesprite 10/10、finish-anims 8/8 |
+
+**三条可复用结论**：
+① **全局动画键与按需纹理必须显式对齐生命周期**：Phaser 的 Animation 在 create 时就把帧名
+解析成 Frame 对象，之后卸纹理不会更新动画；键名相同不代表绑定相同。凡是"纹理可卸载、
+动画只注册一次"的组合，都要在消费点重绑或提供失效钩子。
+② **幂等卫是双刃剑**：`if (exists(key)) return` 防住了重复注册，也把过期绑定永久化。
+幂等的前提是"输入不变"，纹理变体切换恰好打破了它；守卫旁边必须写清失效条件。
+③ **页错风暴会污染时序量具**：A 臂 1.08–1.56s 的单次帧隔横跨采样点，均值会朝两个方向失真；
+用"零页错的短链控制组"分离出真实时序（−27.4ms，噪声），比在故障臂上硬比均值可靠。
+本轮的可强主张是正确性修复与页错/掉帧归零，时序不主张。
+
+**下一轮候选**：`loadPopupFinish` 的纹理移除与动画注册是否进一步收敛到同一生命周期钩子；
+换关落定后 Temple Finish 的保留/释放再账；4g 档小于 100ms 的收益需更多轮次。素材再编码
+（任务 #42）仍是用户保留项，未经裁决不动。
