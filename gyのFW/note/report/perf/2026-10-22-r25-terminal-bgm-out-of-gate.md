@@ -163,7 +163,30 @@ speed 族那一支更贵也更便宜：`LevelMusicFinish_speed` 只有 68.9KB，
 
 ## 六、门禁（末轮套件）
 
-TODO。
+串行 19 步，口径照 r22 §八／r23 §十（vitest 不与 regression 抢 `zz_probe` 夹具、浏览器类步骤互斥），
+**FAIL=0**，本机 09:52:39→09:59:35（约 7 分钟）：
+
+| 步骤 | 读数 |
+| --- | --- |
+| typecheck | 0 错 |
+| `split-char-atlas --check` | 六件逐字节（53 帧 152.1KB ＋ 7 帧 28.3KB ＋ 182 帧 442.4KB） |
+| `reflow-prephase --check` | png 字节一致 ✓ fnt 字节一致 ✓ |
+| build | ✓ built in 3.97s |
+| vitest | **20 文件／220 用例**全过（r23 为 215，＋5 正是本轮静态网那五条） |
+| det（`perf-determinism --compare r32`） | **48/48** 关位级一致 |
+| `prephase-canvas` | **5/5 态逐字节**（menu 803758B／temple 279816B／temple-numbers 448929B／settings 327020B／credits 378072B）；产物哈希 `index-BZ9iZU0M`(041e2a8cb4a09f79)→`index-CxewXNds`(51fd59b7b3080ae7) 换代后像素仍逐字节 ⇒ 本轮改动不触像素 |
+| `domskin` | 4/4 逐字节（wide-error 235029B／narrow-idle 153209B 等） |
+| `audiofamily`（off） | **22 项 ✓**：门内 sfx 十三支逐键在场、两支门后有界到位、循环曲到位即在播、另一族零请求、页面零错误 |
+| `charsplay`（off） | 21 项 ✓（含停答阴性对照） |
+| `treebake` | 9/9 金样一致 |
+| `groundcache` | 6/6 |
+| `journey` refresh／wonrefresh／deathretry／rejoin | 3/3 · **6/6** · **4/4** · 3/3 |
+| `route` forest_01／forest_12 | won=true，winAt 39469／13430ms（r23 为 39463／13428ms，玩法时点未动） |
+| `regression`（zz_probe walkin-doors，`--expect-win`） | won=true errors=0 sync=0 缺帧警告=0 |
+
+- 值得单记的一条：**deathretry 4/4 与 wonrefresh 6/6 都在 off 档跑**，那里两支在 `started` 前就已在缓存，
+  所以它们**证明不了**弱网窗口里的补起路径——那条路径的证据只有 §四 的节流档 audiofamily 与 §五 的静态网。
+  通用门禁对"缺键＝静音"这条失效模式不可见（§二 末），这是本轮再次确认的口径事实。
 
 ## 七、剩余面额与下一轮
 
