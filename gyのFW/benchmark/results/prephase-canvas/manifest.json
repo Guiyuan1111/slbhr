@@ -1,11 +1,13 @@
 {
   "note": "前场画布逐像素基线（r18 门禁件）：只拍 #game-root canvas，DOM 覆盖层整层隐藏；五态编舞与不覆盖态（Boot 进度条/FadeScene Loading/游戏内）见 scripts/e2e/prephase-canvas.mjs 头注",
-  "provenance": "基线锚代=全量 font.png 一代（851f0a2 代 client 代码）：首捕产物 index-CJqW9TNF.js=b8f19d5a06d02ca3 查不到 \"font-prephase\" 引用、字体目录只有 font.png，装载路径=Boot 一次性取 assets/fonts/chinese/font.png 全量 2191×1024（font.fnt 声明 260 字），即 commit 851f0a2 的口径。判代不靠 HEAD 而靠产物指纹：两段化的 client 代码落在 commit 90fe319（BootScene 只装子集、全量走延迟通道），要重新构建进 dist 才改变本门禁读到的像素，而 client 代码在 851f0a2→90fe319~1 之间 diff 为空，故首捕那批 dist 的 client 面就是 851f0a2 代。本次生成（HEAD=9bedda1）所用产物：入口 chunk index-BZ9iZU0M.js=041e2a8cb4a09f79 内**查到** \"font-prephase\" 引用，dist 字体目录=font-prephase.png/font.png ⇒ 本批 PNG 是两段化之后的像素；跨产物复现=与前批 SHA 有差异，本批已换值。换代理由（--reason）：r22 件2：Boot 阻塞批的 CharAssets 2048x2048 整张换成 CharAssetsMenu 1984x670 子图集。menu/settings/credits 三态画角色的贴图来源由 POT 整张变为 NPOT 子幅，UV/采样取整随之变化——三态合计 23 像素（menu 13 / settings 5 / credits 5），最大灰度级差 1，100% 落在抗锯齿渐变区、平坦区 0 个；temple/temple-numbers 两态逐字节相同，隔离出改动只影响画角色的三态。字形/皮肤/地面等其余像素面本轮零改动。。用途：改动前场字体/装载序的一方必须让对拍逐字节复现本批 PNG——任何差异都是子集缺字框或空白化过切，不是画质折衷。页内口径：Math.random=mulberry32(seed 6221086)，Phaser 主循环自驱动封死、改由 16.666667ms 合成步时钟驱动 Game.step，视口 1280×960 deviceScaleFactor 1，DOM 覆盖层隐藏，只截 #game-root canvas。",
+  "provenance": "基线锚代=全量 font.png 一代（851f0a2 代 client 代码）：首捕产物 index-CJqW9TNF.js=b8f19d5a06d02ca3 查不到 \"font-prephase\" 引用、字体目录只有 font.png，装载路径=Boot 一次性取 assets/fonts/chinese/font.png 全量 2191×1024（font.fnt 声明 260 字），即 commit 851f0a2 的口径。判代不靠 HEAD 而靠产物指纹：两段化的 client 代码落在 commit 90fe319（BootScene 只装子集、全量走延迟通道），要重新构建进 dist 才改变本门禁读到的像素，而 client 代码在 851f0a2→90fe319~1 之间 diff 为空，故首捕那批 dist 的 client 面就是 851f0a2 代。本次生成（HEAD=98c2fd8）所用产物：入口 chunk index-7O30D-Ju.js=d5ab3e4b41d88856 内**查到** \"font-prephase\" 引用，dist 字体目录=font-prephase.png/font-roombase.png/font-roomblank.png/font.png ⇒ 本批 PNG 是两段化之后的像素；跨产物复现=与前批 SHA 有差异，本批已换值。换代理由（--reason）：r32 弹窗图集重打包：PopupBackground0000 从 2048² Slim 搬到 1086×696 Mini（帧内像素逐字节相同），板背景线性采样的 UV 在 float32 下偏 1 LSB——仅 settings/credits 两面板，AE 447/390 px、最大通道差 1；臂 A（r31 源码）5/5 逐字节通过，臂 B 只此两态变化。用途：改动前场字体/装载序的一方必须让对拍逐字节复现本批 PNG——任何差异都是子集缺字框或空白化过切，不是画质折衷。页内口径：Math.random=mulberry32(seed 6221086)，Phaser 主循环自驱动封死、改由 16.666667ms 合成步时钟驱动 Game.step，视口 1280×960 deviceScaleFactor 1，DOM 覆盖层隐藏，只截 #game-root canvas。",
   "bundle": {
-    "chunk": "index-BZ9iZU0M.js",
-    "chunkSha": "041e2a8cb4a09f79",
+    "chunk": "index-7O30D-Ju.js",
+    "chunkSha": "d5ab3e4b41d88856",
     "fonts": {
       "font-prephase.png": "b0fd54eb33c507dd",
+      "font-roombase.png": "ebcb004d1f1e3401",
+      "font-roomblank.png": "6434548a97d0c020",
       "font.png": "24800f35d619d57a"
     },
     "subsetReferenced": true,
@@ -22,8 +24,8 @@
       "role": "首捕：本批字节第一次产出的产物（全量 font.png 一代（851f0a2 代 client 代码））"
     },
     {
-      "chunk": "index-CM7A5OVz.js",
-      "chunkSha": "522fb75aa7cdea46",
+      "chunk": "index-BZ9iZU0M.js",
+      "chunkSha": "041e2a8cb4a09f79",
       "fonts": {
         "font-prephase.png": "b0fd54eb33c507dd",
         "font.png": "24800f35d619d57a"
@@ -33,15 +35,17 @@
       "role": "上一批 manifest 登记的产物（与本批 SHA 有差异）"
     },
     {
-      "chunk": "index-BZ9iZU0M.js",
-      "chunkSha": "041e2a8cb4a09f79",
+      "chunk": "index-7O30D-Ju.js",
+      "chunkSha": "d5ab3e4b41d88856",
       "fonts": {
         "font-prephase.png": "b0fd54eb33c507dd",
+        "font-roombase.png": "ebcb004d1f1e3401",
+        "font-roomblank.png": "6434548a97d0c020",
         "font.png": "24800f35d619d57a"
       },
       "subsetReferenced": true,
       "fontEra": "两段化（子集先行，见 90fe319）",
-      "role": "本次 --save 所用产物（两段化（子集先行，见 90fe319），HEAD=9bedda1）"
+      "role": "本次 --save 所用产物（两段化（子集先行，见 90fe319），HEAD=98c2fd8）"
     }
   ],
   "states": [
@@ -71,17 +75,17 @@
     },
     {
       "id": "settings",
-      "sha256": "a12d2a1724f6d50cb6101d46a064f323b362b985bdbef23a1e941f9d662dc239",
-      "bytes": 327020,
-      "uniqueColors": 14495,
+      "sha256": "1aaf533180a51c28c7c55ec9a8eed2bc768d3cc490f3beeb358168f7bee14c64",
+      "bytes": 327080,
+      "uniqueColors": 14494,
       "profile": "首进档案",
       "desc": "「设置」面板（叠 Menu）：标题 设置 + 音乐/音效 开关行 + 好的（StoneButton）"
     },
     {
       "id": "credits",
-      "sha256": "2561dd6f8ed462c2848260cf531603fc2c01b0da3e0609e9e4a447f2f7fe891e",
-      "bytes": 378072,
-      "uniqueColors": 16403,
+      "sha256": "812d6f9be31132f0f796733d2fa617108248be8928d2531f3289dd6f2c8c76c6",
+      "bytes": 378108,
+      "uniqueColors": 16402,
       "profile": "首进档案",
       "desc": "「制作人员」面板（叠 Menu）：标题 + 5 行名单 + 好的"
     }

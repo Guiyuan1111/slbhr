@@ -802,3 +802,33 @@ menuActive Δ 相差 64.0／39.5ms（带内漂移）；4g 臂 B 两轮 8596/9395
 机关图集画布随变体帧数缩小（同上）、换关链（advance）的 16MiB 重解码代价入账、
 MenuAssets 1024² 画布随 29 帧缩小（驻留侧，先做 bitmap 字相位核验）。
 素材再编码（任务 #42）仍是用户保留项，未经裁决不动。
+
+## 二十九、r32 增补（2026-10-22，弹窗主图集画布收缩）
+
+> 报告 `2026-10-22-r32-popup-canvas-shrink.md`。r29 拆张后 `PopupAssetsSlim.png` 的 111 帧里只剩
+> 6 个真帧，但画布仍是 2048²，进房每次解 16.00MiB。本轮把 6 帧重打包到 1086×696，其余 105 帧
+> 以 4×4 透明别名留在 JSON 里（帧名一个不少，结算图集未落地时的同名兜底继续可用）；
+> 线上字节与驻留面额同时下降，是 r26–r31「原地清零」口径之后第一次动容器。
+
+| 件 | 内容 | commit | 关键数字 |
+|---|---|---|---|
+| r32 件1 | `shrink-popup-main.mjs`：`GUT=2` 隔离带、6 真帧逐字节搬运并回读、105 个别名指向唯一 4×4 透明块（`mainAlias:true`、`trimmed:false`、`sourceSize` 保留）；`BootScene` 增 `ATLAS_POPUP_JSON`，两处装载点同用 Mini 常量；`popup-mini.test.ts` 7 例静态网 | `98c2fd8` | `PopupAssetsMini.png` **55,477B**＋JSON **17,169B**、画布 **1086×696**；相对 Slim＋官方 JSON（73,027＋23,232B）**96,259→72,646B（−23,613B，−24.5%）**；过网 **73.0→55.5KB（−17.5KB）**；解码 **16.00→2.88MiB（−13.12MiB）** |
+| r32 件2 | 四档 A/B/A（2 轮/臂）＋驻留 A/B＋双人冒烟（TEMP） | 快照 `load-r32-ab-{4g,fast3g,slow3g,off}-*`（12 份）、`resident-r32-resident-{a,b}.json` | `gameActivePerfMs` Δ＝slow3g **−364.8ms**（最差带 183 的 2.0×，兑现 123.7%）、fast3g −72.8（带内）、4g +22.3（带内，B 散布 1167ms）、off −15.3（带内 n=2）；`menuActiveMs` 四档全带内；Menu 窗 1619KB／18 条三臂一致（Popup 在点击后才发），房内窗 **1630→1612KB／38 条**；驻留 Menu **59.45→46.33MB**、temple **74.38→61.26MB**、Game **95.35→82.24MB**、离房后 **100.90→87.79MB**，堆差 ≤0.2MB 噪声 |
+| r32 件3 | 末轮门禁与文档收口 | `docs` | typecheck 0 错、七项 `--check` 逐字节、build `index-7O30D-Ju` 104.82KB／gzip 35.79KB、vitest **25 文件/276 例**、det **48/48**、roomtext **6/6·5/5**、canvas **5/5 连跑两次（settings/credits 换代理）**、domskin 4/4、audiofamily／charsplay ALL PASS、treebake 9/9、groundcache 6/6、journey 3/3·6/6·4/4·3/3、route 双关 won、regression won=true 零错零缺帧 |
+
+**三条可复用结论**：
+① **清零之后还有"容器"一层可缩**：r26–r31 只改 PNG 像素，1024²/2048² 解码画布不动；本轮保留帧
+重打包后，线上 −17.5KB 的同时驻留 −13.12MiB。代价是 JSON 里 105 条别名声明（gzip 后 1.0KB），
+换来 111 个帧名与降级路径原样保留——"删帧名"与"缩画布"不是同一件事，别名让两者可以同时成立。
+② **画布幅面变化会在采样路径上留下 1 LSB**：settings/credits 两态出现 AE 447/390 px、最大通道差 1
+（板底以 1082×642 原尺寸绘制，帧像素逐字节相同，唯一变量是图集 2048²→1086×696 的 float32 UV 落点）。
+必须做臂 A/B 归因（臂 A 5/5 PASS、臂 B 只此两态变化）、留差图、`--reason` 写进 manifest 再换基线；
+"零像素变化"这类门禁不能只看 AE 是否超过某个小阈值，换代理由必须能被下一轮复核。
+③ **省在点击后暖装窗的字节，menuActive 天然不动**：Popup 对在 `click` 之后发起，Menu 窗 1619KB／18 条
+三臂一致，正好是"只换字节不搬窗口"的阴性对照；`gameActive` 继承，稳定档 slow3g 兑现 123.7%。
+弱档仍受自身散布（4g 1167ms）与 chars-play 竞态干扰，按既有口径不主张。
+
+**下一轮候选**：删除/降级已被 Mini 取代的 `PopupAssetsSlim.png`（现仅生成器与测试引用，不再过网）、
+机关图集画布随变体帧数缩小（驻留侧）、换关链（advance）的 16MiB 重解码代价入账、
+MenuAssets 1024² 画布随 29 帧缩小（驻留侧，先做 bitmap 字相位核验）。
+素材再编码（任务 #42）仍是用户保留项，未经裁决不动。
