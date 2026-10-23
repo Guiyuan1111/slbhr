@@ -461,6 +461,25 @@
         color: #d8cba9;
         white-space: nowrap;
         box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+        transition: opacity 0.45s ease;
+      }
+      /* 自动收起（用户裁定 2026-10-24：常驻压住画布计时钟）——visibility 延迟翻转让淡出播完，
+         收起后 #btn-invite 一并不可点（visibility 继承，防隐身可点） */
+      #hud-top.away {
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.45s ease, visibility 0s 0.45s;
+      }
+      /* 顶部中央唤出热区：栏收起后鼠标移入即唤出（悬停保持、移开 1.2s 后收） */
+      #hud-hot {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 720px;
+        max-width: 92%;
+        height: 26px;
+        pointer-events: auto;
       }
       #hud-time { font-variant-numeric: tabular-nums; font-weight: 700; }
       #hud-role { font-size: 12.5px; color: #b9c6b2; }
@@ -564,6 +583,7 @@
     </div>
 
     <div id="hud" class="hidden">
+      <div id="hud-hot"></div>
       <div id="hud-top">
         <span id="hud-role"></span>
         <span id="hud-room"></span>

@@ -163,6 +163,7 @@ async function reloadLevel(levelId: string): Promise<void> {
   // （bundle:1935016）；换关亦属进关（advance 回声同达）。
   if (currentTempleEntry) markPlayed(currentTempleEntry.filename);
   (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level: currentLevel, keyboard, templeEntry: currentTempleEntry, game: phaser };
+  hudTopShow(); // 换关同样展示几秒（双人可能在新关前重新约人），随后自动收起
   // 换关黑幕（oracle LevelMenu.startLevel fade("level") :1935281；EndMenu Continue→advance 回声双侧同达）
   const sm = phaser!.scene;
   fadeSwitch(phaser!, () => {
@@ -174,6 +175,31 @@ async function reloadLevel(levelId: string): Promise<void> {
     sm.stop("Game");
     sm.start("Game");
   });
+}
+
+/** 局内顶栏自动收起（用户裁定 2026-10-24：房间码条常驻压住画布计时钟）——进关展示
+ *  HUD_TOP_SHOW_MS 后淡出；顶部热区悬停唤出（移开 1.2s 收）或 I 键显/收。won/gameover
+ *  的整条隐藏（updateHud 的 .hidden）独立于此，两态叠加互不干扰。 */
+const HUD_TOP_SHOW_MS = 6000;
+let hudTopTimer: number | undefined;
+function hudTopShow(ms = HUD_TOP_SHOW_MS): void {
+  $("#hud-top").classList.remove("away");
+  if (hudTopTimer !== undefined) window.clearTimeout(hudTopTimer);
+  if (ms > 0) {
+    hudTopTimer = window.setTimeout(() => {
+      hudTopTimer = undefined;
+      $("#hud-top").classList.add("away");
+    }, ms);
+  } else {
+    hudTopTimer = undefined;
+  }
+}
+function hudTopHideNow(): void {
+  if (hudTopTimer !== undefined) {
+    window.clearTimeout(hudTopTimer);
+    hudTopTimer = undefined;
+  }
+  $("#hud-top").classList.add("away");
 }
 
 function show(err?: string): void {
@@ -387,6 +413,7 @@ async function enterGame(): Promise<void> {
   gameStarted = true;
   $("#menu").classList.add("hidden");
   $("#hud").classList.remove("hidden");
+  hudTopShow(); // 进关展示联机栏几秒（够复制邀请链接），随后自动收起让出计时钟
   // r5 装载序：等 MenuScene 后台暖装落定（已完成零等待；仍在飞时等它而非让
   // GameScene 重复拉同一批文件）。未启动暖装的路径（邀请深链直进等）立即返回。
   // r8 件1：唤醒放此处（而非连接窗内任意早的位置）——waitForLevelId/fetchLevel 均
@@ -546,6 +573,7 @@ async function start(mode: "create" | "join"): Promise<void> {
       btn.title = "链接只含房间码不含密码：对方打开后填入同一密码加入";
       // 样式统一在 index.html #btn-invite（#hud 整层 none 防挡画布，按钮 pointer-events:auto 单点恢复可点）
       btn.addEventListener("click", () => {
+        hudTopShow(4000); // 复制反馈文案 1.5s 内可见（点击可能来自热区移开后的收起倒计时中）
         // 非安全上下文（局域网 http）无 navigator.clipboard：copyText 内特性检测后走
         // execCommand 回退，双失败返 false 且绝不向外抛（逻辑与用例见 clipboard.ts 与
         // __tests__/clipboard.test.ts，M4 验收自动化 2026-10-23）。
@@ -663,9 +691,16 @@ function bindUi(): void {
   // r8 件3：temple.json 预取（enterGame 关键路径 await 恒命中）
   void loadTempleLevels();
   // R 键请求整关重开（E1；服务端按 phase 把关：won/gameover 才受理）
+  // I 键显/收局内联机栏（菜单态不响应，避免输入房间码时误触）
+  $("#hud-hot").addEventListener("mouseenter", () => hudTopShow(0)); // 悬停保持显示
+  $("#hud-hot").addEventListener("mouseleave", () => hudTopShow(1200));
   window.addEventListener("keydown", (e) => {
     if (e.code === "KeyP" && gameStarted) togglePause();
     if (e.code === "KeyR" && net) restartWithFade();
+    if (e.code === "KeyI" && gameStarted) {
+      if ($("#hud-top").classList.contains("away")) hudTopShow();
+      else hudTopHideNow();
+    }
   });
 }
 
