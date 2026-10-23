@@ -53,6 +53,7 @@ c55b352「五弹窗面板布局对齐 oracle」从 bundle 源码推导 layoutCon
 - 「对象高」≠「textHeight」：位图文本的 topOffset 用 lineHeight×0.75，勿拿 getBounds 高度凑数。
 
 ## 附注
-- 「暫停」为繁体，与 oracle 同款（该项目字体无简体「暂」字形）；如需简体需扩字体，另行裁定。
+- 「暫停」为繁体，与 oracle 同款（该项目字体无简体「暂」字形）。**用户 2026-10-24 裁定：
+  保持繁体，不扩字体（AskUserQuestion 在案）。**
 - 新增调试句柄：main.ts 两处 `__fwInit` 追加 `game: phaser`（Playwright 抽显示树用，无行为影响）。
 - TEMP/pause-cmp 探针（probe.mjs/probe2.mjs/双端 json/png）收尾已清理。
