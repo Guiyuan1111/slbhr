@@ -606,6 +606,10 @@ function bootPhaser(): void {
     setBusy(false); // 换关回面板：上一局的忙态禁用不得残留（否则 journey 二次建房 click 卡死）
     $("#menu").classList.remove("hidden");
   });
+  // 返回主菜单：收起联机面板（面板仅属于选关流程；TempleScene 返回钮黑幕 ops 内调用）
+  phaser.registry.set("onBackToMenu", () => {
+    $("#menu").classList.add("hidden");
+  });
   if (selectedLevel) {
     const el = document.querySelector("#menu-level");
     if (el) el.textContent = `已选关卡：${selectedLevel}`;

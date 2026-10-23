@@ -155,9 +155,10 @@
       .sub::after { right: 0; bottom: 0; background-position: -1008px -773px; }
 
       #menu-level {
-        position: absolute;
-        right: -34px;
-        top: -58px;
+        /* 面板内流式徽标（居中，DOM 位已在 panel 首行）：旧版 absolute 漂在面板外
+           右上 -34/-58，无锚点悬空（2026-10-23 用户报告"文本位置不对"项） */
+        display: table;
+        margin: 0 auto 10px;
         font-size: 13px;
         letter-spacing: 1px;
         color: #ffd479;
