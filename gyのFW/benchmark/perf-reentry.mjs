@@ -5,6 +5,8 @@
  * 在「离房回选关」时交还，换大厅驻留 −25.5MB。收益的代价必须逐项测出来：
  *   - 交还是否真的发生（大厅里 font-full/font-room、popup-finish-*、五支关卡 BGM 的缓存/纹理是否存在）；
  *   - 重进时它们各自在什么时刻回来（页内 8ms 轮询记首次出现时刻，相对 **#btn-create 点击**）；
+ *   - r42 起同量 chars-play 精灵表（10.75MiB 解码）与 11 个全局动画键：离房先摘键再移除纹理，
+ *     重进纹理到达后 buildCharAnims 重新注册（playMs / charAnimsMs）；
  *   - 是否挡住可玩：字体在 GameScene.preload（进房闸内），结算变体与 BGM 在 create 之后异步补，
  *     故分别对 gameActive / bgmPlaying 计时，把「进房多花的毫秒」与「出声延后」分开。
  *
@@ -124,8 +126,8 @@ function collectPage() {
   };
 }
 
-/** 页内：四类资源的存量与播放态（键名与 BootScene/audio.ts 的公开常量一致） */
-function presenceSnapshot() {
+/** 页内：四类资源的存量与播放态（键名与 BootScene/audio.ts 的公开常量一致，键表取 cfg） */
+function presenceSnapshot(cfg) {
   const g = globalThis.__fw;
   const tex = (k) => g.textures.exists(k);
   const aud = (k) => g.cache.audio.exists(k);
@@ -138,6 +140,8 @@ function presenceSnapshot() {
     finish: Object.fromEntries(finishKeys.map((k) => [k, tex(k)])),
     bgmCached: Object.fromEntries(bgmKeys.map((k) => [k, aud(k)])),
     bgmPlaying: Object.fromEntries(bgmKeys.map((k) => [k, playing(k)])),
+    play: tex(cfg.playKey),
+    charAnims: Object.fromEntries(cfg.charAnimKeys.map((k) => [k, g.anims.exists(k)])),
     menuBgm: { cached: aud("bgm_menu"), playing: playing("bgm_menu") },
     audioKeys: typeof g.cache.audio.getKeys === "function" ? g.cache.audio.getKeys().slice().sort() : [],
   };
@@ -154,11 +158,16 @@ function installReentryWatch(cfg) {
     bgmCached: null,
     bgmPlaying: null,
     menuBgmStopped: null,
+    charsPlay: null,
+    charAnims: null,
     audio: {},
     play: {},
     timer: null,
   };
   globalThis.__reWatch = W;
+  // 安装早于 #btn-create 点击：此刻已在（A 臂未交还或快速路径）记 0，表示点击时即就绪
+  W.charsPlay = g.textures.exists(cfg.playKey) ? 0 : null;
+  W.charAnims = cfg.charAnimKeys.every((k) => g.anims.exists(k)) ? 0 : null;
   document.querySelector("#btn-create").addEventListener(
     "click",
     () => {
@@ -175,6 +184,8 @@ function installReentryWatch(cfg) {
     if (W.bgmCached == null && cfg.bgmKeys.some((k) => g.cache.audio.exists(k))) W.bgmCached = rel();
     if (W.bgmPlaying == null && cfg.bgmKeys.some((k) => g.sound.isPlaying(k))) W.bgmPlaying = rel();
     if (W.menuBgmStopped == null && !g.sound.isPlaying("bgm_menu")) W.menuBgmStopped = rel();
+    if (W.charsPlay == null && g.textures.exists(cfg.playKey)) W.charsPlay = rel();
+    if (W.charAnims == null && cfg.charAnimKeys.every((k) => g.anims.exists(k))) W.charAnims = rel();
     for (const k of cfg.bgmKeys) {
       if (W.audio[k] == null && g.cache.audio.exists(k)) W.audio[k] = rel();
       if (W.play[k] == null && g.sound.isPlaying(k)) W.play[k] = rel();
@@ -328,10 +339,21 @@ try {
   log(`首进 ${LEVEL}（net=${NET_NAME}）…`);
   await enterAs(page, PORT, "create", "", LEVEL, NET.waitScale);
   await waitSceneActive(page, "Game", W(60000));
-  const cfg = { fontKeys: ["font-full", "font-room"], finishKeys: ["popup-finish-general", "popup-finish-speed", "popup-finish-puzzle"], bgmKeys: ["bgm_level", "bgm_level_speed", "bgm_finish", "bgm_finish_speed", "bgm_over"] };
+  const cfg = {
+    fontKeys: ["font-full", "font-room"],
+    finishKeys: ["popup-finish-general", "popup-finish-speed", "popup-finish-puzzle"],
+    bgmKeys: ["bgm_level", "bgm_level_speed", "bgm_finish", "bgm_finish_speed", "bgm_over"],
+    playKey: "chars-play", // 房内独占角色精灵表（10.75MiB 解码，442.4KB PNG）
+    charAnimKeys: [
+      // 离房时先摘、重进纹理到达后由 ensureCharAnims→buildCharAnims 重新注册的 11 个全局动画键
+      "fire_legs_run", "fire_jump", "fire_fall", "fire_rising", "fire_stairs",
+      "water_legs_run", "water_jump", "water_fall", "water_rising", "water_stairs", "smoke",
+    ],
+  };
   // 首进必须等"延迟装载"落定再拍基线：BGM 循环曲/终局曲、结算变体、chars-play 都在 create 之后取，
   // slow3g 下 LevelMusic 1.28MB 就要 ≈20s。不等就离房，量到的是"半装房间"，cycle 1 的
   // 存量/交还标记全被在飞请求搅乱（r41 首轮即踩到：初始 audio 缺 bgm_level、tex 缺 chars-play）。
+  // r42 起还等 chars-play 落定后 11 个全局动画键全部注册，否则离房前的基线本身不完整。
   const settleTimeout = Math.max(30000, Math.min(W(90000), 180000));
   log(`等首进延迟装载落定（上限 ${Math.round(settleTimeout / 1000)}s）…`);
   await page.waitForFunction(
@@ -341,7 +363,9 @@ try {
       const finish = c.finishKeys.some((k) => g.textures.exists(k));
       const loop = g.cache.audio.exists("bgm_level") || g.cache.audio.exists("bgm_level_speed");
       const term = g.cache.audio.exists("bgm_over") && (g.cache.audio.exists("bgm_finish") || g.cache.audio.exists("bgm_finish_speed"));
-      return font && finish && loop && term;
+      const play = g.textures.exists(c.playKey);
+      const charAnims = c.charAnimKeys.every((k) => g.anims.exists(k));
+      return font && finish && loop && term && play && charAnims;
     },
     cfg,
     { timeout: settleTimeout, polling: 200 },
@@ -358,7 +382,7 @@ try {
     largest: firstLoad.largest,
   };
   const initialPage = await page.evaluate(collectPage);
-  const initialPresence = await page.evaluate(presenceSnapshot);
+  const initialPresence = await page.evaluate(presenceSnapshot, cfg);
   out.initial = { page: initialPage, presence: initialPresence };
   const roomFonts = ["font-full", "font-room"].filter((k) => initialPresence.font[k]);
   const finishKeys = ["popup-finish-general", "popup-finish-speed", "popup-finish-puzzle"].filter((k) => initialPresence.finish[k]);
@@ -373,7 +397,7 @@ try {
     await sleep(900); // 黑幕 + 菜单曲起播落定
 
     const hallPage = await page.evaluate(collectPage);
-    const hallPresence = await page.evaluate(presenceSnapshot);
+    const hallPresence = await page.evaluate(presenceSnapshot, cfg);
     const hall = {
       page: hallPage,
       presence: hallPresence,
@@ -385,17 +409,19 @@ try {
         font: roomFonts.length > 0 && roomFonts.every((k) => !hallPresence.font[k]),
         finish: finishKeys.length > 0 && finishKeys.every((k) => !hallPresence.finish[k]),
         bgm: roomBgms.length > 0 && roomBgms.every((k) => !hallPresence.bgmCached[k]),
+        play: !hallPresence.play, // 仅记录：A 臂不交还时 false，不算失败
       },
     };
     log(
       `第 ${i} 轮离房：纹 ${hallPage.texMB}MB（Δ${hall.delta.texMB}）音 ${hallPage.audioMB}MB/${hallPage.audioCount}键（Δ${hall.delta.audioMB}）` +
-        ` | 交还 字体=${hall.released.font} 结算=${hall.released.finish} BGM=${hall.released.bgm} | 菜单曲 ${hallPresence.menuBgm.playing ? "在播" : "未播"}`,
+        ` | 交还 字体=${hall.released.font} 结算=${hall.released.finish} BGM=${hall.released.bgm} chars-play=${hallPresence.play ? "仍驻留" : "已交还"}` +
+        ` | 菜单曲 ${hallPresence.menuBgm.playing ? "在播" : "未播"}`,
     );
 
     // —— 重进：onLevelPicked 弹回面板 → 点 #btn-create（capture 先记 t0）
     await page.evaluate((lv) => globalThis.__fw.registry.get("onLevelPicked")(lv), LEVEL);
     await page.waitForSelector("#menu", { state: "visible", timeout: 10000 });
-    const preClick = await page.evaluate(presenceSnapshot);
+    const preClick = await page.evaluate(presenceSnapshot, cfg);
     await page.evaluate(installReentryWatch, cfg);
     await page.click("#btn-create");
     await page.waitForFunction(() => globalThis.__reWatch?.t0 != null, null, { timeout: 10000, polling: 20 });
@@ -404,7 +430,7 @@ try {
       .waitForFunction(
         (c) => {
           const w = globalThis.__reWatch;
-          return !!(w && w.font != null && w.finish != null && w.bgmPlaying != null && w.gameActive != null);
+          return !!(w && w.font != null && w.finish != null && w.bgmPlaying != null && w.gameActive != null && w.charsPlay != null && w.charAnims != null);
         },
         cfg,
         { timeout: Math.min(W(20000), 60000), polling: 40 },
@@ -415,7 +441,7 @@ try {
     const watch = await page.evaluate(readReentryWatch);
     const newResources = await page.evaluate(newResourceEntries, watch.t0);
     const postPage = await page.evaluate(collectPage);
-    const postPresence = await page.evaluate(presenceSnapshot);
+    const postPresence = await page.evaluate(presenceSnapshot, cfg);
     const post = {
       page: postPage,
       presence: postPresence,
@@ -423,11 +449,14 @@ try {
         font: roomFonts.every((k) => postPresence.font[k]),
         finish: finishKeys.every((k) => postPresence.finish[k]),
         bgm: roomBgms.every((k) => postPresence.bgmCached[k]),
+        play: postPresence.play === true,
+        charAnims: cfg.charAnimKeys.every((k) => postPresence.charAnims[k] === true),
       },
     };
     const newTransferKB = +newResources.reduce((s, r) => s + r.transferKB, 0).toFixed(1);
     log(
       `第 ${i} 轮重进：可玩 ${watch.gameActive}ms 字体 ${watch.font}ms 结算 ${watch.finish}ms BGM ${watch.bgmPlaying}ms` +
+        ` playMs=${watch.charsPlay} charAnimsMs=${watch.charAnims}` +
         ` | 复原 字体=${post.restored.font} 结算=${post.restored.finish} BGM=${post.restored.bgm}` +
         ` | 新资源 ${newResources.length} 条 ${newTransferKB}KB | 纹 ${postPage.texMB}MB 音 ${postPage.audioMB}MB`,
     );
