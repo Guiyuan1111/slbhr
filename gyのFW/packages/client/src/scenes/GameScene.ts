@@ -1301,6 +1301,11 @@ export class GameScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     const st = this.d.net.room?.state;
     if (!st) return;
+    // 换关窗口闸（用户实测 2026-10-24：下一关人物模型短暂出现在上一关地图内）——
+    // advance 回声先于黑幕换景：服务端 buildWorld 已把玩家落新关出生点，旧场景若继续
+    // 消费会把新关站位画进旧地图（resetRound 重显+瞬移）。oracle gameFinish 后
+    // Level.update 停跑无此窗口；我方 scene 重建由 reloadLevel 幕下完成，期间旧场景冻结。
+    if (String(st.levelId ?? "") !== this.d.level.id) return;
     const nowMs = Number(time) || 0;
 
     // M12：首个快照做一次字段校验。schema 漂移（漏 defineTypes/字段改名）此前被
