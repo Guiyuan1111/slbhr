@@ -173,15 +173,37 @@ export class PauseMenu extends Phaser.Scene {
     });
     this.board = buildBoard(this);
     const board = this.board;
-    board.add(this.add.bitmapText(CX, 40, FONT_MAIN, "暫停", 36).setOrigin(0.5, 0.5));
-    // 再试/返回：oracle 为 fade 包络（:1909660/:1910067），面板由黑幕 ops 统一停，本地不抢停
-    stoneButton(this, board, CX + HALF_W / 3, 108, "再试一次", () => {
+    // oracle 布局（A 包 init 偏移 1860825-1861900，2026-10-23 勘误）：
+    //   标题 fontStone_large 36——中文版预加载把该键重绑到 chinese font（偏移 2166900 区），
+    //   与 FONT_MAIN 同源同度量（名义 36 ⇒ 墨迹高≈(3+91)×0.75≈70）；锚(0) y=0.6·(−halfH)+th/2
+    //   ⇒ 中心板内 y = 321 − 192.6 + 70 ≈ 199（旧值 40 系未换算 halfHeight，挤在板顶）。
+    board.add(this.add.bitmapText(CX, 199, FONT_MAIN, "暫停", 36).setOrigin(0.5, 0.5));
+    // 设置齿轮（oracle renderContent）：SettingsButton0000/1（102×102）scale 0.9 ⇒ 91.8 见方，
+    //   锚(1,1) 右缘=halfW−w、下缘=−halfH+w+100 ⇒ 板内中心 (836,146)；点开 SettingsScene
+    //   （oracle 开 SettingsMenu，keyboard 模式 Music/Fx 双钮 + Ok，我方即 SettingsScene）。
+    const gear = this.add
+      .image(836, 146, ATLAS_MENU, "SettingsButton0000")
+      .setDisplaySize(91.8, 91.8)
+      .setInteractive({ useHandCursor: true });
+    gear.on("pointerdown", () => gear.setFrame("SettingsButton0001"));
+    gear.on("pointerup", () => {
+      gear.setFrame("SettingsButton0000");
+      clickSfx(this);
+      this.scene.launch("SettingsScene");
+    });
+    gear.on("pointerupoutside", () => gear.setFrame("SettingsButton0000"));
+    board.add(gear);
+    // 再试/返回/继续（oracle layoutContent）：三钮构造后重设锚(0)=左上角，位 x=±halfW/3、
+    //   y=0.15·halfH（双钮）与 x=0、y=0.5·halfH（继续）——左上角位 + 半宽 126/半高 58.5 = 中心位
+    //   ⇒ 再试(811,428)/返回(523,428)/继续(667,540)。旧中心锚直抄 rel 坐标，整体挤在板顶。
+    //   再试/返回：oracle 为 fade 包络（:1909660/:1910067），面板由黑幕 ops 统一停，本地不抢停
+    stoneButton(this, board, CX + HALF_W / 3 + 126, 321 + 0.15 * 321 + 58.5, "再试一次", () => {
       handle().__fwRestart?.();
     });
-    stoneButton(this, board, CX - HALF_W / 3, 108, "返回菜单", () => {
+    stoneButton(this, board, CX - HALF_W / 3 + 126, 321 + 0.15 * 321 + 58.5, "返回菜单", () => {
       handle().__fwLeaveToMenu?.();
     });
-    stoneButton(this, board, CX, 241, "继续", () => {
+    stoneButton(this, board, CX + 126, 321 + 0.5 * 321 + 58.5, "继续", () => {
       // F3：经 __fwTogglePause 发 resume 给服务端；菜单由 pause-changed 回声统一关闭
       // （本地不抢停——若对端已解除，回声早已关掉本面板，此钮不会存在）
       handle().__fwTogglePause?.();
@@ -319,12 +341,16 @@ export class GameOverMenu extends Phaser.Scene {
   }
   create(): void {
     const board = buildBoard(this);
-    board.add(this.add.bitmapText(CX, 40, FONT_MAIN, "游戏结束", 36).setOrigin(0.5, 0.5));
+    // oracle GameOverMenu（A 包 init 偏移 1879350 区，2026-10-23 勘误）：标题锚(0)
+    // y=0.5·(−halfH)+th/2（th≈70，同 Pause 勘误口径）⇒ 中心板内 y = 321 − 160.5 + 70 ≈ 231；
+    // 双钮锚(0.5)中心位 (±0.4·halfW, 0.4·halfH) = (±173.2, 128.4) ⇒ 板内 (368,449)/(714,449)。
+    // 旧值 y=40/254 同 Pause 系未换算，标题与双钮挤在板顶。
+    board.add(this.add.bitmapText(CX, 231, FONT_MAIN, "游戏结束", 36).setOrigin(0.5, 0.5));
     // 双钮：oracle 为 fade 包络（:1880672 Menu / :1909660 Retry），面板由黑幕 ops 统一停
-    stoneButton(this, board, CX - 0.4 * HALF_W, 254, "返回菜单", () => {
+    stoneButton(this, board, CX - 0.4 * HALF_W, 321 + 0.4 * 321, "返回菜单", () => {
       handle().__fwLeaveToMenu?.();
     });
-    stoneButton(this, board, CX + 0.4 * HALF_W, 254, "再试一次", () => {
+    stoneButton(this, board, CX + 0.4 * HALF_W, 321 + 0.4 * 321, "再试一次", () => {
       handle().__fwRestart?.();
     });
   }
