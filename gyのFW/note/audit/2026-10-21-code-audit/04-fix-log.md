@@ -21,7 +21,7 @@
 | M9 | 机关平滑速度不衰减 | P2 | 已修 | `c7dc51b` | 超 80ms 静止清零回读 + 全量门禁；未做视觉抽帧 |
 | M10 | Boot 加载条事件名 | P2 | 已修 | `c7dc51b` | `filecomplete-atlasjson-` 回读；加载条视觉未单独断言 |
 | M11 | temple.json 失败永久缓存 | P2 | 已修 | `c7dc51b`+`fa7e075` | `templeData.test` 失败/网络拒绝重试 + 成功单例 3 例 |
-| M12 | any/GameScene 巨型类 | P2 | 大部已修 | `cef6359`+`fc2bb52`+`5225d74`+`09adfe8`+`ec3e057` | 渐进拆分：机关平滑 `scenes/mechSmoothing.ts`（单测 4）、快照字段校验 `snapshotValidation.ts`（单测 5）、平台声 `scenes/platformSound.ts`（单测 5）、相机子系统 `scenes/cameraRig.ts`（单测 17；0.3.43 接线 `ec3e057`，GameScene 2102→1950 行，视觉带 repeat5 中位 92.53 无显著位移+det48+e2e 全绿）已接入；共享 DTO/生成类型仍挂账（netDto 草案备料中），见 [02-medium.md](02-medium.md) |
+| M12 | any/GameScene 巨型类 | P2 | 大部已修 | `cef6359`+`fc2bb52`+`5225d74`+`09adfe8`+`ec3e057` | 渐进拆分：机关平滑 `scenes/mechSmoothing.ts`（单测 4）、快照字段校验 `snapshotValidation.ts`（单测 5）、平台声 `scenes/platformSound.ts`（单测 5）、相机子系统 `scenes/cameraRig.ts`（单测 17；0.3.43 接线 `ec3e057`，GameScene 2102→1950 行，视觉带 repeat5 中位 92.53 无显著位移+det48+e2e 全绿）已接入；共享 DTO 清单已落地并接入 snapshotValidation（netDto `9eaf451`+接线 `cb4a21c`：Player 5→14 字段/winds 1→2/新增 doors 单对象监控，真局探针实证误报归零）；剩余=消费面 st:any 换用生成类型（低优先），见 [02-medium.md](02-medium.md) |
 | M13 | localStorage 写入无保护 | P2 | 已修 | `c7dc51b`+`fa7e075` | `progress.test` 写入/读取抛错降级 2 例 |
 | L1 | oracle 路径硬编码 | P3 | 已修 | `bd151d8` | `ORACLE_ROOT` 环境变量覆盖回读 |
 | L2 | `/api/level` 异常文本泄漏 | P3 | 已修 | `bd151d8` | 错误细节转服务端日志、响应通用文案回读 |
