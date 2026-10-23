@@ -169,7 +169,7 @@ git 列以快照 JSON `meta.git`（存档时脚本记录）为准；visual 系�
 | perf-r0-step | e477f9c | 0.0227ms | 0.3752ms | 本机 r0 基线（空载口径；scripted 档见 r0 报告 §二） |
 | perf-r1-step | 8d2b6d5 | 0.0193ms | 0.3205ms | r1 四件后（b2Timer 桩+jumpSound；时点读数 0.0177，带内 -15%~-22%） |
 | det-baseline-vm | 3a1cfdf | — | — | 位级哈希链基线（后续引擎改动的对照锚） |
-| det-r0-baseline | e477f9c | — | — | 位级门禁现锚（r1 四件后 --compare 仍 48/48 全绿） |
+| det-r0-baseline | 865a0fb | — | — | 位级门禁现锚（P-03 S 档 forest_14/14_1 分叉后重锚两行，余 46 行哈希不变，--compare 48/48 全绿） |
 | load-baseline / load-r3-load | 9f0155c | — | — | 客户端加载前/后（冷启动 6909→4858KB） |
 | sync-r0-sync → sync-r1-sync | e477f9c→8d2b6d5 | — | — | sync 段 forest_01 0.0210→0.0096ms（patch 字节不变） |
 | routeio-r0-routeio → routeio-r1-routeio | 269d83d→8d2b6d5 | — | — | 整关回放 10.34→12.14 关/s |
