@@ -25,6 +25,13 @@
 
 ## 条目
 
+**更新**：2026-10-23（0.3.43 发版：M12 相机接线+交接复查批+四槽开发）
+① 交接审查：0.3.41/0.3.42 交接 AI 成果合格（核心门禁亲核+四高风险 diff 逐 hunk 无实质缺陷），唯一失配 DEPLOY.md Node 版本已修（233e3d3）；盲区补验 e2e 11 跑 11 PASS/视觉带 91.11-92.45 无位移/H4 内存有界证实——证据 [evidence/2026-10-23-recheck/](evidence/2026-10-23-recheck/) 01-04。
+② M12 相机子系统接线落地（ec3e057）：GameScene 2102→1950 行，视觉带 repeat5 中位 92.53 无显著位移，M12 剩共享 DTO 接线（草案 9eaf451 已备：8 类 48 字段+21 例漂移单测）。
+③ 验收自动化：M4 clipboard 抽模块+7 例（e6a47e8）；M3 journey bgm 场景 12/12（c287bc3）；CI actions v4→v7（9813dc2）。
+④ 待用户裁决四件：P-03 范围（17 号档：S=2/M=8/L=15-18 关，双口径警示真可通关仅 11/48）；forest_05 口径张力（oracle 实机已解 vs README 待审）；colyseus 0.18 立项（调研档 8b218cf：L 级 2.5-3 槽，B3 onLeave 语义坑+无中间态；Plan B=nanoid overrides 0.5 槽）；48 关视觉量具扩种。
+⑤ 发版：0.3.43 门禁全绿（217 用例/det48/e2e 十场景/route f01+f12/audit 0 critical），release note [release/0.3.43.md](release/0.3.43.md)。
+
 **更新**：2026-10-21（**🚢 0.3.42 发版：M12 渐进拆分 + T10 平台电机声 + A 槽 L-02/L-01 + P-01 静音**。①M12 按用户裁定走渐进拆分：机关平滑 `scenes/mechSmoothing.ts`、快照字段校验 `snapshotValidation.ts`、平台声 `scenes/platformSound.ts` 抽为纯模块并接入，新增 14 例单测；相机子系统与共享 DTO 仍挂账（见 `note/audit/2026-10-21-code-audit/02-medium.md`）。②T10 平台电机声由全局单发改为逐台实例（起步/限位停/反向重启），SHUTDOWN 与整轮复位统一释放。③A 槽：L-02 won 相位刷新/重连回座补开结算（`openEndMenu`+`endMenuShown` 幂等），L-01 终局爬梯幽灵隐藏；L-01 因共享工作树卷入 `5225d74`，未改写历史，归属见 `note/issues-2026-10-20/A-server-room.md`。④P-01 按用户裁定：twoRows 隐藏钻石行保留空拍但静音。⑤门禁：16 文件/172 用例、build、det 48/48 位级一致、e2e pause 11/11·leave 3/3·refresh 3/3·wonrefresh 6/6·rejoin 3/3；f12 repeat3 ALL PASS（winAt 12989/13477/12967ms，判定墙钟抖动，0.3.39 ~268ms 存疑按环境漂移结案）。⑥版本四处+lock+README 统一 0.3.42，发行说明 `note/release/0.3.42.md`；遗留：M12 相机/DTO、LAN 剪贴板手测、速度关 BGM 听感、烘焙内存峰值、真机触屏/弱网。）
 
 **更新**：2026-10-20（**📋 交接简报就位（用户令"写好文档，交给另一个 AI 开发"）**——`note/handoff/2026-10-20-session-handoff.md`：使命与立身原则（完全复刻默认+原版优化须先审后行）/八条铁律/架构与门禁全家桶数字（vitest 126·det 48/48·新口径带 90.55-92.86）/0.3.40 收盘状态/待用户裁决六项/下一波队列（A 槽客户端余量三项+T10+f12 复测）/八条血泪教训（审计误报四例·仪器伪差·tag 字典序·深链兼容等）/文件速查/开工三步。归档导航已登记，总导航快速定位已挂。后续会话以该简报为开工第一读物，动态仍看本文件置顶条目。）
