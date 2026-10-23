@@ -1,0 +1,178 @@
+{
+  "meta": {
+    "label": "r43-mr-slow3g-b",
+    "git": "d9759b7",
+    "date": "2026-10-23T03:15:24.557Z",
+    "node": "v22.22.1",
+    "net": "slow3g",
+    "note": "reloadMs=scene.start('Menu')→Menu RUNNING 且四键纹理在位的墙钟（不含 500ms 黑幕包络）；released/reloaded=four texture exists flags; imagesTransfer=sum(transferSize) over the four images in that window (0=immutable disk cache hit);texMB=textures.list 逐源 w·h·4 总账（含透明边距）"
+  },
+  "summary": {
+    "cycles": 3,
+    "releasedAll": true,
+    "reloadMsMedian": 102.4,
+    "reloadMsMax": 115.8,
+    "imagesTransferMedian": 0
+  },
+  "cycles": [
+    {
+      "cycle": 1,
+      "menuTexMB": 15.76,
+      "menuFourMB": 5.58,
+      "releasedTexMB": 25.94,
+      "releasedFourMB": 0,
+      "reloadedTexMB": 31.51,
+      "reloadedFourMB": 5.58,
+      "released": {
+        "TempleHall": 0,
+        "Beam": 0,
+        "GameName": 0,
+        "KiziLogo": 0
+      },
+      "reloaded": {
+        "TempleHall": 1,
+        "Beam": 1,
+        "GameName": 1,
+        "KiziLogo": 1
+      },
+      "reloadMs": 101.5,
+      "resources": [
+        {
+          "name": "/assets/images/TempleHallForest.jpg?v=4250127c",
+          "ms": 3.7,
+          "transfer": 0,
+          "encoded": 426676,
+          "decoded": 426676
+        },
+        {
+          "name": "/assets/images/Beam.png?v=0aba164c",
+          "ms": 3.2,
+          "transfer": 0,
+          "encoded": 64607,
+          "decoded": 64607
+        },
+        {
+          "name": "/assets/images/GameNameForest.png?v=401f4b91",
+          "ms": 3.3,
+          "transfer": 0,
+          "encoded": 109049,
+          "decoded": 109049
+        },
+        {
+          "name": "/assets/images/branding/branding_logo_kizi.png?v=a7f1205a",
+          "ms": 3.1,
+          "transfer": 0,
+          "encoded": 61532,
+          "decoded": 61532
+        }
+      ],
+      "imagesTransfer": 0
+    },
+    {
+      "cycle": 2,
+      "menuTexMB": 31.51,
+      "menuFourMB": 5.58,
+      "releasedTexMB": 25.94,
+      "releasedFourMB": 0,
+      "reloadedTexMB": 31.51,
+      "reloadedFourMB": 5.58,
+      "released": {
+        "TempleHall": 0,
+        "Beam": 0,
+        "GameName": 0,
+        "KiziLogo": 0
+      },
+      "reloaded": {
+        "TempleHall": 1,
+        "Beam": 1,
+        "GameName": 1,
+        "KiziLogo": 1
+      },
+      "reloadMs": 102.4,
+      "resources": [
+        {
+          "name": "/assets/images/TempleHallForest.jpg?v=4250127c",
+          "ms": 4.4,
+          "transfer": 0,
+          "encoded": 426676,
+          "decoded": 426676
+        },
+        {
+          "name": "/assets/images/Beam.png?v=0aba164c",
+          "ms": 3.8,
+          "transfer": 0,
+          "encoded": 64607,
+          "decoded": 64607
+        },
+        {
+          "name": "/assets/images/GameNameForest.png?v=401f4b91",
+          "ms": 3.9,
+          "transfer": 0,
+          "encoded": 109049,
+          "decoded": 109049
+        },
+        {
+          "name": "/assets/images/branding/branding_logo_kizi.png?v=a7f1205a",
+          "ms": 3.5,
+          "transfer": 0,
+          "encoded": 61532,
+          "decoded": 61532
+        }
+      ],
+      "imagesTransfer": 0
+    },
+    {
+      "cycle": 3,
+      "menuTexMB": 31.51,
+      "menuFourMB": 5.58,
+      "releasedTexMB": 25.94,
+      "releasedFourMB": 0,
+      "reloadedTexMB": 31.51,
+      "reloadedFourMB": 5.58,
+      "released": {
+        "TempleHall": 0,
+        "Beam": 0,
+        "GameName": 0,
+        "KiziLogo": 0
+      },
+      "reloaded": {
+        "TempleHall": 1,
+        "Beam": 1,
+        "GameName": 1,
+        "KiziLogo": 1
+      },
+      "reloadMs": 115.8,
+      "resources": [
+        {
+          "name": "/assets/images/TempleHallForest.jpg?v=4250127c",
+          "ms": 5,
+          "transfer": 0,
+          "encoded": 426676,
+          "decoded": 426676
+        },
+        {
+          "name": "/assets/images/Beam.png?v=0aba164c",
+          "ms": 4.5,
+          "transfer": 0,
+          "encoded": 64607,
+          "decoded": 64607
+        },
+        {
+          "name": "/assets/images/GameNameForest.png?v=401f4b91",
+          "ms": 4.6,
+          "transfer": 0,
+          "encoded": 109049,
+          "decoded": 109049
+        },
+        {
+          "name": "/assets/images/branding/branding_logo_kizi.png?v=a7f1205a",
+          "ms": 4.3,
+          "transfer": 0,
+          "encoded": 61532,
+          "decoded": 61532
+        }
+      ],
+      "imagesTransfer": 0
+    }
+  ]
+}

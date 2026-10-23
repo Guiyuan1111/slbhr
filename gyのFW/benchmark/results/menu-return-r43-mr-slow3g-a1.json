@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "label": "r43-mr-slow3g-a1",
+    "git": "d9759b7",
+    "date": "2026-10-23T03:14:30.648Z",
+    "node": "v22.22.1",
+    "net": "slow3g",
+    "note": "reloadMs=scene.start('Menu')→Menu RUNNING 且四键纹理在位的墙钟（不含 500ms 黑幕包络）；released/reloaded=four texture exists flags; imagesTransfer=sum(transferSize) over the four images in that window (0=immutable disk cache hit);texMB=textures.list 逐源 w·h·4 总账（含透明边距）"
+  },
+  "summary": {
+    "cycles": 3,
+    "releasedAll": false,
+    "reloadMsMedian": 115.4,
+    "reloadMsMax": 120.4,
+    "imagesTransferMedian": 0
+  },
+  "cycles": [
+    {
+      "cycle": 1,
+      "menuTexMB": 15.76,
+      "menuFourMB": 5.58,
+      "releasedTexMB": 31.51,
+      "releasedFourMB": 5.58,
+      "reloadedTexMB": 31.51,
+      "reloadedFourMB": 5.58,
+      "released": {
+        "TempleHall": 1,
+        "Beam": 1,
+        "GameName": 1,
+        "KiziLogo": 1
+      },
+      "reloaded": {
+        "TempleHall": 1,
+        "Beam": 1,
+        "GameName": 1,
+        "KiziLogo": 1
+      },
+      "reloadMs": 107.8,
+      "resources": [],
+      "imagesTransfer": 0
+    },
+    {
+      "cycle": 2,
+      "menuTexMB": 31.51,
+      "menuFourMB": 5.58,
+      "releasedTexMB": 31.51,
+      "releasedFourMB": 5.58,
+      "reloadedTexMB": 31.51,
+      "reloadedFourMB": 5.58,
+      "released": {
+        "TempleHall": 1,
+        "Beam": 1,
+        "GameName": 1,
+        "KiziLogo": 1
+      },
+      "reloaded": {
+        "TempleHall": 1,
+        "Beam": 1,
+        "GameName": 1,
+        "KiziLogo": 1
+      },
+      "reloadMs": 120.4,
+      "resources": [],
+      "imagesTransfer": 0
+    },
+    {
+      "cycle": 3,
+      "menuTexMB": 31.51,
+      "menuFourMB": 5.58,
+      "releasedTexMB": 31.51,
+      "releasedFourMB": 5.58,
+      "reloadedTexMB": 31.51,
+      "reloadedFourMB": 5.58,
+      "released": {
+        "TempleHall": 1,
+        "Beam": 1,
+        "GameName": 1,
+        "KiziLogo": 1
+      },
+      "reloaded": {
+        "TempleHall": 1,
+        "Beam": 1,
+        "GameName": 1,
+        "KiziLogo": 1
+      },
+      "reloadMs": 115.4,
+      "resources": [],
+      "imagesTransfer": 0
+    }
+  ]
+}
