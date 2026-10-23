@@ -23,7 +23,7 @@ import { AUDIO_SFX, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadAudioPack } from 
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
-import { ATLAS_CHARS, ATLAS_CHARS_ENTRY, ATLAS_CHARS_PLAY, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, ATLAS_TEMPLE_FINISH, FONT_ROOM, PLAYER_SCALE, buildGameAnims, ensureCharAnims, loadCharsPlay, loadGameAtlases, loadMechAtlas, loadPopupFinish, loadRoomFont, loadTempleFinish, popupFinishKey, roomFontKey } from "./BootScene";
+import { ATLAS_CHARS, ATLAS_CHARS_ENTRY, ATLAS_CHARS_PLAY, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, ATLAS_TEMPLE_FINISH, FINISH_ATLAS_KEYS, FONT_FULL, FONT_ROOM, PLAYER_SCALE, buildGameAnims, ensureCharAnims, loadCharsPlay, loadGameAtlases, loadMechAtlas, loadPopupFinish, loadRoomFont, loadTempleFinish, popupFinishKey, roomFontKey } from "./BootScene";
 import { getSettings } from "../settings";
 import { loadTempleLevels } from "../templeData";
 import { validateSnapshot } from "../snapshotValidation";
@@ -684,6 +684,19 @@ export class GameScene extends Phaser.Scene {
    *  房内，3.72MiB 解码画布不留在选关大厅。重进同关由 kickTempleFinish 重取（121.9KB）。 */
   static releaseTempleFinish(textures: Phaser.Textures.TextureManager): void {
     if (textures.exists(ATLAS_TEMPLE_FINISH)) textures.remove(ATLAS_TEMPLE_FINISH);
+  }
+
+  /** r41：离房回选关交还房内字体（两变体互斥，至多一张 8,974,336B 解码画布）。大厅的字全用
+   *  FONT_MAIN（font-prephase），房内字体在大厅没有消费点；重进由 GameScene.preload 的
+   *  loadRoomFont 重新声明——PNG 走 r37 的 immutable 缓存（0 请求），代价只剩解码。 */
+  static releaseRoomFont(textures: Phaser.Textures.TextureManager): void {
+    for (const key of [FONT_FULL, FONT_ROOM]) if (textures.exists(key)) textures.remove(key);
+  }
+
+  /** r41：离房回选关交还结算变体（~1.97MiB 解码画布；三张互斥，至多一张在缓存）。重进由
+   *  kickPopupFinish 在房间可玩之后预取，首次开板前有整局时间。 */
+  static releasePopupFinish(textures: Phaser.Textures.TextureManager): void {
+    for (const key of FINISH_ATLAS_KEYS) if (textures.exists(key)) textures.remove(key);
   }
 
   /** 地面：岩壁纹理 × 蒙版合成 + 黑外描边 + 右下软投影（canvas 一次性合成） */

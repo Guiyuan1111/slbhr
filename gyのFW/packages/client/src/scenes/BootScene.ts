@@ -88,6 +88,9 @@ export const ATLAS_MENU_JSON = "/assets/atlasses/MenuAssetsMini.json";
 export const ATLAS_FINISH_GENERAL = "popup-finish-general";
 export const ATLAS_FINISH_SPEED = "popup-finish-speed";
 export const ATLAS_FINISH_PUZZLE = "popup-finish-puzzle";
+/** 三张结算图集的键全表（r41：离房回选关时全部交还，大厅无消费点）。同一时刻至多一张
+ *  在缓存——loadPopupFinish 跨类型会先卸旧变体；重进由 kickPopupFinish 预取。 */
+export const FINISH_ATLAS_KEYS = [ATLAS_FINISH_GENERAL, ATLAS_FINISH_SPEED, ATLAS_FINISH_PUZZLE] as const;
 const FINISH_ATLASES = {
   general: { key: ATLAS_FINISH_GENERAL, file: "PopupFinishGeneral", stone: "FinishStone" },
   speed: { key: ATLAS_FINISH_SPEED, file: "PopupFinishSpeed", stone: "FinishStoneSpeed" },

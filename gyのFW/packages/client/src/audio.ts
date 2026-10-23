@@ -104,3 +104,16 @@ export function loadAudioPack(scene: Phaser.Scene, pack: ReadonlyArray<readonly 
     scene.load.audio(key, [{ url: `/assets/audio/s/${file.replace(/.mp3$/, "")}`, type: "mp3" }]);
   }
 }
+
+/** 房内 BGM 键全表（r41）：离房回选关时连同解码 PCM 一起交还——大厅只活 bgm_menu 与 sfx，
+ *  这五支在大厅一秒也不响。重进由 kickBgmLoop / kickBgmTerminal 按需重取。 */
+export const GAME_BGM_KEYS = ["bgm_level", "bgm_level_speed", "bgm_finish", "bgm_finish_speed", "bgm_over"] as const;
+
+/** 交还房内 BGM：先销毁 Sound 实例（WebAudioSound.audioBuffer 仍引用 PCM），再删缓存条目；
+ *  顺序反了缓冲区会被实例钉住，缓存账归零而堆不还。 */
+export function releaseGameBgms(sound: Phaser.Sound.BaseSoundManager, cache: Phaser.Cache.BaseCache): void {
+  for (const key of GAME_BGM_KEYS) {
+    sound.removeByKey(key);
+    cache.remove(key);
+  }
+}

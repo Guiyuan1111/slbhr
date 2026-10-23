@@ -14,6 +14,7 @@ import { Net, type NetCallbacks } from "./net";
 import { KeyboardInput } from "./input";
 import { TouchControls } from "./touch";
 import { BootScene, bgWarmSettled, markEntryInFlight, mechAtlasUrls, roomFontKey, roomFontPng, setWarmBgmFamily, warmMechFor, warmRoomFontFor } from "./scenes/BootScene";
+import { releaseGameBgms } from "./audio";
 import { MenuScene } from "./scenes/MenuScene";
 import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
@@ -449,6 +450,12 @@ async function enterGame(): Promise<void> {
       GameScene.releaseGrounds(phaser!.textures);
       // r34：门动画图集（3.72MiB 解码）只服务房内；选关大厅不为它买单，重进由 kickTempleFinish 重取。
       GameScene.releaseTempleFinish(phaser!.textures);
+      // r41：房内独占资源的其余三笔同理——房内字体（8.56MiB 解码）、结算变体（~1.97MiB）、
+      // 关卡 BGM（解码 PCM ~15MB）。大厅一个字、一声都不消费；重进由 GameScene.preload
+      // （字体）、kickPopupFinish、kickBgmLoop/kickBgmTerminal 重取，冷启动路径零变化。
+      GameScene.releaseRoomFont(phaser!.textures);
+      GameScene.releasePopupFinish(phaser!.textures);
+      releaseGameBgms(phaser!.sound, phaser!.cache.audio);
       sm.start("Temple");
       const hud = document.querySelector("#hud");
       if (hud) hud.classList.add("hidden");
