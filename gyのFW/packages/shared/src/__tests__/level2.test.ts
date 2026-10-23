@@ -213,10 +213,12 @@ describe("level2 全 48 关冒烟 + 全量直方图", () => {
     }
     expect(counts).toEqual({
       [GROUND_TYPE.SOLID]: 14114,
-      [GROUND_TYPE.SLOPE_A]: 764,
+      // P-03 S 档分叉（2026-10-23，forest_14/14_1 cb32 门台修）：删楔面 gid2×2/gid5×2 ×两关
+      // ——oracle 账为 SLOPE_A 764 / WEDGE_D 628，见 evidence/forest_14 分叉建档
+      [GROUND_TYPE.SLOPE_A]: 760,
       [GROUND_TYPE.SLOPE_B]: 881,
       [GROUND_TYPE.WEDGE_C]: 770,
-      [GROUND_TYPE.WEDGE_D]: 628,
+      [GROUND_TYPE.WEDGE_D]: 624,
       [GROUND_TYPE.WATER]: 407,
       [GROUND_TYPE.LAVA]: 327,
       [GROUND_TYPE.GREEN]: 315,
