@@ -41,6 +41,7 @@
 | 方法论/批次规划 | plans/（deviation-flip、fidelity-audit-method、level-batches、route-production-playbook、route-synthesis、wiring-0.3.0） |
 | oracle bundle 逆向工作台 | reverse/oracle-a/（beautified init.js + MODULES.md + 模块拆解） |
 | 关卡证据库（35 目录，按关组织） | evidence/forest*/ |
+| 0.3.42 交接复查证据（2026-10-23 五槽） | [evidence/2026-10-23-recheck/](evidence/2026-10-23-recheck/)（01 e2e 全量 11/11、02 视觉带+audit、03 H4 内存有界、04 M12 相机拆分草案） |
 | 自验收阶梯（L0–L4） | [self-acceptance.md](self-acceptance.md) |
 | 联机架构说明 | [multiplayer-architecture.md](multiplayer-architecture.md) |
 | Ubuntu 服务器档案 | [ubuntu-server-profile.md](ubuntu-server-profile.md) |
