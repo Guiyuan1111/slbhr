@@ -15,6 +15,7 @@
 //   ④ 放行后按帧补齐：十一式全部注册、163 帧全部来自 chars-play 且几何等于产物 json。
 //   ⑤ 真路径（不停答）也收敛：房间可玩后十一式齐、零缺帧警告、零花屏，并**量出**"可玩 → Play 张落定"
 //      这段窗口的真实长度（这条长度 perf-load 量不到，原因见用例二注）。
+//   ⑥ r42 离房交还后重进重建：十一式全局键与 chars-play 纹理必须成对交还/重取，重进后逐帧解析到新纹理。
 //
 // 用法：node scripts/e2e/charsplay.mjs [port] [level] [停答保险丝ms] [net]
 //   net = off|cable|4g|fast3g|slow3g（缺省 off）。窗口这段东西的**现场在弱网**：off 档实测 Play 张
@@ -297,6 +298,69 @@ try {
   check("真路径页面零错误", errs.length === 0, errs.join("; "));
   await C.ctx.close();
   await D.ctx.close();
+
+  // ── 用例三：离房交还 chars-play → 重进重建（r42）──
+  // 钉三条用例一/二够不到的失效模式：
+  //   ① 摘键顺序：Animation 在 create 时就把帧名解析成具体 Frame，纹理一卸 Frame.data 即为 null；
+  //      buildSeq 的 exists 幂等卫又拒绝重建 ⇒ r39 那类 stale Frame 会一路带着播。故交还必须
+  //      **先摘十一式全局键、再卸纹理**，大厅里不许留死键。
+  //   ② 重建时机：重进由 GameScene.create 的 kickCharsPlay 重新声明纹理，ensureCharAnims 在
+  //      filecomplete 后才 buildCharAnims；早一步注册=整张图集当一帧（__BASE），晚一步=按键无键。
+  //   ③ 大厅零消费：chars-play/房内字体/结算变体离房即交还，而 bgm_menu 这类大厅资源不受牵连。
+  const E = await mkCtx();
+  watch("E", E.page);
+  await enterAs(E.page, PORT, "create", "", LEVEL, WAIT_SCALE);
+  // 单人 create 的 phase 可能不是 started（waitForStarted 不适用），以 Game active + 角色上屏为落定锚
+  await E.page.waitForFunction(() => globalThis.__fw?.scene?.isActive("Game"), null, { timeout: 60000, polling: 40 });
+  await waitPainted(E.page, WAIT_START);
+  await waitAnims(E.page, true, ARRIVAL_CAP);
+  const s5 = await snapshot(E.page);
+  check("用例三基线：重进前 chars-play 在缓存", s5.hasPlay === true, `hasPlay=${s5.hasPlay} role=${s5.myRole}`);
+  check("用例三基线：重进前十一式齐（阳性对照）", s5.registeredCount === PLAY_KEYS.length, `registered=${s5.registeredCount}/${PLAY_KEYS.length}`);
+
+  // 用例三窗口起点：只取此前累计条数，后面按 slice 判"本轮新增"
+  const preErrs = errs.length;
+  const preWarns = warns.length;
+  const preMissing = missingAnim.length;
+
+  await E.page.evaluate(() => globalThis.__fwLeaveToMenu?.());
+  await E.page.waitForFunction(
+    () => globalThis.__fw?.scene?.isActive("Temple") && !globalThis.__fw?.textures.exists("chars-play"),
+    null,
+    { timeout: 20000, polling: 40 },
+  );
+  const hall = await E.page.evaluate((keys) => {
+    const g = globalThis.__fw;
+    return {
+      hasPlay: g.textures.exists("chars-play"),
+      anims: keys.map((k) => g.anims.exists(k)),
+      font: g.textures.exists("font-full") || g.textures.exists("font-room"),
+      finish: ["popup-finish-general", "popup-finish-speed", "popup-finish-puzzle"].some((k) => g.textures.exists(k)),
+      bgmMenu: g.cache.audio.exists("bgm_menu"),
+    };
+  }, PLAY_KEYS);
+  check("用例三离房：chars-play 已交还", hall.hasPlay === false, `hasPlay=${hall.hasPlay}`);
+  check("用例三离房：十一式全局键全部已摘（不留 stale Frame 键）", hall.anims.every((v) => v === false), `anims=${JSON.stringify(hall.anims)}`);
+  check("用例三离房：房内字体与结算变体也已交还（r41 回归）", hall.font === false && hall.finish === false, `font=${hall.font} finish=${hall.finish}`);
+  check("用例三离房：大厅菜单曲仍在缓存", hall.bgmMenu === true, `bgmMenu=${hall.bgmMenu}`);
+
+  await E.page.evaluate((lv) => globalThis.__fw.registry.get("onLevelPicked")(lv), LEVEL);
+  await E.page.waitForSelector("#menu", { state: "visible", timeout: 15000 });
+  await E.page.click("#btn-create");
+  await E.page.waitForFunction(() => globalThis.__fw?.scene?.isActive("Game"), null, { timeout: 60000, polling: 40 });
+  await waitAnims(E.page, true, ARRIVAL_CAP);
+  const s6 = await snapshot(E.page);
+  check("用例三重进：chars-play 重新声明且十一式全部注册", s6.hasPlay === true && s6.registeredCount === PLAY_KEYS.length, `hasPlay=${s6.hasPlay} registered=${s6.registeredCount}/${PLAY_KEYS.length}`);
+  check(`用例三重进：动画帧数恰为 ${PLAY_FRAME_COUNT} 且全部来自 chars-play`, s6.animFrames === PLAY_FRAME_COUNT && s6.animForeign.length === 0, `frames=${s6.animFrames} foreign=${s6.animForeign.join(",")}`);
+  check("用例三重进：逐帧解析到新纹理（无 stale Frame / 无 __BASE）", s6.animBadFrames.length === 0 && s6.animGeomBad.length === 0 && s6.animMisResolved.length === 0, `bad=${s6.animBadFrames.join(",")} geomBad=${s6.animGeomBad.join(",")} mis=${s6.animMisResolved.join(" ")}`);
+  check("用例三重进：在场 chars 对象全部对得上产物 json", s6.badPainted.length === 0, `bad=${JSON.stringify(s6.badPainted)}`);
+
+  const key3 = /water/.test(s6.myRole) ? "d" : "ArrowRight";
+  await runInputs(E.page, [{ t: 0, key: key3, type: "down" }, { t: 900, key: key3, type: "up" }], 1000);
+  check("用例三窗口：重建后跑动零新增 Missing animation（重建时机已钉住）", missingAnim.slice(preMissing).length === 0, missingAnim.slice(preMissing).join("; "));
+  check("用例三窗口：零新增 TEX_WARN", warns.slice(preWarns).length === 0, warns.slice(preWarns).join("; "));
+  check("用例三窗口：零新增页面错误", errs.slice(preErrs).length === 0, errs.slice(preErrs).join("; "));
+  await E.ctx.close();
 } finally {
   await browser.close().catch(() => {});
   server.kill();
