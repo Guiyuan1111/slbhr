@@ -282,8 +282,8 @@
 
       /* 按钮：StoneButton0000/0001 原生帧 252×117（与 overlays.ts stoneButton 同尺寸同 hover 换帧）；
          帧坐标经 background-size/position 百分比换算（1024/252、256/772），定宽/回流拉伸两用。
-         精修主次梯度：首层主题暗罩（火/水）+ inset 主题色环 + 顶 1px 高光——创建=主钮
-         （满尺寸 + ember 环 + 文字暖光），加入=次钮（略小 + aqua 环 + 整体 opacity 略低）；
+         首层主题暗罩（火/水）+ inset 主题色环 + 顶 1px 高光——创建=ember 环 + 文字暖光，
+         加入=aqua 环；两钮同尺寸（用户 2026-10-23 裁定取消主次大小差），仅色环/亮度微差；
          hover 换帧照旧（background-position 不参与 transition，帧切换保持瞬时），叠加
          提亮 + 上浮 2px + 阴影扩散（150ms ease-out）；active 压平；busy（disabled）压暗。 */
       .btn {
@@ -314,8 +314,6 @@
       #btn-create { --btint: rgba(64, 20, 8, 0.42); box-shadow: inset 0 0 0 2px rgba(255, 122, 60, 0.55), inset 0 1px 0 rgba(255, 232, 190, 0.38); }
       #btn-join {
         --btint: rgba(18, 38, 72, 0.4);
-        width: 240px;
-        height: 108px;
         opacity: 0.92;
         color: #f3e9d2;
         box-shadow: inset 0 0 0 2px rgba(80, 180, 255, 0.5), inset 0 1px 0 rgba(214, 240, 255, 0.3);
@@ -428,7 +426,7 @@
       .hint .k-water kbd { border-color: rgba(63, 185, 255, 0.55); border-bottom: 3px solid rgba(63, 185, 255, 0.85); }
 
       /* 窄屏回流皮（手机竖屏/横屏矮窗）：板变流宽、按钮整行堆叠；四角裁片照常生效；
-         主次钮同宽但色环/尺寸差保留（次钮 108px 高） */
+         两钮同宽同高（继承 .btn 基类），色环/亮度微差保留 */
       @media (max-width: 559.9px), (max-height: 419.9px) {
         .menu-fit { transform: none; }
         .menu-logo { width: min(300px, 78vw); margin-bottom: -8px; }
@@ -436,7 +434,6 @@
         label, input, #menu-error { width: 100%; }
         .divider { width: 100%; margin-top: 16px; }
         .btn { display: flex; width: 100%; margin: 24px 0 0; }
-        #btn-join { width: 100%; }
         .btn + .btn { margin-top: 16px; }
         .hint { margin-top: 24px; }
       }
@@ -541,7 +538,7 @@
         <div class="panel">
           <div id="menu-level" style="text-align:center;color:#ffd479;font-size:14px;min-height:18px"></div>
           <h1><span class="fire">森林</span>·<span class="water">冰火人</span></h1>
-          <div class="sub">双人联机 · 一人火人 · 一人水女孩</div>
+          <div class="sub">双人联机 · 一人火娃 · 一人水娃</div>
           <div class="divider" aria-hidden="true"></div>
 
           <label for="password">房间密码（创建者设定，两人一致才能进同一房）</label>
@@ -553,12 +550,12 @@
           <label for="roomcode">房间码（加入时填写）</label>
           <input id="roomcode" type="text" maxlength="12" placeholder="创建后会显示房间码" />
 
-          <button class="btn" id="btn-create" type="button"><i class="av av-fire" aria-hidden="true"></i><span>创建房间<small>我当火人 · 方向键</small></span></button>
-          <button class="btn" id="btn-join" type="button"><i class="av av-water" aria-hidden="true"></i><span>加入房间<small>我当水女孩 · W/A/D</small></span></button>
+          <button class="btn" id="btn-create" type="button"><i class="av av-fire" aria-hidden="true"></i><span>创建房间<small>我当火娃 · 方向键</small></span></button>
+          <button class="btn" id="btn-join" type="button"><i class="av av-water" aria-hidden="true"></i><span>加入房间<small>我当水娃 · W/A/D</small></span></button>
           <div id="menu-error"></div>
           <div class="hint" title="每台电脑控制本机角色：碰到自己克制的液体没事，碰到对方的液体会化成烟；两人各自站进自己的门即可通关。创建房间时可在 URL 加 ?level=forest_02 选择关卡（默认 forest_01）。">
-            <span class="k-fire"><b>火人</b><kbd>↑</kbd><kbd>←</kbd><kbd>→</kbd></span>
-            <span class="k-water"><b>水女孩</b><kbd>W</kbd><kbd>A</kbd><kbd>D</kbd></span>
+            <span class="k-fire"><b>火娃</b><kbd>↑</kbd><kbd>←</kbd><kbd>→</kbd></span>
+            <span class="k-water"><b>水娃</b><kbd>W</kbd><kbd>A</kbd><kbd>D</kbd></span>
             <span><b>重开</b><kbd>R</kbd></span>
             <span><b>暂停</b><kbd>P</kbd></span>
           </div>

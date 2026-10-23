@@ -437,7 +437,7 @@ async function tryResume(): Promise<void> {
   }
   net = resumed;
   myRole = resumed.myRole;
-  if (myRole) $("#hud-role").textContent = myRole === "fireboy" ? "你扮演：火人" : "你扮演：水女孩";
+  if (myRole) $("#hud-role").textContent = myRole === "fireboy" ? "你扮演：火娃" : "你扮演：水娃";
   fillHudRoom(resumed.room.roomId);
   await enterGame();
 }
@@ -446,7 +446,7 @@ async function tryResume(): Promise<void> {
 function netHandlers(): NetCallbacks {
   return {
     onRole: (role: Role) => {
-      $("#hud-role").textContent = role === "fireboy" ? "你扮演：火人" : "你扮演：水女孩";
+      $("#hud-role").textContent = role === "fireboy" ? "你扮演：火娃" : "你扮演：水娃";
       myRole = role;
       keyboard?.setRole(role); // 键盘分键（F1）：fb=方向键，wg=W/A/D
       // 场景可能已启动（角色消息晚到），同步给渲染层
@@ -454,7 +454,7 @@ function netHandlers(): NetCallbacks {
       scene?.setMyRole(role);
     },
     onDeath: ({ role }) => {
-      const name = role === "fireboy" ? "火人" : "水女孩";
+      const name = role === "fireboy" ? "火娃" : "水娃";
       $("#toast").textContent = `${name}化烟了！点「再试一次」重开`;
       setTimeout(() => ($("#toast").textContent = ""), 2000);
     },
