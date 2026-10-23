@@ -1078,3 +1078,32 @@ Phaser 3.90 的 `Texture.get` 缺帧回落 `firstFrame`（不是 `__BASE`，本�
 **下一轮候选**：`chars-play`（10.75MB）与 `font-room`（8.56MB）的按需面收缩；`groundTex`
 4.96MB 逐关烘焙画布的换关释放口径；Temple Finish 的保留/释放再账；4g 档小于 100ms 的收益
 需更多轮次。素材再编码（任务 #42）仍是用户保留项，未经裁决不动。
+
+## 三十八、r41 增补（2026-10-23，离房交还房内独占资源）
+
+> 报告 `2026-10-23-r41-leave-release.md`。r24/r28 把房内字体做成按关子集、r29 把结算板拆成
+> 三变体、r25 把终局/失败曲延后装载——这些资源只在房间内需要，却在此前一直驻留到大厅：
+> 房内字体两变体互斥（8.56MiB 解码）、结算变体三选一（1.97MiB）、五支关卡 BGM PCM 14.99MB。
+> 本轮在 `leaveToMenu` 这一个入口把它们交还（`sound.removeByKey` 先于 `cache.remove`，
+> 纹理 `exists` 后卫 `textures.remove`），进房装载点原样保留：字体在 `GameScene.preload` 门内
+> 重解码，结算变体与 BGM 由 create 后 kick 重新装载；大厅 `bgm_menu` 与 13 支 SFX 不受影响。
+
+| 件 | 内容 | commit | 关键数字 |
+|---|---|---|---|
+| r41 件1 | [`audio.ts`](../../../packages/client/src/audio.ts) 增 `GAME_BGM_KEYS`／`releaseGameBgms`；[`GameScene.ts`](../../../packages/client/src/scenes/GameScene.ts) 增 `releaseRoomFont`／`releasePopupFinish` 静态纯函数；[`main.ts`](../../../packages/client/src/main.ts) 的 `leaveToMenu` 单点接线；[`leave-release.test.ts`](../../../packages/client/src/__tests__/leave-release.test.ts) 9 例静态网（调用顺序、单一入口、键集合、大厅零消费、销毁顺序、重装声明、create kick）；行钉 +13 同步 | 本轮 | 大厅驻留（离房后冷烘）纹理 **53.35→42.83MB**、音频 **21.81→6.82MB**、缓存键 **17→14**；menu/temple/game 三态两臂逐项相同；客户端 +398B raw／+113B gzip／+17B brotli |
+| r41 件2 | `perf-reentry` 新量具（单人房：字体 preload 与 kick 与 phase 无关；`t0` 取 `#btn-create` 点击捕获；首进等字体＋结算＋双 BGM 落定再静置 1.2s 拍基线；8ms tick 记录首次出现/播放）；off 4 轮×2 臂、slow3g 2 轮×2 臂 A/B/A | `resident-r41-*`（3 份）＋`reentry-r41-*`（9 份） | 可玩时刻 off A1 **831.7**／B **939.0**／A2 **888.3** → Δ **+79.0ms**（超 |Ā1−Ā2| 带 56.7，但＜B 散布 175.9 与 A 臂内 212.5，**不足判定为回归**）；slow3g **1672.7／1918.9／1854.0** → +155.5ms（在 A 带 181.3 内）；复原：字体与可玩同刻、结算 +164.3（off）/+502.4ms（slow3g）、BGM +246.6/+502.4ms；重进线上只多 **0.3KB**；9 份快照 `errors=[]`、末态 62.03/21.81/17 与 A 相同；冷启动两臂 5220KB 传输/6952KB 解码不变 |
+| r41 件3 | 末轮门禁与文档收口 | `docs` | typecheck 0 错、十二项 `--check` 逐字节、build `index-lL2vswjt` 109,635B／gzip 37,017B、vitest **32 文件/339 例**、det 48/48、fixtures 6/6、prephase 5/5、roomtext 6/6·5/5、domskin 4/4、audiofamily／charsplay ALL PASS、treebake／groundcache ALL PASS、journey 7/7·3/3·6/6·4/4·3/3、route 双关 won（39,567／12,987ms）、regression won=true 零错零缺帧、tilesprite 10/10、finish-anims 8/8 |
+
+**三条可复用结论**：
+① **互斥资源按"末次消费者离场"交还，入口必须唯一**：字体两变体、结算三变体、五支 BGM 都是
+房内互斥集，离房后大厅零消费；把交还放在 `leaveToMenu` 单点并用静态网钉死，比在每个场景
+shutdown 里各自清理更容易审计，也不会误伤大厅共用的 `bgm_menu`／SFX。
+② **释放顺序 = 先声音实例后缓存**：`sound.removeByKey` 会走 `WebAudioSound.destroy` 断开节点、
+置空 `audioBuffer`，之后 `cache.remove` 只丢 ArrayBuffer；反过来先移缓存会让在播实例持有悬空引用。
+③ **释放的代价必须量到"可玩后何时复原"**：可玩时刻只反映字体重解码，结算与 BGM 的缺口要等到
++0.16–0.50s 才闭合；量具若只看可玩时刻会把"合法但可见的空窗"漏掉。三闸门口径下本轮
+off +79.0ms 仍不足判定为回归，如实记录方向与散布，不把它写成收益或回归。
+
+**下一轮候选**：`chars-play`（10.75MB）与 `font-room`（8.56MB）的按需面收缩；`groundTex`
+逐关烘焙画布的换关释放口径；Temple Finish 的保留/释放再账；4g 档小于 100ms 的收益需更多轮次。
+素材再编码（任务 #42）仍是用户保留项，未经裁决不动。
