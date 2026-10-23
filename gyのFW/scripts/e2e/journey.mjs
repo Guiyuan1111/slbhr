@@ -79,8 +79,8 @@ try {
     const lvl = await roomState(a, `String(s.levelId)`);
     const phase = await roomState(a, `String(s.phase)`);
     check("forest_02 ready→started 且 levelId 正确", lvl === "forest_02" && phase === "started", `levelId=${lvl} phase=${phase}`);
-    check("席位保留（A=火人）", (await readRole(a)).includes("火人"), await readRole(a));
-    check("席位保留（B=水女孩）", (await readRole(b)).includes("水女孩"), await readRole(b));
+    check("席位保留（A=火娃）", (await readRole(a)).includes("火娃"), await readRole(a));
+    check("席位保留（B=水娃）", (await readRole(b)).includes("水娃"), await readRole(b));
     // 新关活局：权威时钟续走（旧场景「新房创建/按码加入」半段随 0.3.12 语义退役——
     // 建/加入房链路由其余四场景入场段常态覆盖）
     const t1 = await roomState(a, `Number(s.timerMs)`);

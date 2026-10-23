@@ -1510,7 +1510,9 @@ export class GameScene extends Phaser.Scene {
       // dying 即藏身（animcheck 12 号档对拍：原版 update 首行 dying 分支每帧
       // bodySprite/legs/head 全 invisible，烟雾独行；此前 dying 期间身体可见直到 isDead，
       // 与原版「触液即化烟、本体消失」观感不符——playwright A/B：dyingHidden 104/195 → 全覆盖）
-      const visible = ps.isDead !== true && ps.dying !== true;
+      // won 爬梯演出（用户实测 2026-10-24：门口出现两个人）——原版 gameFinish 后 Level.update
+      // 停跑不再重显，我方 update 常驻，须在此守住 playStairsSequence 的藏身，否则同帧被冲掉
+      const visible = ps.isDead !== true && ps.dying !== true && !this.stairsPlayed;
       view.glow.visible = view.legs.visible = view.head.visible = visible;
       const flip = Number(ps.facing) < 0;
       if (flip !== view.flip) {
