@@ -1107,3 +1107,35 @@ off +79.0ms 仍不足判定为回归，如实记录方向与散布，不把它�
 **下一轮候选**：`chars-play`（10.75MB）与 `font-room`（8.56MB）的按需面收缩；`groundTex`
 逐关烘焙画布的换关释放口径；Temple Finish 的保留/释放再账；4g 档小于 100ms 的收益需更多轮次。
 素材再编码（任务 #42）仍是用户保留项，未经裁决不动。
+
+## 三十九、r42 增补（2026-10-23，离房交还角色序列帧）
+
+> 报告 `2026-10-23-r42-chars-play-release.md`。r41 交还了字体、结算变体与关卡 BGM 之后，
+> 大厅离房驻留仍有最后一张「房内独占」大纹理：`chars-play`（`CharAssetsPlay.png` 442.4KB 线上、
+> 解码 **10.75MiB**、182 帧），它只被房内角色十一式动画消费。难点不在卸图，而在 Phaser 的
+> 全局动画表：11 个动画键在 `create` 时已把帧名解析成 `Frame` 对象，`textures.remove` 会让
+> `Frame.data` 悬空，而重进时 `buildSeq` 的 `exists` 卫又会跳过重建 ⇒ stale Frame 一路带播。
+> 因此交还必须「先摘 11 键，再卸纹理」，重进由既有 `kickCharsPlay`＋`ensureCharAnims` 重建。
+
+| 件 | 内容 | commit | 关键数字 |
+|---|---|---|---|
+| r42 件1 | [`BootScene.ts`](../../../packages/client/src/scenes/BootScene.ts) 增 `CHAR_PLAY_ANIM_KEYS`（11 键）；[`GameScene.ts`](../../../packages/client/src/scenes/GameScene.ts) 增 `releaseCharsPlay(textures, anims)`（逐键 `anims.remove` 后 `textures.remove`，全 `exists` 卫）；[`main.ts`](../../../packages/client/src/main.ts) 的 `leaveToMenu` 单点接线；[`leave-release.test.ts`](../../../packages/client/src/__tests__/leave-release.test.ts) 13 例（新增 4 例：摘键先于卸图、键表三方一致、重取路径、大厅零消费）；[`charsplay.mjs`](../../../scripts/e2e/charsplay.mjs) 增用例三（双人房离房→真实 join 重进） | `35cd1d3`＋`b59147d`＋`f32e92a` | 大厅（离房后）纹理 **42.83→32.07MB（−10.76）**，音频 6.82MB／14 键不变；menu／temple 首入／game 三态 32.03／42.27／51.79 两臂逐项相同；客户端 +299B raw／+91B gzip／+165B brotli |
+| r42 件2 | `perf-reentry` 扩 `chars-play` 与 11 键的离房交还/重进复原时刻（落定门纳入 play＋anims）；off 4 轮×2 臂、slow3g 2 轮×2 臂 A/B/A；驻留 A/B/A 三态对账 | `bfc21f3` | 可玩时刻 off A1 **1002.5**／B **970.7**／A2 **992.4** → Δ **−26.8ms**（在 A 带 10.1 外，但＜B 散布 149.6 与 A 臂内 206.4，**不作收益主张**）；slow3g **1786.8／1754.8／2143.5** → −210.4ms（在 A 带 356.7 内）；复原：`chars-play`＋11 键 **+198.9ms**（off，111.7–270.5）／**+464.2ms**（slow3g），结算与 BGM +277.1／+526.4，字体 0（preload 门内）；重进线上 **1.1→1.4KB（+0.3KB）**，PNG 走 304；6 份重进快照 18 轮 `errors=[]`，B 臂交还全 true、18 轮 post 态 play＋11 键全 true；冷启动 5220KB 传输／6952KB 解码不变 |
+| r42 件3 | 末轮门禁与文档收口 | `docs` | typecheck 0 错、十二项 `--check` 逐字节、build `index-CwNMklE2` 109,934B／gzip 37,108B、vitest **32 文件/343 例**、det 48/48、fixtures 6/6、prephase 5/5、roomtext 6/6·5/5、domskin 4/4、audiofamily／charsplay ALL PASS、treebake／groundcache ALL PASS、journey 7/7·3/3·6/6·4/4·3/3、route 双关 won（39,517／12,986ms）、regression won=true 零错零缺帧、tilesprite 1/1＋8/8、finish-anims 8/8 |
+
+**三条可复用结论**：
+① **纹理键与全局动画键必须成对交还，且摘键先于卸图**：Phaser 的 `Animation` 持有已解析的
+`Frame` 对象，`textures.remove` 只清纹理侧，动画表里的键仍指向失效帧；而 `buildSeq` 的
+`exists` 卫看到"键还在"就不会重建。顺序写反的失效是静默的（r39 同类），必须由静态网钉死。
+② **场景外的全局注册表不是纹理的附属品**：纹理释放不会自动摘动画键，反之亦然。交还函数要
+显式遍历键表，并用「BootScene 声明 == 测试清单 == `buildCharAnims` 注册集」三方一致钉住，
+否则新增一式动画就会漏摘，留成一颗定时炸弹。
+③ **重进窗口按真实相位量、按真实相位测**：弱网下 `chars-play` 在可玩后约 0.46s 才闭窗，
+入场姿势由 preload 的 `chars-entry` 兜底；e2e 的离房触发必须等入场黑幕退场——`fadeSwitch`
+的 fading gate 会静默丢弃黑幕期的离房调用（本轮用例三首版超时的根因），量具与测试都要按
+`XFade` 的真实相位编排，而不是固定 sleep。
+
+**下一轮候选**：大厅离房驻留现为 32.07MB，其中树画布 `tree-big/tree-all/tree-done` 各 3.41MB
+（合计 10.24MB）、`TempleHall` 4MB、`popup` 2.88MB、`temple` 2.63MB；可勘察选关树三张画布的
+共用/交还与 `TempleHall` 归并；`groundTex` 逐关烘焙画布的换关释放口径仍待定。素材再编码
+（任务 #42）仍是用户保留项，未经裁决不动。
