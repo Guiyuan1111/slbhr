@@ -7,6 +7,8 @@
 ## 文件
 
 - `fw.service`：systemd 单元样例（`Restart=always`、SIGTERM 优雅停机、日志走 journald）。
+- `DEPLOY.md`：云服务器（VPS）完整部署手册——选购要点、deploy key 拉取、构建、
+  公网暴露（直连/反代二选一）、systemd 常驻、更新流程与故障排查。
 
 ## 长期运行最小步骤（Ubuntu）
 
