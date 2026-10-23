@@ -11,7 +11,14 @@
  * 左下设置齿轮 (100,860)、右上"?" (1240,40)。
  */
 import Phaser from "phaser";
-import { ATLAS_CHARS, ATLAS_MENU, FONT_MAIN, startBgWarm } from "./BootScene";
+import {
+  ATLAS_CHARS,
+  ATLAS_MENU,
+  FONT_MAIN,
+  loadMenuOnlyImages,
+  releaseMenuOnlyImages,
+  startBgWarm,
+} from "./BootScene";
 import { clickSfx } from "./overlays";
 import { fadeSwitch } from "./transition";
 import { takeFirstComplete } from "../progress";
@@ -41,7 +48,18 @@ export class MenuScene extends Phaser.Scene {
     super("Menu");
   }
 
+  /** r43：四张独立图只在开始界面消费。首装由 Boot 阻塞批完成（键已存在→本处跳过）；
+   *  离房交还后的重进在这里重取——同 URL（?v=，immutable）命中磁盘缓存，零传输。
+   *  装载失败时 create 走 Texture.get 的 __MISSING 分支：背景/光柱退化为缺图，不抛错。 */
+  preload(): void {
+    loadMenuOnlyImages(this.load);
+  }
+
   create(): void {
+    // 交还挂在 SHUTDOWN：Play→Temple 的 fadeSwitch、DOM 建房/受邀进 Game 的 enterGame
+    // 都会停掉本场景，出口唯一。同帧显示列表先拆、下一场景 create 在后，无悬空引用。
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => releaseMenuOnlyImages(this.textures));
+
     const W = this.scale.width;
     const H = this.scale.height;
 

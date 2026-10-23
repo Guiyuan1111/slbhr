@@ -3,8 +3,8 @@
   "_ring": 4,
   "_ringWhy": "环宽取 font.fnt 的 info padding=\"4,4,4,4\"。理由不是好看，是滤波：项目里没有 pixelArt/setFilter 配置，纹理保持 Phaser 默认 LINEAR，WebGL 下字形边缘会采到帧矩形外 1 texel，所以这一圈邻域字节必须与今日同一批。实测环带像素 54,254 个、侵入未保留字形帧矩形 0 个（说明打包间隙本就 ≥4px），产物比 ring=0 贵 9.8KB（295.0→304.5KB）。",
   "sources": [
-    { "file": "packages/client/src/scenes/MenuScene.ts", "line": 91, "texts": ["开始游戏"], "note": "Play 标题" },
-    { "file": "packages/client/src/scenes/MenuScene.ts", "line": 137, "texts": ["?"], "note": "右上制作人员入口" },
+    { "file": "packages/client/src/scenes/MenuScene.ts", "line": 109, "texts": ["开始游戏"], "note": "Play 标题" },
+    { "file": "packages/client/src/scenes/MenuScene.ts", "line": 155, "texts": ["?"], "note": "右上制作人员入口" },
     { "file": "packages/client/src/scenes/menus.ts", "line": 29, "texts": ["设置"], "note": "SettingsScene 标题" },
     { "file": "packages/client/src/scenes/menus.ts", "line": 63, "texts": ["音乐"], "note": "toggleRow(..., \"音乐\") → menus.ts:53 的 text 实参" },
     { "file": "packages/client/src/scenes/menus.ts", "line": 64, "texts": ["音效"], "note": "toggleRow(..., \"音效\") → menus.ts:53 的 text 实参" },

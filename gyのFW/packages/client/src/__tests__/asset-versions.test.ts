@@ -21,6 +21,13 @@ const MECH = readdirSync(path.join(ROOT, "assets/atlasses/mech"))
   .filter((f) => /^MechAssets-[A-Za-z0-9_-]+\.(png|json)$/.test(f))
   .sort();
 const FONTS = ["font-roombase.png", "font-roomblank.png", "font.fnt"];
+/** r43：开始界面独占四图加入清单（重取走 immutable；DOM 标题图同 URL） */
+const MENU_ONLY = [
+  "/assets/images/TempleHallForest.jpg",
+  "/assets/images/Beam.png",
+  "/assets/images/GameNameForest.png",
+  "/assets/images/branding/branding_logo_kizi.png",
+];
 
 describe("r37 内容寻址清单", () => {
   it("每条哈希等于文件字节 sha1 前 8 位", () => {
@@ -32,11 +39,12 @@ describe("r37 内容寻址清单", () => {
     expect(bad).toEqual([]);
   });
 
-  it("覆盖恰为 24 个机关变体两件 + 三份房内字体（无漏无多）", () => {
+  it("覆盖恰为 24 个机关变体两件 + 三份房内字体 + 四张 Menu 独占图（无漏无多）", () => {
     expect(MECH).toHaveLength(48);
     const expectKeys = [
       ...MECH.map((f) => `/assets/atlasses/mech/${f}`),
       ...FONTS.map((f) => `/assets/fonts/chinese/${f}`),
+      ...MENU_ONLY,
     ].sort();
     expect(Object.keys(ASSET_VERSIONS).sort()).toEqual(expectKeys);
     const variants = new Set(MECH.map((f) => f.replace(/\.(png|json)$/, "")));
@@ -56,7 +64,7 @@ describe("r37 内容寻址清单", () => {
       cwd: ROOT,
       encoding: "utf8",
     });
-    expect(out).toContain("51 条逐字节一致");
+    expect(out).toContain(`${MECH.length + FONTS.length + MENU_ONLY.length} 条与 index.html 同步项逐字节一致`);
   });
 
   it("BootScene：链关键 URL 全部经 versionedAsset，且清单只有这一处引用", () => {

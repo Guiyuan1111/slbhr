@@ -9,6 +9,7 @@
  *
  * 冷启动装载序整形（r5 perf，2026-10-18）：Boot 只装开始界面首帧必需
  * （CharAssetsMenu 角色 53 帧/MenuAssets/位图字/四张独立图；r22 件1 起 menu 音频也移出）；
+ * r43 起四张独立图在 Menu 退出时交还（5.58MiB 解码），重进由 MenuScene.preload 重取；
  * chars-entry/ground/mech/temple/popup
  * 五图集移出关键路径（r40 起 ground 是 151 帧的 Play 图集，PNG 92.7→30.3KiB）——MenuScene.create
  * 首帧后由本场景 loader 后台暖装，
@@ -135,6 +136,30 @@ export function roomFontKey(levelFile?: string | null): string {
 export function versionedAsset(url: string): string {
   const v = ASSET_VERSIONS[url];
   return v ? `${url}?v=${v}` : url;
+}
+
+/** 开始界面独占的四张独立图（r43）：Menu SHUTDOWN 即交还，重进由 MenuScene.preload 重取。
+ *  解码 1366×768 + 159×846 + 860×270 + 319×144 各 ×4B = 5.58MiB，线上合计 646.0KB。
+ *  消费面只有 MenuScene（TempleHall 的 cover 缩放还要读源图尺寸；Beam 光柱、标题、logo）；
+ *  Temple/Game/Credits/Settings/Complete 均不引用。URL 走 r37 内容寻址：重取的 URL 与首装
+ *  逐字节相同且 immutable，命中磁盘缓存时零传输、无 304 往返（slow3g 下每次重进省 ~400ms RTT）。
+ *  交还挂在场景 SHUTDOWN：显示列表同帧拆完，下一场景 create 之前不会再有消费者。 */
+export const MENU_ONLY_IMAGES: ReadonlyArray<readonly [string, string]> = [
+  ["TempleHall", versionedAsset("/assets/images/TempleHallForest.jpg")],
+  ["Beam", versionedAsset("/assets/images/Beam.png")],
+  ["GameName", versionedAsset("/assets/images/GameNameForest.png")],
+  ["KiziLogo", versionedAsset("/assets/images/branding/branding_logo_kizi.png")],
+];
+export const MENU_ONLY_KEYS: readonly string[] = MENU_ONLY_IMAGES.map(([k]) => k);
+/** 装载入口（Boot 首装与 Menu 重取共用一份清单）：键已在纹理缓存时静默跳过，
+ *  与 Phaser Loader 的 hasCacheConflict 语义一致，首次进 Menu 不会重复下载。 */
+export function loadMenuOnlyImages(load: Phaser.Loader.LoaderPlugin): void {
+  for (const [key, url] of MENU_ONLY_IMAGES) {
+    if (!load.scene.textures.exists(key)) load.image(key, url);
+  }
+}
+export function releaseMenuOnlyImages(textures: Phaser.Textures.TextureManager): void {
+  for (const key of MENU_ONLY_KEYS) if (textures.exists(key)) textures.remove(key);
 }
 
 /** 房内字体 PNG 路径（唯一出处：loadRoomFont 与 r36 结算窗预热共用）。
@@ -432,10 +457,9 @@ export class BootScene extends Phaser.Scene {
     // 304.5KB/8.56MB 解码 → 242.4KB/1.45MB。
     this.load.bitmapFont(FONT_MAIN, "/assets/fonts/chinese/font-prephase.png", "/assets/fonts/chinese/font-prephase.fnt");
     // 独立图片（0.3.12 起开始界面引用，此前漏载致缺纹理静默空白——差距审计 P0）
-    this.load.image("TempleHall", "/assets/images/TempleHallForest.jpg");
-    this.load.image("Beam", "/assets/images/Beam.png");
-    this.load.image("GameName", "/assets/images/GameNameForest.png");
-    this.load.image("KiziLogo", "/assets/images/branding/branding_logo_kizi.png");
+    // r43：只由 MenuScene 消费的四张图收进 MENU_ONLY_IMAGES——离房即交还（5.58MiB 解码），
+    // 重进由 MenuScene.preload 用同一清单重取；URL 带 ?v= 走 immutable。
+    loadMenuOnlyImages(this.load);
 
     // 音频：r22 件1 起 Boot 阻塞批不再含菜单曲——Menu 首帧的像素一个也不靠它，却曾是本批
     // 唯一非像素的一笔（MenuMusic.mp3 150.1KB ⇒ 4g −307ms / fast3g −769ms / slow3g −2459ms 的

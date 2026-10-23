@@ -10,6 +10,7 @@
  *   node scripts/e2e/journey.mjs rejoin  [--port 3573]   # 断线超时→补位重进：房间整关重开而非死房（0.3.27 onLeave 修复回归；用 FW_RECONNECT_SECONDS 缩窗）
  *   node scripts/e2e/journey.mjs deathretry [--port 3574] # 死亡→gameover 静置（原版无自动重开）→Retry 整关重开（F2 翻转回归）
  *   node scripts/e2e/journey.mjs rolesplit [--port 3576] # 按角色分键：fb 只认方向键/wg 只认 WASD，跨组键免疫（F1 翻转回归）
+ *   node scripts/e2e/journey.mjs backmenu [--port 3577] # r43 开始界面独占四图：进房交还、返回 Menu 重取且尺寸正确
  *
  * 断言全部读权威 state 或服务端日志，不依赖 DOM 轮询文本。
  */
@@ -392,8 +393,69 @@ try {
     results.pass = results.checks.every((c) => c.ok);
     await ctxA.close();
     await ctxB.close();
+  } else if (MODE === "backmenu") {
+    // ── 场景 6（r43）：开始界面独占四图的交还/重取。
+    // 进房时 enterGame 停 Menu → SHUTDOWN 交还四图（5.58MiB）；离房回选关再点左下返回，
+    // MenuScene.preload 重取。缺图时 Texture.get 落 __MISSING 只 console.warn，故这里
+    // 既查 exists 也比对源图尺寸——只查 exists 会被 __MISSING 骗过。
+    const ctxA = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+    const ctxB = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+    const a = await ctxA.newPage();
+    const b = await ctxB.newPage();
+    const errs = [];
+    a.on("pageerror", (e) => errs.push(String(e)));
+    const KEYS = ["TempleHall", "Beam", "GameName", "KiziLogo"];
+    const EXPECT = { TempleHall: [1366, 768], Beam: [159, 846], GameName: [860, 270], KiziLogo: [319, 144] };
+    const texInfo = () =>
+      a.evaluate((ks) => {
+        const out = {};
+        const tm = window.__fw?.textures;
+        for (const k of ks) {
+          const img = tm && tm.exists(k) ? tm.get(k).source[0]?.image : null;
+          out[k] = img && img.width ? [img.width, img.height] : null;
+        }
+        return out;
+      }, KEYS);
+    const absent = (info) => KEYS.every((k) => info[k] === null);
+
+    await a.goto(`http://127.0.0.1:${PORT}/?level=forest_01`, { waitUntil: "domcontentloaded" });
+    await a.waitForFunction(() => window.__fw?.scene?.isActive("Menu"), null, { timeout: 30000 });
+    const first = await texInfo();
+    check("首入 Menu 四图在位", JSON.stringify(first) === JSON.stringify(EXPECT), JSON.stringify(first));
+    const code = await enterAs(a, PORT, "create", "", "forest_01");
+    await enterAs(b, PORT, "join", code, "forest_01");
+    await waitForStarted(a);
+    await waitForStarted(b);
+    await a.waitForFunction(() => window.__fw.scene.isActive("Game"), null, { timeout: 15000 });
+    const afterEntry = await texInfo();
+    check("进房后四图已交还", absent(afterEntry), JSON.stringify(afterEntry));
+
+    await a.evaluate(() => window.__fwLeaveToMenu());
+    await a.waitForFunction(() => window.__fw.scene.isActive("Temple"), null, { timeout: 8000 });
+    await a.waitForFunction(() => !window.__fw.scene.isActive("XFade"), null, { timeout: 8000 });
+    check("离房回选关后四图仍未重载", absent(await texInfo()));
+    // 真实点击左下返回（TempleScene BackButton @ 70,880；#menu 在进房时已 hidden，
+    // 幕布不在，点得到画布）。点击后 fadeSwitch 500ms 才起 Menu.preload，故等 Menu active。
+    const pt = await a.evaluate(() => {
+      const r = document.querySelector("canvas").getBoundingClientRect();
+      return { x: r.left + (70 / 1280) * r.width, y: r.top + (880 / 960) * r.height };
+    });
+    await a.mouse.click(pt.x, pt.y);
+    let backOk = false;
+    try {
+      await a.waitForFunction(() => window.__fw.scene.isActive("Menu"), null, { timeout: 15000 });
+      backOk = true;
+    } catch { /* 超时按失败记 */ }
+    check("返回按钮 → Menu 重进", backOk);
+    const back = await texInfo();
+    check("重进时四图按原尺寸重取", JSON.stringify(back) === JSON.stringify(EXPECT), JSON.stringify(back));
+    check("无页面错误", errs.length === 0, errs.join("; "));
+    await a.screenshot({ path: join(OUT, "backmenu-menu.png") });
+    results.pass = results.checks.every((c) => c.ok);
+    await ctxA.close();
+    await ctxB.close();
   } else {
-    throw new Error(`未知模式: ${MODE}（可用 journey|pause|leave|refresh|wonrefresh|rejoin|deathretry|rolesplit）`);
+    throw new Error(`未知模式: ${MODE}（可用 journey|pause|leave|refresh|wonrefresh|rejoin|deathretry|rolesplit|backmenu）`);
   }
 
   await browser.close();

@@ -10,8 +10,10 @@
 # 臂B 恒为当前工作树源码。
 # 档位透传：EXTRA_ARGS="--net 4g" 让三臂跑同一节流档（r21 加，与 ab-assets.sh 同式；
 # 换臂不动它，故三臂档位一致——弱网档的漂移带比本机 off 窄一个量级，见 r20 §五之一）。
-# 量具选择（r34 加）：TOOL=perf-load（默认）或 perf-resident——两者都支持 --no-build/--save，
-# 且都按同一 FILES 换臂；驻留档的档位参数无意义，EXTRA_ARGS 留空即可。
+# 量具选择（r34 加）：TOOL=perf-load（默认）或 perf-resident、perf-menu-return——都支持
+# --no-build/--save，且都按同一 FILES 换臂；驻留档的档位参数无意义，EXTRA_ARGS 留空即可。
+# r43 注：新版 build 会跑 scripts/asset-versions.mjs 重写清单与 index.html，故该脚本与其
+# 产物、被同步的 index.html 必须一起放进 FILES，否则臂A 的"旧源码"会被新版生成器覆盖。
 #
 # 安全约束：本脚本会用 `git checkout <rev> -- $FILES` 临时改写工作树并在收尾恢复。
 # 共享工作树里这有风险，故开工前强制要求 $FILES 无未提交改动，否则直接退出。

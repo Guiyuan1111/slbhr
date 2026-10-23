@@ -52,4 +52,8 @@ export const ASSET_VERSIONS: Record<string, string> = {
   "/assets/fonts/chinese/font-roombase.png": "15fddcdb",
   "/assets/fonts/chinese/font-roomblank.png": "2a3c4201",
   "/assets/fonts/chinese/font.fnt": "f7e2c673",
+  "/assets/images/TempleHallForest.jpg": "4250127c",
+  "/assets/images/Beam.png": "0aba164c",
+  "/assets/images/GameNameForest.png": "401f4b91",
+  "/assets/images/branding/branding_logo_kizi.png": "a7f1205a",
 };
