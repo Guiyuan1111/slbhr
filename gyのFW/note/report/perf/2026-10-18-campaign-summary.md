@@ -1139,3 +1139,36 @@ off +79.0ms 仍不足判定为回归，如实记录方向与散布，不把它�
 （合计 10.24MB）、`TempleHall` 4MB、`popup` 2.88MB、`temple` 2.63MB；可勘察选关树三张画布的
 共用/交还与 `TempleHall` 归并；`groundTex` 逐关烘焙画布的换关释放口径仍待定。素材再编码
 （任务 #42）仍是用户保留项，未经裁决不动。
+
+## 四十、r43 增补（2026-10-23，离房交还开始界面独占四图）
+
+> 报告 `2026-10-23-r43-menu-only-release.md`。r41/r42 交还房内独占资源后，大厅离房态
+> 32.07MB 的构成里只剩四项「只由 Menu 消费」的独立图：`TempleHall` 4.00MiB、`Beam`
+> 0.51MiB、`GameName` 0.89MiB、`KiziLogo` 0.18MiB，合计 **5.58MiB**。它们由 Boot 阻塞批
+> 装载，却从不被 Temple/Game/结算/设置/制作人员引用。本轮把它们收进 `MENU_ONLY_IMAGES`，
+> 在 `MenuScene` 的 `SHUTDOWN` 交还，回 Menu 时由新增的 `MenuScene.preload` 用 r37 内容寻址
+> URL 重取；四图同时纳入清单（51→55 条），生成器并把 `index.html` 中同源的 DOM 标题图
+> `src` 改写成同一个 `?v=`，避免冷启动同一字节被 DOM 与 Boot 各下一份。
+
+| 件 | 内容 | commit | 关键数字 |
+|---|---|---|---|
+| r43 件1 | [`BootScene.ts`](../../../packages/client/src/scenes/BootScene.ts) 增 `MENU_ONLY_IMAGES`／`MENU_ONLY_KEYS`／`loadMenuOnlyImages`／`releaseMenuOnlyImages`，Boot 四条内联 `load.image` 收拢为共用清单；[`MenuScene.ts`](../../../packages/client/src/scenes/MenuScene.ts) 增幂等 `preload` 与 `create` 首句的 `SHUTDOWN` 交还；[`asset-versions.mjs`](../../../scripts/asset-versions.mjs) 清单 55 条并同步 [`index.html`](../../../packages/client/index.html) 的 DOM 标题图 `?v=`；[`menu-release.test.ts`](../../../packages/client/src/__tests__/menu-release.test.ts) 8 例（键表、清单、HTML 同版本、唯一首装点、重取卫、SHUTDOWN 顺序、只删四键、其余场景零引用）；[`journey.mjs`](../../../scripts/e2e/journey.mjs) 增 `backmenu`；[`perf-menu-return.mjs`](../../../benchmark/perf-menu-return.mjs) 新量具 | `d9759b7` | temple 首入/重进/三进 42.27→**36.69MB**、game 51.79→**46.21MB**、大厅离房 32.07→**26.50MB**（各 −5.58/−5.57），menu 首帧 32.03 两臂相同；客户端 +417B raw／+131B gzip／+103B brotli |
+| r43 件2 | `perf-resident` 六态 A/B/A＋`perf-menu-return` off 4 轮/臂、slow3g 3 轮/臂 A/B/A（臂 A/C＝`599ff68`） | `688af8a`（9 份快照） | 四图 `5.58→0→5.58MB`，重取 4 笔 **transfer 0B**（`?v=` immutable 磁盘命中）；reloadMs 中位 off **123.4**／slow3g **102.4ms**（A 臂 5.6/123.7 与 115.4/151.3 呈场景启动噪声，B 落在 A 带内；资源侧合计 12.6–19.1ms）；重取落在 500ms 黑幕内；e2e `backmenu` 6/6（真实返回按钮、四图原尺寸回归） |
+| r43 件3 | 末轮门禁与文档收口；`font-prephase` 两条重负载逐字节用例显式 20s 超时（整包并行下默认 5s 偶发超时，判定逻辑零改动，`586c859`） | `docs` | typecheck 0 错、十二项 `--check` 逐字节、build `index-DB_13DUZ` 110,351B／gzip 37,239B、vitest **33 文件/351 例**、det 48/48、fixtures 6/6、prephase 5/5、roomtext 6/6·5/5、domskin 4/4、audiofamily／charsplay ALL PASS、treebake／groundcache ALL PASS、journey **9 模式全过**（含 backmenu 6/6）、route 双关 won（39,515／13,466ms）、regression won=true 零错零缺帧、tilesprite 1/1＋8/8、finish-anims 8/8 |
+
+**三条可复用结论**：
+① **场景独占资源按场景生命周期交还，比按业务入口交还更稳**：Menu 有 Play→Temple 与
+DOM 建房/受邀两条出口，r41/r42 用的单点 `leaveToMenu` 覆盖不到 Play；绑定 `SHUTDOWN`
+后两条出口自动覆盖，且释放与显示列表销毁同帧，不存在「纹理先没了、精灵还在画」的窗口。
+② **内容寻址必须覆盖同一字节的所有 URL**：只给客户端装载器加 `?v=` 而漏掉 `index.html`
+的 DOM `src`，同一字节会以两个 URL 各下一份（GameName 109KB，slow3g 约 +1.7s）。生成器
+同时改写两类 URL、`--check` 同时校验，是把这类双载风险变成硬门禁的通用做法。
+③ **重取代价要在真实转场包络内量，并验证缓存语义**：reloadMs 的场景启动本身有 0–130ms
+双峰噪声，单看 ms 会把噪声当代价；可主张的是「资源窗口 12.6–19.1ms＋transfer 0B」和
+「上界 100–155ms ＜ 500ms 黑幕」。缓存语义（immutable 命中）必须由 resource timing 实证，
+不能从 URL 形式推断。
+
+**下一轮候选**：大厅离房驻留现为 26.50MB，剩余大项为 `chars` 5.07MB、树画布
+`tree-big/tree-all/tree-done` 各 3.41MB（合计 10.24MB）、`popup` 2.88MB、`temple` 2.63MB；
+可勘察选关树三张画布的共用/交还与 `TempleHall` 相邻资源的归并；`groundTex` 逐关烘焙画布的
+换关释放口径仍待定。素材再编码（任务 #42）仍是用户保留项，未经裁决不动。
