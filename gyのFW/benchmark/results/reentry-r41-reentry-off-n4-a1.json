@@ -1,0 +1,2114 @@
+{
+  "meta": {
+    "tool": "perf-reentry",
+    "label": "r41-reentry-off-n4-a1",
+    "level": "forest_01",
+    "net": "off",
+    "netDesc": "不节流（历轮口径）",
+    "cycles": 4,
+    "port": 3569,
+    "generatedAt": "2026-10-23T02:01:05.766Z",
+    "commit": "ee3acf5672bb97676852bb75ef1a50aed4eb54c8",
+    "dirty": true
+  },
+  "cycles": [
+    {
+      "index": 1,
+      "hall": {
+        "page": {
+          "ok": true,
+          "texMB": 53.35,
+          "canvasTexMB": 10.24,
+          "texTop": [
+            [
+              "chars-play",
+              10.75
+            ],
+            [
+              "font-full",
+              8.56
+            ],
+            [
+              "chars",
+              5.07
+            ],
+            [
+              "TempleHall",
+              4
+            ],
+            [
+              "tree-big",
+              3.41
+            ],
+            [
+              "tree-all",
+              3.41
+            ],
+            [
+              "tree-done",
+              3.41
+            ],
+            [
+              "popup",
+              2.88
+            ]
+          ],
+          "audioMB": 21.81,
+          "audioTop": [
+            [
+              "bgm_level",
+              12.02
+            ],
+            [
+              "bgm_menu",
+              3.48
+            ],
+            [
+              "bgm_finish",
+              1.5
+            ],
+            [
+              "bgm_over",
+              1.46
+            ],
+            [
+              "sfx_wind",
+              0.91
+            ],
+            [
+              "sfx_door",
+              0.61
+            ],
+            [
+              "sfx_platform",
+              0.61
+            ],
+            [
+              "sfx_end_diamond",
+              0.29
+            ]
+          ],
+          "audioCount": 17,
+          "audioKeys": [
+            "bgm_finish",
+            "bgm_level",
+            "bgm_menu",
+            "bgm_over",
+            "sfx_death",
+            "sfx_diamond",
+            "sfx_door",
+            "sfx_end_diamond",
+            "sfx_end_fail",
+            "sfx_end_pass",
+            "sfx_jump_fb",
+            "sfx_jump_wg",
+            "sfx_lever",
+            "sfx_platform",
+            "sfx_pusher",
+            "sfx_water_steps",
+            "sfx_wind"
+          ],
+          "ground": {
+            "size": 0,
+            "bytesMB": 0
+          },
+          "tree": {
+            "jobs": 0,
+            "results": 1,
+            "jobMB": 0,
+            "resultMB": 10.24
+          },
+          "sceneObjs": {
+            "Temple": 56
+          },
+          "heapRawMB": 39.6
+        },
+        "presence": {
+          "font": {
+            "font-full": true,
+            "font-room": false
+          },
+          "finish": {
+            "popup-finish-general": true,
+            "popup-finish-speed": false,
+            "popup-finish-puzzle": false
+          },
+          "bgmCached": {
+            "bgm_level": true,
+            "bgm_level_speed": false,
+            "bgm_finish": true,
+            "bgm_finish_speed": false,
+            "bgm_over": true
+          },
+          "bgmPlaying": {
+            "bgm_level": false,
+            "bgm_level_speed": false,
+            "bgm_finish": false,
+            "bgm_finish_speed": false,
+            "bgm_over": false
+          },
+          "menuBgm": {
+            "cached": true,
+            "playing": true
+          },
+          "audioKeys": [
+            "bgm_finish",
+            "bgm_level",
+            "bgm_menu",
+            "bgm_over",
+            "sfx_death",
+            "sfx_diamond",
+            "sfx_door",
+            "sfx_end_diamond",
+            "sfx_end_fail",
+            "sfx_end_pass",
+            "sfx_jump_fb",
+            "sfx_jump_wg",
+            "sfx_lever",
+            "sfx_platform",
+            "sfx_pusher",
+            "sfx_water_steps",
+            "sfx_wind"
+          ]
+        },
+        "delta": {
+          "texMB": 1.56,
+          "audioMB": 0
+        },
+        "released": {
+          "font": false,
+          "finish": false,
+          "bgm": false
+        }
+      },
+      "preClick": {
+        "font": {
+          "font-full": true,
+          "font-room": false
+        },
+        "finish": {
+          "popup-finish-general": true,
+          "popup-finish-speed": false,
+          "popup-finish-puzzle": false
+        },
+        "bgmCached": {
+          "bgm_level": true,
+          "bgm_level_speed": false,
+          "bgm_finish": true,
+          "bgm_finish_speed": false,
+          "bgm_over": true
+        },
+        "bgmPlaying": {
+          "bgm_level": false,
+          "bgm_level_speed": false,
+          "bgm_finish": false,
+          "bgm_finish_speed": false,
+          "bgm_over": false
+        },
+        "menuBgm": {
+          "cached": true,
+          "playing": true
+        },
+        "audioKeys": [
+          "bgm_finish",
+          "bgm_level",
+          "bgm_menu",
+          "bgm_over",
+          "sfx_death",
+          "sfx_diamond",
+          "sfx_door",
+          "sfx_end_diamond",
+          "sfx_end_fail",
+          "sfx_end_pass",
+          "sfx_jump_fb",
+          "sfx_jump_wg",
+          "sfx_lever",
+          "sfx_platform",
+          "sfx_pusher",
+          "sfx_water_steps",
+          "sfx_wind"
+        ]
+      },
+      "watch": {
+        "t0": 7505.400000035763,
+        "font": 72.9,
+        "finish": 72.9,
+        "gameActive": 877.4,
+        "bgmCached": 73,
+        "bgmPlaying": 877.4,
+        "menuBgmStopped": 877.4,
+        "audio": {
+          "bgm_level": 73,
+          "bgm_finish": 73,
+          "bgm_over": 73
+        },
+        "play": {
+          "bgm_level": 877.4
+        }
+      },
+      "newResources": [
+        {
+          "url": "/matchmake/create/forest",
+          "type": "xmlhttprequest",
+          "transferKB": 0.5,
+          "decodedKB": 0.2,
+          "startMs": 0.6,
+          "endMs": 10
+        },
+        {
+          "url": "/assets/atlasses/CharAssetsEntry.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 2.2,
+          "startMs": 805.2,
+          "endMs": 806.7
+        },
+        {
+          "url": "/assets/atlasses/GroundAssetsPlay.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 52.9,
+          "startMs": 807.4,
+          "endMs": 811.2
+        },
+        {
+          "url": "/assets/atlasses/Temples/forest/TempleAssetsCore.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 9.1,
+          "startMs": 807.7,
+          "endMs": 812.8
+        },
+        {
+          "url": "/assets/atlasses/PopupAssetsMini.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 16.8,
+          "startMs": 807.8,
+          "endMs": 813.1
+        },
+        {
+          "url": "/assets/fonts/chinese/font.fnt?v=f7e2c673",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 30.8,
+          "startMs": 807.9,
+          "endMs": 813.2
+        },
+        {
+          "url": "/assets/atlasses/Temples/forest/TempleAssetsFinish.png",
+          "type": "xmlhttprequest",
+          "transferKB": 0.3,
+          "decodedKB": 119.1,
+          "startMs": 876.9,
+          "endMs": 880.3
+        },
+        {
+          "url": "/assets/atlasses/Temples/forest/TempleAssetsFinish.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 7.7,
+          "startMs": 877.1,
+          "endMs": 878.8
+        },
+        {
+          "url": "/assets/atlasses/PopupFinishGeneral.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 8.4,
+          "startMs": 905.5,
+          "endMs": 906.8
+        }
+      ],
+      "newTransferKB": 0.8,
+      "post": {
+        "page": {
+          "ok": true,
+          "texMB": 62.03,
+          "canvasTexMB": 15.21,
+          "texTop": [
+            [
+              "chars-play",
+              10.75
+            ],
+            [
+              "font-full",
+              8.56
+            ],
+            [
+              "chars",
+              5.07
+            ],
+            [
+              "groundTex",
+              4.96
+            ],
+            [
+              "TempleHall",
+              4
+            ],
+            [
+              "temple-finish",
+              3.72
+            ],
+            [
+              "tree-big",
+              3.41
+            ],
+            [
+              "tree-all",
+              3.41
+            ]
+          ],
+          "audioMB": 21.81,
+          "audioTop": [
+            [
+              "bgm_level",
+              12.02
+            ],
+            [
+              "bgm_menu",
+              3.48
+            ],
+            [
+              "bgm_finish",
+              1.5
+            ],
+            [
+              "bgm_over",
+              1.46
+            ],
+            [
+              "sfx_wind",
+              0.91
+            ],
+            [
+              "sfx_door",
+              0.61
+            ],
+            [
+              "sfx_platform",
+              0.61
+            ],
+            [
+              "sfx_end_diamond",
+              0.29
+            ]
+          ],
+          "audioCount": 17,
+          "audioKeys": [
+            "bgm_finish",
+            "bgm_level",
+            "bgm_menu",
+            "bgm_over",
+            "sfx_death",
+            "sfx_diamond",
+            "sfx_door",
+            "sfx_end_diamond",
+            "sfx_end_fail",
+            "sfx_end_pass",
+            "sfx_jump_fb",
+            "sfx_jump_wg",
+            "sfx_lever",
+            "sfx_platform",
+            "sfx_pusher",
+            "sfx_water_steps",
+            "sfx_wind"
+          ],
+          "ground": {
+            "size": 1,
+            "bytesMB": 4.96
+          },
+          "tree": {
+            "jobs": 0,
+            "results": 1,
+            "jobMB": 0,
+            "resultMB": 10.24
+          },
+          "sceneObjs": {
+            "Game": 105
+          },
+          "heapRawMB": 30.4
+        },
+        "presence": {
+          "font": {
+            "font-full": true,
+            "font-room": false
+          },
+          "finish": {
+            "popup-finish-general": true,
+            "popup-finish-speed": false,
+            "popup-finish-puzzle": false
+          },
+          "bgmCached": {
+            "bgm_level": true,
+            "bgm_level_speed": false,
+            "bgm_finish": true,
+            "bgm_finish_speed": false,
+            "bgm_over": true
+          },
+          "bgmPlaying": {
+            "bgm_level": true,
+            "bgm_level_speed": false,
+            "bgm_finish": false,
+            "bgm_finish_speed": false,
+            "bgm_over": false
+          },
+          "menuBgm": {
+            "cached": true,
+            "playing": false
+          },
+          "audioKeys": [
+            "bgm_finish",
+            "bgm_level",
+            "bgm_menu",
+            "bgm_over",
+            "sfx_death",
+            "sfx_diamond",
+            "sfx_door",
+            "sfx_end_diamond",
+            "sfx_end_fail",
+            "sfx_end_pass",
+            "sfx_jump_fb",
+            "sfx_jump_wg",
+            "sfx_lever",
+            "sfx_platform",
+            "sfx_pusher",
+            "sfx_water_steps",
+            "sfx_wind"
+          ]
+        },
+        "restored": {
+          "font": true,
+          "finish": true,
+          "bgm": true
+        }
+      }
+    },
+    {
+      "index": 2,
+      "hall": {
+        "page": {
+          "ok": true,
+          "texMB": 53.35,
+          "canvasTexMB": 10.24,
+          "texTop": [
+            [
+              "chars-play",
+              10.75
+            ],
+            [
+              "font-full",
+              8.56
+            ],
+            [
+              "chars",
+              5.07
+            ],
+            [
+              "TempleHall",
+              4
+            ],
+            [
+              "tree-big",
+              3.41
+            ],
+            [
+              "tree-all",
+              3.41
+            ],
+            [
+              "tree-done",
+              3.41
+            ],
+            [
+              "popup",
+              2.88
+            ]
+          ],
+          "audioMB": 21.81,
+          "audioTop": [
+            [
+              "bgm_level",
+              12.02
+            ],
+            [
+              "bgm_menu",
+              3.48
+            ],
+            [
+              "bgm_finish",
+              1.5
+            ],
+            [
+              "bgm_over",
+              1.46
+            ],
+            [
+              "sfx_wind",
+              0.91
+            ],
+            [
+              "sfx_door",
+              0.61
+            ],
+            [
+              "sfx_platform",
+              0.61
+            ],
+            [
+              "sfx_end_diamond",
+              0.29
+            ]
+          ],
+          "audioCount": 17,
+          "audioKeys": [
+            "bgm_finish",
+            "bgm_level",
+            "bgm_menu",
+            "bgm_over",
+            "sfx_death",
+            "sfx_diamond",
+            "sfx_door",
+            "sfx_end_diamond",
+            "sfx_end_fail",
+            "sfx_end_pass",
+            "sfx_jump_fb",
+            "sfx_jump_wg",
+            "sfx_lever",
+            "sfx_platform",
+            "sfx_pusher",
+            "sfx_water_steps",
+            "sfx_wind"
+          ],
+          "ground": {
+            "size": 0,
+            "bytesMB": 0
+          },
+          "tree": {
+            "jobs": 0,
+            "results": 1,
+            "jobMB": 0,
+            "resultMB": 10.24
+          },
+          "sceneObjs": {
+            "Temple": 56
+          },
+          "heapRawMB": 32.1
+        },
+        "presence": {
+          "font": {
+            "font-full": true,
+            "font-room": false
+          },
+          "finish": {
+            "popup-finish-general": true,
+            "popup-finish-speed": false,
+            "popup-finish-puzzle": false
+          },
+          "bgmCached": {
+            "bgm_level": true,
+            "bgm_level_speed": false,
+            "bgm_finish": true,
+            "bgm_finish_speed": false,
+            "bgm_over": true
+          },
+          "bgmPlaying": {
+            "bgm_level": false,
+            "bgm_level_speed": false,
+            "bgm_finish": false,
+            "bgm_finish_speed": false,
+            "bgm_over": false
+          },
+          "menuBgm": {
+            "cached": true,
+            "playing": true
+          },
+          "audioKeys": [
+            "bgm_finish",
+            "bgm_level",
+            "bgm_menu",
+            "bgm_over",
+            "sfx_death",
+            "sfx_diamond",
+            "sfx_door",
+            "sfx_end_diamond",
+            "sfx_end_fail",
+            "sfx_end_pass",
+            "sfx_jump_fb",
+            "sfx_jump_wg",
+            "sfx_lever",
+            "sfx_platform",
+            "sfx_pusher",
+            "sfx_water_steps",
+            "sfx_wind"
+          ]
+        },
+        "delta": {
+          "texMB": 1.56,
+          "audioMB": 0
+        },
+        "released": {
+          "font": false,
+          "finish": false,
+          "bgm": false
+        }
+      },
+      "preClick": {
+        "font": {
+          "font-full": true,
+          "font-room": false
+        },
+        "finish": {
+          "popup-finish-general": true,
+          "popup-finish-speed": false,
+          "popup-finish-puzzle": false
+        },
+        "bgmCached": {
+          "bgm_level": true,
+          "bgm_level_speed": false,
+          "bgm_finish": true,
+          "bgm_finish_speed": false,
+          "bgm_over": true
+        },
+        "bgmPlaying": {
+          "bgm_level": false,
+          "bgm_level_speed": false,
+          "bgm_finish": false,
+          "bgm_finish_speed": false,
+          "bgm_over": false
+        },
+        "menuBgm": {
+          "cached": true,
+          "playing": true
+        },
+        "audioKeys": [
+          "bgm_finish",
+          "bgm_level",
+          "bgm_menu",
+          "bgm_over",
+          "sfx_death",
+          "sfx_diamond",
+          "sfx_door",
+          "sfx_end_diamond",
+          "sfx_end_fail",
+          "sfx_end_pass",
+          "sfx_jump_fb",
+          "sfx_jump_wg",
+          "sfx_lever",
+          "sfx_platform",
+          "sfx_pusher",
+          "sfx_water_steps",
+          "sfx_wind"
+        ]
+      },
+      "watch": {
+        "t0": 11956,
+        "font": 81.8,
+        "finish": 81.8,
+        "gameActive": 955.9,
+        "bgmCached": 81.8,
+        "bgmPlaying": 955.9,
+        "menuBgmStopped": 955.9,
+        "audio": {
+          "bgm_level": 81.8,
+          "bgm_finish": 81.8,
+          "bgm_over": 81.8
+        },
+        "play": {
+          "bgm_level": 955.9
+        }
+      },
+      "newResources": [
+        {
+          "url": "/matchmake/create/forest",
+          "type": "xmlhttprequest",
+          "transferKB": 0.5,
+          "decodedKB": 0.2,
+          "startMs": 0.6,
+          "endMs": 14.4
+        },
+        {
+          "url": "/assets/atlasses/CharAssetsEntry.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 2.2,
+          "startMs": 852.8,
+          "endMs": 854.2
+        },
+        {
+          "url": "/assets/atlasses/GroundAssetsPlay.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 52.9,
+          "startMs": 853,
+          "endMs": 859.3
+        },
+        {
+          "url": "/assets/atlasses/Temples/forest/TempleAssetsCore.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 9.1,
+          "startMs": 853.1,
+          "endMs": 859.4
+        },
+        {
+          "url": "/assets/atlasses/PopupAssetsMini.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 16.8,
+          "startMs": 853.2,
+          "endMs": 859.5
+        },
+        {
+          "url": "/assets/fonts/chinese/font.fnt?v=f7e2c673",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 30.8,
+          "startMs": 853.2,
+          "endMs": 859.6
+        },
+        {
+          "url": "/assets/atlasses/Temples/forest/TempleAssetsFinish.png",
+          "type": "xmlhttprequest",
+          "transferKB": 0.3,
+          "decodedKB": 119.1,
+          "startMs": 927.4,
+          "endMs": 931.4
+        },
+        {
+          "url": "/assets/atlasses/Temples/forest/TempleAssetsFinish.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 7.7,
+          "startMs": 927.5,
+          "endMs": 929.6
+        },
+        {
+          "url": "/assets/atlasses/PopupFinishGeneral.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 8.4,
+          "startMs": 956.6,
+          "endMs": 958.6
+        }
+      ],
+      "newTransferKB": 0.8,
+      "post": {
+        "page": {
+          "ok": true,
+          "texMB": 62.03,
+          "canvasTexMB": 15.21,
+          "texTop": [
+            [
+              "chars-play",
+              10.75
+            ],
+            [
+              "font-full",
+              8.56
+            ],
+            [
+              "chars",
+              5.07
+            ],
+            [
+              "groundTex",
+              4.96
+            ],
+            [
+              "TempleHall",
+              4
+            ],
+            [
+              "temple-finish",
+              3.72
+            ],
+            [
+              "tree-big",
+              3.41
+            ],
+            [
+              "tree-all",
+              3.41
+            ]
+          ],
+          "audioMB": 21.81,
+          "audioTop": [
+            [
+              "bgm_level",
+              12.02
+            ],
+            [
+              "bgm_menu",
+              3.48
+            ],
+            [
+              "bgm_finish",
+              1.5
+            ],
+            [
+              "bgm_over",
+              1.46
+            ],
+            [
+              "sfx_wind",
+              0.91
+            ],
+            [
+              "sfx_door",
+              0.61
+            ],
+            [
+              "sfx_platform",
+              0.61
+            ],
+            [
+              "sfx_end_diamond",
+              0.29
+            ]
+          ],
+          "audioCount": 17,
+          "audioKeys": [
+            "bgm_finish",
+            "bgm_level",
+            "bgm_menu",
+            "bgm_over",
+            "sfx_death",
+            "sfx_diamond",
+            "sfx_door",
+            "sfx_end_diamond",
+            "sfx_end_fail",
+            "sfx_end_pass",
+            "sfx_jump_fb",
+            "sfx_jump_wg",
+            "sfx_lever",
+            "sfx_platform",
+            "sfx_pusher",
+            "sfx_water_steps",
+            "sfx_wind"
+          ],
+          "ground": {
+            "size": 1,
+            "bytesMB": 4.96
+          },
+          "tree": {
+            "jobs": 0,
+            "results": 1,
+            "jobMB": 0,
+            "resultMB": 10.24
+          },
+          "sceneObjs": {
+            "Game": 105
+          },
+          "heapRawMB": 30.5
+        },
+        "presence": {
+          "font": {
+            "font-full": true,
+            "font-room": false
+          },
+          "finish": {
+            "popup-finish-general": true,
+            "popup-finish-speed": false,
+            "popup-finish-puzzle": false
+          },
+          "bgmCached": {
+            "bgm_level": true,
+            "bgm_level_speed": false,
+            "bgm_finish": true,
+            "bgm_finish_speed": false,
+            "bgm_over": true
+          },
+          "bgmPlaying": {
+            "bgm_level": true,
+            "bgm_level_speed": false,
+            "bgm_finish": false,
+            "bgm_finish_speed": false,
+            "bgm_over": false
+          },
+          "menuBgm": {
+            "cached": true,
+            "playing": false
+          },
+          "audioKeys": [
+            "bgm_finish",
+            "bgm_level",
+            "bgm_menu",
+            "bgm_over",
+            "sfx_death",
+            "sfx_diamond",
+            "sfx_door",
+            "sfx_end_diamond",
+            "sfx_end_fail",
+            "sfx_end_pass",
+            "sfx_jump_fb",
+            "sfx_jump_wg",
+            "sfx_lever",
+            "sfx_platform",
+            "sfx_pusher",
+            "sfx_water_steps",
+            "sfx_wind"
+          ]
+        },
+        "restored": {
+          "font": true,
+          "finish": true,
+          "bgm": true
+        }
+      }
+    },
+    {
+      "index": 3,
+      "hall": {
+        "page": {
+          "ok": true,
+          "texMB": 53.35,
+          "canvasTexMB": 10.24,
+          "texTop": [
+            [
+              "chars-play",
+              10.75
+            ],
+            [
+              "font-full",
+              8.56
+            ],
+            [
+              "chars",
+              5.07
+            ],
+            [
+              "TempleHall",
+              4
+            ],
+            [
+              "tree-big",
+              3.41
+            ],
+            [
+              "tree-all",
+              3.41
+            ],
+            [
+              "tree-done",
+              3.41
+            ],
+            [
+              "popup",
+              2.88
+            ]
+          ],
+          "audioMB": 21.81,
+          "audioTop": [
+            [
+              "bgm_level",
+              12.02
+            ],
+            [
+              "bgm_menu",
+              3.48
+            ],
+            [
+              "bgm_finish",
+              1.5
+            ],
+            [
+              "bgm_over",
+              1.46
+            ],
+            [
+              "sfx_wind",
+              0.91
+            ],
+            [
+              "sfx_door",
+              0.61
+            ],
+            [
+              "sfx_platform",
+              0.61
+            ],
+            [
+              "sfx_end_diamond",
+              0.29
+            ]
+          ],
+          "audioCount": 17,
+          "audioKeys": [
+            "bgm_finish",
+            "bgm_level",
+            "bgm_menu",
+            "bgm_over",
+            "sfx_death",
+            "sfx_diamond",
+            "sfx_door",
+            "sfx_end_diamond",
+            "sfx_end_fail",
+            "sfx_end_pass",
+            "sfx_jump_fb",
+            "sfx_jump_wg",
+            "sfx_lever",
+            "sfx_platform",
+            "sfx_pusher",
+            "sfx_water_steps",
+            "sfx_wind"
+          ],
+          "ground": {
+            "size": 0,
+            "bytesMB": 0
+          },
+          "tree": {
+            "jobs": 0,
+            "results": 1,
+            "jobMB": 0,
+            "resultMB": 10.24
+          },
+          "sceneObjs": {
+            "Temple": 56
+          },
+          "heapRawMB": 32.2
+        },
+        "presence": {
+          "font": {
+            "font-full": true,
+            "font-room": false
+          },
+          "finish": {
+            "popup-finish-general": true,
+            "popup-finish-speed": false,
+            "popup-finish-puzzle": false
+          },
+          "bgmCached": {
+            "bgm_level": true,
+            "bgm_level_speed": false,
+            "bgm_finish": true,
+            "bgm_finish_speed": false,
+            "bgm_over": true
+          },
+          "bgmPlaying": {
+            "bgm_level": false,
+            "bgm_level_speed": false,
+            "bgm_finish": false,
+            "bgm_finish_speed": false,
+            "bgm_over": false
+          },
+          "menuBgm": {
+            "cached": true,
+            "playing": true
+          },
+          "audioKeys": [
+            "bgm_finish",
+            "bgm_level",
+            "bgm_menu",
+            "bgm_over",
+            "sfx_death",
+            "sfx_diamond",
+            "sfx_door",
+            "sfx_end_diamond",
+            "sfx_end_fail",
+            "sfx_end_pass",
+            "sfx_jump_fb",
+            "sfx_jump_wg",
+            "sfx_lever",
+            "sfx_platform",
+            "sfx_pusher",
+            "sfx_water_steps",
+            "sfx_wind"
+          ]
+        },
+        "delta": {
+          "texMB": 1.56,
+          "audioMB": 0
+        },
+        "released": {
+          "font": false,
+          "finish": false,
+          "bgm": false
+        }
+      },
+      "preClick": {
+        "font": {
+          "font-full": true,
+          "font-room": false
+        },
+        "finish": {
+          "popup-finish-general": true,
+          "popup-finish-speed": false,
+          "popup-finish-puzzle": false
+        },
+        "bgmCached": {
+          "bgm_level": true,
+          "bgm_level_speed": false,
+          "bgm_finish": true,
+          "bgm_finish_speed": false,
+          "bgm_over": true
+        },
+        "bgmPlaying": {
+          "bgm_level": false,
+          "bgm_level_speed": false,
+          "bgm_finish": false,
+          "bgm_finish_speed": false,
+          "bgm_over": false
+        },
+        "menuBgm": {
+          "cached": true,
+          "playing": true
+        },
+        "audioKeys": [
+          "bgm_finish",
+          "bgm_level",
+          "bgm_menu",
+          "bgm_over",
+          "sfx_death",
+          "sfx_diamond",
+          "sfx_door",
+          "sfx_end_diamond",
+          "sfx_end_fail",
+          "sfx_end_pass",
+          "sfx_jump_fb",
+          "sfx_jump_wg",
+          "sfx_lever",
+          "sfx_platform",
+          "sfx_pusher",
+          "sfx_water_steps",
+          "sfx_wind"
+        ]
+      },
+      "watch": {
+        "t0": 16529.5,
+        "font": 93.3,
+        "finish": 93.3,
+        "gameActive": 750,
+        "bgmCached": 93.4,
+        "bgmPlaying": 750,
+        "menuBgmStopped": 750,
+        "audio": {
+          "bgm_level": 93.4,
+          "bgm_finish": 93.4,
+          "bgm_over": 93.4
+        },
+        "play": {
+          "bgm_level": 750
+        }
+      },
+      "newResources": [
+        {
+          "url": "/matchmake/create/forest",
+          "type": "xmlhttprequest",
+          "transferKB": 0.5,
+          "decodedKB": 0.2,
+          "startMs": 0.5,
+          "endMs": 15.4
+        },
+        {
+          "url": "/assets/atlasses/CharAssetsEntry.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 2.2,
+          "startMs": 654.4,
+          "endMs": 657.3
+        },
+        {
+          "url": "/assets/atlasses/GroundAssetsPlay.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 52.9,
+          "startMs": 654.6,
+          "endMs": 660
+        },
+        {
+          "url": "/assets/atlasses/Temples/forest/TempleAssetsCore.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 9.1,
+          "startMs": 654.7,
+          "endMs": 660.1
+        },
+        {
+          "url": "/assets/atlasses/PopupAssetsMini.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 16.8,
+          "startMs": 654.8,
+          "endMs": 660.2
+        },
+        {
+          "url": "/assets/fonts/chinese/font.fnt?v=f7e2c673",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 30.8,
+          "startMs": 654.8,
+          "endMs": 660.4
+        },
+        {
+          "url": "/assets/atlasses/Temples/forest/TempleAssetsFinish.png",
+          "type": "xmlhttprequest",
+          "transferKB": 0.3,
+          "decodedKB": 119.1,
+          "startMs": 749.4,
+          "endMs": 753.5
+        },
+        {
+          "url": "/assets/atlasses/Temples/forest/TempleAssetsFinish.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 7.7,
+          "startMs": 749.6,
+          "endMs": 751.4
+        },
+        {
+          "url": "/assets/atlasses/PopupFinishGeneral.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 8.4,
+          "startMs": 750.3,
+          "endMs": 753.4
+        }
+      ],
+      "newTransferKB": 0.8,
+      "post": {
+        "page": {
+          "ok": true,
+          "texMB": 62.03,
+          "canvasTexMB": 15.21,
+          "texTop": [
+            [
+              "chars-play",
+              10.75
+            ],
+            [
+              "font-full",
+              8.56
+            ],
+            [
+              "chars",
+              5.07
+            ],
+            [
+              "groundTex",
+              4.96
+            ],
+            [
+              "TempleHall",
+              4
+            ],
+            [
+              "temple-finish",
+              3.72
+            ],
+            [
+              "tree-big",
+              3.41
+            ],
+            [
+              "tree-all",
+              3.41
+            ]
+          ],
+          "audioMB": 21.81,
+          "audioTop": [
+            [
+              "bgm_level",
+              12.02
+            ],
+            [
+              "bgm_menu",
+              3.48
+            ],
+            [
+              "bgm_finish",
+              1.5
+            ],
+            [
+              "bgm_over",
+              1.46
+            ],
+            [
+              "sfx_wind",
+              0.91
+            ],
+            [
+              "sfx_door",
+              0.61
+            ],
+            [
+              "sfx_platform",
+              0.61
+            ],
+            [
+              "sfx_end_diamond",
+              0.29
+            ]
+          ],
+          "audioCount": 17,
+          "audioKeys": [
+            "bgm_finish",
+            "bgm_level",
+            "bgm_menu",
+            "bgm_over",
+            "sfx_death",
+            "sfx_diamond",
+            "sfx_door",
+            "sfx_end_diamond",
+            "sfx_end_fail",
+            "sfx_end_pass",
+            "sfx_jump_fb",
+            "sfx_jump_wg",
+            "sfx_lever",
+            "sfx_platform",
+            "sfx_pusher",
+            "sfx_water_steps",
+            "sfx_wind"
+          ],
+          "ground": {
+            "size": 1,
+            "bytesMB": 4.96
+          },
+          "tree": {
+            "jobs": 0,
+            "results": 1,
+            "jobMB": 0,
+            "resultMB": 10.24
+          },
+          "sceneObjs": {
+            "Game": 105
+          },
+          "heapRawMB": 30.6
+        },
+        "presence": {
+          "font": {
+            "font-full": true,
+            "font-room": false
+          },
+          "finish": {
+            "popup-finish-general": true,
+            "popup-finish-speed": false,
+            "popup-finish-puzzle": false
+          },
+          "bgmCached": {
+            "bgm_level": true,
+            "bgm_level_speed": false,
+            "bgm_finish": true,
+            "bgm_finish_speed": false,
+            "bgm_over": true
+          },
+          "bgmPlaying": {
+            "bgm_level": true,
+            "bgm_level_speed": false,
+            "bgm_finish": false,
+            "bgm_finish_speed": false,
+            "bgm_over": false
+          },
+          "menuBgm": {
+            "cached": true,
+            "playing": false
+          },
+          "audioKeys": [
+            "bgm_finish",
+            "bgm_level",
+            "bgm_menu",
+            "bgm_over",
+            "sfx_death",
+            "sfx_diamond",
+            "sfx_door",
+            "sfx_end_diamond",
+            "sfx_end_fail",
+            "sfx_end_pass",
+            "sfx_jump_fb",
+            "sfx_jump_wg",
+            "sfx_lever",
+            "sfx_platform",
+            "sfx_pusher",
+            "sfx_water_steps",
+            "sfx_wind"
+          ]
+        },
+        "restored": {
+          "font": true,
+          "finish": true,
+          "bgm": true
+        }
+      }
+    },
+    {
+      "index": 4,
+      "hall": {
+        "page": {
+          "ok": true,
+          "texMB": 53.35,
+          "canvasTexMB": 10.24,
+          "texTop": [
+            [
+              "chars-play",
+              10.75
+            ],
+            [
+              "font-full",
+              8.56
+            ],
+            [
+              "chars",
+              5.07
+            ],
+            [
+              "TempleHall",
+              4
+            ],
+            [
+              "tree-big",
+              3.41
+            ],
+            [
+              "tree-all",
+              3.41
+            ],
+            [
+              "tree-done",
+              3.41
+            ],
+            [
+              "popup",
+              2.88
+            ]
+          ],
+          "audioMB": 21.81,
+          "audioTop": [
+            [
+              "bgm_level",
+              12.02
+            ],
+            [
+              "bgm_menu",
+              3.48
+            ],
+            [
+              "bgm_finish",
+              1.5
+            ],
+            [
+              "bgm_over",
+              1.46
+            ],
+            [
+              "sfx_wind",
+              0.91
+            ],
+            [
+              "sfx_door",
+              0.61
+            ],
+            [
+              "sfx_platform",
+              0.61
+            ],
+            [
+              "sfx_end_diamond",
+              0.29
+            ]
+          ],
+          "audioCount": 17,
+          "audioKeys": [
+            "bgm_finish",
+            "bgm_level",
+            "bgm_menu",
+            "bgm_over",
+            "sfx_death",
+            "sfx_diamond",
+            "sfx_door",
+            "sfx_end_diamond",
+            "sfx_end_fail",
+            "sfx_end_pass",
+            "sfx_jump_fb",
+            "sfx_jump_wg",
+            "sfx_lever",
+            "sfx_platform",
+            "sfx_pusher",
+            "sfx_water_steps",
+            "sfx_wind"
+          ],
+          "ground": {
+            "size": 0,
+            "bytesMB": 0
+          },
+          "tree": {
+            "jobs": 0,
+            "results": 1,
+            "jobMB": 0,
+            "resultMB": 10.24
+          },
+          "sceneObjs": {
+            "Temple": 56
+          },
+          "heapRawMB": 32.2
+        },
+        "presence": {
+          "font": {
+            "font-full": true,
+            "font-room": false
+          },
+          "finish": {
+            "popup-finish-general": true,
+            "popup-finish-speed": false,
+            "popup-finish-puzzle": false
+          },
+          "bgmCached": {
+            "bgm_level": true,
+            "bgm_level_speed": false,
+            "bgm_finish": true,
+            "bgm_finish_speed": false,
+            "bgm_over": true
+          },
+          "bgmPlaying": {
+            "bgm_level": false,
+            "bgm_level_speed": false,
+            "bgm_finish": false,
+            "bgm_finish_speed": false,
+            "bgm_over": false
+          },
+          "menuBgm": {
+            "cached": true,
+            "playing": true
+          },
+          "audioKeys": [
+            "bgm_finish",
+            "bgm_level",
+            "bgm_menu",
+            "bgm_over",
+            "sfx_death",
+            "sfx_diamond",
+            "sfx_door",
+            "sfx_end_diamond",
+            "sfx_end_fail",
+            "sfx_end_pass",
+            "sfx_jump_fb",
+            "sfx_jump_wg",
+            "sfx_lever",
+            "sfx_platform",
+            "sfx_pusher",
+            "sfx_water_steps",
+            "sfx_wind"
+          ]
+        },
+        "delta": {
+          "texMB": 1.56,
+          "audioMB": 0
+        },
+        "released": {
+          "font": false,
+          "finish": false,
+          "bgm": false
+        }
+      },
+      "preClick": {
+        "font": {
+          "font-full": true,
+          "font-room": false
+        },
+        "finish": {
+          "popup-finish-general": true,
+          "popup-finish-speed": false,
+          "popup-finish-puzzle": false
+        },
+        "bgmCached": {
+          "bgm_level": true,
+          "bgm_level_speed": false,
+          "bgm_finish": true,
+          "bgm_finish_speed": false,
+          "bgm_over": true
+        },
+        "bgmPlaying": {
+          "bgm_level": false,
+          "bgm_level_speed": false,
+          "bgm_finish": false,
+          "bgm_finish_speed": false,
+          "bgm_over": false
+        },
+        "menuBgm": {
+          "cached": true,
+          "playing": true
+        },
+        "audioKeys": [
+          "bgm_finish",
+          "bgm_level",
+          "bgm_menu",
+          "bgm_over",
+          "sfx_death",
+          "sfx_diamond",
+          "sfx_door",
+          "sfx_end_diamond",
+          "sfx_end_fail",
+          "sfx_end_pass",
+          "sfx_jump_fb",
+          "sfx_jump_wg",
+          "sfx_lever",
+          "sfx_platform",
+          "sfx_pusher",
+          "sfx_water_steps",
+          "sfx_wind"
+        ]
+      },
+      "watch": {
+        "t0": 20913.100000023842,
+        "font": 81.5,
+        "finish": 81.5,
+        "gameActive": 743.4,
+        "bgmCached": 81.5,
+        "bgmPlaying": 743.4,
+        "menuBgmStopped": 743.4,
+        "audio": {
+          "bgm_level": 81.6,
+          "bgm_finish": 81.6,
+          "bgm_over": 81.6
+        },
+        "play": {
+          "bgm_level": 743.4
+        }
+      },
+      "newResources": [
+        {
+          "url": "/matchmake/create/forest",
+          "type": "xmlhttprequest",
+          "transferKB": 0.5,
+          "decodedKB": 0.2,
+          "startMs": 0.4,
+          "endMs": 10.4
+        },
+        {
+          "url": "/assets/atlasses/CharAssetsEntry.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 2.2,
+          "startMs": 642.8,
+          "endMs": 646.6
+        },
+        {
+          "url": "/assets/atlasses/GroundAssetsPlay.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 52.9,
+          "startMs": 642.9,
+          "endMs": 648.3
+        },
+        {
+          "url": "/assets/atlasses/Temples/forest/TempleAssetsCore.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 9.1,
+          "startMs": 643,
+          "endMs": 648.5
+        },
+        {
+          "url": "/assets/atlasses/PopupAssetsMini.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 16.8,
+          "startMs": 643.1,
+          "endMs": 648.6
+        },
+        {
+          "url": "/assets/fonts/chinese/font.fnt?v=f7e2c673",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 30.8,
+          "startMs": 643.2,
+          "endMs": 648.7
+        },
+        {
+          "url": "/assets/atlasses/Temples/forest/TempleAssetsFinish.png",
+          "type": "xmlhttprequest",
+          "transferKB": 0.3,
+          "decodedKB": 119.1,
+          "startMs": 714.8,
+          "endMs": 718.7
+        },
+        {
+          "url": "/assets/atlasses/Temples/forest/TempleAssetsFinish.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 7.7,
+          "startMs": 715.1,
+          "endMs": 716.6
+        },
+        {
+          "url": "/assets/atlasses/PopupFinishGeneral.json",
+          "type": "xmlhttprequest",
+          "transferKB": 0,
+          "decodedKB": 8.4,
+          "startMs": 743.8,
+          "endMs": 745.2
+        }
+      ],
+      "newTransferKB": 0.8,
+      "post": {
+        "page": {
+          "ok": true,
+          "texMB": 62.03,
+          "canvasTexMB": 15.21,
+          "texTop": [
+            [
+              "chars-play",
+              10.75
+            ],
+            [
+              "font-full",
+              8.56
+            ],
+            [
+              "chars",
+              5.07
+            ],
+            [
+              "groundTex",
+              4.96
+            ],
+            [
+              "TempleHall",
+              4
+            ],
+            [
+              "temple-finish",
+              3.72
+            ],
+            [
+              "tree-big",
+              3.41
+            ],
+            [
+              "tree-all",
+              3.41
+            ]
+          ],
+          "audioMB": 21.81,
+          "audioTop": [
+            [
+              "bgm_level",
+              12.02
+            ],
+            [
+              "bgm_menu",
+              3.48
+            ],
+            [
+              "bgm_finish",
+              1.5
+            ],
+            [
+              "bgm_over",
+              1.46
+            ],
+            [
+              "sfx_wind",
+              0.91
+            ],
+            [
+              "sfx_door",
+              0.61
+            ],
+            [
+              "sfx_platform",
+              0.61
+            ],
+            [
+              "sfx_end_diamond",
+              0.29
+            ]
+          ],
+          "audioCount": 17,
+          "audioKeys": [
+            "bgm_finish",
+            "bgm_level",
+            "bgm_menu",
+            "bgm_over",
+            "sfx_death",
+            "sfx_diamond",
+            "sfx_door",
+            "sfx_end_diamond",
+            "sfx_end_fail",
+            "sfx_end_pass",
+            "sfx_jump_fb",
+            "sfx_jump_wg",
+            "sfx_lever",
+            "sfx_platform",
+            "sfx_pusher",
+            "sfx_water_steps",
+            "sfx_wind"
+          ],
+          "ground": {
+            "size": 1,
+            "bytesMB": 4.96
+          },
+          "tree": {
+            "jobs": 0,
+            "results": 1,
+            "jobMB": 0,
+            "resultMB": 10.24
+          },
+          "sceneObjs": {
+            "Game": 105
+          },
+          "heapRawMB": 30.7
+        },
+        "presence": {
+          "font": {
+            "font-full": true,
+            "font-room": false
+          },
+          "finish": {
+            "popup-finish-general": true,
+            "popup-finish-speed": false,
+            "popup-finish-puzzle": false
+          },
+          "bgmCached": {
+            "bgm_level": true,
+            "bgm_level_speed": false,
+            "bgm_finish": true,
+            "bgm_finish_speed": false,
+            "bgm_over": true
+          },
+          "bgmPlaying": {
+            "bgm_level": true,
+            "bgm_level_speed": false,
+            "bgm_finish": false,
+            "bgm_finish_speed": false,
+            "bgm_over": false
+          },
+          "menuBgm": {
+            "cached": true,
+            "playing": false
+          },
+          "audioKeys": [
+            "bgm_finish",
+            "bgm_level",
+            "bgm_menu",
+            "bgm_over",
+            "sfx_death",
+            "sfx_diamond",
+            "sfx_door",
+            "sfx_end_diamond",
+            "sfx_end_fail",
+            "sfx_end_pass",
+            "sfx_jump_fb",
+            "sfx_jump_wg",
+            "sfx_lever",
+            "sfx_platform",
+            "sfx_pusher",
+            "sfx_water_steps",
+            "sfx_wind"
+          ]
+        },
+        "restored": {
+          "font": true,
+          "finish": true,
+          "bgm": true
+        }
+      }
+    }
+  ],
+  "errors": [],
+  "throttle": {
+    "profile": "off",
+    "checked": false
+  },
+  "firstLoad": {
+    "count": 62,
+    "totalTransferKB": 5220,
+    "totalDecodedKB": 6952,
+    "byType": {
+      "script": {
+        "n": 1,
+        "transferKB": 34.693359375,
+        "decodedKB": 106.6767578125
+      },
+      "other": {
+        "n": 2,
+        "transferKB": 338.501953125,
+        "decodedKB": 1573.427734375
+      },
+      "img": {
+        "n": 1,
+        "transferKB": 106.7861328125,
+        "decodedKB": 106.4931640625
+      },
+      "css": {
+        "n": 1,
+        "transferKB": 80.4755859375,
+        "decodedKB": 80.1826171875
+      },
+      "fetch": {
+        "n": 5,
+        "transferKB": 5.251953125,
+        "decodedKB": 32.5224609375
+      },
+      "xmlhttprequest": {
+        "n": 52,
+        "transferKB": 4654.1162109375,
+        "decodedKB": 5052.6455078125
+      }
+    },
+    "largest": {
+      "url": "/assets/audio/s/LevelMusic",
+      "KB": 1285.4,
+      "bodyMs": 6.7
+    }
+  },
+  "initial": {
+    "page": {
+      "ok": true,
+      "texMB": 51.79,
+      "canvasTexMB": 4.96,
+      "texTop": [
+        [
+          "chars-play",
+          10.75
+        ],
+        [
+          "font-full",
+          8.56
+        ],
+        [
+          "chars",
+          5.07
+        ],
+        [
+          "groundTex",
+          4.96
+        ],
+        [
+          "TempleHall",
+          4
+        ],
+        [
+          "temple-finish",
+          3.72
+        ],
+        [
+          "popup",
+          2.88
+        ],
+        [
+          "temple",
+          2.63
+        ]
+      ],
+      "audioMB": 21.81,
+      "audioTop": [
+        [
+          "bgm_level",
+          12.02
+        ],
+        [
+          "bgm_menu",
+          3.48
+        ],
+        [
+          "bgm_finish",
+          1.5
+        ],
+        [
+          "bgm_over",
+          1.46
+        ],
+        [
+          "sfx_wind",
+          0.91
+        ],
+        [
+          "sfx_door",
+          0.61
+        ],
+        [
+          "sfx_platform",
+          0.61
+        ],
+        [
+          "sfx_end_diamond",
+          0.29
+        ]
+      ],
+      "audioCount": 17,
+      "audioKeys": [
+        "bgm_finish",
+        "bgm_level",
+        "bgm_menu",
+        "bgm_over",
+        "sfx_death",
+        "sfx_diamond",
+        "sfx_door",
+        "sfx_end_diamond",
+        "sfx_end_fail",
+        "sfx_end_pass",
+        "sfx_jump_fb",
+        "sfx_jump_wg",
+        "sfx_lever",
+        "sfx_platform",
+        "sfx_pusher",
+        "sfx_water_steps",
+        "sfx_wind"
+      ],
+      "ground": {
+        "size": 1,
+        "bytesMB": 4.96
+      },
+      "tree": {
+        "jobs": 0,
+        "results": 0,
+        "jobMB": 0,
+        "resultMB": 0
+      },
+      "sceneObjs": {
+        "Game": 105
+      },
+      "heapRawMB": 21.3
+    },
+    "presence": {
+      "font": {
+        "font-full": true,
+        "font-room": false
+      },
+      "finish": {
+        "popup-finish-general": true,
+        "popup-finish-speed": false,
+        "popup-finish-puzzle": false
+      },
+      "bgmCached": {
+        "bgm_level": true,
+        "bgm_level_speed": false,
+        "bgm_finish": true,
+        "bgm_finish_speed": false,
+        "bgm_over": true
+      },
+      "bgmPlaying": {
+        "bgm_level": true,
+        "bgm_level_speed": false,
+        "bgm_finish": false,
+        "bgm_finish_speed": false,
+        "bgm_over": false
+      },
+      "menuBgm": {
+        "cached": true,
+        "playing": false
+      },
+      "audioKeys": [
+        "bgm_finish",
+        "bgm_level",
+        "bgm_menu",
+        "bgm_over",
+        "sfx_death",
+        "sfx_diamond",
+        "sfx_door",
+        "sfx_end_diamond",
+        "sfx_end_fail",
+        "sfx_end_pass",
+        "sfx_jump_fb",
+        "sfx_jump_wg",
+        "sfx_lever",
+        "sfx_platform",
+        "sfx_pusher",
+        "sfx_water_steps",
+        "sfx_wind"
+      ]
+    }
+  },
+  "ok": true
+}
