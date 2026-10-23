@@ -1,7 +1,7 @@
 /**
- * 相机装置（M12 从 GameScene 抽出的**草案，未接线**——GameScene.ts 仍持有一份逐行等价实现，
- * 本文件为后续接线备料；每个成员注释标明 GameScene.ts 行号与原语义，映射表见
- * note/evidence/2026-10-23-recheck/04-m12-camera-prep.md）。
+ * 相机装置（M12 从 GameScene 抽出的纯状态机，0.3.43 起接线——GameScene 持 camRig 实例，
+ * 引擎写（setZoom/centerOn/HUD 反缩放）与输入监听注册留在 GameScene 侧；
+ * 拆分映射表见 note/evidence/2026-10-23-recheck/04-m12-camera-prep.md）。
  *
  * 原版 CameraManager bundle @1881500 移植（0.3.x F4 翻转），GameConfig.zooming（bundle @1260）：
  * lockAtMinScale=true, minScaleRatio=0.9, lockScaleRatio=0.97, maxScale=1.5；
@@ -17,8 +17,9 @@
  *   由调用方（GameScene.applyCam 残壳）落引擎。
  */
 
-/** GameScene.ts:43 PAD 同值（关卡四周留白 32px；接线时与 GameScene 常量二选一去重） */
-const PAD = 32;
+/** 关卡四周留白 32px（原版 groundTexture 1312×992 @(-32,-32) 实测；接线后单一来源在本模块，
+ *  GameScene 导入使用——原 :43 本地常量已删） */
+export const PAD = 32;
 /** 相机最小可视格子（GameScene.ts:61-62 同值；mpx=32 即 tile 尺寸） */
 const TILES_DESKTOP = { w: 40, h: 30 };
 const TILES_SMALL = { w: 20, h: 15 };

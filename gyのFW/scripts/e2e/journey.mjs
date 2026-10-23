@@ -203,7 +203,8 @@ try {
       check(`第 ${round} 次刷新 → 自动回座 started`, resumed);
       if (!resumed) break;
       if (round === 1) {
-        const camFrozen = await a.evaluate(() => window.__fw.scene.getScene("Game").camFrozen);
+        // 0.3.43 M12 相机接线后冻结门在 camRig（旧探针读 GameScene.camFrozen 已不存在）
+        const camFrozen = await a.evaluate(() => window.__fw.scene.getScene("Game").camRig.camFrozen);
         check("刷新回座 → 相机已解冻（H2）", camFrozen === false, `camFrozen=${camFrozen}`);
       }
     }
