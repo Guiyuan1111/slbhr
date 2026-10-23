@@ -25,7 +25,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright";
-import { enterAs, log, runInputs, startServer, waitForStarted } from "./lib.mjs";
+import { PASSWORD, enterAs, log, runInputs, startServer, waitForStarted } from "./lib.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "..", "..");
 const PORT = Number(process.argv[2] || 3611);
@@ -307,11 +307,15 @@ try {
   //   ② 重建时机：重进由 GameScene.create 的 kickCharsPlay 重新声明纹理，ensureCharAnims 在
   //      filecomplete 后才 buildCharAnims；早一步注册=整张图集当一帧（__BASE），晚一步=按键无键。
   //   ③ 大厅零消费：chars-play/房内字体/结算变体离房即交还，而 bgm_menu 这类大厅资源不受牵连。
+  // 双人房：重进走真实 join（沿用原房间码），让 GameScene.create 与 started 相位都真实发生
   const E = await mkCtx();
+  const F = await mkCtx();
   watch("E", E.page);
-  await enterAs(E.page, PORT, "create", "", LEVEL, WAIT_SCALE);
-  // 单人 create 的 phase 可能不是 started（waitForStarted 不适用），以 Game active + 角色上屏为落定锚
-  await E.page.waitForFunction(() => globalThis.__fw?.scene?.isActive("Game"), null, { timeout: 60000, polling: 40 });
+  watch("F", F.page);
+  const code3 = await enterAs(E.page, PORT, "create", "", LEVEL, WAIT_SCALE);
+  await enterAs(F.page, PORT, "join", code3, LEVEL, WAIT_SCALE);
+  await waitForStarted(E.page, WAIT_START);
+  await waitForStarted(F.page, WAIT_START);
   await waitPainted(E.page, WAIT_START);
   await waitAnims(E.page, true, ARRIVAL_CAP);
   const s5 = await snapshot(E.page);
@@ -323,6 +327,9 @@ try {
   const preWarns = warns.length;
   const preMissing = missingAnim.length;
 
+  // 离房前必须等入场黑幕退场：fadeSwitch 在 XFade active 期把整个离房触发丢弃
+  // （r42 首跑超时的根因，TEMP 探针实测 Game 未停、XFade 400ms 后自停）。等场景不再活动即可。
+  await E.page.waitForFunction(() => !globalThis.__fw?.scene?.isActive("XFade"), null, { timeout: 20000, polling: 40 });
   await E.page.evaluate(() => globalThis.__fwLeaveToMenu?.());
   await E.page.waitForFunction(
     () => globalThis.__fw?.scene?.isActive("Temple") && !globalThis.__fw?.textures.exists("chars-play"),
@@ -346,8 +353,13 @@ try {
 
   await E.page.evaluate((lv) => globalThis.__fw.registry.get("onLevelPicked")(lv), LEVEL);
   await E.page.waitForSelector("#menu", { state: "visible", timeout: 15000 });
-  await E.page.click("#btn-create");
+  await E.page.fill("#password", PASSWORD);
+  await E.page.fill("#roomcode", code3);
+  await E.page.click("#btn-join");
+  await E.page.waitForSelector("#menu", { state: "hidden", timeout: 15000 * WAIT_SCALE });
+  await waitForStarted(E.page, WAIT_START);
   await E.page.waitForFunction(() => globalThis.__fw?.scene?.isActive("Game"), null, { timeout: 60000, polling: 40 });
+  await E.page.waitForFunction(() => !globalThis.__fw?.scene?.isActive("XFade"), null, { timeout: 20000, polling: 40 });
   await waitAnims(E.page, true, ARRIVAL_CAP);
   const s6 = await snapshot(E.page);
   check("用例三重进：chars-play 重新声明且十一式全部注册", s6.hasPlay === true && s6.registeredCount === PLAY_KEYS.length, `hasPlay=${s6.hasPlay} registered=${s6.registeredCount}/${PLAY_KEYS.length}`);
@@ -361,6 +373,7 @@ try {
   check("用例三窗口：零新增 TEX_WARN", warns.slice(preWarns).length === 0, warns.slice(preWarns).join("; "));
   check("用例三窗口：零新增页面错误", errs.slice(preErrs).length === 0, errs.slice(preErrs).join("; "));
   await E.ctx.close();
+  await F.ctx.close();
 } finally {
   await browser.close().catch(() => {});
   server.kill();
