@@ -770,8 +770,8 @@ export class GameScene extends Phaser.Scene {
         this.add.image(p.pts[3].x + PAD, p.pts[3].y + PAD, ATLAS_MECH, "pulley_base0000").setOrigin(0.5).setDepth(1.23),
       ];
       const wheels: [Phaser.GameObjects.Image, Phaser.GameObjects.Image] = [
-        this.add.image(a1.x - 10, a1.y - 50, ATLAS_MECH, "pulley_anchor0000").setOrigin(0.5).setDepth(1.26),
-        this.add.image(a2.x + 10, a2.y - 50, ATLAS_MECH, "pulley_anchor0000").setOrigin(0.5).setDepth(1.26),
+        this.add.image(a1.x + 10, a1.y - 50, ATLAS_MECH, "pulley_anchor0000").setOrigin(0.5).setDepth(1.26),
+        this.add.image(a2.x - 10, a2.y - 50, ATLAS_MECH, "pulley_anchor0000").setOrigin(0.5).setDepth(1.26),
       ];
       const mkRope = (fx: number, fy: number, tx: number, ty: number): Phaser.GameObjects.TileSprite => {
         const r = this.add
@@ -781,10 +781,13 @@ export class GameScene extends Phaser.Scene {
         r.setRotation(Math.atan2(ty - fy, tx - fx));
         return r;
       };
+      // 三段绳（oracle Pulley.update @1702579 区：ropeLeft=轮1→板1顶、ropeCenter=轮1↔轮2
+      // 定长顶段（不随板动）、ropeRight=轮2→板2顶；绳端=板体位 − baseHeight 60（板顶）。
+      // 用户实测 2026-10-24 bonus_2：旧版中段误接板1↔板2，板一移动整条链斜穿地图）。
       const ropes: [Phaser.GameObjects.TileSprite, Phaser.GameObjects.TileSprite, Phaser.GameObjects.TileSprite] = [
-        mkRope(a1.x, a1.y, p.pts[0].x + PAD, p.pts[0].y + PAD),
-        mkRope(p.pts[0].x + PAD, p.pts[0].y + PAD, p.pts[3].x + PAD, p.pts[3].y + PAD),
-        mkRope(p.pts[3].x + PAD, p.pts[3].y + PAD, a2.x, a2.y),
+        mkRope(a1.x, a1.y, p.pts[0].x + PAD, p.pts[0].y - 60 + PAD),
+        mkRope(a1.x, a1.y, a2.x, a2.y),
+        mkRope(a2.x, a2.y, p.pts[3].x + PAD, p.pts[3].y - 60 + PAD),
       ];
       const planks: [Phaser.GameObjects.Image, Phaser.GameObjects.Image] = [
         this.add.image(p.pts[0].x + PAD, p.pts[0].y + PAD, ATLAS_MECH, "pulley_platform0000").setOrigin(0.5).setDepth(1.3),
@@ -1861,33 +1864,27 @@ export class GameScene extends Phaser.Scene {
     }
     const b1 = v.planks[0];
     const b2 = v.planks[1];
-    // r3 脏守卫：三段绳+轮转角只依赖双板位置——任一板变位才重指
-    //（绳段内联展开，消除每帧 seg 闭包与解构数组）
-    if (b1.x !== v.segX1 || b1.y !== v.segY1 || b2.x !== v.segX2 || b2.y !== v.segY2) {
-      v.segX1 = b1.x;
-      v.segY1 = b1.y;
-      v.segX2 = b2.x;
-      v.segY2 = b2.y;
-      const r0 = v.ropes[0];
-      r0.setPosition(v.anchor1.x, v.anchor1.y);
-      r0.width = Math.max(1, Math.hypot(b1.x - v.anchor1.x, b1.y - v.anchor1.y));
-      r0.setRotation(Math.atan2(b1.y - v.anchor1.y, b1.x - v.anchor1.x));
-      const r1 = v.ropes[1];
-      r1.setPosition(b1.x, b1.y);
-      r1.width = Math.max(1, Math.hypot(b2.x - b1.x, b2.y - b1.y));
-      r1.setRotation(Math.atan2(b2.y - b1.y, b2.x - b1.x));
-      const r2 = v.ropes[2];
-      r2.setPosition(b2.x, b2.y);
-      r2.width = Math.max(1, Math.hypot(v.anchor2.x - b2.x, v.anchor2.y - b2.y));
-      r2.setRotation(Math.atan2(v.anchor2.y - b2.y, v.anchor2.x - b2.x));
-      // 轮转角 = 绳总长/π/10（原版装饰语义）
-      const total =
-        Math.hypot(b1.x - v.anchor1.x, b1.y - v.anchor1.y) +
-        Math.hypot(b2.x - b1.x, b2.y - b1.y) +
-        Math.hypot(v.anchor2.x - b2.x, v.anchor2.y - b2.y);
-      const turn = total / (Math.PI * 10);
-      v.wheels[0].setRotation(turn);
-      v.wheels[1].setRotation(turn);
+      // r3 脏守卫：两段垂绳+轮转角只依赖双板位置——任一板变位才重指
+      //（中段 ropeCenter=锚1↔锚2 定长，create 时已就位，step 不碰）
+      if (b1.x !== v.segX1 || b1.y !== v.segY1 || b2.x !== v.segX2 || b2.y !== v.segY2) {
+        v.segX1 = b1.x;
+        v.segY1 = b1.y;
+        v.segX2 = b2.x;
+        v.segY2 = b2.y;
+        const e1y = b1.y - 60; // 绳端=板顶（oracle baseHeight 60）
+        const e2y = b2.y - 60;
+        const r0 = v.ropes[0];
+        r0.setPosition(v.anchor1.x, v.anchor1.y);
+        r0.width = Math.max(1, Math.hypot(b1.x - v.anchor1.x, e1y - v.anchor1.y));
+        r0.setRotation(Math.atan2(e1y - v.anchor1.y, b1.x - v.anchor1.x));
+        const r2 = v.ropes[2];
+        r2.setPosition(v.anchor2.x, v.anchor2.y);
+        r2.width = Math.max(1, Math.hypot(b2.x - v.anchor2.x, e2y - v.anchor2.y));
+        r2.setRotation(Math.atan2(e2y - v.anchor2.y, b2.x - v.anchor2.x));
+        // 轮转角 = 右绳长/π/10（oracle e.Length() 装饰语义）
+        const turn = r2.width / (Math.PI * 10);
+        v.wheels[0].setRotation(turn);
+        v.wheels[1].setRotation(turn);
     }
   }
 
