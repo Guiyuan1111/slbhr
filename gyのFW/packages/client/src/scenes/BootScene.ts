@@ -3,14 +3,15 @@
  *
  * 渲染复刻原版（Phaser 2 版 output/A）的实测配方：
  * - 背景与门框在 TempleAssets；机关在 MechAssets；角色/钻石在 CharAssets；
- *   液体/特效在 GroundAssets；UI 贴图在 PopupAssets/MenuAssets。
+ *   液体/烘焙蒙版在 GroundAssetsPlay；UI 贴图在 PopupAssets/MenuAssets。
  * - 原 M1 加载的 tilemaps/tilesets/{Chars,Ground}.png 在素材包中不存在（Tiled 只留了
  *   元数据 JSON），地面改为程序化绘制（见 GameScene.buildGround）。
  *
  * 冷启动装载序整形（r5 perf，2026-10-18）：Boot 只装开始界面首帧必需
  * （CharAssetsMenu 角色 53 帧/MenuAssets/位图字/四张独立图；r22 件1 起 menu 音频也移出）；
  * chars-entry/ground/mech/temple/popup
- * 五图集（png 合计 1208.5KB）移出关键路径——MenuScene.create 首帧后由本场景 loader 后台暖装，
+ * 五图集移出关键路径（r40 起 ground 是 151 帧的 Play 图集，PNG 92.7→30.3KiB）——MenuScene.create
+ * 首帧后由本场景 loader 后台暖装，
  * GameScene.preload / TempleScene 等消费方照常声明装载（Phaser Loader 对已入纹理缓存
  * 的键静默跳过，见 LoaderPlugin.keyExists→File.hasCacheConflict），暖装被提前打断时
  * 由消费方补齐，任何进入路径都保证纹理就绪。r23 件1 另有一条：房内角色的**播放序列帧**
@@ -39,7 +40,16 @@ export const ATLAS_CHARS = "chars";
  *  反过来说配错也**不报错**：故注册点必须推迟到该张纹理到位（见 `ensureCharAnims`）。 */
 export const ATLAS_CHARS_ENTRY = "chars-entry";
 export const ATLAS_CHARS_PLAY = "chars-play";
+/** 地面图集（r40 按消费面重打包；生成器 `scripts/shrink-ground-atlas.mjs`）：
+ *  官方 GroundAssets 是 1024×2048（解码 8.00MiB）的 343 帧，但只有 151 帧有消费点——液体三段循环
+ *  135 帧（buildGameAnims 的 `liquid_*`）、冰膜静帧 3 帧（buildLiquids）、地面烘焙蒙版 13 帧
+ *  （bakeGroundCanvas）。这张 Play 图集把 151 帧按 GUT=2 重打包到 634×584（解码 1.41MiB），
+ *  其余 192 帧别名到 4×4 透明块，JSON 仍声明官方全部帧名。官方整张只作为生成器的输入留在
+ *  assets/ 里，运行时不再装载。消费者全是 **1:1 整数像素**绘制（液体精灵 scale=1、烘焙整像素
+ *  drawImage），故重打包逐字节等价，不需要 MenuAssetsMini 那样的 1px 邻域。 */
 export const ATLAS_GROUND = "ground";
+export const ATLAS_GROUND_PNG = "/assets/atlasses/GroundAssetsPlay.png";
+export const ATLAS_GROUND_JSON = "/assets/atlasses/GroundAssetsPlay.json";
 export const ATLAS_MECH = "mech";
 export const ATLAS_TEMPLE = "temple";
 export const ATLAS_POPUP = "popup";
@@ -158,7 +168,7 @@ export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
   // 留在这条批（28.3KB），其余 182 帧（442.4KB）改走 loadCharsPlay 的延迟通道。r22 件2 时这张是 186 帧
   // 461.9KB 整张进落定门，房间首帧其实只画得上其中四帧。
   load.atlas(ATLAS_CHARS_ENTRY, "/assets/atlasses/CharAssetsEntry.png", "/assets/atlasses/CharAssetsEntry.json");
-  load.atlas(ATLAS_GROUND, "/assets/atlasses/GroundAssets.png", "/assets/atlasses/GroundAssets.json");
+  load.atlas(ATLAS_GROUND, ATLAS_GROUND_PNG, ATLAS_GROUND_JSON);
   load.atlas(ATLAS_TEMPLE, ATLAS_TEMPLE_PNG, ATLAS_TEMPLE_JSON);
   load.atlas(ATLAS_POPUP, ATLAS_POPUP_PNG, ATLAS_POPUP_JSON);
   // r30：机关图集不在这里——它按关卡变体（loadMechAtlas），由关卡定出后声明。

@@ -701,7 +701,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** 烘焙整关地面（r13 从 buildGround 抽出为纯静态：只读图集与关卡数据，
-   *  不触场景状态、不碰纹理 → 可在任何时刻（结算空闲）预烘。像素逻辑逐字未动。） */
+   *  不触场景状态、不碰纹理 → 可在任何时刻（结算空闲）预烘。像素逻辑逐字未动。
+   *  r40：蒙版帧来自重打包后的 `ATLAS_GROUND`（GroundAssetsPlay，同一键）；帧像素与原图集
+   *  逐字节相同，`drawImage` 的 1:1 整像素拷贝与换图集前等价。 */
   private static bakeGroundCanvas(level: LevelData, textures: Phaser.Textures.TextureManager): HTMLCanvasElement {
     const W = level.widthPx + PAD * 2;
     const H = level.heightPx + PAD * 2;
