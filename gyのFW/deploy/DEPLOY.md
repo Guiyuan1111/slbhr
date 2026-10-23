@@ -25,10 +25,10 @@
 ```bash
 ssh root@<服务器IP>
 apt update && apt -y upgrade
-# Node 20 LTS（engines 要求 >=20.6）
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+# Node 22 LTS（engines 要求 >=22.12.0，0.3.41 起 vitest 5 需 Node ≥22.12；与 CI 的 node-version 22.x 同口径）
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt -y install nodejs git
-node -v   # 应 >= v20.6
+node -v   # 应 >= v22.12
 ```
 
 建议建非 root 用户跑服务（下文以 `fw` 为例）：
