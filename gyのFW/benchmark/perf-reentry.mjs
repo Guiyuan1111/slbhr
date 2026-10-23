@@ -328,7 +328,25 @@ try {
   log(`首进 ${LEVEL}（net=${NET_NAME}）…`);
   await enterAs(page, PORT, "create", "", LEVEL, NET.waitScale);
   await waitSceneActive(page, "Game", W(60000));
-  await sleep(2500); // 相机收敛 + BGM/结算 kick 落定
+  const cfg = { fontKeys: ["font-full", "font-room"], finishKeys: ["popup-finish-general", "popup-finish-speed", "popup-finish-puzzle"], bgmKeys: ["bgm_level", "bgm_level_speed", "bgm_finish", "bgm_finish_speed", "bgm_over"] };
+  // 首进必须等"延迟装载"落定再拍基线：BGM 循环曲/终局曲、结算变体、chars-play 都在 create 之后取，
+  // slow3g 下 LevelMusic 1.28MB 就要 ≈20s。不等就离房，量到的是"半装房间"，cycle 1 的
+  // 存量/交还标记全被在飞请求搅乱（r41 首轮即踩到：初始 audio 缺 bgm_level、tex 缺 chars-play）。
+  const settleTimeout = Math.max(30000, Math.min(W(90000), 180000));
+  log(`等首进延迟装载落定（上限 ${Math.round(settleTimeout / 1000)}s）…`);
+  await page.waitForFunction(
+    (c) => {
+      const g = globalThis.__fw;
+      const font = c.fontKeys.some((k) => g.textures.exists(k));
+      const finish = c.finishKeys.some((k) => g.textures.exists(k));
+      const loop = g.cache.audio.exists("bgm_level") || g.cache.audio.exists("bgm_level_speed");
+      const term = g.cache.audio.exists("bgm_over") && (g.cache.audio.exists("bgm_finish") || g.cache.audio.exists("bgm_finish_speed"));
+      return font && finish && loop && term;
+    },
+    cfg,
+    { timeout: settleTimeout, polling: 200 },
+  );
+  await sleep(1200); // 相机收敛 + 最后一批 kick 的 complete 回调落定
   const firstLoad = await page.evaluate(resourceSnapshot);
   const wallMs = THROTTLED ? await probeLatencyWall(page) : null;
   out.throttle = assertThrottleActive(wallMs, firstLoad.largest, "首进");
@@ -346,8 +364,6 @@ try {
   const finishKeys = ["popup-finish-general", "popup-finish-speed", "popup-finish-puzzle"].filter((k) => initialPresence.finish[k]);
   const roomBgms = initialPresence.audioKeys.filter((k) => k.startsWith("bgm_") && k !== "bgm_menu");
   log(`首进落定：纹 ${initialPage.texMB}MB 音 ${initialPage.audioMB}MB/${initialPage.audioCount}键 | 房内字体 ${roomFonts.join("+") || "无"} 结算 ${finishKeys.join("+") || "无"} 房内BGM ${roomBgms.join("+") || "无"}`);
-
-  const cfg = { fontKeys: ["font-full", "font-room"], finishKeys: ["popup-finish-general", "popup-finish-speed", "popup-finish-puzzle"], bgmKeys: ["bgm_level", "bgm_level_speed", "bgm_finish", "bgm_finish_speed", "bgm_over"] };
 
   for (let i = 1; i <= CYCLES; i++) {
     // —— 离房回大厅：与 EndMenu「继续」同一入口
@@ -391,7 +407,7 @@ try {
           return !!(w && w.font != null && w.finish != null && w.bgmPlaying != null && w.gameActive != null);
         },
         cfg,
-        { timeout: 15000, polling: 40 },
+        { timeout: Math.min(W(20000), 60000), polling: 40 },
       )
       .catch(() => {});
     await sleep(700); // 复原后的装载队列落定
