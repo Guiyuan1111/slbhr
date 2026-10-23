@@ -196,7 +196,7 @@ describe("进房前子集产物语义（r19 重排版）", () => {
       );
     }
     expect(kept.filter((k) => k.glyph.width > 0 && k.glyph.height > 0).length).toBe(52);
-  });
+  }, 20000); // 52 个字形逐字节比较；整包并行时会超过 vitest 默认 5s（本文件单跑 2.6s）
 
   it("未保留声明（含 0×0）全部指向全零区，且新图上非零像素只可能来自保留区域", () => {
     const keptCodes = new Set(kept.map((k) => k.glyph.id));
@@ -218,7 +218,7 @@ describe("进房前子集产物语义（r19 重排版）", () => {
       if ((prePng.data[o] | prePng.data[o + 1] | prePng.data[o + 2] | prePng.data[o + 3]) && !mask[i]) stray++;
     }
     expect(stray, "区域外有残留非零像素（重排后采样会读到计划外邻居）").toBe(0);
-  });
+  }, 20000); // 整画布逐像素扫描 + 258 条声明矩形，同上受并行负载影响
 
   it("幅面确实缩小、块序与辅助块与源一致、且不得是 2 的幂对（POT 会触发 mipmap=换采样级别）", () => {
     expect(prePng.chunks).toBe(fontSrc.chunks);
