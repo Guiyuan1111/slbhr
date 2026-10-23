@@ -348,8 +348,8 @@
         background: url(/assets/atlasses/CharAssets.png) no-repeat;
         background-size: calc(2048 / 130 * 33px) auto;
       }
-      .av-fire { background-position: 0 calc(-862 / 130 * 33px); }
-      .av-water { background-position: calc(-1340 / 130 * 33px) calc(-468 / 130 * 33px); }
+      .btn .av.av-fire { background-position: 0 calc(-862 / 130 * 33px); }
+      .btn .av.av-water { background-position: calc(-1340 / 130 * 33px) calc(-468 / 130 * 33px); }
       .btn > span { display: flex; flex-direction: column; align-items: center; gap: 5px; pointer-events: none; }
       .btn small { font-size: 12px; font-weight: 400; letter-spacing: 1px; color: #e8d9b8; opacity: 0.85; }
 
@@ -554,7 +554,7 @@
           <input id="roomcode" type="text" maxlength="12" placeholder="创建后会显示房间码" />
 
           <button class="btn" id="btn-create" type="button"><i class="av av-fire" aria-hidden="true"></i><span>创建房间<small>我当火人 · 方向键</small></span></button>
-          <button class="btn" id="btn-join" type="button"><i class="av av-water" aria-hidden="true"></i><span>加入房间<small>水女孩 · W/A/D</small></span></button>
+          <button class="btn" id="btn-join" type="button"><i class="av av-water" aria-hidden="true"></i><span>加入房间<small>我当水女孩 · W/A/D</small></span></button>
           <div id="menu-error"></div>
           <div class="hint" title="每台电脑控制本机角色：碰到自己克制的液体没事，碰到对方的液体会化成烟；两人各自站进自己的门即可通关。创建房间时可在 URL 加 ?level=forest_02 选择关卡（默认 forest_01）。">
             <span class="k-fire"><b>火人</b><kbd>↑</kbd><kbd>←</kbd><kbd>→</kbd></span>
