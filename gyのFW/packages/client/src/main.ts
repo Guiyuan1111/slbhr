@@ -142,6 +142,8 @@ function restartWithFade(): void {
     const sm = game.scene;
     sm.stop("GameOverMenu");
     sm.stop("PauseMenu");
+    sm.stop("SettingsScene");
+    sm.stop("CompleteScene");
     net?.restart();
   });
 }
@@ -167,6 +169,8 @@ async function reloadLevel(levelId: string): Promise<void> {
     sm.stop("EndMenu");
     sm.stop("GameOverMenu");
     sm.stop("PauseMenu");
+    sm.stop("SettingsScene");
+    sm.stop("CompleteScene");
     sm.stop("Game");
     sm.start("Game");
   });
@@ -351,6 +355,8 @@ async function enterGame(): Promise<void> {
       sm.stop("EndMenu");
       sm.stop("GameOverMenu");
       sm.stop("PauseMenu");
+      sm.stop("SettingsScene");
+      sm.stop("CompleteScene");
       sm.start("Temple");
       const hud = document.querySelector("#hud");
       if (hud) hud.classList.add("hidden");
@@ -606,8 +612,9 @@ function bootPhaser(): void {
     setBusy(false); // 换关回面板：上一局的忙态禁用不得残留（否则 journey 二次建房 click 卡死）
     $("#menu").classList.remove("hidden");
   });
-  // 返回主菜单：收起联机面板（面板仅属于选关流程；TempleScene 返回钮黑幕 ops 内调用）
-  phaser.registry.set("onBackToMenu", () => {
+  // 收起联机面板（面板仅属于选关流程）：TempleScene 返回钮与 MenuScene 开始钮的黑幕 ops
+  // 内调用——深链开机（?level=）面板开着点开始，若不收会残留到选关页挡死关卡树
+  phaser.registry.set("onHideLobby", () => {
     $("#menu").classList.add("hidden");
   });
   if (selectedLevel) {

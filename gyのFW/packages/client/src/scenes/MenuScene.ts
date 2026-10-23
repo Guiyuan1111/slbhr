@@ -100,7 +100,13 @@ export class MenuScene extends Phaser.Scene {
         playTxt.setScale(1);
         clickSfx(this);
         // 进选关黑幕（oracle Menu.startTemple fade("levelMenu") :1941847）
-        fadeSwitch(this.game, () => this.scene.start("Temple"));
+        fadeSwitch(this.game, () => {
+        // 深链开机（?level=）面板开着点开始：先收面板（选关页点关卡才再弹）——
+        // 不收会残留到选关页，全屏 overlay 挡死关卡树（2026-10-23 残留族排查）
+        const cb = this.registry.get("onHideLobby") as (() => void) | undefined;
+        cb?.();
+        this.scene.start("Temple");
+      });
       })
       .on("pointerupoutside", () => playTxt.setScale(1));
 

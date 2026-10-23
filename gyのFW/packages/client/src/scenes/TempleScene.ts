@@ -215,10 +215,10 @@ export class TempleScene extends Phaser.Scene {
       backLabel.setScale(1);
       clickSfx(this);
       // 返主菜单黑幕（oracle goBack fade("menu") :1935440）；联机面板随选关流程结束收起
-      // （onBackToMenu 由 main.ts 注册收 DOM——面板仅属于选关页，此前残留在主菜单上
+      // （onHideLobby 由 main.ts 注册收 DOM——面板仅属于选关页，此前残留在主菜单上
       //   压住画布标题/开始游戏钮，2026-10-23 用户报告）
       fadeSwitch(this.game, () => {
-        const cb = this.registry.get("onBackToMenu") as (() => void) | undefined;
+        const cb = this.registry.get("onHideLobby") as (() => void) | undefined;
         cb?.();
         this.scene.start("Menu");
       });

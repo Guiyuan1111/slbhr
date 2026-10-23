@@ -170,6 +170,9 @@ export class PauseMenu extends Phaser.Scene {
     if (!this.scene.isPaused("Game")) this.scene.pause("Game");
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       if (this.scene.isPaused("Game")) this.scene.resume("Game");
+      // 设置浮层由本面板齿轮打开：宿主任何关闭路径（P 恢复/R 重开/返回菜单/再试一次）
+      // 连带收起，防悬空漂在恢复后的 Game 上（2026-10-23 残留族）；非活动时 stop 幂等
+      if (this.scene.isActive("SettingsScene")) this.scene.stop("SettingsScene");
     });
     this.board = buildBoard(this);
     const board = this.board;
