@@ -10,6 +10,8 @@
  *   node scripts/e2e/journey.mjs rejoin  [--port 3573]   # 断线超时→补位重进：房间整关重开而非死房（0.3.27 onLeave 修复回归；用 FW_RECONNECT_SECONDS 缩窗）
  *   node scripts/e2e/journey.mjs deathretry [--port 3574] # 死亡→gameover 静置（原版无自动重开）→Retry 整关重开（F2 翻转回归）
  *   node scripts/e2e/journey.mjs rolesplit [--port 3576] # 按角色分键：fb 只认方向键/wg 只认 WASD，跨组键免疫（F1 翻转回归）
+ *   node scripts/e2e/journey.mjs bgm     [--port 3661]   # M3 速度关 BGM 键：普通关 forest_01/02 播 bgm_level 不误切，
+ *                                                        # FORCE_DOORS 通关→活房间 advance 链入速度关 forest_03 切 bgm_level_speed
  *
  * 断言全部读权威 state 或服务端日志，不依赖 DOM 轮询文本。
  */
@@ -31,7 +33,7 @@ const check = (name, ok, detail = "") => {
 
 let server;
 try {
-  server = await startServer(PORT, MODE === "journey" ? { FW_DEBUG_FORCE_DOORS: "1" } : MODE === "rejoin" ? { FW_RECONNECT_SECONDS: "4" } : MODE === "wonrefresh" ? { FW_DEBUG_FORCE_DOORS: "1", FW_RECONNECT_SECONDS: "15" } : {});
+  server = await startServer(PORT, MODE === "journey" || MODE === "bgm" ? { FW_DEBUG_FORCE_DOORS: "1" } : MODE === "rejoin" ? { FW_RECONNECT_SECONDS: "4" } : MODE === "wonrefresh" ? { FW_DEBUG_FORCE_DOORS: "1", FW_RECONNECT_SECONDS: "15" } : {});
   mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true, args: ["--mute-audio"] });
 
@@ -393,8 +395,101 @@ try {
     results.pass = results.checks.every((c) => c.ok);
     await ctxA.close();
     await ctxB.close();
+  } else if (MODE === "bgm") {
+    // ── 场景 6：速度关 BGM 键程序化断言（M3，0.3.41 审计档遗留「听感验收」的自动化前置）——
+    // 观测面（只读，不改 GameScene/audio）：window.__fw（Phaser.Game）→ scene.getScene("Game")
+    // → sound.isPlaying(key)（Phaser SoundManager API，GameScene.applyMusicSetting 同款用法）
+    // 与 templeType 字段（GameScene.create 由 templeEntry 同步赋值，辅锚点）。
+    // 断言链：forest_01（temple.json type=general）双端入房 → BGM=bgm_level 且不误切速度曲
+    // → FORCE_DOORS 通关 → __fwNextLevel 活房间 advance → forest_02（仍 general，换关注入
+    // 路径 reloadLevel 同验）→ 再通关 advance → forest_03（type=speed time=25）→ BGM 切
+    // bgm_level_speed 且普通曲不在播。
+    const ctxA = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+    const ctxB = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+    const a = await ctxA.newPage();
+    const b = await ctxB.newPage();
+    // BGM 观测快照：isPlaying 直读在播键；cache.audio.exists 证明曲已装载（sfx 对缺键静默跳过）
+    const bgmSnapshot = (page) => page.evaluate(`(() => {
+      try {
+        const g = window.__fw.scene.getScene("Game");
+        return {
+          templeType: String(g.templeType ?? ""),
+          levelBgm: g.sound.isPlaying("bgm_level") === true,
+          speedBgm: g.sound.isPlaying("bgm_level_speed") === true,
+          levelInCache: g.cache.audio.exists("bgm_level") === true,
+          speedInCache: g.cache.audio.exists("bgm_level_speed") === true,
+        };
+      } catch (e) { return { err: String(e) }; }
+    })()`);
+    const anyBgmExpr = `(() => { try { const g = window.__fw.scene.getScene("Game"); return g.sound.isPlaying("bgm_level") || g.sound.isPlaying("bgm_level_speed"); } catch { return false; } })()`;
+    /** 新关选曲完成 = XFade 已灭（换关 ops 同步执行完：旧 Game SHUTDOWN 停全部 BGM → 新
+     *  Game create 选曲）且关卡 BGM 在播——此后采样到的在播键必属新关。 */
+    const settledBgmExpr = `(() => { try { const sm = window.__fw.scene; const g = sm.getScene("Game"); return !sm.isActive("XFade") && (g.sound.isPlaying("bgm_level") || g.sound.isPlaying("bgm_level_speed")); } catch { return false; } })()`;
+    const wonGate = `(() => { try { return window.__fwInit.net.room.state.phase === "won"; } catch { return false; } })()`;
+    const stateGate = (expr) => `(() => { try { const s = window.__fwInit.net.room.state; return (${expr}); } catch { return false; } })()`;
+    /** 活房间 advance：双端 __fwNextLevel → levelId 回声 → 等换关黑幕走完且新关 BGM 在播 */
+    const advanceAndSettle = async (levelId) => {
+      for (const page of [a, b]) await page.evaluate(() => window.__fwNextLevel());
+      for (const page of [a, b]) {
+        await page.waitForFunction(stateGate(`s.levelId === "${levelId}"`), null, { timeout: 15000 });
+      }
+      await waitForStarted(a);
+      await waitForStarted(b);
+      await a.waitForFunction(settledBgmExpr, null, { timeout: 35000 });
+      await b.waitForFunction(settledBgmExpr, null, { timeout: 35000 });
+    };
+    const waitWon = async (label) => {
+      let won = false;
+      try {
+        await a.waitForFunction(wonGate, null, { timeout: 60000 });
+        won = true;
+      } catch { /* 超时按失败记 */ }
+      check(`FORCE_DOORS 通关 ${label}（phase=won）`, won);
+      return won;
+    };
+
+    // 第 1 段：forest_01（general）双端入房——普通关不误切
+    const code = await enterAs(a, PORT, "create", "", "forest_01");
+    await enterAs(b, PORT, "join", code, "forest_01");
+    await waitForStarted(a);
+    await waitForStarted(b);
+    log(`[bgm] 房间 ${code} forest_01 开局，等 GameScene.create 选曲`);
+    await a.waitForFunction(anyBgmExpr, null, { timeout: 30000 });
+    await b.waitForFunction(anyBgmExpr, null, { timeout: 30000 });
+    for (const [tag, page] of [["A", a], ["B", b]]) {
+      const s = await bgmSnapshot(page);
+      check(`forest_01（general）${tag} 端 BGM 键=bgm_level 且不误切速度曲`, s.levelBgm && !s.speedBgm, JSON.stringify(s));
+      check(`forest_01（general）${tag} 端 templeType=general`, s.templeType === "general", `templeType=${s.templeType}`);
+    }
+
+    // 第 2/3 段：通关 → advance 链 forest_02（仍 general）→ 再通关 → forest_03（speed）。
+    // 任一步超时记 check 失败并照常落盘结果（不裸抛丢报告）。
+    try {
+      if (await waitWon("forest_01")) {
+        await advanceAndSettle("forest_02");
+        for (const [tag, page] of [["A", a], ["B", b]]) {
+          const s = await bgmSnapshot(page);
+          check(`forest_02（general，advance 换关）${tag} 端仍 bgm_level 不误切`, s.levelBgm && !s.speedBgm, JSON.stringify(s));
+        }
+        if (await waitWon("forest_02")) {
+          await advanceAndSettle("forest_03");
+          for (const [tag, page] of [["A", a], ["B", b]]) {
+            const s = await bgmSnapshot(page);
+            check(`forest_03（speed）${tag} 端 BGM 切 bgm_level_speed`, s.speedBgm && !s.levelBgm, JSON.stringify(s));
+            check(`forest_03（speed）${tag} 端 templeType=speed`, s.templeType === "speed", `templeType=${s.templeType}`);
+          }
+        }
+      }
+    } catch (e) {
+      check("advance 链推进（forest_02→forest_03）", false, String(e).slice(0, 300));
+    }
+    await a.screenshot({ path: join(OUT, "bgm-forest03-speed-a.png") });
+    await b.screenshot({ path: join(OUT, "bgm-forest03-speed-b.png") });
+    results.pass = results.checks.every((c) => c.ok);
+    await ctxA.close();
+    await ctxB.close();
   } else {
-    throw new Error(`未知模式: ${MODE}（可用 journey|pause|leave|refresh|wonrefresh|rejoin|deathretry|rolesplit）`);
+    throw new Error(`未知模式: ${MODE}（可用 journey|pause|leave|refresh|wonrefresh|rejoin|deathretry|rolesplit|bgm）`);
   }
 
   await browser.close();
