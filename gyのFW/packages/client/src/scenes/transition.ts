@@ -4,9 +4,11 @@
  *
  * 机制：fadeSwitch(ops) → FadeScene launch（fading 门防重入，进行中重复触发丢弃=oracle 同）
  * → 黑 rect 500ms Linear 淡入 → 执行 ops（幕下换场景，oracle state.start 时点）→ 旧"overlay"
- * 丢弃、新 rect alpha=1 → 下一帧 500ms Linear 淡出 → stop。"Loading"位图字（FONT_MAIN 30 号，
- * 屏心）800ms 后现、300ms 点循环 "Loading..."/"Loading"/"Loading."/"Loading.."
- * （:2212125/:2212213）。oracle 中文字仅在 fade-in overlay 存活超 800ms（广告等待/异步装载）
+ * 丢弃、新 rect alpha=1 → 下一帧 500ms Linear 淡出 → stop。"loading"位图字（FONT_MAIN 30 号，
+ * 屏心）800ms 后现、300ms 点循环 "loading..."/"loading"/"loading."/"loading.."
+ * （:2212125/:2212213）。文案偏差声明：oracle 用 "Loading"，但中文版字体子集无大写 L 字形
+ * （A 包 font.fnt ASCII 覆盖实测），忠实渲染为 "oading"——原版自身的缺陷；用户 2026-10-23
+ * 裁定显示完整优先，首字母改小写（小写 l 字形在表内，零新美术）。oracle 中文字仅在 fade-in overlay 存活超 800ms（广告等待/异步装载）
  * 时可见；无广告环境 oracle 亦一闪而过——机制照移植，文字淡出段不显示（fade-out overlay
  * showText:false，:2213961）。黑幕 setInteractive 吞输入为防双击加固（oracle 无此防护，档卷注明）。
  *
@@ -23,7 +25,7 @@ export const FADE_SCENE = "XFade";
 const FADE_MS = 500;
 const TEXT_DELAY_MS = 800;
 const DOT_MS = 300;
-const DOTS = ["Loading...", "Loading", "Loading.", "Loading.."];
+const DOTS = ["loading...", "loading", "loading.", "loading.."];
 
 export class FadeScene extends Phaser.Scene {
   private shade!: Phaser.GameObjects.Rectangle;
@@ -40,7 +42,7 @@ export class FadeScene extends Phaser.Scene {
     this.t0 = this.time.now;
     this.shade = this.add.rectangle(640, 480, 1280, 960, 0x000000, 1).setDepth(1000).setInteractive();
     this.shade.alpha = 0;
-    this.label = this.add.bitmapText(640, 480, FONT_MAIN, "Loading...", 30).setOrigin(0.5, 0.5).setDepth(1001);
+    this.label = this.add.bitmapText(640, 480, FONT_MAIN, "loading...", 30).setOrigin(0.5, 0.5).setDepth(1001);
     this.label.alpha = 0;
     this.tweens.add({
       targets: this.shade,

@@ -32,7 +32,7 @@ HUD（leaveToMenu 隐藏 ✓）、触屏 DOM（onPhase ready/started 门 ✓）�
 
 tsc 0 / vitest 219 / build / e2e pause 11 + leave 3 + wonrefresh 6 + deathretry 4（改后复跑全过）。
 
-## 观察项（不动，记档）
+## 观察项（用户 2026-10-23 裁定：三项均不修，保持现状）
 
 - requestClose 的 1.5s delayedCall 兜底实测未触发（boardY 爬至 ~4s 才由弹簧落位回调停场景）——弹簧是唯一实际关闭者，注释与行为不符，待后续核查 Clock 语义。
 - oracle EndMenu Continue 初始 disable()（星动画后才启用），我方 Continue 全程可点——行为差异（非布局/残留族），如需对齐另行裁决。
