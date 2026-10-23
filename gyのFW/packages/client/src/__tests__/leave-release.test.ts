@@ -1,10 +1,12 @@
 /**
- * r41 离房资源交还的静态防护网。
+ * r41/r42 离房资源交还的静态防护网。
  *
  * 失效模式全是静默的：字体/结算图集被提前卸掉而某个面板仍用旧键，BitmapText 不抛错——
  * 缺字形画空白；BGM 被卸掉而重进没有重取路径，`GameScene.sfx` 首行按 `cache.audio.exists`
- * 静默跳过——进房没声。所以这里按"交还—重取"成对钉：每个被离房交还的键，必须在源码里
- * 有一条可到达的重取声明；同时钉住交还只发生在 leaveToMenu（房内换关 advance 不得经过）。
+ * 静默跳过——进房没声。r42 的角色序列帧还多一层 r39 类风险：动画键是全局的，纹理卸掉后
+ * Frame.data 为 null，而 buildSeq 的 exists 卫拒绝重建。所以这里按"交还—重取"成对钉：
+ * 每个被离房交还的键/动画，必须在源码里有一条可到达的重取声明；同时钉住交还只发生在
+ * leaveToMenu（房内换关 advance 不得经过），且摘键先于卸纹理。
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -21,6 +23,13 @@ const HALL = ["packages/client/src/scenes/MenuScene.ts", "packages/client/src/sc
 
 /** 三个结算键在 BootScene 里以字面量声明；测试独立抄一份，避免"用被测量当尺子" */
 const FINISH_KEYS = ["popup-finish-general", "popup-finish-speed", "popup-finish-puzzle"] as const;
+
+/** r42 角色房内十一式动画键；同样独立抄一份，与 BootScene 声明和 buildCharAnims 注册集三方对拍 */
+const CHAR_KEYS = [
+  "fire_legs_run", "fire_jump", "fire_fall", "fire_rising", "fire_stairs",
+  "water_legs_run", "water_jump", "water_fall", "water_rising", "water_stairs",
+  "smoke",
+] as const;
 
 /** 剥注释（保持长度与行号，跳过字符串）：注释里的示例调用不能当成调用点 */
 function stripComments(src: string): string {
@@ -69,8 +78,8 @@ function bracedBody(file: string, sig: string): string {
 const main = stripComments(SRC(MAIN));
 const leave = bracedBody(MAIN, "const leaveToMenu = (): void =>");
 
-describe("r41 离房交还：调用点在 leaveToMenu 内且顺序固定", () => {
-  it("先停场景与既有交还，再交还字体/结算/BGM，最后才起 Temple", () => {
+describe("r41/r42 离房交还：调用点在 leaveToMenu 内且顺序固定", () => {
+  it("先停场景与既有交还，再交还字体/结算/角色序列帧/BGM，最后才起 Temple", () => {
     const at = (s: string) => {
       const i = leave.indexOf(s);
       expect(i, `leaveToMenu 缺 ${s}`).toBeGreaterThan(-1);
@@ -82,21 +91,23 @@ describe("r41 离房交还：调用点在 leaveToMenu 内且顺序固定", () =>
       "GameScene.releaseTempleFinish",
       "GameScene.releaseRoomFont",
       "GameScene.releasePopupFinish",
+      "GameScene.releaseCharsPlay",
       "releaseGameBgms",
       'sm.start("Temple")',
     ];
     const pos = order.map(at);
     expect(pos).toEqual([...pos].sort((a, b) => a - b)); // 严格递增
-    // 三件各只调一次：重复调用在 dispose 语义上无害，但说明有人把交还铺到了别处
-    for (const s of ["GameScene.releaseRoomFont", "GameScene.releasePopupFinish", "releaseGameBgms"]) {
+    // 各只调一次：重复调用在 dispose 语义上无害，但说明有人把交还铺到了别处
+    for (const s of ["GameScene.releaseRoomFont", "GameScene.releasePopupFinish", "GameScene.releaseCharsPlay", "releaseGameBgms"]) {
       expect(leave.split(s).length - 1, `${s} 在 leaveToMenu 里出现多次`).toBe(1);
     }
-    // 交还的是全局 sound manager 与 audio cache（scene.sound 就是 game.sound，见 Phaser InjectionMap）
+    // 交还的是全局 sound manager / textures / anims（scene 上的同名属性都是 game 级，见 Phaser InjectionMap）
     expect(leave).toContain("releaseGameBgms(phaser!.sound, phaser!.cache.audio)");
+    expect(leave).toContain("GameScene.releaseCharsPlay(phaser!.textures, phaser!.anims)");
   });
 
-  it("advance（房间内换关）不经过交还：三个入口在 main.ts 里只有 leaveToMenu 一处调用", () => {
-    for (const s of ["GameScene.releaseRoomFont(", "GameScene.releasePopupFinish(", "releaseGameBgms("]) {
+  it("advance（房间内换关）不经过交还：四个入口在 main.ts 里只有 leaveToMenu 一处调用", () => {
+    for (const s of ["GameScene.releaseRoomFont(", "GameScene.releasePopupFinish(", "GameScene.releaseCharsPlay(", "releaseGameBgms("]) {
       const calls = [...main.matchAll(new RegExp(s.replace(/[().]/g, "\\$&"), "g"))].length;
       expect(calls, `${s} 调用点数`).toBe(1);
     }
@@ -192,5 +203,57 @@ describe("r41 重取路径成对存在", () => {
     }
     // 大厅自己的字走 FONT_MAIN；bgm_menu 由 Temple/Menu 起播
     expect(stripComments(SRC("packages/client/src/scenes/TempleScene.ts"))).toContain("ensureMenuBgm");
+  });
+});
+
+describe("r42 角色序列帧：摘键先于卸图，重取链完整，大厅零消费", () => {
+  it("交还实现：先删十一式动画键，再 remove chars-play 纹理", () => {
+    const fn = bracedBody(GAME, "static releaseCharsPlay");
+    expect(fn).toContain("CHAR_PLAY_ANIM_KEYS");
+    expect(fn).toContain("anims.exists");
+    expect(fn).toContain("anims.remove");
+    expect(fn).toContain("textures.exists(ATLAS_CHARS_PLAY)");
+    expect(fn).toContain("textures.remove(ATLAS_CHARS_PLAY)");
+    expect(fn.indexOf("anims.remove"), "摘键必须早于卸纹理（r39 的 Frame 失效模式）").toBeLessThan(fn.indexOf("textures.remove"));
+  });
+
+  it("键表三方一致：BootScene 声明 == 测试清单 == buildCharAnims 注册集", () => {
+    const boot = stripComments(SRC(BOOT));
+    const decl = boot.match(/export const CHAR_PLAY_ANIM_KEYS = \[([\s\S]*?)\] as const/);
+    expect(decl, "CHAR_PLAY_ANIM_KEYS 声明找不到").not.toBeNull();
+    const declared = [...decl![1].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
+    expect(declared.sort()).toEqual([...CHAR_KEYS].sort());
+
+    const body = bracedBody(BOOT, "export function buildCharAnims");
+    const roles = [...(body.match(/for \(const role of \[([^\]]+)\]/)![1].matchAll(/"([^"]+)"/g))].map((x) => x[1]);
+    expect(roles.sort()).toEqual(["fire", "water"]);
+    const prefixes = [...body.matchAll(/seq\(`\$\{role\}_([a-z_]+)`/g)].map((x) => x[1]);
+    const smoke = [...body.matchAll(/seq\("([a-z_]+)", ATLAS_CHARS_PLAY/g)].map((x) => x[1]);
+    expect(prefixes.length, "buildCharAnims 的模板注册数").toBe(5);
+    expect(smoke).toEqual(["smoke"]);
+    const registered = [...roles.flatMap((r) => prefixes.map((p) => `${r}_${p}`)), ...smoke].sort();
+    expect([...CHAR_KEYS].sort()).toEqual(registered);
+  });
+
+  it("重取路径：create 仍挂 kickCharsPlay 与 ensureCharAnims，纹理到达后重建动画", () => {
+    const create = bracedBody(GAME, "create(): void");
+    expect(create).toContain("ensureCharAnims(this");
+    expect(create).toContain("this.kickCharsPlay()");
+    const kick = bracedBody(GAME, "private kickCharsPlay");
+    expect(kick).toContain("textures.exists(ATLAS_CHARS_PLAY)");
+    expect(kick).toContain("loadCharsPlay(this.load)");
+    const ensure = bracedBody(BOOT, "export function ensureCharAnims");
+    expect(ensure).toContain('textures.exists(ATLAS_CHARS_PLAY)');
+    expect(ensure).toContain("buildCharAnims(scene.anims)");
+    expect(ensure).toContain("atlasjson-${ATLAS_CHARS_PLAY}");
+  });
+
+  it("大厅零消费：Menu/Temple/Settings 不引用 chars-play 纹理、装载器或十一式动画键", () => {
+    for (const f of HALL) {
+      const src = stripComments(SRC(f));
+      for (const ban of ["ATLAS_CHARS_PLAY", "loadCharsPlay", "chars-play", ...CHAR_KEYS]) {
+        expect(src.includes(ban), `${f} 仍引用 ${ban}`).toBe(false);
+      }
+    }
   });
 });

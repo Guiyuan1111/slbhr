@@ -506,6 +506,16 @@ function buildSeq(a: Phaser.Animations.AnimationManager) {
   };
 }
 
+/** 角色房内十一式动画键（r42）：与 `buildCharAnims` 的注册集一一对应。离房交还 chars-play
+ *  纹理前必须先摘掉这些全局键——Animation 在 create 时已把帧名解析成 Frame，纹理一卸
+ *  Frame.data 即为 null，而 buildSeq 的 `exists` 幂等卫拒绝重建，重进后会复现 r39 的
+ *  `sourceSize` 空引用/状态定格静默回归。 */
+export const CHAR_PLAY_ANIM_KEYS = [
+  "fire_legs_run", "fire_jump", "fire_fall", "fire_rising", "fire_stairs",
+  "water_legs_run", "water_jump", "water_fall", "water_rising", "water_stairs",
+  "smoke",
+] as const;
+
 /** 角色房内十一式（r22 件2 从 buildMenuAnims 拆出，r23 件1 改挂 CharAssetsPlay）：帧全在那张
  *  延迟图集里，所以**注册必须等纹理落地**——早一步 `anims.create → Animation.getFrames →
  *  textureManager.getFrame`（Animation.js:454）会把 163 个帧名当场解析成 `__BASE`，而 buildSeq 的

@@ -23,7 +23,7 @@ import { AUDIO_SFX, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadAudioPack } from 
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
-import { ATLAS_CHARS, ATLAS_CHARS_ENTRY, ATLAS_CHARS_PLAY, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, ATLAS_TEMPLE_FINISH, FINISH_ATLAS_KEYS, FONT_FULL, FONT_ROOM, PLAYER_SCALE, buildGameAnims, ensureCharAnims, loadCharsPlay, loadGameAtlases, loadMechAtlas, loadPopupFinish, loadRoomFont, loadTempleFinish, popupFinishKey, roomFontKey } from "./BootScene";
+import { ATLAS_CHARS, ATLAS_CHARS_ENTRY, ATLAS_CHARS_PLAY, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, ATLAS_TEMPLE_FINISH, CHAR_PLAY_ANIM_KEYS, FINISH_ATLAS_KEYS, FONT_FULL, FONT_ROOM, PLAYER_SCALE, buildGameAnims, ensureCharAnims, loadCharsPlay, loadGameAtlases, loadMechAtlas, loadPopupFinish, loadRoomFont, loadTempleFinish, popupFinishKey, roomFontKey } from "./BootScene";
 import { getSettings } from "../settings";
 import { loadTempleLevels } from "../templeData";
 import { validateSnapshot } from "../snapshotValidation";
@@ -697,6 +697,15 @@ export class GameScene extends Phaser.Scene {
    *  kickPopupFinish 在房间可玩之后预取，首次开板前有整局时间。 */
   static releasePopupFinish(textures: Phaser.Textures.TextureManager): void {
     for (const key of FINISH_ATLAS_KEYS) if (textures.exists(key)) textures.remove(key);
+  }
+
+  /** r42：离房回选关交还角色序列帧（CharAssetsPlay 10.75MiB 解码画布）。大厅一帧不画，整张
+   *  Play 图集只在 Game 内被十一式动画消费；重进由 kickCharsPlay 在 create 之后重取（442.4KB
+   *  走 immutable 命中，0 传输）。摘动画键必须先于卸纹理：r39 的 Frame 失效模式在全局
+   *  AnimationManager 上同样成立，且重进时 buildSeq 的 exists 卫会跳过重建。 */
+  static releaseCharsPlay(textures: Phaser.Textures.TextureManager, anims: Phaser.Animations.AnimationManager): void {
+    for (const key of CHAR_PLAY_ANIM_KEYS) if (anims.exists(key)) anims.remove(key);
+    if (textures.exists(ATLAS_CHARS_PLAY)) textures.remove(ATLAS_CHARS_PLAY);
   }
 
   /** 地面：岩壁纹理 × 蒙版合成 + 黑外描边 + 右下软投影（canvas 一次性合成） */

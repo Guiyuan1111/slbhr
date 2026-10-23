@@ -455,6 +455,8 @@ async function enterGame(): Promise<void> {
       // （字体）、kickPopupFinish、kickBgmLoop/kickBgmTerminal 重取，冷启动路径零变化。
       GameScene.releaseRoomFont(phaser!.textures);
       GameScene.releasePopupFinish(phaser!.textures);
+      // r42：角色序列帧只被房内十一式动画消费；先摘动画键再卸图，重进由 kickCharsPlay 重取。
+      GameScene.releaseCharsPlay(phaser!.textures, phaser!.anims);
       releaseGameBgms(phaser!.sound, phaser!.cache.audio);
       sm.start("Temple");
       const hud = document.querySelector("#hud");
