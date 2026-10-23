@@ -1,0 +1,325 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@colyseus/auth": {
+      "name": "@colyseus/auth",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@colyseus/core",
+        "grant"
+      ],
+      "effects": [],
+      "range": "*",
+      "nodes": [
+        "node_modules/@colyseus/auth"
+      ],
+      "fixAvailable": true
+    },
+    "@colyseus/core": {
+      "name": "@colyseus/core",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "nanoid"
+      ],
+      "effects": [
+        "@colyseus/auth",
+        "@colyseus/redis-driver",
+        "@colyseus/redis-presence",
+        "@colyseus/ws-transport",
+        "colyseus"
+      ],
+      "range": "<=0.16.26",
+      "nodes": [
+        "node_modules/@colyseus/core"
+      ],
+      "fixAvailable": {
+        "name": "colyseus",
+        "version": "0.18.10",
+        "isSemVerMajor": true
+      }
+    },
+    "@colyseus/redis-driver": {
+      "name": "@colyseus/redis-driver",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@colyseus/core"
+      ],
+      "effects": [
+        "colyseus"
+      ],
+      "range": "<=0.16.1",
+      "nodes": [
+        "node_modules/@colyseus/redis-driver"
+      ],
+      "fixAvailable": {
+        "name": "colyseus",
+        "version": "0.18.10",
+        "isSemVerMajor": true
+      }
+    },
+    "@colyseus/redis-presence": {
+      "name": "@colyseus/redis-presence",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@colyseus/core"
+      ],
+      "effects": [],
+      "range": "<=0.16.4",
+      "nodes": [
+        "node_modules/@colyseus/redis-presence"
+      ],
+      "fixAvailable": true
+    },
+    "@colyseus/ws-transport": {
+      "name": "@colyseus/ws-transport",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@colyseus/core"
+      ],
+      "effects": [],
+      "range": "<=0.16.0-preview.10 || 0.16.1 - 0.17.0",
+      "nodes": [
+        "node_modules/@colyseus/ws-transport"
+      ],
+      "fixAvailable": true
+    },
+    "colyseus": {
+      "name": "colyseus",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@colyseus/core",
+        "@colyseus/redis-driver",
+        "@colyseus/redis-presence"
+      ],
+      "effects": [],
+      "range": "0.14.17-alpha.2 - 0.14.17-alpha.9 || 0.14.18 - 0.17.0",
+      "nodes": [
+        "node_modules/colyseus"
+      ],
+      "fixAvailable": {
+        "name": "colyseus",
+        "version": "0.18.10",
+        "isSemVerMajor": true
+      }
+    },
+    "elliptic": {
+      "name": "elliptic",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1112030,
+          "name": "elliptic",
+          "dependency": "elliptic",
+          "title": "Elliptic Uses a Cryptographic Primitive with a Risky Implementation",
+          "url": "https://github.com/advisories/GHSA-848j-6mx2-7j84",
+          "severity": "low",
+          "cwe": [
+            "CWE-1240"
+          ],
+          "cvss": {
+            "score": 5.6,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L"
+          },
+          "range": "<=6.6.1"
+        }
+      ],
+      "effects": [
+        "jwk-to-pem"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/elliptic"
+      ],
+      "fixAvailable": true
+    },
+    "grant": {
+      "name": "grant",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "jwk-to-pem",
+        "request-oauth"
+      ],
+      "effects": [
+        "@colyseus/auth"
+      ],
+      "range": ">=4.0.0",
+      "nodes": [
+        "node_modules/grant"
+      ],
+      "fixAvailable": true
+    },
+    "jwk-to-pem": {
+      "name": "jwk-to-pem",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "elliptic"
+      ],
+      "effects": [
+        "grant"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/jwk-to-pem"
+      ],
+      "fixAvailable": true
+    },
+    "nanoid": {
+      "name": "nanoid",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1109563,
+          "name": "nanoid",
+          "dependency": "nanoid",
+          "title": "Predictable results in nanoid generation when given non-integer values",
+          "url": "https://github.com/advisories/GHSA-mwcw-c2x4-8c55",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-835"
+          ],
+          "cvss": {
+            "score": 4.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:N"
+          },
+          "range": "<3.3.8"
+        },
+        {
+          "source": 1138811,
+          "name": "nanoid",
+          "dependency": "nanoid",
+          "title": "nanoid: non-secure generators can loop indefinitely with negative size",
+          "url": "https://github.com/advisories/GHSA-28wg-ghj8-5hjv",
+          "severity": "high",
+          "cwe": [
+            "CWE-835"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<3.3.16"
+        },
+        {
+          "source": 1139427,
+          "name": "nanoid",
+          "dependency": "nanoid",
+          "title": "nanoid: custom generators can loop indefinitely when size is zero",
+          "url": "https://github.com/advisories/GHSA-2v37-7h3g-55p8",
+          "severity": "high",
+          "cwe": [
+            "CWE-835"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<3.3.18"
+        },
+        {
+          "source": 1153189,
+          "name": "nanoid",
+          "dependency": "nanoid",
+          "title": "nanoid: Integer Overflow or Wraparound",
+          "url": "https://github.com/advisories/GHSA-xwg4-73v4-xw9w",
+          "severity": "high",
+          "cwe": [
+            "CWE-190"
+          ],
+          "cvss": {
+            "score": 7.4,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N"
+          },
+          "range": "<3.3.12"
+        }
+      ],
+      "effects": [
+        "@colyseus/core"
+      ],
+      "range": "<=3.3.17",
+      "nodes": [
+        "node_modules/nanoid"
+      ],
+      "fixAvailable": {
+        "name": "colyseus",
+        "version": "0.18.10",
+        "isSemVerMajor": true
+      }
+    },
+    "request-oauth": {
+      "name": "request-oauth",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "uuid"
+      ],
+      "effects": [
+        "grant"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/request-oauth"
+      ],
+      "fixAvailable": true
+    },
+    "uuid": {
+      "name": "uuid",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1119441,
+          "name": "uuid",
+          "dependency": "uuid",
+          "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided",
+          "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-787",
+            "CWE-1285"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+          },
+          "range": "<11.1.1"
+        }
+      ],
+      "effects": [
+        "request-oauth"
+      ],
+      "range": "<11.1.1",
+      "nodes": [
+        "node_modules/uuid"
+      ],
+      "fixAvailable": true
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 2,
+      "moderate": 9,
+      "high": 1,
+      "critical": 0,
+      "total": 12
+    },
+    "dependencies": {
+      "prod": 143,
+      "dev": 96,
+      "optional": 98,
+      "peer": 14,
+      "peerOptional": 0,
+      "total": 298
+    }
+  }
+}
