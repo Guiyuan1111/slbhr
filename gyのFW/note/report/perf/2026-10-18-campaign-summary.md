@@ -1049,3 +1049,32 @@ immutable；若素材替换而清单没重算，就会把旧哈希发给新文�
 **下一轮候选**：`loadPopupFinish` 的纹理移除与动画注册是否进一步收敛到同一生命周期钩子；
 换关落定后 Temple Finish 的保留/释放再账；4g 档小于 100ms 的收益需更多轮次。素材再编码
 （任务 #42）仍是用户保留项，未经裁决不动。
+
+## 三十七、r40 增补（2026-10-23，地面图集按消费面重打包）
+
+> 报告 `2026-10-23-r40-ground-atlas-repack.md`。官方 `GroundAssets`（1024×2048，343 帧，
+> 解码 8.00MiB）随落定门批装载，但复刻只按名取 **151 帧**——液体三段循环 135、冰膜 3、
+> 地面烘焙蒙版 13；其余 192 帧（BeamDust/Dust）零消费。本轮把 151 帧重打包到 **634×584**
+> （解码 1.41MiB），192 帧以 `mainAlias` 指向 4×4 透明块，JSON 仍声明全部 343 个帧名、
+> 顺序不变；消费点零改动。地面绘制全是 1:1 整数像素，故不需要 MenuAssetsMini 的 1px 邻域。
+
+| 件 | 内容 | commit | 关键数字 |
+|---|---|---|---|
+| r40 件1 | `scripts/shrink-ground-atlas.mjs`（GUT=2 确定性格架、首帧透明别名、`--check`）＋`BootScene` 换 URL（键 `ground` 不变）＋`ground-atlas-shrink.test.ts` 8 例（独立回算真帧/别名、逐帧像素、343 帧名、零运行时引用、消费点字面量、生成器 `--check`）；`room.mjs` 与 `font-roomblank.test.ts` 行钉随 +2 行同步 | 本轮 | 官方 PNG 94,956B＋JSON 67,889B／8.00MiB／343 帧 → Play 31,009B＋54,193B／1.41MiB／151 真帧＋192 别名；raw **−77,643B（−47.7%）**，解码 **−6.59MiB（−82.4%）** |
+| r40 件2 | 量具沿用 r36–r39（四档 A/B/A、三闸门、驻留、换关链）；臂 A/C＝官方图集（r39 构建），B＝Play 图集 | `load-r40-ab-*`（12 份×2 轮）＋`advance-r40-*`（24 份）＋`resident-r40-*`（3 份） | 线上 PNG **93.0→30.6KB**、JSON **2.5→2.0KB**（−62.9KB），房内窗 **3038→2975KB**；`gameActivePerfMs` slow3g **−1226.5**／fast3g **−357.8ms**（①②过），4g −573.0 因臂B散布585不足判定；after-click slow3g −1099.0／fast3g −381.0／4g −539.0（旁证）；驻留四态 **−6.58～−6.59MB**；24/24 会话页错 0 |
+| r40 件3 | 末轮门禁与文档收口 | `docs` | typecheck 0 错、十二项 `--check` 逐字节、build `index-CFDkosYR` 109.24KB／gzip 36.90KB、vitest **31 文件/330 例**、det 48/48、fixtures 6/6、prephase 5/5、roomtext 6/6·5/5、domskin 4/4、audiofamily／charsplay ALL PASS、treebake／groundcache ALL PASS、journey 7/7·3/3·6/6·4/4·3/3、route 双关 won（39,516／12,991ms）、regression won=true 零错零缺帧、tilesprite 10/10、finish-anims 8/8 |
+
+**三条可复用结论**：
+① **图集缩容以"消费面"为单位，而不是以文件名为单位**：343 个声明帧里 192 个从未被按名取用，
+移除它们不改任何调用点、不引入新的装载时机或降级分支；与 r34"把晚点上屏的帧拆出去"不同，
+本轮是处理"永远不会上屏"的静态面积，风险面更小、收益更纯（驻留与解码一步到位）。
+② **"不需要透明邻域"必须由消费面绘制方式证明**：MenuAssetsMini 的 1px 环是为了非整数缩放/
+旋转的采样外扩；地面只有 `scale=1` 精灵与整像素 `drawImage`，整数对齐下采样不会越出帧矩形。
+先穷举消费点、再决定 ring，不能凭"图集都是这样"默认。
+③ **别名到透明块把"漏改"从花屏降级为透明**：保留全部帧名后，漏改的按名取帧只会画透明；
+Phaser 3.90 的 `Texture.get` 缺帧回落 `firstFrame`（不是 `__BASE`，本图集首帧就是透明别名），
+前提是静态测试把"零消费清单"钉死，新增消费点必须同时改生成器。
+
+**下一轮候选**：`chars-play`（10.75MB）与 `font-room`（8.56MB）的按需面收缩；`groundTex`
+4.96MB 逐关烘焙画布的换关释放口径；Temple Finish 的保留/释放再账；4g 档小于 100ms 的收益
+需更多轮次。素材再编码（任务 #42）仍是用户保留项，未经裁决不动。
