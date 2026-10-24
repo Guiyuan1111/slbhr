@@ -13,6 +13,7 @@
 | 当前挂账（待办/待核/待裁决） | [research/2026-10-behavior-parity/00-INDEX.md §3](research/2026-10-behavior-parity/00-INDEX.md) |
 | 原版不合理优化提案池（须先审后行） | [research/2026-10-behavior-parity/16-original-improve-proposals.md](research/2026-10-behavior-parity/16-original-improve-proposals.md) |
 | 逐版改动 | [release/](release/)（`0.3.X.md`） |
+| **续作开发手册（经验总结）** | [next-games-playbook.md](next-games-playbook.md) | 森林神庙收官复盘：可复用底盘/机关谱/工具链地图/方法论八条/踩坑清单/续作 SOP |
 
 ## 研究域（详情进各域 00-INDEX）
 
