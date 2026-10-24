@@ -208,12 +208,11 @@ export class GameScene extends Phaser.Scene {
   private doorFrames = new Map<Role, number>();
   private clockText!: Phaser.GameObjects.BitmapText;
 
-  // ---- 相机管理（原版 CameraManager bundle @1881500 移植，F4 翻转；M12 抽为 cameraRig.ts
-  // 纯状态机——冻结门/弹簧/缩放夹取/checkBounds 全在 rig，本类只留引擎写与监听注册）----
-  // GameConfig.zooming（bundle @1260）：lockAtMinScale=true, minScaleRatio=0.9, lockScaleRatio=0.97；
-  // maxScale=1.5；滚轮 ×0.8/×1.2 钳 [minScale,maxScale]，1s 静置 debounce 回弹；
-  // 自动适配 worldPadding{top:100,left:200,bottom:100,right:200}、viewportPadding top64、
-  // 最小可视 40×30 格（窄屏/移动 20×15）；焦点=双角色中点；弹簧 a=1/15（用户操作 1/3）、阻尼 0.5。
+  // ---- 相机管理（2026-10-24 用户裁定静态全图：跟随/自动缩放/滚轮/捏合/拖拽全部停用，
+  // 机关全程可见便于双人思考。原版 CameraManager bundle @1881500 动态语义——
+  // GameConfig.zooming(lockAtMinScale/minScaleRatio 0.9/lockScaleRatio 0.97/maxScale 1.5)、
+  // 自动适配 worldPadding{top:100,left:200,bottom:100,right:200}、焦点=双角色中点、
+  // 弹簧 a=1/15 阻尼 0.5——完整保留在 cameraRig.ts（单测覆盖），GameScene 不再接线）----
   private readonly camRig = new CameraRig();
   /** HUD 反缩放登记（zoom≠1 时逐帧补偿，见 buildHud 头注） */
   private hudItems: Array<{ obj: Phaser.GameObjects.Image | Phaser.GameObjects.BitmapText; x: number; y: number }> = [];
@@ -260,7 +259,7 @@ export class GameScene extends Phaser.Scene {
   /** 每帧快照上下文（供提升后的 forEach 回调读取，免逐帧闭包捕获） */
   private curNow = 0;
   private curDelta = 0;
-  /** 每帧取一次的角色快照引用（update/updatePlayers/updateCamTarget 共用，替代每帧 6 次 map get） */
+  /** 每帧取一次的角色快照引用（update/updatePlayers/updateTutorial 共用，替代每帧 6 次 map get） */
   private pFb: any = null;
   private pWg: any = null;
   /** 时钟秒缓存（整秒不变则连字符串都不重算） */
@@ -439,9 +438,6 @@ export class GameScene extends Phaser.Scene {
     // 场景晚于 phase 启动（如重连进 won 房）：补一次演出
     this.prevPhase = String(this.d.net.room?.state?.phase ?? "");
     if (this.prevPhase === "won") this.playStairsSequence();
-    // H2：刷新回座时已在 started，create 到首个 update 之间不会再有 ready→started 迁移事件，
-    // 在此直接解冻；ready 仍保持冻结，由既有 onPhaseChanged 在开局时解冻。
-    if (this.prevPhase === "started") this.camRig.camFrozen = false;
   }
 
   /** 关卡 BGM 键：speed 关用专属曲（原版 preloadAudioFiles 按 levelData.type 换曲） */
@@ -1110,34 +1106,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * 相机管理（原版 CameraManager bundle @1881500 移植，F4 翻转）：
-   * - 初始冻结在全图 minScale（原版 camFreeze 直到开局序列 @1943673 解冻）；
-   * - started 解冻后每帧 updateCamTarget + 弹簧 animate（a=1/15，用户操作中 1/3，阻尼 0.5）；
-   * - 滚轮 ×0.8/×1.2 钳 [minScale,1.5]，1s 静置 lockAtMinScale 回弹（≤lockScale 停在 lockScale，否则复位）；
-   * - 双指捏合缩放、单指拖拽 >10px 平移（panend/pinchend 复位）；
-   *   原版以 cursors.active 闸（触屏光标激活禁用），本复刻触屏键为 DOM 按钮不占画布，无此闸。
-   * 边界（F2 翻转）=关卡矩形语义（oracle checkBounds @1845100）：W·h<视口 → 钉关卡中心、
-   * 否则按半视口钳进关卡矩形（全 realW/realH 屏域，无 PAD）；标准关 settled=scroll(16,16)。
+   * 相机管理（2026-10-24 用户裁定静态全图）：装配一次、终局不变，无输入监听、无逐帧步进。
+   * 视图=整关矩形适配视口钳 ≤1（rig.setupStatic）：标准关(1248×928) scale=1，与原动态相机
+   * settled scroll(16,16) 视图逐位相同；超高关 forest_bonus_2(1248×1120) scale≈0.857 整图入画
+   * （原动态相机裁切+跟随会藏机关，用户裁定保可见性——有意偏离 oracle）。
+   * 原版动态相机（CameraManager bundle @1881500 移植：跟随/自动适配/滚轮/捏合/拖拽/弹簧）
+   * 语义完整保留在 cameraRig.ts 并由单测覆盖，需要时恢复接线即可。
    */
   private setupCameraManager(level: LevelData): void {
-    const rw = this.scale.width;
-    const rh = this.scale.height;
-    // 不用 Phaser setBounds：视口(1280×960)大于关卡矩形(1248×928)时其钳制会把滚动
-    // 钉死在 (32,32)，centerOn 全被否决——0.3.29-F4 动态相机因此在所有标准关上失效
-    // （2026-10-12 相机轨迹实测：角色从出生点走到门区相机纹丝不动）。改为在弹簧目标上
-    // 按原版 checkBounds(@1889585) 语义自行钳制（rig.updateCamTarget 内，含视口>世界时居中）。
-    // 标定+初值+强制应用守卫半在 rig（setupForLevel 返回三元组），本方法只落引擎写与监听。
-    this.applyCamTriplet(this.camRig.setupForLevel(level, rw, rh));
-    this.input.on("wheel", (_p: unknown, _ov: unknown, _dx: number, dy: number) => this.camRig.onCamWheel(dy, this.cameras.main.zoom));
-    this.input.on("pointermove", (p: Phaser.Input.Pointer) => this.camRig.onCamPointerMove(p, { zoom: this.cameras.main.zoom, pointer1: this.input.pointer1, pointer2: this.input.pointer2 }));
-    this.input.on("pointerup", () => this.camRig.onCamPointerUp());
-  }
-
-  /** 每帧目标+弹簧逼近（焦点=双角色中点/checkBounds 钳制/a=1/15·阻尼 0.5）——状态机在 rig，
-   *  本方法只喂参并落引擎写；详细语义注释随实现移入 cameraRig.ts（updateCamTarget/animateCam）。 */
-  private stepCamera(): void {
-    this.camRig.updateCamTarget(this.d.level, this.pFb, this.pWg, this.scale.width, this.scale.height, this.sys.game.device.os.desktop);
-    this.applyCamTriplet(this.camRig.animateCam());
+    this.applyCamTriplet(this.camRig.setupStatic(level, this.scale.width, this.scale.height));
   }
 
   /** 引擎写半（rig 交付三元组 → setZoom/centerOn + HUD 反缩放） */
@@ -1170,10 +1147,9 @@ export class GameScene extends Phaser.Scene {
     if (ap) this.applyCamTriplet(ap);
   }
 
-  /** 相机复位（ready 整轮重开，等价原版整关 reload 回冻结全图）；脏守卫半在 rig（净态返回 null 跳引擎写） */
+  /** 相机复位（ready 整轮重开，静态相机重应用同值；强制走一次引擎写，HUD 反缩放随 zoom 重落） */
   private resetCamera(level: LevelData): void {
-    const ap = this.camRig.resetForLevel(level);
-    if (ap) this.applyCamTriplet(ap);
+    this.applyCamTriplet(this.camRig.setupStatic(level, this.scale.width, this.scale.height));
   }
 
   private buildTutorial(level: LevelData): void {
@@ -1294,7 +1270,7 @@ export class GameScene extends Phaser.Scene {
       { obj: pauseBtn, x: 1265, y: 15 },
       { obj: this.clockText, x: clockX, y: 56 },
     ];
-    this.applyCam(true); // 建好后立即补一次 HUD 补偿（冻结期 minScale 视图下 HUD 也不缩）
+    this.applyCam(true); // 建好后立即补一次 HUD 补偿（静态 zoom 下 HUD 恒按屏显原尺寸反缩）
   }
 
   setMyRole(role: Role): void {
@@ -1319,7 +1295,7 @@ export class GameScene extends Phaser.Scene {
       if (issues.length > 0) console.warn("[fw] 快照字段异常（schema 漂移？）", issues.slice(0, 8));
     }
 
-    // 每帧取一次双角色引用（下游 updatePlayers/updateCamTarget/tutorial 复用）
+    // 每帧取一次双角色引用（下游 updatePlayers/updateTutorial 复用）
     this.pFb = st.players?.get?.("fireboy") ?? null;
     this.pWg = st.players?.get?.("watergirl") ?? null;
 
@@ -1355,11 +1331,6 @@ export class GameScene extends Phaser.Scene {
     if (this.pWg && this.pWg.dying !== true) { ok2 = true; tx2 = Number(this.pWg.x) || 0; ty2 = Number(this.pWg.y) || 0; }
     if ((ok1 || ok2) && !this.tutorialFrozen) this.updateTutorial(tx1, ty1, ok1, tx2, ty2, ok2);
 
-    // 相机管理：解冻后每帧目标适配 + 弹簧逼近（原版 Level.update → camManager.update()）
-    if (!this.camRig.camFrozen) {
-      this.stepCamera();
-    }
-
     this.updateNavies();
     this.snapPending = false;
   }
@@ -1367,7 +1338,6 @@ export class GameScene extends Phaser.Scene {
   /** phase 迁移副作用（E15/E1/M9） */
   private onPhaseChanged(prev: string, cur: string): void {
     if (cur === "ready") this.resetRound(prev);
-    if (cur === "started") this.camRig.camFrozen = false; // 原版开局序列解冻相机（camFreeze=@1943673）
     if (cur === "won" || cur === "gameover") this.freezeTutorial();
     if (cur === "won" && !this.stairsPlayed) this.playStairsSequence();
   }

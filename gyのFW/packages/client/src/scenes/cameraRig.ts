@@ -9,6 +9,10 @@
  * 焦点=双角色中点；弹簧 a=1/15（用户平移中 1/3）、阻尼 0.5；
  * 边界=原版 checkBounds(@1845100) 关卡矩形语义（W·h<视口 → 钉关卡中心，否则按半视口钳进）。
  *
+ * **2026-10-24 起静态化**：用户裁定固定全图，GameScene 仅调 setupStatic/applyForced/
+ * applyIfDirty/resetTransient；动态语义方法（setupForLevel/updateCamTarget/animateCam/
+ * onCamWheel/onCamPointerMove/onCamPointerUp/resetForLevel）保留并由单测覆盖，随时可恢复接线。
+ *
  * 纯度约束：不 import Phaser（连类型都不引），引擎依赖全部经参数/回调注入——
  * - cameras.main.zoom → onCamWheel / onCamPointerMove 的 zoom 参数；
  * - input.pointer1/2 → env.pointer1/2（结构类型 RigPointer，Phaser.Input.Pointer 天然满足）；
@@ -159,6 +163,25 @@ export class CameraRig {
     this.camY = this.camTY = level.heightPx / 2 + PAD; // :1168
     this.camTScale = this.camMinScale; // :1169
     return this.applyForced(); // :1170 applyCam(true)
+  }
+
+  /**
+   * 静态相机装配（2026-10-24 用户裁定：固定全图——跟随/自动缩放/滚轮/捏合/拖拽全部停用，
+   * 机关全程可见便于双人思考）。视图=整关矩形适配视口并钳 ≤1、钉关卡矩形中心：
+   * 标准关(1248×928) scale=1 中心(656,496)，与原动态相机 settled scroll(16,16) 视图逐位相同；
+   * 超高关 forest_bonus_2(1248×1120) scale=960/1120≈0.857 整图入画（原动态相机为裁切+跟随，
+   * 底部机关出视野——有意偏离 oracle，见 note/evidence/2026-10-24-visual-verify-48levels 01号档补记）。
+   * 原版动态相机语义（CameraManager bundle @1881500 移植）完整保留在本类其余方法并由单测覆盖。
+   * 冻结恒真：GameScene 不接输入监听、update 不步进，三值自装配后终局不变。
+   */
+  setupStatic(level: LevelSize, rw: number, rh: number): CamApply {
+    const s = Math.min(1, rw / level.widthPx, rh / level.heightPx);
+    this.camScale = this.camTScale = s;
+    this.camX = this.camTX = level.widthPx / 2 + PAD;
+    this.camY = this.camTY = level.heightPx / 2 + PAD;
+    this.camVX = this.camVY = this.camVScale = 0;
+    this.camFrozen = true;
+    return this.applyForced();
   }
 
   /**

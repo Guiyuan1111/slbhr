@@ -459,4 +459,50 @@ describe("CameraRig", () => {
     expect(rig.camWheelScale).toBeNull();
     expect(timers.size).toBe(0);
   });
+
+  // ---- 静态相机（2026-10-24 用户裁定固定全图：GameScene 只调 setupStatic，
+  //  跟随/缩放/输入路径不再接线；以下锁静态视图定义与终局不变性）----
+
+  it("setupStatic：标准关 scale=1 钉关卡矩形中心（与原 settled scroll(16,16) 视图逐位相同）", () => {
+    const { rig } = mkRig();
+    const ap = rig.setupStatic(LEVEL, RW, RH);
+    expect(ap.scale).toBe(1);
+    expect(ap.x).toBe(CX); // 656
+    expect(ap.y).toBe(CY); // 496
+    expect(rig.camTScale).toBe(1);
+    expect(rig.camTX).toBe(CX);
+    expect(rig.camTY).toBe(CY);
+    expect(rig.camVX).toBe(0);
+    expect(rig.camVY).toBe(0);
+    expect(rig.camVScale).toBe(0);
+    expect(rig.camFrozen).toBe(true);
+    expect(rig.camLastScale).toBe(1); // applyForced 记录
+  });
+
+  it("setupStatic：超高关钳 ≤1 整图入画（bonus_2 1248×1120 → scale=960/1120）", () => {
+    const { rig } = mkRig();
+    const TALL = { widthPx: 1248, heightPx: 1120 };
+    const ap = rig.setupStatic(TALL, RW, RH);
+    expect(ap.scale).toBeCloseTo(RH / TALL.heightPx, 12); // 0.857142…
+    expect(ap.x).toBe(TALL.widthPx / 2 + 32);
+    expect(ap.y).toBe(TALL.heightPx / 2 + 32); // 592
+  });
+
+  it("setupStatic：清残留态且目标恒等现值——误调 animateCam 也零位移（静态视图终局不变）", () => {
+    const { rig } = mkRig();
+    // 模拟旧动态路径残留态：速度/用户覆盖态非零，setupStatic 后不应再影响视图
+    rig.camVX = 3;
+    rig.camVScale = 0.5;
+    rig.camUserScale = 1.2;
+    rig.camWheelScale = 0.9;
+    rig.setupStatic(LEVEL, RW, RH);
+    expect(rig.camVX).toBe(0);
+    expect(rig.camVScale).toBe(0);
+    // 目标=现值 → 弹簧步进零位移零缩放（即便被误调用也收敛于静态视图）
+    const ap = rig.animateCam();
+    expect(ap.scale).toBe(1);
+    expect(ap.x).toBe(CX);
+    expect(ap.y).toBe(CY);
+    expect(rig.applyIfDirty()).toBeNull();
+  });
 });

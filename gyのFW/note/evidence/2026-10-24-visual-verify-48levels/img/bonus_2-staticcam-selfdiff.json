@@ -1,0 +1,8 @@
+{
+  "date": "2026-10-24",
+  "purpose": "静态相机（0.3.44）bonus_2 视图与恒定性实证",
+  "view": { "scale": "960/1120≈0.8571", "marginsPx": { "left": [104, 105, 105], "right": [105, 105, 105] }, "bottomBrightFrac": 0.836, "note": "整图入画：左右黑边≈(1280−1248·0.857)/2≈105px，底缘亮内容到边（地图底墙可见）；对照改造前 ours 左右 48px/底缘 0、oracle 21-22px/底缘 0（裁切视图）" },
+  "selfDiff": { "rounds": "独立房间两轮（t+1s 各一次，间隔约 1 分钟）", "bestOffset": { "x": 0, "y": 0 }, "rate48": 0.9967, "note": "相机跨轮零位移零缩放；0.33% 残差全为 boxheavy 箱堆动力学" },
+  "vsOracle": { "round1": { "rate48": 73.74, "mad": 29.87, "bestOffset": { "x": 29, "y": 38 } }, "round2": { "rate48": 73.84, "mad": 29.7, "bestOffset": { "x": 28, "y": 38 } }, "note": "与 oracle 的低分为缩放视角有意偏离（整图 vs 裁切），非渲染缺陷——见 01号档 §4/§6" },
+  "forest01Control": { "visualScore": 96.02, "bestOffset": { "x": 0, "y": 0 }, "note": "标准关视图逐位不变对照（benchmark/results/visual-staticcam-f01.json）" }
+}
