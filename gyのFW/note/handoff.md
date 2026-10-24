@@ -28,6 +28,7 @@
 ① 用户裁定相机固定显示整图（跟随/缩放会藏机关、不利思考）。cameraRig.setupStatic（整关适配钳≤1 钉关卡矩形中心、冻结恒真）+GameScene 摘除动态接线（双角色中点跟随/距离自动适配/滚轮/捏合/拖拽监听/逐帧弹簧步进）；原版 CameraManager 动态语义全保留 rig 内（单测覆盖，可恢复接线）。
 ② 视图：标准 47 关与原 settled scroll(16,16) 逐位相同（forest_01 96.02/offset(0,0) 同带不变）；bonus_2 由裁切+跟随改整图入画 scale≈0.857（左右黑边 105px/底墙到边 83.6%），与 oracle 取景自此有意偏离（对拍 rate 预期 ~74）——01号档 §6 补记，§4"渲染零缺陷"结论不受影响（差异仅在取景）。
 ③ 恒定实证：两轮独立房间采样互比 (0,0)/99.67%（残差=boxheavy 箱堆动力学）。门禁：typecheck 0/vitest 222（+setupStatic 3 例）/build/journey 7/7/deathretry 4/4/det 48/48@r0-baseline。代码 commit d7e4b26，证据 note/evidence/2026-10-24-visual-verify-48levels/img/bonus_2-staticcam-*。
+④ CI 红一次（40065895641）：发版批漏 package-lock.json（L-06 版本一致性测试查根/三子包+lock 五处），lock 0.3.43→0.3.44 补齐修复——教训：版本 bump 必含 lock，版本测试随发版批复跑。
 
 **更新**：2026-10-24 三（bonus_2"对齐"裁定实施——深挖证伪视口归因，稳态采样 94.54 证明零缺陷，无需修复）
 ① 用户裁定 bonus_2 视口对齐 oracle。实施核查中逐层证伪：叠加图证静态全对齐（±26px 视差系条带目测误读）、RGB 均值双端一致（色调差误判排除）、黑边差系缘饰藤蔓+时钟带测量噪声（"oracle 铺满"假设不成立）。
