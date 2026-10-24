@@ -43,9 +43,27 @@ Pulley（滑轮）/ Roman / Wind（风机关）/ Window——外加 world 层的
 
 ## 2. 续作真正要新做的（工作量地图）
 
-1. **oracle 取证**（最大前置）：本地 oracle 快照（`Fireboy-and-Watergirl/`，严格只读）只含 Forest 一部。
-   每续作先由 [人工] 获取该作原版页面与资源，落同款只读快照，再照 §3.5 反解。**没有 oracle 就没有对拍锚，
-   禁止凭系列常识猜实现**——系列常识（Light=光束镜面反射、Ice=低摩擦冰面等）只能作取证时的候选清单。
+### 2.0 六部原版快照全部在本地（2026-10-24 勘误：手册初版误记"只含 Forest"）
+
+oracle 根目录（`Fireboy-and-Watergirl/`，严格只读）`output/<A..F>` 即系列六部，关卡 JSON 与各部
+`temple.json` 对账一致：
+
+| 快照 | 作品 | 关卡数 | 引擎入口 |
+|---|---|---|---|
+| output/A | **forest 森林神庙（本作，已复刻）** | 48 | `gameIndex.html` + `js/init.<hash>.js` |
+| output/B | light 灯光神庙 | 41 | 同 A 构型 |
+| output/C | ice 冰雪神庙 | 53 | 同 A 构型 |
+| output/D | crystal 水晶神庙 | 39 | 同 A 构型 |
+| output/E | elements 元素合集 | 39 | 同 A 构型；`data/elements/<元素>/` 七元素小关集（crystal6/fire5/forest6/ice6/light5/water6/wind5） |
+| output/F | fairytales 童话 | 32 | **异构**：`index.htm` + `fairy-tales.min.js` 单文件引擎，A–E 的反解钩子未必适用，取证时先验 |
+
+注意两点：①各部 tutorials 目录含首关（B：forest_01+light_01；C：forest_01+ice_02+light_01——ice 部第 2 关
+也在 tutorials，检索逻辑照 `locateLevel` 双目录兼容处理）；②**没有 oracle 对拍锚的机关/演出禁止凭系列常识
+实现**（Light=光束镜面、Ice=低摩擦等只作取证候选清单）。
+
+### 2.1 工作量清单
+1. **oracle 取证**（最大前置，已就位）：对应 `output/<X>` 只读快照直接反解（A–E 同构可复用全套钩子；
+   F 异构先验），产出该作《XX 号档·取证》。
 2. **资产**：atlas/纹理/BGM/SFX（`scripts/sync-assets.mjs` 管线已备）、大厅与选关树换肤。
 3. **关卡内容**：全量关卡 JSON 搬运进 `data/<game>/levels/`；per-level `time`/`type`（general/speed/puzzle）核对。
 4. **新机关类型**：字节语义移植（bundle 反解 → 探针变体实测 → 落地），内核 + 客户端 View 两侧。
@@ -116,8 +134,9 @@ Pulley（滑轮）/ Roman / Wind（风机关）/ Window——外加 world 层的
 
 ## 5. 续作标准开发流程（SOP）
 
-- **Phase 0 取证**：[人工] 获取该作 oracle → 只读快照落位 → bundle 反解盘点（temple id / levels 目录结构 /
-  atlas 键清单 / 机关类型清单 / 数值参数表 / BGM-SFX 清单 / 通关演出帧拍）→ 产出该作《XX 号档·取证》。
+- **Phase 0 取证**：选定该作本地快照（`Fireboy-and-Watergirl/output/<X>`，六部全在，见 §2.0）→ bundle 反解盘点
+  （temple id / levels 目录结构 / atlas 键清单 / 机关类型清单 / 数值参数表 / BGM-SFX 清单 / 通关演出帧拍；
+  F 部异构先验探针）→ 产出该作《XX 号档·取证》。
 - **Phase 1 内容**：关卡 JSON 全量入 `data/<game>/levels/`（核对第 1 关目录特例与 tileset 引用）；
   atlas/音频走 sync-assets；先把**加载初态渲染**对拍绿（capture-one 批量），不急着可玩。
 - **Phase 2 内核**：新机关类型注册（mechanisms.ts + 单测）；数据层字节核对（Objects 层与本作差异表）；
