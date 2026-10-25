@@ -208,6 +208,10 @@ export class GameScene extends Phaser.Scene {
   private lightPusherViews = new Map<string, { base: Phaser.GameObjects.Image; light: Phaser.GameObjects.Image; state: boolean }>();
   private sliderViews = new Map<string, { dot: Phaser.GameObjects.Image; light: Phaser.GameObjects.Image }>();
   private iceViews = new Map<string, Phaser.GameObjects.Container>();
+  // ---- dark 关黑幕（原版 setupDarkness @1883xxx：+64px 黑幕 bitmapData MULTIPLY 覆盖，
+  //  各设备/角色以 lighter 白径向梯度挖洞——我方以 RenderTexture erase 等价实现）----
+  private darkRt: Phaser.GameObjects.RenderTexture | null = null;
+  private darkHalo: Phaser.GameObjects.Image | null = null;
   private windViews = new Map<string, WindView>();
   private hangingViews = new Map<string, HangingView>();
   private pulleyViews = new Map<string, PulleyView>();
@@ -397,6 +401,8 @@ export class GameScene extends Phaser.Scene {
     this.buildTutorial(level);
     this.buildDiamonds(level);
     this.buildMechs(level);
+    // dark 关黑幕（templeType 异步填充，ensureDarkRt 幂等兜底）
+    this.ensureDarkRt(level);
     this.buildGround(level);
     this.buildPlayers(level);
     this.buildDecorations(level);
@@ -1406,6 +1412,7 @@ export class GameScene extends Phaser.Scene {
     this.updatePlayers(st, delta);
     this.updateDiamonds(st);
     this.updateMechs(st, nowMs, delta);
+    this.drawDarkness();
     this.updatePlatformSound(st);
 
     // 教学渐显判定：原版=任一角色进矩形（双方同用关卡坐标），组内全部文本 400ms 淡入/淡出。
@@ -1738,6 +1745,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private lastLiquids = "";
+  private lastBeamPts = new Map<string, number[][]>();
 
   /** 光束折线（打包串 → LIGHTEN 双描线 10/0.3 + 2/1，bundle Beamer 绘制口径） */
   private cbBeamers = (b: { state: number; pts: string }, id: string): void => {
@@ -1750,6 +1758,7 @@ export class GameScene extends Phaser.Scene {
     if (!on || !b.pts) return;
     const path = b.pts.split("|").map((seg) => seg.split(",").map(Number));
     if (path.length < 2) return;
+    this.lastBeamPts.set(k, path);
     for (const [width, alpha] of [[10, 0.3], [2, 1]] as const) {
       v.g.lineStyle(width, v.color, alpha);
       v.g.beginPath();
@@ -1797,6 +1806,88 @@ export class GameScene extends Phaser.Scene {
     v.dot.setPosition(Number(bs.x) + PAD, Number(bs.y) + PAD);
     v.light.setPosition(Number(bs.x) + PAD, Number(bs.y) + PAD);
   };
+
+  /** dark 关黑幕装配（原版 setupDarkness：尺寸=关卡+64、位置 −32、MULTIPLY 覆盖） */
+  private ensureDarkRt(level: LevelData): void {
+    if (this.darkRt || this.templeType !== "dark") return;
+    if (!this.textures.exists("darkGrad")) {
+      // 白径向渐变（0:1 / 0.5:0.3 / 1:0——原版 addColorStop 口径），erase 挖洞用
+      const cv = document.createElement("canvas");
+      cv.width = 256;
+      cv.height = 256;
+      const ctx = cv.getContext("2d")!;
+      const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+      grad.addColorStop(0, "rgba(255,255,255,1)");
+      grad.addColorStop(0.5, "rgba(255,255,255,0.3)");
+      grad.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 256, 256);
+      this.textures.addCanvas("darkGrad", cv);
+    }
+    this.darkHalo = this.add.image(0, 0, "darkGrad").setVisible(false);
+    this.darkRt = this.add
+      .renderTexture(PAD - 32, PAD - 32, level.widthPx + 64, level.heightPx + 64)
+      .setOrigin(0)
+      .setBlendMode(Phaser.BlendModes.MULTIPLY)
+      .setDepth(5.5);
+  }
+
+  /** 逐帧黑幕（原版 updateDarkness：黑底 + 各光晕 erase；半径/锚点按各设备 drawDarkMask 逐字） */
+  private drawDarkness(): void {
+    const rt = this.darkRt;
+    if (!rt || !this.darkHalo || this.templeType !== "dark") return;
+    const halo = (x: number, y: number, r: number): void => {
+      this.darkHalo!.setPosition(x, y).setScale((r * 2) / 256);
+      rt.erase(this.darkHalo!, x - r, y - r);
+    };
+    rt.clear();
+    rt.fill(0x000000, 1);
+    // 角色 r180（bundle character 20→180）
+    if (this.pFb) halo(Number(this.pFb.x) + PAD, Number(this.pFb.y) + PAD, 180);
+    if (this.pWg) halo(Number(this.pWg.x) + PAD, Number(this.pWg.y) + PAD, 180);
+    // 机关静态光晕（lever r50 / rotmirror·infinitemirror r160 / wind 双 r90 / pulley 双 r90）
+    for (const m of this.d.level.levers) halo(m.x + PAD, m.y + PAD, 50);
+    for (const m of this.d.level.rotMirrors) halo(m.x + PAD, m.y + PAD, 160);
+    for (const m of this.d.level.infiniteMirrors) halo(m.x + PAD, m.y + PAD, 160);
+    for (const m of this.d.level.winds) {
+      const rad = ((m.rotation + 90) * Math.PI) / 180;
+      halo(m.rect.x + m.rect.w / 2 + PAD - 36 * Math.sin(rad), m.rect.y + m.rect.h / 2 + PAD - 36 * Math.cos(rad), 90);
+      halo(m.rect.x + m.rect.w / 2 + PAD + 36 * Math.sin(rad), m.rect.y + m.rect.h / 2 + PAD + 36 * Math.cos(rad), 90);
+    }
+    for (const p of this.d.level.pulleys) {
+      for (const pt of [p.pts[1], p.pts[2]]) halo(pt.x + PAD, pt.y + PAD, 90);
+    }
+    this.platformViews.forEach((c, k) => {
+      const idx = Number(k.slice(1));
+      const def = this.d.level.platforms[idx];
+      if (!def) return;
+      const r = ((def.w > def.h ? def.w : def.h) / 2) * 0.6;
+      const rad = (c.angle * Math.PI) / 180;
+      halo(c.x - r * Math.cos(rad), c.y - r * Math.sin(rad), 160);
+      halo(c.x + r * Math.cos(rad), c.y + r * Math.sin(rad), 160);
+    });
+    // beamer：源 r90 + 光束 25px 描线（段外扩渐变擦除近似 lineCap round）
+    this.beamerViews.forEach((v, k) => {
+      const idx = Number(k.slice(1));
+      const def = this.d.level.beamers[idx];
+      halo(def.x + PAD, def.y + PAD, 90);
+      const snap = this.lastBeamPts.get(k);
+      if (!snap) return;
+      for (let i = 1; i < snap.length; i++) {
+        const x0 = snap[i - 1][0] + PAD;
+        const y0 = snap[i - 1][1] + PAD;
+        const x1 = snap[i][0] + PAD;
+        const y1 = snap[i][1] + PAD;
+        const len = Math.hypot(x1 - x0, y1 - y0);
+        if (len < 1) continue;
+        const mid = { x: (x0 + x1) / 2, y: (y0 + y1) / 2 };
+        const ang = (Math.atan2(y1 - y0, x1 - x0) * 180) / Math.PI;
+        this.darkHalo!.setPosition(mid.x, mid.y).setScale((len + 25) / 128, 25 / 128).setAngle(ang);
+        rt.erase(this.darkHalo!, mid.x, mid.y);
+        this.darkHalo!.setAngle(0).setScale(1);
+      }
+    });
+  }
 
   private stepLevers(s: { state: number; angle: number }, id: string): void {
     let e = this.leverSnaps.get(id);
