@@ -24,6 +24,13 @@
 今日（2026-10-20）起新条目写在文件顶部。
 
 ## 条目
+**更新**：2026-10-25 四（系列开发批：light 教学解析修复+体验收尾+RotMirror P0 保真修复+ice 立项+light 路线产线开工）
+① light 教学层名 Tutorial 无后缀（forest 系 Tutorial_*）——level2 补分支，0.3.45 起 light 关游戏内教学文本不可见已修（4fe47ae，7 条文本复验）。
+② 体验收尾（9d1adf8）：光柱浮尘（fillDustLayer/updateDust 逐字：BeamDust×几何掩膜+锚点摆动）；popup 竞态确定性修复（暖装 loader SHUTDOWN 被 reset→in-flight 登记表+清排队键）；存档联调实机 PASS（fw-temple-progress-v1 含 light_01）；EndMenu 类型变体经核早已实现（划销）。
+③ RotMirror P0 保真修复（b02069e，light_02 路线子 agent 发现）：漏 oracle rotation 归一化循环+体角烧进 body（referenceAngle≠0）——rot<0 镜 11 面永久卡死、light_02 数学性不可通关。修复后内核镜角 @60f=270/90/90/0 与 oracle 实机探针逐位一致；r0-light 重锚（恰 4 关漂移=rot<0 分布）；kernel.mjs LEVELS_DIRS 三部化；四关修复后对照截图收容 img/rotfix/。
+④ ice 第三部立项（564edc4）：51 关入库+LEVEL_DIRS+templeIdOf 三部化+r0-ice 锚+CI determinism-ice；timedpusher×25 唯一新机关（Phase 2）；教训=tutorials 拷贝曾覆盖 B 部 light_01（B/C 同名不同字节），已恢复并入档。
+⑤ light 路线产线：两子 agent 并行（light_01/light_02，route.mjs repeat≥3 为验收）；light_02 首轮因 RotMirror 缺陷失败→修复后重派。进度见后续条目。
+
 **更新**：2026-10-25 三（R12 光面性能战役 0.3.46——perf-light 量具+Round A/C 内核同步优化+Round B 黑幕分层；det 双锚位级全程不动）
 ① r0–r11 未覆盖的三个新面（光机关步进/dark 黑幕/七表同步）立量具 benchmark/perf-light.mjs（idle/scripted 双口径+全字段同构 C 段）；拆解实验定位 beamer raycast 46%/rotmirror 钳位 34%（后者 oracle 逐字语义保真不动）。
 ② Round A+C（1039a51）：beamer 变换签名门（全动态体变换逐位快照+epoch，全等⇒复用折线重放标记，物理严格等价）+零分配化+packed 打包串缓存——light 中位步进 -27.8%（溢价 136%→70%）、sync -28.7%/encode -33.3%、heap/600 步 -44.7%。
