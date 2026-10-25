@@ -105,6 +105,15 @@ export class World {
 
   /** Step 期间的事件落点：接触回调直改状态并即时产事件（原版口径，F7） */
   private stepEvents: WorldEvent[] | null = null;
+  // ---- 光束缓存签名（r12 Round A）：全动态体变换逐位快照 + 突变 epoch。
+  // 变换全等与 epoch 一致时 beamer raycast 结果必然逐位相同（命中只依赖 fixture 变换与
+  // beamer 自身位姿/state），可安全复用上一帧折线并重放照明标记；epoch 覆盖 freeze/melt
+  // （filter/lp 翻转）与体销毁（钻石拾取）两类非变换突变。位级等价性论证见 r12 报告 RoundA。
+  private lightSig: Float64Array = new Float64Array(0);
+  private lightSigPrev: Float64Array = new Float64Array(0);
+  private lightSigLen = -1;
+  private lightSigStable = false;
+  lightEpoch = 0;
   private listener: any;
   private pendingRemove: any[] = [];
 
@@ -192,7 +201,7 @@ export class World {
     hangings: Array<{ id: number; x: number; y: number; angle: number }>;
     pulleys: Array<{ id: number; a: { x: number; y: number; angle: number }; b: { x: number; y: number; angle: number } }>;
     romans: Array<{ id: number; x: number; y: number; angle: number }>;
-    beamers: Array<{ id: number; state: number; pts: Array<{ x: number; y: number }> }>;
+    beamers: Array<{ id: number; state: number; pts: string }>;
     rotMirrors: Array<{ id: number; x: number; y: number; angle: number }>;
     boxMirrors: Array<{ id: number; x: number; y: number; angle: number }>;
     infiniteMirrors: Array<{ id: number; angle: number }>;
@@ -236,7 +245,7 @@ export class World {
       beamers: this.mechs.beamers.map((b, id) => ({
         id,
         state: b.state,
-        pts: (b.beamPts ?? []).map((pt) => ({ x: m2px(pt.x), y: m2px(pt.y) })),
+        pts: b.packed(),
       })),
       rotMirrors: this.mechs.rotMirrors.map((m, id) => {
         const pos = m.body.GetPosition();
@@ -315,10 +324,11 @@ export class World {
       // Slider.checkState（连续 state 派发）→ RotMirror.update（钳角）；InfiniteMirror 走信号。
       // 派发即调 deviceChanged(group)（原版 signal.dispatch 同步语义）。
       if (this.mechs.lightDevices.length > 0) {
+        this.collectLightSig();
         const lightEvents: MechEvent[] = [];
         for (let i = this.mechs.lightDevices.length - 1; i >= 0; i--) {
           const d = this.mechs.lightDevices[i];
-          if (d.beamer) d.beamer.update();
+          if (d.beamer) d.beamer.update(this.lightSigStable, this.lightEpoch);
           else if (d.rotMirror) d.rotMirror.update();
           else if (d.lightPusher) d.lightPusher.checkState(lightEvents);
           else if (d.slider) d.slider.checkState(lightEvents);
@@ -352,6 +362,7 @@ export class World {
 
   /** 延迟移除已收集钻石体（box2d 禁止回调内 DestroyBody；原版插件 _toRemove 同款） */
   private flushPendingRemove(): void {
+    if (this.pendingRemove.length) this.lightEpoch++;
     while (this.pendingRemove.length) {
       this.built.world.DestroyBody(this.pendingRemove.pop());
     }
@@ -484,11 +495,46 @@ export class World {
     }
   }
 
+  /** 全动态体变换签名（r12 Round A）：逐位比较上一帧；全等则光束复用合法。
+   *  只扫动态体（static 恒定；体销毁/freeze 走 epoch）。零分配：复用缓冲。 */
+  private collectLightSig(): void {
+    let n = 0;
+    for (let b = this.built.world.GetBodyList(); b; b = b.GetNext()) {
+      if (b.GetType() !== this.B.b2BodyType.b2_dynamicBody) continue;
+      const pos = b.GetPosition();
+      if (n + 3 > this.lightSig.length) {
+        const grown = new Float64Array(this.lightSig.length * 2 + 64);
+        grown.set(this.lightSig);
+        this.lightSig = grown;
+        this.lightSigPrev = new Float64Array(this.lightSig.length);
+      }
+      this.lightSig[n] = pos.x;
+      this.lightSig[n + 1] = pos.y;
+      this.lightSig[n + 2] = b.GetAngle();
+      n += 3;
+    }
+    if (n !== this.lightSigLen) {
+      this.lightSigLen = n;
+      this.lightSigStable = false;
+      return;
+    }
+    let stable = true;
+    for (let i = 0; i < n; i++) {
+      if (this.lightSig[i] !== this.lightSigPrev[i]) {
+        stable = false;
+        break;
+      }
+    }
+    this.lightSigStable = stable;
+    for (let i = 0; i < n; i++) this.lightSigPrev[i] = this.lightSig[i];
+  }
+
   /** 液面冻结（原版 Liquid.freeze @1667963 逐字）：冰面 mask→16（仅对角色层）；
    *  nearBodies：角色上推 0.5m+唤醒，其余体转 static；液面 sensor lp 翻 mirror（冻面反光） */
   private freezeLiquid(liq: any, events: WorldEvent[]): void {
     if (liq.frozen) return;
     liq.frozen = true;
+    this.lightEpoch++;
     liq.iceFixture.SetFilterData({ categoryBits: 1, maskBits: 16 });
     for (const { body } of liq.nearBodies) {
       const role = this.roleOfBody(body);
@@ -509,6 +555,7 @@ export class World {
   private meltLiquid(liq: any, events: WorldEvent[]): void {
     if (!liq.frozen) return;
     liq.frozen = false;
+    this.lightEpoch++;
     liq.iceFixture.SetFilterData({ categoryBits: 1, maskBits: 0 });
     for (const body of liq.frozenBodies) body.SetType(this.B.b2BodyType.b2_dynamicBody);
     liq.frozenBodies.length = 0;

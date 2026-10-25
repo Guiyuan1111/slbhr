@@ -751,8 +751,8 @@ export class ForestRoom extends Room<RoomState> {
         this.state.beamers.set(String(id), bs);
       }
       bs.state = b.state;
-      // 折线打包（屏幕 px 取整，"x,y|x,y"；不变则不写=框架零增量）
-      const pts = (b.beamPts ?? []).map((pt) => `${Math.round(m2px(pt.x))},${Math.round(m2px(pt.y))}`).join("|");
+      // 折线打包（r12：Beamer.packed() 坐标缓存比对，未变零构建；不变则不写=框架零增量）
+      const pts = b.packed();
       if (bs.pts !== pts) bs.pts = pts;
     }
     const syncBody = (map: any, key: string, body: any, angleSign: number, state?: number): void => {

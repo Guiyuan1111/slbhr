@@ -10,7 +10,7 @@
  */
 import { windBodyPos, type BeamerDef, type BoxMirrorDef, type InfiniteMirrorDef, type LevelData, type LightPusherDef, type RotMirrorDef, type SliderDef } from "../level2.js";
 import type { B2 } from "./b2.js";
-import { boxFixture, circleFixture, FILTER, polygonFixture, px2m } from "./b2.js";
+import { boxFixture, circleFixture, FILTER, m2px, polygonFixture, px2m } from "./b2.js";
 
 /** 屏幕像素点 → 物理 vec（新建 b2Vec2） */
 function phys(B: B2, x: number, y: number): any {
@@ -755,44 +755,85 @@ export function buildWindow(B: B2, world: any, def: { rect: { x: number; y: numb
 
 /** Beamer 光束分类回调（bundle @1629100 ReportFixture 逐字）：
  *  无 lp=不透明（记录命中，返回 fraction 继续裁剪）；transparent=穿透（返回 undefined=全射程）；
- *  normal/mirror=停束/反射，sensor 标记 iluminated/lightAt。返回值语义见 vendor b2World.RayCast。 */
-function lightRaycast(B: B2, world: any, from: any, to: any, color: string): { point: any; normal: any | null; sensorLp: LightProperties | null } | null {
-  let contact: { point: any; normal: any | null; sensorLp: LightProperties | null } | null = null;
-  const cb = (fix: any, point: any, normal: any, fraction: number): number | undefined => {
+ *  normal/mirror=停束/反射，sensor 标记 iluminated/lightAt。返回值语义见 vendor b2World.RayCast。
+ *  r12 Round A：回调经 rcCtx 复用（零闭包分配）；命中点写入调用方缓冲（Clone 消除）。 */
+interface RayHit {
+  hit: boolean;
+  px: number;
+  py: number;
+  /** 反射面法线（未命中/不透明= null 语义：nx=NaN） */
+  nx: number;
+  ny: number;
+  mirror: boolean;
+  sensorLp: LightProperties | null;
+}
+const rcCtx = {
+  hit: null as RayHit | null,
+  color: "",
+  cb(fix: any, point: any, normal: any, fraction: number): number | undefined {
     const ud = fix.GetUserData ? fix.GetUserData() : fix.m_userData;
     const lp: LightProperties | undefined = ud && typeof ud === "object" ? ud.lightProperties : undefined;
+    const h = rcCtx.hit!;
     if (!lp) {
-      contact = { point: point.Clone(), normal: null, sensorLp: null };
+      h.hit = true;
+      h.px = point.x;
+      h.py = point.y;
+      h.mirror = false;
+      h.sensorLp = null;
       return fraction;
     }
     if (lp.type === "transparent") {
       if (lp.sensor) {
-        lp.iluminated = color;
+        lp.iluminated = rcCtx.color;
         lp.lightAt = { x: point.x, y: point.y };
       }
       return undefined;
     }
     if (lp.type === "normal") {
-      contact = { point: point.Clone(), normal: null, sensorLp: lp.sensor ? lp : null };
+      h.hit = true;
+      h.px = point.x;
+      h.py = point.y;
+      h.mirror = false;
+      h.sensorLp = lp.sensor ? lp : null;
       return fraction;
     }
     if (lp.type === "mirror") {
-      contact = { point: point.Clone(), normal: normal.Clone(), sensorLp: lp.sensor ? lp : null };
+      h.hit = true;
+      h.px = point.x;
+      h.py = point.y;
+      h.nx = normal.x;
+      h.ny = normal.y;
+      h.mirror = true;
+      h.sensorLp = lp.sensor ? lp : null;
       return fraction;
     }
     return undefined; // portal 等：light 数据未用
-  };
-  world.RayCast(cb, from, to);
-  void B;
-  return contact;
-}
+  },
+};
 
 export class Beamer extends Device {
   readonly body: any;
   readonly color: string;
-  /** 最近一次光束折线（物理米坐标；null=灭）。快照转屏幕 px 供客户端绘制 */
+  /** 最近一次光束折线（物理米坐标；null=灭）。快照转屏幕 px 供客户端绘制；
+   *  r12 Round A：对象池复用（零分配），长度随折点数 */
   beamPts: Array<{ x: number; y: number }> | null = null;
+  private beamLen = 0;
+  /** sensor 照明标记缓存（复用帧重放——原版标记每帧覆盖写，跳帧必须等价重放，见 r12 报告） */
+  private marks: Array<{ lp: LightProperties; x: number; y: number }> = [];
+  private marksLen = 0;
+  private cachedEpoch = -1;
+  private cachedStable = false;
+  /** 打包串缓存（同步链 r12 Round C）：坐标逐位相等即复用 */
+  private packedCache: string | null = null;
+  private packedXY: number[] = [];
   private readonly worldRef: any;
+  /** 反射算术临时向量（零分配；b2Vec2 复用对） */
+  private readonly tmpFrom: any;
+  private readonly tmpTo: any;
+  private readonly tmpDir: any;
+  private readonly tmpB: any;
+  private readonly tmpF: any;
+  private readonly hit: RayHit = { hit: false, px: 0, py: 0, nx: 0, ny: 0, mirror: false, sensorLp: null };
 
   constructor(B: B2, world: any, def: BeamerDef) {
     super(B, def.group, false);
@@ -811,6 +852,11 @@ export class Beamer extends Device {
       { x: -0.4, y: 0.8 / 2 },
       { x: -0.4, y: -0.8 / 2 },
     ], { categoryBits: 1, maskBits: 65535, friction: 0.7, restitution: 0, density: 0 });
+    this.tmpFrom = new B.b2Vec2(0, 0);
+    this.tmpTo = new B.b2Vec2(0, 0);
+    this.tmpDir = new B.b2Vec2(-1, 0);
+    this.tmpB = new B.b2Vec2(0, 0);
+    this.tmpF = new B.b2Vec2(0, 0);
   }
 
   updateState(_silent: boolean): void {
@@ -819,43 +865,122 @@ export class Beamer extends Device {
 
   checkState(_events: MechEvent[]): void {}
 
-  /** 逐帧光束（bundle Beamer.update @1629930 逐字；≤11 折点） */
-  update(): void {
+  /** 光束折点坐标逐位比较（r12 Round C 打包串复用判据） */
+  private ptsUnchanged(): boolean {
+    const pts = this.beamPts;
+    if (!pts || pts.length !== this.beamLen || this.packedXY.length !== this.beamLen * 2) return false;
+    for (let i = 0; i < this.beamLen; i++) {
+      if (pts[i].x !== this.packedXY[i * 2] || pts[i].y !== this.packedXY[i * 2 + 1]) return false;
+    }
+    return true;
+  }
+
+  /** 同步链打包串（"x,y|x,y" 屏幕取整 px；坐标未变时零构建） */
+  packed(): string {
+    if (this.beamPts === null) return "";
+    if (this.packedCache !== null && this.ptsUnchanged()) return this.packedCache;
+    const parts: string[] = [];
+    for (let i = 0; i < this.beamLen; i++) {
+      const pt = this.beamPts[i];
+      parts.push(`${Math.round(m2px(pt.x))},${Math.round(m2px(pt.y))}`);
+    }
+    this.packedCache = parts.join("|");
+    this.packedXY.length = 0;
+    for (let i = 0; i < this.beamLen; i++) {
+      this.packedXY.push(this.beamPts[i].x, this.beamPts[i].y);
+    }
+    return this.packedCache;
+  }
+
+  /** 逐帧光束（bundle Beamer.update @1629930 逐字；≤11 折点）。
+   *  r12 Round A 缓存门：签名稳定+epoch 一致+state 未翻转 ⇒ 本帧 raycast 与上帧逐位相同，
+   *  复用折线并重放照明标记（标记语义=每帧覆盖写，重放值恒等）；否则重算。 */
+  update(stable: boolean, epoch: number): void {
     if (this.state !== 1) {
       this.beamPts = null;
+      this.beamLen = 0;
+      this.packedCache = null;
+      this.marksLen = 0;
+      return;
+    }
+    if (stable && epoch === this.cachedEpoch && this.cachedStable && this.beamPts !== null) {
+      // 复用帧：重放照明标记（值恒等）
+      for (let i = 0; i < this.marksLen; i++) {
+        const mk = this.marks[i];
+        mk.lp.iluminated = this.color;
+        mk.lp.lightAt = { x: mk.x, y: mk.y };
+      }
       return;
     }
     const B = this.B;
-    const p = this.body.GetPosition().Clone();
-    let dir = new B.b2Vec2(-1, 0);
+    const pos = this.body.GetPosition();
+    const p = this.tmpFrom;
+    p.SetXY(pos.x, pos.y);
+    const dir = this.tmpDir;
+    dir.SetXY(-1, 0);
     dir.SelfRotateRadians(this.body.GetAngle());
-    const pts: Array<{ x: number; y: number }> = [{ x: p.x, y: p.y }];
-    for (let seg = 0; seg < 10 && pts.length < 11; seg++) {
-      const from = p.Clone();
-      const to = p.Clone().SelfAdd(dir.Clone().SelfMul(50));
-      const hit = lightRaycast(B, this.worldRef, from, to, this.color);
-      if (!hit) {
+    // 折线池
+    if (this.beamPts === null) this.beamPts = [];
+    let len = 0;
+    const put = (x: number, y: number): void => {
+      if (len >= this.beamPts!.length) this.beamPts!.push({ x, y });
+      else {
+        this.beamPts![len].x = x;
+        this.beamPts![len].y = y;
+      }
+      len++;
+    };
+    put(pos.x, pos.y);
+    let marksLen = 0;
+    const mark = (lp: LightProperties, x: number, y: number): void => {
+      if (marksLen >= this.marks.length) this.marks.push({ lp, x, y });
+      else {
+        this.marks[marksLen].lp = lp;
+        this.marks[marksLen].x = x;
+        this.marks[marksLen].y = y;
+      }
+      marksLen++;
+    };
+    for (let seg = 0; seg < 10 && len < 11; seg++) {
+      const from = this.tmpB;
+      from.SetXY(p.x, p.y);
+      const to = this.tmpTo;
+      to.SetXY(p.x + dir.x * 50, p.y + dir.y * 50);
+      rcCtx.hit = this.hit;
+      rcCtx.color = this.color;
+      this.hit.hit = false;
+      this.worldRef.RayCast(rcCtx.cb, from, to);
+      const hit = this.hit;
+      if (!hit.hit) {
         // 世界四壁兜底（原版依赖边界墙恒命中）；无命中=安全断束
-        pts.push({ x: to.x, y: to.y });
+        put(to.x, to.y);
         break;
       }
       if (hit.sensorLp) {
         hit.sensorLp.iluminated = this.color;
-        hit.sensorLp.lightAt = { x: hit.point.x, y: hit.point.y };
+        hit.sensorLp.lightAt = { x: hit.px, y: hit.py };
+        mark(hit.sensorLp, hit.px, hit.py);
       }
-      pts.push({ x: hit.point.x, y: hit.point.y });
-      if (hit.normal) {
+      put(hit.px, hit.py);
+      if (hit.mirror) {
         // 反射（@1630033 逐字）：b=入射反向单位向量，f=法线×1（CrossVS），dir=b−2(b·f)f
-        const bvec = from.Clone().SelfSub(to).SelfNormalize();
-        const f = hit.normal.Clone().SelfCrossVS(1);
-        dir = bvec.Clone().SelfSub(f.Clone().SelfMul(2 * bvec.Dot(f)));
-        p.SetXY(hit.point.x, hit.point.y);
+        const bvec = this.tmpB;
+        bvec.SetXY(from.x - to.x, from.y - to.y);
+        bvec.SelfNormalize();
+        const f = this.tmpF;
+        f.SetXY(hit.ny, -hit.nx); // CrossVS(1)：(n.y·1, −n.x·1)
+        const dot = bvec.x * f.x + bvec.y * f.y;
+        dir.SetXY(bvec.x - f.x * 2 * dot, bvec.y - f.y * 2 * dot);
+        p.SetXY(hit.px, hit.py);
       } else {
-        dir = null as unknown as B2["b2Vec2"]; // 停束
-        break;
+        break; // 停束
       }
     }
-    this.beamPts = pts;
+    this.beamLen = len;
+    this.marksLen = marksLen;
+    this.cachedEpoch = epoch;
+    this.cachedStable = true;
+    this.packedCache = null; // 坐标可能已变，交由 packed() 比对
   }
 }
 
