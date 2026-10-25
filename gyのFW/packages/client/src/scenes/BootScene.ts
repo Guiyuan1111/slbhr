@@ -41,12 +41,29 @@ function currentTemple(): "forest" | "light" {
 }
 
 /** 游戏内四图集（Menu 首帧用不到）：进阶装载共用入口——已缓存的键 Phaser 自动跳过 */
+/** 在飞图集登记（r12 勘误）：暖装 loader 在场景 SHUTDOWN 时被 Phaser reset（在飞 XHR 仍会
+ *  落地纹理、排队键永不落地）——GameScene 兜底重声明撞上迟到落地即报 "Texture key already
+ *  in use"。此处按 key 登记：已落地（textureManager.exists）或在飞（集合内）的键跳过声明；
+ *  addfile/loaderror 时出集合；SHUTDOWN 时把仍排队（未起飞）的键出集合，交由兜底重声明。 */
+const atlasInflight = new Set<string>();
+
 export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
-  load.atlas(ATLAS_GROUND, "/assets/atlasses/GroundAssets.png", "/assets/atlasses/GroundAssets.json");
-  load.atlas(ATLAS_MECH, "/assets/atlasses/MechAssets.png", "/assets/atlasses/MechAssets.json");
+  const queue = (key: string, url: string): void => {
+    if (load.textureManager.exists(key) || atlasInflight.has(key)) return;
+    atlasInflight.add(key);
+    load.atlas(key, `${url}.png`, `${url}.json`);
+    load.once("addfile", (file: Phaser.Loader.File) => {
+      if (file.key === key) atlasInflight.delete(key);
+    });
+    load.once("loaderror", (file: Phaser.Loader.File) => {
+      if (file.key === key) atlasInflight.delete(key);
+    });
+  };
+  queue(ATLAS_GROUND, "/assets/atlasses/GroundAssets");
+  queue(ATLAS_MECH, "/assets/atlasses/MechAssets");
   const temple = currentTemple();
-  load.atlas(ATLAS_TEMPLE, `/assets/atlasses/Temples/${temple}/TempleAssets.png`, `/assets/atlasses/Temples/${temple}/TempleAssets.json`);
-  load.atlas(ATLAS_POPUP, "/assets/atlasses/PopupAssets.png", "/assets/atlasses/PopupAssets.json");
+  queue(ATLAS_TEMPLE, `/assets/atlasses/Temples/${temple}/TempleAssets`);
+  queue(ATLAS_POPUP, "/assets/atlasses/PopupAssets");
 }
 
 /** 后台暖装落定状态（r5）：MenuScene 启动暖装时登记，进 Game 前等待其落定，
@@ -61,7 +78,13 @@ export function startBgWarm(scene: Phaser.Scene): void {
     resolve = r;
   });
   warmState = { done, resolve };
-  const finish = (): void => warmState?.resolve();
+  const finish = (): void => {
+    // r12 勘误：SHUTDOWN 时 loader 被 reset——排队键（未起飞）永不落地，出集合交由
+    // GameScene 兜底重声明；在飞 XHR 仍会落地纹理，留在集合内挡住重复声明。
+    const q = (scene.load as unknown as { queue?: { iterate: (fn: (f: { key: string }) => void) => void } }).queue;
+    q?.iterate((f) => atlasInflight.delete(f.key));
+    warmState?.resolve();
+  };
   scene.load.once("complete", finish);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, finish);
   loadGameAtlases(scene.load);

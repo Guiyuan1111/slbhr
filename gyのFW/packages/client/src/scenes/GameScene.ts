@@ -212,6 +212,12 @@ export class GameScene extends Phaser.Scene {
   //  各设备/角色以 lighter 白径向梯度挖洞——我方以 RenderTexture erase 等价实现）----
   private darkRt: Phaser.GameObjects.RenderTexture | null = null;
   private darkHalo: Phaser.GameObjects.Image | null = null;
+  // ---- 光柱浮尘（原版 fillDustLayer/updateDust @1908496：BeamDust 粒子 ×几何掩膜——
+  //  掩膜=光束路径 40px 描线，尘只在光柱内可见；仅带 beamer 的关创建）----
+  private dustContainer: Phaser.GameObjects.Container | null = null;
+  private dustMask: Phaser.GameObjects.Graphics | null = null;
+  private dustMaskSig = "";
+  private dustWobble: Array<{ img: Phaser.GameObjects.Image; dir: number; angle: number }> = [];
   /** Round B 静态/动态分层：静态晕擦除图案缓存层（与 darkRt 同尺寸/同位/同原点，不上屏）。
    *  rotmirror/wind/platform 的晕画进本层（erase 只在此三者点亮集合/位姿变化时整层重画），
    *  主 RT 每帧 fill 黑后 erase 本层一次，再补角色/杆/光束动态晕——免逐帧重复 erase。 */
@@ -410,6 +416,8 @@ export class GameScene extends Phaser.Scene {
     this.buildMechs(level);
     // dark 关黑幕（templeType 异步填充，ensureDarkRt 幂等兜底）
     this.ensureDarkRt(level);
+    // 光柱浮尘（原版 fillDustLayer：仅带 beamer 的关）
+    this.buildDust(level);
     this.buildGround(level);
     this.buildPlayers(level);
     this.buildDecorations(level);
@@ -1421,6 +1429,7 @@ export class GameScene extends Phaser.Scene {
     this.updatePlayers(st, delta);
     this.updateDiamonds(st);
     this.updateMechs(st, nowMs, delta);
+    this.updateDust();
     this.drawDarkness();
     this.updatePlatformSound(st);
 
@@ -1825,6 +1834,61 @@ export class GameScene extends Phaser.Scene {
     v.dot.setPosition(Number(bs.x) + PAD, Number(bs.y) + PAD);
     v.light.setPosition(Number(bs.x) + PAD, Number(bs.y) + PAD);
   };
+
+  /** 光柱浮尘装配（原版 fillDustLayer @1908496 逐字：ceil(width/10) 粒 BeamDust0000、
+   *  随机位/随机转角；几何掩膜=光束路径描线，dust 仅光柱内可见） */
+  private buildDust(level: LevelData): void {
+    if (level.beamers.length === 0 || this.dustContainer) return;
+    this.dustMask = this.add.graphics().setDepth(5.15);
+    this.dustContainer = this.add.container(0, 0).setDepth(5.2);
+    const count = Math.ceil(level.widthPx / 10);
+    for (let i = 0; i < count; i++) {
+      const img = this.add
+        .image(Math.random() * level.widthPx + PAD, Math.random() * level.heightPx + PAD, ATLAS_GROUND, "BeamDust0000")
+        .setOrigin(0.5)
+        .setRotation(Math.random() * Math.PI);
+      this.dustContainer.add(img);
+      this.dustWobble.push({ img, dir: i % 2 === 0 ? 1 : -1, angle: img.rotation });
+    }
+    this.dustContainer.setMask(this.dustMask.createGeometryMask());
+    this.dustContainer.setVisible(false); // 无光束=不可见（原版 a=true 分支）
+  }
+
+  /** 逐帧浮尘（原版 updateDust @1908842）：光束变化才重建掩膜（40px 描线）；锚点正余弦摆动 */
+  private updateDust(): void {
+    const dust = this.dustContainer;
+    if (!dust || !this.dustMask) return;
+    let anyBeam = false;
+    const sigs: string[] = [];
+    this.beamerViews.forEach((v, k) => {
+      const pts = this.lastBeamPts.get(k);
+      if (pts && pts.length > 0) {
+        anyBeam = true;
+        sigs.push(k + ":" + pts.map((p) => p[0] + "," + p[1]).join(";"));
+      }
+    });
+    const sig = sigs.join("|");
+    if (sig !== this.dustMaskSig) {
+      this.dustMaskSig = sig;
+      this.dustMask.clear();
+      this.dustMask.lineStyle(40, 0x000000, 1);
+      this.beamerViews.forEach((v, k) => {
+        const pts = this.lastBeamPts.get(k);
+        if (!pts || pts.length === 0) return;
+        this.dustMask!.beginPath();
+        this.dustMask!.moveTo(pts[0][0] + PAD, pts[0][1] + PAD);
+        for (let i = 1; i < pts.length; i++) this.dustMask!.lineTo(pts[i][0] + PAD, pts[i][1] + PAD);
+        this.dustMask!.strokePath();
+      });
+    }
+    dust.setVisible(anyBeam);
+    // 原版逐字：angle += 0.002·(±1 交替)；anchor.set(sin(angle), cos(angle))（纹理原点振荡=原地漂闪；
+    // 转角仅创建时随机一次，不逐帧变）
+    for (const w of this.dustWobble) {
+      w.angle += 0.002 * w.dir;
+      w.img.setOrigin(Math.sin(w.angle), Math.cos(w.angle));
+    }
+  }
 
   /** dark 关黑幕装配（原版 setupDarkness：尺寸=关卡+64、位置 −32、MULTIPLY 覆盖） */
   private ensureDarkRt(level: LevelData): void {
