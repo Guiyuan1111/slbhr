@@ -995,7 +995,9 @@ export class RotMirror extends Device {
     const bd = new B.b2BodyDef();
     bd.type = B.b2BodyType.b2_dynamicBody;
     bd.position = phys(B, def.x, def.y);
-    bd.angle = (Math.PI * def.rotation) / 180;
+    // 体零角创建（oracle RotMirror：base 的 sprite 为 null 不设角，k 精灵 enable 后体角 0，
+    // joint Initialize 时 referenceAngle=0；SetAngle 在 Initialize 后钉限位——r12 路线子 agent
+    // 实证体角烧进 body 会让 reference≠0、rot<0 镜永久卡死）
     this.body = world.CreateBody(bd);
     // ①盒体 1.8×1.8 transparent（角色可站/推；bundle @1743260）
     boxFixture(this.body, B, 0.9, 0.9, { x: 0, y: 0 }, 0, {
@@ -1014,8 +1016,12 @@ export class RotMirror extends Device {
     // ③④踏点圆帽 r=0.25 @盒角（bundle @1743395）
     circleFixture(this.body, B, 0.25, { x: 0.9 - 0.25, y: 0.9 - 0.25 }, { density: 1 });
     circleFixture(this.body, B, 0.25, { x: -(0.9 - 0.25), y: -(0.9 - 0.25) }, { density: 1 });
-    // revolute 钳位（@1743400 逐字）：dir=1 → [−rot, −rot+π/2]，否则 [−rot−π/2, −rot]；motor 恒开 torque 100
-    const rotRad = (Math.PI * def.rotation) / 180;
+    // revolute 钳位（@1743400 逐字）：先归一化 rotation 到 [0, 2π)（oracle 构造器 while 循环
+    // @1743355——r12 路线子 agent 实证漏此循环致 rot<0 镜限位算错、永久卡死，light_02 不可通关），
+    // dir=1 → [−rot, −rot+π/2]，否则 [−rot−π/2, −rot]；motor 恒开 torque 100
+    let rotNorm = (Math.PI * def.rotation) / 180;
+    while (rotNorm < 0) rotNorm += 2 * Math.PI;
+    const rotRad = rotNorm;
     const jd = new B.b2RevoluteJointDef();
     jd.Initialize(this.body, groundBody, this.body.GetWorldCenter());
     if (def.dir === 1) {

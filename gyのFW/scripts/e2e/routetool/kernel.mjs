@@ -16,7 +16,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { ROOT } from "../lib.mjs";
 
-const LEVELS_DIRS = ["data/tutorials/levels", "data/forest/levels"]
+const LEVELS_DIRS = ["data/tutorials/levels", "data/forest/levels", "data/light/levels", "data/ice/levels"]
   .map((rel) => join(ROOT, rel))
   .filter((dir) => {
     try { readdirSync(dir); return true; } catch { return false; }
@@ -36,7 +36,7 @@ export function makeProvider(baseDir) {
   };
 }
 
-/** 关卡 JSON 检索：tutorials 与 forest 两个关卡库（forest_01 在前者，其余 47 关在后者） */
+/** 关卡 JSON 检索：tutorials 与三部关卡库（各部首关在 tutorials，其余在本部目录） */
 export function locateLevel(level) {
   for (const dir of LEVELS_DIRS) {
     try {
