@@ -343,7 +343,7 @@ async function enterGame(): Promise<void> {
   // temple.json 条目（time/type/filename）：EndMenu 限时、星级口径、进度存档键都出自这里
   currentTempleEntry = null;
   // r8 件3：temple.json 单例（bindUi 已预取，此处 await 恒命中已完成态）
-  templeRaw = await loadTempleLevels();
+  templeRaw = await loadTempleLevels(levelId);
   templeLevels = templeRaw.map((lv) => ({ id: Number(lv.id ?? 0), filename: String(lv.filename ?? "") }));
   currentTempleEntry = findTempleEntry(levelId);
   // NewSign played 标记（13 号档 #13，0.3.39）：oracle setPlayed 于 startLevel 进关即置
@@ -688,8 +688,8 @@ function bindUi(): void {
   // HUD 轮询刷新（4Hz 足够，DOM 开销可忽略；模块级单例，重入不叠加）
   setInterval(updateHud, 250);
   bootPhaser();
-  // r8 件3：temple.json 预取（enterGame 关键路径 await 恒命中）
-  void loadTempleLevels();
+  // r8 件3：temple.json 预取（enterGame 关键路径 await 恒命中；按 URL 关卡前缀选庙）
+  void loadTempleLevels(urlLevel);
   // R 键请求整关重开（E1；服务端按 phase 把关：won/gameover 才受理）
   // I 键显/收局内联机栏（菜单态不响应，避免输入房间码时误触）
   $("#hud-hot").addEventListener("mouseenter", () => hudTopShow(0)); // 悬停保持显示

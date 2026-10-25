@@ -93,7 +93,7 @@ describe("light 部 40 关冒烟 + 全量机关直方图", () => {
     let beamsDrawn = 0;
     for (const id of allLevelIds()) {
       const w = new World(loadLevel(id));
-      for (let f = 0; f < 60; f++) w.step(1 / 60, { fireboy: {}, watergirl: {} });
+      for (let f = 0; f < 60; f++) w.step(1 / 60, { fireboy: { up: false, left: false, right: false }, watergirl: { up: false, left: false, right: false } });
       const snap = w.mechSnapshot();
       expect(snap.beamers.length, id).toBe(loadLevel(id).beamers.length);
       for (const b of snap.beamers) {

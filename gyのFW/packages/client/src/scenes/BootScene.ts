@@ -17,6 +17,7 @@
  */
 import Phaser from "phaser";
 import { AUDIO_GAME, AUDIO_MENU, loadAudioPack } from "../audio.js";
+import { templeIdOf } from "../templeData";
 
 export const ATLAS_CHARS = "chars";
 export const ATLAS_GROUND = "ground";
@@ -33,11 +34,18 @@ export const FONT_MAIN = "font";
  */
 export const PLAYER_SCALE = 0.95;
 
+/** 当前神庙（URL ?level= 关卡前缀；Boot 期即可判——第二部 light 换 TempleAssets/TempleHall/GameName） */
+function currentTemple(): "forest" | "light" {
+  const level = new URLSearchParams(location.search).get("level");
+  return templeIdOf(level);
+}
+
 /** 游戏内四图集（Menu 首帧用不到）：进阶装载共用入口——已缓存的键 Phaser 自动跳过 */
 export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
   load.atlas(ATLAS_GROUND, "/assets/atlasses/GroundAssets.png", "/assets/atlasses/GroundAssets.json");
   load.atlas(ATLAS_MECH, "/assets/atlasses/MechAssets.png", "/assets/atlasses/MechAssets.json");
-  load.atlas(ATLAS_TEMPLE, "/assets/atlasses/Temples/forest/TempleAssets.png", "/assets/atlasses/Temples/forest/TempleAssets.json");
+  const temple = currentTemple();
+  load.atlas(ATLAS_TEMPLE, `/assets/atlasses/Temples/${temple}/TempleAssets.png`, `/assets/atlasses/Temples/${temple}/TempleAssets.json`);
   load.atlas(ATLAS_POPUP, "/assets/atlasses/PopupAssets.png", "/assets/atlasses/PopupAssets.json");
 }
 
@@ -84,9 +92,9 @@ export class BootScene extends Phaser.Scene {
     // 原版画布内时钟的位图字（font 48 基准，LevelUI Clock 用 24 号 = 半缩放）
     this.load.bitmapFont(FONT_MAIN, "/assets/fonts/chinese/font.png", "/assets/fonts/chinese/font.fnt");
     // 独立图片（0.3.12 起开始界面引用，此前漏载致缺纹理静默空白——差距审计 P0）
-    this.load.image("TempleHall", "/assets/images/TempleHallForest.jpg");
+    this.load.image("TempleHall", `/assets/images/TempleHall${currentTemple() === "light" ? "Light" : "Forest"}.jpg`);
     this.load.image("Beam", "/assets/images/Beam.png");
-    this.load.image("GameName", "/assets/images/GameNameForest.png");
+    this.load.image("GameName", `/assets/images/GameName${currentTemple() === "light" ? "Light" : "Forest"}.png`);
     this.load.image("KiziLogo", "/assets/images/branding/branding_logo_kizi.png");
 
     // 音频仅装 menu 批（bgm_menu）；游戏内 18 键 ≈2.0MB（0.3.21 起 Menu 冷启动不再为其付出

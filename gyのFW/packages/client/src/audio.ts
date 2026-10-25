@@ -35,6 +35,7 @@ export const AUDIO_GAME: ReadonlyArray<readonly [string, string]> = [
   ["bgm_level_speed", "LevelMusic_speed.mp3"],
   ["bgm_finish_speed", "LevelMusicFinish_speed.mp3"],
   ["bgm_level", "LevelMusic.mp3"],
+  ["bgm_level_dark", "LevelMusic_dark.mp3"],
   ["bgm_finish", "LevelMusicFinish.mp3"],
 ] as const;
 

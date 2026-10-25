@@ -18,7 +18,7 @@ import { Room, ServerError } from "../colyseus.cjs.js";
 import { ROLES, EMPTY_INPUT, type Role, type InputState } from "@fw/shared";
 import { World, m2px, type WorldEvent } from "@fw/shared/kernel";
 import { levelExists, loadLevel, type LevelBundle } from "../levels.js";
-import { RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState } from "./state.js";
+import { BeamState, RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState } from "./state.js";
 
 interface JoinOptions {
   password?: string;
@@ -213,6 +213,13 @@ export class ForestRoom extends Room<RoomState> {
       this.state.winds.clear();
       this.state.hangings.clear();
       this.state.pulleys.clear();
+      this.state.beamers.clear();
+      this.state.rotMirrors.clear();
+      this.state.boxMirrors.clear();
+      this.state.infiniteMirrors.clear();
+      this.state.lightPushers.clear();
+      this.state.sliders.clear();
+      this.state.liquids = "";
       this.state.romans.clear();
       this.restartLevel();
     });
@@ -731,6 +738,51 @@ export class ForestRoom extends Room<RoomState> {
       bs.y = Math.round(m2px(pos.y) * 10) / 10;
       bs.angle = Math.round(r.bar.GetAngle() * 1000) / 1000;
     }
+    // ---- 灯光神庙机关（light 关非空；forest 恒零循环）----
+    for (let id = 0; id < mechs.beamers.length; id++) {
+      const b = mechs.beamers[id];
+      let bs = this.state.beamers.get(String(id));
+      if (!bs) {
+        bs = new BeamState();
+        this.state.beamers.set(String(id), bs);
+      }
+      bs.state = b.state;
+      // 折线打包（屏幕 px 取整，"x,y|x,y"；不变则不写=框架零增量）
+      const pts = (b.beamPts ?? []).map((pt) => `${Math.round(m2px(pt.x))},${Math.round(m2px(pt.y))}`).join("|");
+      if (bs.pts !== pts) bs.pts = pts;
+    }
+    const syncBody = (map: any, key: string, body: any, angleSign: number): void => {
+      let bs = map.get(key);
+      if (!bs) {
+        bs = new BodyState();
+        map.set(key, bs);
+      }
+      const pos = body.GetPosition();
+      bs.x = Math.round(m2px(pos.x) * 10) / 10;
+      bs.y = Math.round(m2px(pos.y) * 10) / 10;
+      bs.angle = Math.round(angleSign * body.GetAngle() * 1000) / 1000;
+    };
+    for (let id = 0; id < mechs.rotMirrors.length; id++) syncBody(this.state.rotMirrors, String(id), mechs.rotMirrors[id].body, 1);
+    for (let id = 0; id < mechs.boxMirrors.length; id++) syncBody(this.state.boxMirrors, String(id), mechs.boxMirrors[id].body, 1);
+    for (let id = 0; id < mechs.infiniteMirrors.length; id++) syncBody(this.state.infiniteMirrors, String(id), mechs.infiniteMirrors[id].body, 1);
+    for (let id = 0; id < mechs.lightPushers.length; id++) {
+      const m = mechs.lightPushers[id];
+      let ps = this.state.lightPushers.get(String(id));
+      if (!ps) {
+        ps = new PusherState();
+        this.state.lightPushers.set(String(id), ps);
+      }
+      ps.group = m.group;
+      ps.state = m.state;
+      const pos = m.body.GetPosition();
+      ps.x = Math.round(m2px(pos.x) * 10) / 10;
+      ps.y = Math.round(m2px(pos.y) * 10) / 10;
+    }
+    for (let id = 0; id < mechs.sliders.length; id++) syncBody(this.state.sliders, String(id), mechs.sliders[id].body, 1);
+    // 液体冻结旗标（行段序 0/1 串）
+    const liquidsFlag = this.world.liquids.map((l: any) => (l.frozen ? "1" : "0")).join("");
+    if (this.state.liquids !== liquidsFlag) this.state.liquids = liquidsFlag;
+
     const doors = this.world.doors;
     this.state.doors.fbAtDoor = doors.fireboy.isOpen;
     this.state.doors.wgAtDoor = doors.watergirl.isOpen;

@@ -200,6 +200,14 @@ export class GameScene extends Phaser.Scene {
   private leverViews = new Map<string, LeverView>();
   private pusherViews = new Map<string, PusherView>();
   private bodyViews = new Map<string, Phaser.GameObjects.Image>();
+  // ---- 灯光神庙视图（light 关非空）----
+  private beamerViews = new Map<string, { base: Phaser.GameObjects.Image; light: Phaser.GameObjects.Image; g: Phaser.GameObjects.Graphics; color: number }>();
+  private rotMirrorViews = new Map<string, { mirror: Phaser.GameObjects.Image; light: Phaser.GameObjects.Image }>();
+  private boxMirrorViews = new Map<string, Phaser.GameObjects.Image>();
+  private infiniteMirrorViews = new Map<string, { mirror: Phaser.GameObjects.Image; light: Phaser.GameObjects.Image }>();
+  private lightPusherViews = new Map<string, { base: Phaser.GameObjects.Image; light: Phaser.GameObjects.Image; state: boolean }>();
+  private sliderViews = new Map<string, { dot: Phaser.GameObjects.Image; light: Phaser.GameObjects.Image }>();
+  private iceViews = new Map<string, Phaser.GameObjects.Container>();
   private windViews = new Map<string, WindView>();
   private hangingViews = new Map<string, HangingView>();
   private pulleyViews = new Map<string, PulleyView>();
@@ -239,7 +247,7 @@ export class GameScene extends Phaser.Scene {
   /** 原版限时（data/forest/temple.json 的 time 字段；取不到=不限时） */
   private templeTimeSec: number | null = null;
   /** temple.json 的关卡类型（general/speed/puzzle），bgm 选曲与星级口径用 */
-  private templeType: string = "general";
+  private templeType: string = "general"; // general/speed/puzzle/dark（light 部新增 dark）
   private waterPlaying = false;
   /** T10：逐台平台电机声实例（限位/反向即停，见 platformSound.ts） */
   private readonly platformSounds = new PlatformSoundTracker<Phaser.Sound.BaseSound>({
@@ -442,7 +450,10 @@ export class GameScene extends Phaser.Scene {
 
   /** 关卡 BGM 键：speed 关用专属曲（原版 preloadAudioFiles 按 levelData.type 换曲） */
   private bgmKey(): string {
-    return this.templeType === "speed" ? "bgm_level_speed" : "bgm_level";
+    // dark=灯光神庙暗关（LevelMusic_dark.mp3；02号档 §1 type 谱）
+    if (this.templeType === "speed") return "bgm_level_speed";
+    if (this.templeType === "dark") return "bgm_level_dark";
+    return "bgm_level";
   }
 
   /** 终局曲键：speed 关用 _speed 变体（oracle animateFinish @1906276 按 type 选曲；T2——
@@ -892,6 +903,80 @@ export class GameScene extends Phaser.Scene {
         this.add.image(0, 0, ATLAS_MECH, "WindowCenter0000").setOrigin(0.5).setScale((sw - 2) / 3, 1),
       ]);
     }
+    // ---- 灯光神庙机关视图（light 关非空；02号档 §2-§7 帧名/层级逐条对齐）----
+    // 灯层为独立 Image（Phaser Image 无子树），消费端与宿主同位同角同步
+    const lightTint = (group: number): number => GROUP_COLORS[Number(String(group)[0])] ?? 0xffffff; // 原版取组号首位
+    for (const m of level.beamers) {
+      const base = this.add.image(m.x + PAD, m.y + PAD, ATLAS_MECH, "beamer0000").setOrigin(0.5).setAngle(m.rotation).setDepth(3);
+      const light = this.add
+        .image(m.x + PAD, m.y + PAD, ATLAS_MECH, m.initialState === 1 ? "beamer_light_on0000" : "beamer_light_off0000")
+        .setOrigin(0.5)
+        .setAngle(m.rotation)
+        .setTint(lightTint(m.group))
+        .setDepth(3.01);
+      const g = this.add.graphics().setDepth(5);
+      const color = m.color === "blue" ? 0xaaeaff : m.color === "red" ? 0xff4d00 : 0xffff88; // bundle getColor
+      this.beamerViews.set(m.id, { base, light, g, color });
+    }
+    for (const m of level.rotMirrors) {
+      this.add.image(m.x + PAD, m.y + PAD, ATLAS_MECH, "rotmirror_circle0000").setOrigin(0.5).setDepth(0.5); // underGround 基座
+      const mirror = this.add.image(m.x + PAD, m.y + PAD, ATLAS_MECH, "rotmirror0000").setOrigin(0.5).setDepth(m.bringToBack ? 0.6 : 3);
+      const light = this.add
+        .image(m.x + PAD, m.y + PAD, ATLAS_MECH, "rotmirror_light_off0000")
+        .setOrigin(0.5)
+        .setTint(lightTint(m.group))
+        .setDepth(m.bringToBack ? 0.61 : 3.01);
+      this.rotMirrorViews.set(m.id, { mirror, light });
+    }
+    for (const m of level.boxMirrors) {
+      const img = this.add.image(m.x + PAD, m.y + PAD, ATLAS_MECH, "BoxMirror0000").setOrigin(0.5).setDepth(3);
+      if (m.rotation) img.setAngle(m.rotation);
+      this.boxMirrorViews.set(m.id, img);
+    }
+    for (const m of level.infiniteMirrors) {
+      this.add.image(m.x + PAD, m.y + PAD, ATLAS_MECH, "rotmirror_circle0000").setOrigin(0.5).setDepth(0.5);
+      const mirror = this.add.image(m.x + PAD, m.y + PAD, ATLAS_MECH, "infinitemirror0000").setOrigin(0.5).setDepth(3);
+      // 原版 on/off 同帧（infinitemirror_light_off 双名注册）
+      const light = this.add
+        .image(m.x + PAD, m.y + PAD, ATLAS_MECH, "infinitemirror_light_off0000")
+        .setOrigin(0.5)
+        .setTint(lightTint(m.group))
+        .setDepth(3.01);
+      this.infiniteMirrorViews.set(m.id, { mirror, light });
+    }
+    for (const m of level.lightPushers) {
+      const base = this.add.image(m.x + PAD, m.y + PAD, ATLAS_MECH, "lightpusher_base0000").setOrigin(0.5).setAngle(m.rotation).setDepth(3);
+      const light = this.add
+        .image(m.x + PAD, m.y + PAD, ATLAS_MECH, "lightpusher_light_off0000")
+        .setOrigin(0.5)
+        .setAngle(m.rotation)
+        .setTint(lightTint(m.group))
+        .setDepth(3.01);
+      this.lightPusherViews.set(m.id, { base, light, state: false });
+    }
+    for (const m of level.sliders) {
+      const track = this.add.image(m.x + PAD, m.y + PAD, ATLAS_MECH, "SliderTrack0000").setOrigin(0.5).setDepth(0.5);
+      track.displayWidth = m.widthPx; // 原版 n.width = o（轨宽 px）
+      const dot = this.add.image(m.x + PAD, m.y + PAD, ATLAS_MECH, "SliderDot0000").setOrigin(0.5).setDepth(4.95); // overChars
+      const light = this.add
+        .image(m.x + PAD, m.y + PAD, ATLAS_MECH, "slider_light_off0000")
+        .setOrigin(0.5)
+        .setTint(lightTint(m.group))
+        .setDepth(4.96);
+      this.sliderViews.set(m.id, { dot, light });
+    }
+    // 冰面覆盖层（原版 createIceGraphics：IceBoxLeft/Box/Right，行段左→右铺；初始 startFrozen 显）
+    for (const run of level.liquidRuns) {
+      if (run.kind !== "water") continue;
+      const c = this.add.container(0, 0).setDepth(1.5).setVisible(run.startFrozen);
+      const A = run.col1 - run.col0 + 1;
+      for (let i = 0; i < A; i++) {
+        const frame = i === 0 ? "IceBoxLeft0000" : i === A - 1 ? "IceBoxRight0000" : "IceBox0000";
+        c.add(this.add.image((run.col0 + i + 0.5) * 32 + PAD, (run.row + 0.5) * 32 + PAD, ATLAS_GROUND, frame).setOrigin(0.5));
+      }
+      this.iceViews.set(`${run.row}:${run.col0}`, c);
+    }
+
   }
 
   /** props 快照 key（"box:0"/"boxheavy:2"/"ball:3"）→ 视图 key（x 下标 / a 下标-boxes 数） */
@@ -1638,7 +1723,80 @@ export class GameScene extends Phaser.Scene {
     st.hangings?.forEach?.(this.cbHangings);
     st.pulleys?.forEach?.(this.cbPulleys);
     st.romans?.forEach?.(this.cbRomans);
+    // 灯光神庙（light 关非空）
+    st.beamers?.forEach?.(this.cbBeamers);
+    st.rotMirrors?.forEach?.(this.cbRotMirrors);
+    st.boxMirrors?.forEach?.(this.cbBoxMirrors);
+    st.infiniteMirrors?.forEach?.(this.cbInfiniteMirrors);
+    st.lightPushers?.forEach?.(this.cbLightPushers);
+    st.sliders?.forEach?.(this.cbSliders);
+    if (typeof st.liquids === "string" && st.liquids !== this.lastLiquids) {
+      this.lastLiquids = st.liquids;
+      let i = 0;
+      this.iceViews.forEach((v) => v.setVisible(st.liquids[i++] === "1"));
+    }
   }
+
+  private lastLiquids = "";
+
+  /** 光束折线（打包串 → LIGHTEN 双描线 10/0.3 + 2/1，bundle Beamer 绘制口径） */
+  private cbBeamers = (b: { state: number; pts: string }, id: string): void => {
+    const k = `L${id}`;
+    const v = this.beamerViews.get(k);
+    if (!v) return;
+    const on = Number(b.state) === 1;
+    v.g.clear();
+    v.light.setFrame(on ? "beamer_light_on0000" : "beamer_light_off0000");
+    if (!on || !b.pts) return;
+    const path = b.pts.split("|").map((seg) => seg.split(",").map(Number));
+    if (path.length < 2) return;
+    for (const [width, alpha] of [[10, 0.3], [2, 1]] as const) {
+      v.g.lineStyle(width, v.color, alpha);
+      v.g.beginPath();
+      v.g.moveTo(path[0][0] + PAD, path[0][1] + PAD);
+      for (let i = 1; i < path.length; i++) v.g.lineTo(path[i][0] + PAD, path[i][1] + PAD);
+      v.g.strokePath();
+    }
+  };
+
+  private cbRotMirrors = (bs: { x: number; y: number; angle: number }, id: string): void => {
+    const v = this.rotMirrorViews.get(`R${id}`);
+    if (!v) return;
+    const deg = (Number(bs.angle) || 0) * (180 / Math.PI);
+    v.mirror.setPosition(Number(bs.x) + PAD, Number(bs.y) + PAD).setAngle(deg);
+    v.light.setPosition(Number(bs.x) + PAD, Number(bs.y) + PAD).setAngle(deg);
+  };
+
+  private cbBoxMirrors = (bs: { x: number; y: number; angle: number }, id: string): void => {
+    const v = this.boxMirrorViews.get(`B${id}`);
+    if (!v) return;
+    v.setPosition(Number(bs.x) + PAD, Number(bs.y) + PAD).setAngle((Number(bs.angle) || 0) * (180 / Math.PI));
+  };
+
+  private cbInfiniteMirrors = (bs: { x: number; y: number; angle: number }, id: string): void => {
+    const v = this.infiniteMirrorViews.get(`M${id}`);
+    if (!v) return;
+    const deg = (Number(bs.angle) || 0) * (180 / Math.PI);
+    v.mirror.setPosition(Number(bs.x) + PAD, Number(bs.y) + PAD).setAngle(deg);
+    v.light.setPosition(Number(bs.x) + PAD, Number(bs.y) + PAD).setAngle(deg);
+  };
+
+  private cbLightPushers = (ps: { state: number }, id: string): void => {
+    const v = this.lightPusherViews.get(`P${id}`);
+    if (!v) return;
+    const on = Number(ps.state) === 1;
+    if (on !== v.state) {
+      v.state = on;
+      v.light.setFrame(on ? "lightpusher_light_on0000" : "lightpusher_light_off0000");
+    }
+  };
+
+  private cbSliders = (bs: { x: number; y: number }, id: string): void => {
+    const v = this.sliderViews.get(`S${id}`);
+    if (!v) return;
+    v.dot.setPosition(Number(bs.x) + PAD, Number(bs.y) + PAD);
+    v.light.setPosition(Number(bs.x) + PAD, Number(bs.y) + PAD);
+  };
 
   private stepLevers(s: { state: number; angle: number }, id: string): void {
     let e = this.leverSnaps.get(id);

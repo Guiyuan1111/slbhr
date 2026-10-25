@@ -115,6 +115,18 @@ export class WindState extends Schema {
   }
 }
 
+/** 光束状态：pts = 打包折线 "x,y|x,y"（屏幕 px 取整；客户端 LIGHTEN 双描线） */
+export class BeamState extends Schema {
+  state!: number;
+  pts!: string;
+
+  constructor() {
+    super();
+    this.state = 0;
+    this.pts = "";
+  }
+}
+
 /** 双门状态（每关恰一对，单条目足够） */
 export class DoorState extends Schema {
   fbAtDoor!: boolean;
@@ -150,6 +162,15 @@ export class RoomState extends Schema {
   hangings!: MapSchemaType<BodyState>;
   pulleys!: MapSchemaType<BodyState>;
   romans!: MapSchemaType<BodyState>;
+  // ---- 灯光神庙（forest 关恒空 map/空串，零编码开销）----
+  beamers!: MapSchemaType<BeamState>;
+  rotMirrors!: MapSchemaType<BodyState>;
+  boxMirrors!: MapSchemaType<BodyState>;
+  infiniteMirrors!: MapSchemaType<BodyState>;
+  lightPushers!: MapSchemaType<PusherState>;
+  sliders!: MapSchemaType<BodyState>;
+  /** 液体冻结旗标串（每行段一位 0/1；无液体=""） */
+  liquids!: string;
   doors!: DoorState;
 
   constructor() {
@@ -167,6 +188,13 @@ export class RoomState extends Schema {
     this.hangings = new MapSchema();
     this.pulleys = new MapSchema();
     this.romans = new MapSchema();
+    this.beamers = new MapSchema();
+    this.rotMirrors = new MapSchema();
+    this.boxMirrors = new MapSchema();
+    this.infiniteMirrors = new MapSchema();
+    this.lightPushers = new MapSchema();
+    this.sliders = new MapSchema();
+    this.liquids = "";
     this.doors = new DoorState();
   }
 }
@@ -242,6 +270,13 @@ defineTypes(RoomState, {
   hangings: { map: BodyState },
   pulleys: { map: BodyState },
   romans: { map: BodyState },
+  beamers: { map: BeamState },
+  rotMirrors: { map: BodyState },
+  boxMirrors: { map: BodyState },
+  infiniteMirrors: { map: BodyState },
+  lightPushers: { map: PusherState },
+  sliders: { map: BodyState },
+  liquids: "string",
   doors: DoorState,
 });
 
