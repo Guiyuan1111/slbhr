@@ -24,6 +24,12 @@
 今日（2026-10-20）起新条目写在文件顶部。
 
 ## 条目
+**更新**：2026-10-25 二（灯光神庙 0.3.45 可玩化里程碑——内核六机关+客户端全链+dark 黑幕+40 关视觉普查中位 90.26）
+① Phase 2/3 全记录见档卷 02/03 号档。内核：lightRaycast（transparent 穿透/mirror CrossVS 反射/sensor 标记）+六机关类+MechManager 逐组派发（|| 连续态 verbatim+无源组不重置）+液体冻融（蓝冻红融/角色上推 0.5m/余体转 static/冻面反光/iluminated 不清=原版 quirk）。level2：六类解析+55→水冻砖 remap。
+② 客户端：temple 前缀参数化（templeData/BootScene/TempleScene）、bgm_level_dark、六机关视图、schema 七字段（netDto 契约同步总量锚 57——测试拦下 BeamState 漏 defineTypes）、dark 黑幕 RT MULTIPLY+erase（设备光晕 1===state 门控——light_30 65.15→97.24 修正实证）。
+③ 普查：40 关加载初态中位 90.26（dark 关全数 94.6+，非 dark 87–92.7 带）；popup 纹理竞态=既有良性（forest 同流程同现）挂观察项。
+④ 挂账：light 通关路线产线/sfx 钩子/星级联调/dust 粒子。门禁：tsc 0/vitest 226/build/journey 7/7+4/4/det forest 48/48+light 40/40/netDto 22。
+
 **更新**：2026-10-25 一（**第二部（灯光神庙）立项开工——Phase 0 取证+Phase 1 数据入库/det 分部基线/CI 拆分，第一部零影响实证**）
 ① 用户令开发第二部并保第一部结果。对象=output/B（light，40 关+共享 forest_01 教学关，全 39×29）。01号档取证：机关谱普查（解析器同款口径）——6 类新机关全光机制（beamer/lightpusher/boxmirror/rotmirror/infinitemirror/slider），共用 10 类内核已有；A/B Objects.json 字节一致；资产全系列共享（每部仅差 TempleAssets/GameName/TempleHall 三件）；关卡带 per-level time，新增 dark 类型（bgmKey 待加映射）。
 ② Phase 1 落地：data/light 入库 41 文件+levels.ts LEVEL_DIRS 增目录；冒烟 40/40 解析+建世界+60 步零失败（unknown 谱与普查逐项吻合=记录不阻断语义实证）。det 门禁分部制：--filter 参数+比对段双计数缺陷修复+新锚 det-r0-light（40 关）；forest --compare r0-baseline --filter forest 48/48 ✓=零影响直接证据；CI determinism 拆双作业。level2.test 权威直方图锚收窄 forest_*（light_01 入 tutorials 曾破 48 计数）。

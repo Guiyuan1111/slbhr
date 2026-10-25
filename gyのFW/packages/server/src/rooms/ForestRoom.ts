@@ -751,7 +751,7 @@ export class ForestRoom extends Room<RoomState> {
       const pts = (b.beamPts ?? []).map((pt) => `${Math.round(m2px(pt.x))},${Math.round(m2px(pt.y))}`).join("|");
       if (bs.pts !== pts) bs.pts = pts;
     }
-    const syncBody = (map: any, key: string, body: any, angleSign: number): void => {
+    const syncBody = (map: any, key: string, body: any, angleSign: number, state?: number): void => {
       let bs = map.get(key);
       if (!bs) {
         bs = new BodyState();
@@ -761,8 +761,9 @@ export class ForestRoom extends Room<RoomState> {
       bs.x = Math.round(m2px(pos.x) * 10) / 10;
       bs.y = Math.round(m2px(pos.y) * 10) / 10;
       bs.angle = Math.round(angleSign * body.GetAngle() * 1000) / 1000;
+      if (state !== undefined) bs.state = state;
     };
-    for (let id = 0; id < mechs.rotMirrors.length; id++) syncBody(this.state.rotMirrors, String(id), mechs.rotMirrors[id].body, 1);
+    for (let id = 0; id < mechs.rotMirrors.length; id++) syncBody(this.state.rotMirrors, String(id), mechs.rotMirrors[id].body, 1, mechs.rotMirrors[id].state);
     for (let id = 0; id < mechs.boxMirrors.length; id++) syncBody(this.state.boxMirrors, String(id), mechs.boxMirrors[id].body, 1);
     for (let id = 0; id < mechs.infiniteMirrors.length; id++) syncBody(this.state.infiniteMirrors, String(id), mechs.infiniteMirrors[id].body, 1);
     for (let id = 0; id < mechs.lightPushers.length; id++) {

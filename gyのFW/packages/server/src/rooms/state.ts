@@ -247,6 +247,11 @@ defineTypes(WindState, {
   state: "number",
 });
 
+defineTypes(BeamState, {
+  state: "number",
+  pts: "string",
+});
+
 defineTypes(DoorState, {
   fbAtDoor: "boolean",
   wgAtDoor: "boolean",

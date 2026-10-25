@@ -96,6 +96,7 @@ const CHILD_CLASSES: Record<SchemaChildName, abstract new () => unknown> = {
   BodyState: state.BodyState,
   WindState: state.WindState,
   DoorState: state.DoorState,
+  BeamState: state.BeamState,
 };
 const CHILD_NAMES = Object.keys(CHILD_CLASSES) as SchemaChildName[];
 
@@ -128,16 +129,16 @@ describe("DTO 字段清单 ↔ 服务端注册字段逐一相符", () => {
     });
   }
 
-  it("RoomState: 14 个字段（3 标量 + 10 集合 + 1 引用）名与种类逐一相符", () => {
+  it("RoomState: 21 个字段（4 标量 + 16 集合 + 1 引用）名与种类逐一相符", () => {
     expect(diffSpec(ROOM_SNAPSHOT_FIELDS, registeredFields(state.RoomState))).toEqual({
       dtoMissing: [],
       serverMissing: [],
       typeMismatch: [],
     });
-    expect(Object.keys(ROOM_SNAPSHOT_FIELDS)).toHaveLength(14);
+    expect(Object.keys(ROOM_SNAPSHOT_FIELDS)).toHaveLength(21);
   });
 
-  it("总量锚：两侧字段总数一致且等于 48（2026-10-23 快照；扩字段须同步 DTO 并更新本锚）", () => {
+  it("总量锚：两侧字段总数一致且等于 57（2026-10-25 灯光神庙扩张：房间 7 字段+BeamState 2 字段；扩字段须同步 DTO 并更新本锚）", () => {
     const serverTotal =
       Object.keys(registeredFields(state.RoomState)).length +
       CHILD_NAMES.reduce((n, name) => n + Object.keys(registeredFields(CHILD_CLASSES[name])).length, 0);
@@ -145,7 +146,7 @@ describe("DTO 字段清单 ↔ 服务端注册字段逐一相符", () => {
       Object.keys(ROOM_SNAPSHOT_FIELDS).length +
       CHILD_NAMES.reduce((n, name) => n + Object.keys(CHILD_SNAPSHOT_FIELDS[name]).length, 0);
     expect(dtoTotal).toBe(serverTotal);
-    expect(serverTotal).toBe(48);
+    expect(serverTotal).toBe(57);
   });
 });
 
@@ -181,7 +182,7 @@ describe("任务点名覆盖面", () => {
     expect(CHILD_SNAPSHOT_FIELDS.DiamondState).toEqual({ collected: "boolean" });
   });
 
-  it("八条机关数值组全部挂对子类且字段相符（platforms/props/hangings/pulleys/romans 复用 BodyState）", () => {
+  it("十六条机关数值组全部挂对子类且字段相符（platforms/props/hangings/pulleys/romans 复用 BodyState）", () => {
     const server = registeredFields(state.RoomState);
     for (const [field, child] of Object.entries(ROOM_COLLECTION_CHILD)) {
       const decl = server[field];

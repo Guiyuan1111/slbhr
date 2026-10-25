@@ -119,6 +119,12 @@ export interface WindSnapshotDto {
   state: number;
 }
 
+/** 对应 state.ts `BeamState`（灯光神庙光束：state 0/1 + 打包折线 "x,y|x,y" 屏幕取整 px） */
+export interface BeamSnapshotDto {
+  state: number;
+  pts: string;
+}
+
 /**
  * 对应 state.ts `DoorState`（类声明 L119，defineTypes 注册 L222-229）。
  * 每关恰一对门、单条目（RoomState.doors 为引用非 Map）。
@@ -158,6 +164,15 @@ export interface RoomSnapshotDto {
   hangings: Readonly<Record<string, BodySnapshotDto>>;
   pulleys: Readonly<Record<string, BodySnapshotDto>>;
   romans: Readonly<Record<string, BodySnapshotDto>>;
+  // ---- 灯光神庙（forest 关恒空 map/空串）----
+  beamers: Readonly<Record<string, BeamSnapshotDto>>;
+  rotMirrors: Readonly<Record<string, BodySnapshotDto>>;
+  boxMirrors: Readonly<Record<string, BodySnapshotDto>>;
+  infiniteMirrors: Readonly<Record<string, BodySnapshotDto>>;
+  lightPushers: Readonly<Record<string, PusherSnapshotDto>>;
+  sliders: Readonly<Record<string, BodySnapshotDto>>;
+  /** 液体冻结旗标串（每行段一位 0/1） */
+  liquids: string;
   doors: DoorSnapshotDto;
 }
 
@@ -173,6 +188,7 @@ export type SchemaChildName =
   | "PusherState"
   | "BodyState"
   | "WindState"
+  | "BeamState"
   | "DoorState";
 
 export const PLAYER_SNAPSHOT_FIELDS: WireSpecOf<PlayerSnapshotDto> = {
@@ -239,6 +255,7 @@ export const CHILD_SNAPSHOT_FIELDS: Record<SchemaChildName, Readonly<Record<stri
   BodyState: BODY_SNAPSHOT_FIELDS,
   WindState: WIND_SNAPSHOT_FIELDS,
   DoorState: DOOR_SNAPSHOT_FIELDS,
+  BeamState: { state: "number", pts: "string" },
 };
 
 /** 房间字段 spec：标量 WireKind；集合 { map: 子类名 }；单引用 { ref: 子类名 } */
@@ -261,6 +278,13 @@ export const ROOM_SNAPSHOT_FIELDS = {
   hangings: { map: "BodyState" },
   pulleys: { map: "BodyState" },
   romans: { map: "BodyState" },
+  beamers: { map: "BeamState" },
+  rotMirrors: { map: "BodyState" },
+  boxMirrors: { map: "BodyState" },
+  infiniteMirrors: { map: "BodyState" },
+  lightPushers: { map: "PusherState" },
+  sliders: { map: "BodyState" },
+  liquids: "string",
   doors: { ref: "DoorState" },
 } as const satisfies Record<keyof RoomSnapshotDto, RoomFieldSpec>;
 
@@ -278,7 +302,7 @@ export function numericFieldNames(spec: Readonly<Record<string, unknown>>): read
   return Object.keys(spec).filter((k) => spec[k] === "number");
 }
 
-/** 房间根字段名清单（14） */
+/** 房间根字段名清单（21） */
 export const ROOM_SNAPSHOT_FIELD_NAMES: readonly string[] = fieldNamesOf(ROOM_SNAPSHOT_FIELDS);
 
 /** 各子状态类字段名清单（键=服务端类名） */
@@ -290,6 +314,7 @@ export const CHILD_SNAPSHOT_FIELD_NAMES: Record<SchemaChildName, readonly string
   BodyState: fieldNamesOf(BODY_SNAPSHOT_FIELDS),
   WindState: fieldNamesOf(WIND_SNAPSHOT_FIELDS),
   DoorState: fieldNamesOf(DOOR_SNAPSHOT_FIELDS),
+  BeamState: fieldNamesOf({ state: "number", pts: "string" }),
 };
 
 /** 房间集合字段 → 子状态类名（MapSchema 拓扑，供校验器遍历集合条目） */
@@ -304,6 +329,12 @@ export const ROOM_COLLECTION_CHILD: Readonly<Record<string, SchemaChildName>> = 
   hangings: "BodyState",
   pulleys: "BodyState",
   romans: "BodyState",
+  beamers: "BeamState",
+  rotMirrors: "BodyState",
+  boxMirrors: "BodyState",
+  infiniteMirrors: "BodyState",
+  lightPushers: "PusherState",
+  sliders: "BodyState",
 };
 
 /** 房间单引用字段（非集合非标量） */

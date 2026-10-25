@@ -1746,6 +1746,9 @@ export class GameScene extends Phaser.Scene {
 
   private lastLiquids = "";
   private lastBeamPts = new Map<string, number[][]>();
+  /** dark 关光晕门控：原版各设备 drawDarkMask 均 `1===this.state` 才画（light_30 对拍实证） */
+  private rotMirrorOn = new Map<string, boolean>();
+  private lightPusherOn = new Map<string, boolean>();
 
   /** 光束折线（打包串 → LIGHTEN 双描线 10/0.3 + 2/1，bundle Beamer 绘制口径） */
   private cbBeamers = (b: { state: number; pts: string }, id: string): void => {
@@ -1768,7 +1771,8 @@ export class GameScene extends Phaser.Scene {
     }
   };
 
-  private cbRotMirrors = (bs: { x: number; y: number; angle: number }, id: string): void => {
+  private cbRotMirrors = (bs: { x: number; y: number; angle: number; state?: number }, id: string): void => {
+    this.rotMirrorOn.set(`R${id}`, Number(bs.state) === 1);
     const v = this.rotMirrorViews.get(`R${id}`);
     if (!v) return;
     const deg = (Number(bs.angle) || 0) * (180 / Math.PI);
@@ -1794,6 +1798,7 @@ export class GameScene extends Phaser.Scene {
     const v = this.lightPusherViews.get(`P${id}`);
     if (!v) return;
     const on = Number(ps.state) === 1;
+    this.lightPusherOn.set(`P${id}`, on);
     if (on !== v.state) {
       v.state = on;
       v.light.setFrame(on ? "lightpusher_light_on0000" : "lightpusher_light_off0000");
@@ -1832,7 +1837,8 @@ export class GameScene extends Phaser.Scene {
       .setDepth(5.5);
   }
 
-  /** 逐帧黑幕（原版 updateDarkness：黑底 + 各光晕 erase；半径/锚点按各设备 drawDarkMask 逐字） */
+  /** 逐帧黑幕（原版 updateDarkness：黑底 + 各光晕 erase；全部设备光晕受 `1===state` 门控——
+   *  未点亮时仅角色有光环（light_30 对拍实证）；半径/锚点按各设备 drawDarkMask 逐字） */
   private drawDarkness(): void {
     const rt = this.darkRt;
     if (!rt || !this.darkHalo || this.templeType !== "dark") return;
@@ -1842,37 +1848,49 @@ export class GameScene extends Phaser.Scene {
     };
     rt.clear();
     rt.fill(0x000000, 1);
-    // 角色 r180（bundle character 20→180）
+    // 角色 r180（bundle character 20→180，无条件）
     if (this.pFb) halo(Number(this.pFb.x) + PAD, Number(this.pFb.y) + PAD, 180);
     if (this.pWg) halo(Number(this.pWg.x) + PAD, Number(this.pWg.y) + PAD, 180);
-    // 机关静态光晕（lever r50 / rotmirror·infinitemirror r160 / wind 双 r90 / pulley 双 r90）
-    for (const m of this.d.level.levers) halo(m.x + PAD, m.y + PAD, 50);
-    for (const m of this.d.level.rotMirrors) halo(m.x + PAD, m.y + PAD, 160);
-    for (const m of this.d.level.infiniteMirrors) halo(m.x + PAD, m.y + PAD, 160);
-    for (const m of this.d.level.winds) {
-      const rad = ((m.rotation + 90) * Math.PI) / 180;
-      halo(m.rect.x + m.rect.w / 2 + PAD - 36 * Math.sin(rad), m.rect.y + m.rect.h / 2 + PAD - 36 * Math.cos(rad), 90);
-      halo(m.rect.x + m.rect.w / 2 + PAD + 36 * Math.sin(rad), m.rect.y + m.rect.h / 2 + PAD + 36 * Math.cos(rad), 90);
-    }
-    for (const p of this.d.level.pulleys) {
-      for (const pt of [p.pts[1], p.pts[2]]) halo(pt.x + PAD, pt.y + PAD, 90);
-    }
-    this.platformViews.forEach((c, k) => {
+    // lever r50（state 1；晕心=杆尖≈stick 位）
+    this.leverViews.forEach((v) => {
+      if (v.lightOn) halo(v.stick.x, v.stick.y, 50);
+    });
+    // rotmirror r160（state 1）
+    this.rotMirrorViews.forEach((v, k) => {
+      if (this.rotMirrorOn.get(k)) halo(v.mirror.x, v.mirror.y, 160);
+    });
+    // wind 双 r90（state 1；±36px 沿 rotation+90 轴）
+    this.windViews.forEach((v, k) => {
+      if (!v.on) return;
+      const idx = Number(k.slice(1));
+      const def = this.d.level.winds[idx];
+      if (!def) return;
+      const rad = ((def.rotation + 90) * Math.PI) / 180;
+      const cx = def.rect.x + def.rect.w / 2 + PAD;
+      const cy = def.rect.y + def.rect.h / 2 + PAD;
+      halo(cx - 36 * Math.sin(rad), cy - 36 * Math.cos(rad), 90);
+      halo(cx + 36 * Math.sin(rad), cy + 36 * Math.cos(rad), 90);
+    });
+    // platform 双 r160（state 1；sprite.x ± 36px 沿 shapeRotation 轴——横台水平/竖台垂直）
+    this.platformLights.forEach((pl, k) => {
+      if (Number(pl.state) !== 1) return;
+      const c = this.platformViews.get(k);
       const idx = Number(k.slice(1));
       const def = this.d.level.platforms[idx];
-      if (!def) return;
-      const r = ((def.w > def.h ? def.w : def.h) / 2) * 0.6;
-      const rad = (c.angle * Math.PI) / 180;
-      halo(c.x - r * Math.cos(rad), c.y - r * Math.sin(rad), 160);
-      halo(c.x + r * Math.cos(rad), c.y + r * Math.sin(rad), 160);
+      if (!c || !def) return;
+      const axis = ((def.w < def.h ? 90 : 0) * Math.PI) / 180;
+      const dx = 36 * Math.cos(axis);
+      const dy = 36 * Math.sin(axis);
+      halo(c.x - dx, c.y - dy, 160);
+      halo(c.x + dx, c.y + dy, 160);
     });
-    // beamer：源 r90 + 光束 25px 描线（段外扩渐变擦除近似 lineCap round）
+    // beamer：state 1（有折线）时源 r90 + 光束 25px 描线擦除
     this.beamerViews.forEach((v, k) => {
+      const snap = this.lastBeamPts.get(k);
+      if (!snap) return;
       const idx = Number(k.slice(1));
       const def = this.d.level.beamers[idx];
       halo(def.x + PAD, def.y + PAD, 90);
-      const snap = this.lastBeamPts.get(k);
-      if (!snap) return;
       for (let i = 1; i < snap.length; i++) {
         const x0 = snap[i - 1][0] + PAD;
         const y0 = snap[i - 1][1] + PAD;
