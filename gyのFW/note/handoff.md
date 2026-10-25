@@ -27,7 +27,7 @@
 **更新**：2026-10-25 一（**第二部（灯光神庙）立项开工——Phase 0 取证+Phase 1 数据入库/det 分部基线/CI 拆分，第一部零影响实证**）
 ① 用户令开发第二部并保第一部结果。对象=output/B（light，40 关+共享 forest_01 教学关，全 39×29）。01号档取证：机关谱普查（解析器同款口径）——6 类新机关全光机制（beamer/lightpusher/boxmirror/rotmirror/infinitemirror/slider），共用 10 类内核已有；A/B Objects.json 字节一致；资产全系列共享（每部仅差 TempleAssets/GameName/TempleHall 三件）；关卡带 per-level time，新增 dark 类型（bgmKey 待加映射）。
 ② Phase 1 落地：data/light 入库 41 文件+levels.ts LEVEL_DIRS 增目录；冒烟 40/40 解析+建世界+60 步零失败（unknown 谱与普查逐项吻合=记录不阻断语义实证）。det 门禁分部制：--filter 参数+比对段双计数缺陷修复+新锚 det-r0-light（40 关）；forest --compare r0-baseline --filter forest 48/48 ✓=零影响直接证据；CI determinism 拆双作业。level2.test 权威直方图锚收窄 forest_*（light_01 入 tutorials 曾破 48 计数）。
-③ 环境注记：同机另一会话 ruffle-web 测试（42 webkit 进程）致 journey 渲染帧饥饿多次超时（DOM 仪表化诊断：按钮几何恒定/零动画——非代码问题；13:08 同客户端代码 7/7），后台负载窗口重试环跟踪。档卷 note/evidence/2026-10-25-light-temple/（00-INDEX+01号档+tools/smoke.mjs）。
+③ 环境注记（已结案）：同机另一会话 ruffle-web 测试（42 webkit 进程，负载峰值 17）致 journey 渲染帧饥饿多次超时——仪表化诊断定谳（按钮几何恒定/零动画/非 busy，rAF 实测 1.7fps vs 空闲 21fps=合成器饿死非代码问题）；同机空闲后复跑 journey 7/7+deathretry 4/4 ALL PASS。教训：同机并行会话重度浏览器负载下 e2e 门禁不可判，先仪表化排除代码因素再等窗口重跑。档卷 note/evidence/2026-10-25-light-temple/（00-INDEX+01号档+tools/smoke.mjs）。
 **更新**：2026-10-24 六（勘误续作手册 §2——六部原版快照全在本地，"需 [人工] 获取"系误记）
 ① 用户指正后实测：`Fireboy-and-Watergirl/output/<A..F>` = forest 48（本作）/ light 41 / ice 53 / crystal 39 / elements 39（七元素小关集）/ fairytales 32，关卡数与各部 temple.json 对账一致；A–E 同构（gameIndex.html+js/init.<hash>.js），F 异构（index.htm+fairy-tales.min.js 单文件，反解钩子先验）。
 ② 手册 §2 已改为"六部清单表+取证即反解对应快照"，Phase 0 同步勘误。续作选部即开工，无外部依赖。
