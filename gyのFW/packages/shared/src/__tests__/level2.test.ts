@@ -29,8 +29,10 @@ function loadLevel(id: string): LevelData {
 }
 
 function allLevelIds(): string[] {
+  // 第二部 light 入库（2026-10-25）后 tutorials 目录含 light_01——本 describe 的
+  // 48 关冒烟/直方图锚是 forest 战役权威扫描，枚举只认 forest_*，light 另立档锚。
   return [
-    ...readdirSync(`${ROOT}/data/tutorials/levels`).filter((f) => f.endsWith(".json")),
+    ...readdirSync(`${ROOT}/data/tutorials/levels`).filter((f) => f.endsWith(".json") && f.startsWith("forest_")),
     ...readdirSync(`${ROOT}/data/forest/levels`).filter((f) => f.endsWith(".json")),
   ].map((f) => f.replace(".json", ""));
 }

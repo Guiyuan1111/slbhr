@@ -19,8 +19,14 @@
  * 用法：
  *   node --import tsx benchmark/perf-determinism.mjs --save <label>
  *   node --import tsx benchmark/perf-determinism.mjs --compare <label>
+ *   node --import tsx benchmark/perf-determinism.mjs --compare <label> --filter <前缀>
  *   DET_WORKERS=0 node --import tsx benchmark/perf-determinism.mjs   # 单进程内联（旧串行）
  * 产物：benchmark/results/det-<label>.json
+ *
+ * 分部基线（2026-10-25 第二部 light 入库起）：--filter <前缀> 只跑/只比该前缀关卡
+ * （如 --filter forest 配 r0-baseline、--filter light 配 r0-light）。多部共库后全量
+ * 一次跑会含未入基线的新部关卡——基线按部分文件，比对按前缀闭合（双向：本次未跑的
+ * 基线关同样计漂移）。
  */
 import { createHash } from "node:crypto";
 import { writeFileSync, readFileSync, existsSync } from "node:fs";
@@ -55,6 +61,8 @@ const WORKERS = resolveWorkers();
 
 const argSave = process.argv.includes("--save") ? process.argv[process.argv.indexOf("--save") + 1] : undefined;
 const argCompare = process.argv.includes("--compare") ? process.argv[process.argv.indexOf("--compare") + 1] : undefined;
+/** 分部过滤前缀（--filter light / --filter forest；缺省 undefined=全量） */
+const argFilter = process.argv.includes("--filter") ? process.argv[process.argv.indexOf("--filter") + 1] : undefined;
 
 /** 确定性输入脚本（idle / scripted 两模式） */
 function scriptInputs(mode, step) {
@@ -122,8 +130,13 @@ if (!isMainThread) {
 }
 
 async function main() {
-  const ids = listLevelIds().sort();
-  console.log(`确定性门禁：${ids.length} 关 × ${STEPS} 步 × (idle + scripted)` + (WORKERS > 1 ? `（worker 池 ×${WORKERS}）` : ""));
+  let ids = listLevelIds().sort();
+  if (argFilter != null) {
+    if (!/^[A-Za-z0-9_-]+$/.test(argFilter)) throw new Error(`--filter 非法: "${argFilter}"`);
+    ids = ids.filter((id) => id.startsWith(argFilter));
+    if (ids.length === 0) throw new Error(`--filter ${argFilter}: 无匹配关卡`);
+  }
+  console.log(`确定性门禁：${ids.length} 关${argFilter != null ? `（--filter ${argFilter}）` : ""} × ${STEPS} 步 × (idle + scripted)` + (WORKERS > 1 ? `（worker 池 ×${WORKERS}）` : ""));
   const rows = [];
   // ms 只进日志不进 rows（payload JSON 与旧串行版字节等价）
   const pushRow = ({ ms, ...rest }) => {
@@ -187,8 +200,11 @@ async function main() {
         console.log(`${cur.id}: ✗ 不一致 idle=${ref.idle === cur.idle ? "同" : "异"} scripted=${ref.scripted === cur.scripted ? "同" : "异"}`);
       }
     }
+    // 旧第二循环对"基线缺关"与第一循环重复计数（40 新关被记 80 漂移，2026-10-25
+    //  light 入库实测）——改为只报基线有而本次未跑的关（--filter 下的反向闭合）。
     const baseIds = new Set(base.rows.map((r) => r.id));
-    for (const id of ids) if (!baseIds.has(id)) { console.log(`${id}: 快照无此关`); diff++; }
+    const rowIds = new Set(rows.map((r) => r.id));
+    for (const id of baseIds) if (!rowIds.has(id)) { console.log(`${id}: 基线有此关但本次未跑`); diff++; }
     console.log(diff === 0 ? `\n✓ 全部 ${rows.length} 关位级一致（对比 ${argCompare}）` : `\n✗ ${diff} 关出现位级漂移`);
     process.exitCode = diff === 0 ? 0 : 1;
   }
