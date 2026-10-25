@@ -12,8 +12,9 @@ import { parseLevel, type LevelData } from "@fw/shared/level2";
 /** packages/server/src → 项目根 */
 const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 
-/** 按顺序查找的关卡目录（相对项目根） */
-const LEVEL_DIRS = ["data/forest/levels", "data/tutorials/levels"];
+/** 按顺序查找的关卡目录（相对项目根）。light 系第二部（2026-10-25 起入库）；
+ *  forest_01/light_01 等首关在 tutorials 目录，故其优先级最低兜底。 */
+const LEVEL_DIRS = ["data/forest/levels", "data/light/levels", "data/tutorials/levels"];
 
 export interface LevelBundle {
   id: string;
