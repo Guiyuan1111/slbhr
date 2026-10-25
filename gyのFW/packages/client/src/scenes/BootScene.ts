@@ -35,7 +35,7 @@ export const FONT_MAIN = "font";
 export const PLAYER_SCALE = 0.95;
 
 /** 当前神庙（URL ?level= 关卡前缀；Boot 期即可判——第二部 light 换 TempleAssets/TempleHall/GameName） */
-function currentTemple(): "forest" | "light" {
+function currentTemple(): "forest" | "light" | "ice" {
   const level = new URLSearchParams(location.search).get("level");
   return templeIdOf(level);
 }
@@ -115,9 +115,10 @@ export class BootScene extends Phaser.Scene {
     // 原版画布内时钟的位图字（font 48 基准，LevelUI Clock 用 24 号 = 半缩放）
     this.load.bitmapFont(FONT_MAIN, "/assets/fonts/chinese/font.png", "/assets/fonts/chinese/font.fnt");
     // 独立图片（0.3.12 起开始界面引用，此前漏载致缺纹理静默空白——差距审计 P0）
-    this.load.image("TempleHall", `/assets/images/TempleHall${currentTemple() === "light" ? "Light" : "Forest"}.jpg`);
+    const suffix = { forest: "Forest", light: "Light", ice: "Ice" }[currentTemple()];
+    this.load.image("TempleHall", `/assets/images/TempleHall${suffix}.jpg`);
     this.load.image("Beam", "/assets/images/Beam.png");
-    this.load.image("GameName", `/assets/images/GameName${currentTemple() === "light" ? "Light" : "Forest"}.png`);
+    this.load.image("GameName", `/assets/images/GameName${suffix}.png`);
     this.load.image("KiziLogo", "/assets/images/branding/branding_logo_kizi.png");
 
     // 音频仅装 menu 批（bgm_menu）；游戏内 18 键 ≈2.0MB（0.3.21 起 Menu 冷启动不再为其付出

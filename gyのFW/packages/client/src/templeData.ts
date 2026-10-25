@@ -18,13 +18,13 @@ export interface TempleEntry {
 }
 
 /** 关卡 id → 神庙目录名（第二部 light 入驻：/data/<temple>/temple.json；未知前缀回 forest） */
-export function templeIdOf(levelId: string | null | undefined): "forest" | "light" {
-  const m = /^(forest|light)_/.exec(levelId ?? "");
-  return (m?.[1] as "forest" | "light") ?? "forest";
+export function templeIdOf(levelId: string | null | undefined): "forest" | "light" | "ice" {
+  const m = /^(forest|light|ice)_/.exec(levelId ?? "");
+  return (m?.[1] as "forest" | "light" | "ice") ?? "forest";
 }
 
 /** 逐庙单例（forest/light 各一份；失败清对应项支持重试） */
-const pendings = new Map<string, Promise<TempleEntry[]>>();
+const pendings = new Map<string, Promise<TempleEntry[]>>(); // 逐庙（forest/light/ice）
 
 /** 取 temple.json levels 数组（levelId 决定神庙目录，缺省 forest；成功时同庙页面生命周期内只
  *  fetch 一次；失败返回 [] 并清缓存，下次调用重新请求——避免一次网络抖动把空数组永久固化） */

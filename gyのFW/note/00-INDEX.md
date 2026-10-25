@@ -15,6 +15,7 @@
 | 逐版改动 | [release/](release/)（`0.3.X.md`） |
 | **续作开发手册（经验总结）** | [next-games-playbook.md](next-games-playbook.md) | 森林神庙收官复盘：可复用底盘/机关谱/工具链地图/方法论八条/踩坑清单/续作 SOP |
 | **灯光神庙（第二部）开发档卷** | [evidence/2026-10-25-light-temple/00-INDEX.md](evidence/2026-10-25-light-temple/00-INDEX.md) | 2026-10-25 立项：Phase 0 取证（6 类光新机关）+Phase 1 数据入库/det 分部基线 |
+| **冰雪神庙（第三部）开发档卷** | [evidence/2026-10-25-ice-temple/00-INDEX.md](evidence/2026-10-25-ice-temple/00-INDEX.md) | 2026-10-25 立项：Phase 0 取证（timedpusher 唯一新机关）+Phase 1 数据入库/r0-ice 锚 |
 
 ## 研究域（详情进各域 00-INDEX）
 
