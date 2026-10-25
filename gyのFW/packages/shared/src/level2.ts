@@ -726,7 +726,7 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
       continue;
     }
 
-    if (name.startsWith("Tutorial_")) {
+    if (name.startsWith("Tutorial_") || name === "Tutorial") { // light 部层名无变体后缀（light_01 实测）
       const steps = new Map<number, TutorialStep>();
       for (const o of layer.objects ?? []) {
         const stepId = num(o.properties?.id, -1);
