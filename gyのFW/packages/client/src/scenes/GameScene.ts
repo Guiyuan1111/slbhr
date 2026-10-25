@@ -212,6 +212,13 @@ export class GameScene extends Phaser.Scene {
   //  各设备/角色以 lighter 白径向梯度挖洞——我方以 RenderTexture erase 等价实现）----
   private darkRt: Phaser.GameObjects.RenderTexture | null = null;
   private darkHalo: Phaser.GameObjects.Image | null = null;
+  /** Round B 静态/动态分层：静态晕擦除图案缓存层（与 darkRt 同尺寸/同位/同原点，不上屏）。
+   *  rotmirror/wind/platform 的晕画进本层（erase 只在此三者点亮集合/位姿变化时整层重画），
+   *  主 RT 每帧 fill 黑后 erase 本层一次，再补角色/杆/光束动态晕——免逐帧重复 erase。 */
+  private staticHaloRt: Phaser.GameObjects.RenderTexture | null = null;
+  /** 上次画入静态层的签名（点亮 key 集合+点亮平台位姿；平台运行时晕随体动，位置入签名保锚点语义）。
+   *  null=尚未画过（首帧必画一次）；空串=本关无静态晕（跳过每帧 erase 本层）。 */
+  private staticHaloSig: string | null = null;
   private windViews = new Map<string, WindView>();
   private hangingViews = new Map<string, HangingView>();
   private pulleyViews = new Map<string, PulleyView>();
@@ -1840,10 +1847,19 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0)
       .setBlendMode(Phaser.BlendModes.MULTIPLY)
       .setDepth(5.5);
+    // 静态晕缓存层：同尺寸/同位/同原点（本地坐标 1:1 对齐 darkRt），不上屏、不参与混合；
+    // 生命周期随 darkRt（同处创建，幂等条件一致）
+    this.staticHaloRt = this.add
+      .renderTexture(PAD - 32, PAD - 32, level.widthPx + 64, level.heightPx + 64)
+      .setOrigin(0)
+      .setVisible(false);
+    this.staticHaloSig = null;
   }
 
   /** 逐帧黑幕（原版 updateDarkness：黑底 + 各光晕 erase；全部设备光晕受 `1===state` 门控——
-   *  未点亮时仅角色有光环（light_30 对拍实证）；半径/锚点按各设备 drawDarkMask 逐字） */
+   *  未点亮时仅角色有光环（light_30 对拍实证）；半径/锚点按各设备 drawDarkMask 逐字）。
+   *  Round B 静态/动态分层：rotmirror/wind/platform 晕擦除图案缓存于 staticHaloRt（状态翻转才重画），
+   *  每帧只 erase 静态层一次，再补角色/lever/beamer 动态晕（erase 按源 alpha 乘性叠加，次序无关）。 */
   private drawDarkness(): void {
     const rt = this.darkRt;
     if (!rt || !this.darkHalo || this.templeType !== "dark") return;
@@ -1851,43 +1867,17 @@ export class GameScene extends Phaser.Scene {
       this.darkHalo!.setPosition(x, y).setScale((r * 2) / 256);
       rt.erase(this.darkHalo!, x - r, y - r);
     };
+    this.drawStaticHalos();
     rt.clear();
     rt.fill(0x000000, 1);
+    // 静态晕整层一次擦除（空签名=本关无静态晕，免一次空 erase 的 capture+blit）
+    if (this.staticHaloSig !== "") rt.erase(this.staticHaloRt!, 0, 0);
     // 角色 r180（bundle character 20→180，无条件）
     if (this.pFb) halo(Number(this.pFb.x) + PAD, Number(this.pFb.y) + PAD, 180);
     if (this.pWg) halo(Number(this.pWg.x) + PAD, Number(this.pWg.y) + PAD, 180);
-    // lever r50（state 1；晕心=杆尖≈stick 位）
+    // lever r50（state 1；晕心=杆尖≈stick 位——杆微动，留动态层逐帧擦）
     this.leverViews.forEach((v) => {
       if (v.lightOn) halo(v.stick.x, v.stick.y, 50);
-    });
-    // rotmirror r160（state 1）
-    this.rotMirrorViews.forEach((v, k) => {
-      if (this.rotMirrorOn.get(k)) halo(v.mirror.x, v.mirror.y, 160);
-    });
-    // wind 双 r90（state 1；±36px 沿 rotation+90 轴）
-    this.windViews.forEach((v, k) => {
-      if (!v.on) return;
-      const idx = Number(k.slice(1));
-      const def = this.d.level.winds[idx];
-      if (!def) return;
-      const rad = ((def.rotation + 90) * Math.PI) / 180;
-      const cx = def.rect.x + def.rect.w / 2 + PAD;
-      const cy = def.rect.y + def.rect.h / 2 + PAD;
-      halo(cx - 36 * Math.sin(rad), cy - 36 * Math.cos(rad), 90);
-      halo(cx + 36 * Math.sin(rad), cy + 36 * Math.cos(rad), 90);
-    });
-    // platform 双 r160（state 1；sprite.x ± 36px 沿 shapeRotation 轴——横台水平/竖台垂直）
-    this.platformLights.forEach((pl, k) => {
-      if (Number(pl.state) !== 1) return;
-      const c = this.platformViews.get(k);
-      const idx = Number(k.slice(1));
-      const def = this.d.level.platforms[idx];
-      if (!c || !def) return;
-      const axis = ((def.w < def.h ? 90 : 0) * Math.PI) / 180;
-      const dx = 36 * Math.cos(axis);
-      const dy = 36 * Math.sin(axis);
-      halo(c.x - dx, c.y - dy, 160);
-      halo(c.x + dx, c.y + dy, 160);
     });
     // beamer：state 1（有折线）时源 r90 + 光束 25px 描线擦除
     this.beamerViews.forEach((v, k) => {
@@ -1910,6 +1900,65 @@ export class GameScene extends Phaser.Scene {
         this.darkHalo!.setAngle(0).setScale(1);
       }
     });
+  }
+
+  /** 静态晕层重画（Round B）：rotmirror r160 / wind 双 r90 / platform 双 r160——半径/锚点/门控
+   *  与原逐帧 erase 逐字同源（晕心/偏移/state 门控不动，只挪了擦除目标层）。每帧比对点亮
+   *  签名（点亮 key 集合+点亮平台位姿——平台运行时晕随体动，必须跟着重画保锚点语义），
+   *  一致即跳过整层重画；beginDraw/batchDraw/endDraw 单批画入，一次 capture+blit。 */
+  private drawStaticHalos(): void {
+    const srt = this.staticHaloRt;
+    if (!srt || !this.darkHalo) return;
+    let sig = "";
+    this.rotMirrorViews.forEach((_v, k) => {
+      if (this.rotMirrorOn.get(k)) sig += k + ";";
+    });
+    this.windViews.forEach((v, k) => {
+      if (v.on) sig += k + ";";
+    });
+    this.platformLights.forEach((pl, k) => {
+      if (Number(pl.state) !== 1) return;
+      const c = this.platformViews.get(k);
+      if (c) sig += k + ":" + c.x + "," + c.y + ";";
+    });
+    if (this.staticHaloSig === sig) return;
+    this.staticHaloSig = sig;
+    srt.clear();
+    const shalo = (x: number, y: number, r: number): void => {
+      this.darkHalo!.setPosition(x, y).setScale((r * 2) / 256);
+      srt.batchDraw(this.darkHalo!, x - r, y - r);
+    };
+    srt.beginDraw();
+    // rotmirror r160（state 1）
+    this.rotMirrorViews.forEach((v, k) => {
+      if (this.rotMirrorOn.get(k)) shalo(v.mirror.x, v.mirror.y, 160);
+    });
+    // wind 双 r90（state 1；±36px 沿 rotation+90 轴）
+    this.windViews.forEach((v, k) => {
+      if (!v.on) return;
+      const idx = Number(k.slice(1));
+      const def = this.d.level.winds[idx];
+      if (!def) return;
+      const rad = ((def.rotation + 90) * Math.PI) / 180;
+      const cx = def.rect.x + def.rect.w / 2 + PAD;
+      const cy = def.rect.y + def.rect.h / 2 + PAD;
+      shalo(cx - 36 * Math.sin(rad), cy - 36 * Math.cos(rad), 90);
+      shalo(cx + 36 * Math.sin(rad), cy + 36 * Math.cos(rad), 90);
+    });
+    // platform 双 r160（state 1；sprite.x ± 36px 沿 shapeRotation 轴——横台水平/竖台垂直）
+    this.platformLights.forEach((pl, k) => {
+      if (Number(pl.state) !== 1) return;
+      const c = this.platformViews.get(k);
+      const idx = Number(k.slice(1));
+      const def = this.d.level.platforms[idx];
+      if (!c || !def) return;
+      const axis = ((def.w < def.h ? 90 : 0) * Math.PI) / 180;
+      const dx = 36 * Math.cos(axis);
+      const dy = 36 * Math.sin(axis);
+      shalo(c.x - dx, c.y - dy, 160);
+      shalo(c.x + dx, c.y + dy, 160);
+    });
+    srt.endDraw();
   }
 
   private stepLevers(s: { state: number; angle: number }, id: string): void {
