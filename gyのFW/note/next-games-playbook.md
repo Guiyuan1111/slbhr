@@ -157,3 +157,15 @@ TEMP 用后必清；保真是默认、优化是例外且逐条经用户裁定；
 ## 7. 维护
 
 续作立项时在本文件追加该作 §8"取证要点"；与 [00-INDEX.md](00-INDEX.md) 互链登记。
+
+---
+
+## §8 灯光神庙（light，第二部）取证要点（2026-10-25 立项，进行中）
+
+- 快照：`output/B`，40 自有关（light_01…light_40，无 bonus）+共享 forest_01 教学关；全 39×29 无超高关。
+- 关卡类型四种：general/puzzle/speed/**dark**（5 关，配 LevelMusic_dark.mp3）——bgmKey 需加 dark 映射；每关自带 time/mobileTime。
+- 新机关 6 类全光机制：beamer(21)/lightpusher(35)/boxmirror(21)/rotmirror(17)/infinitemirror(12)/slider(12，非gid polyline+group)。
+  A/B 的 Objects.json 字节一致（类型名在共享图块集），level2 default 分支已预留注释。
+- 资产：全系列共享基础资产+音频（A/B 音频树一致 33 文件），每部仅差 TempleAssets 图集+GameName+TempleHall 三件。
+- det 基线分部制：r0-baseline(forest 48) / r0-light(40) 分文件，`--filter <前缀>` 闭合比对（详见档卷 01号档 §5）。
+- 档卷：[evidence/2026-10-25-light-temple/00-INDEX.md](evidence/2026-10-25-light-temple/00-INDEX.md)。
