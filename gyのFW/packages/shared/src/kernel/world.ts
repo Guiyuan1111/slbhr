@@ -14,6 +14,7 @@ import type { LevelData } from "../level2.js";
 import type { Role } from "../types.js";
 import type { B2 } from "./b2.js";
 import { b2, m2px } from "./b2.js";
+import { GROUND_TYPE } from "../level2.js";
 import { buildLevelWorld, type BuiltWorld, type DoorInfo } from "./build.js";
 import { Character, type AnimState, type InputState } from "./character.js";
 import { buildMechanisms, type MechEvent, type Mechanisms } from "./mechanisms.js";
@@ -30,6 +31,8 @@ export type WorldEvent =
   | { type: "diamond"; role: Role; kind: "red" | "blue" | "silver" | "fbwg" }
   | { type: "door-open"; role: Role }
   | { type: "mech"; event: MechEvent }
+  | { type: "liquid-frozen" }
+  | { type: "liquid-melted" }
   | { type: "win"; data: WinData };
 
 export interface WinData {
@@ -122,6 +125,12 @@ export class World {
       ]);
     }
     this.installContactListener();
+    // startFrozen（type55 冰面）：初始冻结（原版 _.delay(initialFreeze,10)——含一步 settle 物理，
+    // light 数据无 55 砖不走此路；语义保留，02号档 §10-5）
+    const startEvents: WorldEvent[] = [];
+    for (const liq of this.built.liquids) {
+      if (liq.startFrozen && liq.liquidType === GROUND_TYPE.WATER) this.freezeLiquid(liq, startEvents);
+    }
   }
 
   private installContactListener(): void {
@@ -183,6 +192,13 @@ export class World {
     hangings: Array<{ id: number; x: number; y: number; angle: number }>;
     pulleys: Array<{ id: number; a: { x: number; y: number; angle: number }; b: { x: number; y: number; angle: number } }>;
     romans: Array<{ id: number; x: number; y: number; angle: number }>;
+    beamers: Array<{ id: number; state: number; pts: Array<{ x: number; y: number }> }>;
+    rotMirrors: Array<{ id: number; x: number; y: number; angle: number }>;
+    boxMirrors: Array<{ id: number; x: number; y: number; angle: number }>;
+    infiniteMirrors: Array<{ id: number; angle: number }>;
+    lightPushers: Array<{ id: number; group: number; state: number; x: number; y: number }>;
+    sliders: Array<{ id: number; x: number; y: number }>;
+    liquidsFrozen: boolean[];
   } {
     return {
       levers: this.mechs.levers.map((l, id) => ({ id, group: l.group, state: l.state, angle: (l.angleDeg() * Math.PI) / 180 })),
@@ -216,6 +232,30 @@ export class World {
         const pos = r.bar.GetPosition();
         return { id, x: m2px(pos.x), y: m2px(pos.y), angle: r.bar.GetAngle() };
       }),
+      // 灯光神庙：光束折线转屏幕 px（m2px=phys 逆）；角度同 lever 约定（体角原值）
+      beamers: this.mechs.beamers.map((b, id) => ({
+        id,
+        state: b.state,
+        pts: (b.beamPts ?? []).map((pt) => ({ x: m2px(pt.x), y: m2px(pt.y) })),
+      })),
+      rotMirrors: this.mechs.rotMirrors.map((m, id) => {
+        const pos = m.body.GetPosition();
+        return { id, x: m2px(pos.x), y: m2px(pos.y), angle: m.body.GetAngle() };
+      }),
+      boxMirrors: this.mechs.boxMirrors.map((m, id) => {
+        const pos = m.body.GetPosition();
+        return { id, x: m2px(pos.x), y: m2px(pos.y), angle: m.body.GetAngle() };
+      }),
+      infiniteMirrors: this.mechs.infiniteMirrors.map((m, id) => ({ id, angle: m.body.GetAngle() })),
+      lightPushers: this.mechs.lightPushers.map((m, id) => {
+        const pos = m.body.GetPosition();
+        return { id, group: m.group, state: m.state, x: m2px(pos.x), y: m2px(pos.y) };
+      }),
+      sliders: this.mechs.sliders.map((m, id) => {
+        const pos = m.body.GetPosition();
+        return { id, x: m2px(pos.x), y: m2px(pos.y) };
+      }),
+      liquidsFrozen: this.built.liquids.map((l) => l.frozen),
     };
   }
 
@@ -269,6 +309,30 @@ export class World {
       for (const ev of mechEvents) {
         events.push({ type: "mech", event: ev });
         this.mechs.manager.deviceChanged();
+      }
+      // 灯光神庙设备链（light 非空时）：逆创建序逐设备（原版 sprite 更新序探针口径）——
+      // Beamer.update（raycast 标记 illumination）→ LightPusher.checkState（消费+派发）→
+      // Slider.checkState（连续 state 派发）→ RotMirror.update（钳角）；InfiniteMirror 走信号。
+      // 派发即调 deviceChanged(group)（原版 signal.dispatch 同步语义）。
+      if (this.mechs.lightDevices.length > 0) {
+        const lightEvents: MechEvent[] = [];
+        for (let i = this.mechs.lightDevices.length - 1; i >= 0; i--) {
+          const d = this.mechs.lightDevices[i];
+          if (d.beamer) d.beamer.update();
+          else if (d.rotMirror) d.rotMirror.update();
+          else if (d.lightPusher) d.lightPusher.checkState(lightEvents);
+          else if (d.slider) d.slider.checkState(lightEvents);
+        }
+        for (const ev of lightEvents) {
+          events.push({ type: "mech", event: ev });
+          this.mechs.manager.deviceChanged(ev.group);
+        }
+        // 液体光照检查（原版 Liquid.update：蓝照水冻/红照水融，iluminated 不清=原版 quirk）
+        for (const liq of this.built.liquids) {
+          if (liq.liquidType !== GROUND_TYPE.WATER || liq.sensorLp.iluminated == null) continue;
+          if (liq.sensorLp.iluminated === "blue") this.freezeLiquid(liq, events);
+          else if (liq.sensorLp.iluminated === "red") this.meltLiquid(liq, events);
+        }
       }
       this.updateDoors(dt, events);
     }
@@ -350,6 +414,17 @@ export class World {
       return;
     }
 
+    // ---- 液面 sensor 接触体（原版 Liquid setFixtureContactCallback @1664830：
+    //      begin 入表/end 出表；freeze 时上推角色、冻结其余体）----
+    if (ud && typeof ud === "object" && ud.type === "liquid") {
+      const liq = this.built.liquids.find((l) => this.hasFixture(l.body, fix));
+      if (!liq) return;
+      const idx = liq.nearBodies.findIndex((e) => e.body === otherBody);
+      if (begin && idx < 0) liq.nearBodies.push({ id: liq.nearBodies.length, body: otherBody });
+      else if (!begin && idx >= 0) liq.nearBodies.splice(idx, 1);
+      return;
+    }
+
     // ---- 钻石（原版 Diamond 的 sensor 回调，仅 begin）----
     if (ud && typeof ud === "object" && ud.type === "diamond") {
       if (!begin) return;
@@ -407,6 +482,38 @@ export class World {
       // 站门期间持续为真（signal 每帧驱动 checkEndGame），离开即随扫帧回退
       door.isUp = door.frac >= 21;
     }
+  }
+
+  /** 液面冻结（原版 Liquid.freeze @1667963 逐字）：冰面 mask→16（仅对角色层）；
+   *  nearBodies：角色上推 0.5m+唤醒，其余体转 static；液面 sensor lp 翻 mirror（冻面反光） */
+  private freezeLiquid(liq: any, events: WorldEvent[]): void {
+    if (liq.frozen) return;
+    liq.frozen = true;
+    liq.iceFixture.SetFilterData({ categoryBits: 1, maskBits: 16 });
+    for (const { body } of liq.nearBodies) {
+      const role = this.roleOfBody(body);
+      if (role) {
+        const pos = body.GetPosition();
+        body.SetPosition(new this.B.b2Vec2(pos.x, pos.y + 0.5));
+        body.SetAwake(true);
+      } else {
+        body.SetType(this.B.b2BodyType.b2_staticBody);
+        liq.frozenBodies.push(body);
+      }
+    }
+    liq.sensorLp.type = "mirror";
+    events.push({ type: "liquid-frozen" });
+  }
+
+  /** 液面融化（原版 Liquid.melt @1671909 逐字）：冰面 mask→0，冻结体还原 dynamic，sensor 翻回 normal */
+  private meltLiquid(liq: any, events: WorldEvent[]): void {
+    if (!liq.frozen) return;
+    liq.frozen = false;
+    liq.iceFixture.SetFilterData({ categoryBits: 1, maskBits: 0 });
+    for (const body of liq.frozenBodies) body.SetType(this.B.b2BodyType.b2_dynamicBody);
+    liq.frozenBodies.length = 0;
+    liq.sensorLp.type = "normal";
+    events.push({ type: "liquid-melted" });
   }
 
   private checkEnd(events: WorldEvent[]): void {

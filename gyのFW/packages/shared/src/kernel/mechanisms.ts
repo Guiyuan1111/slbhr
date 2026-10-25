@@ -8,7 +8,7 @@
  * deviceChanged = 组内所有信号源 state 的 OR → 赋给组内非信号设备（平台/窗）并 _updateState。
  * 平台纯信号驱动（updateState 仅在信号时调用，SetMotorSpeed ±2 持续生效到行程端点）。
  */
-import { windBodyPos, type LevelData } from "../level2.js";
+import { windBodyPos, type BeamerDef, type BoxMirrorDef, type InfiniteMirrorDef, type LevelData, type LightPusherDef, type RotMirrorDef, type SliderDef } from "../level2.js";
 import type { B2 } from "./b2.js";
 import { boxFixture, circleFixture, FILTER, polygonFixture, px2m } from "./b2.js";
 
@@ -20,7 +20,18 @@ function phys(B: B2, x: number, y: number): any {
 /** 机关事件（世界层转发为 WorldEvent / sfx） */
 export type MechEvent =
   | { kind: "lever"; group: number; state: number }
-  | { kind: "pusher"; group: number; state: number };
+  | { kind: "pusher"; group: number; state: number }
+  | { kind: "lightpusher"; group: number; state: number }
+  | { kind: "slider"; group: number; state: number };
+
+/** 光束交互属性（fixture userData.lightProperties；02号档 §8/§9）。
+ * iluminated/lightAt 由 Beamer raycast 写入，LightPusher 消费后自清，Liquid 只读不清（原版 quirk）。 */
+export interface LightProperties {
+  type: "normal" | "transparent" | "mirror";
+  sensor?: boolean;
+  iluminated?: string | null;
+  lightAt?: { x: number; y: number } | null;
+}
 
 // ---------------------------------------------------------------- 基类
 
@@ -63,18 +74,30 @@ export class MechManager {
     this.groups.set(d.group, list);
   }
 
-  /** 原版 deviceChanged：组内信号源 state 取 OR → 赋给非信号设备 */
-  deviceChanged(): void {
-    for (const list of this.groups.values()) {
+  /**
+   * 原版 deviceChanged（@1834423 逐字）：g = 派发设备 state → 组内信号源依次 `g = g || b.state`
+   * （JS ||，保留连续值——滑轨 state ∈ ±π·max/2 直接透传）→ 赋给非信号设备 + _updateState。
+   * group 缺省=全组遍历（forest 0/1 源下与旧布尔 OR 等价；传 group 时只处理该组——
+   * 滑轨连续态下全组遍历会把其它组的分数态布尔化成 1，2026-10-25 light 集成修正）。
+   */
+  deviceChanged(group?: number): void {
+    const process = (list: GroupMember[]): void => {
       const sources = list.filter((d) => d.hasSignal);
-      if (sources.length === 0) continue;
-      const g = sources.some((d) => d.state !== 0) ? 1 : 0;
+      if (sources.length === 0) return; // 原版仅信号源派发触达；无源组永不被重置（beamer 单组保 initialState）
+      let g = 0;
+      for (const s of sources) g = g || s.state;
       for (const d of list) {
         if (!d.hasSignal && d.state !== g) {
           d.state = g;
           d.signalApply();
         }
       }
+    };
+    if (group === undefined) {
+      for (const list of this.groups.values()) process(list);
+    } else {
+      const list = this.groups.get(group);
+      if (list) process(list);
     }
   }
 }
@@ -725,6 +748,378 @@ export function buildWindow(B: B2, world: any, def: { rect: { x: number; y: numb
   body.CreateFixture(fd);
 }
 
+// ---------------------------------------------------------------- 灯光神庙机关（第二部）
+
+// 坐标约定沿用本文件头注：物理 = (−screen/32, −screen/32)，体角=+deg→rad（与 bundle SetAngle 同式）。
+// 02号档：note/evidence/2026-10-25-light-temple/02号档-光机制反解.md（offset 级引用随行注）。
+
+/** Beamer 光束分类回调（bundle @1629100 ReportFixture 逐字）：
+ *  无 lp=不透明（记录命中，返回 fraction 继续裁剪）；transparent=穿透（返回 undefined=全射程）；
+ *  normal/mirror=停束/反射，sensor 标记 iluminated/lightAt。返回值语义见 vendor b2World.RayCast。 */
+function lightRaycast(B: B2, world: any, from: any, to: any, color: string): { point: any; normal: any | null; sensorLp: LightProperties | null } | null {
+  let contact: { point: any; normal: any | null; sensorLp: LightProperties | null } | null = null;
+  const cb = (fix: any, point: any, normal: any, fraction: number): number | undefined => {
+    const ud = fix.GetUserData ? fix.GetUserData() : fix.m_userData;
+    const lp: LightProperties | undefined = ud && typeof ud === "object" ? ud.lightProperties : undefined;
+    if (!lp) {
+      contact = { point: point.Clone(), normal: null, sensorLp: null };
+      return fraction;
+    }
+    if (lp.type === "transparent") {
+      if (lp.sensor) {
+        lp.iluminated = color;
+        lp.lightAt = { x: point.x, y: point.y };
+      }
+      return undefined;
+    }
+    if (lp.type === "normal") {
+      contact = { point: point.Clone(), normal: null, sensorLp: lp.sensor ? lp : null };
+      return fraction;
+    }
+    if (lp.type === "mirror") {
+      contact = { point: point.Clone(), normal: normal.Clone(), sensorLp: lp.sensor ? lp : null };
+      return fraction;
+    }
+    return undefined; // portal 等：light 数据未用
+  };
+  world.RayCast(cb, from, to);
+  void B;
+  return contact;
+}
+
+export class Beamer extends Device {
+  readonly body: any;
+  readonly color: string;
+  /** 最近一次光束折线（物理米坐标；null=灭）。快照转屏幕 px 供客户端绘制 */
+  beamPts: Array<{ x: number; y: number }> | null = null;
+  private readonly worldRef: any;
+
+  constructor(B: B2, world: any, def: BeamerDef) {
+    super(B, def.group, false);
+    this.worldRef = world;
+    this.color = def.color;
+    this.state = def.initialState; // 原版先 state=1 后 super 重置（=initialState，数据恒 1）
+    const bd = new B.b2BodyDef();
+    bd.type = B.b2BodyType.b2_staticBody;
+    bd.position = phys(B, def.x, def.y);
+    bd.angle = (Math.PI * def.rotation) / 180;
+    this.body = world.CreateBody(bd);
+    // 发射座多边形（bundle @1626960 逐字；w=0.8 h=0.4）
+    polygonFixture(this.body, B, [
+      { x: 0, y: -0.8 / 2 - 0.6 },
+      { x: 0, y: 0.8 / 2 + 0.6 },
+      { x: -0.4, y: 0.8 / 2 },
+      { x: -0.4, y: -0.8 / 2 },
+    ], { categoryBits: 1, maskBits: 65535, friction: 0.7, restitution: 0, density: 0 });
+  }
+
+  updateState(_silent: boolean): void {
+    /* 非信号端；state 由组派发（0=灭 1=亮），光束在 update 重算 */
+  }
+
+  checkState(_events: MechEvent[]): void {}
+
+  /** 逐帧光束（bundle Beamer.update @1629930 逐字；≤11 折点） */
+  update(): void {
+    if (this.state !== 1) {
+      this.beamPts = null;
+      return;
+    }
+    const B = this.B;
+    const p = this.body.GetPosition().Clone();
+    let dir = new B.b2Vec2(-1, 0);
+    dir.SelfRotateRadians(this.body.GetAngle());
+    const pts: Array<{ x: number; y: number }> = [{ x: p.x, y: p.y }];
+    for (let seg = 0; seg < 10 && pts.length < 11; seg++) {
+      const from = p.Clone();
+      const to = p.Clone().SelfAdd(dir.Clone().SelfMul(50));
+      const hit = lightRaycast(B, this.worldRef, from, to, this.color);
+      if (!hit) {
+        // 世界四壁兜底（原版依赖边界墙恒命中）；无命中=安全断束
+        pts.push({ x: to.x, y: to.y });
+        break;
+      }
+      if (hit.sensorLp) {
+        hit.sensorLp.iluminated = this.color;
+        hit.sensorLp.lightAt = { x: hit.point.x, y: hit.point.y };
+      }
+      pts.push({ x: hit.point.x, y: hit.point.y });
+      if (hit.normal) {
+        // 反射（@1630033 逐字）：b=入射反向单位向量，f=法线×1（CrossVS），dir=b−2(b·f)f
+        const bvec = from.Clone().SelfSub(to).SelfNormalize();
+        const f = hit.normal.Clone().SelfCrossVS(1);
+        dir = bvec.Clone().SelfSub(f.Clone().SelfMul(2 * bvec.Dot(f)));
+        p.SetXY(hit.point.x, hit.point.y);
+      } else {
+        dir = null as unknown as B2["b2Vec2"]; // 停束
+        break;
+      }
+    }
+    this.beamPts = pts;
+  }
+}
+
+export class RotMirror extends Device {
+  readonly body: any;
+  private joint: any;
+  private readonly dir: number;
+
+  constructor(B: B2, world: any, groundBody: any, def: RotMirrorDef) {
+    super(B, def.group, false);
+    this.dir = def.dir;
+    const bd = new B.b2BodyDef();
+    bd.type = B.b2BodyType.b2_dynamicBody;
+    bd.position = phys(B, def.x, def.y);
+    bd.angle = (Math.PI * def.rotation) / 180;
+    this.body = world.CreateBody(bd);
+    // ①盒体 1.8×1.8 transparent（角色可站/推；bundle @1743260）
+    boxFixture(this.body, B, 0.9, 0.9, { x: 0, y: 0 }, 0, {
+      friction: 0.7,
+      restitution: 0,
+      density: 1,
+      userData: { lightProperties: { type: "transparent" } as LightProperties },
+    });
+    // ②镜条 2×0.1 @45°（mirror）
+    boxFixture(this.body, B, 1.0, 0.05, { x: 0, y: 0 }, Math.PI / 4, {
+      friction: 0.7,
+      restitution: 0,
+      density: 0.2,
+      userData: { lightProperties: { type: "mirror" } as LightProperties },
+    });
+    // ③④踏点圆帽 r=0.25 @盒角（bundle @1743395）
+    circleFixture(this.body, B, 0.25, { x: 0.9 - 0.25, y: 0.9 - 0.25 }, { density: 1 });
+    circleFixture(this.body, B, 0.25, { x: -(0.9 - 0.25), y: -(0.9 - 0.25) }, { density: 1 });
+    // revolute 钳位（@1743400 逐字）：dir=1 → [−rot, −rot+π/2]，否则 [−rot−π/2, −rot]；motor 恒开 torque 100
+    const rotRad = (Math.PI * def.rotation) / 180;
+    const jd = new B.b2RevoluteJointDef();
+    jd.Initialize(this.body, groundBody, this.body.GetWorldCenter());
+    if (def.dir === 1) {
+      jd.lowerAngle = -rotRad;
+      jd.upperAngle = -rotRad + Math.PI / 2;
+    } else {
+      jd.lowerAngle = -rotRad - Math.PI / 2;
+      jd.upperAngle = -rotRad;
+    }
+    jd.enableLimit = true;
+    jd.maxMotorTorque = 100;
+    jd.enableMotor = true;
+    this.joint = world.CreateJoint(jd);
+    // 初始角钉在对应限位（@1743413）
+    this.body.SetAngle(def.dir === 1 ? -this.joint.GetLowerLimit() : -this.joint.GetUpperLimit());
+  }
+
+  updateState(_silent: boolean): void {
+    // @1743524：state=0 → 马达 −1.5·dir；state=1 → +1.5·dir
+    this.joint.SetMotorSpeed((this.state === 0 ? -1.5 : 1.5) * this.dir);
+  }
+
+  /** 逐帧钳角（@1743473；与 MovingPlatform.update 同式：关节角=−体角） */
+  update(): void {
+    const a = this.joint.GetJointAngleRadians();
+    if (a < this.joint.GetLowerLimit()) this.body.SetAngle(-this.joint.GetLowerLimit());
+    else if (a > this.joint.GetUpperLimit()) this.body.SetAngle(-this.joint.GetUpperLimit());
+  }
+
+  checkState(_events: MechEvent[]): void {}
+}
+
+export function buildBoxMirror(B: B2, world: any, def: BoxMirrorDef): { body: any } {
+  // BoxPrototype（1.77 八边箱+四角滚轮，density 0.45）+ 箱体 lp=transparent + 45° 镜条 2×0.05
+  const size = def.boxSize ?? 1.77;
+  const center = phys(B, def.x, def.y);
+  const bd = new B.b2BodyDef();
+  bd.type = B.b2BodyType.b2_dynamicBody;
+  bd.position = center;
+  bd.angle = ((def.rotation ?? 0) * Math.PI) / 180;
+  const body = world.CreateBody(bd);
+  const g = 0.1;
+  const h = size / 2;
+  const pts = [
+    { x: -h + g, y: -h },
+    { x: h - g, y: -h },
+    { x: h, y: -h + g },
+    { x: h, y: h - g },
+    { x: h - g, y: h },
+    { x: -h + g, y: h },
+    { x: -h, y: h - g },
+    { x: -h, y: -h + g },
+  ].reverse();
+  polygonFixture(body, B, pts, {
+    friction: def.friction ?? 0.4,
+    restitution: 0,
+    density: 0.45,
+    userData: { lightProperties: { type: "transparent" } as LightProperties },
+  });
+  const f = h - 0.06;
+  for (const [cx, cy] of [
+    [-f, -f],
+    [f, -f],
+    [-f, f],
+    [f, f],
+  ]) {
+    circleFixture(body, B, 0.1, { x: cx, y: cy }, {
+      categoryBits: FILTER.PROP_CAT,
+      maskBits: 4097,
+      friction: 0.1,
+      density: 0,
+    });
+  }
+  circleFixture(body, B, 0.1, { x: 0, y: 0 }, {
+    categoryBits: FILTER.PORTAL_CAT,
+    maskBits: FILTER.PORTAL_MASK,
+    friction: 0.5,
+    density: 0,
+    userData: { "portal-sensor": true },
+  });
+  // 镜条（bundle BoxMirror @1638591：2×0.05 @45°，friction 0 density 0，mirror）
+  boxFixture(body, B, 1.0, 0.025, { x: 0, y: 0 }, Math.PI / 4, {
+    friction: 0,
+    restitution: 0,
+    density: 0,
+    userData: { lightProperties: { type: "mirror" } as LightProperties },
+  });
+  body.SetLinearDamping(1);
+  body.SetAngularDamping(20);
+  return { body };
+}
+
+export class InfiniteMirror extends Device {
+  readonly body: any;
+  private joint: any;
+
+  constructor(B: B2, world: any, groundBody: any, def: InfiniteMirrorDef) {
+    super(B, def.group, false);
+    const bd = new B.b2BodyDef();
+    bd.type = B.b2BodyType.b2_dynamicBody;
+    bd.position = phys(B, def.x, def.y);
+    bd.angle = (Math.PI * def.rotation) / 180;
+    this.body = world.CreateBody(bd);
+    // 镜条 3×0.1 @45°（mirror；bundle @1749955）+ 双帽 r=0.3 @±1.1
+    boxFixture(this.body, B, 1.5, 0.05, { x: 0, y: 0 }, Math.PI / 4, {
+      friction: 0.7,
+      restitution: 0,
+      density: 0.2,
+      userData: { lightProperties: { type: "mirror" } as LightProperties },
+    });
+    circleFixture(this.body, B, 0.3, { x: 1.1, y: 1.1 }, { density: 1 });
+    circleFixture(this.body, B, 0.3, { x: -1.1, y: -1.1 }, { density: 1 });
+    // revolute：enableLimit（初值 0,0）+ motor torque 500 speed 0（@1749860）
+    const jd = new B.b2RevoluteJointDef();
+    jd.Initialize(this.body, groundBody, this.body.GetWorldCenter());
+    jd.enableLimit = true;
+    jd.maxMotorTorque = 500;
+    jd.motorSpeed = 0;
+    jd.enableMotor = true;
+    this.joint = world.CreateJoint(jd);
+  }
+
+  /** @1750060：SetLimits(state, state)——state=滑轨连续角或拉杆 0/1 */
+  updateState(_silent: boolean): void {
+    this.joint.SetLimits(this.state, this.state);
+  }
+
+  checkState(_events: MechEvent[]): void {}
+}
+
+export class LightPusher extends Device {
+  readonly body: any;
+  readonly color: string;
+  private sensorLp: LightProperties;
+
+  constructor(B: B2, world: any, def: LightPusherDef) {
+    super(B, def.group, true); // 信号源（照到=1 / 光断=0 派发全组）
+    this.color = def.color;
+    const bd = new B.b2BodyDef();
+    bd.type = B.b2BodyType.b2_staticBody;
+    bd.position = phys(B, def.x, def.y);
+    bd.angle = (Math.PI * def.rotation) / 180;
+    this.body = world.CreateBody(bd);
+    // ①sensor 1.5×0.4（isSensor，normal+sensor；bundle @1657600）
+    const box = new B.b2PolygonShape();
+    box.SetAsOrientedBox(1.5 / 2, 0.4 / 2, new B.b2Vec2(0, 0), 0);
+    this.sensorLp = { type: "normal", sensor: true, iluminated: null, lightAt: null };
+    const sfd = new B.b2FixtureDef();
+    sfd.shape = box;
+    sfd.friction = 0.7;
+    sfd.restitution = 0;
+    sfd.density = 0;
+    sfd.isSensor = true;
+    sfd.userData = { lightProperties: this.sensorLp };
+    this.body.CreateFixture(sfd);
+    // ②梯形座 transparent（@1657700：±(w/2+0.5)@y0 → ±(w/2)@(h−0.1)）
+    polygonFixture(this.body, B, [
+      { x: -1 / 2 - 0.5, y: 0 },
+      { x: 1 / 2 + 0.5, y: 0 },
+      { x: 1 / 2, y: 0.4 - 0.1 },
+      { x: -1 / 2, y: 0.4 - 0.1 },
+    ], { friction: 0.7, restitution: 0, density: 0, userData: { lightProperties: { type: "transparent" } as LightProperties } });
+  }
+
+  updateState(_silent: boolean): void {
+    /* 信号源 */
+  }
+
+  /** @1659550：照到同色→state=1+派发；光断→state=0+派发；随后清 iluminated（每帧） */
+  checkState(events: MechEvent[]): void {
+    if (this.state === 0 && this.sensorLp.iluminated === this.color) {
+      this.state = 1;
+      events.push({ kind: "lightpusher", group: this.group, state: 1 });
+    } else if (this.state === 1 && this.sensorLp.iluminated !== this.color) {
+      this.state = 0;
+      events.push({ kind: "lightpusher", group: this.group, state: 0 });
+    }
+    this.sensorLp.iluminated = null;
+  }
+}
+
+export class Slider extends Device {
+  readonly body: any;
+  private joint: any;
+  private readonly widthPx: number;
+  private readonly max: number;
+  private lastT: number;
+
+  constructor(B: B2, world: any, groundBody: any, def: SliderDef) {
+    super(B, def.group, true); // 连续信号源
+    this.widthPx = def.widthPx;
+    this.max = def.max;
+    const bd = new B.b2BodyDef();
+    bd.type = B.b2BodyType.b2_dynamicBody;
+    bd.position = phys(B, def.x, def.y); // 解析层已居中（x+widthPx/2）
+    this.body = world.CreateBody(bd);
+    circleFixture(this.body, B, 0.3, undefined, {
+      friction: 0,
+      density: 2, // 插件缺省密度（bundle fixture 未设 density；探针待核 02号档 §10）
+    });
+    // prismatic：轴 (−1,0)，行程 ±pxm(o/2)（Device.pxm 取负 → upper=+o/64, lower=−o/64，@1720119）
+    const o = def.widthPx;
+    const jd = new B.b2PrismaticJointDef();
+    jd.Initialize(this.body, groundBody, this.body.GetWorldCenter(), new B.b2Vec2(-1, 0));
+    jd.upperTranslation = o / 64; // 原版 = −pxm(o/2)，Device.pxm(a)=−a/32 → +o/64
+    jd.lowerTranslation = -o / 64; // 原版 = +pxm(o/2) → −o/64
+    jd.enableLimit = true;
+    jd.motorSpeed = 0;
+    jd.maxMotorForce = 20;
+    jd.enableMotor = true;
+    this.joint = world.CreateJoint(jd);
+    this.body.SetLinearDamping(1);
+    this.lastT = this.joint.GetJointTranslation();
+  }
+
+  updateState(_silent: boolean): void {
+    /* 信号源 */
+  }
+
+  /** @1721500：translation 变化才派发；state = π·t·max / pxm(−width)（pxm(−w)=+w/32） */
+  checkState(events: MechEvent[]): void {
+    const t = this.joint.GetJointTranslation();
+    if (t === this.lastT) return;
+    this.lastT = t;
+    this.state = (Math.PI * t * this.max) / (this.widthPx / 32);
+    events.push({ kind: "slider", group: this.group, state: this.state });
+  }
+}
+
 // ---------------------------------------------------------------- 总装
 
 export interface Mechanisms {
@@ -737,6 +1132,15 @@ export interface Mechanisms {
   hangings: Array<{ anchor: any; platform: any }>;
   pulleys: Array<{ plat1: any; plat2: any }>;
   romans: Array<{ bar: any; base: any }>;
+  // ---- 灯光神庙（forest 数据恒为空）----
+  beamers: Beamer[];
+  rotMirrors: RotMirror[];
+  boxMirrors: Array<{ body: any }>;
+  infiniteMirrors: InfiniteMirror[];
+  lightPushers: LightPusher[];
+  sliders: Slider[];
+  /** 光设备统一创建序（world 按【逆序】逐帧步进——原版 sprite 更新序探针口径） */
+  lightDevices: Array<{ order: number; beamer?: Beamer; rotMirror?: RotMirror; lightPusher?: LightPusher; slider?: Slider; infiniteMirror?: InfiniteMirror }>;
 }
 
 export function buildMechanisms(B: B2, world: any, groundBody: any, level: LevelData): Mechanisms {
@@ -778,5 +1182,45 @@ export function buildMechanisms(B: B2, world: any, groundBody: any, level: Level
   }
   for (const d of level.windows) buildWindow(B, world, d);
 
-  return { manager, levers, pushers, platforms, props, winds, hangings, pulleys, romans };
+  // ---- 灯光神庙机关（创建序=Tiled 对象序，与 forest 机关同池装配）----
+  const beamers: Beamer[] = [];
+  const rotMirrors: RotMirror[] = [];
+  const boxMirrors: Array<{ body: any }> = [];
+  const infiniteMirrors: InfiniteMirror[] = [];
+  const lightPushers: LightPusher[] = [];
+  const sliders: Slider[] = [];
+  const lightDevices: Mechanisms["lightDevices"] = [];
+  for (const d of level.beamers) {
+    const m = new Beamer(B, world, d);
+    beamers.push(m);
+    manager.register(m);
+    lightDevices.push({ order: lightDevices.length, beamer: m });
+  }
+  for (const d of level.rotMirrors) {
+    const m = new RotMirror(B, world, groundBody, d);
+    rotMirrors.push(m);
+    manager.register(m);
+    lightDevices.push({ order: lightDevices.length, rotMirror: m });
+  }
+  for (const d of level.boxMirrors) boxMirrors.push(buildBoxMirror(B, world, d));
+  for (const d of level.infiniteMirrors) {
+    const m = new InfiniteMirror(B, world, groundBody, d);
+    infiniteMirrors.push(m);
+    manager.register(m);
+    lightDevices.push({ order: lightDevices.length, infiniteMirror: m });
+  }
+  for (const d of level.lightPushers) {
+    const m = new LightPusher(B, world, d);
+    lightPushers.push(m);
+    manager.register(m);
+    lightDevices.push({ order: lightDevices.length, lightPusher: m });
+  }
+  for (const d of level.sliders) {
+    const m = new Slider(B, world, groundBody, d);
+    sliders.push(m);
+    manager.register(m);
+    lightDevices.push({ order: lightDevices.length, slider: m });
+  }
+
+  return { manager, levers, pushers, platforms, props, winds, hangings, pulleys, romans, beamers, rotMirrors, boxMirrors, infiniteMirrors, lightPushers, sliders, lightDevices };
 }

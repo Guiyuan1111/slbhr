@@ -91,6 +91,8 @@ export interface LiquidRun {
   /** 起止列（含端点） */
   col0: number;
   col1: number;
+  /** 原版 55 型冰面砖（type55→5+startFrozen，bundle @1660900）；light 数据现无 55，保留语义 */
+  startFrozen: boolean;
 }
 
 export interface LeverDef {
@@ -205,6 +207,70 @@ export interface WindowDef {
   group: number;
 }
 
+// ---- 灯光神庙（第二部）机关（02号档反解：note/evidence/2026-10-25-light-temple/02号档-光机制反解.md）----
+
+/** 发光器（BoxedDevice）：光束源，state=initialState（1=亮） */
+export interface BeamerDef {
+  id: string;
+  x: number;
+  y: number;
+  rotation: number;
+  group: number;
+  color: string;
+  initialState: number;
+}
+
+/** 旋转镜（BoxedDevice+revolute）：group 0/1 控制马达换向，dir=摆向 */
+export interface RotMirrorDef {
+  id: string;
+  x: number;
+  y: number;
+  rotation: number;
+  group: number;
+  dir: number;
+  bringToBack: boolean;
+}
+
+/** 箱镜（BoxPrototype 动态箱）：可推，45° 镜条；boxSize 覆写箱宽（米） */
+export interface BoxMirrorDef {
+  id: string;
+  x: number;
+  y: number;
+  rotation: number;
+  boxSize?: number;
+  friction?: number;
+}
+
+/** 无限镜（BoxedDevice+revolute）：joint.SetLimits(state,state)——state=滑轨连续角或拉杆 0/1 */
+export interface InfiniteMirrorDef {
+  id: string;
+  x: number;
+  y: number;
+  rotation: number;
+  group: number;
+}
+
+/** 光控推杆（BoxedDevice，静态）：sensor 被同色光束照到 state=1，光断 state=0（信号源） */
+export interface LightPusherDef {
+  id: string;
+  x: number;
+  y: number;
+  rotation: number;
+  group: number;
+  color: string;
+}
+
+/** 滑轨（非 gid polyline）：prismatic 圆点，state=π·t·max/width（连续角信号源） */
+export interface SliderDef {
+  id: string;
+  x: number;
+  y: number;
+  group: number;
+  max: number;
+  /** 轨宽（polyline 两端 x 差，px） */
+  widthPx: number;
+}
+
 export interface TutorialStep {
   /** 步骤 id（properties.id） */
   id: number;
@@ -250,6 +316,13 @@ export interface LevelData {
   pulleys: PulleyDef[];
   romans: RomanDef[];
   windows: WindowDef[];
+  // ---- 灯光神庙机关（forest 数据恒为空数组）----
+  beamers: BeamerDef[];
+  rotMirrors: RotMirrorDef[];
+  boxMirrors: BoxMirrorDef[];
+  infiniteMirrors: InfiniteMirrorDef[];
+  lightPushers: LightPusherDef[];
+  sliders: SliderDef[];
   /** 教学步骤（已按 id 配对触发区与文本；选层优先级 dual > keyboard > single > 任意） */
   tutorials: TutorialStep[];
   /** 各教学层变体（layer 名 → 步骤），原版按 settings.controls 选层 */
@@ -340,6 +413,7 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
   for (let row = 0; row < rows; row++) {
     let runKind: LiquidKind | undefined;
     let runStart = 0;
+    let runIce = false;
     for (let col = 0; col <= cols; col++) {
       const i = row * cols + col;
       let kind: LiquidKind | undefined;
@@ -352,17 +426,23 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
           if (t === undefined) t = GROUND_TYPE.SOLID;
           t = Number(t);
           if (SLOPE_REMAP[t] !== undefined) t = SLOPE_REMAP[t];
+          if (t === 55) {
+            // 原版 Liquid 构造头（bundle @1660900）：55===type → type=5 + startFrozen=true（冰面初始冻结）
+            t = GROUND_TYPE.WATER;
+            runIce = true;
+          }
           groundType[i] = t;
           kind = liquidKindOf(t);
         }
       }
       // 行扫描：同种液体连续段成 run（col==cols 收尾）
       if (kind !== runKind && runKind !== undefined) {
-        liquidRuns.push({ kind: runKind, row, col0: runStart, col1: col - 1 });
+        liquidRuns.push({ kind: runKind, row, col0: runStart, col1: col - 1, startFrozen: runIce });
       }
       if (kind !== runKind) {
         runKind = kind;
         runStart = col;
+        runIce = false;
       }
     }
   }
@@ -386,6 +466,12 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
   const pulleys: PulleyDef[] = [];
   const romans: RomanDef[] = [];
   const windows: WindowDef[] = [];
+  const beamers: BeamerDef[] = [];
+  const rotMirrors: RotMirrorDef[] = [];
+  const boxMirrors: BoxMirrorDef[] = [];
+  const infiniteMirrors: InfiniteMirrorDef[] = [];
+  const lightPushers: LightPusherDef[] = [];
+  const sliders: SliderDef[] = [];
   const unknown: string[] = [];
   const tutorialVariants: Record<string, TutorialStep[]> = {};
 
@@ -469,6 +555,19 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
             }
           } else if (type === "roman") {
             romans.push({ id: `r${romans.length}`, pts: absPoints(o) });
+          } else if (type === "slider") {
+            // 灯光神庙滑轨（非 gid polyline+group）：轨宽=polyline 两端 x 差（px）；
+            // 体心 = (o.x + o/2, o.y)（bundle Slider 构造 m={x:options.x+o/2,y:options.y}）
+            const pts = absPoints(o);
+            const widthPx = pts.length >= 2 ? pts[1].x - pts[0].x : 0;
+            sliders.push({
+              id: `S${sliders.length}`,
+              x: num(o.x) + widthPx / 2,
+              y: num(o.y),
+              group: num(o.properties?.group),
+              max: num(o.properties?.max, 1),
+              widthPx,
+            });
           } else if (type === "window") {
             windows.push({
               id: `w${windows.length}`,
@@ -536,8 +635,72 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
                 windWidth: props.windWidth === undefined ? undefined : num(props.windWidth),
               });
               break;
+            case "beamer":
+            case "rotmirror":
+            case "lightpusher":
+            case "infinitemirror": {
+              // 灯光神庙 BoxedDevice 族：中心矫正同 box（e0=(16·boxSize,16·boxSize) px 按 −rot 旋转）；
+              // beamer/lightpusher 2×2、rotmirror/infinitemirror 1.8×1.8（bundle options 直证）
+              const rot = num(o.rotation);
+              const th = (-rot * Math.PI) / 180;
+              const size = typeName === "rotmirror" || typeName === "infinitemirror" ? 1.8 : 2;
+              const a = 16 * size;
+              const ex = a * (Math.cos(th) - Math.sin(th));
+              const ey = a * (Math.sin(th) + Math.cos(th));
+              const cx = num(o.x) + ex;
+              const cy = num(o.y) - ey;
+              if (typeName === "beamer") {
+                beamers.push({
+                  id: `L${beamers.length}`,
+                  x: cx,
+                  y: cy,
+                  rotation: rot,
+                  group: num(props.group),
+                  color: String(props.color ?? "yellow"),
+                  initialState: num(props.initialState),
+                });
+              } else if (typeName === "rotmirror") {
+                rotMirrors.push({
+                  id: `R${rotMirrors.length}`,
+                  x: cx,
+                  y: cy,
+                  rotation: rot,
+                  group: num(props.group),
+                  dir: num(props.dir, 1),
+                  bringToBack: props.bringToBack === true,
+                });
+              } else if (typeName === "lightpusher") {
+                lightPushers.push({
+                  id: `P${lightPushers.length}`,
+                  x: cx,
+                  y: cy,
+                  rotation: rot,
+                  group: num(props.group),
+                  color: String(props.color ?? "yellow"),
+                });
+              } else {
+                infiniteMirrors.push({ id: `M${infiniteMirrors.length}`, x: cx, y: cy, rotation: rot, group: num(props.group) });
+              }
+              break;
+            }
+            case "boxmirror": {
+              // 箱镜：BoxedDevice 矫正恒 2×2（BoxPrototype 不覆写 boxSize 类属性），fixture 尺寸走 boxSize 属性
+              const rot = num(o.rotation);
+              const th = (-rot * Math.PI) / 180;
+              const ex = 32 * (Math.cos(th) - Math.sin(th));
+              const ey = 32 * (Math.sin(th) + Math.cos(th));
+              boxMirrors.push({
+                id: `B${boxMirrors.length}`,
+                x: num(o.x) + ex,
+                y: num(o.y) - ey,
+                rotation: rot,
+                boxSize: props.boxSize === undefined ? undefined : num(props.boxSize),
+                friction: props.friction === undefined ? undefined : num(props.friction),
+              });
+              break;
+            }
             default:
-              // beamer/rotmirror/lightpusher/infinitemirror/boxmirror/timedpusher：森林未用，记录即可
+              // timedpusher 等：light 数据未用，记录即可
               unknown.push(`Objects:${typeName || `local${localId}`}`);
           }
         } else if (ref.base === "LargeObjects") {
@@ -621,6 +784,12 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
     pulleys,
     romans,
     windows,
+    beamers,
+    rotMirrors,
+    boxMirrors,
+    infiniteMirrors,
+    lightPushers,
+    sliders,
     tutorials,
     tutorialVariants,
     unknown,

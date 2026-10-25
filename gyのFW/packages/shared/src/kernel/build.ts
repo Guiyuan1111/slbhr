@@ -24,6 +24,17 @@ export interface LiquidInfo {
   row: number;
   /** 冻结面（type55，森林未用） */
   startFrozen: boolean;
+  // ---- 灯光神庙光照/冻结运行时态（02号档 §9；森林恒 false/空）----
+  frozen: boolean;
+  /** 液面 sensor fixture（lightProperties.normal+sensor；冻结后 type 翻 mirror） */
+  sensorFixture: any;
+  sensorLp: { type: "normal" | "mirror"; sensor: boolean; iluminated: string | null; lightAt: { x: number; y: number } | null };
+  /** 冰面碰撞 fixture（mask 0=融化态；冻结 mask 16 仅对角色层） */
+  iceFixture: any;
+  /** 液面 sensor 接触体（fixture id 序插入；freeze 时角色上推 0.5m、其余转 static） */
+  nearBodies: Array<{ id: number; body: any }>;
+  /** freeze 时转 static 的体（melt 时还原） */
+  frozenBodies: any[];
 }
 
 export interface DiamondInfo {
@@ -131,30 +142,34 @@ function buildLiquid(B: B2, world: any, groundBody: any, run: LiquidRunInfo): vo
   bd.type = B.b2BodyType.b2_staticBody;
   bd.position = new B.b2Vec2(-col0, -row);
   const body = world.CreateBody(bd);
-  // 显示/光源带：液面下 0.15–0.5m，mask 61695（不含角色），sensor
-  quadFixture(body, B, 0, -0.15, -A, -0.5, {
+  // 显示/光源带：液面下 0.15–0.5m，mask 61695（不含角色），sensor；
+  // lp normal+sensor（原版 sensorFixture userData @1664790 逐字）——Beamer 照射标记落点
+  const sensorFixture = quadFixture(body, B, 0, -0.15, -A, -0.5, {
     categoryBits: FILTER.GROUND_CAT,
     maskBits: FILTER.LIQUID_SENSOR_MASK,
     friction: 0.7,
     isSensor: true,
-    userData: { type: "liquid", liquidType: run.liquidType },
+    userData: { type: "liquid", liquidType: run.liquidType, lightProperties: { type: "normal", sensor: true, iluminated: null, lightAt: null } },
   });
-  // 冰面带：上半格，mask 0（森林无冰，保留几何保真）
-  quadFixture(body, B, 0, 0, -A, -0.5, {
+  // 冰面带：上半格，mask 0（森林无冰，保留几何保真）；lp transparent（原版 iceFixture @1664810——
+  // 光束穿冰面碰撞体打到下方液面 sensor，冻结后 sensor 翻 mirror 在液面反光）
+  const iceFixture = quadFixture(body, B, 0, 0, -A, -0.5, {
     categoryBits: FILTER.GROUND_CAT,
     maskBits: 0,
     friction: 0,
-    userData: { type: "ice", liquidType: run.liquidType },
+    userData: { type: "ice", liquidType: run.liquidType, lightProperties: { type: "transparent" } },
   });
-  // 致死带：液面下 0.18–1.0m，mask 4369，sensor
+  // 致死带：液面下 0.18–1.0m，mask 4369，sensor；lp transparent（原版 killFixture @1664350——光束穿入水体）
   quadFixture(body, B, 0, -0.18, -A, -1, {
     categoryBits: FILTER.GROUND_CAT,
     maskBits: FILTER.GROUND_MASK,
     friction: 0.7,
     isSensor: true,
-    userData: { type: "liquid_death", liquidType: run.liquidType },
+    userData: { type: "liquid_death", liquidType: run.liquidType, lightProperties: { type: "transparent" } },
   });
   run.body = body;
+  run.sensorFixture = sensorFixture;
+  run.iceFixture = iceFixture;
 }
 
 interface LiquidRunInfo {
@@ -165,6 +180,8 @@ interface LiquidRunInfo {
   liquidType: number;
   startFrozen: boolean;
   body?: any;
+  sensorFixture?: any;
+  iceFixture?: any;
 }
 
 export function buildLevelWorld(level: LevelData): BuiltWorld {
@@ -185,7 +202,7 @@ export function buildLevelWorld(level: LevelData): BuiltWorld {
     row: r.row,
     kind: r.kind,
     liquidType: r.kind === "water" ? GROUND_TYPE.WATER : r.kind === "lava" ? GROUND_TYPE.LAVA : GROUND_TYPE.GREEN,
-    startFrozen: false,
+    startFrozen: r.startFrozen,
   }));
 
   // ---- convertTilemap 主扫描（行优先；实体横向合并、液体行段、其余逐格）----
@@ -228,6 +245,12 @@ export function buildLevelWorld(level: LevelData): BuiltWorld {
       col1: r.col1,
       row: r.row,
       startFrozen: r.startFrozen,
+      frozen: false,
+      sensorFixture: r.sensorFixture,
+      sensorLp: (r.sensorFixture?.GetUserData ? r.sensorFixture.GetUserData() : r.sensorFixture?.m_userData)?.lightProperties,
+      iceFixture: r.iceFixture,
+      nearBodies: [],
+      frozenBodies: [],
     });
   }
 
