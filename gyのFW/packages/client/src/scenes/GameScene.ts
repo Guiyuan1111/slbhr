@@ -1530,6 +1530,11 @@ export class GameScene extends Phaser.Scene {
       const m = q.shift()!;
       if (m.kind === "lever") this.sfx("sfx_lever");
       else if (m.kind === "pusher") this.sfx("sfx_pusher");
+      // 灯光神庙（02号档 §2/§9：lightpusher 照到/滑轨跨格/水冻融）
+      else if (m.kind === "lightpusher") this.sfx("sfx_lightpusher");
+      else if (m.kind === "slider") this.sfx("sfx_slider");
+      else if (m.kind === "liquid-frozen") this.sfx("sfx_freeze");
+      else if (m.kind === "liquid-melted") this.sfx("sfx_melt");
     }
   }
 

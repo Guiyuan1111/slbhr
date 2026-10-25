@@ -28,7 +28,8 @@
 ① Phase 2/3 全记录见档卷 02/03 号档。内核：lightRaycast（transparent 穿透/mirror CrossVS 反射/sensor 标记）+六机关类+MechManager 逐组派发（|| 连续态 verbatim+无源组不重置）+液体冻融（蓝冻红融/角色上推 0.5m/余体转 static/冻面反光/iluminated 不清=原版 quirk）。level2：六类解析+55→水冻砖 remap。
 ② 客户端：temple 前缀参数化（templeData/BootScene/TempleScene）、bgm_level_dark、六机关视图、schema 七字段（netDto 契约同步总量锚 57——测试拦下 BeamState 漏 defineTypes）、dark 黑幕 RT MULTIPLY+erase（设备光晕 1===state 门控——light_30 65.15→97.24 修正实证）。
 ③ 普查：40 关加载初态中位 90.26（dark 关全数 94.6+，非 dark 87–92.7 带）；popup 纹理竞态=既有良性（forest 同流程同现）挂观察项。
-④ 挂账：light 通关路线产线/sfx 钩子/星级联调/dust 粒子。门禁：tsc 0/vitest 226/build/journey 7/7+4/4/det forest 48/48+light 40/40/netDto 22。
+④ sfx 全链：audio 四键（Freeze/Melt/Slider/LightPusher.mp3）+drainSfx 四 kind+ForestRoom 冻融广播；端到端冒烟 scripts/e2e/lightsmoke.mjs（FORCE_DOORS 既有钩子）：light_01 开局→通关→活房间 advance→light_02→再通 ALL PASS——第二部装载/房间/门/胜利/换关管线全通实证。
+⑤ 挂账：light 通关路线产线（route repeat≥3 正式路线，正式路线工序照 forest）、EndMenu 结算板类型变体（puzzle/dark 布局+FinishStone 变体帧）、dust 粒子。门禁：tsc 0/vitest 226/build/journey 7/7+4/4/lightsmoke 4/4/det forest 48/48+light 40/40/netDto 22。
 
 **更新**：2026-10-25 一（**第二部（灯光神庙）立项开工——Phase 0 取证+Phase 1 数据入库/det 分部基线/CI 拆分，第一部零影响实证**）
 ① 用户令开发第二部并保第一部结果。对象=output/B（light，40 关+共享 forest_01 教学关，全 39×29）。01号档取证：机关谱普查（解析器同款口径）——6 类新机关全光机制（beamer/lightpusher/boxmirror/rotmirror/infinitemirror/slider），共用 10 类内核已有；A/B Objects.json 字节一致；资产全系列共享（每部仅差 TempleAssets/GameName/TempleHall 三件）；关卡带 per-level time，新增 dark 类型（bgmKey 待加映射）。

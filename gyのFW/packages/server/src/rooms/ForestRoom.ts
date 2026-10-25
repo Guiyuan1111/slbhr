@@ -599,6 +599,10 @@ export class ForestRoom extends Room<RoomState> {
       } else if (ev.type === "mech") {
         // 机关音效/灯事件直发（lever/pusher 翻转）
         this.broadcast("sfx", { kind: ev.event.kind, group: ev.event.group, state: ev.event.state });
+      } else if (ev.type === "liquid-frozen") {
+        this.broadcast("sfx", { kind: "liquid-frozen" });
+      } else if (ev.type === "liquid-melted") {
+        this.broadcast("sfx", { kind: "liquid-melted" });
       } else if (ev.type === "diamond") {
         this.broadcast("sfx", { kind: "diamond", role: ev.role });
       } else if (ev.type === "door-open") {
