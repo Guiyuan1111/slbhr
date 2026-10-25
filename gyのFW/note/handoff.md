@@ -24,6 +24,11 @@
 今日（2026-10-20）起新条目写在文件顶部。
 
 ## 条目
+**更新**：2026-10-25 三（R12 光面性能战役 0.3.46——perf-light 量具+Round A/C 内核同步优化+Round B 黑幕分层；det 双锚位级全程不动）
+① r0–r11 未覆盖的三个新面（光机关步进/dark 黑幕/七表同步）立量具 benchmark/perf-light.mjs（idle/scripted 双口径+全字段同构 C 段）；拆解实验定位 beamer raycast 46%/rotmirror 钳位 34%（后者 oracle 逐字语义保真不动）。
+② Round A+C（1039a51）：beamer 变换签名门（全动态体变换逐位快照+epoch，全等⇒复用折线重放标记，物理严格等价）+零分配化+packed 打包串缓存——light 中位步进 -27.8%（溢价 136%→70%）、sync -28.7%/encode -33.3%、heap/600 步 -44.7%。
+③ Round B（f96914f 子 agent 并行实施，主会话逐项验证采纳）：dark 黑幕静态/动态分层——每帧 erase 22→3、页内 A/B -44%/-38%、API 逐像素等价实证；并发现 0.3.45 真 bug：fetchTempleTime 漏传 levelId→light 黑幕 1s 后失效——已修（dark 四关复拍带内一致）+收容件 serve8787b 根路径五级修正。
+④ 报告 note/report/perf/2026-10-25-r12-light.md；门禁终态：tsc 0/vitest 226/build/journey 7/7+4/4/lightsmoke 4/4/det 双锚全绿（Round A 提交前后双跑）。
 **更新**：2026-10-25 二（灯光神庙 0.3.45 可玩化里程碑——内核六机关+客户端全链+dark 黑幕+40 关视觉普查中位 90.26）
 ① Phase 2/3 全记录见档卷 02/03 号档。内核：lightRaycast（transparent 穿透/mirror CrossVS 反射/sensor 标记）+六机关类+MechManager 逐组派发（|| 连续态 verbatim+无源组不重置）+液体冻融（蓝冻红融/角色上推 0.5m/余体转 static/冻面反光/iluminated 不清=原版 quirk）。level2：六类解析+55→水冻砖 remap。
 ② 客户端：temple 前缀参数化（templeData/BootScene/TempleScene）、bgm_level_dark、六机关视图、schema 七字段（netDto 契约同步总量锚 57——测试拦下 BeamState 漏 defineTypes）、dark 黑幕 RT MULTIPLY+erase（设备光晕 1===state 门控——light_30 65.15→97.24 修正实证）。

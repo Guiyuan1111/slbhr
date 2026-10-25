@@ -54,7 +54,18 @@ function stats(arr) {
   return { avg, p50: q(50), p95: q(95), p99: q(99), max: s[s.length - 1] };
 }
 
+const SCRIPTED = process.env.PERF_LIGHT_SCRIPTED === "1";
 const inputs = { fireboy: { ...EMPTY_INPUT }, watergirl: { ...EMPTY_INPUT } };
+let stepCounter = 0;
+function stepInputs() {
+  if (!SCRIPTED) return inputs;
+  const phase = stepCounter % 37;
+  stepCounter++;
+  return {
+    fireboy: { up: phase >= 10 && phase < 13, left: phase >= 20 && phase < 30, right: phase < 10 || phase >= 30 },
+    watergirl: { up: phase >= 25 && phase < 28, left: phase < 15, right: phase >= 15 && phase < 25 },
+  };
+}
 
 // ---------------- A. 步进溢价 ----------------
 function stepSuite(ids) {
@@ -63,11 +74,11 @@ function stepSuite(ids) {
     const t0 = performance.now();
     const w = new World(loadLevel(id).level);
     const buildMs = performance.now() - t0;
-    for (let i = 0; i < WARMUP; i++) w.step(1 / 60, inputs);
+    for (let i = 0; i < WARMUP; i++) w.step(1 / 60, stepInputs());
     const stepMs = new Array(STEPS);
     for (let i = 0; i < STEPS; i++) {
       const t = performance.now();
-      w.step(1 / 60, inputs);
+      w.step(1 / 60, stepInputs());
       stepMs[i] = performance.now() - t;
     }
     const st = stats(stepMs);
@@ -79,10 +90,10 @@ function stepSuite(ids) {
 // ---------------- B. 分配率（beam 重关）----------------
 function allocRate(id) {
   const w = new World(loadLevel(id).level);
-  for (let i = 0; i < WARMUP; i++) w.step(1 / 60, inputs);
+  for (let i = 0; i < WARMUP; i++) w.step(1 / 60, stepInputs());
   if (CAN_GC) globalThis.gc();
   const before = process.memoryUsage().heapUsed;
-  for (let i = 0; i < STEPS; i++) w.step(1 / 60, inputs);
+  for (let i = 0; i < STEPS; i++) w.step(1 / 60, stepInputs());
   const after = process.memoryUsage().heapUsed;
   return { id, heapGrowthKBPer600: +((after - before) / 1024).toFixed(1), perStepB: +(((after - before) / STEPS)).toFixed(1) };
 }
@@ -273,7 +284,7 @@ function buildState(world) {
 
 function syncEncode(id, ticks = 600) {
   const w = new World(loadLevel(id).level);
-  for (let i = 0; i < WARMUP; i++) w.step(1 / 60, inputs);
+  for (let i = 0; i < WARMUP; i++) w.step(1 / 60, stepInputs());
   const { state, sync } = buildState(w);
   const enc = new Encoder(state);
   enc.encodeAll(state);
@@ -282,7 +293,7 @@ function syncEncode(id, ticks = 600) {
   const syncMs = [];
   const encMs = [];
   for (let i = 0; i < ticks; i++) {
-    w.step(1 / 60, inputs);
+    w.step(1 / 60, stepInputs());
     let t = performance.now();
     sync();
     syncMs.push(performance.now() - t);
@@ -333,7 +344,7 @@ const syncRows = [syncEncode("light_02"), syncEncode("forest_01")];
 for (const r of syncRows) log(`${r.id}: sync ${r.syncAvgMs}ms enc ${r.encAvgMs}ms patch ${r.patchAvgB}B(p95 ${r.patchP95B})`);
 
 const report = {
-  meta: { label: argSave ?? "adhoc", git: gitShort, date: new Date().toISOString(), steps: STEPS, gc: CAN_GC },
+  meta: { label: argSave ?? "adhoc", git: gitShort, date: new Date().toISOString(), steps: STEPS, gc: CAN_GC, scripted: SCRIPTED },
   stepLight: lightRows,
   stepForestSample: forestRows,
   summary: { lightMedStepMs: lightMed, forestSampleMedStepMs: forestMed, premiumPct: +(((lightMed - forestMed) / forestMed) * 100).toFixed(1) },

@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const rootDir = path.resolve(__dirname, "../../..", "Fireboy-and-Watergirl/output/B");
+const rootDir = path.resolve(__dirname, "../../../../../", "Fireboy-and-Watergirl/output/B");
 const parentDir = path.resolve(rootDir, "..");
 const MIME = { ".html": "text/html", ".js": "application/javascript", ".json": "application/json", ".png": "image/png", ".jpg": "image/jpeg", ".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".woff": "font/woff", ".css": "text/css" };
 http.createServer((req, res) => {

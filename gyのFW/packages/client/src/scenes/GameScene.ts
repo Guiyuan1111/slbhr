@@ -506,7 +506,9 @@ export class GameScene extends Phaser.Scene {
   /** 原版限时（E17：EndMenu TimeIcon 的 limit 来自 temple.json 的 time 字段）。
    *  r8 件3：走页面级单例（此前每次 create 各自 fetch+parse 同一文件）。 */
   private fetchTempleTime(levelId: string): void {
-    loadTempleLevels().then((levels) => {
+    // r12 勘误（Round B 子 agent 发现）：漏传 levelId 恒取 forest temple.json——
+    // light 关匹配不到条目 → create 后约 1s templeType 翻 general → dark 黑幕整关失效
+    loadTempleLevels(levelId).then((levels) => {
       const entry = levels.find((lv) => String(lv?.filename ?? "").endsWith(`/${levelId}.json`));
       const t = Number(entry?.time);
       this.templeTimeSec = Number.isFinite(t) && t > 0 ? t : null;
