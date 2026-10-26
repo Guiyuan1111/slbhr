@@ -646,6 +646,7 @@ export class ForestRoom extends Room<RoomState> {
    *  RoomState——写入表达式与旧路径逐操作同构（角度/坐标取整算式原样），纯序列化侧零
    *  物理影响，det 门 48/48 + fixtures 6/6 实测背书。 */
   private syncState() {
+    this.state.f = this.stepIndex;
     const mechs = this.world.mechanisms;
     for (const role of ROLES) {
       // L-01（#12）：席位已释放（超时/离场）的角色不写不建——否则上一行刚被 releaseSeat

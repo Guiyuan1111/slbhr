@@ -169,6 +169,8 @@ export class DoorState extends Schema {
 export class RoomState extends Schema {
   phase!: string;
   levelId!: string;
+  /** 内核帧号镜像（服务端已完成的仿真步数；e2e 页内锚定用，客户端可忽略） */
+  f!: number;
   timerMs!: number;
   players!: MapSchemaType<PlayerState>;
   diamonds!: MapSchemaType<DiamondState>;
@@ -197,6 +199,7 @@ export class RoomState extends Schema {
     super();
     this.phase = "lobby";
     this.levelId = "";
+    this.f = 0;
     this.timerMs = 0;
     this.players = new MapSchema();
     this.diamonds = new MapSchema();
@@ -293,6 +296,7 @@ defineTypes(DoorState, {
 defineTypes(RoomState, {
   phase: "string",
   levelId: "string",
+  f: "uint16",
   timerMs: "number",
   players: { map: PlayerState },
   diamonds: { map: DiamondState },
