@@ -317,21 +317,19 @@ export class ForestRoom extends Room<RoomState> {
     return true;
   }
 
-  /** 创建与加入共用：密码不对直接拒绝 */
-  onAuth(_client: Client, options: JoinOptions) {
-    if (String(options?.password ?? "") !== this.roomPassword) {
-      throw new ServerError(4403, "房间密码错误");
-    }
-    return true;
+  /** 房间密码校验（#28 Critical：原为实例 onAuth，且 onJoin 按 options 类型判断调用——
+   *  matchmaking 把请求体原样作 joinOptions 传入，joinById(roomId, true) 即可整体绕过。
+   *  现无条件执行；实例级 onAuth 本就被框架忽略（启动时明确告警），不再保留该名字。） */
+  private assertPassword(options?: JoinOptions | true): void {
+    const pw = typeof options === "object" && options !== null ? String(options.password ?? "") : "";
+    if (pw !== this.roomPassword) throw new ServerError(4403, "房间密码错误");
   }
 
   onJoin(client: Client, options?: JoinOptions | true) {
-    // 静态 onAuth 返回 true 后框架会跳过实例 onAuth（Room.js:531-535）——密码在此显式校验，
-    // 校验逻辑仍属实例 onAuth（按房间密码只能在实例级比对）。重连路径 _reserveSeat 传
-    // joinOptions=true（Room.js:609），原实现同样不跑 onAuth，这里保持跳过。
-    if (typeof options === "object" && options !== null) {
-      this.onAuth(client, options);
-    }
+    // 密码无条件校验（#28）：onCreate 强制 4-64 位密码，不存在免密房——true/缺参/错参一律
+    // 4403。断线重连不走这里（Colyseus 0.16 Room.js:527-534 isWaitingReconnection 分支直接
+    // resolve，不调用 onJoin），座位恢复靠服务端预留座位，不依赖旧的「true 跳过」分支。
+    this.assertPassword(options);
     let role: Role | undefined = this.roles.get(client.sessionId);
     if (!role) {
       role = ROLES.find((r) => ![...this.roles.values()].includes(r));
