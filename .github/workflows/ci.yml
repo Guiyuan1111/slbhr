@@ -37,6 +37,9 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      # #24：生产依赖高危审计，非阻断（先报告观察；Colyseus 链 nanoid 已知待大版本，见 issue #20/#24）
+      - name: Audit (production deps, non-blocking)
+        run: npm audit --omit=dev --audit-level=high || true
 
   determinism:
     name: determinism (forest r0-baseline)
