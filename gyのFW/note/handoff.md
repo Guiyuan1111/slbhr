@@ -24,6 +24,10 @@
 今日（2026-10-20）起新条目写在文件顶部。
 
 ## 条目
+**更新**：2026-10-26 六（审计批 0.3.48——GitHub issue #21–#33 十三条全修，13 commits 逐 Issue 独立提交）
+① P0/P1：#28 房间密码无条件校验（joinById(roomId,true) 布尔绕过封堵，重连路径回归覆盖）；#21 限流 key 弃可伪造头（FW_TRUST_PROXY 显式采信+isIP）+authWindows 有界化（热路径 O(1)/硬限 4096 桶均摊淘汰）；#29 GameScene 复用归零 darkRt/dust 族 8 引用（resetFxState）+lastBeamPts.clear。
+② 其余：#32 matchmake 非 POST 405+server 超时；#30 beamer 熄灭删缓存；#22 clock 视图自治+SHUTDOWN 销毁；#31 bgm_level_dark 全停音路径（stopLevelBgm 三键）；#23 快照校验 ROOM_COLLECTION_CHILD 驱动；#26 $filter 补两新类；#24 body-parser 1.20.9+CI 非阻断 audit；#25 ice 51 关锚（直方图+TimedPusher time 表）；#33 staticGz 穿越回归假绿双层根因（it.each 注册时求值 secretName 空串+16B 低于 1KB 门槛）——运行时构造+padding，删校验即红已实证；#27 部署文档口径统一+fw.service 占位符化+根 README 防漂移。
+③ 门禁全绿：typecheck/test 260 例/build；det 三部 48/40/51 对 r0-baseline/r0-light/r0-ice 逐位一致（本轮零内核触碰）。发版记 note/release/0.3.48.md。
 **更新**：2026-10-25 四（系列开发批：light 教学解析修复+体验收尾+RotMirror P0 保真修复+ice 立项+light 路线产线开工）
 ① light 教学层名 Tutorial 无后缀（forest 系 Tutorial_*）——level2 补分支，0.3.45 起 light 关游戏内教学文本不可见已修（4fe47ae，7 条文本复验）。
 ② 体验收尾（9d1adf8）：光柱浮尘（fillDustLayer/updateDust 逐字：BeamDust×几何掩膜+锚点摆动）；popup 竞态确定性修复（暖装 loader SHUTDOWN 被 reset→in-flight 登记表+清排队键）；存档联调实机 PASS（fw-temple-progress-v1 含 light_01）；EndMenu 类型变体经核早已实现（划销）。
