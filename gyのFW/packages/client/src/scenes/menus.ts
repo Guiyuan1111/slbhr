@@ -42,6 +42,7 @@ export class SettingsScene extends Phaser.Scene {
         this.sound.stopByKey("bgm_menu");
         this.sound.stopByKey("bgm_level");
         this.sound.stopByKey("bgm_level_speed");
+        this.sound.stopByKey("bgm_level_dark"); // #31：暗关 BGM 不得在关设置后残留
       }
     };
     // Music / Fx 双开关（oracle ToggleSettingButton：选中态 0000 / 关态 0001，按压帧同帧）

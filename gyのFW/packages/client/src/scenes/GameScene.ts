@@ -463,8 +463,7 @@ export class GameScene extends Phaser.Scene {
     this.buildHud();
     this.fetchTempleTime(level.id);
 
-    this.sound.stopByKey("bgm_level");
-    this.sound.stopByKey("bgm_level_speed");
+    this.stopLevelBgm();
     // T8（14 号档）：menuMusic 退场=fadeOut(500)+完停（oracle LevelMenu.startLevel :1935104），
     // 非硬停；未播/未装载时退回幂等 stop。（cast：BaseSound 类型缺 volume 声明，
     // WebAudio/HTML5Audio 两实现同 surface，运行时鸭子类型安全。）
@@ -506,7 +505,7 @@ export class GameScene extends Phaser.Scene {
           v.clockSnd = null;
         }
       }
-      for (const k of ["bgm_menu", "bgm_level", "bgm_level_speed", "sfx_clock", "bgm_over", "bgm_finish", "bgm_finish_speed", "sfx_wind", "sfx_door"]) {
+      for (const k of ["bgm_menu", "bgm_level", "bgm_level_speed", "bgm_level_dark", "sfx_clock", "bgm_over", "bgm_finish", "bgm_finish_speed", "sfx_wind", "sfx_door"]) {
         this.sound.stopByKey(k);
       }
     });
@@ -524,6 +523,12 @@ export class GameScene extends Phaser.Scene {
     return "bgm_level";
   }
 
+  /** 关卡 BGM 三键全停（#31：暗关曲 bgm_level_dark 曾漏出全部停止路径——关设置、退关、
+   *  死亡、通关、重试、换关都与普通关曲叠播/串音） */
+  private stopLevelBgm(): void {
+    for (const k of ["bgm_level", "bgm_level_speed", "bgm_level_dark"]) this.sound.stopByKey(k);
+  }
+
   /** 终局曲键：speed 关用 _speed 变体（oracle animateFinish @1906276 按 type 选曲；T2——
    *  bgm_finish_speed 此前装载 0 播）。templeType 在 create 即异步填充，won 时必已就绪。 */
   private finishKey(): string {
@@ -537,13 +542,13 @@ export class GameScene extends Phaser.Scene {
   applyMusicSetting(): void {
     if (!this.d) return;
     if (!getSettings().music) {
-      this.sound.stopByKey("bgm_level");
-      this.sound.stopByKey("bgm_level_speed");
+      this.stopLevelBgm();
       return;
     }
     const phase = String(this.d.net.room?.state?.phase ?? "");
     if (phase !== "started" || this.stairsPlayed) return;
-    if (!this.sound.isPlaying("bgm_level") && !this.sound.isPlaying("bgm_level_speed")) {
+    // #31：三键任一在播都不重播（暗关曲在播时重新打开 music 不得再 play 一次）
+    if (!this.sound.isPlaying("bgm_level") && !this.sound.isPlaying("bgm_level_speed") && !this.sound.isPlaying("bgm_level_dark")) {
       this.sfx(this.bgmKey(), { loop: true });
     }
   }
@@ -1572,8 +1577,7 @@ export class GameScene extends Phaser.Scene {
     this.stopWater();
     if (prev === "won" || prev === "gameover") {
       // 原版 retry=整状态重载：BGM 重新起（首次开局 prev=lobby/"" 不重播）
-      this.sound.stopByKey("bgm_level");
-      this.sound.stopByKey("bgm_level_speed");
+      this.stopLevelBgm();
       this.sound.stopByKey("bgm_over");
       this.sfx(this.bgmKey(), { loop: true });
     }
@@ -1583,8 +1587,7 @@ export class GameScene extends Phaser.Scene {
   private playStairsSequence(): void {
     this.stairsPlayed = true;
     // T3（14 号档）：speed 关同停 _speed 变体（oracle levelMusic.stop :1906226 不分变体）
-    this.sound.stopByKey("bgm_level");
-    this.sound.stopByKey("bgm_level_speed");
+    this.stopLevelBgm();
     this.sfx(this.finishKey()); // T2：按 temple.json type 选终局曲（oracle :1906276）
     for (const role of ROLES) {
       const view = this.views.get(role);
@@ -1697,8 +1700,7 @@ export class GameScene extends Phaser.Scene {
         view.smoke.setVisible(true).setPosition(view.cx, view.cy - 21).setFlipX(Number(ps.vx) < 0).play("smoke");
         this.sfx("sfx_death");
         // 原版 _doKill：死亡即停关卡 BGM 切失败曲（LevelMusicOver）
-        this.sound.stopByKey("bgm_level");
-        this.sound.stopByKey("bgm_level_speed");
+        this.stopLevelBgm();
         this.sfx("bgm_over");
       } else if (view.dying && ps.dying !== true) {
         view.smoke.setVisible(false).stop();
