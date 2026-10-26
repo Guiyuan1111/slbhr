@@ -271,6 +271,19 @@ export interface SliderDef {
   widthPx: number;
 }
 
+/** 定时推杆（ice 部，Pusher 同体）：按压 state=1 保持 time 毫秒自动回弹；
+ *  doRegister 覆写为空=不进 MechManager 组（C bundle @1707424），独立计时件 */
+export interface TimedPusherDef {
+  id: string;
+  x: number;
+  y: number;
+  /** 度（oracle Pusher：g.body.data.SetAngle(rotation*π/180||0)，梯形座随体转） */
+  rotation: number;
+  group: number;
+  /** 保持时长（ms；tileproperties.time，缺省 2000） */
+  time: number;
+}
+
 export interface TutorialStep {
   /** 步骤 id（properties.id） */
   id: number;
@@ -323,6 +336,7 @@ export interface LevelData {
   infiniteMirrors: InfiniteMirrorDef[];
   lightPushers: LightPusherDef[];
   sliders: SliderDef[];
+  timedPushers: TimedPusherDef[];
   /** 教学步骤（已按 id 配对触发区与文本；选层优先级 dual > keyboard > single > 任意） */
   tutorials: TutorialStep[];
   /** 各教学层变体（layer 名 → 步骤），原版按 settings.controls 选层 */
@@ -472,6 +486,7 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
   const infiniteMirrors: InfiniteMirrorDef[] = [];
   const lightPushers: LightPusherDef[] = [];
   const sliders: SliderDef[] = [];
+  const timedPushers: TimedPusherDef[] = [];
   const unknown: string[] = [];
   const tutorialVariants: Record<string, TutorialStep[]> = {};
 
@@ -683,6 +698,22 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
               }
               break;
             }
+            case "timedpusher": {
+              // 定时推杆（ice）：BoxedDevice 矫正同 pusher（2×2 缺省→tile 中心），time 从合并属性
+              const rot = num(o.rotation);
+              const th = (-rot * Math.PI) / 180;
+              const ex = 32 * (Math.cos(th) - Math.sin(th));
+              const ey = 32 * (Math.sin(th) + Math.cos(th));
+              timedPushers.push({
+                id: `t${timedPushers.length}`,
+                x: num(o.x) + ex,
+                y: num(o.y) - ey,
+                rotation: num(o.rotation),
+                group: num(props.group),
+                time: num(props.time, 2000),
+              });
+              break;
+            }
             case "boxmirror": {
               // 箱镜：BoxedDevice 矫正恒 2×2（BoxPrototype 不覆写 boxSize 类属性），fixture 尺寸走 boxSize 属性
               const rot = num(o.rotation);
@@ -790,6 +821,7 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
     infiniteMirrors,
     lightPushers,
     sliders,
+    timedPushers,
     tutorials,
     tutorialVariants,
     unknown,

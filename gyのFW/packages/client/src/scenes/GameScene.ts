@@ -95,6 +95,21 @@ interface PusherView {
   state: number;
 }
 
+/** 定时推杆（ice）：头=pusher_block 同构随体；底座皮肤/环灯/倒计时表盘=静止 base 锚（def.y+16px，
+ *  oracle TimedPusher @1726758 加子精灵于 Pusher.base）+clock 音（22796ms 尾音 seek 锚） */
+interface TimedPusherView {
+  block: Phaser.GameObjects.Image;
+  blockLight: Phaser.GameObjects.Image;
+  base: Phaser.GameObjects.Image;
+  ring: Phaser.GameObjects.Image;
+  maskG: Phaser.GameObjects.Graphics;
+  mask: Phaser.Display.Masks.GeometryMask;
+  timeMs: number;
+  on: boolean;
+  lastH: number | null;
+  clockSnd: Phaser.Sound.WebAudioSound | null;
+}
+
 /** 吊挂（原版 §8）：绳 tileSprite 从锚点指向板，板随快照位姿。
  *  base=hanging_base0000（F3a：oracle 吊板容器=platform+base 同位双精灵 @1646952，
  *  base 后 addChild → 盖在 platform 上、自然宽不缩放、随板同位姿）。 */
@@ -275,6 +290,8 @@ export class GameScene extends Phaser.Scene {
   /** 快照键解析缓存（首见填入；场景重启清空） */
   private leverSnaps = new Map<string, LeverSnap | null>();
   private pusherSnaps = new Map<string, PusherSnap | null>();
+  private timedPusherViews = new Map<string, TimedPusherView>();
+  private timedPusherSnaps = new Map<string, TimedPusherView | null>();
   private platformSnaps = new Map<string, PlatformSnap | null>();
   private propSnaps = new Map<string, PropSnap>();
   private windSnaps = new Map<string, WindSnap | null>();
@@ -328,6 +345,7 @@ export class GameScene extends Phaser.Scene {
     this.platformLights.clear();
     this.leverViews.clear();
     this.pusherViews.clear();
+    this.timedPusherViews.clear();
     this.bodyViews.clear();
     this.windViews.clear();
     this.hangingViews.clear();
@@ -359,6 +377,7 @@ export class GameScene extends Phaser.Scene {
     this.snapshotChecked = false;
     this.leverSnaps.clear();
     this.pusherSnaps.clear();
+    this.timedPusherSnaps.clear();
     this.platformSnaps.clear();
     this.propSnaps.clear();
     this.windSnaps.clear();
@@ -682,6 +701,28 @@ export class GameScene extends Phaser.Scene {
         .setTint(GROUP_COLORS[m.group] ?? 0xffffff)
         .setDepth(1.2);
       this.pusherViews.set(m.id, { block, light, state: 0 });
+    }
+
+    // 定时推杆（ice）：C bundle TimedPusher extends Pusher——头部沿用 pusher_block 同构
+    // （随体位姿，prismatic 轴恒世界 Y，体角恒 rotation）；底座皮肤/环灯挂静止 base 锚
+    // （options.y+mpx(0.5)，overGround 层），环灯由 12 档量化楔形 clock 图形做几何遮罩
+    // （c=ceil(12·frac)/12，h=-2πc-π/2，圆心=base+(0,27) 半径 20 @1726905）
+    for (const m of level.timedPushers) {
+      const block = this.add.image(m.x + PAD, m.y + PAD, ATLAS_MECH, "pusher_block0000").setOrigin(0.5).setAngle(m.rotation).setDepth(1.2);
+      const blockLight = this.add
+        .image(m.x + PAD, m.y + PAD, ATLAS_MECH, "pusher_block_light0000")
+        .setOrigin(0.5)
+        .setAngle(m.rotation)
+        .setTint(GROUP_COLORS[m.group] ?? 0xffffff)
+        .setDepth(1.2);
+      const base = this.add.image(m.x + PAD, m.y + 16 + PAD, ATLAS_MECH, "timed_pusher_base0000").setOrigin(0.5).setDepth(3);
+      const ring = this.add
+        .image(m.x + PAD, m.y + 16 + PAD, ATLAS_MECH, "timed_pusher_light_off0000")
+        .setOrigin(0.5)
+        .setTint(GROUP_COLORS[m.group] ?? 0xffffff)
+        .setDepth(3.01);
+      const maskG = this.add.graphics().setVisible(false);
+      this.timedPusherViews.set(m.id, { block, blockLight, base, ring, maskG, mask: maskG.createGeometryMask(), timeMs: m.time, on: false, lastH: null, clockSnd: null });
     }
 
     // 拉杆（overGround）：先杆后底座（底座盖住杆根）+ 亮灯层（lever_base_light_on/off）。
@@ -1547,7 +1588,13 @@ export class GameScene extends Phaser.Scene {
     while (q.length > 0) {
       const m = q.shift()!;
       if (m.kind === "lever") this.sfx("sfx_lever");
-      else if (m.kind === "pusher") this.sfx("sfx_pusher");
+      else if (m.kind === "pusher") {
+        this.sfx("sfx_pusher");
+        // oracle 边沿 sound.stop()：定时推杆 clock 尾音随压下/回弹边沿停（起播门在 cbTimedPushers）
+        this.timedPusherViews.forEach((v) => {
+          if (v.clockSnd?.isPlaying) v.clockSnd.stop();
+        });
+      }
       // 灯光神庙（02号档 §2/§9：lightpusher 照到/滑轨跨格/水冻融）
       else if (m.kind === "lightpusher") this.sfx("sfx_lightpusher");
       else if (m.kind === "slider") this.sfx("sfx_slider");
@@ -1760,6 +1807,7 @@ export class GameScene extends Phaser.Scene {
     st.infiniteMirrors?.forEach?.(this.cbInfiniteMirrors);
     st.lightPushers?.forEach?.(this.cbLightPushers);
     st.sliders?.forEach?.(this.cbSliders);
+    st.timedPushers?.forEach?.(this.cbTimedPushers);
     if (typeof st.liquids === "string" && st.liquids !== this.lastLiquids) {
       this.lastLiquids = st.liquids;
       let i = 0;
@@ -1825,6 +1873,60 @@ export class GameScene extends Phaser.Scene {
     if (on !== v.state) {
       v.state = on;
       v.light.setFrame(on ? "lightpusher_light_on0000" : "lightpusher_light_off0000");
+    }
+  };
+
+  private cbTimedPushers = (ts: { state: number; frac: number; downState: number; x: number; y: number }, id: string): void => {
+    let v = this.timedPusherSnaps.get(id);
+    if (v === undefined) {
+      v = this.timedPusherViews.get(`t${id}`) ?? null;
+      this.timedPusherSnaps.set(id, v);
+    }
+    if (!v) return;
+    const on = Number(ts.state) === 1;
+    // 头随体（快照 x/y 平滑）；底座/环灯/表盘静止不动
+    const pt = this.mechTarget(`TP${id}`, Number(ts.x) || 0, Number(ts.y) || 0, 0);
+    const bx = pt.x + PAD;
+    const by = pt.y + PAD;
+    if (bx !== v.block.x || by !== v.block.y) {
+      v.block.setPosition(bx, by);
+      v.blockLight.setPosition(bx, by);
+    }
+    if (on !== v.on) {
+      v.on = on;
+      v.ring.setFrame(on ? "timed_pusher_light_on0000" : "timed_pusher_light_off0000");
+      if (on) v.ring.setMask(v.mask);
+      else {
+        v.ring.clearMask();
+        v.maskG.clear();
+        v.lastH = null;
+      }
+    }
+    if (!on) {
+      if (v.clockSnd?.isPlaying) v.clockSnd.stop();
+      return;
+    }
+    // 倒计时楔形遮罩（仅 h 变化时重绘）
+    const c = Math.ceil(12 * Math.max(0, Math.min(1, Number(ts.frac) || 0))) / 12;
+    const h = -2 * Math.PI * c - Math.PI / 2;
+    if (h !== v.lastH) {
+      v.lastH = h;
+      const cx = v.base.x;
+      const cy = v.base.y + 27;
+      v.maskG.clear();
+      v.maskG.fillStyle(0xffffff, 1);
+      v.maskG.beginPath();
+      v.maskG.moveTo(cx, cy);
+      v.maskG.arc(cx, cy, 20, h, -Math.PI / 2);
+      v.maskG.lineTo(cx, cy);
+      v.maskG.fillPath();
+    }
+    // clock 尾音：downState===0（已松开倒计时独立走）且未在播 → seek((22796-time)/1000) 起播
+    if (Number(ts.downState) === 0) {
+      if (!v.clockSnd) v.clockSnd = this.sound.add("sfx_clock") as Phaser.Sound.WebAudioSound;
+      if (!v.clockSnd.isPlaying) v.clockSnd.play({ seek: Math.max(0, (22796 - v.timeMs) / 1000) });
+    } else if (v.clockSnd?.isPlaying) {
+      v.clockSnd.stop();
     }
   };
 

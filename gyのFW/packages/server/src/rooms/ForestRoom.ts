@@ -18,7 +18,8 @@ import { Room, ServerError } from "../colyseus.cjs.js";
 import { ROLES, EMPTY_INPUT, type Role, type InputState } from "@fw/shared";
 import { World, m2px, type WorldEvent } from "@fw/shared/kernel";
 import { levelExists, loadLevel, type LevelBundle } from "../levels.js";
-import { BeamState, RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState } from "./state.js";
+import { BeamState,
+  TimedPusherState, RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState } from "./state.js";
 
 interface JoinOptions {
   password?: string;
@@ -219,6 +220,7 @@ export class ForestRoom extends Room<RoomState> {
       this.state.infiniteMirrors.clear();
       this.state.lightPushers.clear();
       this.state.sliders.clear();
+      this.state.timedPushers.clear();
       this.state.liquids = "";
       this.state.romans.clear();
       this.restartLevel();
@@ -784,6 +786,23 @@ export class ForestRoom extends Room<RoomState> {
       ps.y = Math.round(m2px(pos.y) * 10) / 10;
     }
     for (let id = 0; id < mechs.sliders.length; id++) syncBody(this.state.sliders, String(id), mechs.sliders[id].body, 1);
+    for (let id = 0; id < mechs.timedPushers.length; id++) {
+      const m = mechs.timedPushers[id];
+      let ps = this.state.timedPushers.get(String(id));
+      if (!ps) {
+        ps = new TimedPusherState();
+        this.state.timedPushers.set(String(id), ps);
+      }
+      ps.state = m.state;
+      ps.downState = m.downState;
+      // 时钟进度：按压保持期 1−elapsed/time（原版 1−timer.ms/time），非保持期 0
+      const frac = m.timerActive ? Math.max(0, Math.min(1, 1 - m.timerElapsedMs / m.timeMs)) : 0;
+      const fr = Math.round(frac * 1000) / 1000;
+      if (ps.frac !== fr) ps.frac = fr;
+      const pos = m.body.GetPosition();
+      ps.x = Math.round(m2px(pos.x) * 10) / 10;
+      ps.y = Math.round(m2px(pos.y) * 10) / 10;
+    }
     // 液体冻结旗标（行段序 0/1 串）
     const liquidsFlag = this.world.liquids.map((l: any) => (l.frozen ? "1" : "0")).join("");
     if (this.state.liquids !== liquidsFlag) this.state.liquids = liquidsFlag;

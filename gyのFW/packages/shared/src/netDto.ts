@@ -125,6 +125,15 @@ export interface BeamSnapshotDto {
   pts: string;
 }
 
+/** 对应 state.ts `TimedPusherState`（ice 定时推杆：state 0/1 + 时钟进度 frac 0..1） */
+export interface TimedPusherSnapshotDto {
+  state: number;
+  frac: number;
+  downState: number;
+  x: number;
+  y: number;
+}
+
 /**
  * 对应 state.ts `DoorState`（类声明 L119，defineTypes 注册 L222-229）。
  * 每关恰一对门、单条目（RoomState.doors 为引用非 Map）。
@@ -171,6 +180,7 @@ export interface RoomSnapshotDto {
   infiniteMirrors: Readonly<Record<string, BodySnapshotDto>>;
   lightPushers: Readonly<Record<string, PusherSnapshotDto>>;
   sliders: Readonly<Record<string, BodySnapshotDto>>;
+  timedPushers: Readonly<Record<string, TimedPusherSnapshotDto>>;
   /** 液体冻结旗标串（每行段一位 0/1） */
   liquids: string;
   doors: DoorSnapshotDto;
@@ -189,6 +199,7 @@ export type SchemaChildName =
   | "BodyState"
   | "WindState"
   | "BeamState"
+  | "TimedPusherState"
   | "DoorState";
 
 export const PLAYER_SNAPSHOT_FIELDS: WireSpecOf<PlayerSnapshotDto> = {
@@ -256,6 +267,7 @@ export const CHILD_SNAPSHOT_FIELDS: Record<SchemaChildName, Readonly<Record<stri
   WindState: WIND_SNAPSHOT_FIELDS,
   DoorState: DOOR_SNAPSHOT_FIELDS,
   BeamState: { state: "number", pts: "string" },
+  TimedPusherState: { state: "number", frac: "number", downState: "number", x: "number", y: "number" },
 };
 
 /** 房间字段 spec：标量 WireKind；集合 { map: 子类名 }；单引用 { ref: 子类名 } */
@@ -284,6 +296,7 @@ export const ROOM_SNAPSHOT_FIELDS = {
   infiniteMirrors: { map: "BodyState" },
   lightPushers: { map: "PusherState" },
   sliders: { map: "BodyState" },
+  timedPushers: { map: "TimedPusherState" },
   liquids: "string",
   doors: { ref: "DoorState" },
 } as const satisfies Record<keyof RoomSnapshotDto, RoomFieldSpec>;
@@ -302,7 +315,7 @@ export function numericFieldNames(spec: Readonly<Record<string, unknown>>): read
   return Object.keys(spec).filter((k) => spec[k] === "number");
 }
 
-/** 房间根字段名清单（21） */
+/** 房间根字段名清单（22） */
 export const ROOM_SNAPSHOT_FIELD_NAMES: readonly string[] = fieldNamesOf(ROOM_SNAPSHOT_FIELDS);
 
 /** 各子状态类字段名清单（键=服务端类名） */
@@ -315,6 +328,7 @@ export const CHILD_SNAPSHOT_FIELD_NAMES: Record<SchemaChildName, readonly string
   WindState: fieldNamesOf(WIND_SNAPSHOT_FIELDS),
   DoorState: fieldNamesOf(DOOR_SNAPSHOT_FIELDS),
   BeamState: fieldNamesOf({ state: "number", pts: "string" }),
+  TimedPusherState: fieldNamesOf({ state: "number", frac: "number", downState: "number", x: "number", y: "number" }),
 };
 
 /** 房间集合字段 → 子状态类名（MapSchema 拓扑，供校验器遍历集合条目） */
@@ -335,6 +349,7 @@ export const ROOM_COLLECTION_CHILD: Readonly<Record<string, SchemaChildName>> = 
   infiniteMirrors: "BodyState",
   lightPushers: "PusherState",
   sliders: "BodyState",
+  timedPushers: "TimedPusherState",
 };
 
 /** 房间单引用字段（非集合非标量） */

@@ -38,6 +38,7 @@ export const AUDIO_GAME: ReadonlyArray<readonly [string, string]> = [
   ["sfx_melt", "Melt.mp3"],
   ["sfx_slider", "Slider.mp3"],
   ["sfx_lightpusher", "LightPusher.mp3"],
+  ["sfx_clock", "Clock.mp3"],
   ["bgm_level", "LevelMusic.mp3"],
   ["bgm_level_dark", "LevelMusic_dark.mp3"],
   ["bgm_finish", "LevelMusicFinish.mp3"],

@@ -105,6 +105,7 @@ export class World {
 
   /** Step 期间的事件落点：接触回调直改状态并即时产事件（原版口径，F7） */
   private stepEvents: WorldEvent[] | null = null;
+  private tpEvents: { kind: "pusher"; group: number; state: number }[] = [];
   // ---- 光束缓存签名（r12 Round A）：全动态体变换逐位快照 + 突变 epoch。
   // 变换全等与 epoch 一致时 beamer raycast 结果必然逐位相同（命中只依赖 fixture 变换与
   // beamer 自身位姿/state），可安全复用上一帧折线并重放照明标记；epoch 覆盖 freeze/melt
@@ -207,6 +208,7 @@ export class World {
     infiniteMirrors: Array<{ id: number; angle: number }>;
     lightPushers: Array<{ id: number; group: number; state: number; x: number; y: number }>;
     sliders: Array<{ id: number; x: number; y: number }>;
+    timedPushers: Array<{ id: number; state: number; x: number; y: number }>;
     liquidsFrozen: boolean[];
   } {
     return {
@@ -263,6 +265,10 @@ export class World {
       sliders: this.mechs.sliders.map((m, id) => {
         const pos = m.body.GetPosition();
         return { id, x: m2px(pos.x), y: m2px(pos.y) };
+      }),
+      timedPushers: this.mechs.timedPushers.map((m, id) => {
+        const pos = m.body.GetPosition();
+        return { id, state: m.state, x: m2px(pos.x), y: m2px(pos.y) };
       }),
       liquidsFrozen: this.built.liquids.map((l) => l.frozen),
     };
@@ -343,6 +349,12 @@ export class World {
           if (liq.sensorLp.iluminated === "blue") this.freezeLiquid(liq, events);
           else if (liq.sensorLp.iluminated === "red") this.meltLiquid(liq, events);
         }
+      }
+      // 定时推杆（ice，独立计时不进组；dt 走仿真钟）——事件只作音效广播，不进 deviceChanged
+      if (this.mechs.timedPushers.length > 0) {
+        this.tpEvents.length = 0;
+        for (const tp of this.mechs.timedPushers) tp.checkState(this.tpEvents, dt * 1000);
+        for (const ev of this.tpEvents) events.push({ type: "mech", event: ev });
       }
       this.updateDoors(dt, events);
     }

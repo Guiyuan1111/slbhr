@@ -127,6 +127,25 @@ export class BeamState extends Schema {
   }
 }
 
+/** 定时推杆（ice）：state 0/1 + 时钟进度 frac（0..1，客户端画倒数表盘） */
+export class TimedPusherState extends Schema {
+  state!: number;
+  frac!: number;
+  /** 按压物理沿（0=松开/1=压着；clock 尾音门控） */
+  downState!: number;
+  x!: number;
+  y!: number;
+
+  constructor() {
+    super();
+    this.state = 0;
+    this.frac = 0;
+    this.downState = 0;
+    this.x = 0;
+    this.y = 0;
+  }
+}
+
 /** 双门状态（每关恰一对，单条目足够） */
 export class DoorState extends Schema {
   fbAtDoor!: boolean;
@@ -169,6 +188,7 @@ export class RoomState extends Schema {
   infiniteMirrors!: MapSchemaType<BodyState>;
   lightPushers!: MapSchemaType<PusherState>;
   sliders!: MapSchemaType<BodyState>;
+  timedPushers!: MapSchemaType<TimedPusherState>;
   /** 液体冻结旗标串（每行段一位 0/1；无液体=""） */
   liquids!: string;
   doors!: DoorState;
@@ -194,6 +214,7 @@ export class RoomState extends Schema {
     this.infiniteMirrors = new MapSchema();
     this.lightPushers = new MapSchema();
     this.sliders = new MapSchema();
+    this.timedPushers = new MapSchema();
     this.liquids = "";
     this.doors = new DoorState();
   }
@@ -252,6 +273,14 @@ defineTypes(BeamState, {
   pts: "string",
 });
 
+defineTypes(TimedPusherState, {
+  state: "number",
+  frac: "number",
+  downState: "number",
+  x: "number",
+  y: "number",
+});
+
 defineTypes(DoorState, {
   fbAtDoor: "boolean",
   wgAtDoor: "boolean",
@@ -281,6 +310,7 @@ defineTypes(RoomState, {
   infiniteMirrors: { map: BodyState },
   lightPushers: { map: PusherState },
   sliders: { map: BodyState },
+  timedPushers: { map: TimedPusherState },
   liquids: "string",
   doors: DoorState,
 });

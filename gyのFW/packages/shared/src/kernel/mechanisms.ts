@@ -8,7 +8,7 @@
  * deviceChanged = 组内所有信号源 state 的 OR → 赋给组内非信号设备（平台/窗）并 _updateState。
  * 平台纯信号驱动（updateState 仅在信号时调用，SetMotorSpeed ±2 持续生效到行程端点）。
  */
-import { windBodyPos, type BeamerDef, type BoxMirrorDef, type InfiniteMirrorDef, type LevelData, type LightPusherDef, type RotMirrorDef, type SliderDef } from "../level2.js";
+import { windBodyPos, type BeamerDef, type BoxMirrorDef, type InfiniteMirrorDef, type LevelData, type LightPusherDef, type RotMirrorDef, type SliderDef, type TimedPusherDef } from "../level2.js";
 import type { B2 } from "./b2.js";
 import { boxFixture, circleFixture, FILTER, m2px, polygonFixture, px2m } from "./b2.js";
 
@@ -48,7 +48,8 @@ export abstract class Device {
   }
 
   abstract updateState(silent: boolean): void;
-  abstract checkState(events: MechEvent[]): void;
+  /** dtMs 供计时型机关（TimedPusher）走仿真钟；其余实现可忽略 */
+  abstract checkState(events: MechEvent[], dtMs?: number): void;
   /** 信号驱动入口（原版 _updateState） */
   signalApply(): void {
     this.updateState(false);
@@ -1203,6 +1204,92 @@ export class LightPusher extends Device {
   }
 }
 
+/** 定时推杆（ice 部）：Pusher 同体同物理（梯形座+prismatic 行程 0.7、motor -15/力 5），
+ *  语义差异=按压后 state=1 保持 properties.time 毫秒（松开不清零，计时到自动回弹）；
+ *  doRegister 覆写为空 → 不进 MechManager 组（C bundle @1707424 逐字），事件仅作音效。
+ *  计时器走仿真时间（dt 累计；原版 game.time 墙钟在 60Hz 确定性世界与仿真钟逐帧等价）。 */
+export class TimedPusher extends Device {
+  readonly body: any;
+  private joint: any;
+  readonly timeMs: number;
+  /** 计时态公开（ForestRoom 同步时钟进度 frac 用） */
+  timerActive = false;
+  timerElapsedMs = 0;
+  /** 公开（ForestRoom 同步 clock 音门控：state===1 且 downState===0 才播尾音） */
+  downState = 0;
+
+  constructor(B: B2, world: any, groundBody: any, def: TimedPusherDef) {
+    super(B, def.group, false);
+    this.timeMs = def.time;
+    const center = phys(B, def.x, def.y);
+    const bd = new B.b2BodyDef();
+    bd.type = B.b2BodyType.b2_dynamicBody;
+    bd.position = center;
+    this.body = world.CreateBody(bd);
+    this.body.SetUserData("pusher");
+    // oracle Pusher @C：g.body.data.SetAngle(rotation*π/180||0)——梯形座随体转（prismatic 轴恒世界 Y）
+    const th = (def.rotation * Math.PI) / 180;
+    if (th) this.body.SetAngle(th);
+    // 梯形座（Pusher 同款，bundle @1745895 谱系；C 部 pusherHeight 0.6）
+    polygonFixture(this.body, B, [
+      { x: -1, y: 0 },
+      { x: 1, y: 0 },
+      { x: 0.5, y: 0.6 },
+      { x: -0.5, y: 0.6 },
+    ], {
+      categoryBits: FILTER.GROUND_CAT,
+      maskBits: FILTER.LIQUID_SENSOR_MASK,
+      friction: 0.7,
+      restitution: 0,
+      density: 0.1,
+      userData: "pusher",
+    });
+    const jd = new B.b2PrismaticJointDef();
+    jd.Initialize(this.body, groundBody, this.body.GetWorldCenter(), new B.b2Vec2(0, 1));
+    jd.lowerTranslation = 0;
+    jd.upperTranslation = 0.7;
+    jd.enableLimit = true;
+    jd.enableMotor = true;
+    jd.motorSpeed = -15;
+    jd.maxMotorForce = 5;
+    this.joint = world.CreateJoint(jd);
+  }
+
+  updateState(_silent: boolean): void {
+    /* 独立即不进组（doRegister 空），无信号驱动 */
+  }
+
+  /** @1726905 checkState 逐字（计时器换仿真钟）：downState 边沿/按压保持/到时回弹 */
+  checkState(events: MechEvent[], dtMs: number): void {
+    const f = this.joint.GetJointTranslation();
+    if (this.downState === 0 && f > 0) {
+      this.downState = 1;
+      events.push({ kind: "pusher", group: this.group, state: 1 });
+    } else if (this.downState === 1 && f <= 0) {
+      this.downState = 0;
+      events.push({ kind: "pusher", group: this.group, state: 0 });
+    }
+    if (f > 0) {
+      if (this.state === 0) this.state = 1;
+      // 原版按压期每帧 timer.stop().start()——持续压住计时永不到时
+      this.timerActive = true;
+      this.timerElapsedMs = 0;
+    } else if (!this.timerActive && this.state === 1) {
+      this.state = 0;
+    }
+    if (this.timerActive) {
+      this.timerElapsedMs += dtMs;
+      if (this.timerElapsedMs >= this.timeMs) {
+        this.timerActive = false;
+        if (this.state === 1) {
+          this.state = 0;
+          events.push({ kind: "pusher", group: this.group, state: 0 });
+        }
+      }
+    }
+  }
+}
+
 export class Slider extends Device {
   readonly body: any;
   private joint: any;
@@ -1270,6 +1357,7 @@ export interface Mechanisms {
   infiniteMirrors: InfiniteMirror[];
   lightPushers: LightPusher[];
   sliders: Slider[];
+  timedPushers: TimedPusher[];
   /** 光设备统一创建序（world 按【逆序】逐帧步进——原版 sprite 更新序探针口径） */
   lightDevices: Array<{ order: number; beamer?: Beamer; rotMirror?: RotMirror; lightPusher?: LightPusher; slider?: Slider; infiniteMirror?: InfiniteMirror }>;
 }
@@ -1352,6 +1440,11 @@ export function buildMechanisms(B: B2, world: any, groundBody: any, level: Level
     manager.register(m);
     lightDevices.push({ order: lightDevices.length, slider: m });
   }
+  const timedPushers: TimedPusher[] = [];
+  for (const d of level.timedPushers) {
+    // doRegister 覆写为空 → 不进 MechManager 组（独立计时件）
+    timedPushers.push(new TimedPusher(B, world, groundBody, d));
+  }
 
-  return { manager, levers, pushers, platforms, props, winds, hangings, pulleys, romans, beamers, rotMirrors, boxMirrors, infiniteMirrors, lightPushers, sliders, lightDevices };
+  return { manager, levers, pushers, platforms, props, winds, hangings, pulleys, romans, beamers, rotMirrors, boxMirrors, infiniteMirrors, lightPushers, sliders, timedPushers, lightDevices };
 }
