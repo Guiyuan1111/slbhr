@@ -70,7 +70,7 @@ npm ci --omit=dev      # 剪枝 devDependencies（tsx 在 dependencies，npm sta
 关卡 API + `/healthz` + Colyseus WebSocket 全在同一个 `PORT`（默认 2567），
 **无需 nginx 也能跑**。
 
-### 方式 A（推荐，直连）
+### 方式 A（仅限内网/临时调试，勿公网直连）
 
 `deploy/fw.service` 按实际修改三处：`User=fw`、
 `WorkingDirectory=/home/fw/fw/gyのFW`、`Environment=FW_HOST=0.0.0.0`。
@@ -83,19 +83,22 @@ ufw allow 22/tcp && ufw allow 2567/tcp && ufw enable
 
 玩家访问 `http://<服务器IP>:2567`。
 
-### 方式 B（可选，TLS 反代）
+### 方式 B（公网推荐，TLS 反代）
 
 需要域名 + 备案（大陆节点）。Caddy/Nginx 反代同端口：页面与 `/matchmake` 的
 WebSocket upgrade 都要转发，反代空闲超时须 **>60s**（服务端断线重连窗口为 60s，
 `FW_RECONNECT_SECONDS` 可调）；此时 `FW_HOST` 保持默认 `127.0.0.1`，仅反代对外。
+**公网部署一律走本方式**：服务端无用户体系、明文 HTTP 不应直暴露公网。
 
 ### 安全取舍（方式 A）
 
-服务端有**房间密码鉴权**：创建时 4-64 位门槛、加入时服务端比对
-（`packages/server/src/rooms/ForestRoom.ts:145/:313`）；matchmaking 另有 IP 限流
-（60s 固定窗口每 IP 60 次尝试，0.3.41 M5）；无用户体系、无 TLS。
-方式 A 为 HTTP 明文传输，两人私用可接受；**房间密码务必设强**（≥12 位混合）。
-60s 重连窗口内断线者可凭 session 免密重进，属预期行为。
+服务端有**房间密码鉴权**：创建时 4-64 位门槛、加入时服务端无条件比对（0.3.48 修复
+`joinById(roomId, true)` 绕过缺陷，见 #28；此前的「密码设强即足」承诺不成立——
+修复前密码不能作为公网暴露的防护措施对待）；matchmaking 另有 IP 固定窗口限流
+（60s 每 IP 60 次，0.3.41 M5；0.3.48 修复可伪造头绕过与 O(n²) 放大，见 #21）。
+即便如此，方式 A 仍是 HTTP 明文且无用户体系，**仅适用于可信内网或临时调试**；
+公网部署用方式 B 并自行加访问控制。房间密码仍建议设强（≥12 位混合），但它是
+门槛而非边界。60s 重连窗口内断线者可凭 session 免密重进，属预期行为。
 
 ## 5. systemd 常驻（开机自启/崩溃拉起/优雅停机）
 

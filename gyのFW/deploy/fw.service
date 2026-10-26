@@ -1,7 +1,8 @@
 # systemd 单元样例（I-01）。**可选，按需部署**——本项目定位两人私下游玩，
 # 默认 start.bat/start.sh 直跑即可；只有需要开机自启/崩溃自动拉起/标准停机语义时才用。
 #
-# 安装（按实际用户/路径/Node 位置修改后）：
+# 安装（必改下面两处占位符再 cp——DEPLOY.md §4 同款示例值）：
+#   sed -i 's|User=fw$|<你的用户名>|; s|WorkingDirectory=.*|WorkingDirectory=<仓库内 gyのFW 绝对路径>|' deploy/fw.service
 #   sudo cp deploy/fw.service /etc/systemd/system/
 #   sudo systemctl daemon-reload
 #   sudo systemctl enable --now fw
@@ -17,8 +18,9 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=gy
-WorkingDirectory=/home/gy/桌面/dev/slbhr/gyのFW
+# 占位符（#27）：示例值非缺省可用——不改直接 start 会失败，属有意设计
+User=fw
+WorkingDirectory=/home/fw/fw/gyのFW
 # npm start = tsx packages/server/src/index.ts（tsx 为运行时依赖，omit=dev 可用）
 ExecStart=/usr/bin/npm start
 Environment=PORT=2567

@@ -1,5 +1,10 @@
 /**
- * 共享 DTO 快照类型草案（M12 挂账项，prep 草案、未接线）。
+ * 共享 DTO 快照类型（M12 挂账项，0.3.43 起已接线）。
+ *
+ * 已接线消费方：客户端首快照校验 packages/client/src/snapshotValidation.ts
+ * 直接引用本文件字段清单与 ROOM_COLLECTION_CHILD/CHILD_SNAPSHOT_FIELDS（0.3.48
+ * 起校验面亦由其驱动）——修改字段需同步服务端 Schema（state.ts）与
+ * packages/shared/__tests__/netDto.test.ts，任何一侧漂移即红。
  *
  * 对应服务端 Schema 定义：packages/server/src/rooms/state.ts（本文件注释中的
  * "state.ts" 均指该文件，行号以 2026-10-23 HEAD 9813dc2 工作区为准）。
