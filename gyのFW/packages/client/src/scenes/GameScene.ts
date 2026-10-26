@@ -391,6 +391,24 @@ export class GameScene extends Phaser.Scene {
     // （刷新回座 started 由 create 末尾解冻；refresh 进 ready 则保持冻结到开局事件）。
     this.camRig.resetTransient();
     this.myRole = this.d.net.myRole ?? this.myRole;
+    // #29：黑幕/浮尘渲染对象已随上次 SHUTDOWN 的 DisplayList.shutdown 全部销毁，
+    // 长生命周期引用必须归零，否则 create 的幂等条件（引用非空）会跳过重建；
+    // lastBeamPts 同理——旧关折线残留会在首帧画出幽灵光束并污染浮尘掩膜签名。
+    this.lastBeamPts.clear();
+    this.resetFxState();
+  }
+
+  /** #29：场景实例在 stop/start 间复用，Phaser DisplayList.shutdown 会把显示列表中的
+   *  全部子对象逐个 destroy——darkRt 族/浮尘族字段只在 init 归零、create 按需重建。 */
+  private resetFxState(): void {
+    this.darkRt = null;
+    this.darkHalo = null;
+    this.staticHaloRt = null;
+    this.staticHaloSig = null;
+    this.dustContainer = null;
+    this.dustMask = null;
+    this.dustMaskSig = "";
+    this.dustWobble = [];
   }
 
   create(): void {
