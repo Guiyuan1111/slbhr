@@ -1843,13 +1843,24 @@ export class GameScene extends Phaser.Scene {
   private cbBeamers = (b: { state: number; pts: string }, id: string): void => {
     const k = `L${id}`;
     const v = this.beamerViews.get(k);
-    if (!v) return;
+    // #30：视图不存在（实体移除/换关）也必须删缓存——drawDarkness/updateDust 把
+    // lastBeamPts 条目一概视为「当前有光束」，残留即黑幕亮带与浮尘掩膜泄漏。
+    if (!v) {
+      this.lastBeamPts.delete(k);
+      return;
+    }
     const on = Number(b.state) === 1;
     v.g.clear();
     v.light.setFrame(on ? "beamer_light_on0000" : "beamer_light_off0000");
-    if (!on || !b.pts) return;
+    if (!on || !b.pts) {
+      this.lastBeamPts.delete(k);
+      return;
+    }
     const path = b.pts.split("|").map((seg) => seg.split(",").map(Number));
-    if (path.length < 2) return;
+    if (path.length < 2) {
+      this.lastBeamPts.delete(k);
+      return;
+    }
     this.lastBeamPts.set(k, path);
     for (const [width, alpha] of [[10, 0.3], [2, 1]] as const) {
       v.g.lineStyle(width, v.color, alpha);
