@@ -9,7 +9,7 @@
  */
 import http from "node:http";
 import type { AddressInfo, Socket } from "node:net";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { installMatchmakeBodyGuard } from "../matchmakeGuard.js";
 
 const LIMIT = 32;
@@ -112,5 +112,83 @@ describe("installMatchmakeBodyGuard（M5 /matchmake 请求体上限）", () => {
     const r = await post(port, "/api/other", { body: Buffer.alloc(LIMIT * 4, 0x62) });
     expect(r.status).toBe(200);
     expect(JSON.parse(r.body!).bytes).toBe(LIMIT * 4);
+  });
+});
+
+describe("非 POST 方法分流（#32）", () => {
+  /** guard 之后再挂一个「假 Colyseus 监听器」：命中即置位。Colyseus 真实行为是
+   *  非 OPTIONS/POST 不写响应不 end（socket 永久挂起），故 405 必须由 guard 发出。 */
+  let hit = false;
+  let server: http.Server | undefined;
+  const sockets = new Set<Socket>();
+
+  beforeEach(() => {
+    hit = false;
+  });
+
+  afterEach(async () => {
+    for (const s of sockets) s.destroy();
+    sockets.clear();
+    if (server) {
+      await new Promise<void>((resolve) => server!.close(() => resolve()));
+      server = undefined;
+    }
+  });
+
+  async function start(): Promise<number> {
+    server = http.createServer(() => {});
+    server.on("connection", (s) => {
+      sockets.add(s);
+      s.on("close", () => sockets.delete(s));
+    });
+    installMatchmakeBodyGuard(server);
+    // 假下游栈：guard 未响应（headersSent=false）时 200 并打标；guard 已 405 的请求到此
+    // 自滤（真实场景 Colyseus 对非 OPTIONS/POST 本就无响应分支，重复执行无害）。
+    server.addListener("request", (req, res) => {
+      if (res.headersSent || res.writableEnded) return;
+      hit = true;
+      res.writeHead(200);
+      res.end("{}");
+    });
+    await new Promise<void>((resolve) => server!.listen(0, "127.0.0.1", resolve));
+    return (server.address() as AddressInfo).port;
+  }
+
+  const fetchRaw = async (method: string, port: number, path = "/matchmake/joinById/x"): Promise<{ status: number; allow?: string; hitAfter: boolean }> => {
+    return new Promise((resolve, reject) => {
+      const req = http.request({ host: "127.0.0.1", port, method, path }, (res) => {
+        res.resume();
+        res.on("end", () => resolve({ status: res.statusCode ?? 0, allow: res.headers.allow as string | undefined, hitAfter: hit }));
+      });
+      req.on("error", reject);
+      req.end();
+    });
+  };
+
+  it("PUT/DELETE/HEAD 立即 405（Allow: OPTIONS, POST）且不进 Colyseus 分支", async () => {
+    const port = await start();
+    for (const method of ["PUT", "DELETE", "HEAD"]) {
+      hit = false;
+      const r = await fetchRaw(method, port);
+      expect(r.status, method).toBe(405);
+      expect(r.allow).toBe("OPTIONS, POST");
+      expect(r.hitAfter, method).toBe(false);
+    }
+  });
+
+  it("OPTIONS 与 POST 仍照常进入 Colyseus 分支", async () => {
+    const port = await start();
+    hit = false;
+    expect((await fetchRaw("OPTIONS", port)).hitAfter).toBe(true);
+    hit = false;
+    expect((await fetchRaw("POST", port, "/matchmake/create/forest")).hitAfter).toBe(true);
+  });
+
+  it("非 /matchmake 路径的其他方法不受拦截", async () => {
+    const port = await start();
+    hit = false;
+    const r = await fetchRaw("PUT", port, "/healthz");
+    expect(r.hitAfter).toBe(true);
+    expect(r.status).toBe(200);
   });
 });

@@ -21,10 +21,23 @@ export const MATCHMAKE_MAX_BYTES = 16 * 1024;
  */
 export function installMatchmakeBodyGuard(server: http.Server, maxBytes = MATCHMAKE_MAX_BYTES): void {
   server.prependListener("request", (req, res) => {
-    // 只拦截 matchmaking POST；静态资源/健康检查/WS upgrade 完全不受影响。
     // 用 "/matchmake"（与 Colyseus Server.js:196 的 indexOf 判定同口径，含末尾无斜杠变体），
-    // 避免 /matchmake 裸路径绕过上限。
-    if (req.method !== "POST" || !(req.url ?? "").includes("/matchmake")) return;
+    // 避免 /matchmake 裸路径绕过上限。静态资源/健康检查/WS upgrade 完全不受影响。
+    if (!(req.url ?? "").includes("/matchmake")) return;
+
+    // #32：Colyseus handleMatchMakeRequest 只有 OPTIONS/POST 分支（Server.js:206-245），
+    // 其余方法不写响应也不 end——socket 永久挂起（未鉴权连接可无限占用 FD）。立即 405
+    // 并关闭连接；OPTIONS 交还 Colyseus 的 CORS 预检分支。
+    if (req.method !== "POST" && req.method !== "OPTIONS") {
+      if (!res.headersSent) {
+        res.writeHead(405, { Allow: "OPTIONS, POST", Connection: "close" });
+        res.end(() => req.destroy());
+      } else {
+        req.destroy();
+      }
+      return;
+    }
+    if (req.method !== "POST") return;
 
     let rejected = false;
     const reject = (): void => {

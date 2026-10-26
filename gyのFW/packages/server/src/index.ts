@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import { Server, WebSocketTransport } from "./colyseus.cjs.js";
 import { staticGz } from "./staticGz.js";
+import { applyServerTimeouts } from "./serverTimeouts.js";
 import { installMatchmakeBodyGuard } from "./matchmakeGuard.js";
 import { ForestRoom } from "./rooms/ForestRoom.js";
 import { levelExists, listLevelIds, loadLevel } from "./levels.js";
@@ -75,6 +76,7 @@ app.get("/api/level/:id", (req, res) => {
 });
 
 const httpServer = http.createServer(app);
+applyServerTimeouts(httpServer);
 
 const gameServer = new Server({
   transport: new WebSocketTransport({ server: httpServer }),
