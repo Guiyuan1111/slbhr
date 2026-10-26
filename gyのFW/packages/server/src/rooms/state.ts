@@ -327,6 +327,7 @@ defineTypes(RoomState, {
  * hasFilters 不受影响（由 metadata view 标签驱动，TypeContext.discoverTypes），无
  * StateView/encodeView 路径被触及。
  */
-for (const cls of [RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState, DoorState]) {
+// #26：BeamState/TimedPusherState（0.3.45/0.3.47 新增）曾漏登记，每字段编码白付一次 filter 调用
+for (const cls of [RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState, DoorState, BeamState, TimedPusherState]) {
   (cls as unknown as Record<string, unknown>)[$filter as string] = undefined;
 }
