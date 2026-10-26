@@ -3,19 +3,17 @@
  * `String(x ?? "")` / `Number(x) || 0` 静默吞掉。只在每关首帧跑一次，
  * 不进入逐帧热路径。
  *
- * 0.3.43 起字段清单改吃共享 DTO（packages/shared/src/netDto.ts）——校验面
- * 从"客户端现消费的子集"（Player 5/14 字段、winds 1/2）扩为**全注册字段**，
- * 并新增 doors 组监控（客户端暂零消费，先纳入漂移告警）。清单与服务端
- * defineTypes 的一致性由 packages/shared/__tests__/netDto.test.ts 保证。
+ * 0.3.43 起字段清单改吃共享 DTO（packages/shared/src/netDto.ts）。0.3.48 起
+ * （#23）集合组清单亦由共享 DTO 的 ROOM_COLLECTION_CHILD 驱动（排除
+ * players/diamonds 两个有专门逻辑的组）——新增机关组自动纳入校验面，
+ * 不再需要手写同步（0.3.45/0.3.47 的 7 个新组曾因此全部漏检）。
  */
 import {
-  BODY_SNAPSHOT_FIELDS,
+  CHILD_SNAPSHOT_FIELDS,
   DIAMOND_SNAPSHOT_FIELDS,
   DOOR_SNAPSHOT_FIELDS,
-  LEVER_SNAPSHOT_FIELDS,
   PLAYER_SNAPSHOT_FIELDS,
-  PUSHER_SNAPSHOT_FIELDS,
-  WIND_SNAPSHOT_FIELDS,
+  ROOM_COLLECTION_CHILD,
 } from "@fw/shared";
 
 export interface SnapshotIssue {
@@ -28,17 +26,12 @@ type MapLike = {
   get?(key: string): any;
 };
 
-/** 快照组名 → 共享 DTO 字段清单（platforms/props/hangings/pulleys/romans 共用 BodyState） */
-const KIND_GROUPS: ReadonlyArray<readonly [string, Readonly<Record<string, string>>]> = [
-  ["levers", LEVER_SNAPSHOT_FIELDS],
-  ["pushers", PUSHER_SNAPSHOT_FIELDS],
-  ["platforms", BODY_SNAPSHOT_FIELDS],
-  ["props", BODY_SNAPSHOT_FIELDS],
-  ["hangings", BODY_SNAPSHOT_FIELDS],
-  ["pulleys", BODY_SNAPSHOT_FIELDS],
-  ["romans", BODY_SNAPSHOT_FIELDS],
-  ["winds", WIND_SNAPSHOT_FIELDS],
-];
+/** 快照集合组名 → 共享 DTO 字段清单：由 ROOM_COLLECTION_CHILD 全量派生，
+ *  players/diamonds 在 validateSnapshot 有专门逻辑故排除（#23） */
+const KIND_GROUPS: ReadonlyArray<readonly [string, Readonly<Record<string, string>>]> =
+  Object.entries(ROOM_COLLECTION_CHILD)
+    .filter(([group]) => group !== "players" && group !== "diamonds")
+    .map(([group, child]) => [group, CHILD_SNAPSHOT_FIELDS[child]] as const);
 
 /** 集合判定：MapSchema 与 ArraySchema 都有 forEach（doors 系 ArraySchema、其余系 MapSchema，
  * 真局探针实证）；get 仅 MapSchema 有，作可选能力不参与判定。 */

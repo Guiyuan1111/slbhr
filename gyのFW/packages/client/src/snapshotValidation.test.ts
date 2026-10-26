@@ -79,3 +79,60 @@ describe("validateSnapshot", () => {
     expect(issues).toContainEqual({ path: "players.fireboy.doorFrame", expected: "finite number" });
   });
 });
+
+/** ---- #23：集合组清单由 ROOM_COLLECTION_CHILD 驱动，新增组不再漏检 ---- */
+import { CHILD_SNAPSHOT_FIELDS, ROOM_COLLECTION_CHILD, type WireKind } from "@fw/shared";
+
+/** 按 WireKind 造合法值 */
+function good(k: WireKind): unknown {
+  if (k === "number") return 0;
+  if (k === "string") return "";
+  return false;
+}
+/** 按 WireKind 造错误类型值 */
+function bad(k: WireKind): unknown {
+  if (k === "number") return "oops";
+  if (k === "string") return 7;
+  return "not-bool";
+}
+function entryOf(child: string, val: (k: WireKind) => unknown): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [f, k] of Object.entries(CHILD_SNAPSHOT_FIELDS[child as keyof typeof CHILD_SNAPSHOT_FIELDS])) out[f] = val(k);
+  return out;
+}
+
+const COLLECTION_GROUPS = Object.keys(ROOM_COLLECTION_CHILD).filter((g) => g !== "players" && g !== "diamonds");
+
+describe("validateSnapshot #23 新机关组纳入校验", () => {
+  it("beamers/timedPushers/rotMirrors 字段类型全错必报 issue（原漏检复现样例）", () => {
+    const st: any = baseState();
+    st.beamers = new Map([["0", { state: "oops", x: "nope", y: null }]]);
+    st.timedPushers = new Map([["0", { state: "oops", frac: "half", downState: "no", x: "nope", y: null }]]);
+    st.rotMirrors = new Map([["0", { x: "nope", y: null, angle: "deg" }]]);
+    const issues = validateSnapshot(st, ["fireboy", "watergirl"]);
+    expect(issues.some((i) => i.path.startsWith("beamers.0."))).toBe(true);
+    expect(issues.some((i) => i.path.startsWith("timedPushers.0."))).toBe(true);
+    expect(issues.some((i) => i.path.startsWith("rotMirrors.0."))).toBe(true);
+  });
+
+  it("全部集合组逐一漂移必报：ROOM_COLLECTION_CHILD 每个组（除 players/diamonds）都有校验面", () => {
+    expect(COLLECTION_GROUPS.length).toBeGreaterThanOrEqual(15);
+    for (const group of COLLECTION_GROUPS) {
+      const st: any = baseState();
+      st[group] = new Map([["0", entryOf(ROOM_COLLECTION_CHILD[group], bad)]]);
+      const issues = validateSnapshot(st, ["fireboy", "watergirl"]);
+      expect(
+        issues.some((i) => i.path.startsWith(`${group}.0.`)),
+        `组 ${group} 全字段错误类型未被检出`,
+      ).toBe(true);
+    }
+  });
+
+  it("含全部新组的合法快照返回空数组", () => {
+    const st: any = baseState();
+    for (const group of COLLECTION_GROUPS) {
+      st[group] = new Map([["0", entryOf(ROOM_COLLECTION_CHILD[group], good)]]);
+    }
+    expect(validateSnapshot(st, ["fireboy", "watergirl"])).toEqual([]);
+  });
+});
