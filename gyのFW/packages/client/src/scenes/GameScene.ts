@@ -496,7 +496,17 @@ export class GameScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.stopWater();
       this.platformSounds.clear();
-      for (const k of ["bgm_menu", "bgm_level", "bgm_level_speed", "bgm_over", "bgm_finish", "bgm_finish_speed", "sfx_wind", "sfx_door"]) {
+      // #22：clock 是 this.sound.add 挂在全局 SoundManager 上的实例，不随场景关闭销毁——
+      // 反复重开/换关会累积 WebAudioSound，旧实例仍可能发声。逐视图 stop+destroy，
+      // sfx_clock 另入下方兜底 stopByKey 列表。
+      for (const v of this.timedPusherViews.values()) {
+        if (v.clockSnd) {
+          v.clockSnd.stop();
+          v.clockSnd.destroy();
+          v.clockSnd = null;
+        }
+      }
+      for (const k of ["bgm_menu", "bgm_level", "bgm_level_speed", "sfx_clock", "bgm_over", "bgm_finish", "bgm_finish_speed", "sfx_wind", "sfx_door"]) {
         this.sound.stopByKey(k);
       }
     });
@@ -1606,13 +1616,10 @@ export class GameScene extends Phaser.Scene {
     while (q.length > 0) {
       const m = q.shift()!;
       if (m.kind === "lever") this.sfx("sfx_lever");
-      else if (m.kind === "pusher") {
-        this.sfx("sfx_pusher");
-        // oracle 边沿 sound.stop()：定时推杆 clock 尾音随压下/回弹边沿停（起播门在 cbTimedPushers）
-        this.timedPusherViews.forEach((v) => {
-          if (v.clockSnd?.isPlaying) v.clockSnd.stop();
-        });
-      }
+      // #22：pusher 事件不再触碰 clock——任意推杆（普通/任意定时实例）都会发本事件，
+      // 全局 stop 会把所有定时推杆的倒计时音齐停，下一帧又同 seek 重启，可听断续。
+      // clock 起停只由各自视图的 downState/state 驱动（cbTimedPushers 每帧判定）。
+      else if (m.kind === "pusher") this.sfx("sfx_pusher");
       // 灯光神庙（02号档 §2/§9：lightpusher 照到/滑轨跨格/水冻融）
       else if (m.kind === "lightpusher") this.sfx("sfx_lightpusher");
       else if (m.kind === "slider") this.sfx("sfx_slider");
