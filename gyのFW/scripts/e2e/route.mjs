@@ -56,6 +56,9 @@ function mergedTimeline() {
 }
 
 /** 粗等 + 末段自旋的精准 sleep（until 为 t0 相对毫秒；自旋只阻塞本调度器，CDP 收发在 await 间正常进行） */
+/** 文档键名 → 页内虚拟键：KeyboardInput.setVirtual 同源注入（MERGED_KEYSETS 每页按角色映射） */
+const TOUCH_OF = { ArrowUp: "TouchUp", KeyW: "TouchUp", ArrowLeft: "TouchLeft", KeyA: "TouchLeft", ArrowRight: "TouchRight", KeyD: "TouchRight" };
+
 async function sleepPrecise(page, until) {
   for (;;) {
     const elapsed = performance.now() - EPOCH - T0;
@@ -76,30 +79,25 @@ let T0 = 0; // 本轮回放零点（Date.now()）
 async function runOnce(browserA, browserB, runTag) {
   const a = await browserA.newPage();
   const b = await browserB.newPage();
-  await a.setViewportSize({ width: 1400, height: 1000 });
-  await b.setViewportSize({ width: 1400, height: 1000 });
+  await a.setViewportSize({ width: 800, height: 600 });
+  await b.setViewportSize({ width: 800, height: 600 });
+  // rAF 停发：Phaser 软渲染每帧霸占主线程 10-20ms，CDP 按键事件排队在帧后，keydown→ws
+  // 消息系统性迟到（200ms 节流后仍有 −10…+29ms 全谱抖动、65 事件越 deadline 滑帧——渲染
+  // 爆发撞击不可避免）。输入/会话关键路径全部与 rAF 无关：输入发送在自建 window 键监听
+  // （input.ts 事件即发+15Hz 兜底）、onPhase/setPaused 走 onStateChange ws 回调、进房
+  // enterGame 为 DOM+fetch 链、状态镜像由 colyseus onStateChange 维护；画面与场景更新
+  // 无断言、胜负全在服务端——rAF 直接不回调，主线程对按键零争用。
+  const rafThrottle = `window.requestAnimationFrame = () => 0;`;
+  await a.addInitScript({ content: rafThrottle });
+  await b.addInitScript({ content: rafThrottle });
   const result = { tag: runTag, won: false, diedAt: null, winAtMs: null, trace: [], events: 0 };
 
   const code = await enterAs(a, PORT, "create", "", LEVEL);
-  // 页内相位观察器（rAF 分辨率，A 页，观察到 started 即自熄——运行期 A 页只跑游戏本体，
-  // 任何页内常驻计时器都会与派发时刻相位锁死：实测 40ms 记录器与 f332 每轮必撞 26-118ms）。
-  // 锚定原理：服务端 beginReady 与开钟恰好相隔 READY_MS=2000ms（setTimeout），
-  // A 页经 patch 看到 ready 与看到 started 的观察延迟同源于 ~50ms patch 周期，
-  // 两者相减即消掉观察延迟——t0 = ready_seen + 2000ms，残差只有 2s 内 patch 相位漂移。
-  await a.evaluate(() => {
-    window.__fwPhaseT = {};
-    const watch = () => {
-      try {
-        const ph = String(window.__fwInit.net.room.state.phase);
-        if (ph && !(ph in window.__fwPhaseT)) window.__fwPhaseT[ph] = Date.now();
-        if (window.__fwPhaseT.started) return; // 开钟锚定完成，让出 rAF（诊断记录器在 B 页）
-      } catch { /* 初始未连接 */ }
-      requestAnimationFrame(watch);
-    };
-    requestAnimationFrame(watch);
-  });
   const joinedB = Date.now();
   await enterAs(b, PORT, "join", code, LEVEL);
+  // setVirtual 注入口就绪：__fwInit 在 enterGame 尾部暴露（键盘实例此前已建）
+  await a.waitForFunction(() => Boolean(window.__fwInit?.keyboard), null, { timeout: 15000 });
+  await b.waitForFunction(() => Boolean(window.__fwInit?.keyboard), null, { timeout: 15000 });
   // 双页运行期一律零页内常驻计时器：任何页内 interval 都会与固定事件时刻相位锁死
   // （实测 40ms 记录器与 f332 每轮必撞 26-118ms、37ms 素数化仍给渲染主线程添任务）。
   // 诊断采样全部走 CDP 侧（250ms 采样器/500ms 胜负轮询，受静默窗调度）。
@@ -110,41 +108,68 @@ async function runOnce(browserA, browserB, runTag) {
     await b.keyboard.down("Shift");
     await b.keyboard.up("Shift");
   }
-  // 等真实开钟：页面相位观察到 started
-  await waitForStarted(a);
-  await waitForStarted(b);
-  const roleA = await readRole(a);
-  const roleB = await readRole(b);
-  log(`[${runTag}] 房间 ${code} 已开局 roleA=${roleA} roleB=${roleB}`);
-  result.roleA = roleA;
-  result.roleB = roleB;
-
-  // 时基零点：服务端相位时间戳（权威）。started 日志缺 failed 时退 ready+2000，再退页面观察。
-  const phaseT = await a.evaluate(() => window.__fwPhaseT);
-  const readySeen = phaseT?.ready;
-  const startedSeen = phaseT?.started;
-  const anchorSrc = phaseMs.started ? "serverStarted"
-    : phaseMs.ready ? "serverReady+2000"
-      : typeof startedSeen === "number" ? "observedFlip" : "joinedB+2000";
-  const flipActual = anchorSrc === "serverStarted" ? phaseMs.started
-    : anchorSrc === "serverReady+2000" ? phaseMs.ready + 2000
-      : anchorSrc === "observedFlip" ? startedSeen
-        : joinedB + 2000;
+  // 等 ready 锚（服务端 stdout）：开钟与 ready 恰隔 READY_MS=2000ms（服务端 setTimeout），
+  // t0 = ready+2000 先行锚定、派发循环即刻武装（首个事件由 sleepPrecise 等满剩余窗）——
+  // 旧流程 waitForStarted(页内 patch ~50ms 滞后) + readRole/phaseT 等页内查询把派发循环
+  // 拖到 started 后 ~60-110ms，首批事件（t<空隙）全部过期即发，且其中先于客户端本地
+  // started 处理的键直接被客户端丢弃（实测 light_02 fb f2 起跳整键丢失、路线 cascading 脱轨）。
+  // 路线自身仍须保证首个事件 ≥ 开钟后 ~150ms（客户端 started 网络滞后窗口），见各路线文件。
+  for (;;) {
+    if (phaseMs.ready || phaseMs.started) break;
+    await a.waitForTimeout(10);
+  }
+  // 锚定恒取 ready+2000（服务端开钟 = ready 的 setTimeout(2000)，确定性未来点）。
+  // 不得用 phaseMs.started：浏览器预热 >2s 时它已成过去时，派发循环从过期时刻起跑，
+  // 首批事件爆发性迟到 20-75ms（实测 f11-47 全体 +3-4.5f，直接打脱角色开局链）。
+  const anchorSrc = "serverReady+2000";
+  const flipActual = phaseMs.ready + 2000;
   result.flipAnchor = {
-    readySeen, startedSeen, joinedB, used: anchorSrc,
+    joinedB, used: anchorSrc,
     serverReady: phaseMs.ready || null, serverStarted: phaseMs.started || null,
-    obsLatencyReady: readySeen && phaseMs.ready ? readySeen - phaseMs.ready : null,
-    obsLatencyStarted: startedSeen && phaseMs.started ? startedSeen - phaseMs.started : null,
   };
   T0 = flipActual;
-  // mono↔wall 桥接：sleepPrecise 的 elapsed 走 mono（不受 NTP 校时扰动），但需把
-  // T0（服务端翻转戳）到此刻（客户端观察 started + readRole，~60ms 后）之间的墙钟差补回，
-  // 否则全部派发系统性偏迟同样一段（旧实现 EPOCH=T0-performance.now() 丢掉了它）。
+  // mono↔wall 桥接：sleepPrecise 的 elapsed 走 mono（不受 NTP 校时扰动）。
   EPOCH = performance.now() - Date.now();
   const t0 = T0;
 
   const timeline = mergedTimeline();
   result.events = timeline.length;
+
+  // 诊断延后集：角色确认/页面相位观察都属诊断，不阻派发（页内常驻观察器仍照旧自熄）。
+  const diag = (async () => {
+    const waitStarted = () => new Promise((res) => {
+      const watch = () => {
+        try { if (String(window.__fwInit.net.room.state.phase) === "started") return res(); } catch { /* 初始未连接 */ }
+        requestAnimationFrame(watch);
+      };
+      requestAnimationFrame(watch);
+    });
+    // 页内相位观察器（rAF 分辨率）：仅作 started 观察延迟测量，不再承担锚定
+    await a.evaluate(() => {
+      window.__fwPhaseT = {};
+      const watch = () => {
+        try {
+          const ph = String(window.__fwInit.net.room.state.phase);
+          if (ph && !(ph in window.__fwPhaseT)) window.__fwPhaseT[ph] = Date.now();
+          if (window.__fwPhaseT.started) return;
+        } catch { /* 初始未连接 */ }
+        requestAnimationFrame(watch);
+      };
+      requestAnimationFrame(watch);
+    });
+    const roleA = await readRole(a);
+    const roleB = await readRole(b);
+    result.roleA = roleA;
+    result.roleB = roleB;
+    log(`[${runTag}] 房间 ${code} 已开局 roleA=${roleA} roleB=${roleB}`);
+    await waitStarted();
+    const phaseT = await a.evaluate(() => window.__fwPhaseT);
+    result.flipAnchor.readySeen = phaseT?.ready ?? null;
+    result.flipAnchor.startedSeen = phaseT?.started ?? null;
+    result.flipAnchor.obsLatencyReady = result.flipAnchor.readySeen && result.flipAnchor.serverReady ? result.flipAnchor.readySeen - result.flipAnchor.serverReady : null;
+    result.flipAnchor.obsLatencyStarted = result.flipAnchor.startedSeen && result.flipAnchor.serverStarted ? result.flipAnchor.startedSeen - result.flipAnchor.serverStarted : null;
+  })();
+  diag.catch(() => {});
   // 诊断静默窗：派发进行中（键盘 CDP 调用前后 ~80ms）采样/轮询的 evaluate 必须让路——
   // 否则固定节拍的诊断与固定时刻的派发确定性相撞（实测 250ms 采样 tick 正撞 f316、
   // 500ms 胜负轮询正撞 f332，每轮在该事件迟到 20-36ms=1-2 帧晚，正中路线脆弱走廊）。
@@ -159,6 +184,7 @@ async function runOnce(browserA, browserB, runTag) {
 
   // 派发任务：合并时间轴单调度器
   const sampler = (async () => {
+    if (SAMPLE_MS <= 0) return; // 0 = 彻底关闭（服务端 FW_DUMP 已提供零污染真相）
     while (Date.now() - t0 < TOTAL_MS + 15000) {
       await a.waitForTimeout(SAMPLE_MS);
       await yieldToDispatch();
@@ -171,21 +197,72 @@ async function runOnce(browserA, browserB, runTag) {
     }
   })();
 
+  // 页内 worker 调度器模式：CDP evaluate 往返 fwd 段实测 p50=28ms/±25（run8 页内自计时
+  // 全谱）——对 16.7ms 帧窗不可用；页主线程 setTimeout 链也被 Chromium 定时器策略推迟
+  // （裸测 17ms 实发 p50 41-52ms，空白页则完美 17.5ms，与补丁率无关）。 DedicatedWorker
+  // 有独立事件循环、定时器不受该策略管束（裸测 17ms 实发 p50≈21.7 含 postMessage 回主
+  // 线程一跳）——时间线注入 worker，按 worker 页钟触发，postMessage 回主线程执行
+  // setVirtual（触屏同源路径，pressed 集/15Hz 重发/暂停闸语义与真键全同）。
+  // 锚定：同机时钟直映射——页/worker Date.now() 与 node 墙钟同源（差 0-1ms），
+  // T0 = 开钟预估 ready+2000（墙）− 页墙↔perf 桥；服务器 setTimeout(2000) 实测漂移 +5ms。
   const dispatch = (async () => {
-    for (const ev of timeline) {
-      // 静默窗预告必须在进入长睡前就位：本机（Linux VM）roomState evaluate 偶发 200ms+（Windows ~30ms），
-      // 旧实现预告晚至 ev.t-130 才设置，采样在预告前醒来即放行，evaluate 会压过派发点
-      //（实测 250ms 采样 tick 每轮都把 f332 迟到 74-211ms）。预告窗 [t-250, t+80] 宽 330ms > 采样周期
-      // 250ms → 采样任意一次醒来必然已见预告让路；仅 t-250 前已 in-flight 的 evaluate 仍可能越窗，
-      // 其最迟完成于 t-50（按 200ms 计），不压派发点。
-      dispatchBusyUntil = t0 + ev.t + 80;
-      // 两段睡眠：先睡到事件前 130ms，再睡剩余段
-      await sleepPrecise(a, ev.t - 130);
-      await sleepPrecise(a, ev.t);
-      const page = ev.page === "a" ? a : b;
-      const sent = Date.now() - t0;
-      await page.keyboard[ev.type](ev.key);
-      result.trace.push({ dispatch: { t: sent, done: Math.round(Date.now() - t0), f: ev.f, role: ev.role, dir: ev.key, type: ev.type } });
+    const stage = (pg, list, t0Wall) => pg.evaluate((evs) => new Promise((resolve) => {
+      const pageEpochWall = Date.now() - performance.now();
+      const T0 = evs.t0Wall - pageEpochWall;
+      const kb = window.__fwInit.keyboard;
+      const workerSrc = `
+        onmessage = (m) => {
+          const { t0Wall, items } = m.data;
+          const epoch = Date.now() - performance.now();
+          const T0 = t0Wall - epoch;
+          const q = items.slice().sort((a, b) => a.t - b.t);
+          const step = () => {
+            const now = performance.now() - T0;
+            const batch = [];
+            while (q.length && q[0].t <= now) batch.push(q.shift());
+            if (batch.length) postMessage({ batch });
+            if (q.length) setTimeout(step, Math.max(0, q[0].t - (performance.now() - T0)));
+            else postMessage({ done: true });
+          };
+          setTimeout(step, Math.max(0, q[0].t - (performance.now() - T0)));
+        };
+      `;
+      const w = new Worker(URL.createObjectURL(new Blob([workerSrc], { type: "text/javascript" })));
+      const fired = [];
+      let done = false;
+      const finish = (why) => { if (!done) { done = true; try { w.terminate(); } catch {} resolve({ why, fired, t0PagePerf: T0, pageEpochWall }); } };
+      w.onmessage = (m) => {
+        if (m.data.done) { finish("drained"); return; }
+        for (const e of m.data.batch) {
+          kb.setVirtual(e.c, e.d);
+          fired.push({ f: e.f, key: e.k, at: Math.round(performance.now() - T0) });
+        }
+      };
+      w.onerror = (e) => finish("worker-error:" + (e.message ?? "?"));
+      w.postMessage({ t0Wall: evs.t0Wall, items: evs.items });
+      setTimeout(() => finish("timeout"), 150000);
+    }), { t0Wall, items: list });
+    const toPage = (role) => routeDoc[role].map((e) => ({
+      t: Math.round(e.f * MS_PER_F) + OFFSET,
+      c: TOUCH_OF[KEYS[role][e.dir]],
+      d: e.type === "down",
+      f: e.f,
+      k: KEYS[role][e.dir],
+    }));
+    const runs = await Promise.all([stage(a, toPage("fb"), flipActual), stage(b, toPage("wg"), flipActual)]);
+    console.log(`[e2e] 页内调度: fb=${runs[0].why}(${runs[0].fired.length}) wg=${runs[1].why}(${runs[1].fired.length})`);
+    for (const [i, role] of ["fb", "wg"].entries()) {
+      const firedAt = new Map(runs[i].fired.map((x) => [x.f + "|" + x.key, x.at]));
+      for (const e of routeDoc[role]) {
+        result.trace.push({
+          dispatch: {
+            t: Math.round(e.f * MS_PER_F) + OFFSET,
+            exec: firedAt.get(e.f + "|" + KEYS[role][e.dir]) ?? -1,
+            done: -1, f: e.f, role, dir: KEYS[role][e.dir], type: e.type,
+          },
+        });
+      }
+      console.log(`[e2e] 页内锚: ${role} t0PagePerf=${Math.round(runs[i].t0PagePerf)} pageEpochWall=${Math.round(runs[i].pageEpochWall)}`);
     }
   })();
 
