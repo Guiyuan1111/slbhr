@@ -49,7 +49,9 @@ describe("静态 onAuth IP 固定窗口限流（M5）", () => {
 
   it("static onAuth 超限抛 ServerError(4429)；未超限返回 true", async () => {
     const ip = `unit-static-${Date.now()}-${Math.random()}`;
-    const context = { ip, headers: {}, req: undefined } as unknown as AuthContext;
+    // #21 起 key 只认 TCP 对端地址（socket.remoteAddress）；context.ip 由 Colyseus 从可伪造
+    // 头预取（Server.js:239），不再受信——限流 key 经 req.socket 构造。
+    const context = { headers: {}, req: { socket: { remoteAddress: ip } } } as unknown as AuthContext;
     for (let i = 0; i < 60; i++) {
       await expect(ForestRoom.onAuth("", {}, context)).resolves.toBe(true);
     }
@@ -59,8 +61,11 @@ describe("静态 onAuth IP 固定窗口限流（M5）", () => {
     });
   });
 
-  it("context 缺失时归入 unknown 桶但仍可限流", async () => {
-    // 只验证不抛异常且返回 true（unknown 桶可能已被其他用例计数，不能用绝对次数断言）
+  it("context.ip 头预取值不再受信（#21）：与 req 缺失一样归入 unknown 桶", async () => {
+    // context.ip 即便存在也只可能来自可伪造头——两形参必须落在同一 unknown 桶。
+    // 只验证不抛异常且返回 true（unknown 桶可能已被其他用例计数，不能用绝对次数断言）。
+    const spoofed = { ip: `spoof-${Math.random()}`, headers: {}, req: undefined } as unknown as AuthContext;
+    await expect(ForestRoom.onAuth("", {}, spoofed)).resolves.toBe(true);
     await expect(ForestRoom.onAuth("", {}, undefined)).resolves.toBe(true);
   });
 });

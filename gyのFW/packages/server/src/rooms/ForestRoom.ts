@@ -12,6 +12,7 @@
  *   （F3 翻转 2026-10-11，原为本地停手 AFK 语义）
  * - 断线冻结：phase=paused 等待重连 60s，重连恢复、超时才踢出
  */
+import { isIP } from "node:net";
 import type { AuthContext, Client } from "colyseus";
 import { appendFileSync } from "node:fs";
 import { Room, ServerError } from "../colyseus.cjs.js";
@@ -52,17 +53,26 @@ const RECONNECT_SECONDS = envNumber("FW_RECONNECT_SECONDS", 60, 1, 3600);
 const READY_MS = 2000;
 
 /** matchmaking IP 限流（M5）：固定窗口 60s 内每 IP 最多 60 次尝试。
- *  只防公网隧道下的密码暴力尝试/占座洪水；与房间无关，状态进程级共享。 */
+ *  只防公网隧道下的密码暴力尝试/占座洪水；与房间无关，状态进程级共享。
+ *
+ *  #21 两处加固：
+ *  1. key 缺省只取 TCP 对端地址——X-Forwarded-For / x-real-ip 是客户端可伪造头，Colyseus
+ *     的 context.ip 优先采信它们（Server.js:239），直接用等于无限换桶绕过限流。仅当部署方
+ *     显式设置 FW_TRUST_PROXY=1（处于会覆写这些头的可信反代之后）才采信，并要求 net.isIP 合法。
+ *  2. 容量治理有界化：惰性清扫每窗口至多一次（原实现每请求全表扫描=O(n²)）；超过硬限按
+ *     插入序逐桶淘汰最旧（每新增一桶淘汰一个，均摊 O(1)）——窗口内轮换伪造 IP 时内存有界。 */
 const AUTH_WINDOW_MS = 60_000;
 const AUTH_MAX_ATTEMPTS = 60;
 const AUTH_MAP_SOFT_LIMIT = 1024;
+const AUTH_MAP_HARD_LIMIT = 4096;
 interface AuthWindow {
   start: number;
   count: number;
 }
 const authWindows = new Map<string, AuthWindow>();
+let lastSweepAt = 0;
 
-/** 惰性清理：只在窗口轮换/Map 过大时扫过期项，避免每次请求 O(n) */
+/** 惰性清理：只扫过期项（调用方节流到每窗口至多一次） */
 function pruneAuthWindows(now: number): void {
   for (const [ip, win] of authWindows) {
     if (now - win.start >= AUTH_WINDOW_MS) authWindows.delete(ip);
@@ -71,23 +81,42 @@ function pruneAuthWindows(now: number): void {
 
 /** 固定窗口计数（导出供单测注入 now）。返回 false 表示本窗口第 61+ 次。 */
 export function checkAuthRateLimit(ip: string, now = Date.now()): boolean {
-  let win = authWindows.get(ip);
-  if (!win || now - win.start >= AUTH_WINDOW_MS) {
-    win = { start: now, count: 0 };
-    authWindows.set(ip, win);
+  const win = authWindows.get(ip);
+  if (win && now - win.start < AUTH_WINDOW_MS) {
+    win.count++;
+    return win.count <= AUTH_MAX_ATTEMPTS;
   }
-  win.count++;
-  // Map 过大时顺手扫掉过期窗口（攻击者换源 IP 时避免 Map 无界增长）
-  if (authWindows.size > AUTH_MAP_SOFT_LIMIT) pruneAuthWindows(now);
-  return win.count <= AUTH_MAX_ATTEMPTS;
+  // 新桶路径：容量治理只发生在建桶时，命中既有窗的热路径保持 O(1)
+  authWindows.set(ip, { start: now, count: 1 });
+  if (authWindows.size > AUTH_MAP_SOFT_LIMIT && now - lastSweepAt >= AUTH_WINDOW_MS) {
+    lastSweepAt = now;
+    pruneAuthWindows(now);
+  }
+  if (authWindows.size > AUTH_MAP_HARD_LIMIT) {
+    // 时间窗内唯一 key 超硬限（伪造源 IP 洪水）：淘汰最旧桶防内存无界（Map 迭代序=插入序）
+    for (const key of authWindows.keys()) {
+      authWindows.delete(key);
+      break;
+    }
+  }
+  return true;
 }
 
-/** 从 matchmaking authContext 取客户端 IP：Colyseus 已优先 x-real-ip / x-forwarded-for，
- *  再退到 socket.remoteAddress；取首项（xff 可能是逗号列表），缺失归入 unknown 桶。 */
-function authIp(context: AuthContext | undefined): string {
-  const raw = context?.ip ?? context?.req?.socket?.remoteAddress;
-  const first = Array.isArray(raw) ? raw[0] : raw;
-  return String(first ?? "unknown").split(",")[0].trim() || "unknown";
+/** 测试观察口：当前限流桶总数（容量治理有界性断言用） */
+export function authWindowsSize(): number {
+  return authWindows.size;
+}
+
+/** 限流 key 的客户端地址：缺省只信 TCP 对端；FW_TRUST_PROXY=1 才采信 x-real-ip /
+ *  X-Forwarded-For 首项（逗号列表取首项，须 net.isIP 合法，否则回退对端地址）。 */
+export function authIp(context: AuthContext | undefined): string {
+  const remote = context?.req?.socket?.remoteAddress;
+  if (process.env.FW_TRUST_PROXY === "1") {
+    const raw = context?.req?.headers?.["x-real-ip"] ?? context?.req?.headers?.["x-forwarded-for"];
+    const first = String((Array.isArray(raw) ? raw[0] : raw) ?? "").split(",")[0].trim();
+    if (first && isIP(first)) return first;
+  }
+  return remote ? String(remote) : "unknown";
 }
 
 export class ForestRoom extends Room<RoomState> {
