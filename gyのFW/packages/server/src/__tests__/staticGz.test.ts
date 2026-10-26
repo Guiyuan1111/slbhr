@@ -23,7 +23,9 @@ let root = "";
 let secretName = "";
 let secretPath = "";
 const DATA_JSON = JSON.stringify({ pad: "x".repeat(2048) });
-const SECRET_JSON = JSON.stringify({ secret: "top" });
+// #33：secret 必须 >1KB 过 staticGz 体积门槛——否则删除前缀校验后仍因 size<1024
+// 走 fallback 表现为 404，测试假绿（验证的是 express 兜底而非本项目校验）
+const SECRET_JSON = JSON.stringify({ secret: "top", padding: "x".repeat(4096) });
 
 beforeAll(async () => {
   root = mkdtempSync(join(tmpdir(), "fw-staticgz-root-"));
@@ -114,17 +116,26 @@ describe("staticGz 根前缀校验（M-02）", () => {
     expect(r.headers["content-encoding"]).toBe("gzip");
   });
 
-  it.each([
-    ["/..%2f" + secretName, "单层 .. 穿越到根外"],
-    ["/..%2f..%2f" + secretName, "双层 .. 穿越到根外"],
-    ["/dist%2f..%2f..%2f" + secretName, "先入子目录再 .. 回穿"],
-    ["/dist/%2e%2e/%2e%2e/" + secretName, "点号编码 .. 回穿"],
-    ["/assets/..%2f..%2f" + secretName, "前缀挂载下穿越"],
-    ["/..%5c..%5c" + secretName, "反斜杠编码变体"],
-  ])("越界请求被拒（%s，%s）", async (path) => {
-    const r = await rawGet(path);
-    expect(r.status).toBe(404);
-    expect(r.body.toString("utf8")).not.toContain("top");
+  // #33：变体必须在用例运行时构造——it.each 的表在 describe 注册时求值，彼时
+  // beforeAll 尚未给 secretName 赋值（实为空串），六条请求发的一直是 "/..%2f"，
+  // 无论前缀校验在与否都 404，M-02 回归从写下起就是假绿。
+  it("越界请求被拒（6 编码变体，运行时构造含真实 secret 名）", async () => {
+    const variants: Array<[string, string]> = [
+      ["/..%2f" + secretName, "单层 .. 穿越到根外"],
+      ["/..%2f..%2f" + secretName, "双层 .. 穿越到根外"],
+      ["/dist%2f..%2f..%2f" + secretName, "先入子目录再 .. 回穿"],
+      ["/dist/%2e%2e/%2e%2e/" + secretName, "点号编码 .. 回穿"],
+      ["/assets/..%2f..%2f" + secretName, "前缀挂载下穿越"],
+      ["/..%5c..%5c" + secretName, "反斜杠编码变体"],
+    ];
+    for (const [path, desc] of variants) {
+      const r = await rawGet(path);
+      expect(r.status, `${desc}（${path}）`).toBe(404);
+      // 若前缀校验被删，越界 secret（>1KB 过体积门槛）会被 staticGz 真实读取
+      // 并以 200+gzip 返回——以下断言立即变红（已实证）
+      expect(r.headers["content-encoding"], desc).toBeUndefined();
+      expect(r.body.toString("utf8"), desc).not.toContain("top");
+    }
   });
 
   it("根内点段路径（/../ 不出根）不受影响", async () => {
