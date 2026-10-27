@@ -115,9 +115,66 @@ describe("installMatchmakeBodyGuard（M5 /matchmake 请求体上限）", () => {
   });
 });
 
+describe("真实 Colyseus 栈的方法分流（#32/#36 端到端）", () => {
+  // 假下游测不了 vendor 真分支——#36 的教训：断言前提必须对真实 vendor 成立。
+  // 这里用真实 Server（同 room-password.test 口径）验证 GET 404 / PUT 405 各恰一次响应，
+  // 且 guard 交还的请求不触发 ERR_HTTP_HEADERS_SENT（其后真实 matchmake 仍健康）。
+  let srv: { url: string; port: number; shutdown: () => Promise<void> } | undefined;
+  afterEach(async () => {
+    await srv?.shutdown();
+    srv = undefined;
+  });
+
+  async function startReal(): Promise<{ url: string; port: number; shutdown: () => Promise<void> }> {
+    const { Server, WebSocketTransport } = await import("../colyseus.cjs.js");
+    const { ForestRoom } = await import("../rooms/ForestRoom.js");
+    const httpServer = http.createServer();
+    const gameServer = new Server({ transport: new WebSocketTransport({ server: httpServer }) });
+    // 顺序约束（guard 头注释）：Server 构造的 attachMatchMakingRoutes 会 removeAllListeners，
+    // guard 必须在其之后安装（与生产 index.ts 同序）
+    installMatchmakeBodyGuard(httpServer);
+    gameServer.define("forest", ForestRoom);
+    await gameServer.listen(0, "127.0.0.1");
+    const port = (httpServer.address() as AddressInfo).port;
+    return {
+      url: `ws://127.0.0.1:${port}`,
+      port,
+      shutdown: async () => {
+        await gameServer.gracefullyShutdown(false);
+        httpServer.close();
+      },
+    };
+  }
+
+  const raw = (method: string, port: number, path: string) =>
+    new Promise<{ status: number; allow?: string }>((resolve, reject) => {
+      const req = http.request({ host: "127.0.0.1", port, method, path }, (res) => {
+        res.resume();
+        res.on("end", () => resolve({ status: res.statusCode ?? 0, allow: res.headers.allow as string | undefined }));
+      });
+      req.on("error", reject);
+      req.end();
+    });
+
+  it("GET → vendor 404 恰一次；PUT → guard 405；其后真实 create 仍成功", { timeout: 20_000 }, async () => {
+    srv = await startReal();
+    const get = await raw("GET", srv.port, "/matchmake/forest");
+    expect(get.status).toBe(404);
+    const put = await raw("PUT", srv.port, "/matchmake/create/forest");
+    expect(put.status).toBe(405);
+    expect(put.allow).toBe("OPTIONS, POST, GET");
+    const { Client } = await import("colyseus.js");
+    const c = new Client(srv.url);
+    const room = await c.create("forest", { password: "pw-1234", levelId: "forest_01" });
+    expect(room.roomId).toBeTruthy();
+    await room.leave();
+  });
+});
+
 describe("非 POST 方法分流（#32）", () => {
-  /** guard 之后再挂一个「假 Colyseus 监听器」：命中即置位。Colyseus 真实行为是
-   *  非 OPTIONS/POST 不写响应不 end（socket 永久挂起），故 405 必须由 guard 发出。 */
+  /** guard 之后再挂一个「假 Colyseus 监听器」：命中即置位。镜像 vendor 真实分支
+   *  （core Server.js:206-256）：OPTIONS/POST/GET 有响应（GET 404），PUT/DELETE/HEAD/PATCH
+   *  不写响应不 end（socket 永久挂起）——这类请求的 405 必须由 guard 发出。 */
   let hit = false;
   let server: http.Server | undefined;
   const sockets = new Set<Socket>();
@@ -146,8 +203,11 @@ describe("非 POST 方法分流（#32）", () => {
     // 自滤（真实场景 Colyseus 对非 OPTIONS/POST 本就无响应分支，重复执行无害）。
     server.addListener("request", (req, res) => {
       if (res.headersSent || res.writableEnded) return;
+      // 挂起语义只模拟 /matchmake 范围（非 matchmake 路径的应用路由总有响应）
+      const mm = (req.url ?? "").includes("/matchmake");
+      if (mm && (req.method === "PUT" || req.method === "DELETE" || req.method === "HEAD" || req.method === "PATCH")) return;
       hit = true;
-      res.writeHead(200);
+      res.writeHead(mm && req.method === "GET" ? 404 : 200);
       res.end("{}");
     });
     await new Promise<void>((resolve) => server!.listen(0, "127.0.0.1", resolve));
@@ -165,15 +225,23 @@ describe("非 POST 方法分流（#32）", () => {
     });
   };
 
-  it("PUT/DELETE/HEAD 立即 405（Allow: OPTIONS, POST）且不进 Colyseus 分支", async () => {
+  it("PUT/DELETE/HEAD/PATCH 立即 405（Allow: OPTIONS, POST, GET）且不进 Colyseus 分支", async () => {
     const port = await start();
-    for (const method of ["PUT", "DELETE", "HEAD"]) {
+    for (const method of ["PUT", "DELETE", "HEAD", "PATCH"]) {
       hit = false;
       const r = await fetchRaw(method, port);
       expect(r.status, method).toBe(405);
-      expect(r.allow).toBe("OPTIONS, POST");
+      expect(r.allow).toBe("OPTIONS, POST, GET");
       expect(r.hitAfter, method).toBe(false);
     }
+  });
+
+  it("GET 交还 Colyseus 分支（vendor 404），不再被 guard 405（#36 回归）", async () => {
+    const port = await start();
+    hit = false;
+    const r = await fetchRaw("GET", port, "/matchmake/forest");
+    expect(r.status).toBe(404);
+    expect(r.hitAfter).toBe(true);
   });
 
   it("OPTIONS 与 POST 仍照常进入 Colyseus 分支", async () => {

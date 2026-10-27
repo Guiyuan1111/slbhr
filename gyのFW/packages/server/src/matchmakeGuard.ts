@@ -25,12 +25,14 @@ export function installMatchmakeBodyGuard(server: http.Server, maxBytes = MATCHM
     // 避免 /matchmake 裸路径绕过上限。静态资源/健康检查/WS upgrade 完全不受影响。
     if (!(req.url ?? "").includes("/matchmake")) return;
 
-    // #32：Colyseus handleMatchMakeRequest 只有 OPTIONS/POST 分支（Server.js:206-245），
-    // 其余方法不写响应也不 end——socket 永久挂起（未鉴权连接可无限占用 FD）。立即 405
-    // 并关闭连接；OPTIONS 交还 Colyseus 的 CORS 预检分支。
-    if (req.method !== "POST" && req.method !== "OPTIONS") {
+    // #32：Colyseus handleMatchMakeRequest 有 OPTIONS(204)/POST/GET(404) 三个响应分支
+    // （core Server.js:206-256），PUT/DELETE/HEAD/PATCH 无分支——不写响应也不 end，
+    // socket 永久挂起（未鉴权连接可无限占用 FD），由 guard 立即 405 并关闭连接。
+    // #36：GET 必须交还 Colyseus（vendor 返回 404）——此前一律 405 与 vendor 语义冲突，
+    // 且断言「非 OPTIONS/POST 无响应分支」的注释前提对 GET 不成立。
+    if (req.method !== "POST" && req.method !== "OPTIONS" && req.method !== "GET") {
       if (!res.headersSent) {
-        res.writeHead(405, { Allow: "OPTIONS, POST", Connection: "close" });
+        res.writeHead(405, { Allow: "OPTIONS, POST, GET", Connection: "close" });
         res.end(() => req.destroy());
       } else {
         req.destroy();
