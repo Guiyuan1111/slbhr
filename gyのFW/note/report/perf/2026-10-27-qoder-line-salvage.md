@@ -32,7 +32,7 @@
 | r21 | 关卡循环曲出落定门（弱网 −2.1~21.4s） | main 未动 | **已移植（0.3.55）**，与 r25 终局时刻曲件同批出批 |
 | r22–r31 | 资产拆分/瘦身族（char/menu/popup/mech/room-font 等九件） | main 未动 | 资产重打包族，**单独立项**（换代取证流程配套） |
 | r32–r40 | canvas shrink/repack 族 + advance warm + asset versioning + finish anim rebind | main 未动 | 同上资产族，单独立项 |
-| r41–r43 | 离房释放族（leave/chars-play/menu-only release） | main 0.3.48 #29 已做"复用归零黑幕/浮尘/光束折线引用"（主题相邻实现不同） | **r41 已移植（0.3.55）**：与 #29 正交（场景视图引用 vs 全局 sound/cache 音频资产账）；chars-play/menu-only 两件挂账待令 |
+| r41–r43 | 离房释放族（leave/chars-play/menu-only release） | main 0.3.48 #29 已做"复用归零黑幕/浮尘/光束折线引用"（主题相邻实现不同） | **r41 已移植（0.3.55）**；**r42/r43 复核否决（0.3.57）**：依赖 qoder 资产拆分前置件（r33–r37 房内独占图），main 共享图集布局下无可释放对象，挂账至资产族立项 |
 
 ## 首批移植（0.3.53）：r15 服务端两件
 
