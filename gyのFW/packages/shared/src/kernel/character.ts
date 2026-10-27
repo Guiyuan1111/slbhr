@@ -27,6 +27,8 @@ export const CHAR = {
   runForce: 50,
   floatForce: 30,
   defaultMaxSpeed: 8.5,
+  /** wg 冰面限速（oracle waterIceMaxSpeed，setFriction #35 接线；params.ts 同名值保持一致） */
+  waterIceMaxSpeed: 2,
   absoluteMaxSpeed: 40,
 } as const;
 
@@ -56,6 +58,12 @@ export class Character {
   /** 钻石计数（data.diamonds / data.silverDiamond） */
   diamonds = 0;
   silverDiamond = 0;
+
+  /** 雪面/冻面接触计数与冰面态（原版 snowCount/isOnIce @57136/63106，#35 接线） */
+  snowCount = 0;
+  isOnIce = false;
+  /** 运行时限速（setFriction 随冰面态切换；wg 冰面 waterIceMaxSpeed） */
+  maxSpeed: number = CHAR.defaultMaxSpeed;
 
   /** 脚底接触表（b2Contact[]，begin/end 由世界接触监听维护） */
   readonly feetContacts: any[] = [];
@@ -138,6 +146,46 @@ export class Character {
     if (i >= 0) this.feetContacts.splice(i, 1);
   }
 
+  /** 雪面/冻面接触增删（原版 iceFixture 回调语义：snowCount±1 → setOnIce(snowCount!==0)） */
+  snowBegin(): void {
+    this.snowCount++;
+    this.setOnIce(this.snowCount !== 0);
+  }
+
+  snowEnd(): void {
+    this.snowCount--;
+    this.setOnIce(this.snowCount !== 0);
+  }
+
+  /** 原版 setOnIce @63106：边沿翻转才重设摩擦 */
+  private setOnIce(a: boolean): void {
+    if (a && !this.isOnIce) {
+      this.isOnIce = true;
+      this.setFriction();
+    } else if (!a && this.isOnIce) {
+      this.isOnIce = false;
+      this.setFriction();
+    }
+  }
+
+  /** 原版 setFriction @63116：fb 冰面摩擦 0；wg 冰面摩擦 0.7 且限速 waterIceMaxSpeed；
+   *  非冰回 feetFriction/defaultMaxSpeed。尾部 Refilter 并对既有接触 ResetFriction（即时生效）。 */
+  private setFriction(): void {
+    if (this.char === "fb") {
+      this.feetSensor.SetFriction(this.isOnIce ? 0 : CHAR.feetFriction);
+      this.maxSpeed = CHAR.defaultMaxSpeed;
+    } else {
+      this.feetSensor.SetFriction(this.isOnIce ? 0.7 : CHAR.feetFriction);
+      this.maxSpeed = this.isOnIce ? CHAR.waterIceMaxSpeed : CHAR.defaultMaxSpeed;
+    }
+    this.feetSensor.Refilter();
+    let cl = this.feetSensor.GetBody().GetContactList();
+    while (cl) {
+      cl.contact.ResetFriction();
+      cl = cl.next;
+    }
+  }
+
   /** 液体致死判定（原版 liquidTouched：7 全杀 / wg 遇 6 / fb 遇 5） */
   liquidTouched(liquidType: number): boolean {
     return liquidType === 7 || (this.char === "wg" && liquidType === 6) || (this.char === "fb" && liquidType === 5);
@@ -167,7 +215,7 @@ export class Character {
     const jumpVelocity = CHAR.jumpVelocity;
     const s = CHAR.runForce;
     const h = CHAR.floatForce;
-    const m = CHAR.defaultMaxSpeed;
+    const m = this.maxSpeed;
 
     // 脚底接触法线：世界系，按与 (0,−1) 点积升序取最上者
     let n: { x: number; y: number } | undefined;
@@ -213,15 +261,21 @@ export class Character {
       }
     } else {
       this.currentRunForce = 0.475 * s;
-      // 非冰面刹车：i = (7·−vx, 0)
-      i = { x: 7 * -this.body.GetLinearVelocity().x, y: 0 };
+      // 无输入减速（原版 @63254-63264）：wg 在冰面硬停（反速度×20 + 速度清零），其余 i = (7·−vx, 0)
+      const vx = this.body.GetLinearVelocity().x;
+      if (this.isOnIce && this.char === "wg") {
+        i = { x: -vx * 20, y: 0 };
+        this.body.SetLinearVelocity(new B.b2Vec2(0, 0));
+      } else {
+        i = { x: 7 * -vx, y: 0 };
+      }
     }
 
     // 跳跃：prohibitJump 边沿 + 法线门控
     if (this.prohibitJump && !cursors.up) this.prohibitJump = false;
     if (!this.prohibitJump && cursors.up && ((n !== undefined && n.y > 0.2) || this.feetContacts.length >= 2)) {
       this.body.ApplyLinearImpulse({ x: 0, y: k }, { x: 0, y: 0 });
-      // 森林无冰：恒走非冰分支
+      // 起跳只走非冰分支（oracle jumpIceVelocity @63028 同样定义未消费）
       let v = { x: this.body.GetLinearVelocity().x, y: n!.y > 0.65 ? jumpVelocity : Math.sqrt(Math.sqrt(n!.y)) * jumpVelocity };
       const len = Math.hypot(v.x, v.y);
       if (len > jumpVelocity) {

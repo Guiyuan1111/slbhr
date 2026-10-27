@@ -17,8 +17,9 @@ import type { Role } from "./types.js";
  *   解析必须逐关读 tilesets[].firstgid+source，禁止任何写死的本地 id。
  * - 机关默认属性在【图块集】的 tileproperties 里（如 lever 的 onis/startPos、wind 的 length:10），
  *   关卡对象上的 properties 覆盖同名默认（原版 parseMapPropper 运行时合并语义）。
- * - Ground 层地图数据只出现 gid1..8（本地 0..7 → type 0..7）；type 8/9（液体端盖）是运行时生成，
- *   不来自地图；type 11/12 雪地变体与 55 冰面森林未用（解析器仍按原版 remap 语义处理）。
+ * - Ground 层 type 谱（三部 139 关实测）：0..7 静态；8/9 液体端盖（运行时生成，ice_08_1 也有直存）；
+ *   10/11/12 雪地变体（ice 庙：10 直桥 / 11 SE / 12 SW，原版 drawTile @61825-61836、
+ *   createGroundShape @62291：10≡0 实心、11/12 按斜面 remap）；55 冰面森林（Liquid 冻结水）。
  * - 教学层每关最多一种变体名（Tutorial_dual/single/keyboard），步骤=触发矩形对象+文本对象，按 properties.id 配对。
  */
 
@@ -48,7 +49,9 @@ export const GROUND_TYPE = {
 } as const;
 
 /** 雪地变体 remap（原版 drawTile @1831600：11→1、12→2） */
-const SLOPE_REMAP: Record<number, number> = { 11: 1, 12: 2 };
+// #34：type10 直桥曾漏 remap → 不建实体 fixture 可穿透（oracle drawTile 10→0 @61825-61836、
+// createGroundShape `a===0||a===10` @62291）。原始 10/11/12 在 remap 前记入 snowGrid（#35 Snow 设备用）。
+const SLOPE_REMAP: Record<number, number> = { 10: GROUND_TYPE.SOLID, 11: 1, 12: 2 };
 
 export type LiquidKind = "water" | "lava" | "green";
 
@@ -314,6 +317,8 @@ export interface LevelData {
   ground: Uint16Array;
   /** 每格 type（行优先）：−99=空格，其余见 GROUND_TYPE；雪地变体已 remap */
   groundType: Int16Array;
+  /** 雪地变体原始 type（行优先）：0=非雪，10 直桥 / 11 SE 斜 / 12 SW 斜（remap 前采样） */
+  snowGrid: Int16Array;
   /** 液体行段（原版 Liquid 对象粒度） */
   liquidRuns: LiquidRun[];
   spawn: Record<Role, Point>;
@@ -423,6 +428,8 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
   // ---- Ground 网格 ----
   const ground = new Uint16Array(cols * rows);
   const groundType = new Int16Array(cols * rows).fill(-99);
+  // 雪地变体原始 type（10/11/12；remap 前采样，0=非雪）——build 据此建 Snow sensor
+  const snowGrid = new Int16Array(cols * rows);
   const liquidRuns: LiquidRun[] = [];
   for (let row = 0; row < rows; row++) {
     let runKind: LiquidKind | undefined;
@@ -439,6 +446,7 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
           let t = groundTs?.tileproperties?.[String(localId)]?.type;
           if (t === undefined) t = GROUND_TYPE.SOLID;
           t = Number(t);
+          if (t === 10 || t === 11 || t === 12) snowGrid[i] = t;
           if (SLOPE_REMAP[t] !== undefined) t = SLOPE_REMAP[t];
           if (t === 55) {
             // 原版 Liquid 构造头（bundle @1660900）：55===type → type=5 + startFrozen=true（冰面初始冻结）
@@ -801,6 +809,7 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
     heightPx: rows * tile,
     ground,
     groundType,
+    snowGrid,
     liquidRuns,
     spawn,
     doors,

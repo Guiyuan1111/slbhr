@@ -400,6 +400,11 @@ export class World {
       const char = this.chars[role];
       const otherIsSensor = other.IsSensor ? other.IsSensor() : other.m_isSensor;
       if (otherIsSensor) {
+        // Snow/冻面计数（原版 snowCount 回调 @57136-57142：雪砖/冻结冰面 → setOnIce）
+        if (otherUd && typeof otherUd === "object" && (otherUd.type === "snow" || otherUd.type === "ice")) {
+          if (begin) char.snowBegin();
+          else char.snowEnd();
+        }
         if (otherUd && typeof otherUd === "object" && otherUd.type === "liquid_death") {
           if (begin) {
             if (char.liquidTouched(otherUd.liquidType) && !char.dying) {

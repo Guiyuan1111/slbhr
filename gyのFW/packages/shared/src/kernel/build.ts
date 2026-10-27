@@ -205,6 +205,23 @@ export function buildLevelWorld(level: LevelData): BuiltWorld {
     startFrozen: r.startFrozen,
   }));
 
+  // ---- Snow 雪面设备（#35；原版 CreateSnows @62343：type10/11/12 每格设备，cat1/mask16/friction1/
+  //      isSensor，snowCount 计数 → setOnIce。oracle 按行/对角 run 合并建设备，覆盖格集相同，
+  //      这里按格建 sensor 逐位等价；实体碰撞体由主扫描按 remap 后类型另建，互不替代）----
+  for (let i = 0; i < level.snowGrid.length; i++) {
+    const t = level.snowGrid[i];
+    if (!t) continue;
+    const col = i % level.cols;
+    const row = (i / level.cols) | 0;
+    quadFixture(groundBody, B, -1 - col, -1 - row, -col, -row, {
+      categoryBits: FILTER.GROUND_CAT,
+      maskBits: FILTER.CHAR_CAT,
+      friction: 1,
+      isSensor: true,
+      userData: { type: "snow" },
+    });
+  }
+
   // ---- convertTilemap 主扫描（行优先；实体横向合并、液体行段、其余逐格）----
   for (let row = 0; row < level.rows; row++) {
     let runA = 0;

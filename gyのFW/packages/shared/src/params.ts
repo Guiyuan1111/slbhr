@@ -43,11 +43,11 @@ export const CHAR = {
   // ---- 手感（update @1870200–1873400，逐行转写）----
   jumpImpulse: 1,
   jumpVelocity: 15.5, // m/s
-  jumpIceVelocity: 10, // 森林无冰，保留
+  jumpIceVelocity: 10, // oracle 同样定义未消费（@63028），保持未接线
   runForce: 50, // N
   floatForce: 30, // 空中横推 N
   defaultMaxSpeed: 8.5, // m/s
-  waterIceMaxSpeed: 2, // 冰面限速（森林无）
+  waterIceMaxSpeed: 2, // wg 冰面限速（setFriction #35 接线）
   absoluteMaxSpeed: 40, // m/s 硬钳
   /** 跑力爬升常数：e=130·g/currentRunForce（currentRunForce 初值 undefined 是原版事实——首次按住键不发力，先经历一次"松键→0.475·runForce"初始化）*/
   runRamp: 130,

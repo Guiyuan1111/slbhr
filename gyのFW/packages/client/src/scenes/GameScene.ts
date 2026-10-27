@@ -613,8 +613,8 @@ export class GameScene extends Phaser.Scene {
         if (t === EMPTY_TYPE) continue;
         const px = cx * tile + tile / 2;
         const py = cy * tile + tile / 2;
-        if (t === 0 || t === 10 || t === 11 || t === 12 || t === -1) {
-          // 实心（10/11/12 雪地变体解析期已 remap，留分支兜底；-1 装饰空砖只画不建刚体）
+        if (t === 0 || t === -1) {
+          // 实心（10/11/12 雪地变体 #34 起解析期已 remap，groundType 不再出现；-1 装饰空砖只画不建刚体）
           stamp(mc, `MaskBox0000${Math.floor(rnd() * 4)}`, px, py);
         } else if (t >= 1 && t <= 4) {
           stamp(mc, `MaskBox${t}0000`, px, py);
