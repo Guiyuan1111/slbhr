@@ -10,6 +10,15 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-10-27（独立审计修复批 + 0.3.52 发版——note 一致性/发版流程/卫生，游戏行为零改动）
+① **审计**：仓库级只读审计三维度 19 发现（P0×0/P1×2/P2×5/P3×12），逐项证据复核；本批修 10 项，分流见⑥。
+② **note 一致性（cab78b3/6a10519）**：收容注"按新址替换"真替换（30-parity 六处、04号档§10+复现核验）；34-parity 文末补删除注；route-synthesis 去 TEMP/node 前缀；00-INDEX 35→31；r15f 补 autopsy（13 件）；rcm-l0 补引用档卷；根 README 重复括注+非版本 tag 说明；0.1.0.md 头注。
+③ **发版流程（416547a）**：bump-version --desc 必填+版本链入链+同版本拒绝+--verify 拒占位（9a3f287 根因了断）；AGENTS.md/version.test 同步。
+④ **安全（85f0d49）**：房间口令时序安全比较（sha256 摘要+timingSafeEqual，passwordEquals 单元+3 单测，onAuth/assertPassword 两处接入，语义不变）。
+⑤ **卫生（d6ef55d）**：handoff 口径勘误（issue 清零→该批 16 件全数关闭；TEMP 归零口径=gyのFW/TEMP）；根 TEMP 3 个 md5 残留与根 note/ 空目录树清除；audit/20261026-101919 分支+工作树清除。
+⑥ **挂账分流**：Colyseus 0.18（12 漏洞含 1 高危 nanoid，候选待裁档已有）；#49/#50；noUncheckedIndexedAccess 实测 304 错随 #49 推进；staticGz 预压缩可选；~/.qoder detached 工作树含 209 未并入提交（10-23 r42/r43 线，patch-id 与 main 全不等价）去留待用户裁决。
+⑦ **0.3.52 发版**：45 文件 319 测试绿（+4）、typecheck 零输出、bump --verify 六处一致；tag+Release 于 CI 绿后（无附件口径）。
+
 **更新**：2026-10-27（GitHub Issues 全量清偿批 + 0.3.51 发版——该批 16 件开放 issue 全数关闭（#49/#50 同日新挂账另立，见⑦）、TEMP 清库归零（口径：gyのFW/TEMP））
 ① **16 issue 修复关闭附证据**（#32、#34–#48）：ice 雪地碰撞+冰面摩擦移植（det 重锚 r1-ice，4870d55/ec03e06）；won 双断线补发解耦（a7d08e3）；重连 5s 护栏+tryResume 清理（c7a62b0）；冰膜索引同域化+机关视图跨关清空（1a52f66）；客户端低危七件（097a2f7）；占座 DoS 密码前置（6852825）；matchmake GET 放行（afffb28）；bump 脚本跨平台事务化（86b112f）。教训：issue 关闭曾只落一半（8 个开放 0 评论），gh issue list 实查后补齐——"自述不算完成"再次验证。
 ② **安全面 #45**（791501c/c3bb076）：Origin allowlist（FW_ALLOWED_ORIGINS）+WS verifyClient+CSP（内联 hash 启动提取）+/api 固定窗口限流+levelExists stat 缓存+房间 onUncaughtException 隔离+staticGz 方法闸门；vite ^6.4.5。
