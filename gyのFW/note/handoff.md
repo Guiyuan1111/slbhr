@@ -17,7 +17,7 @@
 ④ **安全（85f0d49）**：房间口令时序安全比较（sha256 摘要+timingSafeEqual，passwordEquals 单元+3 单测，onAuth/assertPassword 两处接入，语义不变）。
 ⑤ **卫生（d6ef55d）**：handoff 口径勘误（issue 清零→该批 16 件全数关闭；TEMP 归零口径=gyのFW/TEMP）；根 TEMP 3 个 md5 残留与根 note/ 空目录树清除；audit/20261026-101919 分支+工作树清除。
 ⑥ **挂账分流**：Colyseus 0.18（12 漏洞含 1 高危 nanoid，候选待裁档已有）；#49/#50；noUncheckedIndexedAccess 实测 304 错随 #49 推进；staticGz 预压缩可选；~/.qoder detached 工作树含 209 未并入提交（10-23 r42/r43 线，patch-id 与 main 全不等价）去留待用户裁决。
-⑦ **0.3.52 发版**：45 文件 319 测试绿（+4）、typecheck 零输出、bump --verify 六处一致；tag+Release 于 CI 绿后（无附件口径）。
+⑦ **0.3.52 发版**：45 文件 319 测试绿（+4）、typecheck 零输出、bump --verify 六处一致；CI run 40511798794 八作业绿后注解 tag 0.3.52（同指 477c484）+Release 已发（Latest，无附件口径）。
 
 **更新**：2026-10-27（GitHub Issues 全量清偿批 + 0.3.51 发版——该批 16 件开放 issue 全数关闭（#49/#50 同日新挂账另立，见⑦）、TEMP 清库归零（口径：gyのFW/TEMP））
 ① **16 issue 修复关闭附证据**（#32、#34–#48）：ice 雪地碰撞+冰面摩擦移植（det 重锚 r1-ice，4870d55/ec03e06）；won 双断线补发解耦（a7d08e3）；重连 5s 护栏+tryResume 清理（c7a62b0）；冰膜索引同域化+机关视图跨关清空（1a52f66）；客户端低危七件（097a2f7）；占座 DoS 密码前置（6852825）；matchmake GET 放行（afffb28）；bump 脚本跨平台事务化（86b112f）。教训：issue 关闭曾只落一半（8 个开放 0 评论），gh issue list 实查后补齐——"自述不算完成"再次验证。
