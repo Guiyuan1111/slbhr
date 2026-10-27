@@ -1,5 +1,9 @@
 # gyのFW 仓库约定（agent 会话自动继承）
 
+## 分支口径（2026-10-28 起）
+- `main`：全三部（forest/light/ice）开发主线，版本线 0.3.x，本文档其余部分以 main 为准。
+- `release/1.0-forest`：**1.0 分发分支（仅第一部 forest）**。只做打包/剪裁适配（测试剪 light/ice 依赖、CI 去 light/ice 作业、覆盖率阈值按余量实测、版本 1.0.x），**不承接三部共用代码的删减**——light/ice 数据与引擎仍在分支历史中，分发内容由 scripts/package-deploy.mjs 在打包层剪除（data/light|ice、Temples/light|ice、LevelMusic_dark、dist 内资产重复副本）。改动先落 main 再择时同步本分支；发版打 1.0.x tag 于本分支。
+
 ## 常用命令
 - 类型/测试：`npm run typecheck`；`npm test`；`npm run test:coverage`（覆盖率阈值门禁）
 - 版本：`node scripts/bump-version.mjs <x.y.z> --desc "一句话描述"`（同步四处 package.json + lock；README 版本链新版本带描述入链头、原当前版降“上版”；事务化，lock 失败自动回滚；`--verify` 只读校验六处一致+当前版本行描述在场。发版记手写 note/release/<版>.md）

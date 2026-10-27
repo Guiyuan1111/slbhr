@@ -85,38 +85,6 @@ jobs:
       - name: Compare forest 48-level determinism against r0-baseline
         run: node --import tsx benchmark/perf-determinism.mjs --compare r0-baseline --filter forest
 
-  determinism-ice:
-    name: determinism (ice r1-ice)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22.x
-          cache: npm
-          cache-dependency-path: gyのFW/package-lock.json
-      - name: Install
-        run: npm ci
-      - name: Compare ice 51-level determinism against r1-ice
-        run: node --import tsx benchmark/perf-determinism.mjs --compare r1-ice --filter ice
-
-  determinism-light:
-    name: determinism (light r0-light)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22.x
-          cache: npm
-          cache-dependency-path: gyのFW/package-lock.json
-      - name: Install
-        run: npm ci
-      - name: Compare light 40-level determinism against r0-light
-        run: node --import tsx benchmark/perf-determinism.mjs --compare r0-light --filter light
-
   routes-smoke:
     name: routes smoke (route-node real-server sample)
     runs-on: ubuntu-latest
@@ -131,11 +99,9 @@ jobs:
       - name: Install
         run: npm ci
       # 正式门禁仍为本地 repeat>=3（见 AGENTS.md）；CI 只做回归冒烟。
-      # light_01 不入样本：±1f 刀锋时序对调度抖动敏感（本地约 1/5 假阴），避免 CI 常红。
+      # 1.0（forest-only 分发）不含 light/ice：原 light_02 冒烟步随内容剪除移除。
       - name: route-node forest_01
         run: node --import tsx scripts/e2e/route-node.mjs --level forest_01 --repeat 1
-      - name: route-node light_02
-        run: node --import tsx scripts/e2e/route-node.mjs --level light_02 --repeat 1 --offset -10
 
   servers-smoke:
     # #37：干净 checkout 冒烟——无 TEMP/ 目录起服 + /healthz 探活，专抓
