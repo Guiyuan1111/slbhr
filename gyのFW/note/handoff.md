@@ -15,6 +15,7 @@
 ② **r41（同提交）**：leaveToMenu 时 releaseGameBgms 六键（三族并集）先 sound.removeByKey 后 cache.remove 交还 PCM（反序被实例钉住）；重开/进房不交还，重取走 r15 ETag 304；与 0.3.48 #29 正交（场景视图引用 vs 全局音频资产账）。
 ③ **验证**：audio-families.test 重写 9 例（拆分恒等 loop∪terminal=族包∪失败曲、六键恰三族并集、release 先实例后缓存序）；audiofamily.mjs 新增时序断言（__fwBgmDeferAt 与各曲 startTime 晚于 __fwWarmGateDoneAt+1400ms）3/3 PASS——实测 speed 例门后 3823ms 起请求、门内零 BGM；341 测试绿+typecheck 零错+build 过。
 ④ **裁定**：用户指示本批后只收尾不开新批——分流表余项（r13/r14 件、r17–r40 资产族、r42/r43）挂账待令；既有 #49/#50、Colyseus 0.18 候选待裁不变。
+⑤ **0.3.55 发版**：47 文件 341 测试绿（净+2）、typecheck 0 错、build 过；代码提交 CI run 40538560394 与发版提交 run 40539174844 八作业先后绿，注解 tag 0.3.55（同指 4ae5c68）+Release 已发（Latest，无附件口径）。
 
 **更新**：2026-10-27（并行性能线吸收批二 + 0.3.54 发版——r16 三族移植/r14 件/r12 否决，带审核）
 ① **审核**：r16 前提核查——qoder 两族（general/speed）建立在"森林无 dark"上，main 的 light 部有 7 dark 关（142 关：general 69/puzzle 41/speed 25/dark 7），前提过时→**扩三族**移植，DARK 终局曲与 general 共用（对齐 finishKey else 分支）。
