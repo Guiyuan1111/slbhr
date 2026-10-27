@@ -24,6 +24,12 @@
 今日（2026-10-20）起新条目写在文件顶部。
 
 ## 条目
+**更新**：2026-10-26 六（**light 路线批收官 + 0.3.49 发版——前会话五项计划（light 路线→体验定稿→打包轮→ice 立项）全数完成**）
+① **light_01 通关路线入库**（9e57372）：箱舞 mount（东推带镜箱≥1045 让缝→穿缝→越箱过东→点喷推回 988-1034 亮窗→1048 静定 {up,left} 飞越 c29 坡链）+ 伺服滑钮（亮窗实测 S∈[455,466]，走推必过冲至 473，1-2f 点喷+滑停入窗）。FSM WIN@f2914×3 逐位一致→路线 JSON 内核回放 WIN@f2943+validate 0+真服 route-node 3/3 PASS。
+② **接线考古**（light_01 攻坚最大产出）：lever(g2) 体在基座台顶 (862,385) **走近即翻（sensor，不按键）**→rotMirror(1021,163) 转 90°→黄光上折→g42(1024,32) 亮→p1 沉（+90f）；翻杆不可逆——黄光永离东侧→g41(1208,736) 永灭→p2 永升台口封死⇒**双人须先过台口再翻杆**；fb 候杆驻停必须 ≤810（v34 停 859 压杆 sensor 酿无翻杆翻杆）。档卷 note/evidence/2026-10-26-light01-route/（接线表+l1both35.mjs）+note/light01-route.md。
+③ **TEMP 清理**：l1*×71+l2*×8 探针全删（证据先收容）；他会在办产物（invite/parity/r15f 等 14 项）未动。
+④ **0.3.49 发版**（537b71d，tag+GitHub Release）：light_01/light_02 路线+route-node+帧号镜像；**netDto 契约补 f 字段**（4277849 漂移被 netDto 测试拦下——DTO+双锚 22→23/63→64 同步，教训=扩字段提交须连跑 netDto 门禁）；版本四处+lock+README+发版记。门禁：typecheck 0/test 260/build/det 零内核触碰。
+⑤ 前会话五项计划清账：1 light 路线 ✓（本批）；2+3+4 体验定稿（EndMenu/dust/popup 均已划销，无余债）+打包轮（0.3.49）✓；5 ice 立项 ✓（0.3.47 已落：51 关+TimedPusher 全链+determinism-ice）。下一块大石头=ice 通关路线产线（51 关，工序照 forest/light）；待用户裁决项不变（挂账 #2 S5 续攻/#4 风相位锚/#9 #10 UI 小件）。
 **更新**：2026-10-26 六（审计批 0.3.48——GitHub issue #21–#33 十三条全修，13 commits 逐 Issue 独立提交）
 ① P0/P1：#28 房间密码无条件校验（joinById(roomId,true) 布尔绕过封堵，重连路径回归覆盖）；#21 限流 key 弃可伪造头（FW_TRUST_PROXY 显式采信+isIP）+authWindows 有界化（热路径 O(1)/硬限 4096 桶均摊淘汰）；#29 GameScene 复用归零 darkRt/dust 族 8 引用（resetFxState）+lastBeamPts.clear。
 ② 其余：#32 matchmake 非 POST 405+server 超时；#30 beamer 熄灭删缓存；#22 clock 视图自治+SHUTDOWN 销毁；#31 bgm_level_dark 全停音路径（stopLevelBgm 三键）；#23 快照校验 ROOM_COLLECTION_CHILD 驱动；#26 $filter 补两新类；#24 body-parser 1.20.9+CI 非阻断 audit；#25 ice 51 关锚（直方图+TimedPusher time 表）；#33 staticGz 穿越回归假绿双层根因（it.each 注册时求值 secretName 空串+16B 低于 1KB 门槛）——运行时构造+padding，删校验即红已实证；#27 部署文档口径统一+fw.service 占位符化+根 README 防漂移。
