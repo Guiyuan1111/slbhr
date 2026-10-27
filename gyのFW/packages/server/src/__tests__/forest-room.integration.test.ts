@@ -19,7 +19,7 @@
  */
 import http from "node:http";
 import type { AddressInfo } from "node:net";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { Client, type Room as ClientRoom } from "colyseus.js";
 
 vi.hoisted(() => {
@@ -50,6 +50,8 @@ async function startServer(extraEnv: Record<string, string> = {}): Promise<Srv> 
   const saved = Object.entries(extraEnv).map(([k]) => [k, process.env[k]] as const);
   for (const [k, v] of Object.entries(extraEnv)) process.env[k] = v;
   const httpServer = http.createServer();
+// 注记（#39）：每个 new Server 在进程级泄 4 监听器（Colyseus 无 tearDown API），
+// 多实例后的 MaxListenersExceededWarning 是噪声非缺陷，进程退出即回收。
   const gameServer = new Server({ transport: new WebSocketTransport({ server: httpServer }) });
   gameServer.define("forest", ForestRoom);
   await gameServer.listen(0, "127.0.0.1");
@@ -363,4 +365,10 @@ describe("ForestRoom 房间生命周期（issue #8 集成测试，A 槽探针语
     const c3 = new Client(url);
     await expect(c3.joinById(a.roomId, { password: PW })).rejects.toThrow(); // maxClients=2 满员
   }, 20000);
+});
+
+afterAll(() => {
+  // 还原 vi.hoisted 注入的 FW_*：threads 池复用 worker 线程，process.env 跨文件
+  // 存续，不还原会污染后续测试文件的 ForestRoom 模块读取（#39 实测项）。
+  for (const k of ["FW_RECONNECT_SECONDS", "FW_WIND_PHASE", "FW_DEBUG_AUTO_WIN"]) delete process.env[k];
 });

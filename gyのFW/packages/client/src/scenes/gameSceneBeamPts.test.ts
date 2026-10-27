@@ -11,6 +11,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
+import { SCENE_STATE_KEYS } from "./sceneState.js";
 
 const src = readFileSync(fileURLToPath(new URL("./GameScene.ts", import.meta.url)), "utf8");
 
@@ -25,6 +26,10 @@ function cbBeamersBody(): string {
 
 describe("#30 beamer 熄灭时删除 lastBeamPts", () => {
   const body = () => cbBeamersBody();
+
+  it("lastBeamPts 已纳入场景易失状态清单（#40 清单化兜底，#39）", () => {
+    expect(SCENE_STATE_KEYS).toContain("lastBeamPts");
+  });
 
   it("视图缺失分支删除缓存", () => {
     const b = body();

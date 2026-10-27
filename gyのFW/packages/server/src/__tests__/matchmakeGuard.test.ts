@@ -129,6 +129,8 @@ describe("真实 Colyseus 栈的方法分流（#32/#36 端到端）", () => {
     const { Server, WebSocketTransport } = await import("../colyseus.cjs.js");
     const { ForestRoom } = await import("../rooms/ForestRoom.js");
     const httpServer = http.createServer();
+// 注记（#39）：每个 new Server 在进程级泄 4 监听器（Colyseus 无 tearDown API），
+// 多实例后的 MaxListenersExceededWarning 是噪声非缺陷，进程退出即回收。
     const gameServer = new Server({ transport: new WebSocketTransport({ server: httpServer }) });
     // 顺序约束（guard 头注释）：Server 构造的 attachMatchMakingRoutes 会 removeAllListeners，
     // guard 必须在其之后安装（与生产 index.ts 同序）

@@ -360,10 +360,9 @@ describe("内核：机关全谱构建冒烟（48 关全物理构建）", () => {
     teleport(w, "fireboy", pusher.body.GetPosition().x * -32, pusher.body.GetPosition().y * -32 - 40);
     let pressed = false;
     for (let i = 0; i < 120; i++) {
-      const evs = w.step(1 / 60, { fireboy: NONE, watergirl: NONE });
+      w.step(1 / 60, { fireboy: NONE, watergirl: NONE });
       if (pusher.state === 1) {
         pressed = true;
-        expect(evs.concat([]).length).toBeGreaterThanOrEqual(0);
         break;
       }
     }

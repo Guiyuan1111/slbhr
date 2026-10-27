@@ -11,7 +11,7 @@
  */
 import http from "node:http";
 import type { AddressInfo } from "node:net";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { Client, type Room as ClientRoom } from "colyseus.js";
 
 vi.hoisted(() => {
@@ -41,6 +41,8 @@ afterEach(async () => {
 
 async function startServer(): Promise<Srv> {
   const httpServer = http.createServer();
+// 注记（#39）：每个 new Server 在进程级泄 4 监听器（Colyseus 无 tearDown API），
+// 多实例后的 MaxListenersExceededWarning 是噪声非缺陷，进程退出即回收。
   const gameServer = new Server({ transport: new WebSocketTransport({ server: httpServer }) });
   gameServer.define("forest", ForestRoom);
   await gameServer.listen(0, "127.0.0.1");
@@ -125,4 +127,10 @@ describe("won 相位双端同时断线（#43）", () => {
     await waitPhase(a2, "won", 3000);
     expect(phaseOf(b)).toBe("won");
   });
+});
+
+afterAll(() => {
+  // 还原 vi.hoisted 注入的 FW_*：threads 池复用 worker 线程，process.env 跨文件
+  // 存续，不还原会污染后续测试文件的 ForestRoom 模块读取（#39 实测项）。
+  for (const k of ["FW_RECONNECT_SECONDS", "FW_WIND_PHASE", "FW_DEBUG_AUTO_WIN"]) delete process.env[k];
 });
