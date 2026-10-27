@@ -23,5 +23,5 @@
 
 ## 残留与取舍
 
-- ±1f 硬化（optimizer fatal=0）未达成：31% 事件天生帧临界（坐标下降邻域无解，平台 226/728）——node 管线 ±2ms 下不需要，弃置。
+- ±1f 硬化（optimizer fatal=0）未达成：31% 事件天生帧临界（坐标下降邻域无解，平台 226/728）——node 管线 ±2ms 下不需要，弃置。尝试档收容于 [evidence/2026-10-26-light02-route/light_02.opt.abandoned.json](evidence/2026-10-26-light02-route/light_02.opt.abandoned.json)（未经验证，非正档）。
 - 浏览器路径 `route.mjs` 保留 worker 调度改造（journey 类 UX e2e 仍用浏览器），路线回放职责移交 route-node。

@@ -30,3 +30,10 @@
 ## 首个滑帧死法（浏览器时代样本）
 
 f=11 火娃起跳 +22ms 越过 deadline（187.3ms）滑入 f12 → 全链 1f 错位 → 活塞相位锁死致死于 (883,764)。服务端意图跨度 (k·16.67, k·16.67+16.67]、deadline=+4ms 的语义下，目标 offset=-10（到达 ≈-8ms）留 ±(4.7,14)ms 余量。
+
+## 收容：±1f 硬化弃置档（light_02.opt.abandoned.json）
+
+optimizer ±1f 硬化尝试档（原 `scripts/e2e/inputs/routes/light_02.opt.json`，2026-10-27 收容）：
+事件帧 ±1~3f 微调（fb 105/204、wg 94/160 处不同），totalFrames 4395 与正档一致。
+fatal=0 未达成——31% 事件天生帧临界（坐标下降邻域无解，平台 226/728），弃置；
+**未通过任何回放验证，不等于正档**，正式路线以 `scripts/e2e/inputs/routes/light_02.json` 为准。
