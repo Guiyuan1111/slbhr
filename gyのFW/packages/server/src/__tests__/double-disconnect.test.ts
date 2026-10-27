@@ -104,7 +104,7 @@ describe("won 相位双端同时断线（#43）", () => {
     expect(finA[0]).toMatchObject({ fbDiamonds: 3, wgDiamonds: 4, silver: 0 });
     await waitPhase(a2, "won", 3000);
     await waitPhase(b2, "won", 3000);
-  }, 45000);
+  });
 
   it("单端断线重连行为不回归：finish 补发 + 相位恢复（#13 原用例语义）", { timeout: 40000 }, async () => {
     const srv = await startServer();
@@ -124,5 +124,5 @@ describe("won 相位双端同时断线（#43）", () => {
     await waitFor("重连端收到补发 finish", () => finA.length >= 1, 3000);
     await waitPhase(a2, "won", 3000);
     expect(phaseOf(b)).toBe("won");
-  }, 45000);
+  });
 });

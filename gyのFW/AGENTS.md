@@ -2,7 +2,7 @@
 
 ## 常用命令
 - 类型/测试：`npm run typecheck`；`npm test`；`npm run test:coverage`（覆盖率阈值门禁）
-- 版本：`node scripts/bump-version.mjs <x.y.z>`（同步四处 package.json + README 版本行 + lock，发版记手写 note/release/<版>.md）
+- 版本：`node scripts/bump-version.mjs <x.y.z>`（同步四处 package.json + README 版本行 + lock；事务化，lock 失败自动回滚；`--verify` 只读校验六处一致。发版记手写 note/release/<版>.md）
 - 确定性门禁（改内核必跑）：`node --import tsx benchmark/perf-determinism.mjs --compare <锚>`（锚：r0-baseline/r0-light/r1-ice——r1-ice 为 0.3.51 #34/#35 冰面物理后的 ice 锚，--filter forest|light|ice）
 - 路线门禁（每关）：`node --import tsx scripts/e2e/routetool/validate.mjs --level <lv>`（内核）→ `node --import tsx scripts/e2e/route-node.mjs --level <lv> --repeat 3`（真服，light 系 --offset -10）→ ALL PASS 才算通关
 - 语料全量回归：`node --import tsx scripts/e2e/route-kregress.mjs`（正式语料=formal-corpus.list，内核口径）

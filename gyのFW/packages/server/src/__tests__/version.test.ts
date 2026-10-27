@@ -39,4 +39,11 @@ describe("版本/engines/lock 一致性（M7）", () => {
   it("根 engines.node 覆盖 vitest 5 要求（>=22.12.0）", () => {
     expect(root.engines.node).toBe(">=22.12.0");
   });
+
+  it("README 当前版本行与根 package.json 一致（#38：bump --verify 的常驻等价门禁）", () => {
+    const readme = readFileSync(join(ROOT, "README.md"), "utf8");
+    const m = readme.match(/^> \*\*当前版本\*\*：(\d+\.\d+\.\d+)/m);
+    expect(m, "README 缺「当前版本」行").toBeTruthy();
+    expect(m![1]).toBe(root.version);
+  });
 });
