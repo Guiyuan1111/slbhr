@@ -415,7 +415,26 @@ function absPoints(o: any): Point[] {
   return raw.map((p: any) => ({ x: num(o.x) + num(p.x), y: num(o.y) + num(p.y) }));
 }
 
+/** #44 未知 gid 告警去重：关卡×gid 只警告一次 */
+const unknownGidWarned = new Set<string>();
+
 export function parseLevel(id: string, json: any, getTileset: TilesetProvider): LevelData {
+  // #44 最小 schema 校验：新数据入库时在解析期显式失败（报文含关卡 id 与字段名），
+  // 不再裸 TypeError / 静默 NaN / 超大尺寸 RangeError。当前库内数据均受
+  // levelExists 正则 + 本地文件信任，本层是入库早期防线，非运行时安全边界。
+  if (!json || typeof json !== "object" || Array.isArray(json)) {
+    throw new Error(`关卡 ${id}: JSON 根必须是对象`);
+  }
+  for (const field of ["width", "height", "tilewidth"] as const) {
+    if (typeof json[field] !== "number" || !Number.isFinite(json[field])) {
+      throw new Error(`关卡 ${id}: 缺少数值字段 ${field}`);
+    }
+  }
+  if (json.width <= 0 || json.height <= 0 || json.width > 1024 || json.height > 1024) {
+    throw new Error(`关卡 ${id}: 尺寸异常 ${json.width}x${json.height}（允许 1..1024）`);
+  }
+  if (!Array.isArray(json.layers)) throw new Error(`关卡 ${id}: 缺少 layers 数组`);
+  if (!Array.isArray(json.tilesets)) throw new Error(`关卡 ${id}: 缺少 tilesets 数组`);
   const tile = num(json.tilewidth, 32);
   const cols = num(json.width);
   const rows = num(json.height);
@@ -444,7 +463,15 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
           ground[i] = gid;
           const localId = gid - groundRef.firstgid;
           let t = groundTs?.tileproperties?.[String(localId)]?.type;
-          if (t === undefined) t = GROUND_TYPE.SOLID;
+          if (t === undefined) {
+            // #44：未知 gid 静默当 SOLID 会埋坑（数据错误永不暴露）——每 关卡×gid 只 warn 一次
+            const warnKey = `${id}:${gid}`;
+            if (!unknownGidWarned.has(warnKey)) {
+              unknownGidWarned.add(warnKey);
+              console.warn(`[level2] 关卡 ${id}: gid=${gid}（localId=${localId}）无 tileproperties.type，按 SOLID 处理`);
+            }
+            t = GROUND_TYPE.SOLID;
+          }
           t = Number(t);
           if (t === 10 || t === 11 || t === 12) snowGrid[i] = t;
           if (SLOPE_REMAP[t] !== undefined) t = SLOPE_REMAP[t];
@@ -800,6 +827,17 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
     throw new Error(`关卡 ${id} 出生点缺失（fb=(${spawn.fireboy.x},${spawn.fireboy.y}) wg=(${spawn.watergirl.x},${spawn.watergirl.y})）`);
   }
 
+  // #44 出生门/出生点终检：缺门原会静默 NaN（门永不开、角色永远出不来）——显式失败
+  for (const role of ["fireboy", "watergirl"] as const) {
+    const d = doors[role];
+    if (!d || ![d.x, d.y, d.w, d.h].every(Number.isFinite)) {
+      throw new Error(`关卡 ${id}: 缺少 ${role} 出生门（Chars 层 kind=door props.char）或坐标非数值`);
+    }
+    const sp = spawn[role];
+    if (!sp || !Number.isFinite(sp.x) || !Number.isFinite(sp.y)) {
+      throw new Error(`关卡 ${id}: 缺少 ${role} 出生点（Chars 层 kind=char）`);
+    }
+  }
   return {
     id,
     cols,
