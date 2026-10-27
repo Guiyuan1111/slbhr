@@ -11,26 +11,13 @@
  * 【转写纪律】任何与源码不一致的"优化"都是保真 bug——本文件不做任何数值假设。
  */
 import type { Role } from "../types.js";
+import { CHAR } from "../params.js";
 import type { B2 } from "./b2.js";
 import { FILTER, circleFixture, polygonFixture, px2m } from "./b2.js";
 
-/** 原版 e.prototype 常数（@1863650–1863990） */
-export const CHAR = {
-  feetFriction: 0.5,
-  r1: 0.48,
-  r2: 0.2,
-  dr: 0.03,
-  y1: 0.2,
-  y2: -0.9,
-  jumpImpulse: 1,
-  jumpVelocity: 15.5,
-  runForce: 50,
-  floatForce: 30,
-  defaultMaxSpeed: 8.5,
-  /** wg 冰面限速（oracle waterIceMaxSpeed，setFriction #35 接线；params.ts 同名值保持一致） */
-  waterIceMaxSpeed: 2,
-  absoluteMaxSpeed: 40,
-} as const;
+// CHAR 常数（@1863650–1863990）唯一来源 = ../params.ts（#44 双源合一：原 13 键本地副本
+// 与 params 同名值逐一相等，删除副本改为 import，改参不再需要多处同步）。
+export { CHAR };
 
 export type AnimState = "idle" | "jumping" | "rising" | "falling";
 

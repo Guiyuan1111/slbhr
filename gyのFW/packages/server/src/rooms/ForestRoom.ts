@@ -366,7 +366,9 @@ export class ForestRoom extends Room<RoomState> {
    *  FW_WIND_PHASE=X（e2e/门禁专用）→ simTimeS+X 固定相位偏移，X=0 与内核缺省位级相同，
    *  路线回放与 det/金轨迹口径全线可复现。 */
   private buildWorld(): void {
-    const windPhase = process.env.FW_WIND_PHASE !== undefined ? Number(process.env.FW_WIND_PHASE) : null;
+    // #44：envNumber 校验替代裸 Number——非法值（FW_WIND_PHASE=abc）原得 NaN 使风力
+    // 静默归零；现告警并回退 0（=内核缺省位级口径），错误配置不再静默。
+    const windPhase = process.env.FW_WIND_PHASE !== undefined ? envNumber("FW_WIND_PHASE", 0, -1e6, 1e6) : null;
     this.world = new World(this.bundle.level, {
       windClockS: windPhase !== null
         ? () => this.world.simSeconds + windPhase

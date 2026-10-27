@@ -323,7 +323,7 @@ export function numericFieldNames(spec: Readonly<Record<string, unknown>>): read
   return Object.keys(spec).filter((k) => spec[k] === "number");
 }
 
-/** 房间根字段名清单（22） */
+/** 房间根字段名清单（23；0.3.49 新增 f 后同步，#44） */
 export const ROOM_SNAPSHOT_FIELD_NAMES: readonly string[] = fieldNamesOf(ROOM_SNAPSHOT_FIELDS);
 
 /** 各子状态类字段名清单（键=服务端类名） */
