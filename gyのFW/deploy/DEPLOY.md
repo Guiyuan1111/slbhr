@@ -90,12 +90,34 @@ WebSocket upgrade 都要转发，反代空闲超时须 **>60s**（服务端断�
 `FW_RECONNECT_SECONDS` 可调）；此时 `FW_HOST` 保持默认 `127.0.0.1`，仅反代对外。
 **公网部署一律走本方式**：服务端无用户体系、明文 HTTP 不应直暴露公网。
 
+限流按「每 IP 一桶」统计（60s/60 次，0.3.41 M5）。反代部署下服务端看到的 TCP 对端恒为
+反代地址——要取回真实客户端 IP，须**覆写式**转发头 + `FW_TRUST_PROXY=1`（#48-B）：
+
+```nginx
+# nginx：覆写（而非 $proxy_add_x_forwarded_for 追加）——追加式首项可被客户端自带字段伪造
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $remote_addr;
+```
+
+```caddy
+# Caddy v2（reverse_proxy 默认追加 XFF；显式覆写为仅 $remote_addr）
+reverse_proxy 127.0.0.1:2567 {
+  header_up X-Real-IP {remote_host}
+  header_up X-Forwarded-For {remote_host}
+}
+```
+
+- `FW_TRUST_PROXY=1` 仅在「应用端口不对公网、只经反代可达」时开启；直暴露公网时保持缺省
+  （此时转发头是客户端可任意伪造的字段，采信即绕过限流，#21）。
+- 服务端优先读 `X-Real-IP`，XFF 兜底取【最右】项（追加式反代下最右为最近可信跳，#48-B）。
+
 ### 安全取舍（方式 A）
 
-服务端有**房间密码鉴权**：创建时 4-64 位门槛、加入时服务端无条件比对（0.3.48 修复
-`joinById(roomId, true)` 绕过缺陷，见 #28；此前的「密码设强即足」承诺不成立——
-修复前密码不能作为公网暴露的防护措施对待）；matchmaking 另有 IP 固定窗口限流
-（60s 每 IP 60 次，0.3.41 M5；0.3.48 修复可伪造头绕过与 O(n²) 放大，见 #21）。
+服务端有**房间密码鉴权**：创建时 4-64 位门槛；加入侧密码比对在座位预约**之前**的
+matchmaking 静态层执行（0.3.48 修复 `joinById(roomId, true)` 绕过 #28，0.3.51 修复
+「先占座后鉴权」的未鉴权占座锁房 DoS #48，并关闭 join/joinOrCreate 随机入口）；onJoin
+保留同口径校验作纵深。matchmaking 另有 IP 固定窗口限流（60s 每 IP 60 次，0.3.41 M5；
+0.3.48 修复可伪造头绕过与 O(n²) 放大 #21，0.3.51 收敛 XFF 采信到最右可信跳 #48-B）。
 即便如此，方式 A 仍是 HTTP 明文且无用户体系，**仅适用于可信内网或临时调试**；
 公网部署用方式 B 并自行加访问控制。房间密码仍建议设强（≥12 位混合），但它是
 门槛而非边界。60s 重连窗口内断线者可凭 session 免密重进，属预期行为。

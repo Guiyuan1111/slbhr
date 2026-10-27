@@ -2,7 +2,8 @@
  * matchmaking 限流回归（#21 High）：
  *  - 固定窗口语义保持（61 次拒绝、窗口轮换放行）；
  *  - authIp 缺省只信 TCP 对端——1000 个伪造 X-Forwarded-For 不得改变限流 key；
- *  - FW_TRUST_PROXY=1 时才采信 x-real-ip / XFF 首项，且必须 net.isIP 合法；
+ *  - FW_TRUST_PROXY=1 时才采信 x-real-ip / XFF【最右项】（#48-B：首项可被客户端伪造），
+ *    且必须 net.isIP 合法；
  *  - 窗口内 2 万唯一 key 洪水：内存有界（≤硬限）、耗时近线性（原实现 O(n²) 实测 3s+）。
  */
 import { afterEach, describe, expect, it } from "vitest";
@@ -38,7 +39,9 @@ describe("authIp 伪造头防绕过（#21）", () => {
   it("FW_TRUST_PROXY=1：x-real-ip 优先，XFF 取首项，非法值回退对端", () => {
     process.env.FW_TRUST_PROXY = "1";
     expect(authIp(ctx({ "x-real-ip": "198.51.100.7", "x-forwarded-for": "198.51.100.8, 10.0.0.1" }))).toBe("198.51.100.7");
-    expect(authIp(ctx({ "x-forwarded-for": "198.51.100.8, 10.0.0.1" }))).toBe("198.51.100.8");
+    expect(authIp(ctx({ "x-forwarded-for": "198.51.100.8, 10.0.0.1" }))).toBe("10.0.0.1");
+    // 追加式反代下首项是客户端自带字段：伪造值被忽略，只认最右可信跳
+    expect(authIp(ctx({ "x-forwarded-for": "6.6.6.6, 198.51.100.8, 10.0.0.1" }))).toBe("10.0.0.1");
     expect(authIp(ctx({ "x-forwarded-for": "not-an-ip" }))).toBe("203.0.113.9");
     expect(authIp(ctx({}))).toBe("203.0.113.9");
   });

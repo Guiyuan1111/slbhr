@@ -15,7 +15,7 @@
 import { isIP } from "node:net";
 import type { AuthContext, Client } from "colyseus";
 import { appendFileSync } from "node:fs";
-import { Room, ServerError } from "../colyseus.cjs.js";
+import { Room, ServerError, matchMaker } from "../colyseus.cjs.js";
 import { ROLES, EMPTY_INPUT, type Role, type InputState } from "@fw/shared";
 import { World, m2px, type WorldEvent } from "@fw/shared/kernel";
 import { levelExists, loadLevel, type LevelBundle } from "../levels.js";
@@ -107,14 +107,25 @@ export function authWindowsSize(): number {
   return authWindows.size;
 }
 
-/** 限流 key 的客户端地址：缺省只信 TCP 对端；FW_TRUST_PROXY=1 才采信 x-real-ip /
- *  X-Forwarded-For 首项（逗号列表取首项，须 net.isIP 合法，否则回退对端地址）。 */
+/** 限流 key 的客户端地址：缺省只信 TCP 对端；FW_TRUST_PROXY=1 才采信反代头——优先
+ *  x-real-ip（nginx 覆写语义），退而 XFF 取【最右】项：追加式 $proxy_add_x_forwarded_for
+ *  下首项是客户端可自带字段的伪造源（#48-B），最右项才是最近可信跳追加了真实地址的结果。
+ *  两类头均须 net.isIP 合法，否则回退对端地址。反代配置要求见 deploy/DEPLOY.md。 */
 export function authIp(context: AuthContext | undefined): string {
   const remote = context?.req?.socket?.remoteAddress;
   if (process.env.FW_TRUST_PROXY === "1") {
-    const raw = context?.req?.headers?.["x-real-ip"] ?? context?.req?.headers?.["x-forwarded-for"];
-    const first = String((Array.isArray(raw) ? raw[0] : raw) ?? "").split(",")[0].trim();
-    if (first && isIP(first)) return first;
+    const real = context?.req?.headers?.["x-real-ip"];
+    const realFirst = String((Array.isArray(real) ? real[0] : real) ?? "").split(",")[0].trim();
+    if (realFirst && isIP(realFirst)) return realFirst;
+    const raw = context?.req?.headers?.["x-forwarded-for"];
+    if (raw !== undefined) {
+      const list = String(Array.isArray(raw) ? raw.join(",") : raw)
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const last = list[list.length - 1];
+      if (last && isIP(last)) return last;
+    }
   }
   return remote ? String(remote) : "unknown";
 }
@@ -168,6 +179,9 @@ export class ForestRoom extends Room<RoomState> {
   private lastFinish: { fbDiamonds: number; wgDiamonds: number; silver: number; timeMs: number } | null = null;
 
   onCreate(options: JoinOptions) {
+    // #48 兜底：座位预约窗 15s→3s。鉴权前置后未鉴权占座已不可达，此窗只影响合法
+    // 「拿到预约但没走完 WS 接管」的残窗，缩短即缩小最坏锁席时长。
+    this.setSeatReservationTime(3);
     this.roomPassword = String(options.password ?? "");
     // L-04（服务端半）：私用场景最低门槛——建房时密码 4-64 位（note/PLAN.md「4 位以上」
     // 落地；上限仅防异常巨串，不做复杂度策略）。加入侧走 onAuth 相等比较，短密码天然
@@ -333,17 +347,39 @@ export class ForestRoom extends Room<RoomState> {
 
   /** Colyseus 0.16 matchmaking 级静态 onAuth（MatchMaker.js:469-470 的调用签名为
    *  `onAuth(token, options, authContext)`，authContext 含 ip/headers/req）。
-   *  这里只做 IP 固定窗口限流，返回 true 仅表示放行 matchmaking，**不代表房间密码已通过**。
    *
-   *  注意：Room._onJoin 在 authData 为真时不再自动调用实例 onAuth（Room.js:531-535），
-   *  因此密码校验仍由实例 onAuth 完成，并在 onJoin 入口显式调用；两处不可删。
-   *  也不能把密码校验搬到这里：create 时房间尚未建立，joinById 时静态层读不到房间实例密码。 */
-  static async onAuth(_token: string, _options: unknown, context?: AuthContext): Promise<true> {
+   *  #48：joinById 时序 = callOnAuth(:214) → reserveSeatFor(:215)，预约发生在 WebSocket
+   *  消费座位（onJoin）之前——密码校验若只留在 onJoin，未鉴权 HTTP 请求即可占满 2 席并置
+   *  locked，1 请求/15s 永久锁死任意房间。因此把「能静态判定的拒绝」全部提到这里：
+   *  - join / joinOrCreate：官方客户端只用 create + joinById（net.ts connect），直接关闭，
+   *    消除「不知道 roomId 也能扫射任意未满房」的路径；create 的密码门槛仍在 onCreate。
+   *  - joinById/<roomId>：matchMaker.getLocalRoomById 读本进程房间实例比对密码，失败 4403——
+   *    发生在预约之前，未鉴权请求不再产生任何座位占用。单进程部署下实例必然在本地，
+   *    undefined 只剩 dispose 竞态，随后 reserveSeat 必失败，放行无害。
+   *  onJoin 的 assertPassword 保留（纵深：预留窗内 WS 接管仍要过最后一道）。 */
+  static async onAuth(_token: string, options: unknown, context?: AuthContext): Promise<true> {
     const ip = authIp(context);
     if (!checkAuthRateLimit(ip)) {
       throw new ServerError(4429, "尝试过于频繁，请稍后再试");
     }
+    const m = /^\/(?:[^/?]+\/)?matchmake\/(joinById|join|joinOrCreate)(?:\/([^/?]*))?/.exec(context?.req?.url ?? "");
+    if (m) {
+      const [, action, roomId = ""] = m;
+      if (action !== "joinById") {
+        throw new ServerError(4404, "该入口已关闭，请创建房间或用房间码加入");
+      }
+      const room = matchMaker.getLocalRoomById(roomId) as ForestRoom | undefined;
+      if (room) {
+        const pw = typeof options === "object" && options !== null ? String((options as { password?: unknown }).password ?? "") : "";
+        if (pw !== room.joinPassword) throw new ServerError(4403, "房间密码错误");
+      }
+    }
     return true;
+  }
+
+  /** 静态 onAuth 预约前密码核对用（#48）；onCreate 强制 4-64 位密码，空房密码为"" */
+  get joinPassword(): string {
+    return this.roomPassword;
   }
 
   /** 房间密码校验（#28 Critical：原为实例 onAuth，且 onJoin 按 options 类型判断调用——
