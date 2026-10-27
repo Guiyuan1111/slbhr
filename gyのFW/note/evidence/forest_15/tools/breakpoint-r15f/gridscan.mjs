@@ -1,6 +1,6 @@
 // r15f 网格扫描：对指定事件做 ±K 帧独立伸缩扫描（串行小工具，不与 optimizer 抢核）
 // 报告每个 delta 的 内核结论 + 终局位置，用于定位"停点裕度"刀锋的鲁棒岛。
-// 用法: node --import tsx TEMP/r15f/gridscan.mjs [route路径] "wg#70=-6..6|wg#71=-6..6" [probeF,probeF...]
+// 用法: node --import tsx note/evidence/forest_15/tools/breakpoint-r15f/gridscan.mjs [route路径] "wg#70=-6..6|wg#71=-6..6" [probeF,probeF...]
 // 语法: side#idx=lo..hi （闭区间）；多段用 | 分隔；probe 帧列表（逗号分隔）额外输出该帧 wg 位置
 import { readFileSync } from "node:fs";
 import { runKernel } from "../../scripts/e2e/routetool/kernel.mjs";

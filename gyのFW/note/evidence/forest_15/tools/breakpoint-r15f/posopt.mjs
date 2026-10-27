@@ -8,7 +8,7 @@
 //  2. 代价函数加权 Σ P(slip=d)（+1=0.02, +2=0.006, +3=0.002），与 MC 期望失败率对齐。
 //  3. 快照写 <route>.posbest.json，产物写 <route>.posopt.json（不碰原版 .best.json 约定）。
 //
-// 用法: node --import tsx TEMP/r15f/posopt.mjs --level forest_15 --route <path> [--sweeps 30] [--jobs 7]
+// 用法: node --import tsx note/evidence/forest_15/tools/breakpoint-r15f/posopt.mjs --level forest_15 --route <path> [--sweeps 30] [--jobs 7]
 import { readFileSync, writeFileSync } from "node:fs";
 import { join, isAbsolute } from "node:path";
 import { argOf, log, ROOT } from "../../scripts/e2e/lib.mjs";

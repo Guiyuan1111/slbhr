@@ -1,6 +1,6 @@
 // r15f 尾段整块平移重定相: 墙定位后 wg 站稳时刻与 7430+ 尾段(块内相位自洽)之间是定时交互，
 // 整块平移尾段([LO,8500] 内 fb+wg 全事件同移 k)重对相心。每候选全 MC seed42，TOP3 过 43/44。
-// 用法: node --import tsx TEMP/r15f/wallshift.mjs <route路径> [--jobs 6]
+// 用法: node --import tsx note/evidence/forest_15/tools/breakpoint-r15f/wallshift.mjs <route路径> [--jobs 6]
 import { readFileSync } from "node:fs";
 import { ScanPool } from "../../scripts/e2e/routetool/pool.mjs";
 

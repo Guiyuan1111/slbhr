@@ -8,3 +8,6 @@ batchclear/wallwalk/wallshift 工具链 + 全部运行日志。
 引用档卷：note/evidence/forest_15/01号档-挂起裁决与终态.md（批量期重设计入口）、
 note/evidence/forest_15/logs/r15f-01-verify.txt。路线本体已入库不计绿
 （routes/forest_15.json）。
+注（2026-10-27）：各工具头部"用法"注释已改指本目录；mcany.mjs 注释中
+$PWD/TEMP/node 前缀为历史环境残留（该 node 构建目录已不在），当前直接以
+node --import tsx 运行即可。

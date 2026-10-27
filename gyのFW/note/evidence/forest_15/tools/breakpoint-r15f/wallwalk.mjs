@@ -1,7 +1,7 @@
 // r15f 右墙定位修复：6990 跳跨越是刀锋跳（触地点 1:1 保留滑移误差，862 站位失准即超时）。
 // 修复: right/up 7059→7250 延长按住让 wg 跑满到右墙 x≈1200（吸收全部触地误差，滑移只延迟不提前→名义是最长跑距），
 //       再插一段左走 (7260..7260+D) 标定回到 862，接回原 7430 尾段。D 扫描取 f7400 时 wg.x 最近 862 者，过全 MC。
-// 用法: node --import tsx TEMP/r15f/wallwalk.mjs <route路径> <out路径> [--jobs 6]
+// 用法: node --import tsx note/evidence/forest_15/tools/breakpoint-r15f/wallwalk.mjs <route路径> <out路径> [--jobs 6]
 import { readFileSync, writeFileSync, copyFileSync } from "node:fs";
 import { makeWorld, expandFlat } from "../../scripts/e2e/routetool/kernel.mjs";
 import { ScanPool } from "../../scripts/e2e/routetool/pool.mjs";

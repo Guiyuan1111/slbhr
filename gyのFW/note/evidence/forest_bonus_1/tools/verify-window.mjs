@@ -1,5 +1,5 @@
 // window 渲染验证探针：打开 3700 的 forest_bonus_1，从 Phaser 显示列表取证窗框对象。
-// 用法：node --import tsx TEMP/parity-fix/verify-window.mjs
+// 用法：node --import tsx note/evidence/forest_bonus_1/tools/verify-window.mjs（本文件，2026-10-27 自 TEMP/parity-fix 改指）
 // 输出：窗框容器/子对象的存在性、帧名、世界坐标、可见性、缩放；并对照 level.windows 数据算期望位。
 import { chromium } from "playwright";
 

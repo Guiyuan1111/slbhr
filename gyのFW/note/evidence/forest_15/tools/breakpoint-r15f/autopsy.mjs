@@ -1,6 +1,6 @@
 // r15f 刀锋验尸：对指定 {side,#idx,+d} 正向致命项，跑 nominal vs slipped，
 // 输出死亡帧、死亡位置、死亡前后机制状态与两人轨迹散点，定位"谁杀的"。
-// 用法: node --import tsx TEMP/r15f/autopsy.mjs [route路径] "wg:11:1,wg:13:1,wg:64:1,wg:70:1,wg:70:3"
+// 用法: node --import tsx note/evidence/forest_15/tools/breakpoint-r15f/autopsy.mjs [route路径] "wg:11:1,wg:13:1,wg:64:1,wg:70:1,wg:70:3"
 import { readFileSync } from "node:fs";
 import { makeWorld, expandFlat } from "../../scripts/e2e/routetool/kernel.mjs";
 

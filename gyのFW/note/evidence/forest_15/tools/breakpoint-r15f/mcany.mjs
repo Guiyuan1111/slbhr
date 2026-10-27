@@ -1,7 +1,7 @@
 // r15f: mc.mjs 的任意路径变体——MC 逻辑与 scripts/e2e/mc.mjs 逐行同构
 // （slip/jitter/seed 序列完全一致，数字与库内 mc.mjs 直接可比），
 // 仅把路线来源从固定库路径改为 --route 参数，便于在替换库文件前评测候选。
-// 用法: PATH="$PWD/TEMP/node:$PATH" node --import tsx TEMP/r15f/mcany.mjs --route <path> [--trials 150] [--seed 42]
+// 用法: PATH="$PWD/TEMP/node:$PATH" node --import tsx note/evidence/forest_15/tools/breakpoint-r15f/mcany.mjs --route <path> [--trials 150] [--seed 42]
 import { readFileSync } from "node:fs";
 import { runKernel } from "../../scripts/e2e/routetool/kernel.mjs";
 

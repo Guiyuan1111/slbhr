@@ -1,7 +1,7 @@
 // r15f MC 失败归因：复刻 mcany.mjs 的抖动流（同 LCG/同事件序/同 seed），
 // 对每个失败 trial 做单滑移隔离——只保留事件 e 的滑移、其余归位，若仍失败则 e 为该 trial 的杀手。
 // 输出按"独立击杀 trial 数"排序的杀手清单（JSON + 摘要）。
-// 用法: node --import tsx TEMP/r15f/mcanalyze.mjs <route路径> [--trials 150] [--seed 42]
+// 用法: node --import tsx note/evidence/forest_15/tools/breakpoint-r15f/mcanalyze.mjs <route路径> [--trials 150] [--seed 42]
 import { readFileSync, writeFileSync } from "node:fs";
 import { runKernel } from "../../scripts/e2e/routetool/kernel.mjs";
 

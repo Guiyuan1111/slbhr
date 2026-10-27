@@ -4,7 +4,7 @@
 // 流构建与 mc.mjs 逐位一致：按文件数组序抽取（先 fb 后 wg），抖动后同帧 up 先排序。
 // 循环: 杀手归因(单滑移隔离) → 杀手事件结构候选(单移/整拍平移/释放后补拍) → 快筛 → 全 MC 验收。
 // 护栏: 采纳需赢场严格增加；poscan cost 恶化 >0.05 否决；seed43 陪跑记录(不门禁)。
-// 用法: node --import tsx TEMP/r15f/mcfix.mjs <route路径> <out路径> [--target 148] [--rounds 30] [--jobs 6]
+// 用法: node --import tsx note/evidence/forest_15/tools/breakpoint-r15f/mcfix.mjs <route路径> <out路径> [--target 148] [--rounds 30] [--jobs 6]
 import { readFileSync, writeFileSync, copyFileSync } from "node:fs";
 import { ScanPool } from "../../scripts/e2e/routetool/pool.mjs";
 

@@ -6,6 +6,7 @@
 > 定位法：`python3` `re.finditer(r'define\("States/Level/Devices/…"')` + 子串 find。切片留存 `TEMP/rpa/*.js`（Device/BoxedDevice/Lever/Pusher/MovingPlatform/BoxPrototype，gitignore 内）。
 > 我方实现：`packages/shared/src/kernel/{mechanisms,build,b2,world}.ts`、`packages/shared/src/level2.ts`。
 > 运行时探针：`TEMP/rpa/probe{,2,3}.mts`（`npx tsx` 可复跑，本文 §5 引用其输出）。
+> 〔2026-10-27 收容更新〕TEMP/rpa 已清库，切片与四探针收容 `tools/breakpoint-rpa/`（本目录下）；文中 TEMP/rpa 复现路径按新址替换。
 
 **结论速览：P0 = 0，P1 = 2（其中 1 条为已知跨机制时基），P2 = 11。** 本槽四机制的全部物理语义（关节类型/锚点/限位/马达/密度/摩擦/过滤/坐标换算/组联动）与原版逐参数一致；唯一实测偏差是转臂平台限位过冲（oracle 有逐帧硬钳、内核无），见 §5-D1。
 

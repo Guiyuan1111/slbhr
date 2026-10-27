@@ -1,5 +1,5 @@
 // r15f 诊断探针：仅扫 +1/+2/+3 正向致命（MC slip 模型只有正向；负向致命不影响 MC/真机门禁）
-// 用法: node --import tsx TEMP/r15f/poscan.mjs [route路径] [jobs=7]
+// 用法: node --import tsx note/evidence/forest_15/tools/breakpoint-r15f/poscan.mjs [route路径] [jobs=7]
 // 依据: scripts/e2e/mc.mjs slip() — r<0.02→+1, r<0.026→+2, r<0.028→+3, 其余 0
 import { readFileSync } from "node:fs";
 import { ScanPool } from "../../scripts/e2e/routetool/pool.mjs";

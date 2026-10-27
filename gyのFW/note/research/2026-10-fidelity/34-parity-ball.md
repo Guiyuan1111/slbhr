@@ -3,6 +3,7 @@
 > 槽：rb1。日期 2026-10-15。只读审计，**未改任何 .ts/.mjs 源码**。
 > 事实源：`Fireboy-and-Watergirl/output/A/js/init.eb02fbdab2aa1d24.js`（latin1 口径 2,218,873 B，
 > 与 30-33 号档同一版本；`@N` = latin1 字节偏移）。切片留存 `TEMP/rb1/{Ball,BoxedDevice,Device}.js`（gitignore 内）。
+> 〔2026-10-27 注〕TEMP/rb1 已按其收尾自述整体删除（审计收官）；切片可按下方定位法自 oracle 再生。
 > 定位：`define("States/Level/Devices/Ball" @1624705`（至 Beamer @1626654）；基类 Device @1618061、BoxedDevice @1623528。
 > 我方实现：`packages/shared/src/kernel/mechanisms.ts:412-432`（buildBall）、`b2.ts`（过滤/fixture 助手）、
 > `packages/shared/src/level2.ts:525-527`（ball 解码）。

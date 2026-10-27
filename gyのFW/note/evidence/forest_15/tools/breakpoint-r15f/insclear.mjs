@@ -4,7 +4,7 @@
 //   B. re-tap：释放后补一拍 {fu+o down, fu+o+1 up}（新边沿，捕获原 down 的 +2/+3 滑移；
 //      跳跃类机制空中再按为 no-op，无害性由 WIN 检查兜底）。
 // 只处理残余 fatal 里出现的事件（按权重降序），k/o 拉黑防绕圈。
-// 用法: node --import tsx TEMP/r15f/insclear.mjs <route路径> <out路径> [--maxSteps 60] [--jobs 5]
+// 用法: node --import tsx note/evidence/forest_15/tools/breakpoint-r15f/insclear.mjs <route路径> <out路径> [--maxSteps 60] [--jobs 5]
 import { readFileSync, writeFileSync, copyFileSync } from "node:fs";
 import { ScanPool } from "../../scripts/e2e/routetool/pool.mjs";
 

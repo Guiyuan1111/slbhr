@@ -1,6 +1,6 @@
 // r15f 落点解耦扫描：6990 起跳后 right 按住 69f 贯穿全程飞行 → 落点对起飞延迟敏感（+1f≈+37px）。
 // 候选=在固定帧 R 插入 right/up（摩擦截断漂移），每候选全 MC(seed42) 评分；插入改抖动流，全 MC 是唯一诚实评分。
-// 用法: node --import tsx TEMP/r15f/landingscan.mjs <route路径> [--lo 6996] [--hi 7052] [--jobs 6]
+// 用法: node --import tsx note/evidence/forest_15/tools/breakpoint-r15f/landingscan.mjs <route路径> [--lo 6996] [--hi 7052] [--jobs 6]
 import { readFileSync } from "node:fs";
 import { ScanPool } from "../../scripts/e2e/routetool/pool.mjs";
 

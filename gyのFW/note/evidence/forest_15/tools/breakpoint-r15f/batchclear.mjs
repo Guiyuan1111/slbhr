@@ -1,6 +1,6 @@
 // r15f 批量 deadline 清除器：对正向刀锋事件测前移余量，计算"新 +1/+2/+3 影区全净"的最小前移，
 // 输出提案；--apply 落盘应用后的路线。不含 tap 对/连锁的配对逻辑（那类由 poscan 迭代纠偏）。
-// 用法: node --import tsx TEMP/r15f/batchclear.mjs <route路径> <poscan输出log路径> [--apply <out路径>]
+// 用法: node --import tsx note/evidence/forest_15/tools/breakpoint-r15f/batchclear.mjs <route路径> <poscan输出log路径> [--apply <out路径>]
 import { readFileSync, writeFileSync } from "node:fs";
 import { runKernel } from "../../scripts/e2e/routetool/kernel.mjs";
 import { ScanPool } from "../../scripts/e2e/routetool/pool.mjs";

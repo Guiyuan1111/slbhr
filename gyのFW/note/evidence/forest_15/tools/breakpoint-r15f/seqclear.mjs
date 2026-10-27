@@ -1,7 +1,7 @@
 // r15f 顺序贪心清除器：批清实证不可组合（cand1 联合应用 41→78 爆炸），改为
 // 每轮: poscan 全扫 → 取代价最高刀锋事件测 clean 集 → 选最优 k → 应用 → 下一轮 poscan 验收；
 // 恶化则回滚并拉黑该 (event,k)，换次优继续。单调不升，全程可复现。
-// 用法: node --import tsx TEMP/r15f/seqclear.mjs <route路径> <out路径> [--maxSteps 40] [--jobs 7]
+// 用法: node --import tsx note/evidence/forest_15/tools/breakpoint-r15f/seqclear.mjs <route路径> <out路径> [--maxSteps 40] [--jobs 7]
 import { readFileSync, writeFileSync, copyFileSync } from "node:fs";
 import { ScanPool } from "../../scripts/e2e/routetool/pool.mjs";
 
