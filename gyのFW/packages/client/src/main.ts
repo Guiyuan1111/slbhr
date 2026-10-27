@@ -717,8 +717,11 @@ function bindUi(): void {
   $("#hud-hot").addEventListener("mouseenter", () => hudTopShow(0)); // 悬停保持显示
   $("#hud-hot").addEventListener("mouseleave", () => hudTopShow(1200));
   window.addEventListener("keydown", (e) => {
+    // #47-4：e.repeat 过滤——按住 P 会产生暂停/恢复风暴；R 限游戏内（E1 速度跑语义，
+    // 菜单/转场期无效），转场中重复触发由 restartWithFade 的 fading 门按原版口径丢弃
+    if (e.repeat) return;
     if (e.code === "KeyP" && gameStarted) togglePause();
-    if (e.code === "KeyR" && net) restartWithFade();
+    if (e.code === "KeyR" && net && gameStarted) restartWithFade();
     if (e.code === "KeyI" && gameStarted) {
       if ($("#hud-top").classList.contains("away")) hudTopShow();
       else hudTopHideNow();

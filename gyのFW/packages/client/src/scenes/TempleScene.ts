@@ -12,6 +12,7 @@
  */
 import Phaser from "phaser";
 import { templeIdOf } from "../templeData";
+import { guardLoadErrors } from "./loadGuard";
 import { ATLAS_MENU, ATLAS_TEMPLE, FONT_MAIN } from "./BootScene";
 import { clickSfx } from "./overlays";
 import { fadeSwitch } from "./transition";
@@ -52,6 +53,10 @@ export class TempleScene extends Phaser.Scene {
   }
 
   preload(): void {
+    guardLoadErrors(this);
+    // #47-2：场景重入清空上一轮节点计数/降级图形引用（持有已销毁对象线性累积）
+    this.numberTexts = [];
+    this.flatFallbacks = [];
     const temple = templeIdOf(new URLSearchParams(location.search).get("level"));
     this.load.json("templeData", `/data/${temple}/temple.json`);
     // r5 装载序兜底：temple 图集随游戏内批次延迟装载（MenuScene 后台暖装通常已就绪，

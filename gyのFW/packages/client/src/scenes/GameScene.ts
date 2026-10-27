@@ -27,7 +27,8 @@ import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_T
 import { CameraRig, PAD, type CamApply } from "./cameraRig";
 import { clearSceneStates, resetFxStates, SCENE_STATE_KEYS } from "./sceneState";
 import { getSettings } from "../settings";
-import { loadTempleLevels } from "../templeData";
+import { loadTempleLevels, templeIdOf } from "../templeData";
+import { guardLoadErrors } from "./loadGuard";
 import { validateSnapshot } from "../snapshotValidation";
 import { MechanismSmoother } from "./mechSmoothing";
 import { PlatformSoundTracker } from "./platformSound";
@@ -258,7 +259,6 @@ export class GameScene extends Phaser.Scene {
   private readonly camRig = new CameraRig();
   /** HUD 反缩放登记（zoom≠1 时逐帧补偿，见 buildHud 头注） */
   private hudItems: Array<{ obj: Phaser.GameObjects.Image | Phaser.GameObjects.BitmapText; x: number; y: number }> = [];
-  private redTotal = 0;
   private blueTotal = 0;
   private silverTotal = 0;
   private navyItems: NavyItem[] = [];
@@ -332,7 +332,10 @@ export class GameScene extends Phaser.Scene {
     // 游戏内四图集（r5 冷启动装载序整形）：Boot 不再装载（Menu 首帧用不到），
     // MenuScene 后台暖装通常已就绪（此处静默跳过）；暖装被提前打断（快速建房/
     // 邀请深链直进）时在此补齐，保证 create 前纹理完备——与旧 Boot 全量装载等价。
-    loadGameAtlases(this.load);
+    // #47-6：神庙图集按房间 state.levelId 的庙域装载（用房间码加入时与 URL ?level= 可异；
+    // 已缓存同庙则自动跳过，异庙在此换载）；#47-3：装载失败兜底错误条
+    loadGameAtlases(this.load, templeIdOf(this.d.level.id));
+    guardLoadErrors(this);
   }
 
   init(): void {
@@ -426,8 +429,7 @@ export class GameScene extends Phaser.Scene {
 
     for (const d of level.diamonds) {
       this.diamondKinds.set(d.id, d.kind);
-      if (d.kind === "red") this.redTotal++;
-      else if (d.kind === "blue") this.blueTotal++;
+      if (d.kind === "blue") this.blueTotal++;
       else if (d.kind === "silver") this.silverTotal++;
     }
 
@@ -451,7 +453,7 @@ export class GameScene extends Phaser.Scene {
     this.buildLiquids(level);
     this.buildNavies(level); // 替换 0.2.0 臆造 buildDust（G13：森林从不出现 BeamDust/Dust）
     this.buildHud();
-    this.fetchTempleTime(level.id);
+    this.fetchTempleTime(level);
 
     this.stopLevelBgm();
     // T8（14 号档）：menuMusic 退场=fadeOut(500)+完停（oracle LevelMenu.startLevel :1935104），
@@ -555,14 +557,18 @@ export class GameScene extends Phaser.Scene {
 
   /** 原版限时（E17：EndMenu TimeIcon 的 limit 来自 temple.json 的 time 字段）。
    *  r8 件3：走页面级单例（此前每次 create 各自 fetch+parse 同一文件）。 */
-  private fetchTempleTime(levelId: string): void {
+  private fetchTempleTime(level: LevelData): void {
     // r12 勘误（Round B 子 agent 发现）：漏传 levelId 恒取 forest temple.json——
     // light 关匹配不到条目 → create 后约 1s templeType 翻 general → dark 黑幕整关失效
+    const levelId = level.id;
     loadTempleLevels(levelId).then((levels) => {
       const entry = levels.find((lv) => String(lv?.filename ?? "").endsWith(`/${levelId}.json`));
       const t = Number(entry?.time);
       this.templeTimeSec = Number.isFinite(t) && t > 0 ? t : null;
       this.templeType = String(entry?.type ?? "general");
+      // #47-5：temple.json 首载失败/晚到导致 templeType 此前非 dark 时，回填 dark 后
+      // 补建黑幕（ensureDarkRt 幂等；已建或非 dark 时是空操作）
+      this.ensureDarkRt(level);
     });
   }
 
@@ -1102,7 +1108,6 @@ export class GameScene extends Phaser.Scene {
     for (const run of level.liquidRuns) {
       const fam = LIQUID_ATLAS[run.kind] ?? "WaterBox";
       const single = run.col0 === run.col1;
-      const ice = run.kind === "water" ? this.add.container(0, 0).setDepth(7.05).setVisible(false) : null;
       for (let k = run.col0; k <= run.col1; k++) {
         const pos = k === run.col0 ? (single ? "Left" : "Left") : k === run.col1 ? "Right" : "";
         const s = this.add
@@ -1111,26 +1116,12 @@ export class GameScene extends Phaser.Scene {
           .setDepth(7);
         // 原版三段液体同相位播放（bundle:38988-39006 无随机延迟）；width=1 时 Left/Right 同格叠放
         s.play(`liquid_${run.kind}${pos ? `_${pos.toLowerCase()}` : ""}`);
-        if (ice) {
-          const ipos = pos; // Left/中(裸 IceBox)/Right 与水面三段同格同规则
-          ice.add(
-            this.add
-              .image(k * tile + tile / 2 + PAD, run.row * tile + tile / 2 + 4 + PAD, ATLAS_GROUND, `IceBox${ipos}0000`)
-              .setOrigin(0.5)
-          );
-        }
         if (single) {
           const cap = this.add
             .sprite(k * tile + tile / 2 + PAD, run.row * tile + tile / 2 + 2 + PAD, ATLAS_GROUND, `${fam}Right0000`)
             .setOrigin(0.5)
             .setDepth(7);
           cap.play(`liquid_${run.kind}_right`);
-          // width=1 冰膜同格补 Right（oracle createIceGraphics 无条件建 Left+Right 两枚）
-          if (ice) {
-            ice.add(
-              this.add.image(k * tile + tile / 2 + PAD, run.row * tile + tile / 2 + 4 + PAD, ATLAS_GROUND, "IceBoxRight0000").setOrigin(0.5)
-            );
-          }
         }
       }
     }

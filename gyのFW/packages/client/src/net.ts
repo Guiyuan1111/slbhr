@@ -164,6 +164,9 @@ export class Net {
     room.onMessage("levelError", (payload: { message?: string }) => {
       console.warn("[fw] levelError:", payload?.message);
     });
+    // #47-1：服务端非 started 相位每秒广播 ping（ForestRoom 心跳），无 handler 时
+    // colyseus.js 每秒打一条 "not registered" warn 淹没真实错误——静默吞掉
+    room.onMessage("ping", () => {});
 
     // phase/levelId 迁移差分（比轮询及时，且带前值；prev* 挂实例上，重连重绑后仍连续）
     room.onStateChange((state) => {

@@ -18,6 +18,7 @@
 import Phaser from "phaser";
 import { AUDIO_GAME, AUDIO_MENU, loadAudioPack } from "../audio.js";
 import { templeIdOf } from "../templeData";
+import { guardLoadErrors } from "./loadGuard";
 
 export const ATLAS_CHARS = "chars";
 export const ATLAS_GROUND = "ground";
@@ -47,7 +48,10 @@ function currentTemple(): "forest" | "light" | "ice" {
  *  addfile/loaderror 时出集合；SHUTDOWN 时把仍排队（未起飞）的键出集合，交由兜底重声明。 */
 const atlasInflight = new Set<string>();
 
-export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
+/** ATLAS_TEMPLE 当前已装载的庙域（#47-6：跨庙换载判定用） */
+let loadedTempleAtlas: "forest" | "light" | "ice" | null = null;
+
+export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin, templeOverride?: "forest" | "light" | "ice"): void {
   const queue = (key: string, url: string): void => {
     if (load.textureManager.exists(key) || atlasInflight.has(key)) return;
     atlasInflight.add(key);
@@ -61,8 +65,19 @@ export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin): void {
   };
   queue(ATLAS_GROUND, "/assets/atlasses/GroundAssets");
   queue(ATLAS_MECH, "/assets/atlasses/MechAssets");
-  const temple = currentTemple();
-  queue(ATLAS_TEMPLE, `/assets/atlasses/Temples/${temple}/TempleAssets`);
+  // #47-6：神庙图集按关卡实际庙域装载——URL ?level= 只决定 create 流初值；用房间码加入
+  // 时房间真实关卡可属其它庙（GameScene 以 state.levelId 传 override）。键同为
+  // ATLAS_TEMPLE，庙域不符时移除旧纹理再重排队（帧名跨庙同构，引用点无感）。
+  const temple = templeOverride ?? currentTemple();
+  if (load.textureManager.exists(ATLAS_TEMPLE) && loadedTempleAtlas && loadedTempleAtlas !== temple) {
+    load.textureManager.remove(ATLAS_TEMPLE);
+    atlasInflight.delete(ATLAS_TEMPLE);
+    loadedTempleAtlas = null;
+  }
+  if (!load.textureManager.exists(ATLAS_TEMPLE)) {
+    queue(ATLAS_TEMPLE, `/assets/atlasses/Temples/${temple}/TempleAssets`);
+    loadedTempleAtlas = temple;
+  }
   queue(ATLAS_POPUP, "/assets/atlasses/PopupAssets");
 }
 
@@ -73,6 +88,7 @@ let warmState: { done: Promise<void>; resolve: () => void } | null = null;
 /** MenuScene 调用：开始后台暖装并登记落定门（complete 或场景被切走都算落定） */
 export function startBgWarm(scene: Phaser.Scene): void {
   if (warmState) return;
+  guardLoadErrors(scene);
   let resolve: () => void = () => {};
   const done = new Promise<void>((r) => {
     resolve = r;
@@ -106,6 +122,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
+    guardLoadErrors(this);
     // LoaderBar 贴图首位装载（13 号档 #41，0.3.39：oracle Boot 态预装 PreloaderAssets
     // bundle:2160057 区 → Load 态全程有条；单场景镜像=本队列尽早可用，见 buildLoaderBar）
     this.load.atlas(ATLAS_PRELOADER, "/assets/atlasses/PreloaderAssets.png", "/assets/atlasses/PreloaderAssets.json");

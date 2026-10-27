@@ -43,6 +43,8 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create(): void {
+    // #47-2：场景重入（菜单回返）时清除上一轮尘埃数组，防持有已销毁对象线性累积
+    this.navies = [];
     const W = this.scale.width;
     const H = this.scale.height;
 
