@@ -10,6 +10,13 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-10-27（并行性能线吸收批二 + 0.3.54 发版——r16 三族移植/r14 件/r12 否决，带审核）
+① **审核**：r16 前提核查——qoder 两族（general/speed）建立在"森林无 dark"上，main 的 light 部有 7 dark 关（142 关：general 69/puzzle 41/speed 25/dark 7），前提过时→**扩三族**移植，DARK 终局曲与 general 共用（对齐 finishKey else 分支）。
+② **r16 落地（1bb5ca0）**：AUDIO_GAME 拆 SFX(18 恒取)+失败曲+三族；BootScene 暖装族预判（main.ts 深链 ?level= 经 temple.json 单例预判）；GameScene.preload 按 templeEntry.type 兜底；额度 general 关省 646.5KB/speed 1919.2KB/dark 1620.9KB（原每关全装 2,309,067B）。
+③ **验证**：单测 7 例（族映射与 bgmKey/finishKey 同式等）+ 新门禁 scripts/e2e/audiofamily.mjs 3/3（speed/dark/缺省深链各只装本族，本地真浏览器实测；dark 例为三庙适配新增）。
+④ **r14 件**：levelCache 无界 Map→LRU(4)。**r12 否决**：main 快照对象已复用、剩每帧一个小字面量，收益边际不值改签名——审核否决与移植实录均存档于收容档。
+⑤ **0.3.54 发版**：47 文件 339 测试绿（+7）、typecheck 0 错、build 过；tag+Release 于 CI 绿后（无附件口径）。
+
 **更新**：2026-10-27（并行性能线收容批 + 0.3.53 发版——qoder r12–r43 核查/收容/r15 首移植）
 ① **核查结论**：用户派出的另一 AI（qoder 工作树）不是审核是开发——209 提交性能战役 r12–r43（10-21~23，基点 0.3.42）：packages 42 文件 +5799/−316、34 报告、20+ 新测试、自收口撞号 0.3.43；patch-id 与 main 全不等价。证据与逐轮分流见 note/report/perf/2026-10-27-qoder-line-salvage.md。
 ② **收容（d445d97）**：代码固化分支 qoder/r12-r43-perf-campaign（原工作树已撤）；34 报告+总账 §九–§四十 入 note/report/perf；0.3.43 撞号存档 0.3.43-qoder-perf-line.md；快照（607 文件≈169 万行）不入库留分支（整线压缩 25MB）。

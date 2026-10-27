@@ -21,11 +21,11 @@
 
 | 轮 | 主题 | main 现状（0.3.52） | 处置 |
 |---|---|---|---|
-| r12 | 帧内写入：相机弹簧亚像素吸附/HUD 反缩放/电机声标量差分 | 0.3.44 已改**静态相机**（跟随写入大面积不存在）；0.3.42 已有 T10 电机声逐台实例 | 前提部分失效，对照后小拣 |
+| r12 | 帧内写入：相机弹簧亚像素吸附/HUD 反缩放/电机声标量差分 | 0.3.44 已改**静态相机**（跟随写入大面积不存在）；0.3.42 已有 T10 电机声逐台实例 | **审核否决（2026-10-27）**：相机两件前提失效；电机声件在 main 只剩 stepPlatSnd 每帧一个小字面量（快照对象本就复用、PlatformSoundTracker 纯读），收益边际不值跨模块改签名 |
 | r13 | 换关链预取预烘下一关地面 + 地面缓存有界 LRU（groundCache.ts） | main 无此件；预取语义在静态相机下仍成立 | **可移植**（适配静态相机+三庙 139 关） |
-| r14 | 选关驻留：templeTreeBake 分层流水线/离房释放/levelCache 有界 LRU | main 有 0.3.36 版 templeTreeBake；qoder 版 +159 行 | 可移植（需三方 diff 合并） |
+| r14 | 选关驻留：templeTreeBake 分层流水线/离房释放/levelCache 有界 LRU | main 有 0.3.36 版 templeTreeBake；qoder 版 +159 行 | levelCache LRU(4) 件**已移植（0.3.54）**；templeTreeBake/离房释放件仍后续（需三方 diff） |
 | r15 | 冷启传输：staticGz 强 ETag/条件请求 + 关卡 API 协商压缩（jsonRes.ts） | main 两件皆无；staticGz 已叠加 #33 穿越/#45 方法闸门 | **0.3.53 已移植**（融合 #33/#45 演化） |
-| r16 | 进房音频按关卡类型分族装载 | main 已加 bgm_level_dark（#31）与三庙 BGM | 概念适用，需扩三庙设计——后续批 |
+| r16 | 进房音频按关卡类型分族装载 | main 已加 bgm_level_dark（#31）与三庙 BGM | **已移植（0.3.54，审核扩三族）**：qoder 两族前提"森林无 dark"在 main 过时，扩 general/speed/dark 三族（light 部 7 dark 关）；DARK 终局曲与 general 共用对齐 finishKey；暖装深链预判+GameScene.preload 兜底；单测 7 例+audiofamily 门禁 3/3 |
 | r17 | DOM 皮肤与整图集解耦（dom-skin 合成贴图） | main 未动 | 可移植（资产重打包+domskin 门禁配套） |
 | r18/r19 | 中文位图字两段化 + 进房前字体图集重排 | main 未动 | 可移植（资产+prephase-canvas 取证配套） |
 | r20 | 弱网档位量具（CDP 隧道节流） | main 无 | 工具件可独立移植（低风险） |
@@ -37,3 +37,12 @@
 ## 首批移植（0.3.53）：r15 服务端两件
 
 选 r15 的理由：main 完全缺失、纯服务端可全套 vitest 复验、收益与 0.3.42 无关（关卡 JSON 冗余度只增不减——ice 51 关更大）、与 #45 加固正交。融合要点：保留 main 的 #33 穿越防护与 #45 方法闸门；关卡 API 缓存策略沿用 main #45 的 `public, max-age=300`（该线原为 no-cache），叠加内容寻址 ETag 后 300 秒内共享缓存、过期条件复验 304。
+
+## 移植实录（带审核的吸收）
+
+| 日期 | 件 | 审核结论 | 落点 |
+|---|---|---|---|
+| 2026-10-27 | r15 两件 | 采纳（前提与 main 演化正交，融合 #33/#45） | 0.3.53（fa338d4） |
+| 2026-10-27 | r16 | **采纳但改设计**：两族→三族（main 的 light 部有 7 个 dark 关，qoder 前提过时）；DARK 族终局曲按 oracle/finishKey 语义与 general 共用 | 0.3.54（1bb5ca0） |
+| 2026-10-27 | r14 levelCache 件 | 采纳（main 的 Map 无界） | 0.3.54（1bb5ca0） |
+| 2026-10-27 | r12 电机声标量件 | **否决**：main 快照对象已复用，剩余分配仅每帧一个小字面量，收益边际 | 不移植（理由存档） |
