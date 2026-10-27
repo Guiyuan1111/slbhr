@@ -25,6 +25,7 @@ import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
 import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_MAIN, PLAYER_SCALE, buildGameAnims, loadGameAtlases } from "./BootScene";
 import { CameraRig, PAD, type CamApply } from "./cameraRig";
+import { clearSceneStates, resetFxStates, SCENE_STATE_KEYS } from "./sceneState";
 import { getSettings } from "../settings";
 import { loadTempleLevels } from "../templeData";
 import { validateSnapshot } from "../snapshotValidation";
@@ -222,7 +223,8 @@ export class GameScene extends Phaser.Scene {
   private infiniteMirrorViews = new Map<string, { mirror: Phaser.GameObjects.Image; light: Phaser.GameObjects.Image }>();
   private lightPusherViews = new Map<string, { base: Phaser.GameObjects.Image; light: Phaser.GameObjects.Image; state: boolean }>();
   private sliderViews = new Map<string, { dot: Phaser.GameObjects.Image; light: Phaser.GameObjects.Image }>();
-  private iceViews = new Map<string, Phaser.GameObjects.Container>();
+  /** 冰膜视图（#40）：全 liquid run 同域占位，null=非 water run（只消费 st.liquids 位串位） */
+  private iceViews = new Map<string, Phaser.GameObjects.Container | null>();
   // ---- dark 关黑幕（原版 setupDarkness @1883xxx：+64px 黑幕 bitmapData MULTIPLY 覆盖，
   //  各设备/角色以 lighter 白径向梯度挖洞——我方以 RenderTexture erase 等价实现）----
   private darkRt: Phaser.GameObjects.RenderTexture | null = null;
@@ -391,24 +393,12 @@ export class GameScene extends Phaser.Scene {
     // （刷新回座 started 由 create 末尾解冻；refresh 进 ready 则保持冻结到开局事件）。
     this.camRig.resetTransient();
     this.myRole = this.d.net.myRole ?? this.myRole;
-    // #29：黑幕/浮尘渲染对象已随上次 SHUTDOWN 的 DisplayList.shutdown 全部销毁，
-    // 长生命周期引用必须归零，否则 create 的幂等条件（引用非空）会跳过重建；
-    // lastBeamPts 同理——旧关折线残留会在首帧画出幽灵光束并污染浮尘掩膜签名。
-    this.lastBeamPts.clear();
-    this.resetFxState();
-  }
-
-  /** #29：场景实例在 stop/start 间复用，Phaser DisplayList.shutdown 会把显示列表中的
-   *  全部子对象逐个 destroy——darkRt 族/浮尘族字段只在 init 归零、create 按需重建。 */
-  private resetFxState(): void {
-    this.darkRt = null;
-    this.darkHalo = null;
-    this.staticHaloRt = null;
-    this.staticHaloSig = null;
-    this.dustContainer = null;
-    this.dustMask = null;
-    this.dustMaskSig = "";
-    this.dustWobble = [];
+    // #29/#40：场景实例在 stop/start 间复用，DisplayList.shutdown 已把显示对象全部
+    // destroy——长生命周期引用必须复位，否则 create 的幂等条件（引用非空）会跳过重建；
+    // 机关视图/灯光状态缓存不清空会累积已销毁对象（幽灵光晕、冰膜错位放大、内存滞留）。
+    // 清单集中在 sceneState.ts（SCENE_STATE_KEYS/FX_STATE_INIT），守卫测试遍历断言。
+    clearSceneStates(this as unknown as Record<string, unknown>, SCENE_STATE_KEYS);
+    resetFxStates(this as unknown as Record<string, unknown>);
   }
 
   create(): void {
@@ -1062,9 +1052,16 @@ export class GameScene extends Phaser.Scene {
         .setDepth(4.96);
       this.sliderViews.set(m.id, { dot, light });
     }
-    // 冰面覆盖层（原版 createIceGraphics：IceBoxLeft/Box/Right，行段左→右铺；初始 startFrozen 显）
+    // 冰面覆盖层（原版 createIceGraphics：IceBoxLeft/Box/Right，行段左→右铺；初始 startFrozen 显）。
+    // #40：索引域必须与 st.liquids 位串同域——服务端 world.liquids=全部 liquid run（含
+    // lava/green，顺序即 level.liquidRuns），旧实现只插 water run，「插入序=下标」在
+    // water 前存在其它液体时错位（实测 136 关中 58 关、其中 15 个可冻结 light/ice 关）。
+    // 非 water run 登记 null 占位消费位串位。
     for (const run of level.liquidRuns) {
-      if (run.kind !== "water") continue;
+      if (run.kind !== "water") {
+        this.iceViews.set(`${run.row}:${run.col0}`, null);
+        continue;
+      }
       const c = this.add.container(0, 0).setDepth(1.5).setVisible(run.startFrozen);
       const A = run.col1 - run.col0 + 1;
       for (let i = 0; i < A; i++) {
@@ -1837,8 +1834,12 @@ export class GameScene extends Phaser.Scene {
     st.timedPushers?.forEach?.(this.cbTimedPushers);
     if (typeof st.liquids === "string" && st.liquids !== this.lastLiquids) {
       this.lastLiquids = st.liquids;
+      // #40：全 run 占位同域遍历——null 占位也消费位串位，water 视图按各自 run 位显隐
       let i = 0;
-      this.iceViews.forEach((v) => v.setVisible(st.liquids[i++] === "1"));
+      this.iceViews.forEach((v) => {
+        const frozen = st.liquids[i++] === "1";
+        if (v) v.setVisible(frozen);
+      });
     }
   }
 
