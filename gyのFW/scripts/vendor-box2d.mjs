@@ -1,36 +1,45 @@
 /**
- * 从原版 init.js（参考库，永久只读）按字节原样提取 Box2D 引擎 bundle。
+ * 从原版 init.js（参考库 Fireboy-and-Watergirl/，永久只读）按字节原样提取 Box2D 引擎 bundle。
  *
- * 证据（均为 init.js 字节偏移，latin1 计数与 Buffer 索引一致）：
- * - init.eb02fbdab2aa1d24.js 共 2,273,196 字节；
- * - 引擎为单一 Google Closure 顶层逗号表达式链：起于 @1,132,453 的 `var COMPILED = !1,`（全文件唯一），
- *   止于 @1,654,645 的 `define("box2d", ["Phaser"], ...)` 适配器之前（切片末尾多带一个衔接逗号，由加载器在求值时去掉）；
- * - bundle 同时编入了 Phaser.Physics.Box2D 插件（引用全局 Phaser），加载器提供最小占位；
- * - 求值后导出扁平命名空间 `this.box2d`（与适配器语义一致），集成器为半隐式欧拉（先速度后位置），
- *   与原版逐帧一致：g=31.25 m/s²、h=1/60 时 1 秒位移 = g·h²·n(n+1)/2 = 15.8854 m（508.33 px @ ptm 32）。
+ * 切片定位（#44 重写）：不再硬编码偏移——按锚文本动态定位，参考库小版本更新也能复现：
+ * - 起点：全文件唯一的 `var COMPILED = !1,`（Closure prelude，逗号表达式链头）；
+ * - 终点：`define("box2d", ["Phaser"], ...)` requirejs 适配器起点（适配器本身不进切片，
+ *   切片末尾多带一个衔接逗号，由 src/box2d/load.ts 求值时剥离）；
+ * - 完整性：产物 sha256 必须等于本脚本内 EXPECTED_SHA256（与 vendor/README.md、
+ *   src/box2d/load.ts 的 VENDOR_BOX2D_SHA256 三处一致），不符即拒写。
  *
- * 用法：node scripts/vendor-box2d.mjs   （参考库文件必须存在且未被修改）
+ * 实测（当前参考库 init.eb02fbdab2aa1d24.js = 2,218,873 字节）：
+ *   切片 = [1,105,959, 1,616,882)，510,923 字节，sha256 = d8a9edad036999053839ae5da070811e34417a6616dc39af6743f802471ee80e
+ *
+ * 用法：node scripts/vendor-box2d.mjs
  */
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const INIT = join(ROOT, "..", "Fireboy-and-Watergirl", "output", "A", "js", "init.eb02fbdab2aa1d24.js");
-const START = 1132453;
-const END = 1654645;
+/** 与 vendor/README.md、packages/shared/src/box2d/load.ts 三处一致的完整性锚 */
+const EXPECTED_SHA256 = "d8a9edad036999053839ae5da070811e34417a6616dc39af6743f802471ee80e";
 
 const buf = readFileSync(INIT);
-if (buf.length !== 2273196) throw new Error(`init.js 长度 ${buf.length} ≠ 2273196，参考库可能被改动，中止`);
-const head = buf.subarray(START, START + 18).toString("latin1");
-const tail = buf.subarray(END, END + 15).toString("latin1");
-if (head !== "var COMPILED = !1,") throw new Error(`起点锚文本不符: ${JSON.stringify(head)}`);
-if (tail !== 'define("box2d",') throw new Error(`终点锚文本不符: ${JSON.stringify(tail)}`);
+const text = buf.toString("latin1");
+const START = text.indexOf("var COMPILED = !1,");
+const END = text.indexOf('define("box2d",');
+if (START < 0) throw new Error("起点锚 `var COMPILED = !1,` 未找到——参考库结构可能已变，人工核验后更新脚本");
+if (END < 0 || END <= START) throw new Error("终点锚 `define(\"box2d\",` 未找到或先于起点——人工核验后更新脚本");
 
 const slice = buf.subarray(START, END);
+const sha = createHash("sha256").update(slice).digest("hex");
+if (sha !== EXPECTED_SHA256) {
+  throw new Error(
+    `切片 sha256 ${sha} ≠ 期望 ${EXPECTED_SHA256}\n` +
+      `参考库内容与既有 vendor 不一致（升级或损坏）。人工核对后：若为合法升级，同步更新 ` +
+      `EXPECTED_SHA256 / vendor/README.md / src/box2d/load.ts 三处；否则拒绝生成。`,
+  );
+}
 const out = join(ROOT, "packages", "shared", "vendor", "box2d.js");
-mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, slice);
 console.log(`vendor/box2d.js  <- init.js[${START}, ${END})  ${slice.length} bytes`);
-console.log("sha256:", createHash("sha256").update(slice).digest("hex"));
+console.log("sha256:", sha, "（与既有 vendor 一致，未发生漂移）");

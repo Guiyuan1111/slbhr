@@ -24,9 +24,15 @@
  * ⚠ 不在 src/index.ts 桶导出里引用本文件——new Function 求值会打断 Vite 客户端构建。
  *   服务端与测试用 `@fw/shared/box2d` 子路径导入。
  */
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+
+/** vendor 完整性锚（#44）：与 vendor/README.md、scripts/vendor-box2d.mjs 三处一致。
+ *  求值前校验，不符即 fail-fast——510KB 引擎源若被静默替换，在主上下文求值即任意
+ *  代码执行；本地文件威胁模型低，但供应链必须可验证。 */
+export const VENDOR_BOX2D_SHA256 = "d8a9edad036999053839ae5da070811e34417a6616dc39af6743f802471ee80e";
 
 /** 引擎命名空间（类型在机关封装层逐步收窄，此处保持宽松） */
 export type Box2DNamespace = Record<string, any>;
@@ -181,7 +187,15 @@ function fastCircleShapeDispatch(ns: Box2DNamespace): void {
 
 export function loadBox2d(): Box2DNamespace {
   if (cached) return cached;
-  const src = readFileSync(VENDOR, "latin1");
+  const buf = readFileSync(VENDOR);
+  const actualSha = createHash("sha256").update(buf).digest("hex");
+  if (actualSha !== VENDOR_BOX2D_SHA256) {
+    throw new Error(
+      `vendor/box2d.js 完整性校验失败：sha256 ${actualSha} ≠ 期望 ${VENDOR_BOX2D_SHA256}（#44）。` +
+        `文件被替换/损坏；如为合法升级，同步更新 load.ts / vendor/README.md / scripts/vendor-box2d.mjs 三处锚。`,
+    );
+  }
+  const src = buf.toString("latin1");
   // 切片落在逗号表达式链中段，末尾多一个衔接逗号——去掉后独立成句
   const body = src.replace(/[\s,]+$/, "") + "\n;return this.box2d;";
   // 参数名与 bundle 引用的裸全局一一对应（window/self 指向真实全局，同旧沙箱 window=self=globalThis 语义）

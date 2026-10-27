@@ -2,11 +2,13 @@
 
 | 项 | 值 |
 |---|---|
-| 来源 | `Fireboy-and-Watergirl/output/A/js/init.eb02fbdab2aa1d24.js`（2,273,196 字节，永久只读参考库） |
-| 字节区间 | `[1,132,453, 1,654,645)` |
-| 大小 | 522,192 字节 |
-| SHA-256 | `488199215f7a038617ad556b15e0e04ee376c9e334bc96a4a54455e17053ea22` |
-| 复现 | 仓库根 `node scripts/vendor-box2d.mjs`（脚本带锚文本校验，参考库被改动会拒绝生成） |
+| 来源 | `Fireboy-and-Watergirl/output/A/js/init.eb02fbdab2aa1d24.js`（2,218,873 字节，永久只读参考库） |
+| 字节区间 | `[1,105,959, 1,616,882)`（起点=全文件唯一 `var COMPILED = !1,`，终点=`define("box2d",` 适配器前；脚本按锚文本动态定位） |
+| 大小 | 510,923 字节 |
+| SHA-256 | `d8a9edad036999053839ae5da070811e34417a6616dc39af6743f802471ee80e` |
+| 复现 | gyのFW 下 `node scripts/vendor-box2d.mjs`（锚文本定位 + sha256 闸门，三处锚与 README/load.ts 一致才落盘） |
+
+> #44 勘误：上表曾记录旧参考库（Fireboy-and-Watergun 拼写、2,273,196B、[1,132,453, 1,654,645)、522,192B、48819921…）——那是历史提取的参数，对当前参考库复现会失败。现表与当前参考库逐字节实测一致（vendor 文件本体自始未变，仅文档/脚本过期）。
 | 引擎身份 | Google Closure 编译的 Box2DJS 端口（Isaac Burns 线，≈Box2DFlash 2.1a 语义），含 `b2_epsilon_sq`/`b2_aabbExtension` 等 2.1a 常量；非 planck、非 WASM |
 
 ## 内容说明
