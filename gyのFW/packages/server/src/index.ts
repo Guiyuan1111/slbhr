@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import { Server, WebSocketTransport } from "./colyseus.cjs.js";
 import { staticGz } from "./staticGz.js";
+import { sendJson } from "./jsonRes.js";
 import { applyServerTimeouts } from "./serverTimeouts.js";
 import { installMatchmakeBodyGuard } from "./matchmakeGuard.js";
 import { isOriginAllowed, wsOriginVerify } from "./originPolicy.js";
@@ -72,8 +73,8 @@ app.get("/assets/audio/s/:name", (req, res) => {
 // 统一走本接口按 id 取关；服务端 LEVEL_DIRS 顺序为唯一权威）。#45：无鉴权面加
 // 固定窗口限流（60 req/10s/IP，隧道暴露时挡低成本刷 CPU/IO）。
 app.use("/api", fixedWindowRateLimit({ windowMs: 10_000, max: 60 }));
-app.get("/api/levels", (_req, res) => {
-  res.json({ ids: listLevelIds() });
+app.get("/api/levels", (req, res) => {
+  sendJson(req, res, { ids: listLevelIds() });
 });
 app.get("/api/level/:id", (req, res) => {
   const id = String(req.params.id ?? "");
@@ -83,9 +84,10 @@ app.get("/api/level/:id", (req, res) => {
   }
   try {
     const bundle = loadLevel(id);
-    // 关卡 JSON 随版本发布后不变，短程共享缓存安全（#45：无鉴权热路径减负）
-    res.setHeader("Cache-Control", "public, max-age=300");
-    res.json({ id: bundle.id, json: bundle.json });
+    // 关卡 JSON 随版本发布后不变，短程共享缓存安全（#45）；r15 移植（2026-10-27）：
+    // 叠加内容寻址 ETag + br/gzip 协商压缩——300s 新鲜期后条件复验 304（不整份重下），
+    // 正文按编码传输（实测单关 JSON 冗余 90%+）。实现见 ./jsonRes.ts
+    sendJson(req, res, { id: bundle.id, json: bundle.json }, "public, max-age=300");
   } catch (err) {
     // L2：异常细节只进服务端日志（含路径/堆栈），响应保持通用文案，避免泄漏部署结构
     console.error("[fw] 关卡加载失败:", err);

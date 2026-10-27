@@ -11,11 +11,11 @@ import zlib from "node:zlib";
 import os from "node:os";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import express from "express";
-import { cachePolicy, staticGz } from "../staticGz.js";
+import { cachePolicy, entityTag, staticGz } from "../staticGz.js";
 
 let server: http.Server;
 let port = 0;
@@ -154,5 +154,80 @@ describe("staticGz 根前缀校验（M-02）", () => {
     const r = await rawGet("/dist/../dist/data.json");
     expect(r.status).toBe(200);
     expect(r.headers["content-encoding"]).toBe("gzip");
+  });
+});
+
+
+/** r15 移植（2026-10-27）：条件校验用——任意请求头组合（If-None-Match/If-Modified-Since） */
+function condGet(path: string, headers: Record<string, string>): Promise<{ status: number; headers: http.IncomingHttpHeaders; body: Buffer }> {
+  return new Promise((res, rej) => {
+    const req = http.request({ host: "127.0.0.1", port, path, headers }, (r) => {
+      const chunks: Buffer[] = [];
+      r.on("data", (c) => chunks.push(c as Buffer));
+      r.on("end", () => res({ status: r.statusCode!, headers: r.headers, body: Buffer.concat(chunks) }));
+    });
+    req.on("error", rej);
+    req.end();
+  });
+}
+
+describe("条件校验（r15 移植：压缩路径 ETag/304）", () => {
+  it("br 响应带强 ETag；If-None-Match 回放 → 304 无正文且不带 Content-Encoding/Length", async () => {
+    const first = await condGet("/dist/data.json", { "accept-encoding": "br, gzip" });
+    expect(first.status).toBe(200);
+    expect(first.headers["content-encoding"]).toBe("br");
+    expect(first.headers.etag).toMatch(/^"br-/);
+    const again = await condGet("/dist/data.json", { "accept-encoding": "br, gzip", "if-none-match": String(first.headers.etag) });
+    expect(again.status).toBe(304);
+    expect(again.body.length).toBe(0);
+    expect(again.headers["content-encoding"]).toBeUndefined();
+    expect(again.headers["content-length"]).toBeUndefined();
+    expect(again.headers.etag).toBe(first.headers.etag);
+    expect(again.headers.vary).toBe("Accept-Encoding");
+  });
+
+  it("同一文件的 br 与 gzip 是两种表示，实体标签不可互认", async () => {
+    const br = await condGet("/dist/data.json", { "accept-encoding": "br" });
+    const asGzip = await condGet("/dist/data.json", { "accept-encoding": "gzip", "if-none-match": String(br.headers.etag) });
+    expect(asGzip.status).toBe(200);
+    expect(asGzip.headers["content-encoding"]).toBe("gzip");
+    expect(asGzip.headers.etag).toMatch(/^"gzip-/);
+    expect(asGzip.headers.etag).not.toBe(br.headers.etag);
+  });
+
+  it("弱比较：W/ 前缀与多标签列表也算命中", async () => {
+    const first = await condGet("/dist/data.json", { "accept-encoding": "gzip" });
+    const etag = String(first.headers.etag);
+    const weak = await condGet("/dist/data.json", { "accept-encoding": "gzip", "if-none-match": `W/${etag}` });
+    expect(weak.status).toBe(304);
+    const list = await condGet("/dist/data.json", { "accept-encoding": "gzip", "if-none-match": `"other-tag", ${etag}` });
+    expect(list.status).toBe(304);
+    const star = await condGet("/dist/data.json", { "accept-encoding": "gzip", "if-none-match": "*" });
+    expect(star.status).toBe(304);
+  });
+
+  it("If-Modified-Since 兜底（无 If-None-Match 时）：未来时间 304、过去时间 200", async () => {
+    const future = await condGet("/dist/data.json", { "accept-encoding": "gzip", "if-modified-since": new Date(Date.now() + 60_000).toUTCString() });
+    expect(future.status).toBe(304);
+    const past = await condGet("/dist/data.json", { "accept-encoding": "gzip", "if-modified-since": new Date(Date.now() - 3_600_000).toUTCString() });
+    expect(past.status).toBe(200);
+  });
+
+  it("原地换内容 → 标签失配（不能把 304 当成永久免下载）", async () => {
+    const before = await condGet("/dist/data.json", { "accept-encoding": "gzip" });
+    const oldEtag = String(before.headers.etag);
+    // 换不同长度的内容：mtime+size 双变化，压缩缓存与 ETag 都失效
+    writeFileSync(join(root, "dist", "data.json"), JSON.stringify({ pad: "y".repeat(4096) }));
+    const after = await condGet("/dist/data.json", { "accept-encoding": "gzip", "if-none-match": oldEtag });
+    expect(after.status).toBe(200);
+    expect(after.headers.etag).not.toBe(oldEtag);
+    const replayNew = await condGet("/dist/data.json", { "accept-encoding": "gzip", "if-none-match": String(after.headers.etag) });
+    expect(replayNew.status).toBe(304);
+  });
+
+  it("entityTag 只依赖编码+mtime+size（同 stats 稳定）", () => {
+    const st = statSync(join(root, "dist", "data.json"));
+    expect(entityTag(st, "gzip")).toBe(entityTag(st, "gzip"));
+    expect(entityTag(st, "br")).not.toBe(entityTag(st, "gzip"));
   });
 });

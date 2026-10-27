@@ -8,6 +8,9 @@
  *   · index.html → no-cache（必须回源校验，才能拿到新哈希引用）；
  *   · 其余（图集/音频/数据）→ public 1 天（内容随版本可能原地更新，不可 immutable）。
  *   · 压缩响应带 Vary: Accept-Encoding（经代理/隧道缓存时的协商正确性）。
+ *   · 条件校验（r15 移植，2026-10-27）：压缩响应按 编码+mtime+size 生成强 ETag 并带
+ *     Last-Modified，If-None-Match（弱比较/`*`/多标签）或 If-Modified-Since 命中即 304
+ *     无正文——新鲜期（1 天）一过不再整份重下；压缩产物失效判据 mtime→mtime+size。
  * - 安全（M-02）：请求路径经 decodeURIComponent + join 后若越过根目录（`..%2f` 穿越读取
  *   仓库内其它 JSON/HTML），一律拒绝并走 fallback（404）。回归用例见
  *   packages/server/src/__tests__/staticGz.test.ts。
@@ -28,8 +31,39 @@ export function cachePolicy(urlPath: string): string {
   return "public, max-age=86400";
 }
 
+/** 强 ETag：编码 + mtime(16 进制) + 字节数。编码进标签 = 每种表示各自有身份（r15）。 */
+export function entityTag(st: fs.Stats, encoding: "br" | "gzip"): string {
+  return `"${encoding}-${Math.round(st.mtimeMs).toString(16)}-${st.size.toString(16)}"`;
+}
+
+/** If-None-Match 判定（RFC 9110 §13.2.4 弱比较）：`*`、多标签列表、W/ 前缀都算命中。
+ *  导出给 JSON 响应路由共用（./jsonRes.ts），保证两处条件校验语义一致。 */
+export function matchesEtag(req: express.Request, etag: string): boolean {
+  const inm = req.headers["if-none-match"];
+  if (typeof inm !== "string" || inm.trim() === "") return false;
+  if (inm.trim() === "*") return true;
+  const strip = (t: string) => t.trim().replace(/^W\//, "");
+  return inm.split(",").some((t) => strip(t) === strip(etag));
+}
+
+/** 新鲜度判定：If-None-Match 优先，其次 If-Modified-Since。
+ *  时间头按 HTTP 的 1 秒粒度取整比较，否则同秒内写入的文件会被判为已变。 */
+export function isFresh(req: express.Request, etag: string, mtimeMs: number): boolean {
+  if (matchesEtag(req, etag)) return true;
+  const ims = req.headers["if-modified-since"];
+  if (typeof ims === "string" && ims.trim() !== "") {
+    const since = Date.parse(ims);
+    if (!Number.isNaN(since)) return Math.floor(mtimeMs / 1000) <= Math.floor(since / 1000);
+  }
+  return false;
+}
+
 interface CompCacheEntry {
   mtimeMs: number;
+  /** r15：失效判据由单 mtime 扩为 mtime+size。残留边界：同一毫秒内原地改写且字节数
+   *  不变的文本会命中旧压缩产物——本项目素材/产物更新都伴随构建（新 mtime 且几乎必变
+   *  长度），实际不可达。 */
+  size: number;
   br?: Buffer;
   gz?: Buffer;
 }
@@ -88,8 +122,8 @@ export function staticGz(root: string) {
       return;
     }
     let cached = compCache.get(fpAbs);
-    if (!cached || cached.mtimeMs !== st.mtimeMs) {
-      cached = { mtimeMs: st.mtimeMs };
+    if (!cached || cached.mtimeMs !== st.mtimeMs || cached.size !== st.size) {
+      cached = { mtimeMs: st.mtimeMs, size: st.size };
       compCache.set(fpAbs, cached);
     }
     const ctype = urlPath.endsWith(".js") || urlPath.endsWith(".mjs")
@@ -103,9 +137,17 @@ export function staticGz(root: string) {
             : urlPath.endsWith(".fnt")
               ? "text/plain"
               : "application/octet-stream";
+    const etag = entityTag(st, wantBr ? "br" : "gzip");
     res.setHeader("Content-Type", ctype);
     res.setHeader("Cache-Control", cachePolicy(urlPath));
     res.setHeader("Vary", "Accept-Encoding");
+    res.setHeader("ETag", etag);
+    res.setHeader("Last-Modified", new Date(st.mtimeMs).toUTCString());
+    // 条件校验：新鲜即 304（不带正文，也不带 Content-Encoding/Content-Length）
+    if (isFresh(req, etag, st.mtimeMs)) {
+      res.status(304).end();
+      return;
+    }
     try {
       if (wantBr) {
         if (!cached.br) cached.br = zlib.brotliCompressSync(fs.readFileSync(fpAbs), { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 5 } });
