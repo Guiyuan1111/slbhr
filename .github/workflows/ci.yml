@@ -37,9 +37,18 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
-      # #24：生产依赖高危审计，非阻断（先报告观察；Colyseus 链 nanoid 已知待大版本，见 issue #20/#24）
-      - name: Audit (production deps, non-blocking)
-        run: npm audit --omit=dev --audit-level=high || true
+      # #24/#45：依赖审计双报告，非阻断但写 job summary 可见——生产链 nanoid 已知
+      # 待 Colyseus 0.18 大版本（#20/#24）；dev 侧修复后应保持无 high。
+      - name: Audit (prod + dev, report to summary, non-blocking)
+        run: |
+          {
+            echo "### npm audit"
+            echo "**production**（nanoid 已知项，待 Colyseus 0.18，#20/#24）："
+            npm audit --omit=dev --audit-level=high || true
+            echo ""
+            echo "**dev**（修复后应无 high）："
+            npm audit --audit-level=high || true
+          } >> "$GITHUB_STEP_SUMMARY"
 
   coverage:
     # #39：覆盖率阈值门禁接入 CI（此前仅手工跑，属"自觉门禁"）。CI 环境下
