@@ -2,8 +2,10 @@
  * HTTP 服务器显式超时（#32）：Node 缺省 server.timeout=0（空闲永不超时），未鉴权连接可
  * 长期挂起占用 socket/FD。三道收口：
  *  - headersTimeout 15s / requestTimeout 30s：请求头与整体请求的接收时限；
- *  - timeout 60s：socket 空闲上限——房间内存活连接每秒有 ping 广播（ForestRoom 全相位
- *    心跳），不会误伤；仅 MatchMake 完成后弃置的裸 HTTP 连接受它约束。
+ *  - timeout 60s：socket 空闲上限——大厅/暂停相位有 1s 应用层心跳，started 对局相位
+ *    靠 ws-transport 3s 协议 ping（pingInterval×pingMaxRetries≈9s 探出死链），都远短于
+ *    60s，不会误伤；仅 MatchMake 完成后弃置的裸 HTTP 连接受它约束。
+ *    （#45 勘误：此前注释称「全相位每秒 ping 广播」不实，对局相位无应用层 ping。）
  * 数值口径与 matchmakeGuard（M5 16KB 上限）同属未鉴权入口的对称防护。
  */
 import type http from "node:http";

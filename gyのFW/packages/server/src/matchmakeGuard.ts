@@ -1,5 +1,5 @@
 /**
- * matchmakeGuard：/matchmake 请求体上限（M5）。
+ * matchmakeGuard：/matchmake 入口闸门（M5 请求体上限 + #45 方法分流/CORS 收口）。
  *
  * 背景：Colyseus 0.16 的 Server.handleMatchMakeRequest 对 POST body 无上限——持续
  * `req.on("data")` 累加后 `Buffer.concat` + `JSON.parse`（Server.js:225-231），公网隧道下
@@ -11,6 +11,7 @@
  * 不缓存 body、不 pause，Colyseus 仍能正常读取完整 body。
  */
 import type http from "node:http";
+import { isOriginAllowed } from "./originPolicy.js";
 
 export const MATCHMAKE_MAX_BYTES = 16 * 1024;
 
@@ -19,7 +20,15 @@ export const MATCHMAKE_MAX_BYTES = 16 * 1024;
  * @param server 与 Colyseus WebSocketTransport 共用的 http.Server
  * @param maxBytes 允许的最大 body 字节数（缺省 16KB）
  */
-export function installMatchmakeBodyGuard(server: http.Server, maxBytes = MATCHMAKE_MAX_BYTES): void {
+export interface MatchmakeGuardOptions {
+  maxBytes?: number;
+  /** 显式跨域白名单（FW_ALLOWED_ORIGINS，逗号分隔）；同源与无 Origin 恒放行 */
+  allowedOrigins?: string[];
+}
+
+export function installMatchmakeBodyGuard(server: http.Server, opts: number | MatchmakeGuardOptions = {}): void {
+  const { maxBytes = MATCHMAKE_MAX_BYTES, allowedOrigins = [] } =
+    typeof opts === "number" ? { maxBytes: opts } : opts;
   server.prependListener("request", (req, res) => {
     // 用 "/matchmake"（与 Colyseus Server.js:196 的 indexOf 判定同口径，含末尾无斜杠变体），
     // 避免 /matchmake 裸路径绕过上限。静态资源/健康检查/WS upgrade 完全不受影响。
@@ -37,6 +46,27 @@ export function installMatchmakeBodyGuard(server: http.Server, maxBytes = MATCHM
       } else {
         req.destroy();
       }
+      return;
+    }
+    // #45：CORS/Origin 收口。Colyseus 缺省 OPTIONS 回 ACAO:* + ACAC:true（规范无效组合，
+    // 且允许任意站点跨域建房/探房）。改白名单口径：无 Origin（curl/Node/e2e）放行、
+    // 同源放行、白名单放行，其余 403；OPTIONS 由本层直接应答（回显单一 Origin），
+    // 不再交给 vendor（其通配头不可收敛）。
+    const origin = req.headers.origin;
+    if (!isOriginAllowed(origin, req.headers.host, allowedOrigins)) {
+      res.writeHead(403, { Connection: "close" });
+      res.end(() => req.destroy());
+      return;
+    }
+    if (req.method === "OPTIONS") {
+      res.writeHead(204, {
+        "Access-Control-Allow-Origin": origin ?? "*",
+        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Max-Age": "600",
+        Vary: "Origin",
+      });
+      res.end();
       return;
     }
     if (req.method !== "POST") return;

@@ -51,10 +51,10 @@ afterAll(() => {
   rmSync(secretPath, { force: true });
 });
 
-function rawGet(path: string, acceptEncoding = "gzip"): Promise<{ status: number; headers: http.IncomingHttpHeaders; body: Buffer }> {
+function rawGet(path: string, acceptEncoding = "gzip", method = "GET"): Promise<{ status: number; headers: http.IncomingHttpHeaders; body: Buffer }> {
   return new Promise((res, rej) => {
     const req = http.request(
-      { host: "127.0.0.1", port, path, headers: { "accept-encoding": acceptEncoding } },
+      { host: "127.0.0.1", port, path, method, headers: { "accept-encoding": acceptEncoding } },
       (r) => {
         const chunks: Buffer[] = [];
         r.on("data", (c) => chunks.push(c as Buffer));
@@ -65,6 +65,18 @@ function rawGet(path: string, acceptEncoding = "gzip"): Promise<{ status: number
     req.end();
   });
 }
+
+describe("方法闸门（#45）", () => {
+  it("POST/PUT 到静态路径不再 200 回压缩文件，交 fallback（404）", async () => {
+    for (const method of ["POST", "PUT", "DELETE"]) {
+      const r = await rawGet("/dist/data.json", "gzip", method);
+      expect(r.status, method).toBe(404);
+      expect(r.headers["content-encoding"], method).toBeUndefined();
+    }
+    // GET 基线不受影响
+    expect((await rawGet("/dist/data.json")).status).toBe(200);
+  });
+});
 
 describe("cachePolicy（M8 Vite 哈希产物）", () => {
   it.each([

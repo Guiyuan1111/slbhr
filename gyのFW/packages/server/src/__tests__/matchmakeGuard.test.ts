@@ -25,7 +25,7 @@ afterEach(async () => {
   }
 });
 
-async function startServer(maxBytes = LIMIT): Promise<number> {
+async function startServer(opts: number | Parameters<typeof installMatchmakeBodyGuard>[1] = LIMIT): Promise<number> {
   server = http.createServer((req, res) => {
     const chunks: Buffer[] = [];
     req.on("data", (c: Buffer) => chunks.push(c));
@@ -38,7 +38,7 @@ async function startServer(maxBytes = LIMIT): Promise<number> {
     sockets.add(s);
     s.on("close", () => sockets.delete(s));
   });
-  installMatchmakeBodyGuard(server, maxBytes);
+  installMatchmakeBodyGuard(server, opts);
   await new Promise<void>((resolve) => server!.listen(0, "127.0.0.1", resolve));
   return (server.address() as AddressInfo).port;
 }
@@ -246,10 +246,12 @@ describe("非 POST 方法分流（#32）", () => {
     expect(r.hitAfter).toBe(true);
   });
 
-  it("OPTIONS 与 POST 仍照常进入 Colyseus 分支", async () => {
+  it("OPTIONS 由 guard 应答（#45 CORS 收口，204 不进 vendor）；POST 仍进 vendor", async () => {
     const port = await start();
     hit = false;
-    expect((await fetchRaw("OPTIONS", port)).hitAfter).toBe(true);
+    const r = await fetchRaw("OPTIONS", port);
+    expect(r.hitAfter).toBe(false);
+    expect(r.status).toBe(204);
     hit = false;
     expect((await fetchRaw("POST", port, "/matchmake/create/forest")).hitAfter).toBe(true);
   });
@@ -260,5 +262,68 @@ describe("非 POST 方法分流（#32）", () => {
     const r = await fetchRaw("PUT", port, "/healthz");
     expect(r.hitAfter).toBe(true);
     expect(r.status).toBe(200);
+  });
+});
+
+describe("CORS/Origin 收口（#45）", () => {
+  /** startServer 的下游对任何请求回 200——用 post() 带不同 Origin 断言 guard 分流 */
+  it("跨站 Origin → 403；同源/无 Origin → 放行进下游", async () => {
+    const port = await startServer();
+    const evil = await post(port, "/matchmake/create/forest", {
+      headers: { Origin: "https://evil.example", "content-type": "application/json" },
+    });
+    expect(evil.status).toBe(403);
+    const same = await post(port, "/matchmake/create/forest", {
+      headers: { Origin: `http://127.0.0.1:${port}`, "content-type": "application/json" },
+    });
+    expect(same.status).toBe(200);
+    const noOrigin = await post(port, "/matchmake/create/forest");
+    expect(noOrigin.status).toBe(200);
+  });
+
+  it("白名单 Origin 放行（FW_ALLOWED_ORIGINS 口径）", async () => {
+    const port = await startServer({ allowedOrigins: ["https://tun.example"] });
+    const r = await post(port, "/matchmake/create/forest", {
+      headers: { Origin: "https://tun.example", "content-type": "application/json" },
+    });
+    expect(r.status).toBe(200);
+    const evil = await post(port, "/matchmake/create/forest", {
+      headers: { Origin: "https://evil.example", "content-type": "application/json" },
+    });
+    expect(evil.status).toBe(403);
+  });
+
+  it("OPTIONS 回显单一 Origin，不再出现 ACAO:* + ACAC:true 无效组合", async () => {
+    const port = await startServer();
+    const r = await new Promise<{ status?: number; headers?: http.IncomingHttpHeaders }>((resolve) => {
+      const req = http.request(
+        { host: "127.0.0.1", port, path: "/matchmake/create/forest", method: "OPTIONS", headers: { Origin: `http://127.0.0.1:${port}` } },
+        (res) => {
+          res.resume();
+          res.on("end", () => resolve({ status: res.statusCode, headers: res.headers }));
+        },
+      );
+      req.on("error", () => resolve({}));
+      req.end();
+    });
+    expect(r.status).toBe(204);
+    expect(r.headers?.["access-control-allow-origin"]).toBe(`http://127.0.0.1:${port}`);
+    expect(r.headers?.["access-control-allow-credentials"]).toBeUndefined();
+  });
+
+  it("OPTIONS 跨站 Origin → 403（预检同样收口）", async () => {
+    const port = await startServer();
+    const r = await new Promise<{ status?: number }>((resolve) => {
+      const req = http.request(
+        { host: "127.0.0.1", port, path: "/matchmake/create/forest", method: "OPTIONS", headers: { Origin: "https://evil.example" } },
+        (res) => {
+          res.resume();
+          res.on("end", () => resolve({ status: res.statusCode }));
+        },
+      );
+      req.on("error", () => resolve({}));
+      req.end();
+    });
+    expect(r.status).toBe(403);
   });
 });

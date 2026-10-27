@@ -200,6 +200,14 @@ export class ForestRoom extends Room<RoomState> {
   private pausedFrom: WorldPhase | null = null;
 
   onCreate(options: JoinOptions) {
+    // #45 房间级异常隔离：tick/onMessage 等的未捕获异常只弃本房间（日志 + disconnect），
+    // 不再升级为 Colyseus 全局 uncaughtException 拖垮进程——一个坏房间全服掉线。
+    // 内核边界缺陷/脏数据应被围在出事房间内；房间级 handler 由 Colyseus 在注册时
+    // 自动给 onMessage/模拟循环/定时器包 try-catch（core Room.js:125,347,468）。
+    this.onUncaughtException = (error, methodName) => {
+      console.error(`[fw] 房间 ${this.roomId} 未捕获异常 @${String(methodName)}:`, error);
+      this.disconnect().catch(() => { /* 已 dispose */ });
+    };
     // #48 兜底：座位预约窗 15s→3s。鉴权前置后未鉴权占座已不可达，此窗只影响合法
     // 「拿到预约但没走完 WS 接管」的残窗，缩短即缩小最坏锁席时长。
     this.setSeatReservationTime(3);

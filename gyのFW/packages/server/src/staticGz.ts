@@ -43,6 +43,13 @@ export function staticGz(root: string) {
   const rootAbs = resolve(root);
   const rootPrefix = rootAbs.endsWith(sep) ? rootAbs : rootAbs + sep;
   return (req: express.Request, res: express.Response, next: express.NextFunction): void => {
+    // #45：express.static（fallback）只处理 GET/HEAD，但压缩分支此前不判方法——
+    // POST/PUT 到 .json 会 200 回静态文件（HTTP 语义错误）。非 GET/HEAD 一律交
+    // fallback（404/405 语义由其决定）。
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      fallback(req, res, next);
+      return;
+    }
     const enc = String(req.headers["accept-encoding"] ?? "");
     let urlPath = "";
     try {
@@ -72,7 +79,9 @@ export function staticGz(root: string) {
       return;
     }
     const isHtml = urlPath.endsWith(".html");
-    // html 走 no-cache + 原样（体量小，压缩收益低于协商成本）
+    // html 走 no-cache + 原样（体量小，压缩收益低于协商成本）。注意：fallback
+    // （express.static）会覆写为 public, max-age=0——语义相近（都强制回源校验），
+    // 保留本行以备 fallback 策略变更（#45 注释勘误：此前注释称生效的 no-cache 不实）。
     if (isHtml) {
       res.setHeader("Cache-Control", "no-cache");
       fallback(req, res, next);

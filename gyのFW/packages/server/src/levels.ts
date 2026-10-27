@@ -4,7 +4,7 @@
  * 使用 level2 全机制解析器（@fw/shared/level2）；官方 Tiled JSON 的 tileset 是外部
  * 引用（source 为相对路径），按关卡文件所在目录解析。
  */
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseLevel, type LevelData } from "@fw/shared/level2";
@@ -25,12 +25,19 @@ export interface LevelBundle {
 }
 
 /** 关卡是否存在（供房间校验与 /api/level 路由） */
+const existsCache = new Set<string>();
+
 export function levelExists(id: string): boolean {
   if (!/^[A-Za-z0-9_-]+$/.test(id)) return false;
+  if (existsCache.has(id)) return true;
   for (const dir of LEVEL_DIRS) {
     try {
-      readFileSync(join(ROOT, dir, `${id}.json`), "utf8");
-      return true;
+      // #45：statSync 存在性检查替代整文件 readFileSync（最大 ~60KB/次，/api/level/:id
+      // 热路径可被低成本刷 IO/CPU）；关卡集合进程内不变，正例缓存后 O(1)。
+      if (statSync(join(ROOT, dir, `${id}.json`)).isFile()) {
+        existsCache.add(id);
+        return true;
+      }
     } catch {
       /* 试下一个目录 */
     }
