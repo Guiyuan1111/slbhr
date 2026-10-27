@@ -17,7 +17,7 @@ import type { AuthContext, Client } from "colyseus";
 import { appendFileSync } from "node:fs";
 import { Room, ServerError, matchMaker } from "../colyseus.cjs.js";
 import { ROLES, EMPTY_INPUT, type Role, type InputState } from "@fw/shared";
-import { World, m2px, type WorldEvent } from "@fw/shared/kernel";
+import { World, m2px, type WorldEvent, type WorldPhase } from "@fw/shared/kernel";
 import { levelExists, loadLevel, type LevelBundle } from "../levels.js";
 import { BeamState,
   TimedPusherState, RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState } from "./state.js";
@@ -177,6 +177,9 @@ export class ForestRoom extends Room<RoomState> {
    *  端错过广播后 lastFinish 为 null，客户端以 0 兜底算星级——general 关 timeOk=limit>0&&0<=limit
    *  恒真，把 0 秒成绩写进本地最佳。restart/换关时清空；重连成功时补发（见 onLeave）。 */
   private lastFinish: { fbDiamonds: number; wgDiamonds: number; silver: number; timeMs: number } | null = null;
+  /** 断线冻结来源相位（#43，房间级）：双端同时断线时 per-client prevPhase 会被先执行者
+   *  置 paused 污染，后执行者捕获不到 won——恢复相位必须读房间级快照。 */
+  private pausedFrom: WorldPhase | null = null;
 
   onCreate(options: JoinOptions) {
     // #48 兜底：座位预约窗 15s→3s。鉴权前置后未鉴权占座已不可达，此窗只影响合法
@@ -433,32 +436,40 @@ export class ForestRoom extends Room<RoomState> {
     // 断线冻结等待重连；真人不回来超时后才释放席位。
     const prevPhase = this.state.phase;
     this.state.phase = "paused";
+    // #43：只在首个断线者处记录来源相位（后执行者的 prevPhase 已被污染为 paused）。
+    // state.phase 是 schema string 字段，取值域即 WorldPhase（本房间的相位机只产这四值）。
+    this.pausedFrom ??= prevPhase as WorldPhase;
     this.syncFreezeClock();
     try {
       await this.allowReconnection(client, RECONNECT_SECONDS);
-      if (this.state.phase === "paused") {
-        if (prevPhase === "won" && this.lastFinish) {
-          // L-02：won 相位下重连，先补发 finish、延迟恢复相位——客户端 onPhase("won") 读
-          // lastFinish 计算星级/最佳，相位先到会用 0 兜底（0 秒最佳根因）。重连握手完成
-          // 后客户端立即重绑 onMessage（net.ts reconnect→bindRoom），120ms 足够落定，
-          // 补发必被接住；随后恢复相位触发 onPhase("won") 时 lastFinish 已就位。
-          // 不可直接发：allowReconnection resolve 发生在 core Room._onJoin 内部、早于
-          // JOIN_ROOM 载荷（Room.js:576），此刻发会被尚未重绑的客户端 Room 丢弃。
-          const finish = this.lastFinish;
-          setTimeout(() => {
-            if (this.state.phase !== "paused") return; // 期间已有迁移（另一路超时回 lobby 等）
-            client.send("finish", finish);
-            this.state.phase = prevPhase;
+      if (this.lastFinish) {
+        // L-02/#43：won 结算后的重连，先补发 finish、延迟恢复相位——客户端 onPhase("won")
+        // 读 lastFinish 计算星级/最佳，相位先到会用 0 兜底（0 秒最佳根因）。重连握手完成
+        // 后客户端立即重绑 onMessage（net.ts reconnect→bindRoom），120ms 足够落定，
+        // 补发必被接住；随后恢复相位触发 onPhase("won") 时 lastFinish 已就位。
+        // 不可直接发：allowReconnection resolve 发生在 core Room._onJoin 内部、早于
+        // JOIN_ROOM 载荷（Room.js:576），此刻发会被尚未重绑的客户端 Room 丢弃。
+        // #43：补发与 per-client prevPhase 解耦——双端同时断线时后执行者的 prevPhase 已是
+        // paused，且先重连端恢复相位后后重连端进不了 paused 分支；只看房间级 lastFinish
+        // （restart/换关已清，非 null 即本局 won），双端各自补发一次（幂等），相位恢复由
+        // 「补发时仍处 paused」的一路执行。
+        const finish = this.lastFinish;
+        setTimeout(() => {
+          client.send("finish", finish);
+          if (this.state.phase === "paused") {
+            this.state.phase = this.pausedFrom ?? "lobby";
+            this.pausedFrom = null;
             this.syncFreezeClock();
             this.syncState();
-          }, 120);
-        } else {
-          this.state.phase = prevPhase;
-          // H-02：ready 期断线回来——旧 ready 钟大概率已被守卫拦掉（断线期 phase=paused），
-          // 重排一轮（beginReady 自带 clearTimeout，不会叠加）
-          if (prevPhase === "ready") this.beginReady();
-          this.syncFreezeClock();
-        }
+          }
+        }, 120);
+      } else if (this.state.phase === "paused") {
+        this.state.phase = this.pausedFrom ?? "lobby";
+        this.pausedFrom = null;
+        // H-02：ready 期断线回来——旧 ready 钟大概率已被守卫拦掉（断线期 phase=paused），
+        // 重排一轮（beginReady 自带 clearTimeout，不会叠加）
+        if (this.state.phase === "ready") this.beginReady();
+        this.syncFreezeClock();
       }
       this.syncState();
       // 重连端错过了 pause-changed 广播：仍处玩家暂停则补发一条，让它恢复暂停画面
@@ -483,6 +494,7 @@ export class ForestRoom extends Room<RoomState> {
     // （原版 retry 语义）。不回 lobby 的话 phase 永久卡 paused，tick 停转成死房。
     if (this.roles.size > 0) {
       this.state.phase = "lobby";
+      this.pausedFrom = null;
       if (hadPause) this.broadcast("pause-changed", { paused: false, by: null });
       this.syncFreezeClock();
       this.syncState();

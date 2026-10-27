@@ -45,6 +45,9 @@ export function loadProgress(): Record<string, LevelBest> {
 /** 存档写入且 best 被刷新时返回 true（oracle update :2152850 区 `betterThan → best=state` 门；
  *  调用方据此决定是否走 process 置位段——oracle 未刷新 best 不调 process） */
 export function saveBest(filename: string, stars: number, timeSec: number): boolean {
+  // #43：防御性拒绝——非有限或入库即 ≤0 的时长不得写 best。0 秒「最佳」一旦入库，
+  // 之后任何真实成绩都无法刷新（time < prev.time 恒假），存档不可逆污染。
+  if (!Number.isFinite(timeSec) || Math.round(timeSec) <= 0) return false;
   const all = loadProgress();
   const prev = all[filename];
   if (!prev || stars > prev.stars || (stars === prev.stars && timeSec < prev.time)) {

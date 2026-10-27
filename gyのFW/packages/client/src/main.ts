@@ -267,6 +267,9 @@ function updateHud(): void {
 function openEndMenu(): void {
   if (!net || !currentLevel || !gameStarted || !phaser) return;
   if (endMenuShown || phaser.scene.isActive("EndMenu")) return;
+  // #43 fail-closed：结算数据缺失（极端双断线时序）宁可不结算，也不得以 0 兜底写 0 秒
+  // 最佳。不置 endMenuShown——补发 finish 到位后的重入（resumeWonIfNeeded）仍可开板。
+  if (!net.lastFinish) return;
   endMenuShown = true;
   const f = net.lastFinish;
   const diaTotal = currentLevel.diamonds.filter((d) => d.kind !== "silver").length;
