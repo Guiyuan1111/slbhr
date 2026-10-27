@@ -10,6 +10,12 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-10-28（1.0 分发线落地——第一部 forest 专属 Linux 服务器包发版，与 main 0.3.x 并行）
+① **分支口径**：release/1.0-forest（1.0.x 分发线，main 仍是三部开发主线）——只做打包/剪裁适配：删三部 fixture 测试 3 件+sceneState iceViews 块、CI 去 ice/light determinism 两作业、覆盖率阈值按余量实测重定 69.4/68.7/68.75/64.3、bump 1.0.0；font-census 清单随打包链文案刷新（防护网按设计红一次，本地漏跑复验被 CI 抓回——发版前全门禁必须本地+CI 双绿）。
+② **打包链**：scripts/package-deploy.mjs（打包层剪除 light/ice：data 目录、Temples 图集、LevelMusic_dark、dist 内资产重复副本、tutorials 非 forest 首关；预装 npm ci --omit=dev 生产依赖，解包即用）+ DEPLOY.md（AI 接手部署手册：六步验收含 colyseus.js 真房与"仅第一部"边界断言 /api/levels 全 forest、light/ice 404）。
+③ **发版**：tag 1.0.0（7f300c1）+ Release 已发（附件 gy-fw-forest-1.0.0.tar.gz 39.2MiB+sha256 由 release-asset workflow 从 tag 构建，正文=AI 部署协议全文）。云端产物下载后真包再验收六步全绿。
+④ **踩坑实录**：本机 uploads.github.com 选择性阻断（api/github.com 正常、上传握手必败）→ 附件改 CI 侧构建上传；手动 dispatch 时 GITHUB_REF_NAME=分支名误建同名 release → workflow 加 ref 守卫（只认 1.0.* tag 名）；房间密码强制 4–64 位（DEPLOY 示例用 demo1）。TEMP 验收产物已清零。
+
 **更新**：2026-10-28（并行性能线吸收批三 + 0.3.55 发版——r21+r25 BGM 出落定门/r41 离房交还，带审核）
 ① **r21+r25（4439dad）**：落定门与 GameScene 阻塞批内只剩 SFX(18 支)；BGM 改门后二段（门落定+1500ms BootScene.thenBgmDefer 取 warm 族 loop+terminal）+ create 后 kickBgmLoop/kickBgmTerminal 兜底（缓存命中零请求；补起三卫防晚到盖曲，终局补起须 won 相位——死亡失败曲时刻绑定不补；SHUTDOWN 摘 load complete 防累积）。门挡字节出门：general 1,647,015B/speed 343,792B/dark 812,753B。
 ② **r41（同提交）**：leaveToMenu 时 releaseGameBgms 六键（三族并集）先 sound.removeByKey 后 cache.remove 交还 PCM（反序被实例钉住）；重开/进房不交还，重取走 r15 ETag 304；与 0.3.48 #29 正交（场景视图引用 vs 全局音频资产账）。
