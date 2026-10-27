@@ -10,6 +10,14 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-10-27（工程基建批 0.3.50——对比报告改进 A+B 全落，零游戏行为改动）
+- 背景：当日三报告（自审/同行调研/对比，note/report/2026-10-27-*.md）改进路线图批次 A+B 实施并验收完毕。
+- A 批：CI routes-smoke（route-node 采样 forest_01+light_02，light_01 刀锋时序不入样本）；vitest 覆盖率阈值门禁（基线实测 lines85.76/branches74.05/funcs83.05/stmts84.79，autoUpdate 已 ratchet 至当前值）；bump-version.mjs（修 README /m 缺陷后 6 文件试跑验证）；AGENTS.md 约定入仓。
+- B 批：det-fuzz（3 种子×30 游戏分钟=108000 帧/900 段双跑哈希全一致，墙钟 7-15s）；语料甄别（flash-prep 实跑 validate：15 WIN / forest_02 挂起 FAIL@f1879 / forest_08·22·23 记档在案缺 JSON；主验抽检全符）+ route-kregress（15/15 ALL GREEN 约 10s + 篡改检出验收）。
+- CI 首跑即抓真 bug：routes-smoke 暴露 route-node 写结果文件缺 mkdirSync（干净 checkout ENOENT，本地 out/ 为历史残留被 gitignore 掩盖）——已修。首个全绿 run 以 gh run list 最新为准。
+- 发版：0.3.50（tag+Release 已发）。挂账不变：issues 迁移、PR/分支流（内核改动走 feature 分支）、colyseus testing/loadtest、eslint 选型；semantic-release 明确不做。
+
+
 ## 归档导航
 
 | 范围 / 主题 | 去处 |

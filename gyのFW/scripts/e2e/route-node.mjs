@@ -15,7 +15,7 @@
  * 退出码 0 = 全部 PASS。
  */
 import { spawn } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "colyseus.js";
@@ -154,6 +154,7 @@ for (let r = 1; r <= REPEAT; r++) {
   await new Promise((res) => setTimeout(res, 800)); // 房间销毁间隙
 }
 stopServer();
+mkdirSync(OUT, { recursive: true }); // 干净 checkout（CI）无 out/ 目录——0.3.50 routes-smoke 首跑实测 ENOENT
 writeFileSync(join(OUT, "route-results-node.json"), JSON.stringify({ level: LEVEL, offset: OFFSET, pass, results }, null, 1));
 console.log(`[e2e] route-node ${LEVEL}: ${pass}/${REPEAT} PASS`);
 process.exit(pass === REPEAT ? 0 : 1);
