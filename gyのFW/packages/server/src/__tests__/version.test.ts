@@ -46,4 +46,12 @@ describe("版本/engines/lock 一致性（M7）", () => {
     expect(m, "README 缺「当前版本」行").toBeTruthy();
     expect(m![1]).toBe(root.version);
   });
+
+  it("README 当前版本行带非空描述（2026-10-27 审计 P2-03：杜绝版本号挂上一版描述）", () => {
+    const readme = readFileSync(join(ROOT, "README.md"), "utf8");
+    const m = readme.match(/^> \*\*当前版本\*\*：\d+\.\d+\.\d+（([^）]+)/m);
+    expect(m, "当前版本行缺（描述）——bump 须带 --desc 入链").toBeTruthy();
+    expect(m![1].trim().length, "当前版本行描述为空").toBeGreaterThan(0);
+    expect(m![1]).not.toContain("待补");
+  });
 });
