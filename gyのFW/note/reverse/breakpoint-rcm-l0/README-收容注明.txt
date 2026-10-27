@@ -4,3 +4,4 @@ breakpoint-rcm-l0——TEMP/rcm-l0 收容（2026-10-27 TEMP 清库，用户批�
 产物索引 MODULES.md（模块清单/行范围映射）与 INDEX.md。
 不收容：node_modules（npm i 可重生）与 out/*.js 全量反编译产物（约 3.4MB，
 按 run.mjs 流程可从只读在库的 oracle 源再生成）。
+引用档卷：note/handoff.md ⑤ TEMP 清库收官条目（2026-10-27，本目录唯一在册引用）。

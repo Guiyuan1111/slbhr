@@ -43,7 +43,7 @@
 | 立项计划书（**历史文档**，勿据其开工） | [PLAN.md](PLAN.md)（进度见其横幅补记） |
 | 方法论/批次规划 | plans/（deviation-flip、fidelity-audit-method、level-batches、route-production-playbook、route-synthesis、wiring-0.3.0） |
 | oracle bundle 逆向工作台 | reverse/oracle-a/（beautified init.js + MODULES.md + 模块拆解） |
-| 关卡证据库（35 目录，按关组织） | evidence/forest*/ |
+| 关卡证据库（31 目录，按关组织） | evidence/forest*/ |
 | 2026-10-23 复查与开发证据（九槽次） | [evidence/2026-10-23-recheck/](evidence/2026-10-23-recheck/)（01 e2e 全量 11/11、02 视觉带+audit、03 H4 内存有界、04 M12 相机拆分草案、05 netDto 草案、06 M4/M3 验收、07 CI actions 升级）；另 [plans/colyseus-018-upgrade-research.md](plans/colyseus-018-upgrade-research.md) 升级调研 |
 | 自验收阶梯（L0–L4） | [self-acceptance.md](self-acceptance.md) |
 | 联机架构说明 | [multiplayer-architecture.md](multiplayer-architecture.md) |
