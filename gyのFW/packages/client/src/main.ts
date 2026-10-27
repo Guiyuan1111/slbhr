@@ -266,6 +266,28 @@ function updateHud(): void {
   touch?.setActive(phase === "ready" || phase === "started");
 }
 
+// r13 移植：结算空闲期预取+预烘下一关地面——won 之后到玩家点「继续」之间是纯空闲，
+// 把下一关的 JSON 拉取（fetchLevelCached 走关卡 LRU(4)）与整关地面烘焙（延后 500ms，
+// 避开 EndMenu 开板与星碑动效）挪进这段空闲，换关瞬间的合成与传输就此藏进结算停留。
+// 预取失败一律静默：换关链自身仍会现拉现烘，正确性不依赖预取。无后继（最后一关）不动。
+let groundPrefetchTimer: number | undefined;
+function prefetchNextLevel(): void {
+  if (!phaser) return;
+  const idx = templeLevels.findIndex((lv) => lv.filename === currentTempleEntry?.filename);
+  const nextId = idx >= 0 ? templeLevels[idx + 1]?.filename?.split("/").pop()?.replace(".json", "") : undefined;
+  if (!nextId) return;
+  window.clearTimeout(groundPrefetchTimer);
+  groundPrefetchTimer = window.setTimeout(() => {
+    void fetchLevelCached(nextId)
+      .then((lv) => {
+        if (phaser) GameScene.prepareGround(nextId, lv, phaser.textures);
+      })
+      .catch(() => {
+        // 预取失败无副作用：fetchLevelCached 已自行逐出该键，换关链现拉现烘
+      });
+  }, 500);
+}
+
 /**
  * 结算面板入口（正常 onPhase("won") 与重连/回座补结算共用，L-02）。
  * 前置：关卡数据与场景/字体资源已就绪（enterGame 完成后）——刷新回座时权威 won
@@ -279,6 +301,7 @@ function openEndMenu(): void {
   // 最佳。不置 endMenuShown——补发 finish 到位后的重入（resumeWonIfNeeded）仍可开板。
   if (!net.lastFinish) return;
   endMenuShown = true;
+  prefetchNextLevel();
   const f = net.lastFinish;
   const diaTotal = currentLevel.diamonds.filter((d) => d.kind !== "silver").length;
   const diaGot = (f?.fbDiamonds ?? 0) + (f?.wgDiamonds ?? 0);
@@ -398,6 +421,9 @@ async function enterGame(): Promise<void> {
       // sfx，这六支在大厅一秒也不响）；重进由 kickBgmLoop/kickBgmTerminal 重取，r15 的
       // ETag 让复验只花 304 往返。先 stop 场景再交还：Sound 实例随停音路径释放。
       releaseGameBgms(phaser!.sound, phaser!.cache.audio);
+      // r13 移植：地面位图（≈5MB/张）与 game 级 groundTex 纹理（场景 shutdown 不带走，
+      // GL 句柄仍占着）一并交还；重进同关重烘 ≈12ms 落在入房链里不可见。
+      GameScene.releaseGrounds(phaser!.textures);
       sm.start("Temple");
       const hud = document.querySelector("#hud");
       if (hud) hud.classList.add("hidden");
