@@ -6,6 +6,8 @@
 - 确定性门禁（改内核必跑）：`node --import tsx benchmark/perf-determinism.mjs --compare <锚>`（锚：r0-baseline/r0-light/r1-ice——r1-ice 为 0.3.51 #34/#35 冰面物理后的 ice 锚，--filter forest|light|ice）
 - 路线门禁（每关）：`node --import tsx scripts/e2e/routetool/validate.mjs --level <lv>`（内核）→ `node --import tsx scripts/e2e/route-node.mjs --level <lv> --repeat 3`（真服，light 系 --offset -10）→ ALL PASS 才算通关
 - 语料全量回归：`node --import tsx scripts/e2e/route-kregress.mjs`（正式语料=formal-corpus.list，内核口径）
+- 路线门禁平台口径（#39）：route-node 的 ±1ms node 定时器假设只在 Linux 成立（CI/本地稳态机）；Windows 本机 setTimeout 粒度实测 p50≈7ms/p99≈16ms，`--repeat 1` 不保证通过，正式判定以 Linux `--repeat 3` 为准
+- 发布门禁组合（0.3.51 起）：CI 全绿（typecheck/test/build/coverage/det×3/routes-smoke/servers-smoke）+ 本地 `npm run test:coverage` + det 三部（forest/light/ice）+ 语料 kregress
 - 确定性 fuzz：`node --import tsx benchmark/det-fuzz.mjs --level <lv> --seed <n> --minutes <m>`
 
 ## 工程纪律（硬性）
