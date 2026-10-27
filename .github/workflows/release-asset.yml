@@ -28,8 +28,13 @@ jobs:
           node-version: 22.x
           cache: npm
           cache-dependency-path: gyのFW/package-lock.json
-      - name: Guard（打包链只存在于 release/1.0-forest 线）
-        run: test -f scripts/package-deploy.mjs || { echo "本 ref 无打包链（package-deploy.mjs）——用 --ref release/1.0-forest 派发"; exit 1; }
+      - name: Guard（只认 1.0.* tag 名；分支手动派发会误建同名 release）
+        run: |
+          case "$GITHUB_REF_NAME" in
+            1.0.*) : ;;
+            *) echo "GITHUB_REF_NAME=$GITHUB_REF_NAME 非 1.0.*——tag push 才是正确触发方式"; exit 1 ;;
+          esac
+          test -f scripts/package-deploy.mjs || { echo "本 ref 无打包链（package-deploy.mjs）"; exit 1; }
       - name: Install
         run: npm ci
       - name: Build client
