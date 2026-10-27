@@ -8,8 +8,10 @@
  *
  * 用法（需已构建 dist + 运行中的服务端）：
  *   node scripts/e2e/audiofamily.mjs [--base http://127.0.0.1:3700]
- * 判据：期望曲全部出现在 Resource Timing 的 /assets/audio/s/<name> 段，非本族曲与
- * 页面 pageerror 均为零；任一不满足退出码 1。
+ * 判据：①期望曲全部出现在 Resource Timing 的 /assets/audio/s/<name> 段，非本族曲与
+ * 页面 pageerror 均为零；②r21/r25——循环曲与终局时刻曲不在落定门内：__fwBgmDeferAt
+ * 与各曲 Resource Timing startTime 须晚于 __fwWarmGateDoneAt+1400ms（同一 performance
+ * 时间轴直比）。任一不满足退出码 1。
  */
 import { chromium } from "playwright";
 
@@ -61,8 +63,32 @@ try {
     }
     const missing = c.expect.filter((n) => !names.includes(n));
     const leaked = c.absent.filter((n) => names.includes(n));
-    const ok = missing.length === 0 && leaked.length === 0 && pageErrors.length === 0;
-    console.log(`${ok ? "PASS" : "FAIL"}  ${c.name}${ok ? "" : `  missing=[${missing}] leaked=[${leaked}] pageErrors=[${pageErrors}]`}`);
+    // r21/r25：门内不得出现循环曲/终局时刻曲——请求发出时刻须晚于门落定 +1400ms
+    const timing = await page.evaluate(() => ({
+      gate: globalThis.__fwWarmGateDoneAt ?? null,
+      defer: globalThis.__fwBgmDeferAt ?? null,
+    }));
+    const tracks = c.expect.filter((n) => n.startsWith("LevelMusic"));
+    const bgmStarts = await page.evaluate((ts) => {
+      const SEG = "/assets/audio/s/";
+      return performance
+        .getEntriesByType("resource")
+        .filter((e) => ts.includes(e.name.split(SEG)[1] ?? ""))
+        .map((e) => ({ name: e.name.split(SEG)[1], start: e.startTime }));
+    }, tracks);
+    const timingBad = [];
+    if (timing.gate === null || timing.defer === null) {
+      timingBad.push(`hooks gate=${timing.gate} defer=${timing.defer}`);
+    } else if (timing.defer - timing.gate < 1400) {
+      timingBad.push(`defer-gate=${(timing.defer - timing.gate).toFixed(0)}ms<1400`);
+    }
+    for (const b of bgmStarts) {
+      if (timing.gate === null || b.start < timing.gate + 1400) {
+        timingBad.push(`${b.name}@${b.start.toFixed(0)}<gate+1400`);
+      }
+    }
+    const ok = missing.length === 0 && leaked.length === 0 && pageErrors.length === 0 && timingBad.length === 0;
+    console.log(`${ok ? "PASS" : "FAIL"}  ${c.name}${ok ? "" : `  missing=[${missing}] leaked=[${leaked}] pageErrors=[${pageErrors}] timing=[${timingBad}]`}`);
     if (!ok) failed++;
     await page.close();
   }

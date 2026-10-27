@@ -16,7 +16,7 @@
  * 的串行段（blob→Image ~180ms）而非网络（19 请求全并行仅 ~55ms）。
  */
 import Phaser from "phaser";
-import { AUDIO_BGM_OVER, AUDIO_MENU, AUDIO_SFX, audioGamePackOf, loadAudioPack } from "../audio.js";
+import { AUDIO_MENU, AUDIO_SFX, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadAudioPack } from "../audio.js";
 import { templeIdOf } from "../templeData";
 import { guardLoadErrors } from "./loadGuard";
 
@@ -95,6 +95,18 @@ export function setWarmBgmFamily(type: string | null | undefined): void {
   warmAudioType = type ?? null;
 }
 
+/** r21/r25 移植：门后二段——门落定 1500ms 后再取循环曲+终局时刻曲（门内只剩 sfx）。
+ *  节拍须晚于 fadeSwitch 切场窗口，否则又变回与必需集抢管道；Menu 已被切走（快速
+ *  建房/邀请深链）时定时器随场景停用作废、请求不发起，改由 GameScene.kick* 兜底。 */
+const thenBgmDefer = (scene: Phaser.Scene): void => {
+  if (!scene.sys.isActive()) return;
+  const g = globalThis as unknown as Record<string, unknown>;
+  g.__fwBgmDeferAt = performance.now();
+  loadAudioPack(scene, bgmLoopOf(bgmFamilyOf(warmAudioType)));
+  loadAudioPack(scene, bgmTerminalOf(bgmFamilyOf(warmAudioType)));
+  scene.load.start();
+};
+
 /** MenuScene 调用：开始后台暖装并登记落定门（complete 或场景被切走都算落定） */
 export function startBgWarm(scene: Phaser.Scene): void {
   if (warmState) return;
@@ -110,14 +122,19 @@ export function startBgWarm(scene: Phaser.Scene): void {
     const q = (scene.load as unknown as { queue?: { iterate: (fn: (f: { key: string }) => void) => void } }).queue;
     q?.iterate((f) => atlasInflight.delete(f.key));
     warmState?.resolve();
+    // r21 移植：门落定后 1500ms 再取 BGM（驻留路径预缓存进房即有声）；__fwWarmGateDoneAt
+    // 为只读自报钩子（audiofamily 门禁核"循环曲不在门内"的时序证据，qoder r14 先例）
+    (globalThis as unknown as Record<string, unknown>).__fwWarmGateDoneAt = performance.now();
+    scene.time.delayedCall(1500, () => thenBgmDefer(scene));
   };
   scene.load.once("complete", finish);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, finish);
   loadGameAtlases(scene.load);
   // 游戏内音频批（r6，同 r5 模式）：并入同一暖装队列与落定门——进 Game 前若暖装在飞，
   // GameScene.preload 的兜底声明会整体等门后重跑（已入 cache.audio 的键静默跳过），
-  // 不产生双载竞态。r16 移植：BGM 只取预测族的一支（sfx+失败曲恒取），请求更少仍全并行。
-  loadAudioPack(scene, audioGamePackOf(warmAudioType));
+  // 不产生双载竞态。r16 选族 + r21/r25 出门：门内音频只剩 sfx（BGM 全部改门后二段
+  // thenBgmDefer——循环曲是进房段单笔最大字节，却没有一帧靠它）。
+  loadAudioPack(scene, AUDIO_SFX);
   scene.load.start();
 }
 

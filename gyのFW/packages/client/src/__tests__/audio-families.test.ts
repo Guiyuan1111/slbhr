@@ -1,10 +1,11 @@
 /**
- * r16 移植（2026-10-27，并行性能线）：BGM 按关卡类型选族的纯函数回归。
+ * r16 移植（2026-10-27，并行性能线）+ r21/r25/r41 移植：BGM 选族与拆批的纯函数回归。
  *
- * 钉住四件事：①族映射与 GameScene.bgmKey/finishKey 的三分支逐字同式（speed/dark/其余
- * 含 puzzle）；②DARK 族终局曲与 general 共用（finishKey 的 else 分支语义——speed 才换
- * finish，dark 不换）；③sfx 与失败曲与类型无关恒取（三庙机关声都在内）；④三庙 142 关
- * 全类型覆盖下 audioGamePackOf 只含本族 BGM，绝无跨族键。
+ * 钉住：①族映射与 GameScene.bgmKey/finishKey 的三分支逐字同式（speed/dark/其余含
+ * puzzle）；②DARK 族终局曲与 general 共用（speed 才换 finish，dark 不换）；③sfx 与
+ * 失败曲与类型无关恒取（三庙机关声都在内）；④族包拆成 loop/terminal 两支后并集与族包
+ * 恒等（r21/r25）；⑤GAME_BGM_KEYS 恰为三族并集，releaseGameBgms 每键先实例后缓存
+ * （r41——实例钉 PCM，反序缓存归零而堆不还）。
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -13,9 +14,13 @@ import {
   AUDIO_BGM_OVER,
   AUDIO_BGM_SPEED,
   AUDIO_SFX,
-  audioGamePackOf,
+  GAME_BGM_KEYS,
   bgmFamilyOf,
+  bgmFinishOf,
+  bgmLoopOf,
   bgmPackOf,
+  bgmTerminalOf,
+  releaseGameBgms,
 } from "../audio.js";
 
 const keys = (pack: ReadonlyArray<readonly [string, string]>): string[] => pack.map(([k]) => k);
@@ -44,37 +49,52 @@ describe("三族清单与播放键一致性", () => {
   });
 });
 
-describe("audioGamePackOf：sfx+失败曲恒取，BGM 只取本族", () => {
-  it("sfx 覆盖三庙机关声（forest 风/ice 冻融/light 滑块光推时钟）", () => {
-    for (const t of ["speed", "dark", "general"]) {
-      const ks = keys(audioGamePackOf(t));
-      for (const s of ["sfx_wind", "sfx_freeze", "sfx_melt", "sfx_slider", "sfx_lightpusher", "sfx_clock"]) {
-        expect(ks, `${t} 缺 ${s}`).toContain(s);
-      }
-      expect(ks).toContain("bgm_over");
+describe("族包拆分（r21/r25）：loop 与 terminal 两支", () => {
+  it("循环曲每族恰一支：general/speed/dark 各归其变体", () => {
+    expect(keys(bgmLoopOf("general"))).toEqual(["bgm_level"]);
+    expect(keys(bgmLoopOf("speed"))).toEqual(["bgm_level_speed"]);
+    expect(keys(bgmLoopOf("dark"))).toEqual(["bgm_level_dark"]);
+  });
+
+  it("终局时刻曲 = 失败曲（恒取）+ 本族终局曲；dark 与 general 共用 bgm_finish", () => {
+    expect(keys(bgmTerminalOf("general"))).toEqual(["bgm_over", "bgm_finish"]);
+    expect(keys(bgmTerminalOf("speed"))).toEqual(["bgm_over", "bgm_finish_speed"]);
+    expect(keys(bgmTerminalOf("dark"))).toEqual(["bgm_over", "bgm_finish"]);
+    expect(keys(bgmFinishOf("dark"))).toEqual(["bgm_finish"]);
+  });
+
+  it("loop ∪ terminal === 族包 ∪ 失败曲（拆批不丢键不添键）", () => {
+    for (const f of ["general", "speed", "dark"] as const) {
+      const pack = [...keys(bgmPackOf(f)), "bgm_over"].sort();
+      const split = [...keys(bgmLoopOf(f)), ...keys(bgmTerminalOf(f))].sort();
+      expect(split, f).toEqual(pack);
     }
-    expect(keys(AUDIO_SFX)).toHaveLength(18);
+  });
+
+  it("GAME_BGM_KEYS 恰为三族 loop∪terminal 之并（离房交还全表无漏配）", () => {
+    const union = new Set<string>();
+    for (const f of ["general", "speed", "dark"] as const) {
+      for (const [k] of [...bgmLoopOf(f), ...bgmTerminalOf(f)]) union.add(k);
+    }
+    expect([...union].sort()).toEqual([...GAME_BGM_KEYS].slice().sort());
+  });
+
+  it("sfx 覆盖三庙机关声（forest 风/ice 冻融/light 滑块光推时钟）", () => {
+    const ks = keys(AUDIO_SFX);
+    for (const s of ["sfx_wind", "sfx_freeze", "sfx_melt", "sfx_slider", "sfx_lightpusher", "sfx_clock"]) {
+      expect(ks, `缺 ${s}`).toContain(s);
+    }
+    expect(ks).toHaveLength(18);
     expect(keys(AUDIO_BGM_OVER)).toEqual(["bgm_over"]);
   });
+});
 
-  it("speed 关：含 speed 双变体，不含 general/dark 开局曲与 general 终局曲", () => {
-    const ks = keys(audioGamePackOf("speed"));
-    expect(ks).toContain("bgm_level_speed");
-    expect(ks).toContain("bgm_finish_speed");
-    for (const absent of ["bgm_level", "bgm_level_dark", "bgm_finish"]) expect(ks).not.toContain(absent);
-  });
-
-  it("dark 关：含暗开局曲+general 终局曲，不含 general/speed 开局曲", () => {
-    const ks = keys(audioGamePackOf("dark"));
-    for (const present of ["bgm_level_dark", "bgm_finish"]) expect(ks).toContain(present);
-    for (const absent of ["bgm_level", "bgm_level_speed", "bgm_finish_speed"]) expect(ks).not.toContain(absent);
-  });
-
-  it("general/puzzle 关：含 general 双曲，不含 dark 与 speed 变体", () => {
-    for (const t of ["general", "puzzle", undefined]) {
-      const ks = keys(audioGamePackOf(t));
-      for (const present of ["bgm_level", "bgm_finish"]) expect(ks, String(t)).toContain(present);
-      for (const absent of ["bgm_level_dark", "bgm_level_speed", "bgm_finish_speed"]) expect(ks, String(t)).not.toContain(absent);
-    }
+describe("releaseGameBgms（r41）：六键全交还，先实例后缓存", () => {
+  it("每键 sound.removeByKey 先于 cache.remove——顺序反了 PCM 被实例钉住", () => {
+    const log: string[] = [];
+    const sound = { removeByKey: (k: string) => log.push(`s:${k}`) } as unknown as Parameters<typeof releaseGameBgms>[0];
+    const cache = { remove: (k: string) => log.push(`c:${k}`) } as unknown as Parameters<typeof releaseGameBgms>[1];
+    releaseGameBgms(sound, cache);
+    expect(log).toEqual(GAME_BGM_KEYS.flatMap((k) => [`s:${k}`, `c:${k}`]));
   });
 });

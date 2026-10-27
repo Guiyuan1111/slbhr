@@ -84,9 +84,44 @@ export function bgmPackOf(family: BgmFamily): ReadonlyArray<readonly [string, st
   return family === "speed" ? AUDIO_BGM_SPEED : family === "dark" ? AUDIO_BGM_DARK : AUDIO_BGM_GENERAL;
 }
 
-/** 某关卡类型的完整 game 批（sfx + 失败曲 + 本族 BGM）——暖装与 GameScene.preload 共用 */
-export function audioGamePackOf(templeType: string | null | undefined): ReadonlyArray<readonly [string, string]> {
-  return [...AUDIO_SFX, ...AUDIO_BGM_OVER, ...bgmPackOf(bgmFamilyOf(templeType))];
+/** 族内**循环曲**单支（r21 移植）：LevelMusic 1,315,960B / _speed / _dark 变体——进房段
+ *  单笔最大的一笔，却不参与"可玩"所需的任何一帧：不进落定门也不进 GameScene 阻塞批，
+ *  改为门后二段（BootScene.thenBgmDefer）+ create 后兜底（GameScene.kickBgmLoop）。 */
+export function bgmLoopOf(family: BgmFamily): ReadonlyArray<readonly [string, string]> {
+  return bgmPackOf(family).filter(([key]) => key === "bgm_level" || key === "bgm_level_speed" || key === "bgm_level_dark");
+}
+
+/** 族内**终局曲**单支（r25 移植语义；dark 与 general 共用 bgm_finish）。 */
+export function bgmFinishOf(family: BgmFamily): ReadonlyArray<readonly [string, string]> {
+  return bgmPackOf(family).filter(([key]) => key === "bgm_finish" || key === "bgm_finish_speed");
+}
+
+/** 两支**终局时刻曲**（r25 移植）：失败曲（与类型无关，163,438B）＋ 本族终局曲。它们出声的
+ *  时点在死亡或通关那一刻，必然晚于进房若干秒——出落定门与阻塞批，门后二段兜底；
+ *  缺键时 sfx 的 exists 卫静默跳过（won 补演只是晚响一秒，不是能不能活）。 */
+export function bgmTerminalOf(family: BgmFamily): ReadonlyArray<readonly [string, string]> {
+  return [...AUDIO_BGM_OVER, ...bgmFinishOf(family)];
+}
+
+/** 房内 BGM 键全表（r41 移植，扩三族六键）：离房回选关时连同解码 PCM 一起交还——大厅只活
+ *  bgm_menu 与 sfx，这六支在大厅一秒也不响。重进由 kickBgmLoop/kickBgmTerminal 按需重取
+ *  （服务端 r15 ETag 使复验只花 304 往返，无正文重下）。 */
+export const GAME_BGM_KEYS = [
+  "bgm_level",
+  "bgm_level_speed",
+  "bgm_level_dark",
+  "bgm_finish",
+  "bgm_finish_speed",
+  "bgm_over",
+] as const;
+
+/** 交还房内 BGM：先销毁 Sound 实例（WebAudioSound.audioBuffer 仍引用 PCM），再删缓存条目；
+ *  顺序反了缓冲区会被实例钉住——缓存账归零而堆不还。 */
+export function releaseGameBgms(sound: Phaser.Sound.BaseSoundManager, cache: Phaser.Cache.BaseCache): void {
+  for (const key of GAME_BGM_KEYS) {
+    sound.removeByKey(key);
+    cache.remove(key);
+  }
 }
 
 /** 按清单向场景装载器入队（已在缓存中的键由 Phaser Loader 自动跳过） */

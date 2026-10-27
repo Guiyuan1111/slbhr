@@ -19,7 +19,7 @@ import Phaser from "phaser";
 import { DOOR, ROLES, type Role } from "@fw/shared";
 import type { LevelData, Rect } from "@fw/shared/level2";
 import { windBodyPos } from "@fw/shared/level2";
-import { audioGamePackOf, loadAudioPack } from "../audio.js";
+import { AUDIO_SFX, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadAudioPack } from "../audio.js";
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
@@ -328,9 +328,11 @@ export class GameScene extends Phaser.Scene {
     // 游戏内音频兜底装载（0.3.21 从 Boot 挪出；r6 起 MenuScene 驻留期已后台暖装，
     // 常规路径此处全部命中 cache.audio 静默跳过零传输）；暖装未启动/被打断的路径
     // （邀请深链直进等）在此补齐。场景重启时同样不会重复下载。
-    // r16 移植：只装本关类型对应的 BGM 族（init 已注入 __fwInit.templeEntry，preload
-    // 可同步取 type；暖装猜错族时这里就是补齐点，缺键另有 sfx 的 exists 门禁兜底）。
-    loadAudioPack(this, audioGamePackOf(this.d?.templeEntry?.type));
+    // r16 移植：BGM 按本关类型选族；r21/r25 移植：循环曲与终局时刻曲（失败曲+本族终局
+    // 曲）不进这条阻塞批也不进落定门——它们不决定任何一帧，却是进房段最大字节（循环曲
+    // 1,315,960B）。门后二段（BootScene.thenBgmDefer）或 create 后 kick* 兜底；缺键时
+    // sfx 的 exists 卫静默跳过，到达后由补起处理器补上（won 补演只是晚响，不炸不 warn）。
+    loadAudioPack(this, AUDIO_SFX);
     // 游戏内四图集（r5 冷启动装载序整形）：Boot 不再装载（Menu 首帧用不到），
     // MenuScene 后台暖装通常已就绪（此处静默跳过）；暖装被提前打断（快速建房/
     // 邀请深链直进）时在此补齐，保证 create 前纹理完备——与旧 Boot 全量装载等价。
@@ -480,6 +482,9 @@ export class GameScene extends Phaser.Scene {
     // Boot :2162295 / fx 信号 :2209677 同式——settings.ts 分轨语义仅保留 music 侧）
     this.sound.mute = !getSettings().fx;
     this.sfx(this.bgmKey(), { loop: true });
+    // r21/r25 移植：循环曲与终局时刻曲 create 后兜底（门后二段已缓存则零请求零延后）
+    this.kickBgmLoop();
+    this.kickBgmTerminal();
 
     // T4（14 号档）：退场统一停音。Phaser 3 场景共享全局 sound manager（InjectionMap
     // sound:'sound'，scene.stop 不停音）——quit/换关/重开路径都过本场景 SHUTDOWN，在此
@@ -527,6 +532,49 @@ export class GameScene extends Phaser.Scene {
    *  bgm_finish_speed 此前装载 0 播）。templeType 在 create 即异步填充，won 时必已就绪。 */
   private finishKey(): string {
     return this.templeType === "speed" ? "bgm_finish_speed" : "bgm_finish";
+  }
+
+  /** r21 移植：关卡循环曲（进房段单笔最大字节）的兜底装载点——既不在落定门也不在本场景
+   *  阻塞批，create 之后才取，房间先可玩。门后二段跑完的常规路径键已在缓存，当场返回：
+   *  零请求、零延后、create 当场有声。 */
+  private kickBgmLoop(): void {
+    const key = this.bgmKey();
+    if (this.cache.audio.exists(key)) return;
+    loadAudioPack(this, bgmLoopOf(bgmFamilyOf(this.templeType)));
+    const catchUp = (): void => {
+      // 补起 create 那次没成功的播放：ready 阶段也该在播（房主就位到 started 之间 BGM
+      // 本来就在响）；只有"已被终局曲接管"或"本就在播"才不补。死亡换失败曲、通关换终局
+      // 曲、重开按原逻辑重起——晚到的循环曲一律不得把它们盖回去。
+      if (this.stairsPlayed) return;
+      if (this.sound.isPlaying("bgm_over") || this.sound.isPlaying(this.finishKey())) return;
+      if (this.sound.isPlaying(key)) return;
+      this.sfx(key, { loop: true });
+    };
+    // LoaderPlugin 随场景复用（shutdown 只 reset 队列、不解绑事件），换关/重开每次 create
+    // 都会再挂一个 once——SHUTDOWN 时摘掉，否则补起处理器累积并在下次装载完成时多播一支。
+    this.load.once("complete", catchUp);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.load.off("complete", catchUp));
+    this.load.start();
+  }
+
+  /** r25 移植：终局时刻曲（失败曲 163,438B + 本族终局曲）兜底装载点，形状同 kickBgmLoop。
+   *  补起只给**终局曲**：死亡那一刻的失败曲是时刻绑定的一次性音，晚到几秒再放会把"已经
+   *  重生在跑"盖成失败音，所以不补；终局曲不一样——通关演出与 won 补演都处在"那一局的
+   *  结尾正在进行"的状态，晚到仍是那句结尾，比整段静音更贴原意。三道卫钉死这个语义：
+   *  没进过演出、已离开 won 相位、或已被失败曲/自己占住，都不补。 */
+  private kickBgmTerminal(): void {
+    const fin = this.finishKey();
+    if (this.cache.audio.exists("bgm_over") && this.cache.audio.exists(fin)) return;
+    loadAudioPack(this, bgmTerminalOf(bgmFamilyOf(this.templeType)));
+    const catchUpFinish = (): void => {
+      if (!this.stairsPlayed) return;
+      if (String(this.d?.net.room?.state?.phase ?? "") !== "won") return;
+      if (this.sound.isPlaying(fin) || this.sound.isPlaying("bgm_over")) return;
+      this.sfx(fin);
+    };
+    this.load.once("complete", catchUpFinish);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.load.off("complete", catchUpFinish));
+    this.load.start();
   }
 
   /** T6（14 号档）：music 开关 Game 态即时生效（oracle settingsSignal→updateMusic :1905636）。

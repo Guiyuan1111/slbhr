@@ -14,6 +14,7 @@ import { copyText } from "./clipboard";
 import { KeyboardInput } from "./input";
 import { TouchControls } from "./touch";
 import { BootScene, bgWarmSettled, setWarmBgmFamily } from "./scenes/BootScene";
+import { releaseGameBgms } from "./audio";
 import { MenuScene } from "./scenes/MenuScene";
 import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
@@ -393,6 +394,10 @@ async function enterGame(): Promise<void> {
       sm.stop("PauseMenu");
       sm.stop("SettingsScene");
       sm.stop("CompleteScene");
+      // r41 移植：离房回选关——房内 BGM 六键连同解码 PCM 一起交还（大厅只活 bgm_menu 与
+      // sfx，这六支在大厅一秒也不响）；重进由 kickBgmLoop/kickBgmTerminal 重取，r15 的
+      // ETag 让复验只花 304 往返。先 stop 场景再交还：Sound 实例随停音路径释放。
+      releaseGameBgms(phaser!.sound, phaser!.cache.audio);
       sm.start("Temple");
       const hud = document.querySelector("#hud");
       if (hud) hud.classList.add("hidden");
