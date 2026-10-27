@@ -14,7 +14,9 @@
  */
 import { isIP } from "node:net";
 import type { AuthContext, Client } from "colyseus";
-import { appendFileSync } from "node:fs";
+import { appendFileSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Room, ServerError, matchMaker } from "../colyseus.cjs.js";
 import { ROLES, EMPTY_INPUT, type Role, type InputState } from "@fw/shared";
 import { World, m2px, type WorldEvent, type WorldPhase } from "@fw/shared/kernel";
@@ -130,6 +132,20 @@ export function authIp(context: AuthContext | undefined): string {
   return remote ? String(remote) : "unknown";
 }
 
+/** FW_DUMP 落盘路径：锚定项目根 TEMP/（原来的相对 CWD 写法在非仓库根启动时
+ *  落错位置或 ENOENT，#37）；目录只建一次，失败交由调用方 try/catch 兜底。 */
+let dumpDirReady = false;
+export function dumpPath(seg: number): string {
+  const p = fileURLToPath(new URL(`../../../../TEMP/server-dump-${seg}.jsonl`, import.meta.url));
+  if (!dumpDirReady) {
+    try {
+      mkdirSync(dirname(p), { recursive: true });
+      dumpDirReady = true;
+    } catch { /* 建目录失败则每次写时再试 */ }
+  }
+  return p;
+}
+
 export class ForestRoom extends Room<RoomState> {
   maxClients = 2;
 
@@ -154,7 +170,9 @@ export class ForestRoom extends Room<RoomState> {
   private dumpReset() {
     if (process.env.FW_DUMP !== "1") return;
     if (this.dumpBuf.length > 0) {
-      appendFileSync(`TEMP/server-dump-${this.dumpSeg}.jsonl`, this.dumpBuf.join("\n") + "\n");
+      try {
+        appendFileSync(dumpPath(this.dumpSeg), this.dumpBuf.join("\n") + "\n");
+      } catch { /* 诊断落盘失败静默：FW_DUMP 只增观测，不得反噬被测系统（#37） */ }
       this.dumpBuf = [];
     }
     this.dumpSeg++;
@@ -643,7 +661,9 @@ export class ForestRoom extends Room<RoomState> {
           },
         }));
         if (this.dumpBuf.length >= 30) {
-          appendFileSync(`TEMP/server-dump-${this.dumpSeg}.jsonl`, this.dumpBuf.join("\n") + "\n");
+          try {
+            appendFileSync(dumpPath(this.dumpSeg), this.dumpBuf.join("\n") + "\n");
+          } catch { /* 诊断落盘失败静默：FW_DUMP 只增观测，不得反噬被测系统（#37） */ }
           this.dumpBuf = [];
         }
       }

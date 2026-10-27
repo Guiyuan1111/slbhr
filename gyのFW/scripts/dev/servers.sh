@@ -5,6 +5,7 @@
 # pidfile/日志落 TEMP/（gitignore 内），进程用 nohup 脱离会话，终端关闭不影响。
 set -u
 cd "$(dirname "$0")/../.."   # → gyのFW 仓库根
+mkdir -p TEMP                # 干净 checkout 无 TEMP/，pidfile/日志写入会失败（#37）
 
 PLAY_PID="TEMP/play-server.pid"
 ORACLE_PID="TEMP/oracle-serve.pid"

@@ -23,7 +23,9 @@ npm run typecheck               # 零输出 = 过
 npm run test                    # vitest，应全绿
 npm run build                   # vite 构建（含素材同步）
 
-# 关卡验收门禁（真实服务器 + 双浏览器回放）
+# 关卡验收门禁（真实服务器 + 纯 Node 双客户端回放；CI routes-smoke 同款）
+node --import tsx scripts/e2e/route-node.mjs --level forest_01 --repeat 3 --offset -15
+# 浏览器回放变体：前置 npx playwright install chromium（Windows 缺省 msedge 通道，FW_BROWSER_CHANNEL 可覆盖）
 node scripts/e2e/route.mjs --level forest_01 --repeat 3 --offset -15
 # 三部分部确定性基线（逐位一致）
 node --import tsx benchmark/perf-determinism.mjs --filter forest --compare r0-baseline

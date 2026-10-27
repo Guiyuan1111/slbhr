@@ -108,3 +108,36 @@ jobs:
         run: node --import tsx scripts/e2e/route-node.mjs --level forest_01 --repeat 1
       - name: route-node light_02
         run: node --import tsx scripts/e2e/route-node.mjs --level light_02 --repeat 1 --offset -10
+
+  servers-smoke:
+    # #37：干净 checkout 冒烟——无 TEMP/ 目录起服 + /healthz 探活，专抓
+    # pidfile/日志/落盘目录这类环境假设（单元测试罩不住的脚本级问题）。
+    name: servers smoke (clean checkout servers.sh + healthz)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.x
+          cache: npm
+          cache-dependency-path: gyのFW/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Start play server via servers.sh
+        run: scripts/dev/servers.sh start play
+      - name: Probe /healthz
+        run: |
+          code=""
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 http://127.0.0.1:3700/healthz || true)
+            [ "$code" = "200" ] && break
+            sleep 1
+          done
+          [ "$code" = "200" ] || { echo "/healthz 未就绪（最后状态 $code）"; exit 1; }
+          echo "/healthz 200"
+      - name: Stop
+        if: always()
+        run: scripts/dev/servers.sh stop play

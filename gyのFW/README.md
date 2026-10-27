@@ -40,7 +40,7 @@ Nginx/Caddy 等反代层终止 HTTPS、限制请求速率与并发，并把 `FW_
 
 | 层 | 工具 | 说明 |
 |---|---|---|
-| 通关门禁 | `node scripts/e2e/route.mjs --level forest_01 --repeat 3 --offset -15` | 真实服务器 + 双浏览器回放（`--offset -15` 为本机标定基线） |
+| 通关门禁 | `node --import tsx scripts/e2e/route-node.mjs --level forest_01 --repeat 3 --offset -15` | 真实服务器 + 纯 Node 双客户端回放，CI 同款（`--offset -15` 为本机标定基线；浏览器变体 `route.mjs` 需 `npx playwright install chromium`，Windows 缺省 msedge 通道） |
 | 位级确定性 | `node --import tsx benchmark/perf-determinism.mjs --compare r0-baseline`（并行缺省，`DET_WORKERS=0` 回退串行） | 全 48 关 det 位级基线（perf 战役现役锚 r0-baseline，与行为战役史锚 r32 同源互证；并行/串行/快照三方逐字节同） |
 | 行为回归网 | `node --import tsx scripts/e2e/routetool/fixture-runner.mjs` | 金轨迹 fixture 6 case：v1 内核自基线 ×4（tolerance=0）+ oracle 金 ×2（forest_01/forest_26） |
 | oracle 对拍 | `scripts/e2e/oracle/`（lib/vtrun/vtdiff/goldcollect/windphase/animprobe） | 原版虚拟钟机族：确定性 60Hz 逐帧对拍、金输出采集、风相位/动画审计 |

@@ -10,7 +10,7 @@
  */
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
-import { writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { ROOT, argOf, log } from "./lib.mjs";
 
 const args = process.argv.slice(2);
@@ -54,6 +54,7 @@ for (let i = 0; i < levels.length; i++) {
 }
 
 const failed = results.filter((r) => !r.ok);
+mkdirSync(OUT, { recursive: true }); // 干净 checkout 无 out/（同 route-node，#37）
 writeFileSync(join(OUT, "route-all-results.json"), JSON.stringify({ repeat: REPEAT, results }, null, 1));
 log(`==== 扫荡汇总：${results.length - failed.length}/${results.length} 过 ====${failed.length ? " 未过: " + failed.map((r) => r.level).join(", ") : " ALL GREEN"}`);
 process.exit(failed.length ? 1 : 0);
