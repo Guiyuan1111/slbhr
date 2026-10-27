@@ -10,13 +10,13 @@ export default defineConfig({
     // 覆盖率阈值门禁（对比报告 #2 / plans/2026-10-27-next-improvements.md A2）：
     // 只覆盖逻辑层（shared/server），client 为渲染重载层不设阈；
     // 首次基线 2026-10-27 实测 lines 82/branches 69/funcs 78/stmts 81；
-    // 阈值已随 autoUpdate ratchet 至 85.76/84.79/83.05/74.05（当前零余量口径，#46 注释同步）。
+    // 阈值已随 autoUpdate ratchet 至 86.17/85.22/83.39/75.81（当前零余量口径，#46 注释同步）。
     coverage: {
       provider: "v8",
       include: ["packages/shared/src/**", "packages/server/src/**"],
       // autoUpdate：本地跑 test:coverage 时抬升 ratchet；CI 环境必须只读——
       // 门禁不得在流水线里回写受控配置（#39）。
-      thresholds: { autoUpdate: process.env.CI !== "true", lines: 85.76, statements: 84.79, functions: 83.05, branches: 74.05 },
+      thresholds: { autoUpdate: process.env.CI !== "true", lines: 86.17, statements: 85.22, functions: 83.39, branches: 75.81 },
     },
   },
 });

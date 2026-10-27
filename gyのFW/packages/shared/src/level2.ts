@@ -464,11 +464,15 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
           const localId = gid - groundRef.firstgid;
           let t = groundTs?.tileproperties?.[String(localId)]?.type;
           if (t === undefined) {
-            // #44：未知 gid 静默当 SOLID 会埋坑（数据错误永不暴露）——每 关卡×gid 只 warn 一次
-            const warnKey = `${id}:${gid}`;
-            if (!unknownGidWarned.has(warnKey)) {
-              unknownGidWarned.add(warnKey);
-              console.warn(`[level2] 关卡 ${id}: gid=${gid}（localId=${localId}）无 tileproperties.type，按 SOLID 处理`);
+            // #44：未知正 gid 静默当 SOLID 会埋坑（数据错误永不暴露）——每 关卡×gid 只 warn 一次。
+            // 负 gid 是 Tiled 翻转标志位（0x80000000 族）的 |0 回绕，走同一 SOLID 兜底但属已知
+            // 语义非数据错误，不告警（实库 light_39/ice_19 有此类格子）。
+            if (gid > 0) {
+              const warnKey = `${id}:${gid}`;
+              if (!unknownGidWarned.has(warnKey)) {
+                unknownGidWarned.add(warnKey);
+                console.warn(`[level2] 关卡 ${id}: gid=${gid}（localId=${localId}）无 tileproperties.type，按 SOLID 处理`);
+              }
             }
             t = GROUND_TYPE.SOLID;
           }

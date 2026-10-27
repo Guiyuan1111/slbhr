@@ -27,3 +27,15 @@ export function isOriginAllowed(
   }
   return allowlist.includes(origin);
 }
+
+/** WS 升级的 verifyClient 工厂（#45）：与 matchmake HTTP 同一 Origin 口径。
+ *  拒绝时 403 断开升级——浏览器跨站 WS 不受 CORS 管，必须在升级层收口。 */
+export function wsOriginVerify(
+  allowlist: readonly string[],
+): (info: { origin?: string; req: { headers: Record<string, unknown> } }, cb: (ok: boolean, code?: number) => void) => void {
+  return (info, cb) => {
+    const host = typeof info.req.headers.host === "string" ? info.req.headers.host : undefined;
+    const ok = isOriginAllowed(info.origin || undefined, host, allowlist);
+    cb(ok, ok ? 200 : 403);
+  };
+}
