@@ -1,0 +1,46 @@
+# 1.0 分发链：从 tag 源码构建部署包并上传到同名 Release。
+# 背景：本机网络对 uploads.github.com 选择性阻断（api/github.com 正常、上传握手必败），
+# 附件改由 CI 侧构建上传；分发产物由此永远等于 tag 源码的确定性产出。
+# 触发：推送 1.0.* tag；或 workflow_dispatch（--ref release/1.0-forest，main 无打包链）。
+name: release-asset
+
+on:
+  push:
+    tags:
+      - "1.0.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: gyのFW
+
+jobs:
+  package-upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.x
+          cache: npm
+          cache-dependency-path: gyのFW/package-lock.json
+      - name: Guard（打包链只存在于 release/1.0-forest 线）
+        run: test -f scripts/package-deploy.mjs || { echo "本 ref 无打包链（package-deploy.mjs）——用 --ref release/1.0-forest 派发"; exit 1; }
+      - name: Install
+        run: npm ci
+      - name: Build client
+        run: npm run build
+      - name: Package（内含生产依赖预装）
+        run: node scripts/package-deploy.mjs
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "$tag" --notes "部署手册见包内 DEPLOY.md"
+          gh release upload "$tag" TEMP/gy-fw-forest-*.tar.gz TEMP/gy-fw-forest-*.tar.gz.sha256 --repo "$GITHUB_REPOSITORY" --clobber
