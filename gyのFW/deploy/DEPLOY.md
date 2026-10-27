@@ -52,7 +52,13 @@ git clone git@github.com:Guiyuan1111/slbhr.git ~/fw && cd ~/fw/gyのFW
 说明：
 
 - 官方素材与关卡数据（`assets/`、`data/`）**随仓库分发**，clone 即齐，无需搬运。
-- 官方原版参考库（oracle）不在仓库内，VPS 上不需要也不应有。
+- 官方原版参考库（oracle）**随本仓库分发**（仓库根 `Fireboy-and-Watergirl/`，私库自述不分发）。
+  VPS 上 oracle 服务（scripts/baseline/serve-original.mjs）不需要也不应运行；若想省 ~220MB，
+  可用 sparse-checkout 排除参考库目录：
+  ```bash
+  git sparse-checkout init --no-cone && printf '/*\n!/Fireboy-and-Watergirl/\n' > "$(git rev-parse --git-dir)/info/sparse-checkout" && git read-tree -mu HEAD
+  ```
+  （0.3.51 #42 勘误：本行此前误称「参考库不在仓库内」，与事实相反。）
 - 玩家进度存浏览器 localStorage（`packages/client/src/progress.ts`），服务端完全
   无状态——换服务器/换节点零迁移、无需备份玩家数据。
 

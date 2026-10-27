@@ -17,10 +17,22 @@
 //   综合复刻度 = 0.6·mean(bodyScore) + 0.4·mean(endScore)，全金轨迹全体取均值
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
+import { gunzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
 import { parseLevel } from "../packages/shared/src/level2.js";
 import { World } from "../packages/shared/src/kernel/world.js";
+
+// #42：golden 大 JSON 入库 gzip 化——读端透明兼容 .json 与 .json.gz（gzip 后省 ~92%）
+function readGolden(dir, name) {
+  const f = join(dir, name);
+  try {
+    return JSON.parse(readFileSync(f, "utf8"));
+  } catch (e) {
+    if (e?.code !== "ENOENT") throw e;
+    return JSON.parse(gunzipSync(readFileSync(`${f}.gz`)));
+  }
+}
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const GOLDENS = [
@@ -80,7 +92,7 @@ function bodyForTag(world, mechs, tag) {
 }
 
 function runGolden(name) {
-  const golden = JSON.parse(readFileSync(join(ROOT, "scripts/baseline/golden", `${name}.json`), "utf8"));
+  const golden = readGolden(ROOT, `scripts/baseline/golden/${name}.json`);
   const level = loadLevel(golden.meta.level);
   const world = new World(level);
   const mechs = world.mechanisms;

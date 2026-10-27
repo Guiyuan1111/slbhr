@@ -12,7 +12,8 @@
  * 输入对齐：INPUT_SHIFT=+1 为实测标定（金轨迹采样钩 vs 内核逐步的 1 帧相位差，
  * 8.5m/s 巡航 × 1 帧 ≈ 0.14m，为 fb 剩余漂移主导项；扫描 −2..+2 取最优）。
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { gunzipSync } from "node:zlib";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseLevel } from "../../packages/shared/src/level2.js";
@@ -21,7 +22,10 @@ import { World } from "../../packages/shared/src/kernel/world.js";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const goldenPath = process.argv[2] ?? join(ROOT, "scripts", "baseline", "golden", "forest_01_a1_fixeddt.json");
 
-const golden = JSON.parse(readFileSync(goldenPath, "utf8"));
+// #42：golden 入库 gzip 化——路径缺 .gz 后缀时透明尝试 <path>.gz
+const golden = JSON.parse(
+  existsSync(goldenPath) ? readFileSync(goldenPath, "utf8") : gunzipSync(readFileSync(`${goldenPath}.gz`)),
+);
 const LEVEL = golden.meta.level;
 // 关卡目录查找：tutorials / forest（bonus 在 forest/levels 内）
 const CANDIDATE_DIRS = ["data/tutorials/levels", "data/forest/levels"];

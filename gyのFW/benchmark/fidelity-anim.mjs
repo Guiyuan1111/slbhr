@@ -19,10 +19,22 @@
 //   评分：animIndex = 100·(0.5·headRate + 0.5·legsRate)（对齐窗 + exBoundary）；composite = 各关均值。
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
+import { gunzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import http from "node:http";
 import { chromium } from "playwright";
 import { parseLevel } from "../packages/shared/src/level2.js";
+
+// #42：golden 大 JSON 入库 gzip 化——读端透明兼容 .json 与 .json.gz（gzip 后省 ~92%）
+function readGolden(dir, name) {
+  const f = join(dir, name);
+  try {
+    return JSON.parse(readFileSync(f, "utf8"));
+  } catch (e) {
+    if (e?.code !== "ENOENT") throw e;
+    return JSON.parse(gunzipSync(readFileSync(`${f}.gz`)));
+  }
+}
 import { World } from "../packages/shared/src/kernel/world.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -84,7 +96,7 @@ function legsOf(anim, vxScreen) {
 }
 
 function runOurs(goldenName) {
-  const golden = JSON.parse(readFileSync(join(GOLDEN_DIR, `${goldenName}.json`), "utf8"));
+  const golden = readGolden(GOLDEN_DIR, `${goldenName}.json`);
   const level = loadLevel(golden.meta.level);
   const world = new World(level);
   const NONE = { up: false, left: false, right: false };
@@ -307,7 +319,7 @@ async function captureOnce(browser, levelId, script, maxFrames) {
 }
 
 async function captureLevel(browser, goldenName) {
-  const golden = JSON.parse(readFileSync(join(GOLDEN_DIR, `${goldenName}.json`), "utf8"));
+  const golden = readGolden(GOLDEN_DIR, `${goldenName}.json`);
   const levelId = golden.meta.level;
   const script = golden.meta.inputScript ?? [];
   const maxFrames = golden.runs[0].frames.length;
@@ -439,7 +451,7 @@ if (doCapture) {
 // 评分：读参考轨迹 + 我方内核复跑
 const levelScores = [];
 for (const lv of LEVELS) {
-  const golden = JSON.parse(readFileSync(join(GOLDEN_DIR, `${lv.golden}.json`), "utf8"));
+  const golden = readGolden(GOLDEN_DIR, `${lv.golden}.json`);
   const refPath = join(RESULTS, `anim-ref-${golden.meta.level}.json`);
   if (!existsSync(refPath)) throw new Error(`缺参考轨迹 ${refPath}——先跑 --capture`);
   const ref = JSON.parse(readFileSync(refPath, "utf8"));

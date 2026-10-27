@@ -169,3 +169,19 @@ jobs:
       - name: Stop
         if: always()
         run: scripts/dev/servers.sh stop play
+
+  repo-size:
+    # #42：仓库 tracked 体积软阈值——超限只写 summary 告警不阻断，防大文件静默回涨。
+    name: repo size (soft threshold)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Report tracked size
+        run: |
+          BYTES=$(git ls-tree -r -l HEAD | awk '{s+=$4} END {print s+0}')
+          MIB=$((BYTES / 1048576))
+          echo "tracked = ${MIB} MiB" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$MIB" -gt 150 ]; then
+            echo "⚠️ tracked 体积 ${MIB} MiB 超软阈值 150 MiB（#42）——请检查是否新增大文件（golden/基准快照/素材）" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
