@@ -29,10 +29,10 @@
 | r17 | DOM 皮肤与整图集解耦（dom-skin 合成贴图） | main 未动 | 可移植（资产重打包+domskin 门禁配套） |
 | r18/r19 | 中文位图字两段化 + 进房前字体图集重排 | main 未动 | 可移植（资产+prephase-canvas 取证配套） |
 | r20 | 弱网档位量具（CDP 隧道节流） | main 无 | 工具件可独立移植（低风险） |
-| r21 | 关卡循环曲出落定门（弱网 −2.1~21.4s） | main 未动 | 客户端行为件，后续批 |
+| r21 | 关卡循环曲出落定门（弱网 −2.1~21.4s） | main 未动 | **已移植（0.3.55）**，与 r25 终局时刻曲件同批出批 |
 | r22–r31 | 资产拆分/瘦身族（char/menu/popup/mech/room-font 等九件） | main 未动 | 资产重打包族，**单独立项**（换代取证流程配套） |
 | r32–r40 | canvas shrink/repack 族 + advance warm + asset versioning + finish anim rebind | main 未动 | 同上资产族，单独立项 |
-| r41–r43 | 离房释放族（leave/chars-play/menu-only release） | main 0.3.48 #29 已做"复用归零黑幕/浮尘/光束折线引用"（主题相邻实现不同） | 对照合并，待复核 |
+| r41–r43 | 离房释放族（leave/chars-play/menu-only release） | main 0.3.48 #29 已做"复用归零黑幕/浮尘/光束折线引用"（主题相邻实现不同） | **r41 已移植（0.3.55）**：与 #29 正交（场景视图引用 vs 全局 sound/cache 音频资产账）；chars-play/menu-only 两件挂账待令 |
 
 ## 首批移植（0.3.53）：r15 服务端两件
 
@@ -46,3 +46,5 @@
 | 2026-10-27 | r16 | **采纳但改设计**：两族→三族（main 的 light 部有 7 个 dark 关，qoder 前提过时）；DARK 族终局曲按 oracle/finishKey 语义与 general 共用 | 0.3.54（1bb5ca0） |
 | 2026-10-27 | r14 levelCache 件 | 采纳（main 的 Map 无界） | 0.3.54（1bb5ca0） |
 | 2026-10-27 | r12 电机声标量件 | **否决**：main 快照对象已复用，剩余分配仅每帧一个小字面量，收益边际 | 不移植（理由存档） |
+| 2026-10-28 | r21+r25 | 采纳（前提在 main 成立）：补起三卫防晚到盖曲（stairsPlayed/终局接管/在播），终局补起另加 won 相位卫（死亡失败曲时刻绑定不补）；SHUTDOWN 摘 load complete 防 once 累积 | 0.3.55（4439dad） |
+| 2026-10-28 | r41 离房释放件 | 采纳：六键=三族并集（qoder 原版无 dark 键），先实例后缓存序防 PCM 钉住；重开/进房不交还；与 #29 正交不冲突 | 0.3.55（4439dad） |

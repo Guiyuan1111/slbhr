@@ -10,6 +10,12 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-10-28（并行性能线吸收批三 + 0.3.55 发版——r21+r25 BGM 出落定门/r41 离房交还，带审核）
+① **r21+r25（4439dad）**：落定门与 GameScene 阻塞批内只剩 SFX(18 支)；BGM 改门后二段（门落定+1500ms BootScene.thenBgmDefer 取 warm 族 loop+terminal）+ create 后 kickBgmLoop/kickBgmTerminal 兜底（缓存命中零请求；补起三卫防晚到盖曲，终局补起须 won 相位——死亡失败曲时刻绑定不补；SHUTDOWN 摘 load complete 防累积）。门挡字节出门：general 1,647,015B/speed 343,792B/dark 812,753B。
+② **r41（同提交）**：leaveToMenu 时 releaseGameBgms 六键（三族并集）先 sound.removeByKey 后 cache.remove 交还 PCM（反序被实例钉住）；重开/进房不交还，重取走 r15 ETag 304；与 0.3.48 #29 正交（场景视图引用 vs 全局音频资产账）。
+③ **验证**：audio-families.test 重写 9 例（拆分恒等 loop∪terminal=族包∪失败曲、六键恰三族并集、release 先实例后缓存序）；audiofamily.mjs 新增时序断言（__fwBgmDeferAt 与各曲 startTime 晚于 __fwWarmGateDoneAt+1400ms）3/3 PASS——实测 speed 例门后 3823ms 起请求、门内零 BGM；341 测试绿+typecheck 零错+build 过。
+④ **裁定**：用户指示本批后只收尾不开新批——分流表余项（r13/r14 件、r17–r40 资产族、r42/r43）挂账待令；既有 #49/#50、Colyseus 0.18 候选待裁不变。
+
 **更新**：2026-10-27（并行性能线吸收批二 + 0.3.54 发版——r16 三族移植/r14 件/r12 否决，带审核）
 ① **审核**：r16 前提核查——qoder 两族（general/speed）建立在"森林无 dark"上，main 的 light 部有 7 dark 关（142 关：general 69/puzzle 41/speed 25/dark 7），前提过时→**扩三族**移植，DARK 终局曲与 general 共用（对齐 finishKey else 分支）。
 ② **r16 落地（1bb5ca0）**：AUDIO_GAME 拆 SFX(18 恒取)+失败曲+三族；BootScene 暖装族预判（main.ts 深链 ?level= 经 temple.json 单例预判）；GameScene.preload 按 templeEntry.type 兜底；额度 general 关省 646.5KB/speed 1919.2KB/dark 1620.9KB（原每关全装 2,309,067B）。
