@@ -10,6 +10,13 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-10-28（性能线吸收批四 + 0.3.56 发版——r13 地面缓存/r20 弱网量具/P0：CSP×seedrandom 断链修复）
+① **P0（91394f2）**：seedrandom 字符串内联+new Function 被 0.3.51 CSP 禁 eval 拦截——GameScene create 炸在 decorate z() 步进，**浏览器建房→Game 全断 0.3.51–0.3.55 五版**（node 侧 e2e 不加载浏览器 bundle、audiofamily 不建房故无人察觉）。修复=官方 2717B 以真实源码模块入编译图；等值=10000 步对拍+parity 锚单测+det forest 48 关位级一致。
+② **r13（f977aff）**：groundCache 字节账 LRU（24MB，正绑定/当前张不可逐出不变量单测钉死）+结算入口后 500ms 预烘下一关+离房释放；合成管线逐字节不动；浏览器实测 669ms 进房/离房释放。
+③ **r20（0ec412d）**：perf-load --net 五档 CDP 节流+waitScale+生效自检（qoder r30 判据：墙钟直测——首版 TTFB 判据实弹抓出假阴性）；fast3g Menu 21.4s vs off 510ms 基线入库。
+④ **门禁（8c63d05）**：browser-room 浏览器建房链路冒烟入 CI（七作业）——P0 潜伏五版的流程缺口收口。
+⑤ **0.3.56 发版**：48 文件 349 测试绿（+8）、typecheck/build 过、det forest 锚一致；CI 七作业绿后 tag 0.3.56 + Release 已发（Latest）。
+
 **更新**：2026-10-28（1.0 分发线落地——第一部 forest 专属 Linux 服务器包发版，与 main 0.3.x 并行）
 ① **分支口径**：release/1.0-forest（1.0.x 分发线，main 仍是三部开发主线）——只做打包/剪裁适配：删三部 fixture 测试 3 件+sceneState iceViews 块、CI 去 ice/light determinism 两作业、覆盖率阈值按余量实测重定 69.4/68.7/68.75/64.3、bump 1.0.0；font-census 清单随打包链文案刷新（防护网按设计红一次，本地漏跑复验被 CI 抓回——发版前全门禁必须本地+CI 双绿）。
 ② **打包链**：scripts/package-deploy.mjs（打包层剪除 light/ice：data 目录、Temples 图集、LevelMusic_dark、dist 内资产重复副本、tutorials 非 forest 首关；预装 npm ci --omit=dev 生产依赖，解包即用）+ DEPLOY.md（AI 接手部署手册：六步验收含 colyseus.js 真房与"仅第一部"边界断言 /api/levels 全 forest、light/ice 404）。
