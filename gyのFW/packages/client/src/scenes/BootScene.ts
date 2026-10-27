@@ -16,7 +16,7 @@
  * 的串行段（blob→Image ~180ms）而非网络（19 请求全并行仅 ~55ms）。
  */
 import Phaser from "phaser";
-import { AUDIO_GAME, AUDIO_MENU, loadAudioPack } from "../audio.js";
+import { AUDIO_BGM_OVER, AUDIO_MENU, AUDIO_SFX, audioGamePackOf, loadAudioPack } from "../audio.js";
 import { templeIdOf } from "../templeData";
 import { guardLoadErrors } from "./loadGuard";
 
@@ -85,6 +85,16 @@ export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin, templeOverride
  *  避免「暖装仍在飞 + GameScene 兜底重复拉同一批文件」的双载竞态 */
 let warmState: { done: Promise<void>; resolve: () => void } | null = null;
 
+/** 暖装期 BGM 族猜测（r16 移植）：暖装发生在 Menu 驻留期，目标关卡通常未知，只能按
+ *  缺省 general 猜（142 关里 110 关 general/puzzle 命中）。main.ts 在 temple.json 单例
+ *  落定后若已能从 ?level= 深链定出类型，则先于暖装写入本字段。暖装已启动后改它无效
+ *  ——缺的族由 GameScene.preload 兜底声明补齐（未缓存的键照常下载）。 */
+let warmAudioType: string | null = null;
+export function setWarmBgmFamily(type: string | null | undefined): void {
+  if (warmState) return;
+  warmAudioType = type ?? null;
+}
+
 /** MenuScene 调用：开始后台暖装并登记落定门（complete 或场景被切走都算落定） */
 export function startBgWarm(scene: Phaser.Scene): void {
   if (warmState) return;
@@ -106,8 +116,8 @@ export function startBgWarm(scene: Phaser.Scene): void {
   loadGameAtlases(scene.load);
   // 游戏内音频批（r6，同 r5 模式）：并入同一暖装队列与落定门——进 Game 前若暖装在飞，
   // GameScene.preload 的兜底声明会整体等门后重跑（已入 cache.audio 的键静默跳过），
-  // 不产生双载竞态；全部 22 请求 < maxParallelDownloads 32，仍全并行。
-  loadAudioPack(scene, AUDIO_GAME);
+  // 不产生双载竞态。r16 移植：BGM 只取预测族的一支（sfx+失败曲恒取），请求更少仍全并行。
+  loadAudioPack(scene, audioGamePackOf(warmAudioType));
   scene.load.start();
 }
 

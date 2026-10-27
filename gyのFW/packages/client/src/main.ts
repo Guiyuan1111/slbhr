@@ -13,7 +13,7 @@ import { Net, type NetCallbacks } from "./net";
 import { copyText } from "./clipboard";
 import { KeyboardInput } from "./input";
 import { TouchControls } from "./touch";
-import { BootScene, bgWarmSettled } from "./scenes/BootScene";
+import { BootScene, bgWarmSettled, setWarmBgmFamily } from "./scenes/BootScene";
 import { MenuScene } from "./scenes/MenuScene";
 import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
@@ -103,15 +103,22 @@ async function fetchLevel(id: string): Promise<LevelData> {
 
 /** 关卡数据客户端缓存（r8 perf 件4）：LevelData 只读（场景构建遍历读，不改写），
  *  同关重进（离房再建/邀请深链重复进出）零重复拉取；失败逐出保证可重试。 */
+// r14 移植（并行性能线）：有界 LRU——换关链无限玩下去 LevelData（关卡 JSON + 图块集
+// 引用）会无界累积；Map 迭代序=插入序，超界删最旧（正在使用的当轮关卡不会是最旧）。
+const LEVEL_CACHE_MAX = 4;
 const levelCache = new Map<string, Promise<LevelData>>();
 
-/** fetchLevel 带缓存（异常不缓存） */
+/** fetchLevel 带缓存（异常不缓存；LRU 上限 4 关） */
 function fetchLevelCached(id: string): Promise<LevelData> {
   let p = levelCache.get(id);
   if (!p) {
     p = fetchLevel(id);
     p.catch(() => levelCache.delete(id));
     levelCache.set(id, p);
+    if (levelCache.size > LEVEL_CACHE_MAX) {
+      const oldest = levelCache.keys().next().value;
+      if (oldest !== undefined && oldest !== id) levelCache.delete(oldest);
+    }
   }
   return p;
 }
@@ -712,6 +719,14 @@ function bindUi(): void {
   bootPhaser();
   // r8 件3：temple.json 预取（enterGame 关键路径 await 恒命中；按 URL 关卡前缀选庙）
   void loadTempleLevels(urlLevel);
+  // r16 移植：?level= 深链时把暖装 BGM 族预判到该关类型（上方预取先入队，本 .then
+  // 微任务恒早于 Boot 装载完成后的 MenuScene 暖装定时器 >120ms，预判总在入队前生效；
+  // 无深链则沿用缺省 general，缺族由 GameScene.preload 兜底补齐——只多取一支绝不缺键）。
+  if (urlLevel)
+    void loadTempleLevels(urlLevel).then((levels) => {
+      const e = levels.find((lv) => String(lv?.filename ?? "").endsWith(`/${urlLevel}.json`));
+      setWarmBgmFamily(e?.type);
+    });
   // R 键请求整关重开（E1；服务端按 phase 把关：won/gameover 才受理）
   // I 键显/收局内联机栏（菜单态不响应，避免输入房间码时误触）
   $("#hud-hot").addEventListener("mouseenter", () => hudTopShow(0)); // 悬停保持显示

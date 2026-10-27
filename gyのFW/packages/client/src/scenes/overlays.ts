@@ -105,7 +105,7 @@ export function buildBoard(scene: Phaser.Scene): Board {
 
 
 /** pusher 点击音（oracle Button 基类统一 `settings.fx && currentSounds.pusher.play()`，
- *  :1088100 区；键在 AUDIO_GAME 清单，Menu 暖装 120ms 后可用，极早点击缺键仅 console 警告） */
+ *  :1088100 区；键在 game 批清单（audio.ts），Menu 暖装 120ms 后可用，极早点击缺键仅 console 警告） */
 export function clickSfx(scene: Phaser.Scene): void {
   if (!getSettings().fx) return;
   scene.sound.play("sfx_pusher");
