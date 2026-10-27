@@ -103,11 +103,12 @@ curl -s -o /dev/null -w 'light_01   %{http_code}\n' $BASE/api/level/light_01   #
 # ⑤ 音频流式路由：200 + application/octet-stream
 curl -s -o /dev/null -w '%{http_code} %{content_type}\n' $BASE/assets/audio/s/MenuMusic
 
-# ⑥ 联机房间端到端（用包内自带的 colyseus.js 客户端开一间真房）
+# ⑥ 联机房间端到端（用包内自带的 colyseus.js 客户端开一间真房；
+#   房间密码强制 4–64 位，空密码/短密码会被 4400 拒绝——故示例用 demo1）
 node --input-type=module -e "
 import { Client } from 'colyseus.js';
 const c = new Client('ws://127.0.0.1:' + (process.env.PORT ?? 2567));
-const room = await c.create('forest', { levelId: 'forest_01', password: '' });
+const room = await c.create('forest', { levelId: 'forest_01', password: 'demo1' });
 console.log('WS OK sessionId=' + room.sessionId);
 await room.leave(true); process.exit(0);
 " 2>&1 | tail -1
