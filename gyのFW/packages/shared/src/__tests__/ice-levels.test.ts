@@ -122,7 +122,8 @@ describe("ice 部 51 关冒烟 + 全量机关直方图", () => {
     }
   });
 
-  it("内核全 51 关建世界+60 步零失败；mechSnapshot timedPushers 数量与解析一致", () => {
+  // 覆盖率插桩下 51 关×60 步超 5s 默认超时（裸跑 ~4s），单独放宽到 30s
+  it("内核全 51 关建世界+60 步零失败；mechSnapshot timedPushers 数量与解析一致", { timeout: 30000 }, () => {
     for (const id of allLevelIds()) {
       const L = loadLevel(id);
       const w = new World(L);
