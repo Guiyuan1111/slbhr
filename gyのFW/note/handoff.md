@@ -11,6 +11,8 @@
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
 **更新**：2026-10-28（0.3.57——#49 落地：决策抽纯模块退役文本契约；r42/r43 复核否决）
+⑤ **#50 侦察（挂账待启动）**：ice 语料 0 条（formal-corpus=forest 13+light 2），且无 ice route 记档——#50 前置=先解 ice 正式通关路线（autosearch 需人工检查点链设计，light_01/02 当年各占独立批次级工作量）。建议首关 ice_02（教学：冰面+TimedPusher 引入）；r17–r40 资产族/Colyseus 0.18 仍待令。
+
 ① **gameGuards（纯模块）**：needsDarkRt/needsDust（create 幂等守卫）+resolveBeamCache（#30 三退出路径）+clockSoundDecision（#22 downState 逐实例起停）——原文本契约对逻辑破坏假绿（#39 审计实测 6/6 PASS），退役后行为断言进 gameGuards.test（10 例逐路径）。
 ② **LEVEL_BGM_KEYS 常量化**（#31→#49）：stopLevelBgm/SHUTDOWN 兜底同源引用，键表 audio-families 钉死。
 ③ **r42/r43 复核否决**：依赖 qoder 资产拆分前置件（r33–r37），main 共享图集布局下无可释放对象——挂账资产族立项（分流表存档）。
