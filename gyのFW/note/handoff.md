@@ -10,6 +10,15 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-10-27（GitHub Issues 全量清偿批 + 0.3.51 发版——开放 issue 清零、TEMP 清库归零）
+① **16 issue 修复关闭附证据**（#32、#34–#48）：ice 雪地碰撞+冰面摩擦移植（det 重锚 r1-ice，4870d55/ec03e06）；won 双断线补发解耦（a7d08e3）；重连 5s 护栏+tryResume 清理（c7a62b0）；冰膜索引同域化+机关视图跨关清空（1a52f66）；客户端低危七件（097a2f7）；占座 DoS 密码前置（6852825）；matchmake GET 放行（afffb28）；bump 脚本跨平台事务化（86b112f）。教训：issue 关闭曾只落一半（8 个开放 0 评论），gh issue list 实查后补齐——"自述不算完成"再次验证。
+② **安全面 #45**（791501c/c3bb076）：Origin allowlist（FW_ALLOWED_ORIGINS）+WS verifyClient+CSP（内联 hash 启动提取）+/api 固定窗口限流+levelExists stat 缓存+房间 onUncaughtException 隔离+staticGz 方法闸门；vite ^6.4.5。
+③ **卫生 #42/#44**：har 6×~153MB 出库+golden gzip 化（tracked 302.0→123.2MiB，2657c44）；vendor 脚本锚文本+sha256 闸门（c7b3f96）；level2 最小 schema 校验，未知 gid warn 限正 gid（负=Tiled 翻转位，1eed572）。
+④ **门禁 #37/#39/#46**：CI 增 coverage/servers-smoke/repo-size（共 8 作业）；覆盖率阈值 ratchet 86.17/85.22/83.39/75.81；干净 checkout 五件（3352efe）；发版口径=CI 绿+本地门禁全绿再 tag（0a26451）。
+⑤ **TEMP 清库收官**（3b823f4）：B 组五目录收容 note/**/tools/breakpoint-r15f｜breakpoint-r25d｜breakpoint-main25｜breakpoint-rpa｜breakpoint-rcm-l0（附收容注明，逐字节核验后删原件；forest_15 复活入口已改指新址）；C 组（rb1/parity-fix/散文件/rcm-l0 node_modules 40MB）直接清；TEMP 归零。
+⑥ **0.3.51 发版**：bump+note/release/0.3.51.md；44 文件 315 测试绿；CI 8 作业绿（run 40486874875）后 tag+Release（无附件）。本条目+注解 tag 为发版四件套补账（原发轻量 tag，已重打注解 tag 同指 c70d0d2）。
+⑦ **下一步**：#50（ice 语料入 kregress）→#49（GameScene 抽纯模块）；候选待裁：Colyseus 0.18（nanoid 根治）/forest_15 批量期重设计/git 历史瘦身（filter-repo 破坏性）。
+
 **更新**：2026-10-27（工程基建批 0.3.50——对比报告改进 A+B 全落，零游戏行为改动）
 - 背景：当日三报告（自审/同行调研/对比，note/report/2026-10-27-*.md）改进路线图批次 A+B 实施并验收完毕。
 - A 批：CI routes-smoke（route-node 采样 forest_01+light_02，light_01 刀锋时序不入样本）；vitest 覆盖率阈值门禁（基线实测 lines85.76/branches74.05/funcs83.05/stmts84.79，autoUpdate 已 ratchet 至当前值）；bump-version.mjs（修 README /m 缺陷后 6 文件试跑验证）；AGENTS.md 约定入仓。

@@ -7,7 +7,7 @@
 
 | 要找什么 | 去哪 |
 |---|---|
-| **新会话/新 AI 开工指令（当前有效）** | [handoff/2026-10-20-session-handoff.md](handoff/2026-10-20-session-handoff.md) |
+| **新会话/新 AI 开工指令（当前有效）** | [handoff.md](handoff.md) 置顶条目（完整开工说明书：[handoff/2026-10-20-session-handoff.md](handoff/2026-10-20-session-handoff.md)） |
 | 项目现状/当前版本 | [../README.md](../README.md) 版本段 |
 | 最新开发动态（开工现状源） | [handoff.md](handoff.md) |
 | 当前挂账（待办/待核/待裁决） | [research/2026-10-behavior-parity/00-INDEX.md §3](research/2026-10-behavior-parity/00-INDEX.md) |
