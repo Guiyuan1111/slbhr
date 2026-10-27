@@ -14,7 +14,7 @@
 ① **gameGuards（纯模块）**：needsDarkRt/needsDust（create 幂等守卫）+resolveBeamCache（#30 三退出路径）+clockSoundDecision（#22 downState 逐实例起停）——原文本契约对逻辑破坏假绿（#39 审计实测 6/6 PASS），退役后行为断言进 gameGuards.test（10 例逐路径）。
 ② **LEVEL_BGM_KEYS 常量化**（#31→#49）：stopLevelBgm/SHUTDOWN 兜底同源引用，键表 audio-families 钉死。
 ③ **r42/r43 复核否决**：依赖 qoder 资产拆分前置件（r33–r37），main 共享图集布局下无可释放对象——挂账资产族立项（分流表存档）。
-④ **0.3.57 发版**：50 文件 356 测试绿、kregress 15/15、browser-room 4/4、typecheck 零错；#49 关闭。
+④ **0.3.57 发版**：50 文件 356 测试绿、kregress 15/15、browser-room 4/4、typecheck 零错；CI 九作业绿后 tag 0.3.57 + Release 已发（Latest）；#49 已关闭。
 
 **更新**：2026-10-28（性能线吸收批四 + 0.3.56 发版——r13 地面缓存/r20 弱网量具/P0：CSP×seedrandom 断链修复）
 ① **P0（91394f2）**：seedrandom 字符串内联+new Function 被 0.3.51 CSP 禁 eval 拦截——GameScene create 炸在 decorate z() 步进，**浏览器建房→Game 全断 0.3.51–0.3.55 五版**（node 侧 e2e 不加载浏览器 bundle、audiofamily 不建房故无人察觉）。修复=官方 2717B 以真实源码模块入编译图；等值=10000 步对拍+parity 锚单测+det forest 48 关位级一致。
