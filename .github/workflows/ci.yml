@@ -41,6 +41,25 @@ jobs:
       - name: Audit (production deps, non-blocking)
         run: npm audit --omit=dev --audit-level=high || true
 
+  coverage:
+    # #39：覆盖率阈值门禁接入 CI（此前仅手工跑，属"自觉门禁"）。CI 环境下
+    # vitest thresholds.autoUpdate 关闭（见 vitest.config.ts）——阈值只读，
+    # ratchet 仍由本地 test:coverage 抬升后人工提交。
+    name: coverage thresholds (v8, read-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.x
+          cache: npm
+          cache-dependency-path: gyのFW/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Test with coverage thresholds
+        run: npm run test:coverage
+
   determinism:
     name: determinism (forest r0-baseline)
     runs-on: ubuntu-latest

@@ -14,7 +14,9 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["packages/shared/src/**", "packages/server/src/**"],
-      thresholds: { autoUpdate: true, lines: 85.76, statements: 84.79, functions: 83.05, branches: 74.05 },
+      // autoUpdate：本地跑 test:coverage 时抬升 ratchet；CI 环境必须只读——
+      // 门禁不得在流水线里回写受控配置（#39）。
+      thresholds: { autoUpdate: process.env.CI !== "true", lines: 85.76, statements: 84.79, functions: 83.05, branches: 74.05 },
     },
   },
 });
