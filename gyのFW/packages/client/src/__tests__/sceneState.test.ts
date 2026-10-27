@@ -68,12 +68,8 @@ describe("SCENE_STATE_KEYS 守卫（防同类新增漏网）", () => {
       ["darkHalo", "darkRt", "dustContainer", "dustMask", "dustMaskSig", "dustWobble", "staticHaloRt", "staticHaloSig"].sort(),
     );
   });
-
-  it("create 的幂等条件仍以引用非空判断（init 归零后语义成立，#29 原契约保留）", () => {
-    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../scenes/GameScene.ts"), "utf-8");
-    expect(src).toContain('if (this.darkRt || this.templeType !== "dark") return;');
-    expect(src).toContain("if (level.beamers.length === 0 || this.dustContainer) return;");
-  });
+  // #49：create 幂等条件的源码文本契约已退役——决策抽 gameGuards.needsDarkRt/needsDust，
+  // 行为断言见 gameGuards.test.ts（文本契约对逻辑破坏假绿，#39 审计实测 6/6 仍 PASS）。
 });
 
 describe("iceViews 索引域契约（light_28 / ice_11 fixture，#40）", () => {

@@ -15,6 +15,7 @@ import {
   AUDIO_BGM_SPEED,
   AUDIO_SFX,
   GAME_BGM_KEYS,
+  LEVEL_BGM_KEYS,
   bgmFamilyOf,
   bgmFinishOf,
   bgmLoopOf,
@@ -77,6 +78,11 @@ describe("族包拆分（r21/r25）：loop 与 terminal 两支", () => {
       for (const [k] of [...bgmLoopOf(f), ...bgmTerminalOf(f)]) union.add(k);
     }
     expect([...union].sort()).toEqual([...GAME_BGM_KEYS].slice().sort());
+  });
+
+  it("LEVEL_BGM_KEYS 恰为三族循环曲键（#31 停音清单同源：漏键=叠播/串音）", () => {
+    expect([...LEVEL_BGM_KEYS]).toEqual(["bgm_level", "bgm_level_speed", "bgm_level_dark"]);
+    expect([...LEVEL_BGM_KEYS].sort()).toEqual(["bgm_level", "bgm_level_dark", "bgm_level_speed"].sort());
   });
 
   it("sfx 覆盖三庙机关声（forest 风/ice 冻融/light 滑块光推时钟）", () => {

@@ -19,7 +19,7 @@ import Phaser from "phaser";
 import { DOOR, ROLES, type Role } from "@fw/shared";
 import type { LevelData, Rect } from "@fw/shared/level2";
 import { windBodyPos } from "@fw/shared/level2";
-import { AUDIO_SFX, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadAudioPack } from "../audio.js";
+import { AUDIO_SFX, LEVEL_BGM_KEYS, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadAudioPack } from "../audio.js";
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
@@ -33,6 +33,7 @@ import { validateSnapshot } from "../snapshotValidation";
 import { MechanismSmoother } from "./mechSmoothing";
 import { PlatformSoundTracker } from "./platformSound";
 import { GroundCache } from "./groundCache";
+import { clockSoundDecision, needsDarkRt, needsDust, resolveBeamCache } from "./gameGuards";
 
 export interface GameInit {
   net: Net;
@@ -505,7 +506,8 @@ export class GameScene extends Phaser.Scene {
           v.clockSnd = null;
         }
       }
-      for (const k of ["bgm_menu", "bgm_level", "bgm_level_speed", "bgm_level_dark", "sfx_clock", "bgm_over", "bgm_finish", "bgm_finish_speed", "sfx_wind", "sfx_door"]) {
+      // bgm_level 三键清单与 stopLevelBgm 同源（LEVEL_BGM_KEYS，#49）
+      for (const k of ["bgm_menu", ...LEVEL_BGM_KEYS, "sfx_clock", "bgm_over", "bgm_finish", "bgm_finish_speed", "sfx_wind", "sfx_door"]) {
         this.sound.stopByKey(k);
       }
     });
@@ -524,9 +526,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** 关卡 BGM 三键全停（#31：暗关曲 bgm_level_dark 曾漏出全部停止路径——关设置、退关、
-   *  死亡、通关、重试、换关都与普通关曲叠播/串音） */
+   *  死亡、通关、重试、换关都与普通关曲叠播/串音）。#49：键清单提 audio.ts 常量模块。 */
   private stopLevelBgm(): void {
-    for (const k of ["bgm_level", "bgm_level_speed", "bgm_level_dark"]) this.sound.stopByKey(k);
+    for (const k of LEVEL_BGM_KEYS) this.sound.stopByKey(k);
   }
 
   /** 终局曲键：speed 关用 _speed 变体（oracle animateFinish @1906276 按 type 选曲；T2——
@@ -1920,31 +1922,26 @@ export class GameScene extends Phaser.Scene {
   private cbBeamers = (b: { state: number; pts: string }, id: string): void => {
     const k = `L${id}`;
     const v = this.beamerViews.get(k);
-    // #30：视图不存在（实体移除/换关）也必须删缓存——drawDarkness/updateDust 把
-    // lastBeamPts 条目一概视为「当前有光束」，残留即黑幕亮带与浮尘掩膜泄漏。
-    if (!v) {
-      this.lastBeamPts.delete(k);
-      return;
-    }
     const on = Number(b.state) === 1;
-    v.g.clear();
-    v.light.setFrame(on ? "beamer_light_on0000" : "beamer_light_off0000");
-    if (!on || !b.pts) {
-      this.lastBeamPts.delete(k);
-      return;
+    if (v) {
+      v.g.clear();
+      v.light.setFrame(on ? "beamer_light_on0000" : "beamer_light_off0000");
     }
-    const path = b.pts.split("|").map((seg) => seg.split(",").map(Number));
-    if (path.length < 2) {
+    // #30/#49：视图不存在（实体移除/换关）、熄灭、折线不合法都必须删缓存——
+    // drawDarkness/updateDust 把 lastBeamPts 条目一概视为「当前有光束」，残留即
+    // 黑幕亮带与浮尘掩膜泄漏。决策抽 gameGuards.resolveBeamCache（单测钉退出路径）。
+    const path = resolveBeamCache(!!v, on, b.pts);
+    if (!path) {
       this.lastBeamPts.delete(k);
       return;
     }
     this.lastBeamPts.set(k, path);
     for (const [width, alpha] of [[10, 0.3], [2, 1]] as const) {
-      v.g.lineStyle(width, v.color, alpha);
-      v.g.beginPath();
-      v.g.moveTo(path[0][0] + PAD, path[0][1] + PAD);
-      for (let i = 1; i < path.length; i++) v.g.lineTo(path[i][0] + PAD, path[i][1] + PAD);
-      v.g.strokePath();
+      v!.g.lineStyle(width, v!.color, alpha);
+      v!.g.beginPath();
+      v!.g.moveTo(path[0][0] + PAD, path[0][1] + PAD);
+      for (let i = 1; i < path.length; i++) v!.g.lineTo(path[i][0] + PAD, path[i][1] + PAD);
+      v!.g.strokePath();
     }
   };
 
@@ -2027,12 +2024,14 @@ export class GameScene extends Phaser.Scene {
       v.maskG.lineTo(cx, cy);
       v.maskG.fillPath();
     }
-    // clock 尾音：downState===0（已松开倒计时独立走）且未在播 → seek((22796-time)/1000) 起播
-    if (Number(ts.downState) === 0) {
+    // clock 尾音（#22/#49）：起停决策抽 gameGuards.clockSoundDecision（downState/state
+    // 驱动；全局 stop 会让多实例齐停齐启可听断续——本决策逐实例判定）
+    const op = clockSoundDecision(on, Number(ts.downState), !!v.clockSnd?.isPlaying, v.timeMs);
+    if (op.op === "play") {
       if (!v.clockSnd) v.clockSnd = this.sound.add("sfx_clock") as Phaser.Sound.WebAudioSound;
-      if (!v.clockSnd.isPlaying) v.clockSnd.play({ seek: Math.max(0, (22796 - v.timeMs) / 1000) });
-    } else if (v.clockSnd?.isPlaying) {
-      v.clockSnd.stop();
+      if (!v.clockSnd.isPlaying) v.clockSnd.play({ seek: op.seek });
+    } else if (op.op === "stop") {
+      v.clockSnd!.stop();
     }
   };
 
@@ -2046,7 +2045,8 @@ export class GameScene extends Phaser.Scene {
   /** 光柱浮尘装配（原版 fillDustLayer @1908496 逐字：ceil(width/10) 粒 BeamDust0000、
    *  随机位/随机转角；几何掩膜=光束路径描线，dust 仅光柱内可见） */
   private buildDust(level: LevelData): void {
-    if (level.beamers.length === 0 || this.dustContainer) return;
+    // #49：幂等守卫抽 gameGuards.needsDust（原文本契约退役，行为等价）
+    if (!needsDust(level.beamers.length, !!this.dustContainer)) return;
     this.dustMask = this.add.graphics().setDepth(5.15);
     this.dustContainer = this.add.container(0, 0).setDepth(5.2);
     const count = Math.ceil(level.widthPx / 10);
@@ -2100,7 +2100,8 @@ export class GameScene extends Phaser.Scene {
 
   /** dark 关黑幕装配（原版 setupDarkness：尺寸=关卡+64、位置 −32、MULTIPLY 覆盖） */
   private ensureDarkRt(level: LevelData): void {
-    if (this.darkRt || this.templeType !== "dark") return;
+    // #49：幂等守卫抽 gameGuards.needsDarkRt（原文本契约退役，行为等价）
+    if (!needsDarkRt(!!this.darkRt, this.templeType)) return;
     if (!this.textures.exists("darkGrad")) {
       // 白径向渐变（0:1 / 0.5:0.3 / 1:0——原版 addColorStop 口径），erase 挖洞用
       const cv = document.createElement("canvas");

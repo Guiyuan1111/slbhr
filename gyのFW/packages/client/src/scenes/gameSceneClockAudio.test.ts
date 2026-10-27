@@ -31,12 +31,9 @@ describe("#22 clock 音局部化+销毁", () => {
     expect(body).not.toContain("clockSnd");
   });
 
-  it("cbTimedPushers 保持 downState 驱动起停", () => {
-    const body = slice("if (Number(ts.downState) === 0)", "private cbSliders =");
-    expect(body).toContain('this.sound.add("sfx_clock")');
-    expect(body).toContain("v.clockSnd.play(");
-    expect(body).toContain("v.clockSnd.stop()");
-  });
+  // #49：downState 起停决策已抽 gameGuards.clockSoundDecision，行为断言见
+  // gameGuards.test.ts（熄灭停/按住停/松开起播含 seek/已播不动，逐路径）——
+  // 源码文本契约退役（对逻辑破坏假绿，#39 审计实测）。
 
   it("SHUTDOWN 逐视图销毁 clockSnd 并把 sfx_clock 纳入兜底停音", () => {
     const body = slice("Events.SHUTDOWN, () => {", "});");
