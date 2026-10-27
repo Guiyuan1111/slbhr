@@ -167,6 +167,8 @@ export interface RoomSnapshotDto {
   levelId: string;
   /** 正计时毫秒（仅 started 步进内累计；客户端 mmss 渲染） */
   timerMs: number;
+  /** 内核帧号镜像（uint16 回绕；syncState 每 tick 同步——补丁流自描述时序，e2e 锚定/诊断用，客户端可忽略，0.3.49） */
+  f: number;
   players: Readonly<Record<string, PlayerSnapshotDto>>;
   diamonds: Readonly<Record<string, DiamondSnapshotDto>>;
   levers: Readonly<Record<string, LeverSnapshotDto>>;
@@ -285,6 +287,7 @@ export const ROOM_SNAPSHOT_FIELDS = {
   phase: "string",
   levelId: "string",
   timerMs: "number",
+  f: "number",
   players: { map: "PlayerState" },
   diamonds: { map: "DiamondState" },
   levers: { map: "LeverState" },

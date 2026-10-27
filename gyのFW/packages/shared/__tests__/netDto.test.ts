@@ -130,16 +130,16 @@ describe("DTO 字段清单 ↔ 服务端注册字段逐一相符", () => {
     });
   }
 
-  it("RoomState: 22 个字段（4 标量 + 17 集合 + 1 引用）名与种类逐一相符", () => {
+  it("RoomState: 23 个字段（5 标量 + 17 集合 + 1 引用）名与种类逐一相符", () => {
     expect(diffSpec(ROOM_SNAPSHOT_FIELDS, registeredFields(state.RoomState))).toEqual({
       dtoMissing: [],
       serverMissing: [],
       typeMismatch: [],
     });
-    expect(Object.keys(ROOM_SNAPSHOT_FIELDS)).toHaveLength(22);
+    expect(Object.keys(ROOM_SNAPSHOT_FIELDS)).toHaveLength(23);
   });
 
-  it("总量锚：两侧字段总数一致且等于 63（2026-10-26 ice TimedPusher：房间+1 集合+TimedPusherState 5 字段 state/frac/downState/x/y；扩字段须同步 DTO 并更新本锚）", () => {
+  it("总量锚：两侧字段总数一致且等于 64（2026-10-26 0.3.49 房间帧号镜像 f：房间+1 标量；扩字段须同步 DTO 并更新本锚）", () => {
     const serverTotal =
       Object.keys(registeredFields(state.RoomState)).length +
       CHILD_NAMES.reduce((n, name) => n + Object.keys(registeredFields(CHILD_CLASSES[name])).length, 0);
@@ -147,7 +147,7 @@ describe("DTO 字段清单 ↔ 服务端注册字段逐一相符", () => {
       Object.keys(ROOM_SNAPSHOT_FIELDS).length +
       CHILD_NAMES.reduce((n, name) => n + Object.keys(CHILD_SNAPSHOT_FIELDS[name]).length, 0);
     expect(dtoTotal).toBe(serverTotal);
-    expect(serverTotal).toBe(63);
+    expect(serverTotal).toBe(64);
   });
 });
 
