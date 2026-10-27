@@ -13,6 +13,7 @@
  * - 断线冻结：phase=paused 等待重连 60s，重连恢复、超时才踢出
  */
 import { isIP } from "node:net";
+import { passwordEquals } from "../passwordCompare.js";
 import type { AuthContext, Client } from "colyseus";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
@@ -402,7 +403,7 @@ export class ForestRoom extends Room<RoomState> {
       const room = matchMaker.getLocalRoomById(roomId) as ForestRoom | undefined;
       if (room) {
         const pw = typeof options === "object" && options !== null ? String((options as { password?: unknown }).password ?? "") : "";
-        if (pw !== room.joinPassword) throw new ServerError(4403, "房间密码错误");
+        if (!passwordEquals(pw, room.joinPassword)) throw new ServerError(4403, "房间密码错误");
       }
     }
     return true;
@@ -418,7 +419,8 @@ export class ForestRoom extends Room<RoomState> {
    *  现无条件执行；实例级 onAuth 本就被框架忽略（启动时明确告警），不再保留该名字。） */
   private assertPassword(options?: JoinOptions | true): void {
     const pw = typeof options === "object" && options !== null ? String(options.password ?? "") : "";
-    if (pw !== this.roomPassword) throw new ServerError(4403, "房间密码错误");
+    // 比较走时序安全摘要（2026-10-27 审计 P3-15），语义不变：错/缺/空一律 4403
+    if (!passwordEquals(pw, this.roomPassword)) throw new ServerError(4403, "房间密码错误");
   }
 
   onJoin(client: Client, options?: JoinOptions | true) {
