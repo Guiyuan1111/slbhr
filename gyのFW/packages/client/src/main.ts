@@ -469,7 +469,26 @@ async function tryResume(): Promise<void> {
   myRole = resumed.myRole;
   if (myRole) $("#hud-role").textContent = myRole === "fireboy" ? "你扮演：火娃" : "你扮演：水娃";
   fillHudRoom(resumed.room.roomId);
-  await enterGame();
+  try {
+    await enterGame();
+  } catch (e: any) {
+    // #41-A：回座后半程（/api/level、图块集、Phaser 启动）失败不得成为 unhandled
+    // rejection——复用 start() 的清理口径：释放输入与房间连接（防旧连接泄漏）、
+    // 清已失效令牌、退回菜单面板并给出明确提示（index.html 的 __errs 只是自动化口，
+    // 不是用户反馈出口）。
+    setBusy(false);
+    touch?.dispose();
+    touch = null;
+    keyboard?.destroy();
+    keyboard = null;
+    net?.leave();
+    net = null;
+    Net.clearSavedResume();
+    if (!selectedLevel) selectedLevel = DEFAULT_LEVEL_ID;
+    $("#menu-level").textContent = `已选关卡：${selectedLevel}`;
+    $("#menu").classList.remove("hidden");
+    show(e?.message ? `恢复失败：${e.message}，请重新创建或加入房间` : "恢复失败，请重新创建或加入房间");
+  }
 }
 
 /** Net 事件回调（start() 与刷新恢复 tryResume 共用；全部只依赖模块级状态） */

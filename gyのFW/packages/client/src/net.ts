@@ -75,6 +75,31 @@ export function isConsentedClose(code: number): boolean {
 
 /** 断线重连退避序列（毫秒）：首试 +3 次重试，总窗 ~7s+尝试耗时（服务端席位窗默认 60s） */
 const RECONNECT_DELAYS_MS = [0, 1000, 2000, 4000];
+/** 单次重连尝试超时（#41-B）：半开网络下 vendor reconnect 可无限挂起，无超时则退避
+ *  循环失效、onDisconnect 永不触发、玩家永久卡「正在重连」且耗尽服务端席位窗。 */
+export const RECONNECT_ATTEMPT_TIMEOUT_MS = 5000;
+
+/**
+ * 单次重连尝试 + 超时护栏（#41-B，tryResume 同法收敛复用）。
+ * Promise.race 超时不会取消底层 reconnect：迟到 resolve 的房间由本函数主动 leave(true)，
+ * 防孤儿连接；超时向调用方抛错以进入下一次退避。
+ */
+export async function reconnectAttempt(
+  client: Pick<Client, "reconnect">,
+  token: string,
+  timeoutMs = RECONNECT_ATTEMPT_TIMEOUT_MS,
+): Promise<Room> {
+  const attempt = client.reconnect(token);
+  try {
+    return await Promise.race([
+      attempt,
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("重连超时")), timeoutMs)),
+    ]);
+  } catch (e) {
+    attempt.then((room) => room.leave(true)).catch(() => {});
+    throw e;
+  }
+}
 
 export class Net {
   room!: Room<any>;
@@ -186,8 +211,9 @@ export class Net {
         }
         cb.onReconnecting?.(attempt, max);
         try {
-          // reconnect 返回的是新 Room 实例：必须换绑 net.room 并重挂全部监听
-          const room = await this.client.reconnect(token);
+          // reconnect 返回的是新 Room 实例：必须换绑 net.room 并重挂全部监听。
+          // #41-B：单次尝试带超时（reconnectAttempt），半开网络不再永久挂起
+          const room = await reconnectAttempt(this.client, token);
           if (this.leaving) {
             // 重连期间本端已主动离开：关掉刚拿到的房间，避免留下孤儿连接
             room.leave(true);
@@ -210,6 +236,15 @@ export class Net {
   }
 
   // ---- 重连令牌持久化（issue #5 H-04：同标签页刷新后可尝试回座）----
+
+  /** 清除持久化恢复令牌（#41-A：回座后半程失败时调用——连接已关，令牌不会再有效） */
+  static clearSavedResume(): void {
+    try {
+      sessionStorage.removeItem(RESUME_KEY);
+    } catch {
+      /* 存储不可用时无持久化可言 */
+    }
+  }
 
   private saveResume(): void {
     const token = (this.room as unknown as { reconnectionToken?: string }).reconnectionToken;
@@ -247,15 +282,10 @@ export class Net {
     const client = new Client(Net.serverUrl());
     const net = new Net();
     net.client = client;
-    // Promise.race 超时不会取消底层 reconnect：先持有原 promise，迟到 resolve 时关房
-    const reconnectPromise = client.reconnect(saved.token);
+    // #41-B：超时护栏统一走 reconnectAttempt（迟到 resolve 的房间由其关房）
     try {
-      net.room = await Promise.race([
-        reconnectPromise,
-        new Promise<never>((_, rej) => setTimeout(() => rej(new Error("重连超时")), timeoutMs)),
-      ]);
+      net.room = await reconnectAttempt(client, saved.token, timeoutMs);
     } catch {
-      reconnectPromise.then((room) => room.leave(true)).catch(() => {});
       // 隐私模式下 sessionStorage 可能直接抛 SecurityError，不能让清理失败盖过返回值
       try {
         sessionStorage.removeItem(RESUME_KEY);
