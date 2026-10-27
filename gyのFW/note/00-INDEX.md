@@ -48,5 +48,5 @@
 | 自验收阶梯（L0–L4） | [self-acceptance.md](self-acceptance.md) |
 | 联机架构说明 | [multiplayer-architecture.md](multiplayer-architecture.md) |
 | Ubuntu 服务器档案 | [ubuntu-server-profile.md](ubuntu-server-profile.md) |
-| 关卡通关路线（顶层散件） | forest01/08/15/23/26-route.md、forest22-route-wip.md |
+| 关卡通关路线（顶层散件） | forest01/08/15/23/26-route.md、forest22-route-wip.md、light01-route.md、light02-route.md |
 | 开发日志归档（10-05 起逐日） | [handoff/](handoff/)（archive-2026-10.md + 主题档） |

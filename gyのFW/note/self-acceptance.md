@@ -58,6 +58,7 @@
    服务端 [phase] 锚定 + 输入队列排水）→ forest_01 repeat≥3 ALL PASS。**剩余工作**：
    其余 47 关按「原语库+内核初排 → optimize ±1f 硬化 → validate → 门禁」批量生产
    （批次计划见 note/plans/level-batches.md）；产出后将「48 关全部可真实通关」整体纳入 L3 必过清单。
+   **light 部进度（2026-10-26）**：light_01/light_02 正式路线已入库（route-node 真服各 3/3 PASS，0.3.49），余 38 关未产线；light_01 接线考古与编排见 note/light01-route.md。
 2. 其余关卡的机关级旅程用例（拉杆/推箱/风区/摆绳在体交互）目前依赖 L1+L2，未逐一在体。
 3. 音频层（播放与否/音量）无自动化断言，仅实玩抽检。
 4. 触屏（Touch* 虚拟键）`touch.mjs` 已覆盖三键/ tap/按住/桌面豁免（自动化侧）；真机多点与 iOS Safari 实机手感仍靠人工抽检。
@@ -76,5 +77,6 @@
 - `scripts/e2e/routetool/validate.mjs`：内核复核 CLI（WIN/FAIL 退出码 + 逐帧 trace）。
 - `scripts/e2e/routetool/optimize.mjs`：±1f 容忍硬化器（成组平移坐标下降 + 最优快照回滚）。
 - `scripts/e2e/route.mjs`：真实门禁 runner——服务端 `[phase]` 墙钟锚定、mono↔wall 桥接、双页合并时间轴精准派发、0 钩子断言 phase=won。
+- `scripts/e2e/route-node.mjs`（0.3.49）：纯 node 真服回放器——colyseus.js 双客户端建/进房 + 服务端 stdout 墙钟锚（ready+2000）+ node 定时器链（±1ms，派发 p50=2ms）；回放断言全在服务端、浏览器不参与判定。light_01/light_02 首批以此验收（各 repeat3 3/3 PASS，offset=-10）。
 - 服务端输入队列（335b5e7）：消息按到达墙钟戳入队、每步按意图跨度排水——真实服务端逐事件精确复现内核时序的前提。
 - 观测纪律：FW_DUMP 等诊断逐帧落盘必须缓冲（30 行/写、分段），禁止逐帧同步 IO 扰动节拍；门禁本体 0 钩子。

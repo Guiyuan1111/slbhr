@@ -31,7 +31,7 @@ Pulley（滑轮）/ Roman / Wind（风机关）/ Window——外加 world 层的
 | 物理位级比对 | `node --import tsx benchmark/perf-determinism.mjs --compare <基线>` | det 48/48 门禁，改内核必跑 |
 | 视觉差分 | `benchmark/visual-diff.mjs`；任意关批量用档卷收容件 `capture-one.mjs`（已参数化） | 双端像素比对（页内 480×360 灰度+平移搜索） |
 | 动画保真 | `benchmark/fidelity-anim.mjs` / `fidelity-score.mjs` | 帧级动画比对 |
-| 通关门禁 | `scripts/e2e/route.mjs`（routetool/kernel.mjs 内核回跑） | repeat≥3 ALL PASS 才算关卡通关 |
+| 通关门禁 | `scripts/e2e/route-node.mjs`（0.3.49 起：纯 node 真服回放主力，colyseus.js 双端 + 真服 stdout 锚点）；`scripts/e2e/route.mjs`（内核回跑）作内核侧交叉验证 | 真服 repeat≥3 ALL PASS 才算关卡通关 |
 | 联机场景 | `scripts/e2e/journey.mjs`（+deathretry/pause/rejoin/rolesplit/touch） | 7/7+4/4+9/9+3/3+6/6+6/6 |
 | 性能 | `benchmark/perf-*.mjs` 十余件 | 容量/步进/GC/序列化等 |
 
