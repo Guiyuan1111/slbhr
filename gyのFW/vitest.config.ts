@@ -9,8 +9,8 @@ export default defineConfig({
     pool: "threads",
     // 覆盖率阈值门禁（对比报告 #2 / plans/2026-10-27-next-improvements.md A2）：
     // 只覆盖逻辑层（shared/server），client 为渲染重载层不设阈；
-    // 基线 2026-10-27 实测 lines 82/branches 69/funcs 78/stmts 81，
-    // 阈值=基线-3(行/语句)、-5(函数/分支) 起步，autoUpdate 抬升 ratchet。
+    // 首次基线 2026-10-27 实测 lines 82/branches 69/funcs 78/stmts 81；
+    // 阈值已随 autoUpdate ratchet 至 85.76/84.79/83.05/74.05（当前零余量口径，#46 注释同步）。
     coverage: {
       provider: "v8",
       include: ["packages/shared/src/**", "packages/server/src/**"],

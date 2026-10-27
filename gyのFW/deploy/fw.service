@@ -1,7 +1,7 @@
 # systemd 单元样例（I-01）。**可选，按需部署**——本项目定位两人私下游玩，
 # 默认 start.bat/start.sh 直跑即可；只有需要开机自启/崩溃自动拉起/标准停机语义时才用。
 #
-# 安装（必改下面两处占位符再 cp——DEPLOY.md §4 同款示例值）：
+# 安装（必改 User/WorkingDirectory 两处占位符再 cp；内网真机另改 FW_HOST=0.0.0.0——三处口径与 DEPLOY.md §4 一致）：
 #   sed -i 's|User=fw$|<你的用户名>|; s|WorkingDirectory=.*|WorkingDirectory=<仓库内 gyのFW 绝对路径>|' deploy/fw.service
 #   sudo cp deploy/fw.service /etc/systemd/system/
 #   sudo systemctl daemon-reload
@@ -21,8 +21,13 @@ Type=simple
 # 占位符（#27）：示例值非缺省可用——不改直接 start 会失败，属有意设计
 User=fw
 WorkingDirectory=/home/fw/fw/gyのFW
-# npm start = tsx packages/server/src/index.ts（tsx 为运行时依赖，omit=dev 可用）
-ExecStart=/usr/bin/npm start
+# node 直连（M-04 单进程口径）：tsx 经 WorkingDirectory 下的 node_modules 解析；
+# 不经 npm 启动器，SIGTERM 直达服务进程，停机语义无中间层
+ExecStart=/usr/bin/node --import tsx packages/server/src/index.ts
+# 加固（#46）：服务进程不提权、文件系统只读（ WorkingDirectory 例外由默认留写）、私有 /tmp
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
 Environment=PORT=2567
 # 私用默认只绑本机；局域网真机改 0.0.0.0（手机可连，勿暴露公网）
 Environment=FW_HOST=127.0.0.1
