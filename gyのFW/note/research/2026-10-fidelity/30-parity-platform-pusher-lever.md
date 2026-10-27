@@ -3,10 +3,10 @@
 > 槽：rpa（repo-parity-A）。日期 2026-10-15。只读审计，未改任何 .ts/.mjs 源码。
 > 事实源：`Fireboy-and-Watergirl/output/A/js/init.eb02fbdab2aa1d24.js`，**当前版本 2,218,873 B**（mtime 2026-10-15）。
 > ⚠ 该文件与 05 号文档提取时（2,273,196 B）不是同一份——**本文所有 @偏移 只对当前版本有效**，与 05 号的偏移不可互查。
-> 定位法：`python3` `re.finditer(r'define\("States/Level/Devices/…"')` + 子串 find。切片留存 `TEMP/rpa/*.js`（Device/BoxedDevice/Lever/Pusher/MovingPlatform/BoxPrototype，gitignore 内）。
+> 定位法：`python3` `re.finditer(r'define\("States/Level/Devices/…"')` + 子串 find。切片收容于 `note/research/2026-10-fidelity/tools/breakpoint-rpa/*.js`（Device/BoxedDevice/Lever/Pusher/MovingPlatform/BoxPrototype；2026-10-27 TEMP 清库收容，已入库）。
 > 我方实现：`packages/shared/src/kernel/{mechanisms,build,b2,world}.ts`、`packages/shared/src/level2.ts`。
-> 运行时探针：`TEMP/rpa/probe{,2,3}.mts`（`npx tsx` 可复跑，本文 §5 引用其输出）。
-> 〔2026-10-27 收容更新〕TEMP/rpa 已清库，切片与四探针收容 `tools/breakpoint-rpa/`（本目录下）；文中 TEMP/rpa 复现路径按新址替换。
+> 运行时探针：`note/research/2026-10-fidelity/tools/breakpoint-rpa/probe{,2,3}.mts`（`npx tsx` 可复跑，本文 §5 引用其输出）。
+> 〔2026-10-27 收容更新〕TEMP/rpa 已清库，切片与四探针收容 `tools/breakpoint-rpa/`（本目录下）；文中 TEMP/rpa 复现路径已按新址替换。
 
 **结论速览：P0 = 0，P1 = 2（其中 1 条为已知跨机制时基），P2 = 11。** 本槽四机制的全部物理语义（关节类型/锚点/限位/马达/密度/摩擦/过滤/坐标换算/组联动）与原版逐参数一致；唯一实测偏差是转臂平台限位过冲（oracle 有逐帧硬钳、内核无），见 §5-D1。
 
@@ -131,8 +131,8 @@ oracle：`define("States/Level/Devices/MovingPlatform" @1675269`。**直接继�
 ### P1（边缘参数/工况级偏差）
 
 - **D1 转臂平台限位过冲（oracle 有逐帧硬钳，内核无）**
-  oracle @1679971-1680049 每帧把越限转臂 `SetAngle(∓limit)` 传送回限位点；内核仅靠 revolute limit 软约束。实测（TEMP/rpa/probe2.mts，forest_07 dtheta=90+offsetY=−1）：state1 马达 +2 持续压向上限，1.5s 后体角 **−91.257°** 并稳态维持；oracle 同工况每帧钳回 **−90°**。差 ≈1.26°（1.5m 臂尖 ≈3.3cm≈1px），14 个转臂平台（forest_07/18/27/27_1/30/31）全部受影响；mechSnapshot 的 angle 同步带此偏差。受力工况（角色站臂）下过冲幅度还受载荷影响，两侧不再逐帧一致。
-  复现：`npx tsx TEMP/rpa/probe2.mts`（构建 forest_07→找 isRevolute 平台→idle 1s→state=1+signalApply→step 90→打印体角）。修复方向（供 5.3 裁决，本文不动源码）：在平台每步 pre-Step 或 post-Step 补「revolute 且越限时 body.SetAngle(−越限端)」钳制，注意只限 revolute（prismatic 在 oracle 被存在性短路）。
+  oracle @1679971-1680049 每帧把越限转臂 `SetAngle(∓limit)` 传送回限位点；内核仅靠 revolute limit 软约束。实测（tools/breakpoint-rpa/probe2.mts，forest_07 dtheta=90+offsetY=−1）：state1 马达 +2 持续压向上限，1.5s 后体角 **−91.257°** 并稳态维持；oracle 同工况每帧钳回 **−90°**。差 ≈1.26°（1.5m 臂尖 ≈3.3cm≈1px），14 个转臂平台（forest_07/18/27/27_1/30/31）全部受影响；mechSnapshot 的 angle 同步带此偏差。受力工况（角色站臂）下过冲幅度还受载荷影响，两侧不再逐帧一致。
+  复现：`npx tsx note/research/2026-10-fidelity/tools/breakpoint-rpa/probe2.mts`（构建 forest_07→找 isRevolute 平台→idle 1s→state=1+signalApply→step 90→打印体角）。修复方向（供 5.3 裁决，本文不动源码）：在平台每步 pre-Step 或 post-Step 补「revolute 且越限时 body.SetAngle(−越限端)」钳制，注意只限 revolute（prismatic 在 oracle 被存在性短路）。
 - **D2 求解时基：oracle 可变 dt（min(0.04, elapsed)，useElapsedTime=true @1896600/@1896799），内核固定 1/60**
   跨机制通项（非本槽独有），world.ts 头注/金轨迹流程已按「喂录制 dt 序列」管理。列此存档：任何「固定 60Hz 假设」下的马达行程/弹簧平衡在 oracle 慢帧（dt 到 40ms）会有亚厘米级差异。复现：fidelity-score 换可变 dt 序列对拍。
 
@@ -176,7 +176,7 @@ oracle：`define("States/Level/Devices/MovingPlatform" @1675269`。**直接继�
 
 ## 附：证据与产出清单
 
-- oracle 切片（本地，gitignore）：`TEMP/rpa/{Device,BoxedDevice,Lever,Pusher,MovingPlatform,BoxPrototype}.js`
-- 探针（可复跑）：`TEMP/rpa/probe.mts`（平移平台位移/质量）、`probe2.mts`（转臂限位过冲=P1-D1、拉杆静置）、`probe3.mts`（隔离拉杆平衡位形）
+- oracle 切片（2026-10-27 收容入库）：`note/research/2026-10-fidelity/tools/breakpoint-rpa/{Device,BoxedDevice,Lever,Pusher,MovingPlatform,BoxPrototype}.js`
+- 探针（可复跑）：`…/tools/breakpoint-rpa/probe.mts`（平移平台位移/质量）、`probe2.mts`（转臂限位过冲=P1-D1、拉杆静置）、`probe3.mts`（隔离拉杆平衡位形）
 - 关联既有验证：kernel2.test.ts:337（拉杆不自翻）、:355（踩按钮→平台联动）、:327（48 关构建冒烟）；48-level-behavior.test.ts（逐关 10s 浸泡）
 - 本审计未修改任何源码；工作树中 mechanisms.ts/level2.ts 的未提交改动属并行槽（windWidth/box 中心矫正），其 BoxedDevice 公式与本档 §1 推导互证一致。

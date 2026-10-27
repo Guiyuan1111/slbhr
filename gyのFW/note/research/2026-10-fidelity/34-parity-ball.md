@@ -187,7 +187,7 @@ ball#0 objid=26 raw=(1056,128)
 
 ## 附：证据与产出清单
 
-- oracle 切片（本地，gitignore）：`TEMP/rb1/{Ball,BoxedDevice,Device}.js`
+- oracle 切片 `TEMP/rb1/{Ball,BoxedDevice,Device}.js`——已随 TEMP/rb1 整体删除（见头部〔2026-10-27 注〕），可按本档定位法自 oracle 再生
 - 探针（可复跑，已入库）：`note/evidence/forest_08/tools/rb1-ball-parity-probe.mjs`（commit d6ee401）
 - 本审计未修改任何源码；修复类 P2（rotation/damping 解析、params.BALL 常量）留主会话裁决
 - 关联既有验证：33 号档 §2.2（箱/球 portal 感应圆逐参一致）、48-level-behavior.test.ts（含 13 关的逐关浸泡）、

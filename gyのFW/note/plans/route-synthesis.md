@@ -16,7 +16,7 @@
               --level <id> --scan 1 --jobs 4——枚举单方向刀锋预移 1f 至 WIN 孪生盆位重降；
               forest_01 实证：单盆位下降收敛 ≠ 全局不可达，预移一跳即 ±1f fatal 0/222；
               注意复合预移混沌耦合，工具已按逐个预移+独立全局验收实现）
-5. 门禁     PATH="$PWD/TEMP/node:$PATH" node scripts/e2e/route.mjs --level <id> --repeat 3 --port <分配端口>
+5. 门禁     node scripts/e2e/route.mjs --level <id> --repeat 3 --port <分配端口>
 ```
 
 验收 = 门禁 repeat≥3 ALL PASS（0 调试钩子；`FW_DEBUG_*` 在门禁中**禁止**）。硬化/复核须在最终内核上跑
