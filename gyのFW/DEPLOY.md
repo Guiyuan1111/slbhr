@@ -1,12 +1,50 @@
 # gyのFW 第一部（forest）服务器部署指南
 
-> **本包版本**：见 `package.json` 的 `version`（1.0.x 线）。
-> **给接手 AI 的操作协议**：按 §1→§2→§3→§4→§5 顺序执行，§5 每一条都必须实际运行命令并核对"预期"后才算部署完成；任何一步不符先查 §7 故障表，仍无法解决就向宿主报告现场输出，**不要修改包内代码或配置来"绕过"验收**。§9 的边界声明属于预期行为，不是故障。
+> **本包版本**：见 `package.json` 的 `version`（1.x 线）。
+>
+> **给 AI / 运维的唯一入口**：解包后执行 `sudo ./deploy.sh`。它会自检环境、生成 systemd
+> 服务、起服、并跑完整验收（六步 + 真开局双人 patch），全绿即部署完成。**不需要读下面的
+> 章节也能部署**；§1–§9 是手册与故障排查，仅在 deploy.sh 报错时查阅。
+>
+> 手工部署或需要理解细节时按 §1→§5 顺序执行，§5 每条都必须实际运行并核对"预期"；任何
+> 一步不符先查 §7 故障表，仍无法解决就向宿主报告现场输出，**不要修改包内代码或配置来
+> "绕过"验收**。§9 的边界声明属于预期行为，不是故障。
 
-## 0. 本包是什么
+## 0. 一键部署（推荐，也是 AI 接手的最短路径）
+
+```bash
+sha256sum -c gy-fw-forest-*.tar.gz.sha256   # ① 校验包完整性
+tar -xzf gy-fw-forest-*.tar.gz              # ② 解包
+cd gy-fw-forest-*/                           # ③ 进目录
+sudo ./deploy.sh                            # ④ 部署 + 自验收（一条命令到底）
+```
+
+`deploy.sh` 的行为：
+
+| 参数 | 作用 |
+|---|---|
+| 默认（无参数） | 装成 systemd 服务 `gy-fw-forest`，监听 `127.0.0.1:2567`（仅本机，安全缺省） |
+| `--public` | 改监听 `0.0.0.0`，对外可直连（会提示放行防火墙） |
+| `--port 8080` | 换端口 |
+| `--trust-proxy` | 置于 nginx 反代之后（限流取真实 IP） |
+| `--origins https://a.com` | 跨域白名单（反代换域/嵌入页时需要） |
+| `--no-service` | 只前台试跑 + 验收，不装服务 |
+| `--verify-only` | 服务已在跑，只跑验收 |
+
+退出码 0 = 部署完成且验收全绿；非 0 会打印失败项与对应日志命令。
+
+**验收内容**（`scripts/verify.mjs`，随包出厂）：① `/healthz` ② 首页 ③ 关卡清单与包内
+实装逐一致 ④ 本部首关 200 与别部关卡 404 ⑤ 音频流 ⑥ 建房 ⑦ **双人到齐进 started**
+⑧ **started 期 patch 持续在流** ⑨ 浏览器建房进 Game（有 playwright 时）。
+
+> ⑦⑧ 是 1.0.1 新增的**必过项**。1.0.0 的第 ⑥ 步只 `create→leave`，房间状态从未广播过
+> 增量，「能起服、不能开局」的崩溃因此完全隐形（详见 #51 复盘）。缺这两条，验收再绿也
+> 不代表能玩。
+
+## 0.1 本包是什么
 
 - 《Fireboy & Watergirl》复刻（gyのFW）**仅第一部森林神庙**的可部署服务端：Node 单进程同时服务 HTTP 静态资源与 WebSocket 联机（Colyseus 同端口），48 关（forest_01–47 + forest_01 教学副本）+ 双人联机房间（房间名 `forest`）。
-- 包内已含**预装好的生产依赖**（`node_modules/`，linux-x64）与**已构建的客户端**（`packages/client/dist/`）——**目标机不需要 npm、不需要构建工具链，解包即可运行**。
+- 包内已含**预装好的生产依赖**（`node_modules/`，linux-x64）、**已构建的客户端**（`packages/client/dist/`）与**已预转译的服务端 JS**——**目标机不需要 npm、不需要 tsx、不需要构建工具链，解包即可运行**。
 - 明确**不含**：第二部（light 灯光神庙）、第三部（ice 冰雪神庙）的关卡/图集/专属音频；开发源码测试；构建链。深链访问 `?level=light_xx` 等会得到 404，这是分发边界，见 §9。
 
 ## 1. 前置条件（逐条自检）
@@ -20,12 +58,13 @@
 
 > node_modules 内含平台二进制（esbuild 等），仅保证 linux-x64。其他平台/架构：在有网环境于包根目录执行 `npm ci --omit=dev` 重装后再用。
 
+
 ## 2. 快速起步（前台试跑）
 
 ```bash
-sha256sum -c gy-fw-forest-1.0.1.tar.gz.sha256     # 校验（1.0.x 按实际版本号）
-tar -xzf gy-fw-forest-1.0.1.tar.gz
-cd gy-fw-forest-1.0.1
+sha256sum -c gy-fw-forest-1.0.2.tar.gz.sha256     # 校验（1.0.x 按实际版本号）
+tar -xzf gy-fw-forest-1.0.2.tar.gz
+cd gy-fw-forest-1.0.2
 node packages/server/src/index.js                 # 前台起服（默认 127.0.0.1:2567）
 ```
 
@@ -68,7 +107,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 # ↓↓↓ 按实际部署路径与端口修改这两行 ↓↓↓
-WorkingDirectory=/opt/gy-fw-forest-1.0.1
+WorkingDirectory=/opt/gy-fw-forest-1.0.2
 Environment=PORT=2567
 # 对外直连时加：Environment=FW_HOST=0.0.0.0
 # 反代后加：Environment=FW_TRUST_PROXY=1
@@ -80,7 +119,7 @@ RestartSec=3
 User=nobody
 NoNewPrivileges=true
 ProtectSystem=strict
-ReadWritePaths=/opt/gy-fw-forest-1.0.1
+ReadWritePaths=/opt/gy-fw-forest-1.0.2
 
 [Install]
 WantedBy=multi-user.target
@@ -91,6 +130,8 @@ systemctl status gy-fw-forest --no-pager
 ```
 
 日志：`journalctl -u gy-fw-forest -f`。停机：`sudo systemctl stop gy-fw-forest`（进程内注册了 SIGTERM 优雅停机，房间会先回收）。
+
+> 上面这段是**手工等价物**。用 `sudo ./deploy.sh` 时 unit 自动生成（路径按实际解包目录填写），不需要手改任何一行。
 
 ## 5. 部署验收清单（AI 逐条执行，全绿才算完成）
 
@@ -144,9 +185,8 @@ await b.leave(true); await a.leave(true); process.exit(0);
 #   若 phase≠started 或 patches 不增长，即为「能起服不能开局」——查 §7。
 ```
 
-> **推荐一次跑完 ①–⑥**：`node scripts/e2e/deploy-smoke.mjs --base $BASE`（脚本随源码仓库分发，
-> 不在部署包内）。它会自动断言 ①③⑥ 的等价项、服务端无 schema 编码崩溃、进程存活，
-> 有 playwright 时还会真开浏览器建房进 Game 并断言 pageerror=0。
+> **推荐一次跑完 ①–⑥**：包内 `node scripts/verify.mjs --base $BASE` 即为上述全量的
+> 自动版（含双人 started 与 patch 断言），`deploy.sh` 第 4 步调的就是它。
 
 ## 6. 对外服务
 
@@ -188,7 +228,7 @@ server {
 
 ## 8. 升级与回滚
 
-- **升级**：新版本包解到并列目录（如 `/opt/gy-fw-forest-1.0.1/`）→ 修改 unit 的 `WorkingDirectory`/`ReadWritePaths` → `daemon-reload && restart`。停机窗口=重启秒级；房间状态不持久（对局中断即散）。
+- **升级**：新版本包解到并列目录（如 `/opt/gy-fw-forest-1.0.2/`）→ 修改 unit 的 `WorkingDirectory`/`ReadWritePaths` → `daemon-reload && restart`。停机窗口=重启秒级；房间状态不持久（对局中断即散）。
 - **回滚**：`WorkingDirectory` 改回旧目录 → `daemon-reload && restart`。
 
 ## 9. 分发边界声明（预期行为，非故障）

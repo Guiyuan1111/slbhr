@@ -10,6 +10,13 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-10-28（1.0.2——一键部署闭环 + 三部分发共用打包链）
+① **交付形态**：包内新增 `deploy.sh`（自检→生成 systemd unit→起服→验收，一条命令到底）与 `verify.mjs`（9 项：healthz/首页/关卡清单==包内实装/本部首关 200+别部 404/音频流/建房/双人 started/patch 持续/浏览器进 Game）。服务名 `gy-fw-<部>`、端口缺省、本部首关、成员边界全部由包内 `data/` 自动认定，三种包共用同一份脚本。实测干净目录 `./deploy.sh --no-service` 全绿。
+② **打包链参数化**：`package-deploy.mjs --temple forest|light|ice`，剪裁集由该部 `temple.json` 清单推导（不再硬编码文件名；清单对别部教学关的交叉引用属本部内容、保留）；`--plan` 只打印计划。首关推导收口到 `scripts/first-level.mjs`（处理「首关在 tutorials」「ice 清单 initial 指别部关」两陷阱），打包器/verify/CI 三处复用。
+③ **修 1.0.1 验收假阳性**：③ 原按 `forest_` 前缀判，对 light/ice 包会误报（其清单合法含 forest_01）→ 改为「服务端清单 == 包内实装」，多则夹带、少则漏剪。
+④ **CI**：release-asset tag 守卫扩为 `1.*/2.*/3.*`，主线号→分部映射写死 Guard 内，解包复验新增「别部 data/图集不得残留」；新增 drift-check.yml 周检各 release/* 相对 main 的落后量（阈值 20 提交/7 天）——补 #51 里「分发线安静腐烂」的流程缺口。
+⑤ **实测**：forest 包 48 关全绿；light 包 41 关用同一套脚本全绿（含干净目录一条命令部署），包内确认无别部 data/图集、无 .ts、无 __tests__。版本 1.0.2 六处一致。
+
 **更新**：2026-10-28（1.0.1——分发线开局必崩根治 + 真开局验收门禁；#51）
 ① **根因三层**：①编译链——包发 TS + `node --import tsx`，tsx 4.23.15 的 useDefineForClassFields 归一化只在 CJS 钩子、ESM loader 不读，包内又缺 tsconfig → `x!: number` 编成原生 class field 覆盖 schema 访问器 → 首次增量广播 encodeValue 崩、整进程带崩；②分发线停在 0.3.55，缺 0.3.56 的 seedrandom CSP P0（浏览器也进不去 Game）；③§5 第⑥步只 create→leave，状态从未广播增量，崩溃路径零覆盖。复盘 note/issues-2026-10-20/51-deploy-startup-crash.md。
 ② **修复**：state.ts 64 字段改 `declare`（任何转译器都不产运行时字段，根治）；package-deploy 改 esbuild 逐文件预转译（不打包→import.meta 锚点天然正确），目标机直跑 .js 不需 tsx；新增 schemaSelfCheck 启动期 fail-fast（坏产物实测报 64 项）。
