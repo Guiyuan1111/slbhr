@@ -548,8 +548,8 @@ const SEGI = {
       //   登级须退跑到 x60-80 助跑带速起跳 runJump(1,~90,25)（apex ~150 落首级）。fb 首件 waitPx
       //   锚 b1 按压后慢速穿池（按压 f861 起冻 416f）；wg 压板 sleep(30) 锚 entry/冻结后跟进。
       fb: [spec("waitPx", "wg", 105, 170), spec("sleep", 45), spec("walkTo", -1, 300, 999),
-        spec("walkTo", -1, 70, 60), spec("runJump", 1, 90, 25), spec("sleep", 10)],
-      wg: [spec("sleep", 30), spec("walkTo", -1, 70, 60), spec("runJump", 1, 90, 25), spec("sleep", 10)],
+        spec("walkTo", -1, 80, 60), spec("runJump", 1, 80, 25), spec("sleep", 10)],
+      wg: [spec("sleep", 30), spec("walkTo", -1, 80, 60), spec("runJump", 1, 80, 25), spec("sleep", 10)],
     },
     vocab: {
       fb: [spec("waitPx", "wg", 105, 170), spec("waitPx", "wg", 100, 180),
@@ -570,9 +570,9 @@ const SEGI = {
       // I3b 首级(604@x132-160)→deck-476(x192+)：加速横穿首级 walkTo(1,140,999) 带速至东缘
       //   runJump(1,152,12)（弧穿三角斜瓦 x160-188 下方）落 524 台（x208-236）；jd(-1,0,4) 升 40
       //   落三角顶 484@188；8px 阶 walkTo 上 deck。
-      fb: [spec("walkTo", 1, 140, 999), spec("runJump", 1, 152, 12), spec("walkTo", 1, 215, 999),
+      fb: [spec("runJump", 1, 152, 14), spec("walkTo", 1, 215, 999),
         spec("jumpDrift", -1, 0, 4), spec("walkTo", 1, 260, 999), spec("sleep", 10)],
-      wg: [spec("walkTo", 1, 140, 999), spec("runJump", 1, 152, 12), spec("walkTo", 1, 215, 999),
+      wg: [spec("runJump", 1, 152, 14), spec("walkTo", 1, 215, 999),
         spec("jumpDrift", -1, 0, 4), spec("walkTo", 1, 260, 999), spec("sleep", 10)],
     },
     vocab: {
