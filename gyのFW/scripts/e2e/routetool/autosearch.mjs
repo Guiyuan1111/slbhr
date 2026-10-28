@@ -544,18 +544,25 @@ const SEGI = {
   I3: {
     maxDepth: 12, capFb: 8, capWg: 8, horizonF: 520,
     recipe: {
-      // 双人同链（连通性泛洪+TEMP/ice02-i3new.mjs 实测口径）：东台西行 walkTo(-1,100)→
-      //   jd(-1,0,7) 跳上 \坡(704)（45°坡不可步行上行，只能跳链；落地即跳 jd 防滑走）→
-      //   jd(1,0,12) 跳西塔(608)→jd(1,0,9) 跳桥面西端(512，石 [192,256] 上空净空）。
-      fb: [spec("walkTo", -1, 100, 60), spec("jumpDrift", -1, 0, 7), spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 9), spec("sleep", 10)],
-      wg: [spec("walkTo", -1, 100, 60), spec("jumpDrift", -1, 0, 7), spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 9), spec("sleep", 10)],
+      // 时间线锁（TEMP/ice02-i3dbg.mjs + dbgI3 复放实证）：I2 末态=wg 泳过未冻池按 b1（pusherState1=1，
+      //   f~849），p1 滑出+蓝束落地冻结滞后 ~100-130f；fb 若立即西行 f757 溺亡（原 recipe 实证）。
+      //   双方 waitPx(wg 在按钮窗)+sleep(120) 等冻结完成，再同链西行：walkTo(-1,100)→jd(-1,0,7)
+      //   跳上 \坡(704)（45°坡不可步行上行）→jd(1,0,12) 越西塔(608)直落桥面西端(512)。
+      fb: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 100, 60),
+        spec("jumpDrift", -1, 0, 7), spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 9), spec("sleep", 10)],
+      wg: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 100, 60),
+        spec("jumpDrift", -1, 0, 7), spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 9), spec("sleep", 10)],
     },
     vocab: {
-      fb: [spec("walkTo", -1, 90, 60), spec("walkTo", -1, 110, 60),
+      fb: [spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 105, 170),
+        spec("sleep", 100), spec("sleep", 120), spec("sleep", 150),
+        spec("walkTo", -1, 90, 60), spec("walkTo", -1, 110, 60),
         spec("jumpDrift", -1, 0, 5), spec("jumpDrift", -1, 0, 7), spec("jumpDrift", -1, 0, 9),
         spec("jumpDrift", 1, 0, 10), spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 15),
         spec("jumpDrift", 1, 0, 7), spec("jumpDrift", 1, 0, 9), spec("jumpDrift", 1, 0, 12), spec("sleep", 10)],
-      wg: [spec("walkTo", -1, 90, 60), spec("walkTo", -1, 110, 60),
+      wg: [spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 105, 170),
+        spec("sleep", 100), spec("sleep", 120), spec("sleep", 150),
+        spec("walkTo", -1, 90, 60), spec("walkTo", -1, 110, 60),
         spec("jumpDrift", -1, 0, 5), spec("jumpDrift", -1, 0, 7), spec("jumpDrift", -1, 0, 9),
         spec("jumpDrift", 1, 0, 10), spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 15),
         spec("jumpDrift", 1, 0, 7), spec("jumpDrift", 1, 0, 9), spec("jumpDrift", 1, 0, 12), spec("sleep", 10)],
@@ -589,18 +596,19 @@ const SEGI = {
     },
   },
   I6: {
-    maxDepth: 14, capFb: 3, capWg: 12, horizonF: 560,
+    maxDepth: 14, capFb: 4, capWg: 12, horizonF: 560,
     recipe: {
-      // fb 留守方块按压 t0（闸门常开）；wg：方块东端助跑西跳 rj1130 落金字塔雪阶(224)→
-      //   西行跳链下 mosaic（192 块→224 带→256 带）→rj680 大跳 rise96 落门室桩 ∩(160)→
-      //   hold 西行越洞孔(320,384)→升闸→内室西行。wg 不进门（I7 fb 冲刺时门须开）。
-      fb: [spec("sleep", 400)],
+      // fb 守块直至 wg 入内室（waitPx 精确同步，闸门常开全程）；wg：方块东端助跑西跳 rj1130 落
+      //   金字塔雪阶(224)→西行跳链下 mosaic（192 块→224 带→256 带）→rj680 大跳 rise96 落门室桩
+      //   ∩(160)→hold 西行越洞孔(320,384)→升闸→内室停（不进门，给 I7 fb 冲刺留开闸）。
+      fb: [spec("waitPx", "wg", 130, 330), spec("sleep", 15)],
       wg: [spec("walkTo", 1, 1235, 60), spec("runJump", -1, 1130, 25), spec("sleep", 8),
         spec("jumpDrift", -1, 0, 5), spec("walkTo", -1, 770, 60), spec("jumpDrift", -1, 0, 4),
         spec("walkTo", -1, 688, 60), spec("runJump", -1, 680, 25), spec("hold", -1, 300), spec("walkTo", -1, 160, 70)],
     },
     vocab: {
-      fb: [spec("sleep", 300), spec("sleep", 400), spec("sleep", 500)],
+      fb: [spec("waitPx", "wg", 130, 330), spec("waitPx", "wg", 140, 320), spec("waitPx", "wg", 130, 340),
+        spec("sleep", 15), spec("sleep", 30), spec("sleep", 45)],
       wg: [spec("walkTo", 1, 1215, 60), spec("walkTo", 1, 1235, 60),
         spec("runJump", -1, 1120, 25), spec("runJump", -1, 1130, 25), spec("runJump", -1, 1140, 25), spec("sleep", 8),
         spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 5), spec("jumpDrift", -1, 0, 7),
@@ -615,11 +623,11 @@ const SEGI = {
   I7: {
     maxDepth: 14, capFb: 12, capWg: 4, horizonF: 520,
     recipe: {
-      // wg 内室待命；fb 离块（4s 窗起）→同链冲刺→fb 门(48)；wg 出脚到 W 门(152)→phaseWon。
+      // wg 内室已就位：walkTo W 门(152)；fb 离块（t0 释放=4s 窗起）→同链冲刺→fb 门(48)→phaseWon。
       fb: [spec("walkTo", 1, 1235, 60), spec("runJump", -1, 1130, 25), spec("sleep", 8),
         spec("jumpDrift", -1, 0, 5), spec("walkTo", -1, 770, 60), spec("jumpDrift", -1, 0, 4),
         spec("walkTo", -1, 688, 60), spec("runJump", -1, 680, 25), spec("hold", -1, 300), spec("walkTo", -1, 48, 70)],
-      wg: [spec("sleep", 150), spec("walkTo", -1, 150, 60), spec("sleep", 15)],
+      wg: [spec("sleep", 60), spec("walkTo", -1, 152, 60), spec("sleep", 15)],
     },
     vocab: {
       fb: [spec("walkTo", 1, 1215, 60), spec("walkTo", 1, 1235, 60),
@@ -631,7 +639,7 @@ const SEGI = {
         spec("runJump", -1, 670, 25), spec("runJump", -1, 680, 25), spec("runJump", -1, 690, 25),
         spec("hold", -1, 300), spec("hold", -1, 320),
         spec("walkTo", -1, 48, 70), spec("walkTo", -1, 60, 70), spec("sleep", 15)],
-      wg: [spec("sleep", 100), spec("sleep", 150), spec("sleep", 220),
+      wg: [spec("sleep", 60), spec("sleep", 100), spec("sleep", 150),
         spec("walkTo", -1, 150, 60), spec("walkTo", -1, 160, 60), spec("sleep", 15)],
     },
   },
