@@ -360,7 +360,7 @@
   },
   {
    "id": "I3",
-   "title": "双人登西坡上长台 deck-476（实测坡体：首级604@x132-160→三角斜瓦x160-188→524台x208-236→三角顶484→deck@x192；跳冲量随速度，登级全用带速 runJump）",
+   "title": "I3a 穿池+登首级：fb waitPx 锚按压后慢速穿冻结池；双人退跑 x60-80 助跑带速跳登首级 604 台（x132-160）",
    "entry": [
     {
      "kind": "px",
@@ -398,6 +398,108 @@
     {
      "kind": "grounded",
      "role": "fb"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "waypoints": [
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 110,
+      "max": 170
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 590,
+      "max": 615
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     },
+     {
+      "kind": "alive"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 128,
+     "max": 162
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 588,
+     "max": 614
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 128,
+     "max": 162
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 588,
+     "max": 614
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "horizonF": 420
+  },
+  {
+   "id": "I3b",
+   "title": "I3b 首级→deck：加速穿首级带速跳（弧穿三角斜瓦下方）落 524 台→跳三角顶 484→8px 阶上 deck-476",
+   "entry": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 128,
+     "max": 162
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 588,
+     "max": 614
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 128,
+     "max": 162
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 588,
+     "max": 614
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
     },
     {
      "kind": "alive"
@@ -463,7 +565,7 @@
      "kind": "alive"
     }
    ],
-   "horizonF": 700
+   "horizonF": 420
   },
   {
    "id": "I4",

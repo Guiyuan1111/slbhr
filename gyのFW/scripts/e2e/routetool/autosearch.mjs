@@ -542,35 +542,46 @@ const SEGI = {
     },
   },
   I3: {
-    maxDepth: 14, capFb: 8, capWg: 8, horizonF: 700,
+    maxDepth: 8, capFb: 5, capWg: 5, horizonF: 420,
     recipe: {
-      // 坡体 4px 精扫（TEMP/ice02-scan6）：地板 700（x40-250 实体，液池 x252 起）→首级 ~604
-      //   （x132-160，28px）→三角斜瓦 x160-188（~540→484，无竖直面）→524 台（x208-236）→三角顶
-      //   484@188→deck-476（x192 起）。跳冲量随水平速度（站立 38px/全速 ~100px）：登首级须退跑
-      //   西端 x60-80 助跑 runJump(1,~90,25)；首级→524 台沿边 runJump(1,152,12)（弧穿三角下方）；
-      //   524→三角顶 jd(-1,0,4)（升 40 贴脸）；8px 阶上 deck。fb 首件 waitPx 锚按压，慢速穿池。
+      // I3a 穿池+登首级（604 台 x132-160，28px）：跳冲量随水平速度（站立 38px/全速 ~100px），
+      //   登级须退跑到 x60-80 助跑带速起跳 runJump(1,~90,25)（apex ~150 落首级）。fb 首件 waitPx
+      //   锚 b1 按压后慢速穿池（按压 f861 起冻 416f）；wg 压板 sleep(30) 锚 entry/冻结后跟进。
       fb: [spec("waitPx", "wg", 105, 170), spec("walkTo", -1, 300, 999), spec("walkTo", -1, 70, 60),
-        spec("runJump", 1, 90, 25), spec("walkTo", 1, 140, 999), spec("runJump", 1, 152, 12),
-        spec("walkTo", 1, 215, 999), spec("jumpDrift", -1, 0, 4), spec("walkTo", 1, 260, 999), spec("sleep", 10)],
-      wg: [spec("sleep", 30), spec("walkTo", -1, 70, 60), spec("runJump", 1, 90, 25),
-        spec("walkTo", 1, 140, 999), spec("runJump", 1, 152, 12), spec("walkTo", 1, 215, 999),
-        spec("jumpDrift", -1, 0, 4), spec("walkTo", 1, 260, 999), spec("sleep", 10)],
+        spec("runJump", 1, 90, 25), spec("sleep", 10)],
+      wg: [spec("sleep", 30), spec("walkTo", -1, 70, 60), spec("runJump", 1, 90, 25), spec("sleep", 10)],
     },
     vocab: {
       fb: [spec("waitPx", "wg", 105, 170), spec("waitPx", "wg", 100, 180),
         spec("walkTo", -1, 300, 999), spec("walkTo", -1, 240, 999),
         spec("walkTo", -1, 60, 60), spec("walkTo", -1, 70, 60), spec("walkTo", -1, 80, 60),
-        spec("runJump", 1, 80, 25), spec("runJump", 1, 90, 25), spec("runJump", 1, 95, 25), spec("runJump", 1, 100, 25),
-        spec("walkTo", 1, 140, 999), spec("walkTo", 1, 150, 999),
+        spec("runJump", 1, 80, 25), spec("runJump", 1, 85, 25), spec("runJump", 1, 90, 25),
+        spec("runJump", 1, 95, 25), spec("runJump", 1, 100, 25), spec("sleep", 10)],
+      wg: [spec("sleep", 20), spec("sleep", 30), spec("sleep", 45),
+        spec("walkTo", -1, 60, 60), spec("walkTo", -1, 70, 60), spec("walkTo", -1, 80, 60),
+        spec("runJump", 1, 80, 25), spec("runJump", 1, 85, 25), spec("runJump", 1, 90, 25),
+        spec("runJump", 1, 95, 25), spec("runJump", 1, 100, 25), spec("sleep", 10)],
+    },
+  },
+  I3b: {
+    maxDepth: 8, capFb: 6, capWg: 6, horizonF: 420,
+    recipe: {
+      // I3b 首级(604@x132-160)→deck-476(x192+)：加速横穿首级 walkTo(1,140,999) 带速至东缘
+      //   runJump(1,152,12)（弧穿三角斜瓦 x160-188 下方）落 524 台（x208-236）；jd(-1,0,4) 升 40
+      //   落三角顶 484@188；8px 阶 walkTo 上 deck。
+      fb: [spec("walkTo", 1, 140, 999), spec("runJump", 1, 152, 12), spec("walkTo", 1, 215, 999),
+        spec("jumpDrift", -1, 0, 4), spec("walkTo", 1, 260, 999), spec("sleep", 10)],
+      wg: [spec("walkTo", 1, 140, 999), spec("runJump", 1, 152, 12), spec("walkTo", 1, 215, 999),
+        spec("jumpDrift", -1, 0, 4), spec("walkTo", 1, 260, 999), spec("sleep", 10)],
+    },
+    vocab: {
+      fb: [spec("walkTo", 1, 140, 999), spec("walkTo", 1, 150, 999),
         spec("runJump", 1, 148, 10), spec("runJump", 1, 152, 12), spec("runJump", 1, 152, 14),
         spec("walkTo", 1, 210, 999), spec("walkTo", 1, 215, 999), spec("walkTo", 1, 220, 999),
         spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6),
         spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4),
         spec("walkTo", 1, 260, 999), spec("walkTo", 1, 300, 999), spec("sleep", 10)],
-      wg: [spec("sleep", 20), spec("sleep", 30), spec("sleep", 45),
-        spec("walkTo", -1, 60, 60), spec("walkTo", -1, 70, 60), spec("walkTo", -1, 80, 60),
-        spec("runJump", 1, 80, 25), spec("runJump", 1, 90, 25), spec("runJump", 1, 95, 25), spec("runJump", 1, 100, 25),
-        spec("walkTo", 1, 140, 999), spec("walkTo", 1, 150, 999),
+      wg: [spec("walkTo", 1, 140, 999), spec("walkTo", 1, 150, 999),
         spec("runJump", 1, 148, 10), spec("runJump", 1, 152, 12), spec("runJump", 1, 152, 14),
         spec("walkTo", 1, 210, 999), spec("walkTo", 1, 215, 999), spec("walkTo", 1, 220, 999),
         spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6),
