@@ -544,22 +544,27 @@ const SEGI = {
   I3: {
     maxDepth: 12, capFb: 6, capWg: 6, horizonF: 620,
     recipe: {
-      // 物理支撑扫描（TEMP/ice02-scan4/5）：西坡 x136-232 顶 ~596→~524 接 deck-476。主案=坡可步行
-      //   （~17° 斜率，dip 21° 实证可走）；备选=小跳链/满跳。fb 自 702 穿冻结泳池（冻至 ~f1271，
-      //   I2 止 ~f886，步行 574px ~130f 余量足）回西端上坡；wg 自按钮台 (127,700) 直接东行上坡。
-      fb: [spec("walkTo", -1, 300, 999), spec("walkTo", -1, 128, 60), spec("walkTo", 1, 420, 999), spec("sleep", 10)],
-      wg: [spec("walkTo", 1, 420, 999), spec("sleep", 10)],
+      // 冰池冻结窗口：run1 冻结 ~f700 过期、b1 按压 f861 起冻结至 ~1277——fb 种子队列 ~f700 排干
+      //   （I2 定稿修剪掉等待件），任何早于按压的西行即溺。fb 首件 waitPx(wg,105,170) 锚按压后；
+      //   wg 实证（v3 搜索 d2+）：退跑 60px 助跑 + jd(1,0,20) 可登首级 ~596，续小跳上坡。
+      fb: [spec("waitPx", "wg", 105, 170), spec("walkTo", -1, 300, 999), spec("walkTo", -1, 128, 60),
+        spec("walkTo", 1, 420, 999), spec("sleep", 10)],
+      wg: [spec("walkTo", -1, 60, 60), spec("jumpDrift", 1, 0, 20), spec("jumpDrift", 1, 0, 8),
+        spec("walkTo", 1, 420, 999), spec("sleep", 10)],
     },
     vocab: {
-      fb: [spec("walkTo", -1, 320, 999), spec("walkTo", -1, 280, 999), spec("walkTo", -1, 240, 999),
+      fb: [spec("waitPx", "wg", 105, 170), spec("waitPx", "wg", 100, 180),
+        spec("walkTo", -1, 320, 999), spec("walkTo", -1, 280, 999), spec("walkTo", -1, 240, 999),
         spec("walkTo", -1, 140, 60), spec("walkTo", -1, 128, 60), spec("walkTo", -1, 116, 60),
         spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 8),
         spec("jumpDrift", 1, 0, 20), spec("jumpDrift", 1, 0, 25),
         spec("walkTo", 1, 420, 999), spec("walkTo", 1, 380, 999), spec("walkTo", 1, 300, 60), spec("sleep", 10)],
       wg: [spec("walkTo", -1, 60, 60), spec("walkTo", -1, 80, 60),
-        spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 8), spec("jumpDrift", 1, 0, 12),
+        spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 8), spec("jumpDrift", 1, 0, 10),
+        spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 14), spec("jumpDrift", 1, 0, 16), spec("jumpDrift", 1, 0, 18),
         spec("jumpDrift", 1, 0, 20), spec("jumpDrift", 1, 0, 25), spec("jumpDrift", 1, 0, 28),
-        spec("walkTo", 1, 380, 999), spec("walkTo", 1, 420, 999), spec("walkTo", 1, 300, 60), spec("sleep", 10)],
+        spec("walkTo", 1, 200, 60), spec("walkTo", 1, 230, 60), spec("walkTo", 1, 260, 60),
+        spec("walkTo", 1, 300, 60), spec("walkTo", 1, 380, 999), spec("walkTo", 1, 420, 999), spec("sleep", 10)],
     },
   },
   I4: {
@@ -592,14 +597,18 @@ const SEGI = {
       wg: [spec("jumpDrift", -1, 0, 6), spec("walkTo", -1, 300, 999), spec("sleep", 10)],
     },
     vocab: {
-      fb: [spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6), spec("jumpDrift", -1, 0, 8),
+      fb: [spec("jumpDrift", 1, 0, 10), spec("jumpDrift", 1, 0, 14), spec("jumpDrift", 1, 0, 18),
+        spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6), spec("jumpDrift", -1, 0, 8),
+        spec("jumpDrift", -1, 0, 10), spec("jumpDrift", -1, 0, 12), spec("jumpDrift", -1, 0, 14),
         spec("jumpDrift", -1, 0, 16), spec("jumpDrift", -1, 0, 20), spec("jumpDrift", -1, 0, 25),
-        spec("walkTo", -1, 300, 999), spec("walkTo", -1, 350, 999), spec("walkTo", -1, 400, 999), spec("walkTo", -1, 500, 999),
-        spec("sleep", 10)],
-      wg: [spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6), spec("jumpDrift", -1, 0, 8),
+        spec("walkTo", 1, 1000, 999), spec("walkTo", -1, 300, 999), spec("walkTo", -1, 350, 999),
+        spec("walkTo", -1, 400, 999), spec("walkTo", -1, 500, 999), spec("sleep", 10)],
+      wg: [spec("jumpDrift", 1, 0, 10), spec("jumpDrift", 1, 0, 14), spec("jumpDrift", 1, 0, 18),
+        spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6), spec("jumpDrift", -1, 0, 8),
+        spec("jumpDrift", -1, 0, 10), spec("jumpDrift", -1, 0, 12), spec("jumpDrift", -1, 0, 14),
         spec("jumpDrift", -1, 0, 16), spec("jumpDrift", -1, 0, 20), spec("jumpDrift", -1, 0, 25),
-        spec("walkTo", -1, 300, 999), spec("walkTo", -1, 350, 999), spec("walkTo", -1, 400, 999), spec("walkTo", -1, 500, 999),
-        spec("sleep", 10)],
+        spec("walkTo", 1, 1000, 999), spec("walkTo", -1, 300, 999), spec("walkTo", -1, 350, 999),
+        spec("walkTo", -1, 400, 999), spec("walkTo", -1, 500, 999), spec("sleep", 10)],
     },
   },
   I6: {
