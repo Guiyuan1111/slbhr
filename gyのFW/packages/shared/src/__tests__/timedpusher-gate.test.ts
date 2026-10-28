@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { parseLevel, type LevelData } from "../level2.js";
 import { World } from "../kernel/world.js";
+import { b2 } from "../kernel/b2.js";
 import type { InputState } from "../types.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -41,8 +42,8 @@ function stepN(w: World, n: number, fb: InputState = NONE, wg: InputState = NONE
 
 /** 把角色放到屏幕 px 坐标（清速度+唤醒；探针口径，settle 数帧即落在支撑面上） */
 function teleport(w: World, role: "fireboy" | "watergirl", x: number, y: number): void {
-  const B = w.B;
-  const ch = w.chars[role];
+  const B = b2();
+  const ch = w.players[role];
   ch.body.SetPosition(new B.b2Vec2(px(x, y).x, px(x, y).y));
   ch.body.SetLinearVelocity(new B.b2Vec2(0, 0));
   ch.body.SetAwake(true);
