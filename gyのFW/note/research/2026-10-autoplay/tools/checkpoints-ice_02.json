@@ -1,6 +1,6 @@
 {
  "level": "ice_02",
- "note": "ice_02 检查点链 v2（2026-10-28 全图地形解析+连通性泛洪重排）。I0-I2 沿用已解前缀（出生→mound/y桥→row-20→东台；wg 泅渡压 b1：p1 东移让蓝光冻结泳池，p1 东移持久=冻结持久）。I3-I5 双人同链：东台西行→\\坡(704)跳西塔(608)→跳桥面西端(512)→冰面东行→绕磕头漂移跳上 slab-13(416)→东行穿走廊缝跳上 t0 方块(320)（gid 对象 y=底边：t0 传感器 [1136,1200]x[288,352] 与方块顶 320 相叠=站上即按压）。I6：fb 留守方块持续按压（TimedPusher 压住保持、松开 4s 回弹→闸门 p2 升启 platY≈15.7），wg 西跳金字塔雪阶(224/256)→645→437 rise96 大跳门室桩 ∩(\\+/ 峰 160)→穿洞孔(320,384)→升闸→wg 门(152)。I7：fb 离块起 4s 窗同链→fb 门(48)→phaseWon。关键勘误记录：p1 轨道全段上方有 row17 实体（544-576），任何 p1 载人竖跳 48px 即磕头——p1 唯一用途=蓝光遮板；row16 嵌段为 LAVA[704,896]@512 底部悬空无盆，不可泅渡；45° 坡瓦无法步行上行（脚圆卡坡脚），只可跳链。",
+ "note": "ice_02 检查点链 v3（2026-10-28 物理支撑扫描+门位网格测定全图重证）。关键勘误史：早先 fixture 转储未加 body 变换且 x 轴未镜像（screen=-32*b2），旧地形图整体作废；tile gid1=背景瓦非实体。实证地形（TEMP/ice02-scan4/5 + ice02-door.mjs）：西台顶~700 仅 x40-136（b1 板[96,717 160,736]）；x160-560 底部=泳池（冻结后可行）；slab-east x664-784 顶~700；西梯/坡 x136-232（~596→~524）接长台 deck-476（x256-1120）；beam-380 x664-1024；东区 x1000 有 ~292 级、g2 块 x1088-1120 顶~320、计时按钮板[1136,301 1200,320]（gid38 time4000，站板=按压）；上梁顶~252 x232-1048；45° 斜瓦阶梯 x128-256（288→192）上门廊；门廊：细走面 ~124-128（x48-240+），门龛地板 ~184——fb 站 (x56-104,py181)、wg 站 (x192-208,py181) 实测 door.isOpen=1，双门同帧 isUp=won。闸 p2=[258,64 286,160]（dy3，gid38 联动）与 b0[928,493 992,512]（group1→p0 平台/红遮板）为支线，主路线不经过。I3-I6 双人同链：登西坡上长台→东行跳 beam-380→上梁西行→斜坡跳链上廊→双门 phaseWon。",
  "segments": [
   {
    "id": "I0",
@@ -360,7 +360,7 @@
   },
   {
    "id": "I3",
-   "title": "等冻结→双人西行→\\坡顶踏板(704)→登西塔顶(608)（塔西坡台不算，须平顶）",
+   "title": "双人登西坡上长台 deck-476（wg 自按钮台起步；fb 穿冻结泳池西回；坡 x136-232 ~596→~524，走/跳两案并行）",
    "entry": [
     {
      "kind": "px",
@@ -408,14 +408,14 @@
      {
       "kind": "px",
       "role": "fb",
-      "min": 14,
-      "max": 150
+      "min": 128,
+      "max": 256
      },
      {
       "kind": "py",
       "role": "fb",
-      "min": 650,
-      "max": 738
+      "min": 470,
+      "max": 645
      },
      {
       "kind": "grounded",
@@ -424,51 +424,14 @@
      {
       "kind": "px",
       "role": "wg",
-      "min": 14,
-      "max": 150
+      "min": 128,
+      "max": 256
      },
      {
       "kind": "py",
       "role": "wg",
-      "min": 650,
-      "max": 738
-     },
-     {
-      "kind": "grounded",
-      "role": "wg"
-     },
-     {
-      "kind": "alive"
-     }
-    ],
-    [
-     {
-      "kind": "px",
-      "role": "fb",
-      "min": 60,
-      "max": 200
-     },
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 540,
-      "max": 660
-     },
-     {
-      "kind": "grounded",
-      "role": "fb"
-     },
-     {
-      "kind": "px",
-      "role": "wg",
-      "min": 60,
-      "max": 200
-     },
-     {
-      "kind": "py",
-      "role": "wg",
-      "min": 540,
-      "max": 660
+      "min": 470,
+      "max": 645
      },
      {
       "kind": "grounded",
@@ -483,14 +446,14 @@
     {
      "kind": "px",
      "role": "fb",
-     "min": 95,
-     "max": 195
+     "min": 256,
+     "max": 760
     },
     {
      "kind": "py",
      "role": "fb",
-     "min": 552,
-     "max": 590
+     "min": 466,
+     "max": 492
     },
     {
      "kind": "grounded",
@@ -499,14 +462,14 @@
     {
      "kind": "px",
      "role": "wg",
-     "min": 95,
-     "max": 195
+     "min": 256,
+     "max": 760
     },
     {
      "kind": "py",
      "role": "wg",
-     "min": 552,
-     "max": 590
+     "min": 466,
+     "max": 492
     },
     {
      "kind": "grounded",
@@ -516,107 +479,23 @@
      "kind": "alive"
     }
    ],
-   "horizonF": 520
-  },
-  {
-   "id": "I3b",
-   "title": "塔顶→东小跳落桥面西端(512)，双人同链",
-   "entry": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 95,
-     "max": 195
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 552,
-     "max": 590
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 95,
-     "max": 195
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 552,
-     "max": 590
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "waypoints": [],
-   "target": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 180,
-     "max": 330
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 455,
-     "max": 497
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 180,
-     "max": 330
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 455,
-     "max": 497
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "horizonF": 320,
-   "maxDepth": 10,
-   "capFb": 6,
-   "capWg": 6,
-   "note": "塔顶站立 py≈572.5；东跳 rise96→feet 512=桥面顶；漂移 100-140（jd 4-5f）落 [192,256] 桥面西端；jd 过大越缘落冻池"
+   "horizonF": 620
   },
   {
    "id": "I4",
-   "title": "双人桥面(冰)东行→漂移跳上 slab-13 西段(416)（冰面起跳，绕开 slab-13 底 448 磕头须 x≤530 起跳）",
+   "title": "长台东行→东跳上 beam-380（rise96，起跳 x840-900 漂 130-135 落 x664-1024 梁）→东端上梁东段",
    "entry": [
     {
      "kind": "px",
      "role": "fb",
-     "min": 180,
-     "max": 330
+     "min": 256,
+     "max": 760
     },
     {
      "kind": "py",
      "role": "fb",
-     "min": 455,
-     "max": 497
+     "min": 466,
+     "max": 492
     },
     {
      "kind": "grounded",
@@ -625,14 +504,14 @@
     {
      "kind": "px",
      "role": "wg",
-     "min": 180,
-     "max": 330
+     "min": 256,
+     "max": 760
     },
     {
      "kind": "py",
      "role": "wg",
-     "min": 455,
-     "max": 497
+     "min": 466,
+     "max": 492
     },
     {
      "kind": "grounded",
@@ -647,14 +526,14 @@
      {
       "kind": "px",
       "role": "fb",
-      "min": 395,
-      "max": 535
+      "min": 850,
+      "max": 1120
      },
      {
       "kind": "py",
       "role": "fb",
-      "min": 455,
-      "max": 497
+      "min": 466,
+      "max": 492
      },
      {
       "kind": "grounded",
@@ -663,14 +542,14 @@
      {
       "kind": "px",
       "role": "wg",
-      "min": 395,
-      "max": 535
+      "min": 850,
+      "max": 1120
      },
      {
       "kind": "py",
       "role": "wg",
-      "min": 455,
-      "max": 497
+      "min": 466,
+      "max": 492
      },
      {
       "kind": "grounded",
@@ -685,14 +564,14 @@
     {
      "kind": "px",
      "role": "fb",
-     "min": 512,
-     "max": 780
+     "min": 700,
+     "max": 1070
     },
     {
      "kind": "py",
      "role": "fb",
-     "min": 358,
-     "max": 402
+     "min": 236,
+     "max": 400
     },
     {
      "kind": "grounded",
@@ -701,14 +580,14 @@
     {
      "kind": "px",
      "role": "wg",
-     "min": 512,
-     "max": 780
+     "min": 700,
+     "max": 1070
     },
     {
      "kind": "py",
      "role": "wg",
-     "min": 358,
-     "max": 402
+     "min": 236,
+     "max": 400
     },
     {
      "kind": "grounded",
@@ -718,23 +597,23 @@
      "kind": "alive"
     }
    ],
-   "horizonF": 460
+   "horizonF": 620
   },
   {
    "id": "I5",
-   "title": "slab-13 东行→双人全速东跳上 t0 方块(320)（穿走廊缝 [1024,1120]，oracle sweep 实证 96px 东跳）",
+   "title": "beam-380/上梁西行→上梁西端斜坡底（x215-430, py 236-312）",
    "entry": [
     {
      "kind": "px",
      "role": "fb",
-     "min": 512,
-     "max": 780
+     "min": 700,
+     "max": 1070
     },
     {
      "kind": "py",
      "role": "fb",
-     "min": 358,
-     "max": 402
+     "min": 236,
+     "max": 400
     },
     {
      "kind": "grounded",
@@ -743,14 +622,14 @@
     {
      "kind": "px",
      "role": "wg",
-     "min": 512,
-     "max": 780
+     "min": 700,
+     "max": 1070
     },
     {
      "kind": "py",
      "role": "wg",
-     "min": 358,
-     "max": 402
+     "min": 236,
+     "max": 400
     },
     {
      "kind": "grounded",
@@ -765,36 +644,37 @@
      {
       "kind": "px",
       "role": "fb",
-      "min": 1130,
-      "max": 1244
+      "min": 300,
+      "max": 700
      },
      {
       "kind": "py",
       "role": "fb",
-      "min": 268,
+      "min": 236,
       "max": 300
      },
      {
       "kind": "grounded",
       "role": "fb"
-     }
-    ],
-    [
+     },
      {
       "kind": "px",
       "role": "wg",
-      "min": 1130,
-      "max": 1244
+      "min": 300,
+      "max": 700
      },
      {
       "kind": "py",
       "role": "wg",
-      "min": 268,
+      "min": 236,
       "max": 300
      },
      {
       "kind": "grounded",
       "role": "wg"
+     },
+     {
+      "kind": "alive"
      }
     ]
    ],
@@ -802,14 +682,14 @@
     {
      "kind": "px",
      "role": "fb",
-     "min": 1130,
-     "max": 1244
+     "min": 215,
+     "max": 430
     },
     {
      "kind": "py",
      "role": "fb",
-     "min": 268,
-     "max": 300
+     "min": 236,
+     "max": 312
     },
     {
      "kind": "grounded",
@@ -818,14 +698,14 @@
     {
      "kind": "px",
      "role": "wg",
-     "min": 1130,
-     "max": 1244
+     "min": 215,
+     "max": 430
     },
     {
      "kind": "py",
      "role": "wg",
-     "min": 268,
-     "max": 300
+     "min": 236,
+     "max": 312
     },
     {
      "kind": "grounded",
@@ -839,19 +719,19 @@
   },
   {
    "id": "I6",
-   "title": "fb 留守方块压住 t0（闸门常开）→wg 方块西跳金字塔雪阶(224)→mosaic 西行→大跳门室桩 ∩(160)→穿洞孔→升闸→内室待命",
+   "title": "斜坡跳链上廊：wg 东踏门龛(192-208@184)；fb 西跳直落门龛(56-104@184)；双门同升 phaseWon",
    "entry": [
     {
      "kind": "px",
      "role": "fb",
-     "min": 1130,
-     "max": 1244
+     "min": 215,
+     "max": 430
     },
     {
      "kind": "py",
      "role": "fb",
-     "min": 268,
-     "max": 300
+     "min": 236,
+     "max": 312
     },
     {
      "kind": "grounded",
@@ -860,14 +740,14 @@
     {
      "kind": "px",
      "role": "wg",
-     "min": 1130,
-     "max": 1244
+     "min": 215,
+     "max": 430
     },
     {
      "kind": "py",
      "role": "wg",
-     "min": 268,
-     "max": 300
+     "min": 236,
+     "max": 312
     },
     {
      "kind": "grounded",
@@ -880,131 +760,40 @@
    "waypoints": [
     [
      {
-      "kind": "platY",
-      "id": 2,
-      "min": 0,
-      "max": 60
-     }
-    ],
-    [
-     {
       "kind": "px",
       "role": "wg",
-      "min": 800,
-      "max": 1000
+      "min": 176,
+      "max": 220
      },
      {
       "kind": "py",
       "role": "wg",
-      "min": 185,
-      "max": 250
+      "min": 168,
+      "max": 196
      },
      {
       "kind": "grounded",
       "role": "wg"
-     }
-    ],
-    [
-     {
-      "kind": "px",
-      "role": "wg",
-      "min": 320,
-      "max": 470
      },
      {
-      "kind": "py",
-      "role": "wg",
-      "min": 118,
-      "max": 162
-     },
-     {
-      "kind": "grounded",
-      "role": "wg"
-     }
-    ]
-   ],
-   "target": [
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 130,
-     "max": 330
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 118,
-     "max": 180
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "horizonF": 460
-  },
-  {
-   "id": "I7",
-   "title": "wg 内室待命；fb 离块（4s 窗）→同链冲刺→fb 门(48)；wg 走到 W 门(152)→双门升起 WIN",
-   "entry": [
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 130,
-     "max": 330
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 118,
-     "max": 180
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "waypoints": [
-    [
-     {
-      "kind": "platY",
-      "id": 2,
-      "min": 0,
-      "max": 60
+      "kind": "alive"
      }
     ],
     [
      {
       "kind": "px",
       "role": "fb",
-      "min": 800,
-      "max": 1000
+      "min": 48,
+      "max": 112
      },
      {
       "kind": "py",
       "role": "fb",
-      "min": 185,
-      "max": 250
+      "min": 168,
+      "max": 196
      },
      {
-      "kind": "grounded",
-      "role": "fb"
-     }
-    ],
-    [
-     {
-      "kind": "px",
-      "role": "fb",
-      "min": 320,
-      "max": 470
-     },
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 118,
-      "max": 162
-     },
-     {
-      "kind": "grounded",
-      "role": "fb"
+      "kind": "alive"
      }
     ]
    ],
@@ -1013,7 +802,7 @@
      "kind": "phaseWon"
     }
    ],
-   "horizonF": 470
+   "horizonF": 700
   }
  ]
 }

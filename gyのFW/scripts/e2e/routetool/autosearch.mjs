@@ -542,120 +542,85 @@ const SEGI = {
     },
   },
   I3: {
-    maxDepth: 12, capFb: 8, capWg: 8, horizonF: 1100,
+    maxDepth: 12, capFb: 6, capWg: 6, horizonF: 620,
     recipe: {
-      // dbgI3 复放实证（resume 后 recipe 首评）：walkTo vMax60 实速 1px/f，fb 走 600f 致第三跳被
-      //   视界截断；jd(-1,0,3) 自 x85 漂 50-90 落 -5..35 全员错过 \坡[32,64] 撞西墙角。
-      //   修：fb 两段走（999 全速至 150 + 60 精停 90，省 ~450f）；首跳 jd(-1,0,2) 漂 25-50 落坡面；
-      //   jd(1,0,4) 落脊峰 / 面/顶点(160,608)；jd(1,0,2) 上桥面 [160,224]@512。视界 1100。
-      fb: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 150, 999),
-        spec("walkTo", -1, 90, 60), spec("jumpDrift", -1, 0, 2), spec("jumpDrift", 1, 0, 4),
-        spec("jumpDrift", 1, 0, 2), spec("sleep", 10)],
-      wg: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 85, 60),
-        spec("jumpDrift", -1, 0, 2), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 2), spec("sleep", 10)],
+      // 物理支撑扫描（TEMP/ice02-scan4/5）：西坡 x136-232 顶 ~596→~524 接 deck-476。主案=坡可步行
+      //   （~17° 斜率，dip 21° 实证可走）；备选=小跳链/满跳。fb 自 702 穿冻结泳池（冻至 ~f1271，
+      //   I2 止 ~f886，步行 574px ~130f 余量足）回西端上坡；wg 自按钮台 (127,700) 直接东行上坡。
+      fb: [spec("walkTo", -1, 300, 999), spec("walkTo", -1, 128, 60), spec("walkTo", 1, 420, 999), spec("sleep", 10)],
+      wg: [spec("walkTo", 1, 420, 999), spec("sleep", 10)],
     },
     vocab: {
-      fb: [spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 105, 170),
-        spec("sleep", 100), spec("sleep", 120), spec("sleep", 150),
-        spec("walkTo", -1, 140, 999), spec("walkTo", -1, 160, 999),
-        spec("jumpDrift", -1, 0, 2), spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4),
-        spec("jumpDrift", 1, 0, 2), spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5),
-        spec("jumpDrift", 1, 0, 2), spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("sleep", 10)],
-      wg: [spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 105, 170),
-        spec("sleep", 100), spec("sleep", 120), spec("sleep", 150),
-        spec("walkTo", -1, 80, 60), spec("walkTo", -1, 95, 60),
-        spec("jumpDrift", -1, 0, 2), spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4),
-        spec("jumpDrift", 1, 0, 2), spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5),
-        spec("jumpDrift", 1, 0, 2), spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("sleep", 10)],
-    },
-  },
-  I3b: {
-    maxDepth: 10, capFb: 6, capWg: 6, horizonF: 320,
-    recipe: {
-      // 塔顶站立 py≈572.5；东跳 rise96 → feet 512 = 桥面顶；jd(1,0,5) 漂 ~100-140 落 [192,256]。
-      fb: [spec("jumpDrift", 1, 0, 5), spec("sleep", 10)],
-      wg: [spec("jumpDrift", 1, 0, 5), spec("sleep", 10)],
-    },
-    vocab: {
-      fb: [spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5),
-        spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 7), spec("walkTo", 1, 240, 60), spec("sleep", 10)],
-      wg: [spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5),
-        spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 7), spec("walkTo", 1, 240, 60), spec("sleep", 10)],
+      fb: [spec("walkTo", -1, 320, 999), spec("walkTo", -1, 280, 999), spec("walkTo", -1, 240, 999),
+        spec("walkTo", -1, 140, 60), spec("walkTo", -1, 128, 60), spec("walkTo", -1, 116, 60),
+        spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 8),
+        spec("jumpDrift", 1, 0, 20), spec("jumpDrift", 1, 0, 25),
+        spec("walkTo", 1, 420, 999), spec("walkTo", 1, 380, 999), spec("walkTo", 1, 300, 60), spec("sleep", 10)],
+      wg: [spec("walkTo", -1, 60, 60), spec("walkTo", -1, 80, 60),
+        spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 8), spec("jumpDrift", 1, 0, 12),
+        spec("jumpDrift", 1, 0, 20), spec("jumpDrift", 1, 0, 25), spec("jumpDrift", 1, 0, 28),
+        spec("walkTo", 1, 380, 999), spec("walkTo", 1, 420, 999), spec("walkTo", 1, 300, 60), spec("sleep", 10)],
     },
   },
   I4: {
-    maxDepth: 10, capFb: 8, capWg: 8, horizonF: 460,
+    maxDepth: 10, capFb: 7, capWg: 7, horizonF: 620,
     recipe: {
-      // 桥面冰东行至 ~500 停定（起跳须 x≤530 绕 slab-13 底 448 磕头），jd(1,0,14) 漂移跳上西段。
-      fb: [spec("walkTo", 1, 500, 999), spec("jumpDrift", 1, 0, 14), spec("sleep", 10)],
-      wg: [spec("walkTo", 1, 500, 999), spec("jumpDrift", 1, 0, 14), spec("sleep", 10)],
+      // deck-476 东段助跑东跳 rise96（实测漂 130-135）：x850 起跳落 ~985 beam-380（x664-1024）；
+      // 东端 x1000 有 ~292 级、g2 块 x1088-1120 顶 ~320。target 容 beam-380/292/320 全部高位。
+      fb: [spec("walkTo", 1, 850, 999), spec("runJump", 1, 870, 25), spec("walkTo", 1, 1000, 999), spec("sleep", 10)],
+      wg: [spec("walkTo", 1, 850, 999), spec("runJump", 1, 870, 25), spec("walkTo", 1, 1000, 999), spec("sleep", 10)],
     },
     vocab: {
-      fb: [spec("walkTo", 1, 480, 999), spec("walkTo", 1, 500, 999), spec("walkTo", 1, 520, 999),
-        spec("jumpDrift", 1, 0, 10), spec("jumpDrift", 1, 0, 14), spec("jumpDrift", 1, 0, 18), spec("sleep", 10)],
-      wg: [spec("walkTo", 1, 480, 999), spec("walkTo", 1, 500, 999), spec("walkTo", 1, 520, 999),
-        spec("jumpDrift", 1, 0, 10), spec("jumpDrift", 1, 0, 14), spec("jumpDrift", 1, 0, 18), spec("sleep", 10)],
+      fb: [spec("walkTo", 1, 800, 999), spec("walkTo", 1, 850, 999), spec("walkTo", 1, 900, 999),
+        spec("runJump", 1, 840, 25), spec("runJump", 1, 860, 25), spec("runJump", 1, 880, 25), spec("runJump", 1, 900, 25),
+        spec("jumpDrift", 1, 0, 20), spec("jumpDrift", 1, 0, 25),
+        spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 8),
+        spec("walkTo", 1, 950, 999), spec("walkTo", 1, 1000, 999), spec("sleep", 10)],
+      wg: [spec("walkTo", 1, 800, 999), spec("walkTo", 1, 850, 999), spec("walkTo", 1, 900, 999),
+        spec("runJump", 1, 840, 25), spec("runJump", 1, 860, 25), spec("runJump", 1, 880, 25), spec("runJump", 1, 900, 25),
+        spec("jumpDrift", 1, 0, 20), spec("jumpDrift", 1, 0, 25),
+        spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 8),
+        spec("walkTo", 1, 950, 999), spec("walkTo", 1, 1000, 999), spec("sleep", 10)],
     },
   },
   I5: {
-    maxDepth: 8, capFb: 6, capWg: 6, horizonF: 400,
+    maxDepth: 10, capFb: 6, capWg: 6, horizonF: 500,
     recipe: {
-      // slab-13 满速东行 rj975 起跳 drift ~250-270 落 t0 方块 [1120,1248]（穿走廊缝 [1024,1120]，
-      //   D 楔 [992,1024]@288 在头顶但起跳点 975 东向错过）。
-      fb: [spec("runJump", 1, 975, 25), spec("sleep", 10)],
-      wg: [spec("runJump", 1, 975, 25), spec("sleep", 10)],
+      // 高位（beam-380 东端/292 级/上梁 252 东段）西行：292→252 升 40 小跳，之后沿上梁全速西行
+      //   至西端斜坡底（x215-430, py 236-312 容 252-rest248 与 288-rest284）。
+      fb: [spec("jumpDrift", -1, 0, 6), spec("walkTo", -1, 300, 999), spec("sleep", 10)],
+      wg: [spec("jumpDrift", -1, 0, 6), spec("walkTo", -1, 300, 999), spec("sleep", 10)],
     },
     vocab: {
-      fb: [spec("runJump", 1, 955, 25), spec("runJump", 1, 975, 25), spec("runJump", 1, 995, 25), spec("sleep", 10)],
-      wg: [spec("runJump", 1, 955, 25), spec("runJump", 1, 975, 25), spec("runJump", 1, 995, 25), spec("sleep", 10)],
+      fb: [spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6), spec("jumpDrift", -1, 0, 8),
+        spec("jumpDrift", -1, 0, 16), spec("jumpDrift", -1, 0, 20), spec("jumpDrift", -1, 0, 25),
+        spec("walkTo", -1, 300, 999), spec("walkTo", -1, 350, 999), spec("walkTo", -1, 400, 999), spec("walkTo", -1, 500, 999),
+        spec("sleep", 10)],
+      wg: [spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6), spec("jumpDrift", -1, 0, 8),
+        spec("jumpDrift", -1, 0, 16), spec("jumpDrift", -1, 0, 20), spec("jumpDrift", -1, 0, 25),
+        spec("walkTo", -1, 300, 999), spec("walkTo", -1, 350, 999), spec("walkTo", -1, 400, 999), spec("walkTo", -1, 500, 999),
+        spec("sleep", 10)],
     },
   },
   I6: {
-    maxDepth: 14, capFb: 4, capWg: 12, horizonF: 560,
+    maxDepth: 14, capFb: 8, capWg: 8, horizonF: 700,
     recipe: {
-      // fb 守块直至 wg 入内室（waitPx 精确同步，闸门常开全程）；wg：方块东端助跑西跳 rj1130 落
-      //   金字塔雪阶(224)→西行跳链下 mosaic（192 块→224 带→256 带）→rj680 大跳 rise96 落门室桩
-      //   ∩(160)→hold 西行越洞孔(320,384)→升闸→内室停（不进门，给 I7 fb 冲刺留开闸）。
-      fb: [spec("waitPx", "wg", 130, 330), spec("sleep", 15)],
-      wg: [spec("walkTo", 1, 1235, 60), spec("runJump", -1, 1130, 25), spec("sleep", 8),
-        spec("jumpDrift", -1, 0, 5), spec("walkTo", -1, 770, 60), spec("jumpDrift", -1, 0, 4),
-        spec("walkTo", -1, 688, 60), spec("runJump", -1, 680, 25), spec("hold", -1, 300), spec("walkTo", -1, 160, 70)],
+      // 门位网格测定（TEMP/ice02-door.mjs）：fb 龛 (x56-104, py181)、wg 龛 (x192-208, py181) 站定即
+      //   isOpen，双门 frac 51f 同升 → won。fb 自上梁西端 (~200,248) 满跳西漂 130 直落龛内；
+      //   wg 先西至坡顶平台 (128-192@192) 东踏 8px 阶上龛。
+      fb: [spec("jumpDrift", -1, 0, 25), spec("sleep", 10)],
+      wg: [spec("walkTo", -1, 180, 60), spec("jumpDrift", 1, 0, 5), spec("sleep", 10)],
     },
     vocab: {
-      fb: [spec("waitPx", "wg", 130, 330), spec("waitPx", "wg", 140, 320), spec("waitPx", "wg", 130, 340),
-        spec("sleep", 15), spec("sleep", 30), spec("sleep", 45)],
-      wg: [spec("walkTo", 1, 1215, 60), spec("walkTo", 1, 1235, 60),
-        spec("runJump", -1, 1120, 25), spec("runJump", -1, 1130, 25), spec("runJump", -1, 1140, 25), spec("sleep", 8),
-        spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 5), spec("jumpDrift", -1, 0, 7),
-        spec("walkTo", -1, 750, 60), spec("walkTo", -1, 770, 60),
-        spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6),
-        spec("walkTo", -1, 688, 60), spec("walkTo", -1, 700, 60),
-        spec("runJump", -1, 670, 25), spec("runJump", -1, 680, 25), spec("runJump", -1, 690, 25),
-        spec("hold", -1, 300), spec("hold", -1, 320),
-        spec("walkTo", -1, 160, 70), spec("walkTo", -1, 180, 70), spec("sleep", 15)],
-    },
-  },
-  I7: {
-    maxDepth: 14, capFb: 12, capWg: 4, horizonF: 520,
-    recipe: {
-      // wg 内室已就位：walkTo W 门(152)；fb 离块（t0 释放=4s 窗起）→同链冲刺→fb 门(48)→phaseWon。
-      fb: [spec("walkTo", 1, 1235, 60), spec("runJump", -1, 1130, 25), spec("sleep", 8),
-        spec("jumpDrift", -1, 0, 5), spec("walkTo", -1, 770, 60), spec("jumpDrift", -1, 0, 4),
-        spec("walkTo", -1, 688, 60), spec("runJump", -1, 680, 25), spec("hold", -1, 300), spec("walkTo", -1, 48, 70)],
-      wg: [spec("sleep", 60), spec("walkTo", -1, 152, 60), spec("sleep", 15)],
-    },
-    vocab: {
-      fb: [spec("walkTo", 1, 1215, 60), spec("walkTo", 1, 1235, 60),
-        spec("runJump", -1, 1120, 25), spec("runJump", -1, 1130, 25), spec("runJump", -1, 1140, 25), spec("sleep", 8),
-        spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 5), spec("jumpDrift", -1, 0, 7),
-        spec("walkTo", -1, 750, 60), spec("walkTo", -1, 770, 60),
-        spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6),
-        spec("walkTo", -1, 688, 60), spec("walkTo", -1, 700, 60),
-        spec("runJump", -1, 670, 25), spec("runJump", -1, 680, 25), spec("runJump", -1, 690, 25),
-        spec("hold", -1, 300), spec("hold", -1, 320),
-        spec("walkTo", -1, 48, 70), spec("walkTo", -1, 60, 70), spec("sleep", 15)],
-      wg: [spec("sleep", 60), spec("sleep", 100), spec("sleep", 150),
-        spec("walkTo", -1, 150, 60), spec("walkTo", -1, 160, 60), spec("sleep", 15)],
+      fb: [spec("jumpDrift", -1, 0, 16), spec("jumpDrift", -1, 0, 20), spec("jumpDrift", -1, 0, 25), spec("jumpDrift", -1, 0, 28),
+        spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6), spec("jumpDrift", -1, 0, 8),
+        spec("walkTo", -1, 60, 60), spec("walkTo", -1, 80, 60), spec("walkTo", -1, 100, 60), spec("walkTo", -1, 120, 60),
+        spec("walkTo", -1, 150, 60), spec("walkTo", -1, 180, 60), spec("walkTo", -1, 130, 999), spec("sleep", 10)],
+      wg: [spec("walkTo", -1, 150, 60), spec("walkTo", -1, 170, 60), spec("walkTo", -1, 185, 60),
+        spec("walkTo", -1, 100, 60), spec("walkTo", -1, 120, 60),
+        spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5), spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 8),
+        spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6), spec("jumpDrift", -1, 0, 8),
+        spec("walkTo", 1, 195, 60), spec("walkTo", 1, 205, 60), spec("walkTo", 1, 215, 60), spec("sleep", 10)],
     },
   },
 };
