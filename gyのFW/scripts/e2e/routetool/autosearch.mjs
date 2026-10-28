@@ -542,29 +542,31 @@ const SEGI = {
     },
   },
   I3: {
-    maxDepth: 12, capFb: 8, capWg: 8, horizonF: 900,
+    maxDepth: 12, capFb: 8, capWg: 8, horizonF: 1100,
     recipe: {
-      // 几何账：塔顶 608 高池沿 128px，单跳 96 不达——踏板链 ledge→\坡顶(704,[32,64] 仅 32px 宽)
-      //   →塔西坡台(~615-640)→塔平顶(608)。实证 jd(-1,0,4/3) 西跳漂移过冲/欠收两难，beam 局部
-      //   陷阱（658 评估耗尽）——本段只到塔顶，塔→桥面拆 I3b。
-      fb: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 90, 60),
-        spec("jumpDrift", -1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 2), spec("sleep", 10)],
-      wg: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 90, 60),
-        spec("jumpDrift", -1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 2), spec("sleep", 10)],
+      // dbgI3 复放实证（resume 后 recipe 首评）：walkTo vMax60 实速 1px/f，fb 走 600f 致第三跳被
+      //   视界截断；jd(-1,0,3) 自 x85 漂 50-90 落 -5..35 全员错过 \坡[32,64] 撞西墙角。
+      //   修：fb 两段走（999 全速至 150 + 60 精停 90，省 ~450f）；首跳 jd(-1,0,2) 漂 25-50 落坡面；
+      //   jd(1,0,4) 落脊峰 / 面/顶点(160,608)；jd(1,0,2) 上桥面 [160,224]@512。视界 1100。
+      fb: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 150, 999),
+        spec("walkTo", -1, 90, 60), spec("jumpDrift", -1, 0, 2), spec("jumpDrift", 1, 0, 4),
+        spec("jumpDrift", 1, 0, 2), spec("sleep", 10)],
+      wg: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 85, 60),
+        spec("jumpDrift", -1, 0, 2), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 2), spec("sleep", 10)],
     },
     vocab: {
       fb: [spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 105, 170),
         spec("sleep", 100), spec("sleep", 120), spec("sleep", 150),
-        spec("walkTo", -1, 80, 60), spec("walkTo", -1, 100, 60),
+        spec("walkTo", -1, 140, 999), spec("walkTo", -1, 160, 999),
         spec("jumpDrift", -1, 0, 2), spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4),
         spec("jumpDrift", 1, 0, 2), spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5),
-        spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 7), spec("jumpDrift", 1, 0, 8), spec("sleep", 10)],
+        spec("jumpDrift", 1, 0, 2), spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("sleep", 10)],
       wg: [spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 105, 170),
         spec("sleep", 100), spec("sleep", 120), spec("sleep", 150),
-        spec("walkTo", -1, 80, 60), spec("walkTo", -1, 100, 60),
+        spec("walkTo", -1, 80, 60), spec("walkTo", -1, 95, 60),
         spec("jumpDrift", -1, 0, 2), spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4),
         spec("jumpDrift", 1, 0, 2), spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5),
-        spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 7), spec("jumpDrift", 1, 0, 8), spec("sleep", 10)],
+        spec("jumpDrift", 1, 0, 2), spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("sleep", 10)],
     },
   },
   I3b: {
