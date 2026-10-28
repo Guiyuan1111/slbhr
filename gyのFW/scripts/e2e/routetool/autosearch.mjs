@@ -548,11 +548,12 @@ const SEGI = {
       //   (736,704)(768,672)(800,640)，自 (800,640) 满速西北跳落 (672,544) '5' 砖（rise~92 漂~130
       //   弧穿 512 楼板下侧），步上 512 结构（'7' 砖 x704-896 顶~508），再 jd 40px 上 deck(472)。
       //   全程 fb 不越液体西缘，冻结与否无关；闸门+定时钮系烟雾弹（门厅自 upper beam 西端可达）。
-      fb: [spec("walkTo", 1, 730, 999), spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 3),
-        spec("jumpDrift", 1, 0, 3), spec("runJump", -1, 790, 25), spec("jumpDrift", 1, 0, 3),
+      // v6.1 修正：fb 首件必须 waitPx 站住（entry 合取窗 f849-861：fb∈[600,755] ∧ wg∈[105,170]，
+      //   先行东走即错过——v6 entry@-1 全灭实证）。阶梯斜砖可步行直上 row-20(605)（d8 实证 864,605），
+      //   自 row-20 满速西跳落 512 楼板（704-896，rise~95 漂~200），jd 40px 上 deck。
+      fb: [spec("waitPx", "wg", 105, 170), spec("walkTo", 1, 950, 999), spec("runJump", -1, 880, 25),
         spec("jumpDrift", 1, 0, 4), spec("walkTo", 1, 880, 999), spec("sleep", 10)],
-      wg: [spec("walkTo", 1, 730, 999), spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 3),
-        spec("jumpDrift", 1, 0, 3), spec("runJump", -1, 790, 25), spec("jumpDrift", 1, 0, 3),
+      wg: [spec("waitPx", "fb", 600, 755), spec("walkTo", 1, 950, 999), spec("runJump", -1, 880, 25),
         spec("jumpDrift", 1, 0, 4), spec("walkTo", 1, 880, 999), spec("sleep", 10)],
     },
     vocab: {
