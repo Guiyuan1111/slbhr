@@ -550,7 +550,7 @@ const SEGI = {
       //   跳上 \坡(704)（45°坡不可步行上行）→jd(1,0,12) 越西塔(608)直落桥面西端(512)。
       fb: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 100, 60),
         spec("jumpDrift", -1, 0, 7), spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 9), spec("sleep", 10)],
-      wg: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 100, 60),
+      wg: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 90, 60),
         spec("jumpDrift", -1, 0, 7), spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 9), spec("sleep", 10)],
     },
     vocab: {
