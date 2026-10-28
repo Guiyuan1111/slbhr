@@ -544,28 +544,27 @@ const SEGI = {
   I3: {
     maxDepth: 12, capFb: 8, capWg: 8, horizonF: 620,
     recipe: {
-      // 时间线锁（dbgI3 复放实证）：I2 末态=wg 泳过未冻池按 b1（pusherState1=1，f~849），p1 滑出+
-      //   蓝束落地冻结滞后 ~100-130f；fb 原 recipe vMax60 西行 600px 需 ~600f 超段视界（实证卡 290）。
-      //   fb 全速(999)西行 ~130f；wg 精停 90 备坡基起跳。同链：jd(-1,0,7) 跳上 \坡(704)（45°坡不可
-      //   步行上行）→jd(1,0,12) 越西塔(608)→jd(1,0,9) 落桥面西端(512)。
+      // 时间线锁（dbgI3 复放实证）：I2 末态=wg 泳过未冻池按 b1，冻结滞后 ~100-130f；fb vMax60 走
+      //   600px 超 520 视界（停 290）改全速；jd(1,0,12) 从极西起跳撞塔西立面回弹（fb 停 100 实证）。
+      //   三跳链：jd(-1,0,5) 西小跳落 ledge 西端→jd(1,0,8) 东跳上西塔(608)→jd(1,0,5) 东小跳落桥面(512)。
       fb: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 100, 999),
-        spec("jumpDrift", -1, 0, 7), spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 9), spec("sleep", 10)],
+        spec("jumpDrift", -1, 0, 5), spec("jumpDrift", 1, 0, 8), spec("jumpDrift", 1, 0, 5), spec("sleep", 10)],
       wg: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 90, 60),
-        spec("jumpDrift", -1, 0, 7), spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 9), spec("sleep", 10)],
+        spec("jumpDrift", -1, 0, 5), spec("jumpDrift", 1, 0, 8), spec("jumpDrift", 1, 0, 5), spec("sleep", 10)],
     },
     vocab: {
       fb: [spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 105, 170),
         spec("sleep", 100), spec("sleep", 120), spec("sleep", 150),
         spec("walkTo", -1, 90, 999), spec("walkTo", -1, 110, 999),
-        spec("jumpDrift", -1, 0, 5), spec("jumpDrift", -1, 0, 7), spec("jumpDrift", -1, 0, 9),
-        spec("jumpDrift", 1, 0, 10), spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 15),
-        spec("jumpDrift", 1, 0, 7), spec("jumpDrift", 1, 0, 9), spec("jumpDrift", 1, 0, 12), spec("sleep", 10)],
+        spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 5), spec("jumpDrift", -1, 0, 7),
+        spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 8), spec("jumpDrift", 1, 0, 10),
+        spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5), spec("jumpDrift", 1, 0, 7), spec("sleep", 10)],
       wg: [spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 105, 170),
         spec("sleep", 100), spec("sleep", 120), spec("sleep", 150),
         spec("walkTo", -1, 80, 60), spec("walkTo", -1, 100, 60),
-        spec("jumpDrift", -1, 0, 5), spec("jumpDrift", -1, 0, 7), spec("jumpDrift", -1, 0, 9),
-        spec("jumpDrift", 1, 0, 10), spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 15),
-        spec("jumpDrift", 1, 0, 7), spec("jumpDrift", 1, 0, 9), spec("jumpDrift", 1, 0, 12), spec("sleep", 10)],
+        spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 5), spec("jumpDrift", -1, 0, 7),
+        spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 8), spec("jumpDrift", 1, 0, 10),
+        spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5), spec("jumpDrift", 1, 0, 7), spec("sleep", 10)],
     },
   },
   I4: {
