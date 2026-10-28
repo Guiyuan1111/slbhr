@@ -542,13 +542,13 @@ const SEGI = {
     },
   },
   I3: {
-    maxDepth: 12, capFb: 8, capWg: 8, horizonF: 520,
+    maxDepth: 12, capFb: 8, capWg: 8, horizonF: 620,
     recipe: {
-      // 时间线锁（TEMP/ice02-i3dbg.mjs + dbgI3 复放实证）：I2 末态=wg 泳过未冻池按 b1（pusherState1=1，
-      //   f~849），p1 滑出+蓝束落地冻结滞后 ~100-130f；fb 若立即西行 f757 溺亡（原 recipe 实证）。
-      //   双方 waitPx(wg 在按钮窗)+sleep(120) 等冻结完成，再同链西行：walkTo(-1,100)→jd(-1,0,7)
-      //   跳上 \坡(704)（45°坡不可步行上行）→jd(1,0,12) 越西塔(608)直落桥面西端(512)。
-      fb: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 100, 60),
+      // 时间线锁（dbgI3 复放实证）：I2 末态=wg 泳过未冻池按 b1（pusherState1=1，f~849），p1 滑出+
+      //   蓝束落地冻结滞后 ~100-130f；fb 原 recipe vMax60 西行 600px 需 ~600f 超段视界（实证卡 290）。
+      //   fb 全速(999)西行 ~130f；wg 精停 90 备坡基起跳。同链：jd(-1,0,7) 跳上 \坡(704)（45°坡不可
+      //   步行上行）→jd(1,0,12) 越西塔(608)→jd(1,0,9) 落桥面西端(512)。
+      fb: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 100, 999),
         spec("jumpDrift", -1, 0, 7), spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 9), spec("sleep", 10)],
       wg: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 90, 60),
         spec("jumpDrift", -1, 0, 7), spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 9), spec("sleep", 10)],
@@ -556,13 +556,13 @@ const SEGI = {
     vocab: {
       fb: [spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 105, 170),
         spec("sleep", 100), spec("sleep", 120), spec("sleep", 150),
-        spec("walkTo", -1, 90, 60), spec("walkTo", -1, 110, 60),
+        spec("walkTo", -1, 90, 999), spec("walkTo", -1, 110, 999),
         spec("jumpDrift", -1, 0, 5), spec("jumpDrift", -1, 0, 7), spec("jumpDrift", -1, 0, 9),
         spec("jumpDrift", 1, 0, 10), spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 15),
         spec("jumpDrift", 1, 0, 7), spec("jumpDrift", 1, 0, 9), spec("jumpDrift", 1, 0, 12), spec("sleep", 10)],
       wg: [spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 105, 170),
         spec("sleep", 100), spec("sleep", 120), spec("sleep", 150),
-        spec("walkTo", -1, 90, 60), spec("walkTo", -1, 110, 60),
+        spec("walkTo", -1, 80, 60), spec("walkTo", -1, 100, 60),
         spec("jumpDrift", -1, 0, 5), spec("jumpDrift", -1, 0, 7), spec("jumpDrift", -1, 0, 9),
         spec("jumpDrift", 1, 0, 10), spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 15),
         spec("jumpDrift", 1, 0, 7), spec("jumpDrift", 1, 0, 9), spec("jumpDrift", 1, 0, 12), spec("sleep", 10)],
