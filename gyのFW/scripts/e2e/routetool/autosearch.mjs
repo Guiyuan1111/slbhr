@@ -542,29 +542,40 @@ const SEGI = {
     },
   },
   I3: {
-    maxDepth: 12, capFb: 6, capWg: 6, horizonF: 620,
+    maxDepth: 14, capFb: 8, capWg: 8, horizonF: 700,
     recipe: {
-      // 冰池冻结窗口：run1 冻结 ~f700 过期、b1 按压 f861 起冻结至 ~1277——fb 种子队列 ~f700 排干
-      //   （I2 定稿修剪掉等待件），任何早于按压的西行即溺。fb 首件 waitPx(wg,105,170) 锚按压后；
-      //   wg 实证（v3 搜索 d2+）：退跑 60px 助跑 + jd(1,0,20) 可登首级 ~596，续小跳上坡。
-      fb: [spec("waitPx", "wg", 105, 170), spec("walkTo", -1, 300, 999), spec("walkTo", -1, 128, 60),
-        spec("walkTo", 1, 420, 999), spec("sleep", 10)],
-      wg: [spec("walkTo", -1, 60, 60), spec("jumpDrift", 1, 0, 20), spec("jumpDrift", 1, 0, 8),
-        spec("walkTo", 1, 420, 999), spec("sleep", 10)],
+      // 坡体 4px 精扫（TEMP/ice02-scan6）：地板 700（x40-250 实体，液池 x252 起）→首级 ~604
+      //   （x132-160，28px）→三角斜瓦 x160-188（~540→484，无竖直面）→524 台（x208-236）→三角顶
+      //   484@188→deck-476（x192 起）。跳冲量随水平速度（站立 38px/全速 ~100px）：登首级须退跑
+      //   西端 x60-80 助跑 runJump(1,~90,25)；首级→524 台沿边 runJump(1,152,12)（弧穿三角下方）；
+      //   524→三角顶 jd(-1,0,4)（升 40 贴脸）；8px 阶上 deck。fb 首件 waitPx 锚按压，慢速穿池。
+      fb: [spec("waitPx", "wg", 105, 170), spec("walkTo", -1, 300, 999), spec("walkTo", -1, 70, 60),
+        spec("runJump", 1, 90, 25), spec("walkTo", 1, 140, 999), spec("runJump", 1, 152, 12),
+        spec("walkTo", 1, 215, 999), spec("jumpDrift", -1, 0, 4), spec("walkTo", 1, 260, 999), spec("sleep", 10)],
+      wg: [spec("sleep", 30), spec("walkTo", -1, 70, 60), spec("runJump", 1, 90, 25),
+        spec("walkTo", 1, 140, 999), spec("runJump", 1, 152, 12), spec("walkTo", 1, 215, 999),
+        spec("jumpDrift", -1, 0, 4), spec("walkTo", 1, 260, 999), spec("sleep", 10)],
     },
     vocab: {
       fb: [spec("waitPx", "wg", 105, 170), spec("waitPx", "wg", 100, 180),
-        spec("walkTo", -1, 320, 999), spec("walkTo", -1, 280, 999), spec("walkTo", -1, 240, 999),
-        spec("walkTo", -1, 140, 60), spec("walkTo", -1, 128, 60), spec("walkTo", -1, 116, 60),
-        spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 8),
-        spec("jumpDrift", 1, 0, 20), spec("jumpDrift", 1, 0, 25),
-        spec("walkTo", 1, 420, 999), spec("walkTo", 1, 380, 999), spec("walkTo", 1, 300, 60), spec("sleep", 10)],
-      wg: [spec("walkTo", -1, 60, 60), spec("walkTo", -1, 80, 60),
-        spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 8), spec("jumpDrift", 1, 0, 10),
-        spec("jumpDrift", 1, 0, 12), spec("jumpDrift", 1, 0, 14), spec("jumpDrift", 1, 0, 16), spec("jumpDrift", 1, 0, 18),
-        spec("jumpDrift", 1, 0, 20), spec("jumpDrift", 1, 0, 25), spec("jumpDrift", 1, 0, 28),
-        spec("walkTo", 1, 200, 60), spec("walkTo", 1, 230, 60), spec("walkTo", 1, 260, 60),
-        spec("walkTo", 1, 300, 60), spec("walkTo", 1, 380, 999), spec("walkTo", 1, 420, 999), spec("sleep", 10)],
+        spec("walkTo", -1, 300, 999), spec("walkTo", -1, 240, 999),
+        spec("walkTo", -1, 60, 60), spec("walkTo", -1, 70, 60), spec("walkTo", -1, 80, 60),
+        spec("runJump", 1, 80, 25), spec("runJump", 1, 90, 25), spec("runJump", 1, 95, 25), spec("runJump", 1, 100, 25),
+        spec("walkTo", 1, 140, 999), spec("walkTo", 1, 150, 999),
+        spec("runJump", 1, 148, 10), spec("runJump", 1, 152, 12), spec("runJump", 1, 152, 14),
+        spec("walkTo", 1, 210, 999), spec("walkTo", 1, 215, 999), spec("walkTo", 1, 220, 999),
+        spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6),
+        spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4),
+        spec("walkTo", 1, 260, 999), spec("walkTo", 1, 300, 999), spec("sleep", 10)],
+      wg: [spec("sleep", 20), spec("sleep", 30), spec("sleep", 45),
+        spec("walkTo", -1, 60, 60), spec("walkTo", -1, 70, 60), spec("walkTo", -1, 80, 60),
+        spec("runJump", 1, 80, 25), spec("runJump", 1, 90, 25), spec("runJump", 1, 95, 25), spec("runJump", 1, 100, 25),
+        spec("walkTo", 1, 140, 999), spec("walkTo", 1, 150, 999),
+        spec("runJump", 1, 148, 10), spec("runJump", 1, 152, 12), spec("runJump", 1, 152, 14),
+        spec("walkTo", 1, 210, 999), spec("walkTo", 1, 215, 999), spec("walkTo", 1, 220, 999),
+        spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6),
+        spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4),
+        spec("walkTo", 1, 260, 999), spec("walkTo", 1, 300, 999), spec("sleep", 10)],
     },
   },
   I4: {
