@@ -1,0 +1,65 @@
+# 分发线漂移检查（防 #51 重演）
+#
+# ## 为什么需要这个作业
+#
+# 1.0.0 的事故链里有一环不是代码 bug，而是流程缺口：`release/1.0-forest` 从
+# 0.3.55 分出后再没跟进 main，而 main 同期落了 26 个提交，其中两个正好是
+# 同一链路的 P0 修复（0.3.56 CSP+seedrandom、0.3.58 TimedPusher）。分发线
+# 「安静地」带着两个已修缺陷出厂，六步验收全绿也发现不了。
+#
+# 本作业把「分发线落后于 main」变成可见信号：超过阈值即告警（不阻断 main 的
+# 开发，但必须在下次发版前处理）。阈值取 7 天 / 20 个提交，与
+# note/plans/2026-10-28-version-lines.md §五 的约定一致。
+#
+# 非阻断策略：main 每天在动，硬失败会让日常开发永远红。这里用 job summary +
+# 告警标签，真发版前由人工/发版流程核对（§四回灌检查表）。
+name: drift-check
+
+on:
+  schedule:
+    - cron: "0 2 * * 1"      # 每周一 02:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0        # 需要完整历史做 rev-list
+
+      - name: 检查各分发线相对 main 的落后量
+        run: |
+          set -eu
+          MAX_COMMITS=20
+          MAX_DAYS=7
+          now="$(date +%s)"
+          rc=0
+          lines=""
+          for br in $(git branch -r --list 'origin/release/*' | sed 's#^ *origin/##'); do
+            behind="$(git rev-list --count "origin/$br..origin/main" 2>/dev/null || echo 0)"
+            ahead="$(git rev-list --count "origin/main..origin/$br" 2>/dev/null || echo 0)"
+            last="$(git log -1 --format=%ct "origin/$br" 2>/dev/null || echo "$now")"
+            days=$(( (now - last) / 86400 ))
+            verdict="ok"
+            if [ "$behind" -gt "$MAX_COMMITS" ] || [ "$days" -gt "$MAX_DAYS" ]; then
+              verdict="DRIFT"
+              rc=1
+            fi
+            lines="${lines}| \`$br\` | $behind | $ahead | $days | $verdict |"$'\n'
+            echo "$br: behind=$behind ahead=$ahead idle=${days}d -> $verdict"
+          done
+          {
+            echo "## 分发线漂移检查（阈值：落后 >${MAX_COMMITS} 提交 或 闲置 >${MAX_DAYS} 天）"
+            echo
+            echo "| 分支 | 落后 main | 领先 main | 距上次提交 | 判定 |"
+            echo "|---|---|---|---|---|"
+            printf '%s' "$lines"
+            echo
+            echo "处置见 \`gyのFW/note/plans/2026-10-28-version-lines.md\` §四 跨线回灌流程。"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $rc

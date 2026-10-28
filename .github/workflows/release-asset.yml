@@ -1,13 +1,23 @@
-# 1.0 分发链：从 tag 源码构建部署包并上传到同名 Release。
+# 单部神庙分发链：从 tag 源码构建该部的部署包，上传到同名 Release。
+#
 # 背景：本机网络对 uploads.github.com 选择性阻断（api/github.com 正常、上传握手必败），
 # 附件改由 CI 侧构建上传；分发产物由此永远等于 tag 源码的确定性产出。
-# 触发：推送 1.0.* tag；或 workflow_dispatch（--ref release/1.0-forest，main 无打包链）。
+#
+# 触发：推送 <部>.<任意>.* 形式的 tag（1.* / 2.* / 3.*）；或 workflow_dispatch
+# （手动派发须在带打包链的分支上，main 目前没有 package-deploy.mjs）。
+#
+# ## tag 主线号 → 分部（见 note/plans/2026-10-28-version-lines.md）
+#   1.x.* → forest   2.x.* → light   3.x.* → ice
+# 主线号与内容不符会被本文件的 Guard 直接拒绝——「1.x 只发第一部」是硬约束，
+# 不允许靠人工记忆维持。
 name: release-asset
 
 on:
   push:
     tags:
-      - "1.0.*"
+      - "1.*"
+      - "2.*"
+      - "3.*"
   workflow_dispatch:
 
 permissions:
@@ -28,13 +38,23 @@ jobs:
           node-version: 22.x
           cache: npm
           cache-dependency-path: gyのFW/package-lock.json
-      - name: Guard（只认 1.0.* tag 名；分支手动派发会误建同名 release）
+      - name: Guard（tag 主线号决定分部；不符即拒）
+        id: temple
         run: |
           case "$GITHUB_REF_NAME" in
-            1.0.*) : ;;
-            *) echo "GITHUB_REF_NAME=$GITHUB_REF_NAME 非 1.0.*——tag push 才是正确触发方式"; exit 1 ;;
+            1.*) temple=forest ;;
+            2.*) temple=light ;;
+            3.*) temple=ice ;;
+            *) echo "GITHUB_REF_NAME=$GITHUB_REF_NAME 不是 1.*/2.*/3.* —— tag push 才是正确触发方式"; exit 1 ;;
           esac
+          echo "temple=$temple" >> "$GITHUB_OUTPUT"
+          echo "分部：$temple（tag $GITHUB_REF_NAME）"
           test -f scripts/package-deploy.mjs || { echo "本 ref 无打包链（package-deploy.mjs）"; exit 1; }
+          # 打包器会自己校验该部部署文档是否存在；这里先探一次，让失败原因出现在更早的步骤
+          if [ "$temple" != forest ] && [ ! -f "DEPLOY.$temple.md" ]; then
+            echo "缺 DEPLOY.$temple.md —— 分发包的部署指南必须与本部内容一致"
+            exit 1
+          fi
       - name: Install
         run: npm ci
       - name: Install chromium（真开局冒烟要开浏览器）
@@ -45,22 +65,32 @@ jobs:
         # #51 防回归：package-deploy 内置 deploy-smoke——起服→双人开局→assert patch
         # 持续→assert 进程存活→浏览器建房进 Game。六步验收的 ⑥ 只 create→leave，
         # 状态从未广播增量，「能起服不能开局」在验收里完全隐形（1.0.0 就这样漏出去）。
-        run: node scripts/package-deploy.mjs
+        run: node scripts/package-deploy.mjs --temple "${{ steps.temple.outputs.temple }}"
       - name: 解包复验（独立 tmp 目录，模拟真实部署）
         run: |
+          temple="${{ steps.temple.outputs.temple }}"
           tmp="$(mktemp -d)"
-          tar -xzf TEMP/gy-fw-forest-*.tar.gz -C "$tmp"
-          pkg="$(find "$tmp" -maxdepth 1 -name 'gy-fw-forest-*' -type d)"
+          tar -xzf TEMP/gy-fw-${temple}-*.tar.gz -C "$tmp"
+          pkg="$(find "$tmp" -maxdepth 1 -name "gy-fw-${temple}-*" -type d)"
           echo "包目录: $pkg"
           # 包里不得残留 TS 源码或测试（1.0.1 起预转译，跑 .js）
           test -z "$(find "$pkg" -path '*/node_modules' -prune -o -name '*.ts' -print)"
           test -z "$(find "$pkg" -path '*/node_modules' -prune -o -name '__tests__' -type d -print)"
-          node scripts/e2e/deploy-smoke.mjs --serve-dir "$pkg" --port 2599 --window 8000
+          # 别部的数据目录不得残留（「只发一部」的兜底断言，与 verify.mjs ③ 同口径）
+          for t in forest light ice; do
+            if [ "$t" != "$temple" ]; then
+              test ! -d "$pkg/data/$t" || { echo "夹带别部数据 data/$t"; exit 1; }
+              test ! -d "$pkg/assets/atlasses/Temples/$t" || { echo "夹带别部图集 Temples/$t"; exit 1; }
+            fi
+          done
+          node scripts/e2e/deploy-smoke.mjs --serve-dir "$pkg" --port 2599 --window 8000 \
+            --level "$(node scripts/first-level.mjs "$pkg/data/$temple/temple.json" "$temple")"
       - name: Upload to release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          temple="${{ steps.temple.outputs.temple }}"
           tag="${GITHUB_REF_NAME}"
           gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
             gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "$tag" --notes "部署手册见包内 DEPLOY.md"
-          gh release upload "$tag" TEMP/gy-fw-forest-*.tar.gz TEMP/gy-fw-forest-*.tar.gz.sha256 --repo "$GITHUB_REPOSITORY" --clobber
+          gh release upload "$tag" TEMP/gy-fw-${temple}-*.tar.gz TEMP/gy-fw-${temple}-*.tar.gz.sha256 --repo "$GITHUB_REPOSITORY" --clobber
