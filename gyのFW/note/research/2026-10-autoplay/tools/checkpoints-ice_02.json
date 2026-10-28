@@ -330,7 +330,7 @@
   },
   {
    "id": "I3",
-   "title": "东阶攀 v6：701 岸东行→阶梯砖(736,704)(768,672)(800,640)→满速西北跳落 544 砖→512 结构(704-896)→40px 跳上 deck(472) 东段停定（Tiled 底图实证，无闸无竞赛）",
+   "note": "v7 西塔线：fb 借 P1 渡 701 水道(wg 压 b1 驱动)→双上 b1 座垂直跳 y608 台(573)→西跳楔形坡(448-480)→跃台阶上塔顶(381)→短跃 y384(349)→步上斜坡顶(317-339)→东跳上梁西端(253)→东行双跳绿浆(544-640)。地图口径：deck(512) 横贯 x160-1248 封洞顶(row-20 头槌实证)，全部静态跳升限 119。",
    "entry": [
     {
      "kind": "px",
@@ -378,74 +378,90 @@
      {
       "kind": "px",
       "role": "fb",
-      "min": 640,
-      "max": 800
+      "min": 60,
+      "max": 300
      },
      {
       "kind": "py",
       "role": "fb",
-      "min": 494,
-      "max": 560
+      "min": 640,
+      "max": 730
      },
      {
       "kind": "grounded",
       "role": "fb"
-     },
+     }
+    ],
+    [
      {
       "kind": "px",
       "role": "wg",
-      "min": 640,
-      "max": 800
+      "min": 100,
+      "max": 200
      },
      {
       "kind": "py",
       "role": "wg",
-      "min": 494,
-      "max": 560
+      "min": 540,
+      "max": 600
      },
      {
       "kind": "grounded",
       "role": "wg"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 25,
+      "max": 150
      },
      {
-      "kind": "alive"
+      "kind": "py",
+      "role": "wg",
+      "min": 340,
+      "max": 480
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 210,
+      "max": 540
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 225,
+      "max": 285
      }
     ],
     [
      {
       "kind": "px",
       "role": "fb",
-      "min": 740,
-      "max": 1000
+      "min": 650,
+      "max": 1060
      },
      {
       "kind": "py",
       "role": "fb",
-      "min": 462,
-      "max": 496
-     },
-     {
-      "kind": "grounded",
-      "role": "fb"
+      "min": 225,
+      "max": 285
      },
      {
       "kind": "px",
       "role": "wg",
-      "min": 740,
-      "max": 1000
+      "min": 650,
+      "max": 1060
      },
      {
       "kind": "py",
       "role": "wg",
-      "min": 462,
-      "max": 496
-     },
-     {
-      "kind": "grounded",
-      "role": "wg"
-     },
-     {
-      "kind": "alive"
+      "min": 225,
+      "max": 285
      }
     ]
    ],
@@ -453,76 +469,60 @@
     {
      "kind": "px",
      "role": "fb",
-     "min": 780,
-     "max": 1010
+     "min": 650,
+     "max": 1060
     },
     {
      "kind": "py",
      "role": "fb",
-     "min": 462,
-     "max": 496
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
+     "min": 225,
+     "max": 285
     },
     {
      "kind": "px",
      "role": "wg",
-     "min": 780,
-     "max": 1010
+     "min": 650,
+     "max": 1060
     },
     {
      "kind": "py",
      "role": "wg",
-     "min": 462,
-     "max": 496
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
+     "min": 225,
+     "max": 285
     },
     {
      "kind": "alive"
     }
    ],
-   "horizonF": 560
+   "horizonF": 1500
   },
   {
    "id": "I4",
-   "title": "deck 西跑→上跳 beam-380(372)→东端连跳 g2 阶(1096:308→1104:300→1112:292→1120+:280)→满速西跳落 upper beam(248) 西段",
+   "note": "v7 终段：fb 步落 g2 板(285) 待 wg 抵 y256(221) 后踏 t0(4s 电梯下行)→板西缘跳西落上梁(253)→西奔跳浆→梁西端步落 y256→跃接电梯(x224-320)→ride 唤醒随梯至顶(61)→落门厅(125)各归其门→双 isUp 同帧胜。电梯 p2 由计时推杆 t0(1168,320) 驱动：压=降(157) 弛=升(61)。",
    "entry": [
     {
      "kind": "px",
      "role": "fb",
-     "min": 780,
-     "max": 1010
+     "min": 650,
+     "max": 1060
     },
     {
      "kind": "py",
      "role": "fb",
-     "min": 462,
-     "max": 496
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
+     "min": 225,
+     "max": 285
     },
     {
      "kind": "px",
      "role": "wg",
-     "min": 780,
-     "max": 1010
+     "min": 650,
+     "max": 1060
     },
     {
      "kind": "py",
      "role": "wg",
-     "min": 462,
-     "max": 496
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
+     "min": 225,
+     "max": 285
     },
     {
      "kind": "alive"
@@ -533,206 +533,109 @@
      {
       "kind": "px",
       "role": "fb",
-      "min": 680,
-      "max": 1030
+      "min": 1080,
+      "max": 1240
      },
      {
       "kind": "py",
       "role": "fb",
-      "min": 352,
-      "max": 404
-     },
-     {
-      "kind": "grounded",
-      "role": "fb"
-     },
-     {
-      "kind": "px",
-      "role": "wg",
-      "min": 680,
-      "max": 1030
-     },
-     {
-      "kind": "py",
-      "role": "wg",
-      "min": 352,
-      "max": 404
-     },
-     {
-      "kind": "grounded",
-      "role": "wg"
-     },
-     {
-      "kind": "alive"
+      "min": 255,
+      "max": 315
      }
     ],
     [
      {
       "kind": "px",
-      "role": "fb",
-      "min": 280,
-      "max": 1216
-     },
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 236,
-      "max": 340
-     },
-     {
-      "kind": "grounded",
-      "role": "fb"
-     },
-     {
-      "kind": "px",
       "role": "wg",
-      "min": 280,
-      "max": 1216
+      "min": 170,
+      "max": 270
      },
      {
       "kind": "py",
       "role": "wg",
-      "min": 236,
-      "max": 340
-     },
-     {
-      "kind": "grounded",
-      "role": "wg"
-     },
-     {
-      "kind": "alive"
-     }
-    ]
-   ],
-   "target": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 240,
-     "max": 1000
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 236,
-     "max": 272
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 240,
-     "max": 1000
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 236,
-     "max": 272
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "horizonF": 720
-  },
-  {
-   "id": "I5",
-   "title": "upper beam 西端下跳门厅：wg 入龛(176-220@~216/184)站门；fb 越缝西跳入龛(48-112@184)站门；双门同升 phaseWon",
-   "entry": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 240,
-     "max": 1000
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 236,
-     "max": 272
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 240,
-     "max": 1000
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 236,
-     "max": 272
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "waypoints": [
-    [
-     {
-      "kind": "px",
-      "role": "wg",
-      "min": 152,
-      "max": 232
-     },
-     {
-      "kind": "py",
-      "role": "wg",
-      "min": 160,
-      "max": 232
-     },
-     {
-      "kind": "grounded",
-      "role": "wg"
-     },
-     {
-      "kind": "alive"
+      "min": 195,
+      "max": 250
      }
     ],
     [
+     {
+      "kind": "platY",
+      "id": 2,
+      "min": 180,
+      "max": 240
+     }
+    ],
+    [
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 40,
+      "max": 180
+     },
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 210,
+      "max": 345
+     }
+    ],
+    [
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 100,
+      "max": 150
+     },
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 140,
+      "max": 240
+     }
+    ],
+    [
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 40,
+      "max": 180
+     },
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 210,
+      "max": 345
+     }
+    ],
+    [
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 100,
+      "max": 150
+     },
      {
       "kind": "px",
       "role": "fb",
       "min": 40,
-      "max": 120
-     },
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 160,
-      "max": 232
-     },
-     {
-      "kind": "grounded",
-      "role": "fb"
-     },
-     {
-      "kind": "alive"
+      "max": 240
      }
     ]
    ],
    "target": [
     {
-     "kind": "phaseWon"
+     "kind": "doorUp",
+     "role": "wg"
+    },
+    {
+     "kind": "doorUp",
+     "role": "fb"
+    },
+    {
+     "kind": "alive"
     }
    ],
-   "horizonF": 700
+   "horizonF": 1300
   }
  ]
 }
