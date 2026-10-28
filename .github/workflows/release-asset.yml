@@ -37,10 +37,25 @@ jobs:
           test -f scripts/package-deploy.mjs || { echo "本 ref 无打包链（package-deploy.mjs）"; exit 1; }
       - name: Install
         run: npm ci
+      - name: Install chromium（真开局冒烟要开浏览器）
+        run: npx playwright install --with-deps chromium
       - name: Build client
         run: npm run build
-      - name: Package（内含生产依赖预装）
+      - name: Package（内含生产依赖预装 + 产物真开局冒烟）
+        # #51 防回归：package-deploy 内置 deploy-smoke——起服→双人开局→assert patch
+        # 持续→assert 进程存活→浏览器建房进 Game。六步验收的 ⑥ 只 create→leave，
+        # 状态从未广播增量，「能起服不能开局」在验收里完全隐形（1.0.0 就这样漏出去）。
         run: node scripts/package-deploy.mjs
+      - name: 解包复验（独立 tmp 目录，模拟真实部署）
+        run: |
+          tmp="$(mktemp -d)"
+          tar -xzf TEMP/gy-fw-forest-*.tar.gz -C "$tmp"
+          pkg="$(find "$tmp" -maxdepth 1 -name 'gy-fw-forest-*' -type d)"
+          echo "包目录: $pkg"
+          # 包里不得残留 TS 源码或测试（1.0.1 起预转译，跑 .js）
+          test -z "$(find "$pkg" -path '*/node_modules' -prune -o -name '*.ts' -print)"
+          test -z "$(find "$pkg" -path '*/node_modules' -prune -o -name '__tests__' -type d -print)"
+          node scripts/e2e/deploy-smoke.mjs --serve-dir "$pkg" --port 2599 --window 8000
       - name: Upload to release
         env:
           GH_TOKEN: ${{ github.token }}

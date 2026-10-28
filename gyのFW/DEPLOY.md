@@ -23,15 +23,28 @@
 ## 2. 快速起步（前台试跑）
 
 ```bash
-sha256sum -c gy-fw-forest-1.0.0.tar.gz.sha256     # 校验（1.0.x 按实际版本号）
-tar -xzf gy-fw-forest-1.0.0.tar.gz
-cd gy-fw-forest-1.0.0
-node --import tsx packages/server/src/index.ts    # 前台起服（默认 127.0.0.1:2567）
+sha256sum -c gy-fw-forest-1.0.1.tar.gz.sha256     # 校验（1.0.x 按实际版本号）
+tar -xzf gy-fw-forest-1.0.1.tar.gz
+cd gy-fw-forest-1.0.1
+node packages/server/src/index.js                 # 前台起服（默认 127.0.0.1:2567）
 ```
 
-看到 `[fw] http+ws  http://127.0.0.1:2567` 即启动成功。Ctrl+C 退出，转 §4 常驻。
+看到这两行即启动成功（第一行是启动期状态自检，必须在）：
 
-> **必须用 `node --import tsx …` 单进程方式启动**，不要用 `npm start`/`npx tsx`（会派生 CLI 子进程，stop 时只杀外层、孙进程变孤儿霸占端口——本项目实测坑，见仓库 M-04）。
+```
+[fw] schema 自检通过（10 类字段访问器完好）
+[fw] http+ws  http://127.0.0.1:2567
+```
+
+Ctrl+C 退出，转 §4 常驻。
+
+> **服务端已预转译，直接跑 `.js`**：包内 `packages/server/src/*.js` 是构建期由 esbuild 从
+> TS 转译的产物，目标机**不需要 tsx，也不需要任何构建工具**。
+>
+> 1.0.0 曾发 TS 源码 + `node --import tsx` 启动，实测开局必崩——tsx 4.x 的 ESM loader 不读
+> tsconfig 的 `useDefineForClassFields`，`x!: number` 被编成原生 class field 覆盖 Colyseus
+> schema 的访问器，首次增量广播即 `encodeValue` 崩溃（#51）。现字段已全部改用 `declare`
+> （不产运行时字段）+ 启动期自检兜底，此类问题不会再静默发生。
 
 ## 3. 环境变量
 
@@ -55,19 +68,19 @@ Wants=network-online.target
 [Service]
 Type=simple
 # ↓↓↓ 按实际部署路径与端口修改这两行 ↓↓↓
-WorkingDirectory=/opt/gy-fw-forest-1.0.0
+WorkingDirectory=/opt/gy-fw-forest-1.0.1
 Environment=PORT=2567
 # 对外直连时加：Environment=FW_HOST=0.0.0.0
 # 反代后加：Environment=FW_TRUST_PROXY=1
 # 自定义域名/嵌入页加：Environment=FW_ALLOWED_ORIGINS=https://fw.example.com
-ExecStart=/usr/bin/env node --import tsx packages/server/src/index.ts
+ExecStart=/usr/bin/env node packages/server/src/index.js
 Restart=always
 RestartSec=3
 # 服务只写 stdout（journald 收），不落业务文件；不设 User= 则以运行 systemctl 的身份，建议显式指定非特权用户
 User=nobody
 NoNewPrivileges=true
 ProtectSystem=strict
-ReadWritePaths=/opt/gy-fw-forest-1.0.0
+ReadWritePaths=/opt/gy-fw-forest-1.0.1
 
 [Install]
 WantedBy=multi-user.target
@@ -103,17 +116,37 @@ curl -s -o /dev/null -w 'light_01   %{http_code}\n' $BASE/api/level/light_01   #
 # ⑤ 音频流式路由：200 + application/octet-stream
 curl -s -o /dev/null -w '%{http_code} %{content_type}\n' $BASE/assets/audio/s/MenuMusic
 
-# ⑥ 联机房间端到端（用包内自带的 colyseus.js 客户端开一间真房；
-#   房间密码强制 4–64 位，空密码/短密码会被 4400 拒绝——故示例用 demo1）
+# ⑥ 联机房间端到端 —— **必须凑两人进 started 并确认增量在流**
+#   1.0.0 的验收在此处只 create→leave：房间状态从未广播过增量，
+#   于是「能起服、不能开局」的崩溃（#51）完全隐形，六步全绿而玩家永远卡 loading。
+#   房间密码强制 4–64 位（空/短密码 4400 拒绝），示例用 demo1。
 node --input-type=module -e "
 import { Client } from 'colyseus.js';
-const c = new Client('ws://127.0.0.1:' + (process.env.PORT ?? 2567));
-const room = await c.create('forest', { levelId: 'forest_01', password: 'demo1' });
-console.log('WS OK sessionId=' + room.sessionId);
-await room.leave(true); process.exit(0);
+const url = 'ws://127.0.0.1:' + (process.env.PORT ?? 2567);
+const c = new Client(url);
+const a = await c.create('forest', { levelId: 'forest_01', password: 'demo1' });
+const b = await c.joinById(a.roomId, { password: 'demo1' });
+a.onMessage('role', () => {}); b.onMessage('role', () => {});
+let patches = 0;
+a.onStateChange(() => { patches++; });
+const t0 = Date.now();
+while (Date.now() - t0 < 20000 && String(a.state?.phase) !== 'started') {
+  await new Promise(r => setTimeout(r, 200));
+}
+const phase = String(a.state?.phase);
+const before = patches;
+await new Promise(r => setTimeout(r, 8000));
+const gained = patches - before;
+console.log('phase=' + phase + ' patches+=' + gained);
+await b.leave(true); await a.leave(true); process.exit(0);
 " 2>&1 | tail -1
-#   预期输出 WS OK sessionId=…
+#   预期输出 phase=started patches+= 且增量数 > 100（≈60/s × 8s）。
+#   若 phase≠started 或 patches 不增长，即为「能起服不能开局」——查 §7。
 ```
+
+> **推荐一次跑完 ①–⑥**：`node scripts/e2e/deploy-smoke.mjs --base $BASE`（脚本随源码仓库分发，
+> 不在部署包内）。它会自动断言 ①③⑥ 的等价项、服务端无 schema 编码崩溃、进程存活，
+> 有 playwright 时还会真开浏览器建房进 Game 并断言 pageerror=0。
 
 ## 6. 对外服务
 
@@ -143,7 +176,9 @@ server {
 
 | 症状 | 原因 | 处置 |
 |---|---|---|
-| `Error: Cannot find module …/tsx/…` 或 esbuild 平台报错 | 非 linux-x64 平台用了随包 node_modules | 包根目录 `npm ci --omit=dev` 重装 |
+| 启动日志缺 `schema 自检通过`，进程立刻退出 | 服务端 `.js` 被外部工具改坏/被 TS 源码覆盖（状态字段非 schema 访问器，房间增量编码必崩，#51） | 用官方包重装；**不要**用 `tsx` 跑包内 TS（1.0.1 起包里已无 TS） |
+| 玩家建房后永久卡 loading，日志见 `uncaughtException … Symbol(Symbol.metadata)` | 同上的旧版崩溃形态（1.0.0 及更早） | 升级到 1.0.1+ |
+| `Error: Cannot find module …` / esbuild 平台报错 | 非 linux-x64 平台用了随包 node_modules | 包根目录 `npm ci --omit=dev` 重装 |
 | 启动即退出：`EADDRINUSE` | 端口被占（含旧实例孤儿进程） | `ss -tlnp \| grep :2567` 找到 pid，`kill` 后再起 |
 | `node: internal …` 版本语法错 | Node < 22.12 | 升级 Node（§1） |
 | 页面能开但玩家连不上房间、日志见 WS 升级 403 | 跨站 Origin 被拒（#45 安全默认） | 玩家页面源加入 `FW_ALLOWED_ORIGINS`（同源访问无需） |
