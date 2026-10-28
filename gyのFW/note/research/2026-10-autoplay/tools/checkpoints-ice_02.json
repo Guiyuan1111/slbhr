@@ -1,0 +1,935 @@
+{
+ "level": "ice_02",
+ "note": "ice_02 检查点链 v2（2026-10-28 全图地形解析+连通性泛洪重排）。I0-I2 沿用已解前缀（出生→mound/y桥→row-20→东台；wg 泅渡压 b1：p1 东移让蓝光冻结泳池，p1 东移持久=冻结持久）。I3-I5 双人同链：东台西行→\\坡(704)跳西塔(608)→跳桥面西端(512)→冰面东行→绕磕头漂移跳上 slab-13(416)→东行穿走廊缝跳上 t0 方块(320)（gid 对象 y=底边：t0 传感器 [1136,1200]x[288,352] 与方块顶 320 相叠=站上即按压）。I6：fb 留守方块持续按压（TimedPusher 压住保持、松开 4s 回弹→闸门 p2 升启 platY≈15.7），wg 西跳金字塔雪阶(224/256)→645→437 rise96 大跳门室桩 ∩(\\+/ 峰 160)→穿洞孔(320,384)→升闸→wg 门(152)。I7：fb 离块起 4s 窗同链→fb 门(48)→phaseWon。关键勘误记录：p1 轨道全段上方有 row17 实体（544-576），任何 p1 载人竖跳 48px 即磕头——p1 唯一用途=蓝光遮板；row16 嵌段为 LAVA[704,896]@512 底部悬空无盆，不可泅渡；45° 坡瓦无法步行上行（脚圆卡坡脚），只可跳链。",
+ "segments": [
+  {
+   "id": "I0",
+   "title": "出生东行：双人翻雪丘（row-25 台→顶 768）→短助跑东跳上 row-22(704)",
+   "entry": [
+    {
+     "kind": "alive"
+    }
+   ],
+   "waypoints": [
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 880,
+      "max": 1040
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 715,
+      "max": 748
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 880,
+      "max": 1040
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 715,
+      "max": 748
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 1060,
+     "max": 1240
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 655,
+     "max": 682
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 1060,
+     "max": 1240
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 655,
+     "max": 682
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "horizonF": 700
+  },
+  {
+   "id": "I1",
+   "title": "row-22 西跳 row-20(640)→西侧楼梯(D25,21+/24,21)步行下东台(736)",
+   "entry": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 1060,
+     "max": 1240
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 655,
+     "max": 682
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 1060,
+     "max": 1240
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 655,
+     "max": 682
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "waypoints": [
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 850,
+      "max": 1000
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 590,
+      "max": 618
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 850,
+      "max": 1000
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 590,
+      "max": 618
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 680,
+      "max": 830
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 630,
+      "max": 712
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 680,
+      "max": 830
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 630,
+      "max": 712
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 600,
+     "max": 755
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 688,
+     "max": 712
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 600,
+     "max": 755
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 688,
+     "max": 712
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "horizonF": 450
+  },
+  {
+   "id": "I2",
+   "title": "wg 东台跳西入泳池泅渡→登西台→压 b1（p1 东移+泳池永久冻结）；fb 候东台",
+   "entry": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 600,
+     "max": 755
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 688,
+     "max": 712
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 600,
+     "max": 755
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 688,
+     "max": 712
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "waypoints": [
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 280,
+      "max": 600
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 695,
+      "max": 732
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 40,
+      "max": 220
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 688,
+      "max": 712
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 105,
+     "max": 170
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 688,
+     "max": 712
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "pusherState",
+     "id": 1,
+     "value": 1
+    },
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 600,
+     "max": 755
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 688,
+     "max": 712
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "horizonF": 600
+  },
+  {
+   "id": "I3",
+   "title": "双人西行→\\坡跳上西塔(608)→跳上桥面西端(512)（西坡/西塔=普通坡+楔，双人可跳链）",
+   "entry": [
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 105,
+     "max": 170
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 688,
+     "max": 712
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "pusherState",
+     "id": 1,
+     "value": 1
+    },
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 600,
+     "max": 755
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 688,
+     "max": 712
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "waypoints": [
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 14,
+      "max": 120
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 650,
+      "max": 738
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     },
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 14,
+      "max": 120
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 650,
+      "max": 738
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     },
+     {
+      "kind": "alive"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 110,
+      "max": 205
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 555,
+      "max": 612
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     },
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 110,
+      "max": 205
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 555,
+      "max": 612
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     },
+     {
+      "kind": "alive"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 180,
+     "max": 330
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 455,
+     "max": 497
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 180,
+     "max": 330
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 455,
+     "max": 497
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "horizonF": 520
+  },
+  {
+   "id": "I4",
+   "title": "双人桥面(冰)东行→漂移跳上 slab-13 西段(416)（冰面起跳，绕开 slab-13 底 448 磕头须 x≤530 起跳）",
+   "entry": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 180,
+     "max": 330
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 455,
+     "max": 497
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 180,
+     "max": 330
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 455,
+     "max": 497
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "waypoints": [
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 395,
+      "max": 535
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 455,
+      "max": 497
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     },
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 395,
+      "max": 535
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 455,
+      "max": 497
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     },
+     {
+      "kind": "alive"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 512,
+     "max": 780
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 358,
+     "max": 402
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 512,
+     "max": 780
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 358,
+     "max": 402
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "horizonF": 460
+  },
+  {
+   "id": "I5",
+   "title": "slab-13 东行→双人全速东跳上 t0 方块(320)（穿走廊缝 [1024,1120]，oracle sweep 实证 96px 东跳）",
+   "entry": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 512,
+     "max": 780
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 358,
+     "max": 402
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 512,
+     "max": 780
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 358,
+     "max": 402
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "waypoints": [
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 1130,
+      "max": 1244
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 268,
+      "max": 300
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 1130,
+      "max": 1244
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 268,
+      "max": 300
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 1130,
+     "max": 1244
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 268,
+     "max": 300
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 1130,
+     "max": 1244
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 268,
+     "max": 300
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "horizonF": 500
+  },
+  {
+   "id": "I6",
+   "title": "fb 留守方块压住 t0（闸门常开）→wg 方块西跳金字塔雪阶(224)→mosaic 西行→大跳门室桩 ∩(160)→穿洞孔→升闸→内室待命",
+   "entry": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 1130,
+     "max": 1244
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 268,
+     "max": 300
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 1130,
+     "max": 1244
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 268,
+     "max": 300
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "waypoints": [
+    [
+     {
+      "kind": "platY",
+      "id": 2,
+      "min": 0,
+      "max": 60
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 800,
+      "max": 1000
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 185,
+      "max": 250
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 320,
+      "max": 470
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 118,
+      "max": 162
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 130,
+     "max": 330
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 118,
+     "max": 180
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "horizonF": 460
+  },
+  {
+   "id": "I7",
+   "title": "wg 内室待命；fb 离块（4s 窗）→同链冲刺→fb 门(48)；wg 走到 W 门(152)→双门升起 WIN",
+   "entry": [
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 130,
+     "max": 330
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 118,
+     "max": 180
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "waypoints": [
+    [
+     {
+      "kind": "platY",
+      "id": 2,
+      "min": 0,
+      "max": 60
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 800,
+      "max": 1000
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 185,
+      "max": 250
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 320,
+      "max": 470
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 118,
+      "max": 162
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "phaseWon"
+    }
+   ],
+   "horizonF": 470
+  }
+ ]
+}
