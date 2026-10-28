@@ -544,13 +544,13 @@ const SEGI = {
   I3: {
     maxDepth: 12, capFb: 8, capWg: 8, horizonF: 900,
     recipe: {
-      // 几何账：塔顶 608 高池沿 128px，单跳 96 不达——踏板链 ledge→\坡顶(704,[32,64] 仅 32px 宽!)
-      //   →塔(608)→桥面(512)。实证 jd(-1,0,4) 漂 70-110 过冲坡顶撞墙角，jd(1,0,5) 落塔西坡台
-      //   (105,604) 卡死；jd(-1,0,3) 漂 ~50-90 收坡顶窗。wg 已证 jd(1,0,5) 塔顶→桥面可行。
+      // 几何账：塔顶 608 高池沿 128px，单跳 96 不达——踏板链 ledge→\坡顶(704,[32,64] 仅 32px 宽)
+      //   →塔西坡台(~615-640)→塔平顶(608)。实证 jd(-1,0,4/3) 西跳漂移过冲/欠收两难，beam 局部
+      //   陷阱（658 评估耗尽）——本段只到塔顶，塔→桥面拆 I3b。
       fb: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 90, 60),
-        spec("jumpDrift", -1, 0, 3), spec("jumpDrift", 1, 0, 5), spec("jumpDrift", 1, 0, 5), spec("sleep", 10)],
+        spec("jumpDrift", -1, 0, 3), spec("jumpDrift", 1, 0, 5), spec("jumpDrift", 1, 0, 6), spec("sleep", 10)],
       wg: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 90, 60),
-        spec("jumpDrift", -1, 0, 3), spec("jumpDrift", 1, 0, 5), spec("jumpDrift", 1, 0, 5), spec("sleep", 10)],
+        spec("jumpDrift", -1, 0, 3), spec("jumpDrift", 1, 0, 5), spec("jumpDrift", 1, 0, 6), spec("sleep", 10)],
     },
     vocab: {
       fb: [spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 105, 170),
@@ -558,13 +558,27 @@ const SEGI = {
         spec("walkTo", -1, 80, 60), spec("walkTo", -1, 100, 60),
         spec("jumpDrift", -1, 0, 2), spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4),
         spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5), spec("jumpDrift", 1, 0, 6),
-        spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5), spec("sleep", 10)],
+        spec("jumpDrift", 1, 0, 7), spec("jumpDrift", 1, 0, 8), spec("sleep", 10)],
       wg: [spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 105, 170),
         spec("sleep", 100), spec("sleep", 120), spec("sleep", 150),
         spec("walkTo", -1, 80, 60), spec("walkTo", -1, 100, 60),
         spec("jumpDrift", -1, 0, 2), spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4),
         spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5), spec("jumpDrift", 1, 0, 6),
-        spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5), spec("sleep", 10)],
+        spec("jumpDrift", 1, 0, 7), spec("jumpDrift", 1, 0, 8), spec("sleep", 10)],
+    },
+  },
+  I3b: {
+    maxDepth: 10, capFb: 6, capWg: 6, horizonF: 320,
+    recipe: {
+      // 塔顶站立 py≈572.5；东跳 rise96 → feet 512 = 桥面顶；jd(1,0,5) 漂 ~100-140 落 [192,256]。
+      fb: [spec("jumpDrift", 1, 0, 5), spec("sleep", 10)],
+      wg: [spec("jumpDrift", 1, 0, 5), spec("sleep", 10)],
+    },
+    vocab: {
+      fb: [spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5),
+        spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 7), spec("walkTo", 1, 240, 60), spec("sleep", 10)],
+      wg: [spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5),
+        spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 7), spec("walkTo", 1, 240, 60), spec("sleep", 10)],
     },
   },
   I4: {

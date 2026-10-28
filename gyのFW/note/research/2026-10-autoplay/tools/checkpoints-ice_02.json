@@ -360,7 +360,7 @@
   },
   {
    "id": "I3",
-   "title": "等冻结（waitPx wg 按钮窗 + 120f 滞后）→双人西行→\\坡跳上→越西塔→桥面西端(512)",
+   "title": "等冻结→双人西行→\\坡顶踏板(704)→登西塔顶(608)（塔西坡台不算，须平顶）",
    "entry": [
     {
      "kind": "px",
@@ -440,8 +440,125 @@
      {
       "kind": "alive"
      }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 60,
+      "max": 200
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 540,
+      "max": 660
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     },
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 60,
+      "max": 200
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 540,
+      "max": 660
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     },
+     {
+      "kind": "alive"
+     }
     ]
    ],
+   "target": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 95,
+     "max": 195
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 552,
+     "max": 590
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 95,
+     "max": 195
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 552,
+     "max": 590
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "horizonF": 520
+  },
+  {
+   "id": "I3b",
+   "title": "塔顶→东小跳落桥面西端(512)，双人同链",
+   "entry": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 95,
+     "max": 195
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 552,
+     "max": 590
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 95,
+     "max": 195
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 552,
+     "max": 590
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "waypoints": [],
    "target": [
     {
      "kind": "px",
@@ -479,7 +596,11 @@
      "kind": "alive"
     }
    ],
-   "horizonF": 520
+   "horizonF": 320,
+   "maxDepth": 10,
+   "capFb": 6,
+   "capWg": 6,
+   "note": "塔顶站立 py≈572.5；东跳 rise96→feet 512=桥面顶；漂移 100-140（jd 4-5f）落 [192,256] 桥面西端；jd 过大越缘落冻池"
   },
   {
    "id": "I4",
