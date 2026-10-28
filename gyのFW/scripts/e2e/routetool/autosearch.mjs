@@ -542,17 +542,18 @@ const SEGI = {
     },
   },
   I3: {
-    maxDepth: 8, capFb: 5, capWg: 5, horizonF: 420,
+    maxDepth: 8, capFb: 5, capWg: 5, horizonF: 480,
     recipe: {
       // I3a 穿池+登首级（604 台 x132-160，28px）：跳冲量随水平速度（站立 38px/全速 ~100px），
       //   登级须退跑到 x60-80 助跑带速起跳 runJump(1,~90,25)（apex ~150 落首级）。fb 首件 waitPx
       //   锚 b1 按压后慢速穿池（按压 f861 起冻 416f）；wg 压板 sleep(30) 锚 entry/冻结后跟进。
-      fb: [spec("waitPx", "wg", 105, 170), spec("walkTo", -1, 300, 999), spec("walkTo", -1, 70, 60),
-        spec("runJump", 1, 90, 25), spec("sleep", 10)],
+      fb: [spec("waitPx", "wg", 105, 170), spec("sleep", 45), spec("walkTo", -1, 300, 999),
+        spec("walkTo", -1, 70, 60), spec("runJump", 1, 90, 25), spec("sleep", 10)],
       wg: [spec("sleep", 30), spec("walkTo", -1, 70, 60), spec("runJump", 1, 90, 25), spec("sleep", 10)],
     },
     vocab: {
       fb: [spec("waitPx", "wg", 105, 170), spec("waitPx", "wg", 100, 180),
+        spec("sleep", 30), spec("sleep", 45), spec("sleep", 60),
         spec("walkTo", -1, 300, 999), spec("walkTo", -1, 240, 999),
         spec("walkTo", -1, 60, 60), spec("walkTo", -1, 70, 60), spec("walkTo", -1, 80, 60),
         spec("runJump", 1, 80, 25), spec("runJump", 1, 85, 25), spec("runJump", 1, 90, 25),
