@@ -10,6 +10,13 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-10-28（1.0.1——分发线开局必崩根治 + 真开局验收门禁；#51）
+① **根因三层**：①编译链——包发 TS + `node --import tsx`，tsx 4.23.15 的 useDefineForClassFields 归一化只在 CJS 钩子、ESM loader 不读，包内又缺 tsconfig → `x!: number` 编成原生 class field 覆盖 schema 访问器 → 首次增量广播 encodeValue 崩、整进程带崩；②分发线停在 0.3.55，缺 0.3.56 的 seedrandom CSP P0（浏览器也进不去 Game）；③§5 第⑥步只 create→leave，状态从未广播增量，崩溃路径零覆盖。复盘 note/issues-2026-10-20/51-deploy-startup-crash.md。
+② **修复**：state.ts 64 字段改 `declare`（任何转译器都不产运行时字段，根治）；package-deploy 改 esbuild 逐文件预转译（不打包→import.meta 锚点天然正确），目标机直跑 .js 不需 tsx；新增 schemaSelfCheck 启动期 fail-fast（坏产物实测报 64 项）。
+③ **门禁三处**：deploy-smoke.mjs（起服→双人 started→patch 持续→进程存活→浏览器进 Game+pageerror=0）用于打包链内自检 / release-asset CI 解包复验 / ci.yml 源码树作业；新增 schemaFieldErasure 单测（最坏 tsconfig 下断言无裸 class field）。
+④ **合入 main**：0.3.56–0.3.58 全量（CSP seedrandom P0、TimedPusher 派发、r13/r20、#49）；冲突仅分发剪裁差异。附带修加载条填充条锚点（Phaser3 中心锚 vs oracle 0,0 → 左移 100/上移 10）。
+⑤ **验证**：353 测试绿、typecheck 零输出、打包冒烟 8s +475 patch（59.4/s）、解包独立起服 ok、DEPLOY⑥ 实测 phase=started patches+=473。发版 1.0.1 待 tag/Release 与服务器部署验收。
+
 **更新**：2026-10-28（0.3.58——TimedPusher 组派发保真修复：ice_02 闸门复活，#50 前置解除）
 ① **缺陷实锤**：解 ice_02 路线时发现门室封死悖论——定时按钮被当纯音效件（不入组/不派发），组内平台永不动。oracle C 部对质：TimedPusher extends Pusher，构造器末尾 registerDevice() 入组+signal 接线 deviceChanged，checkState 三处 state 迁移即 dispatch 点（旧注"doRegister 空=不进组"引错位置，实为 Pusher 路径被覆写、其自身基类注册仍生效）。证据链全录 note/research/2026-10-28-timedpusher-dispatch.md。
 ② **修复**：mechanisms.ts hasSignal=true+register 入组；world.ts 迁移沿同步 deviceChanged(group)；事件 kind/协议/音效零变化。闸门全周期内核实测（升 96px/按压重置计时/4s 回落），"闸门被砌体卡死"疑虑实测排除（零密度动态体穿静态体，oracle 同构）。
