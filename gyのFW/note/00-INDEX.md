@@ -42,6 +42,9 @@
 |---|---|
 | 立项计划书（**历史文档**，勿据其开工） | [PLAN.md](PLAN.md)（进度见其横幅补记） |
 | 方法论/批次规划 | plans/（deviation-flip、fidelity-audit-method、level-batches、route-production-playbook、route-synthesis、wiring-0.3.0） |
+| **版本线与双线并行管理方案** | [plans/2026-10-28-version-lines.md](plans/2026-10-28-version-lines.md) | 1.x=forest / 2.x=light / 3.x=ice；分支模型、跨线回灌流程、机器护栏（drift-check）、每部开工清单 |
+| **1.0.0「能起服不能开局」需求侧复盘** | [research/2026-10-28-why-1.0.0-shipped-broken.md](research/2026-10-28-why-1.0.0-shipped-broken.md) | 要求没说错，但三处关键约束是隐含前提；给了以后提这类要求该显式写的三句 |
+| **S302 装了 GitHub 仍慢的实测归因** | [research/2026-10-28-s302-github-slowness.md](research/2026-10-28-s302-github-slowness.md) | S302 是绕路器不是加速器；现场数据（国内 30MB/s、出境 100KB/s、经 S302 31KB/s）；镜像证书错乱与 uploads 只劫持不服务 |
 | oracle bundle 逆向工作台 | reverse/oracle-a/（beautified init.js + MODULES.md + 模块拆解） |
 | 关卡证据库（31 目录，按关组织） | evidence/forest*/ |
 | 2026-10-23 复查与开发证据（九槽次） | [evidence/2026-10-23-recheck/](evidence/2026-10-23-recheck/)（01 e2e 全量 11/11、02 视觉带+audit、03 H4 内存有界、04 M12 相机拆分草案、05 netDto 草案、06 M4/M3 验收、07 CI actions 升级）；另 [plans/colyseus-018-upgrade-research.md](plans/colyseus-018-upgrade-research.md) 升级调研 |
