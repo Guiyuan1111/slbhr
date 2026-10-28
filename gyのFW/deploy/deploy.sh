@@ -23,6 +23,13 @@
 # ============================================================================
 set -euo pipefail
 
+# -h/--help 先于一切解析：开发树里三部 data/ 并存，本部识别会拒，但看用法不该被拦。
+for _a in "$@"; do
+  case "$_a" in
+    -h|--help) sed -n '2,23p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  esac
+done
+
 SELF_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 # 脚本可能被放在包根（分发包里的 deploy.sh），也可能在仓库的 deploy/ 下（开发树）。
 # 以「哪层有 packages/server/src/index.js」为准，两种摆放都正确。
@@ -62,7 +69,6 @@ while [[ $# -gt 0 ]]; do
     --verify-only) MODE="verify-only"; shift ;;
     --trust-proxy) EXTRA_ENV+=("FW_TRUST_PROXY=1"); shift ;;
     --origins)     EXTRA_ENV+=("FW_ALLOWED_ORIGINS=${2:?--origins 需要域名}"); shift 2 ;;
-    -h|--help)     sed -n '2,26p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *)             die "未知参数：$1（--help 看用法）" ;;
   esac
 done

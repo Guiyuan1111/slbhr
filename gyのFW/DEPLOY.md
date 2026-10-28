@@ -62,9 +62,9 @@ sudo ./deploy.sh                            # ④ 部署 + 自验收（一条命
 ## 2. 快速起步（前台试跑）
 
 ```bash
-sha256sum -c gy-fw-forest-1.0.2.tar.gz.sha256     # 校验（1.0.x 按实际版本号）
-tar -xzf gy-fw-forest-1.0.2.tar.gz
-cd gy-fw-forest-1.0.2
+sha256sum -c gy-fw-forest-1.0.3.tar.gz.sha256     # 校验（1.0.x 按实际版本号）
+tar -xzf gy-fw-forest-1.0.3.tar.gz
+cd gy-fw-forest-1.0.3
 node packages/server/src/index.js                 # 前台起服（默认 127.0.0.1:2567）
 ```
 
@@ -107,7 +107,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 # ↓↓↓ 按实际部署路径与端口修改这两行 ↓↓↓
-WorkingDirectory=/opt/gy-fw-forest-1.0.2
+WorkingDirectory=/opt/gy-fw-forest-1.0.3
 Environment=PORT=2567
 # 对外直连时加：Environment=FW_HOST=0.0.0.0
 # 反代后加：Environment=FW_TRUST_PROXY=1
@@ -119,7 +119,7 @@ RestartSec=3
 User=nobody
 NoNewPrivileges=true
 ProtectSystem=strict
-ReadWritePaths=/opt/gy-fw-forest-1.0.2
+ReadWritePaths=/opt/gy-fw-forest-1.0.3
 
 [Install]
 WantedBy=multi-user.target
@@ -228,7 +228,7 @@ server {
 
 ## 8. 升级与回滚
 
-- **升级**：新版本包解到并列目录（如 `/opt/gy-fw-forest-1.0.2/`）→ 修改 unit 的 `WorkingDirectory`/`ReadWritePaths` → `daemon-reload && restart`。停机窗口=重启秒级；房间状态不持久（对局中断即散）。
+- **升级**：新版本包解到并列目录（如 `/opt/gy-fw-forest-1.0.3/`）→ 修改 unit 的 `WorkingDirectory`/`ReadWritePaths` → `daemon-reload && restart`。停机窗口=重启秒级；房间状态不持久（对局中断即散）。
 - **回滚**：`WorkingDirectory` 改回旧目录 → `daemon-reload && restart`。
 
 ## 9. 分发边界声明（预期行为，非故障）
