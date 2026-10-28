@@ -559,66 +559,55 @@ const SEGI = {
   I3: {
     maxDepth: 22, capFb: 28, capWg: 28, horizonF: 1200,
     recipe: {
-      // v9c 东攀重放线（2026-10-28 probe20/21 实证；v8 西崖线证伪废弃）：
-      // 入场=I2-final 末态 wg(140,701)/fb(702,701)（701 水道已冻）。双人同线，fb 领先 ~1 梯级：
-      // 冻桥东渡 x690 → 岸东缘 edgeDrop 下地面(861) → 西移 x400 拉助跑 → 【I0 重放】
-      // rj(1,750) 上雪丘(768) → rj(1,990) 过岩浆上 row-22(669，probe21 实证 1175,669) →
-      // hold 1160 → rj(-1,1120) 西跳上 row-20 楔台(605，实证 938,605) → rj(-1,990) 定西端
-      // (836,605) → 【甲板东角跳·低速弧】walkTo(-1,845,15) 精停 → walkTo(1,800,60) 回拉 →
-      // rj(1,860,25)：60px 低速助跑 vx~190，在 x896 角 rise~102 够角（全速 vx250 过角
-      // rise 仅 92 削角弹回 row-22，probe21 证伪）；着陆 x905-915 (896-1216) →
-      // walkTo(-1,900) → rj(-1,860,25) 漂 130-135 落 beam-380(381) x725-730（I2 口径）。
-      wg: [spec("walkTo", 1, 690, 999), spec("edgeDrop", 1, 16),
-        spec("walkTo", -1, 400, 999), spec("sleep", 45),
-        spec("runJump", 1, 750, 25), spec("runJump", 1, 990, 25),
-        spec("hold", -1, 1160), spec("runJump", -1, 1120, 25),
-        spec("runJump", -1, 990, 25), spec("walkTo", -1, 845, 15),
-        spec("walkTo", 1, 800, 60), spec("runJump", 1, 860, 25),
-        spec("walkTo", -1, 900, 60), spec("runJump", -1, 860, 25), spec("sleep", 15)],
-      fb: [spec("edgeDrop", 1, 16),
-        spec("walkTo", -1, 400, 999), spec("sleep", 45),
-        spec("runJump", 1, 750, 25), spec("runJump", 1, 990, 25),
-        spec("hold", -1, 1160), spec("runJump", -1, 1120, 25),
-        spec("runJump", -1, 990, 25), spec("walkTo", -1, 845, 15),
-        spec("walkTo", 1, 800, 60), spec("runJump", 1, 860, 25),
-        spec("walkTo", -1, 900, 60), spec("runJump", -1, 860, 25), spec("sleep", 15)],
+      // v10c 西崖全跳接（2026-10-28 probe22/23/24 实证；v9d 冻桥直跳线废弃：beam-380 实际
+      // x512-1056（level JSON 权威），甲板在其正下形成 64px 走廊——走廊内跳不起（probe16-G
+      // 磕底全解释）；row-20→甲板东 rise 需 132>119 几何死（probe22-B 实证削角弹回）；
+      // 冻桥 rj(1,850) 只到 row-22/row-20（种子 d7 wp4/6），上梁无路）。
+      // 真梯（wg 从 b1 足印内 127-140 起，fb 先冻桥西渡到 139）：
+      // 【M1】rj(-1,120,6) 短充西跳出 b1 足印（落 ~49-59，足印内走不动=只能跳，probe24 实证）
+      // 【M2】rj(1,80,10) 短充东跳上岩架（落 ~121-122,581，probe24 双变体实证）
+      // 【H 】walkTo(1,148,40) 东贴（x122 起跳撞甲板面，148 才净空，probe15/24）→
+      //      brakedHop(1,525,178) 上甲板西（落 ~216,477，probe15 实证）
+      // 【S 】runJump(1,435,25) 冰面全速滑行+满充跳上 beam-380（probe23 实证：435→549,381、
+      //      455→552,381、475→507,372 西坡趾；495 磕面回甲板——窗口 415-475）。
+      wg: [spec("runJump", -1, 120, 6), spec("sleep", 10),
+        spec("runJump", 1, 80, 10), spec("sleep", 15),
+        spec("walkTo", 1, 148, 40), spec("brakedHop", 1, 525, 178), spec("sleep", 15),
+        spec("runJump", 1, 435, 25), spec("sleep", 20)],
+      fb: [spec("walkTo", -1, 140, 999), spec("sleep", 10),
+        spec("runJump", -1, 120, 6), spec("sleep", 10),
+        spec("runJump", 1, 80, 10), spec("sleep", 15),
+        spec("walkTo", 1, 148, 40), spec("brakedHop", 1, 525, 178), spec("sleep", 15),
+        spec("runJump", 1, 435, 25), spec("sleep", 20)],
     },
     vocab: {
-      fb: [spec("sleep", 10), spec("sleep", 20), spec("sleep", 45),
-        spec("waitPx", "wg", 400, 704), spec("waitPx", "wg", 560, 704),
-        spec("walkTo", 1, 660, 999), spec("walkTo", 1, 680, 999), spec("walkTo", 1, 700, 999),
-        spec("edgeDrop", 1, 8), spec("edgeDrop", 1, 16), spec("edgeDrop", 1, 24),
-        spec("walkTo", -1, 240, 999), spec("walkTo", -1, 380, 999), spec("walkTo", -1, 400, 999),
-        spec("walkTo", -1, 430, 999),
-        spec("runJump", 1, 740, 25), spec("runJump", 1, 750, 25), spec("runJump", 1, 760, 25),
-        spec("runJump", 1, 980, 25), spec("runJump", 1, 990, 25), spec("runJump", 1, 1000, 25),
-        spec("hold", -1, 1140), spec("hold", -1, 1160), spec("hold", -1, 1180),
-        spec("runJump", -1, 1110, 25), spec("runJump", -1, 1120, 25), spec("runJump", -1, 1130, 25),
-        spec("runJump", -1, 980, 25), spec("runJump", -1, 990, 25), spec("runJump", -1, 1000, 25),
-        spec("walkTo", -1, 840, 15), spec("walkTo", -1, 845, 15), spec("walkTo", -1, 850, 15),
-        spec("walkTo", 1, 790, 60), spec("walkTo", 1, 800, 60), spec("walkTo", 1, 815, 60),
-        spec("runJump", 1, 850, 25), spec("runJump", 1, 860, 25), spec("runJump", 1, 870, 25),
-        spec("walkTo", -1, 890, 60), spec("walkTo", -1, 900, 60), spec("walkTo", -1, 910, 60),
-        spec("walkTo", -1, 900, 999),
-        spec("runJump", -1, 850, 25), spec("runJump", -1, 860, 25), spec("runJump", -1, 870, 25),
-        spec("sleep", 15)],
-      wg: [spec("sleep", 10), spec("sleep", 20), spec("sleep", 45),
-        spec("walkTo", 1, 660, 999), spec("walkTo", 1, 680, 999), spec("walkTo", 1, 700, 999),
-        spec("edgeDrop", 1, 8), spec("edgeDrop", 1, 16), spec("edgeDrop", 1, 24),
-        spec("walkTo", -1, 240, 999), spec("walkTo", -1, 380, 999), spec("walkTo", -1, 400, 999),
-        spec("walkTo", -1, 430, 999),
-        spec("runJump", 1, 740, 25), spec("runJump", 1, 750, 25), spec("runJump", 1, 760, 25),
-        spec("runJump", 1, 980, 25), spec("runJump", 1, 990, 25), spec("runJump", 1, 1000, 25),
-        spec("hold", -1, 1140), spec("hold", -1, 1160), spec("hold", -1, 1180),
-        spec("runJump", -1, 1110, 25), spec("runJump", -1, 1120, 25), spec("runJump", -1, 1130, 25),
-        spec("runJump", -1, 980, 25), spec("runJump", -1, 990, 25), spec("runJump", -1, 1000, 25),
-        spec("walkTo", -1, 840, 15), spec("walkTo", -1, 845, 15), spec("walkTo", -1, 850, 15),
-        spec("walkTo", 1, 790, 60), spec("walkTo", 1, 800, 60), spec("walkTo", 1, 815, 60),
-        spec("runJump", 1, 850, 25), spec("runJump", 1, 860, 25), spec("runJump", 1, 870, 25),
-        spec("walkTo", -1, 890, 60), spec("walkTo", -1, 900, 60), spec("walkTo", -1, 910, 60),
-        spec("walkTo", -1, 900, 999),
-        spec("runJump", -1, 850, 25), spec("runJump", -1, 860, 25), spec("runJump", -1, 870, 25),
-        spec("sleep", 15)],
+      fb: [spec("sleep", 5), spec("sleep", 10), spec("sleep", 15), spec("sleep", 20),
+        spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 400, 704),
+        spec("walkTo", -1, 140, 999), spec("walkTo", -1, 160, 999), spec("walkTo", -1, 200, 999),
+        spec("walkTo", -1, 128, 60),
+        spec("runJump", -1, 112, 6), spec("runJump", -1, 120, 6), spec("runJump", -1, 128, 6),
+        spec("runJump", -1, 120, 10), spec("runJump", -1, 120, 15),
+        spec("runJump", 1, 72, 6), spec("runJump", 1, 80, 6), spec("runJump", 1, 80, 10),
+        spec("runJump", 1, 88, 10), spec("runJump", 1, 80, 15), spec("runJump", 1, 88, 15),
+        spec("walkTo", 1, 144, 40), spec("walkTo", 1, 148, 40), spec("walkTo", 1, 152, 40),
+        spec("walkTo", 1, 148, 60),
+        spec("brakedHop", 1, 515, 172), spec("brakedHop", 1, 525, 178), spec("brakedHop", 1, 535, 182),
+        spec("runJump", 1, 415, 25), spec("runJump", 1, 425, 25), spec("runJump", 1, 435, 25),
+        spec("runJump", 1, 445, 25), spec("runJump", 1, 455, 25), spec("runJump", 1, 465, 25),
+        spec("runJump", 1, 435, 20), spec("runJump", 1, 435, 30),
+        spec("sleep", 20)],
+      wg: [spec("sleep", 5), spec("sleep", 10), spec("sleep", 15), spec("sleep", 20),
+        spec("runJump", -1, 112, 6), spec("runJump", -1, 120, 6), spec("runJump", -1, 128, 6),
+        spec("runJump", -1, 120, 10), spec("runJump", -1, 120, 15),
+        spec("runJump", 1, 72, 6), spec("runJump", 1, 80, 6), spec("runJump", 1, 80, 10),
+        spec("runJump", 1, 88, 10), spec("runJump", 1, 80, 15), spec("runJump", 1, 88, 15),
+        spec("walkTo", 1, 144, 40), spec("walkTo", 1, 148, 40), spec("walkTo", 1, 152, 40),
+        spec("walkTo", 1, 148, 60),
+        spec("brakedHop", 1, 515, 172), spec("brakedHop", 1, 525, 178), spec("brakedHop", 1, 535, 182),
+        spec("runJump", 1, 415, 25), spec("runJump", 1, 425, 25), spec("runJump", 1, 435, 25),
+        spec("runJump", 1, 445, 25), spec("runJump", 1, 455, 25), spec("runJump", 1, 465, 25),
+        spec("runJump", 1, 435, 20), spec("runJump", 1, 435, 30),
+        spec("sleep", 20)],
     },
   },
   I4: {
