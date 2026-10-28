@@ -15,6 +15,10 @@
  *
  *   node scripts/e2e/deploy-smoke.mjs --serve-dir /opt/gy-fw-forest-1.0.1
  *   node scripts/e2e/deploy-smoke.mjs --base http://127.0.0.1:2567      # 已跑着的服务
+ *   node scripts/e2e/deploy-smoke.mjs --serve-dir /opt/gy-fw-light-2.0.0 --level light_01
+ *
+ * `--level` 缺省 forest_01（1.x 线）；2.x/3.x 分包必须显式指定该部的首关，否则服务端
+ * 会因关卡不存在直接 4404 拒建。
  *
  * `--serve-dir` 用 `node packages/server/src/index.js` 在包目录里起服（这是 1.0.1
  * 起的默认启动式），跑完自动收尸；`--base` 只做客户端侧断言、不管进程。
@@ -43,6 +47,8 @@ const SERVE_DIR = argOf("serve-dir", "");
 const PORT = Number(argOf("port", BASE ? new URL(BASE).port || "80" : "2599"));
 const NO_BROWSER = args.includes("--no-browser");
 const PATCH_WINDOW_MS = Number(argOf("window", "12000"));
+/** 开局用的关卡 id：缺省第一部首关；2.x/3.x 分包须显式传该部首关，否则 4404 */
+const LEVEL = argOf("level", "forest_01");
 
 if (!BASE && !SERVE_DIR) {
   console.error("deploy-smoke: 需要 --serve-dir <包目录> 或 --base <http://host:port>");
@@ -99,7 +105,7 @@ try {
   // 所以「增量编码崩」完全隐形。必须凑齐两人进 started，物理才会逐帧广播。
   const { Client } = await import("colyseus.js");
   const client = new Client(base.replace(/^http/, "ws"));
-  const room = await client.create("forest", { levelId: "forest_01", password: "smoke1" });
+  const room = await client.create("forest", { levelId: LEVEL, password: "smoke1" });
   check(!!room.sessionId, "colyseus.js 建房（A）", `sessionId=${room.sessionId}`);
   const roomB = await client.joinById(room.roomId, { password: "smoke1" });
   check(!!roomB.sessionId, "colyseus.js 入房（B）", `sessionId=${roomB.sessionId}`);
@@ -151,7 +157,7 @@ try {
         const errs = [];
         page.on("pageerror", (e) => errs.push(String(e).slice(0, 200)));
         page.on("console", (m) => { if (m.type() === "error") errs.push("console.error: " + m.text().slice(0, 200)); });
-        await page.goto(`${base}/?level=forest_01`, { waitUntil: "domcontentloaded" });
+        await page.goto(`${base}/?level=${LEVEL}`, { waitUntil: "domcontentloaded" });
         await page.waitForFunction(() => !!globalThis.__fw, null, { timeout: 60000 });
         await page.waitForFunction(() => globalThis.__fw.scene.isActive("Menu"), null, { timeout: 60000 });
         await page.fill("#password", "smoke1");
