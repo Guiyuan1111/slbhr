@@ -10,6 +10,13 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-10-28（0.3.58——TimedPusher 组派发保真修复：ice_02 闸门复活，#50 前置解除）
+① **缺陷实锤**：解 ice_02 路线时发现门室封死悖论——定时按钮被当纯音效件（不入组/不派发），组内平台永不动。oracle C 部对质：TimedPusher extends Pusher，构造器末尾 registerDevice() 入组+signal 接线 deviceChanged，checkState 三处 state 迁移即 dispatch 点（旧注"doRegister 空=不进组"引错位置，实为 Pusher 路径被覆写、其自身基类注册仍生效）。证据链全录 note/research/2026-10-28-timedpusher-dispatch.md。
+② **修复**：mechanisms.ts hasSignal=true+register 入组；world.ts 迁移沿同步 deviceChanged(group)；事件 kind/协议/音效零变化。闸门全周期内核实测（升 96px/按压重置计时/4s 回落），"闸门被砌体卡死"疑虑实测排除（零密度动态体穿静态体，oracle 同构）。
+③ **影响面**：15 关定时钮联动生效（forest_20、light_14/31、ice 族）；det forest 48/48、light 40/40 位级一致，ice 唯 ice_bonus_1 预期漂移（脚本踩中 t0 group7→p8 起动）→ ice 锚重录 r2-tpgate + ci.yml 引用更新。
+④ **门禁**：51 文件 359 测试绿（+3 行为钉 timedpusher-gate.test）、typecheck 零错、kregress 15/15、browser-room 4/4；发版三件套齐，tag/Release 待 CI。
+⑤ **#50 进行中**：ice_02 地形/机制解码完成（光束红融冰/蓝冻水、按钮滑台让束、定时钮开闸），检查点链设计随发版后继续。
+
 **更新**：2026-10-28（0.3.57——#49 落地：决策抽纯模块退役文本契约；r42/r43 复核否决）
 ⑤ **#50 侦察（挂账待启动）**：ice 语料 0 条（formal-corpus=forest 13+light 2），且无 ice route 记档——#50 前置=先解 ice 正式通关路线（autosearch 需人工检查点链设计，light_01/02 当年各占独立批次级工作量）。建议首关 ice_02（教学：冰面+TimedPusher 引入）；r17–r40 资产族/Colyseus 0.18 仍待令。
 
