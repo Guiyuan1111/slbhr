@@ -15,20 +15,20 @@ import { Schema, MapSchema, defineTypes, $filter } from "../colyseus.cjs.js";
 import type { MapSchema as MapSchemaType } from "@colyseus/schema";
 
 export class PlayerState extends Schema {
-  x!: number;
-  y!: number;
-  vx!: number;
-  vy!: number;
-  facing!: number;
-  anim!: string;
-  headTilt!: number;
-  inLiquid!: boolean;
-  dying!: boolean;
-  dead!: boolean;
-  isDead!: boolean;
-  atDoor!: boolean;
-  doorFrame!: number;
-  doorUp!: boolean;
+  declare x: number;
+  declare y: number;
+  declare vx: number;
+  declare vy: number;
+  declare facing: number;
+  declare anim: string;
+  declare headTilt: number;
+  declare inLiquid: boolean;
+  declare dying: boolean;
+  declare dead: boolean;
+  declare isDead: boolean;
+  declare atDoor: boolean;
+  declare doorFrame: number;
+  declare doorUp: boolean;
 
   constructor() {
     super();
@@ -50,7 +50,7 @@ export class PlayerState extends Schema {
 }
 
 export class DiamondState extends Schema {
-  collected!: boolean;
+  declare collected: boolean;
 
   constructor() {
     super();
@@ -59,10 +59,10 @@ export class DiamondState extends Schema {
 }
 
 export class LeverState extends Schema {
-  group!: number;
-  state!: number;
+  declare group: number;
+  declare state: number;
   /** 杆角（屏幕弧度，客户端转贴图倾角） */
-  angle!: number;
+  declare angle: number;
 
   constructor() {
     super();
@@ -73,11 +73,11 @@ export class LeverState extends Schema {
 }
 
 export class PusherState extends Schema {
-  group!: number;
-  state!: number;
+  declare group: number;
+  declare state: number;
   /** 块体中心（屏幕 px，随 prismatic 下沉连续变化） */
-  x!: number;
-  y!: number;
+  declare x: number;
+  declare y: number;
 
   constructor() {
     super();
@@ -89,11 +89,11 @@ export class PusherState extends Schema {
 }
 
 export class BodyState extends Schema {
-  x!: number;
-  y!: number;
-  angle!: number;
+  declare x: number;
+  declare y: number;
+  declare angle: number;
   /** 仅平台用：组信号 OR（原版灯罩 light_on/off 换帧依据），其余刚体恒 0 */
-  state!: number;
+  declare state: number;
 
   constructor() {
     super();
@@ -105,8 +105,8 @@ export class BodyState extends Schema {
 }
 
 export class WindState extends Schema {
-  group!: number;
-  state!: number;
+  declare group: number;
+  declare state: number;
 
   constructor() {
     super();
@@ -117,8 +117,8 @@ export class WindState extends Schema {
 
 /** 光束状态：pts = 打包折线 "x,y|x,y"（屏幕 px 取整；客户端 LIGHTEN 双描线） */
 export class BeamState extends Schema {
-  state!: number;
-  pts!: string;
+  declare state: number;
+  declare pts: string;
 
   constructor() {
     super();
@@ -129,12 +129,12 @@ export class BeamState extends Schema {
 
 /** 定时推杆（ice）：state 0/1 + 时钟进度 frac（0..1，客户端画倒数表盘） */
 export class TimedPusherState extends Schema {
-  state!: number;
-  frac!: number;
+  declare state: number;
+  declare frac: number;
   /** 按压物理沿（0=松开/1=压着；clock 尾音门控） */
-  downState!: number;
-  x!: number;
-  y!: number;
+  declare downState: number;
+  declare x: number;
+  declare y: number;
 
   constructor() {
     super();
@@ -148,12 +148,12 @@ export class TimedPusherState extends Schema {
 
 /** 双门状态（每关恰一对，单条目足够） */
 export class DoorState extends Schema {
-  fbAtDoor!: boolean;
-  wgAtDoor!: boolean;
-  fbFrame!: number;
-  wgFrame!: number;
-  fbUp!: boolean;
-  wgUp!: boolean;
+  declare fbAtDoor: boolean;
+  declare wgAtDoor: boolean;
+  declare fbFrame: number;
+  declare wgFrame: number;
+  declare fbUp: boolean;
+  declare wgUp: boolean;
 
   constructor() {
     super();
@@ -167,33 +167,33 @@ export class DoorState extends Schema {
 }
 
 export class RoomState extends Schema {
-  phase!: string;
-  levelId!: string;
+  declare phase: string;
+  declare levelId: string;
   /** 内核帧号镜像（服务端已完成的仿真步数；e2e 页内锚定用，客户端可忽略） */
-  f!: number;
-  timerMs!: number;
-  players!: MapSchemaType<PlayerState>;
-  diamonds!: MapSchemaType<DiamondState>;
-  levers!: MapSchemaType<LeverState>;
-  pushers!: MapSchemaType<PusherState>;
-  platforms!: MapSchemaType<BodyState>;
-  props!: MapSchemaType<BodyState>;
-  winds!: MapSchemaType<WindState>;
+  declare f: number;
+  declare timerMs: number;
+  declare players: MapSchemaType<PlayerState>;
+  declare diamonds: MapSchemaType<DiamondState>;
+  declare levers: MapSchemaType<LeverState>;
+  declare pushers: MapSchemaType<PusherState>;
+  declare platforms: MapSchemaType<BodyState>;
+  declare props: MapSchemaType<BodyState>;
+  declare winds: MapSchemaType<WindState>;
   /** 吊挂板（hanging platform）位姿；pulley 两板键 u{id}a / u{id}b；roman bar 位姿 */
-  hangings!: MapSchemaType<BodyState>;
-  pulleys!: MapSchemaType<BodyState>;
-  romans!: MapSchemaType<BodyState>;
+  declare hangings: MapSchemaType<BodyState>;
+  declare pulleys: MapSchemaType<BodyState>;
+  declare romans: MapSchemaType<BodyState>;
   // ---- 灯光神庙（forest 关恒空 map/空串，零编码开销）----
-  beamers!: MapSchemaType<BeamState>;
-  rotMirrors!: MapSchemaType<BodyState>;
-  boxMirrors!: MapSchemaType<BodyState>;
-  infiniteMirrors!: MapSchemaType<BodyState>;
-  lightPushers!: MapSchemaType<PusherState>;
-  sliders!: MapSchemaType<BodyState>;
-  timedPushers!: MapSchemaType<TimedPusherState>;
+  declare beamers: MapSchemaType<BeamState>;
+  declare rotMirrors: MapSchemaType<BodyState>;
+  declare boxMirrors: MapSchemaType<BodyState>;
+  declare infiniteMirrors: MapSchemaType<BodyState>;
+  declare lightPushers: MapSchemaType<PusherState>;
+  declare sliders: MapSchemaType<BodyState>;
+  declare timedPushers: MapSchemaType<TimedPusherState>;
   /** 液体冻结旗标串（每行段一位 0/1；无液体=""） */
-  liquids!: string;
-  doors!: DoorState;
+  declare liquids: string;
+  declare doors: DoorState;
 
   constructor() {
     super();

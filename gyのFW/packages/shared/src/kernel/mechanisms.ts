@@ -262,7 +262,8 @@ export class MovingPlatform {
     this.isRevolute = def.dtheta !== undefined;
     this.dthetaPositive = (def.dtheta ?? 0) > 0;
 
-    // 宽<高（米）→ 交换并 shapeRotation=−π/2；中心化：横向 (x+=w/2, y+=h/2)、纵向 (x+=原h/2, y+=原w/2)（px）
+    // 宽<高（米）→ 交换并 shapeRotation=−π/2；中心化：横向 (x+=w/2, y+=h/2)、纵向 (x+=原w/2, y+=原h/2)（px）
+    // （旧注"纵向 x+=原h/2"为笔误；oracle C @1675266：swap 后 x+=height/2=原w/2、y+=width/2=原h/2——下方代码是对的）
     let wM = def.w / 32;
     let hM = def.h / 32;
     let cx = def.x;
@@ -1219,7 +1220,11 @@ export class TimedPusher extends Device {
   downState = 0;
 
   constructor(B: B2, world: any, groundBody: any, def: TimedPusherDef) {
-    super(B, def.group, false);
+    // oracle C @1726729：TimedPusher extends Pusher，构造器末尾显式 registerDevice()（基类）
+    // → 入 MechManager 组且 signal 接线 deviceChanged——是信号源（hasSignal=true）。
+    // doRegister(){ } 空覆盖只废掉 Pusher 构造器里那条 doRegister→registerDevice 路径，
+    // TimedPusher 自己的 registerDevice() 仍生效（2026-10-28 ice_02 闸门保真修复）。
+    super(B, def.group, true);
     this.timeMs = def.time;
     const center = phys(B, def.x, def.y);
     const bd = new B.b2BodyDef();
@@ -1256,10 +1261,12 @@ export class TimedPusher extends Device {
   }
 
   updateState(_silent: boolean): void {
-    /* 独立即不进组（doRegister 空），无信号驱动 */
+    /* 信号源不被他者赋值（oracle deviceChanged 只写无 signal 设备）；自身物理在 checkState */
   }
 
-  /** @1726905 checkState 逐字（计时器换仿真钟）：downState 边沿/按压保持/到时回弹 */
+  /** C @1726729 checkState（计时器换仿真钟）：downState 边沿/按压保持/到时回弹。
+   *  events 只承载音效广播（downState 沿+到时）；state 三处迁移（压下沿→1、到时→0、
+   *  无 timer 早松→0）= oracle signal.dispatch 点，由 world 层按迁移沿转 deviceChanged(group)。 */
   checkState(events: MechEvent[], dtMs: number): void {
     const f = this.joint.GetJointTranslation();
     if (this.downState === 0 && f > 0) {
@@ -1442,8 +1449,11 @@ export function buildMechanisms(B: B2, world: any, groundBody: any, level: Level
   }
   const timedPushers: TimedPusher[] = [];
   for (const d of level.timedPushers) {
-    // doRegister 覆写为空 → 不进 MechManager 组（独立计时件）
-    timedPushers.push(new TimedPusher(B, world, groundBody, d));
+    // oracle C @1726729：构造器末尾 registerDevice() → 入组为信号源（doRegister 空覆盖
+    // 只废 Pusher 构造器那条路径，TimedPusher 自身的基类注册仍生效）——ice_02 闸门链
+    const tp = new TimedPusher(B, world, groundBody, d);
+    timedPushers.push(tp);
+    manager.register(tp);
   }
 
   return { manager, levers, pushers, platforms, props, winds, hangings, pulleys, romans, beamers, rotMirrors, boxMirrors, infiniteMirrors, lightPushers, sliders, timedPushers, lightDevices };

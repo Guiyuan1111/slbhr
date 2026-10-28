@@ -350,10 +350,16 @@ export class World {
           else if (liq.sensorLp.iluminated === "red") this.meltLiquid(liq, events);
         }
       }
-      // 定时推杆（ice，独立计时不进组；dt 走仿真钟）——事件只作音效广播，不进 deviceChanged
+      // 定时推杆（ice，dt 走仿真钟）：events 只作音效广播；state 迁移沿（压下/到时/早松）
+      // 即 oracle signal.dispatch 点（C @1726729 构造器 registerDevice 入组+接线）——
+      // 同帧同步 deviceChanged(group) 驱动组内平台（ice_02 升降闸门，2026-10-28 保真修复）
       if (this.mechs.timedPushers.length > 0) {
         this.tpEvents.length = 0;
-        for (const tp of this.mechs.timedPushers) tp.checkState(this.tpEvents, dt * 1000);
+        for (const tp of this.mechs.timedPushers) {
+          const prev = tp.state;
+          tp.checkState(this.tpEvents, dt * 1000);
+          if (tp.state !== prev) this.mechs.manager.deviceChanged(tp.group);
+        }
         for (const ev of this.tpEvents) events.push({ type: "mech", event: ev });
       }
       this.updateDoors(dt, events);

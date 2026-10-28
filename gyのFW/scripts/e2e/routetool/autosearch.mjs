@@ -469,6 +469,198 @@ const SEG = {
   },
 };
 
+// ---------------------------------------------------------------- ice_02 段词表（2026-10-28，oracle 实证 + 内核探针标定）
+// 地形口径（geom.mjs + oracle sweep3/sweep4 + 内核液体/机关模拟）：
+//   底层 896；雪丘三层 800/768（row-25/24 台）；row-22 台 704 x[1056,1248]；row-20 台 640 x[832,992]；
+//   西侧楼梯 D(25,21)+/(24,21) 下东台 736 x[640,736]；泳池（水,5）736 面 x[256,640]（wg 漂浮 714.9，
+//   面即 grounded 可游可跳）；西台 736 x[32,224]（b1 @128）；p1 平台原位 x[383,447] 顶 624
+//   （b1 压下东移 64→[447,511]，释放回位；蓝光冻结泳池且永久）；桥（冻结水）512 x[224,608]
+//   （冰面：fb 滑行加速 maxSpeed 40m/s、wg 减速 64px/s）；slab-13 416 x[544,1024]（桥面 x[440,515]
+//   助跑东跳可上，row-9 实体底 320 高于峰值 box-top 335.5 无磕头）；t0 台 320 x[1120,1248]
+//   （slab-13 东端 ~1005 助跑东跳 96px 上，oracle sweep 实证）；row-9 东段 288 x[640,992]
+//   （t0 台西跳落东雪 ~885）；绿池 7 杀 x[544,640]（row-9 西跳 645→437 上 mound-A 顶 192 x[320,448]）；
+//   波浪路 `\../` 160-192 x[288,448]；闸门 p2 x[256,288] y[64,160]（t0 信号升起 96px，
+//   platY 112→15.7；TimedPusher 压住计时重置、松开 4s 回弹）；内室地 160（fb 门 48 / wg 门 152）。
+//   岩浆渠 6 x[672,864] 512 面（fb 漂浮 490.9 可涉渡；wg 必死故全程不过渠）。
+const SEGI = {
+  // 物理口径修正（TEMP/ice02-replay.mjs 逐帧法证 2026-10-28）：实测 rise-96 跳漂移 ~130-135px
+  //   （非弹道ideal 208：飞行 ~0.44s、空中水平速衰减、落地 scrub ~60%）——所有起跳线按实测收，
+  //   落点统一留台内余量；同高度跳（绿池跨越）为全长飞行 drift ~250-267。
+  I0: {
+    maxDepth: 14, capFb: 8, capWg: 8,
+    recipe: {
+      // rj750 落台 ~885（台 864-1024 内 21px）；rj990 自 885 起跑 105px 回满速，drift ~130 落 ~1120
+      //   （row-22 内：距西缘 64 / 东缘 128，±1f 平移 ±6px 双侧安全）。
+      fb: [spec("runJump", 1, 720, 25), spec("runJump", 1, 940, 25), spec("sleep", 15)],
+      wg: [spec("sleep", 45), spec("runJump", 1, 750, 25), spec("runJump", 1, 990, 25), spec("sleep", 15)],
+    },
+    vocab: {
+      fb: [spec("runJump", 1, 720, 25), spec("runJump", 1, 750, 25), spec("runJump", 1, 780, 25),
+        spec("runJump", 1, 960, 25), spec("runJump", 1, 975, 25), spec("runJump", 1, 990, 25), spec("runJump", 1, 1005, 25), spec("sleep", 15)],
+      wg: [spec("sleep", 30), spec("sleep", 45), spec("sleep", 60),
+        spec("runJump", 1, 720, 25), spec("runJump", 1, 750, 25), spec("runJump", 1, 780, 25),
+        spec("runJump", 1, 960, 25), spec("runJump", 1, 975, 25), spec("runJump", 1, 990, 25), spec("runJump", 1, 1005, 25), spec("sleep", 15)],
+    },
+  },
+  I1: {
+    maxDepth: 12, capFb: 7, capWg: 7,
+    recipe: {
+      // 实测（TEMP/ice02-i1.mjs 网格 ±1f 全过）：fb 自 1200 西跑 rj1150 落 row-20 [942,605]；
+      //   wg rj1090 落 [897,605]；hold 780 步行出西缘 832 落楼梯 D25,21+/24,21，末段 hold690
+      //   （雪/冰滑停过冲 ~25px → 终点 ~662-667，I1 target/I2 entry 窗 [640,735] 内双侧余量）。
+      // entry 合取口径：整链重放下 fb 的 I0 部分先完（f288），须等 wg 进 row-22 窗（~f455）
+      //   才能离窗，否则 entry 永不合取（I1 d1 recipe entry@-1 实证）。waitPx 领头解决；
+      //   waitPx 只查 x（wg 空中穿窗 f445 即燃，而她落稳可能晚至 f490——种子带 sleep 变体时
+      //   合取窗错过，beam24 实证）→ 后接 walkTo(-1,1160,60) 慢爬 40px 把在窗时间拉长到 ~80f，
+      //   再 rj(-1,1120) 冲刺起跳（v~250 drift~215 落 row-20 ~905 中部）。
+      fb: [spec("waitPx", "wg", 1060, 1240), spec("hold", -1, 1160), spec("runJump", -1, 1120, 25),
+        spec("edgeDrop", -1, 16), spec("hold", -1, 685), spec("walkTo", 1, 700, 60), spec("sleep", 15)],
+      wg: [spec("sleep", 20), spec("runJump", -1, 1130, 25), spec("edgeDrop", -1, 16), spec("hold", -1, 685), spec("walkTo", 1, 700, 60), spec("sleep", 15)],
+    },
+    vocab: {
+      fb: [spec("waitPx", "wg", 1060, 1240), spec("hold", -1, 1140), spec("hold", -1, 1160), spec("hold", -1, 1180),
+        spec("runJump", -1, 1110, 25), spec("runJump", -1, 1120, 25), spec("runJump", -1, 1130, 25), spec("runJump", -1, 1150, 25),
+        spec("edgeDrop", -1, 12), spec("edgeDrop", -1, 16), spec("edgeDrop", -1, 20), spec("hold", -1, 780), spec("hold", -1, 685), spec("walkTo", 1, 690, 60), spec("walkTo", 1, 700, 60), spec("walkTo", 1, 710, 60), spec("sleep", 15)],
+      wg: [spec("sleep", 20), spec("runJump", -1, 1120, 25), spec("runJump", -1, 1130, 25), spec("runJump", -1, 1140, 25),
+        spec("edgeDrop", -1, 12), spec("edgeDrop", -1, 16), spec("edgeDrop", -1, 20), spec("hold", -1, 780), spec("hold", -1, 685), spec("walkTo", 1, 690, 60), spec("walkTo", 1, 700, 60), spec("walkTo", 1, 710, 60), spec("sleep", 15)],
+    },
+  },
+  I2: {
+    maxDepth: 12, capFb: 5, capWg: 10, horizonF: 700,
+    recipe: {
+      fb: [spec("sleep", 500)],
+      wg: [spec("hold", -1, 560), spec("hold", -1, 300), spec("walkTo", -1, 240, 999), spec("jumpDrift", -1, 0, 20),
+        spec("walkTo", -1, 128, 999), spec("sleep", 15)],
+    },
+    vocab: {
+      fb: [spec("sleep", 300), spec("sleep", 450), spec("sleep", 600)],
+      wg: [spec("hold", -1, 600), spec("hold", -1, 560), spec("hold", -1, 520),
+        spec("hold", -1, 340), spec("hold", -1, 300),
+        spec("walkTo", -1, 240, 999), spec("walkTo", -1, 260, 999),
+        spec("jumpDrift", -1, 0, 15), spec("jumpDrift", -1, 0, 20), spec("jumpDrift", -1, 0, 30),
+        spec("walkTo", -1, 128, 999), spec("walkTo", -1, 140, 999), spec("walkTo", -1, 116, 999), spec("sleep", 15)],
+    },
+  },
+  I3: {
+    maxDepth: 12, capFb: 8, capWg: 8, horizonF: 1100,
+    recipe: {
+      // dbgI3 复放实证（resume 后 recipe 首评）：walkTo vMax60 实速 1px/f，fb 走 600f 致第三跳被
+      //   视界截断；jd(-1,0,3) 自 x85 漂 50-90 落 -5..35 全员错过 \坡[32,64] 撞西墙角。
+      //   修：fb 两段走（999 全速至 150 + 60 精停 90，省 ~450f）；首跳 jd(-1,0,2) 漂 25-50 落坡面；
+      //   jd(1,0,4) 落脊峰 / 面/顶点(160,608)；jd(1,0,2) 上桥面 [160,224]@512。视界 1100。
+      fb: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 150, 999),
+        spec("walkTo", -1, 90, 60), spec("jumpDrift", -1, 0, 2), spec("jumpDrift", 1, 0, 4),
+        spec("jumpDrift", 1, 0, 2), spec("sleep", 10)],
+      wg: [spec("waitPx", "wg", 105, 170), spec("sleep", 120), spec("walkTo", -1, 85, 60),
+        spec("jumpDrift", -1, 0, 2), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 2), spec("sleep", 10)],
+    },
+    vocab: {
+      fb: [spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 105, 170),
+        spec("sleep", 100), spec("sleep", 120), spec("sleep", 150),
+        spec("walkTo", -1, 140, 999), spec("walkTo", -1, 160, 999),
+        spec("jumpDrift", -1, 0, 2), spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4),
+        spec("jumpDrift", 1, 0, 2), spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5),
+        spec("jumpDrift", 1, 0, 2), spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("sleep", 10)],
+      wg: [spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 105, 170),
+        spec("sleep", 100), spec("sleep", 120), spec("sleep", 150),
+        spec("walkTo", -1, 80, 60), spec("walkTo", -1, 95, 60),
+        spec("jumpDrift", -1, 0, 2), spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4),
+        spec("jumpDrift", 1, 0, 2), spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5),
+        spec("jumpDrift", 1, 0, 2), spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("sleep", 10)],
+    },
+  },
+  I3b: {
+    maxDepth: 10, capFb: 6, capWg: 6, horizonF: 320,
+    recipe: {
+      // 塔顶站立 py≈572.5；东跳 rise96 → feet 512 = 桥面顶；jd(1,0,5) 漂 ~100-140 落 [192,256]。
+      fb: [spec("jumpDrift", 1, 0, 5), spec("sleep", 10)],
+      wg: [spec("jumpDrift", 1, 0, 5), spec("sleep", 10)],
+    },
+    vocab: {
+      fb: [spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5),
+        spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 7), spec("walkTo", 1, 240, 60), spec("sleep", 10)],
+      wg: [spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4), spec("jumpDrift", 1, 0, 5),
+        spec("jumpDrift", 1, 0, 6), spec("jumpDrift", 1, 0, 7), spec("walkTo", 1, 240, 60), spec("sleep", 10)],
+    },
+  },
+  I4: {
+    maxDepth: 10, capFb: 8, capWg: 8, horizonF: 460,
+    recipe: {
+      // 桥面冰东行至 ~500 停定（起跳须 x≤530 绕 slab-13 底 448 磕头），jd(1,0,14) 漂移跳上西段。
+      fb: [spec("walkTo", 1, 500, 999), spec("jumpDrift", 1, 0, 14), spec("sleep", 10)],
+      wg: [spec("walkTo", 1, 500, 999), spec("jumpDrift", 1, 0, 14), spec("sleep", 10)],
+    },
+    vocab: {
+      fb: [spec("walkTo", 1, 480, 999), spec("walkTo", 1, 500, 999), spec("walkTo", 1, 520, 999),
+        spec("jumpDrift", 1, 0, 10), spec("jumpDrift", 1, 0, 14), spec("jumpDrift", 1, 0, 18), spec("sleep", 10)],
+      wg: [spec("walkTo", 1, 480, 999), spec("walkTo", 1, 500, 999), spec("walkTo", 1, 520, 999),
+        spec("jumpDrift", 1, 0, 10), spec("jumpDrift", 1, 0, 14), spec("jumpDrift", 1, 0, 18), spec("sleep", 10)],
+    },
+  },
+  I5: {
+    maxDepth: 8, capFb: 6, capWg: 6, horizonF: 400,
+    recipe: {
+      // slab-13 满速东行 rj975 起跳 drift ~250-270 落 t0 方块 [1120,1248]（穿走廊缝 [1024,1120]，
+      //   D 楔 [992,1024]@288 在头顶但起跳点 975 东向错过）。
+      fb: [spec("runJump", 1, 975, 25), spec("sleep", 10)],
+      wg: [spec("runJump", 1, 975, 25), spec("sleep", 10)],
+    },
+    vocab: {
+      fb: [spec("runJump", 1, 955, 25), spec("runJump", 1, 975, 25), spec("runJump", 1, 995, 25), spec("sleep", 10)],
+      wg: [spec("runJump", 1, 955, 25), spec("runJump", 1, 975, 25), spec("runJump", 1, 995, 25), spec("sleep", 10)],
+    },
+  },
+  I6: {
+    maxDepth: 14, capFb: 4, capWg: 12, horizonF: 560,
+    recipe: {
+      // fb 守块直至 wg 入内室（waitPx 精确同步，闸门常开全程）；wg：方块东端助跑西跳 rj1130 落
+      //   金字塔雪阶(224)→西行跳链下 mosaic（192 块→224 带→256 带）→rj680 大跳 rise96 落门室桩
+      //   ∩(160)→hold 西行越洞孔(320,384)→升闸→内室停（不进门，给 I7 fb 冲刺留开闸）。
+      fb: [spec("waitPx", "wg", 130, 330), spec("sleep", 15)],
+      wg: [spec("walkTo", 1, 1235, 60), spec("runJump", -1, 1130, 25), spec("sleep", 8),
+        spec("jumpDrift", -1, 0, 5), spec("walkTo", -1, 770, 60), spec("jumpDrift", -1, 0, 4),
+        spec("walkTo", -1, 688, 60), spec("runJump", -1, 680, 25), spec("hold", -1, 300), spec("walkTo", -1, 160, 70)],
+    },
+    vocab: {
+      fb: [spec("waitPx", "wg", 130, 330), spec("waitPx", "wg", 140, 320), spec("waitPx", "wg", 130, 340),
+        spec("sleep", 15), spec("sleep", 30), spec("sleep", 45)],
+      wg: [spec("walkTo", 1, 1215, 60), spec("walkTo", 1, 1235, 60),
+        spec("runJump", -1, 1120, 25), spec("runJump", -1, 1130, 25), spec("runJump", -1, 1140, 25), spec("sleep", 8),
+        spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 5), spec("jumpDrift", -1, 0, 7),
+        spec("walkTo", -1, 750, 60), spec("walkTo", -1, 770, 60),
+        spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6),
+        spec("walkTo", -1, 688, 60), spec("walkTo", -1, 700, 60),
+        spec("runJump", -1, 670, 25), spec("runJump", -1, 680, 25), spec("runJump", -1, 690, 25),
+        spec("hold", -1, 300), spec("hold", -1, 320),
+        spec("walkTo", -1, 160, 70), spec("walkTo", -1, 180, 70), spec("sleep", 15)],
+    },
+  },
+  I7: {
+    maxDepth: 14, capFb: 12, capWg: 4, horizonF: 520,
+    recipe: {
+      // wg 内室已就位：walkTo W 门(152)；fb 离块（t0 释放=4s 窗起）→同链冲刺→fb 门(48)→phaseWon。
+      fb: [spec("walkTo", 1, 1235, 60), spec("runJump", -1, 1130, 25), spec("sleep", 8),
+        spec("jumpDrift", -1, 0, 5), spec("walkTo", -1, 770, 60), spec("jumpDrift", -1, 0, 4),
+        spec("walkTo", -1, 688, 60), spec("runJump", -1, 680, 25), spec("hold", -1, 300), spec("walkTo", -1, 48, 70)],
+      wg: [spec("sleep", 60), spec("walkTo", -1, 152, 60), spec("sleep", 15)],
+    },
+    vocab: {
+      fb: [spec("walkTo", 1, 1215, 60), spec("walkTo", 1, 1235, 60),
+        spec("runJump", -1, 1120, 25), spec("runJump", -1, 1130, 25), spec("runJump", -1, 1140, 25), spec("sleep", 8),
+        spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 5), spec("jumpDrift", -1, 0, 7),
+        spec("walkTo", -1, 750, 60), spec("walkTo", -1, 770, 60),
+        spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6),
+        spec("walkTo", -1, 688, 60), spec("walkTo", -1, 700, 60),
+        spec("runJump", -1, 670, 25), spec("runJump", -1, 680, 25), spec("runJump", -1, 690, 25),
+        spec("hold", -1, 300), spec("hold", -1, 320),
+        spec("walkTo", -1, 48, 70), spec("walkTo", -1, 60, 70), spec("sleep", 15)],
+      wg: [spec("sleep", 60), spec("sleep", 100), spec("sleep", 150),
+        spec("walkTo", -1, 150, 60), spec("walkTo", -1, 160, 60), spec("sleep", 15)],
+    },
+  },
+};
+Object.assign(SEG, SEGI);
+
 // ---------------------------------------------------------------- evaluate：单候选全量重放（进程内确定性，§1.4）
 // 语义对齐 botcore.drive（fb→wg→step，run→done→推进，队列空锁存末输入，死亡/WIN 短路），
 // 另加：entry 联合首帧（入场门控）、段相对 horizon、双队列空+宽限冻结。
@@ -503,13 +695,13 @@ function evaluate(segC, sf, sw, totalCapF) {
         jumpHeld: state[role].up,
       };
       let inp = null;
-      try { inp = stp.run(ctx); } catch { inp = NONE; }
+      try { inp = stp.run(ctx); } catch (e) { if (process.env.AS_TRACE) console.error(`[throw-run] ${role}#${idx[role]} f${f}: ${e.message}`); inp = NONE; }
       const next = { up: !!(inp?.up), left: !!(inp?.left), right: !!(inp?.right) };
       state[role] = next;
       inputs[role] = next;
       let d = false;
-      try { d = stp.done(ctx); } catch { d = false; }
-      if (d) { idx[role]++; if (idx[role] >= progs[role].length) drainF[role] = f; }
+      try { d = stp.done(ctx); } catch (e) { if (process.env.AS_TRACE) console.error(`[throw-done] ${role}#${idx[role]} f${f}: ${e.message}`); d = false; }
+      if (d) { idx[role]++; if (process.env.AS_TRACE) console.error(`[idx] ${role}->${idx[role]} f${f} ${stp.name ?? "?"}`); if (idx[role] >= progs[role].length) drainF[role] = f; }
     }
     w.step(1 / 60, { fireboy: inputs.fb, watergirl: inputs.wg });
     const a = w.snapshotPlayer("fireboy"), b = w.snapshotPlayer("watergirl");
@@ -765,7 +957,7 @@ function searchSegment(segDef, seeds, opts) {
       fb: [+b.r.S.fb.x.toFixed(0), +b.r.S.fb.y.toFixed(0)], wg: [+b.r.S.wg.x.toFixed(0), +b.r.S.wg.y.toFixed(0)],
       path: progNames(b.sf).slice(0, 160) + " | " + progNames(b.sw).slice(0, 160),
     });
-    log(`  ${segDef.id} d${depth}: evals=${evals} best=${b.score.toFixed(0)} wp=${b.unlocked}/${segC.wpG.length} met=${b.met} rob=${layers.at(-1).rob ?? "-"} entry@${b.r.entryF} fb=[${layers.at(-1).fb}] wg=[${layers.at(-1).wg}]`);
+    log(`  ${segDef.id} d${depth}: evals=${evals} best=${b.score.toFixed(0)} wp=${b.unlocked}/${segC.wpG.length} met=${b.met} rob=${layers.at(-1).rob ?? "-"} entry@${b.r.entryF} fb=[${layers.at(-1).fb}] wg=[${layers.at(-1).wg}] prog fb=${progNames(b.sf)} | wg=${progNames(b.sw)}`);
     if (b.met) {
       // met 不即停：先试定稿阶梯，seam 过关才收（早熟脆家系 met 会饿死下段——v4 实证
       // d8 4原语落窗即坠家系抢跑）；不过则继续加深让鲁棒家系上位，快照首个 met 前沿兜底
@@ -779,6 +971,7 @@ function searchSegment(segDef, seeds, opts) {
   if (!solved && metBeam) { solved = metBeam.find((n) => n.met) ?? null; beam = metBeam; }
   return {
     id: segDef.id, title: segDef.title, horizonF: segC.horizonF, maxDepth,
+    seedFb, seedWg,
     solved: !!solved, exhausted, evals, wallS: +((Date.now() - t0) / 1000).toFixed(1), layers,
     bestEver: bestEver ? { score: +bestEver.score.toFixed(0), unlocked: bestEver.unlocked, met: bestEver.met, entryF: bestEver.r.entryF, endF: bestEver.r.endF, fb: [+bestEver.r.S.fb.x.toFixed(0), +bestEver.r.S.fb.y.toFixed(0)], wg: [+bestEver.r.S.wg.x.toFixed(0), +bestEver.r.S.wg.y.toFixed(0)], sf: bestEver.sf, sw: bestEver.sw } : null,
     solvedCand: solved ? { score: +solved.score.toFixed(0), unlocked: solved.unlocked, entryF: solved.r.entryF, endF: solved.r.endF, metAt: solved.r.metAt, sf: solved.sf, sw: solved.sw, S: solved.r.S, M: solved.r.M, D: solved.r.D } : null,
@@ -799,10 +992,12 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
   // 池按程序前缀签名去重（同族 padding 候选挤占 top-8 会饿死异族鲁棒组合，exha-s0a2 实证）
   const pool = [];
   const seenFam = new Set();
+  const sFb = segRes.seedFb ?? 0, sWg = segRes.seedWg ?? 0;
   for (const n of segRes.beam) {
     if (!n.met) continue;
     const R = n.r ?? {};
-    const key = progNames((n.sf ?? []).slice(0, 3)) + "|" + progNames((n.sw ?? []).slice(0, 3));
+    // key 用本段新增后缀（链式段候选共享种子前缀，前缀 key 会把池饿到 1 族——I1 实证）
+    const key = progNames((n.sf ?? []).slice(sFb)) + "|" + progNames((n.sw ?? []).slice(sWg));
     if (seenFam.has(key)) continue;
     seenFam.add(key);
     pool.push(n);

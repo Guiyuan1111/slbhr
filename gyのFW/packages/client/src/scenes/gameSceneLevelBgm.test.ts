@@ -11,17 +11,16 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
+import { LEVEL_BGM_KEYS } from "../audio.js";
 
 const gameScene = readFileSync(fileURLToPath(new URL("./GameScene.ts", import.meta.url)), "utf8");
 const menus = readFileSync(fileURLToPath(new URL("./menus.ts", import.meta.url)), "utf8");
 
 describe("#31 bgm_level_dark 停音清单", () => {
-  it("stopLevelBgm 覆盖三键", () => {
-    const m = gameScene.match(/private stopLevelBgm\(\): void \{([\s\S]*?)\n  \}/);
-    expect(m, "找不到 stopLevelBgm").toBeTruthy();
-    for (const k of ['"bgm_level"', '"bgm_level_speed"', '"bgm_level_dark"']) {
-      expect(m![1]).toContain(k);
-    }
+  it("stopLevelBgm 覆盖三键（#49：键清单提 LEVEL_BGM_KEYS 常量——stopLevelBgm/SHUTDOWN 同源引用，键表内容由 audio-families 钉死）", () => {
+    expect([...LEVEL_BGM_KEYS]).toEqual(["bgm_level", "bgm_level_speed", "bgm_level_dark"]);
+    // 循环引用常量（不再内联字面量）：散键漏改会绕过同源清单
+    expect(gameScene).toContain("for (const k of LEVEL_BGM_KEYS) this.sound.stopByKey(k);");
   });
 
   it("GameScene 中两键散停全部替换为 stopLevelBgm（仅定义处保留三键列表）", () => {
@@ -40,10 +39,10 @@ describe("#31 bgm_level_dark 停音清单", () => {
     expect(m![1]).toContain('!this.sound.isPlaying("bgm_level_dark")');
   });
 
-  it("SHUTDOWN 兜底列表含 bgm_level_dark", () => {
+  it("SHUTDOWN 兜底列表展开 LEVEL_BGM_KEYS（与 stopLevelBgm 同源，#49）", () => {
     const i = gameScene.indexOf("Events.SHUTDOWN, () => {");
     const body = gameScene.slice(i, i + 900);
-    expect(body).toContain('"bgm_level_dark"');
+    expect(body).toContain("...LEVEL_BGM_KEYS");
   });
 
   it("menus.ts 退关/关设置分支补停 bgm_level_dark", () => {

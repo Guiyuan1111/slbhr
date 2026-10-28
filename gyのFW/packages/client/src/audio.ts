@@ -103,6 +103,10 @@ export function bgmTerminalOf(family: BgmFamily): ReadonlyArray<readonly [string
   return [...AUDIO_BGM_OVER, ...bgmFinishOf(family)];
 }
 
+/** 关卡循环曲三键停音清单（#31→#49）：bgm_level_dark 曾漏出全部停止路径致叠播/串音；
+ *  stopLevelBgm 与 SHUTDOWN 兜底列表同源引用，键表改动单测钉死（audio-families）。 */
+export const LEVEL_BGM_KEYS = ["bgm_level", "bgm_level_speed", "bgm_level_dark"] as const;
+
 /** 房内 BGM 键全表（r41 移植，扩三族六键）：离房回选关时连同解码 PCM 一起交还——大厅只活
  *  bgm_menu 与 sfx，这六支在大厅一秒也不响。重进由 kickBgmLoop/kickBgmTerminal 按需重取
  *  （服务端 r15 ETag 使复验只花 304 往返，无正文重下）。 */

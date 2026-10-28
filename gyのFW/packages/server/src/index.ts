@@ -18,8 +18,15 @@ import { isOriginAllowed, wsOriginVerify } from "./originPolicy.js";
 import { buildInlineScriptHashes, composeCsp, securityHeadersMiddleware } from "./serverHeaders.js";
 import { fixedWindowRateLimit } from "./rateLimit.js";
 import { logFatal } from "./processGuards.js";
+import { guardSchemaSemantics } from "./schemaSelfCheck.js";
 import { ForestRoom } from "./rooms/ForestRoom.js";
 import { levelExists, listLevelIds, loadLevel } from "./levels.js";
+
+// #51 第一道门：状态字段必须是 schema 访问器。分发/编译链路一旦丢掉 tsconfig 的
+// useDefineForClassFields:false，`x!: number` 会变成原生字段覆盖访问器——那要到
+// 房间首次增量广播才炸（玩家卡 loading、整进程带崩）。这里在监听端口前先判形态，
+// 不对立即退出，运维在启动日志就能看到原因。
+guardSchemaSemantics();
 
 const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 const PORT = Number(process.env.PORT ?? 2567);

@@ -10,6 +10,34 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-10-28（0.3.58——TimedPusher 组派发保真修复：ice_02 闸门复活，#50 前置解除）
+① **缺陷实锤**：解 ice_02 路线时发现门室封死悖论——定时按钮被当纯音效件（不入组/不派发），组内平台永不动。oracle C 部对质：TimedPusher extends Pusher，构造器末尾 registerDevice() 入组+signal 接线 deviceChanged，checkState 三处 state 迁移即 dispatch 点（旧注"doRegister 空=不进组"引错位置，实为 Pusher 路径被覆写、其自身基类注册仍生效）。证据链全录 note/research/2026-10-28-timedpusher-dispatch.md。
+② **修复**：mechanisms.ts hasSignal=true+register 入组；world.ts 迁移沿同步 deviceChanged(group)；事件 kind/协议/音效零变化。闸门全周期内核实测（升 96px/按压重置计时/4s 回落），"闸门被砌体卡死"疑虑实测排除（零密度动态体穿静态体，oracle 同构）。
+③ **影响面**：15 关定时钮联动生效（forest_20、light_14/31、ice 族）；det forest 48/48、light 40/40 位级一致，ice 唯 ice_bonus_1 预期漂移（脚本踩中 t0 group7→p8 起动）→ ice 锚重录 r2-tpgate + ci.yml 引用更新。
+④ **门禁**：51 文件 359 测试绿（+3 行为钉 timedpusher-gate.test）、typecheck 零错、kregress 15/15、browser-room 4/4；发版三件套齐，tag/Release 待 CI。
+⑤ **#50 进行中**：ice_02 地形/机制解码完成（光束红融冰/蓝冻水、按钮滑台让束、定时钮开闸），检查点链设计随发版后继续。
+
+**更新**：2026-10-28（0.3.57——#49 落地：决策抽纯模块退役文本契约；r42/r43 复核否决）
+⑤ **#50 侦察（挂账待启动）**：ice 语料 0 条（formal-corpus=forest 13+light 2），且无 ice route 记档——#50 前置=先解 ice 正式通关路线（autosearch 需人工检查点链设计，light_01/02 当年各占独立批次级工作量）。建议首关 ice_02（教学：冰面+TimedPusher 引入）；r17–r40 资产族/Colyseus 0.18 仍待令。
+
+① **gameGuards（纯模块）**：needsDarkRt/needsDust（create 幂等守卫）+resolveBeamCache（#30 三退出路径）+clockSoundDecision（#22 downState 逐实例起停）——原文本契约对逻辑破坏假绿（#39 审计实测 6/6 PASS），退役后行为断言进 gameGuards.test（10 例逐路径）。
+② **LEVEL_BGM_KEYS 常量化**（#31→#49）：stopLevelBgm/SHUTDOWN 兜底同源引用，键表 audio-families 钉死。
+③ **r42/r43 复核否决**：依赖 qoder 资产拆分前置件（r33–r37），main 共享图集布局下无可释放对象——挂账资产族立项（分流表存档）。
+④ **0.3.57 发版**：50 文件 356 测试绿、kregress 15/15、browser-room 4/4、typecheck 零错；CI 九作业绿后 tag 0.3.57 + Release 已发（Latest）；#49 已关闭。
+
+**更新**：2026-10-28（性能线吸收批四 + 0.3.56 发版——r13 地面缓存/r20 弱网量具/P0：CSP×seedrandom 断链修复）
+① **P0（91394f2）**：seedrandom 字符串内联+new Function 被 0.3.51 CSP 禁 eval 拦截——GameScene create 炸在 decorate z() 步进，**浏览器建房→Game 全断 0.3.51–0.3.55 五版**（node 侧 e2e 不加载浏览器 bundle、audiofamily 不建房故无人察觉）。修复=官方 2717B 以真实源码模块入编译图；等值=10000 步对拍+parity 锚单测+det forest 48 关位级一致。
+② **r13（f977aff）**：groundCache 字节账 LRU（24MB，正绑定/当前张不可逐出不变量单测钉死）+结算入口后 500ms 预烘下一关+离房释放；合成管线逐字节不动；浏览器实测 669ms 进房/离房释放。
+③ **r20（0ec412d）**：perf-load --net 五档 CDP 节流+waitScale+生效自检（qoder r30 判据：墙钟直测——首版 TTFB 判据实弹抓出假阴性）；fast3g Menu 21.4s vs off 510ms 基线入库。
+④ **门禁（8c63d05）**：browser-room 浏览器建房链路冒烟入 CI（七作业）——P0 潜伏五版的流程缺口收口。
+⑤ **0.3.56 发版**：48 文件 349 测试绿（+8）、typecheck/build 过、det forest 锚一致；CI 九作业绿（含 browser-room 首跑）后 tag 0.3.56（e16226d）+ Release 已发（Latest）。
+
+**更新**：2026-10-28（1.0 分发线落地——第一部 forest 专属 Linux 服务器包发版，与 main 0.3.x 并行）
+① **分支口径**：release/1.0-forest（1.0.x 分发线，main 仍是三部开发主线）——只做打包/剪裁适配：删三部 fixture 测试 3 件+sceneState iceViews 块、CI 去 ice/light determinism 两作业、覆盖率阈值按余量实测重定 69.4/68.7/68.75/64.3、bump 1.0.0；font-census 清单随打包链文案刷新（防护网按设计红一次，本地漏跑复验被 CI 抓回——发版前全门禁必须本地+CI 双绿）。
+② **打包链**：scripts/package-deploy.mjs（打包层剪除 light/ice：data 目录、Temples 图集、LevelMusic_dark、dist 内资产重复副本、tutorials 非 forest 首关；预装 npm ci --omit=dev 生产依赖，解包即用）+ DEPLOY.md（AI 接手部署手册：六步验收含 colyseus.js 真房与"仅第一部"边界断言 /api/levels 全 forest、light/ice 404）。
+③ **发版**：tag 1.0.0（7f300c1）+ Release 已发（附件 gy-fw-forest-1.0.0.tar.gz 39.2MiB+sha256 由 release-asset workflow 从 tag 构建，正文=AI 部署协议全文）。云端产物下载后真包再验收六步全绿。
+④ **踩坑实录**：本机 uploads.github.com 选择性阻断（api/github.com 正常、上传握手必败）→ 附件改 CI 侧构建上传；手动 dispatch 时 GITHUB_REF_NAME=分支名误建同名 release → workflow 加 ref 守卫（只认 1.0.* tag 名）；房间密码强制 4–64 位（DEPLOY 示例用 demo1）。TEMP 验收产物已清零。
+
 **更新**：2026-10-28（并行性能线吸收批三 + 0.3.55 发版——r21+r25 BGM 出落定门/r41 离房交还，带审核）
 ① **r21+r25（4439dad）**：落定门与 GameScene 阻塞批内只剩 SFX(18 支)；BGM 改门后二段（门落定+1500ms BootScene.thenBgmDefer 取 warm 族 loop+terminal）+ create 后 kickBgmLoop/kickBgmTerminal 兜底（缓存命中零请求；补起三卫防晚到盖曲，终局补起须 won 相位——死亡失败曲时刻绑定不补；SHUTDOWN 摘 load complete 防累积）。门挡字节出门：general 1,647,015B/speed 343,792B/dark 812,753B。
 ② **r41（同提交）**：leaveToMenu 时 releaseGameBgms 六键（三族并集）先 sound.removeByKey 后 cache.remove 交还 PCM（反序被实例钉住）；重开/进房不交还，重取走 r15 ETag 304；与 0.3.48 #29 正交（场景视图引用 vs 全局音频资产账）。

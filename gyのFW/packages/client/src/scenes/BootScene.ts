@@ -181,7 +181,7 @@ export class BootScene extends Phaser.Scene {
 
   /**
    * 加载条（13 号档 #41，0.3.39；oracle LoaderBar 组 bundle:2164711 字证逐参复刻）：
-   * LoaderBar0000 置 (−100,−10)（屏心系→我方 (cx−100, cy−10)，默认 (0,0) 锚）自左
+   * LoaderBar0000 置 (−100,−10)（屏心系→我方 (cx−100, cy−10)，锚 (0,0) 自左上）自左
    * crop `Rectangle(0,0,0,20)`；LoaderHolder0000 居中 anchor 0.5；LoaderTitle0000
    * (0,−80) anchor 0.47（双轴）；组内层序 bar→holder→title。进度=装载完成度百分比
    * （Phaser3 progress 0..1 ≡ oracle onFileComplete a/100 同一数据源，:2164711 区
@@ -198,7 +198,10 @@ export class BootScene extends Phaser.Scene {
       bar?.setCrop(0, 0, BAR_W * frac, BAR_H);
     };
     const build = (): void => {
-      bar = this.add.image(cx - BAR_W / 2, cy - BAR_H / 2, ATLAS_PRELOADER, "LoaderBar0000");
+      // 锚点必须显式 (0,0)：oracle 是 Phaser2 Sprite（anchor 缺省 0,0）而 Phaser3
+      // Image 缺省中心锚；setCrop 恒定从贴图左上角起裁，中心锚会把填充条整块
+      // 左移 100px、上移 10px 甩到金色框外（2026-10-28 用户实机截图）。
+      bar = this.add.image(cx - BAR_W / 2, cy - BAR_H / 2, ATLAS_PRELOADER, "LoaderBar0000").setOrigin(0, 0);
       cropTo(this.load.progress);
       this.add.image(cx, cy, ATLAS_PRELOADER, "LoaderHolder0000").setOrigin(0.5, 0.5);
       this.add.image(cx, cy - 80, ATLAS_PRELOADER, "LoaderTitle0000").setOrigin(0.47, 0.47);
