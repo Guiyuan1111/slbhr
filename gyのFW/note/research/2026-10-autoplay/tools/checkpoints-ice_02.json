@@ -360,7 +360,7 @@
   },
   {
    "id": "I3",
-   "title": "I3a 穿池+登首级：fb waitPx 锚按压后慢速穿冻结池；双人退跑 x60-80 助跑带速跳登首级 604 台（x132-160）",
+   "title": "I3 独登接力·fb：冻结池西渡→退跑助跑登首级 604→带速跳 524 台→三角顶 484→deck-476 停定；wg 西岸原地看护",
    "entry": [
     {
      "kind": "px",
@@ -408,14 +408,14 @@
      {
       "kind": "px",
       "role": "fb",
-      "min": 110,
-      "max": 170
+      "min": 114,
+      "max": 162
      },
      {
       "kind": "py",
       "role": "fb",
-      "min": 578,
-      "max": 622
+      "min": 575,
+      "max": 618
      },
      {
       "kind": "grounded",
@@ -424,88 +424,7 @@
      {
       "kind": "alive"
      }
-    ]
-   ],
-   "target": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 118,
-     "max": 158
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 575,
-     "max": 618
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 118,
-     "max": 158
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 575,
-     "max": 618
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "horizonF": 480
-  },
-  {
-   "id": "I3b",
-   "title": "I3b 首级→deck：加速穿首级带速跳（弧穿三角斜瓦下方）落 524 台→跳三角顶 484→8px 阶上 deck-476",
-   "entry": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 128,
-     "max": 162
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 588,
-     "max": 614
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 128,
-     "max": 162
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 588,
-     "max": 614
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "waypoints": [
+    ],
     [
      {
       "kind": "px",
@@ -522,6 +441,129 @@
      {
       "kind": "grounded",
       "role": "fb"
+     },
+     {
+      "kind": "alive"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 256,
+     "max": 700
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 466,
+     "max": 492
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 60,
+     "max": 180
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 688,
+     "max": 712
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "horizonF": 560
+  },
+  {
+   "id": "I3b",
+   "title": "I3b 独登接力·wg：同链登首级→524 台→三角顶→deck-476 与 fb 会合；fb 台上待命",
+   "entry": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 256,
+     "max": 700
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 466,
+     "max": 492
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 60,
+     "max": 180
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 688,
+     "max": 712
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "alive"
+    }
+   ],
+   "waypoints": [
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 114,
+      "max": 162
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 575,
+      "max": 618
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     },
+     {
+      "kind": "alive"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 204,
+      "max": 240
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 514,
+      "max": 538
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
      },
      {
       "kind": "alive"

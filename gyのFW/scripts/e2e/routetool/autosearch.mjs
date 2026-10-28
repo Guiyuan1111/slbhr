@@ -542,48 +542,52 @@ const SEGI = {
     },
   },
   I3: {
-    maxDepth: 8, capFb: 5, capWg: 5, horizonF: 480,
+    maxDepth: 12, capFb: 8, capWg: 5, horizonF: 560,
     recipe: {
-      // I3a 穿池+登首级（604 台 x132-160，28px）：跳冲量随水平速度（站立 38px/全速 ~100px），
-      //   登级须退跑到 x60-80 助跑带速起跳 runJump(1,~90,25)（apex ~150 落首级）。fb 首件 waitPx
-      //   锚 b1 按压后慢速穿池（按压 f861 起冻 416f）；wg 压板 sleep(30) 锚 entry/冻结后跟进。
-      fb: [spec("waitPx", "wg", 105, 170), spec("sleep", 45), spec("walkTo", -1, 300, 999),
-        spec("walkTo", -1, 80, 60), spec("runJump", 1, 80, 25), spec("sleep", 10)],
-      wg: [spec("sleep", 30), spec("walkTo", -1, 80, 60), spec("runJump", 1, 80, 25), spec("sleep", 10)],
+      // 独登接力·fb（v10 教训：双人同窗登首级不可解——首级冰面 60f 即滑落，fb 爬行穿池到时 wg
+      //   已坠回）。改 fb 单人全爬升：waitPx 锚冻结（b1 已于 I2 压下）→sleep45→全速至 120→
+      //   慢爬 70 精停（防打滑过冲出西缘）→runJump(1,80,25) 登首级（逐帧实证：自 ~79 跳落
+      //   (123,607)，冰面弹跳瞬态即逝）→无缝 runJump(1,152,14) 带速跳 524 台→jd(-1,0,4) 上
+      //   三角顶 484→walkTo 上 deck-476 停定。wg 只须原地看护（target 宽窗）。
+      fb: [spec("waitPx", "wg", 105, 170), spec("sleep", 45), spec("walkTo", -1, 120, 999),
+        spec("walkTo", -1, 70, 60), spec("runJump", 1, 80, 25), spec("runJump", 1, 152, 14),
+        spec("walkTo", 1, 215, 999), spec("jumpDrift", -1, 0, 4), spec("walkTo", 1, 260, 999),
+        spec("sleep", 10)],
+      wg: [spec("sleep", 30), spec("walkTo", 1, 140, 60), spec("sleep", 15)],
     },
     vocab: {
       fb: [spec("waitPx", "wg", 105, 170), spec("waitPx", "wg", 100, 180),
         spec("sleep", 30), spec("sleep", 45), spec("sleep", 60),
-        spec("walkTo", -1, 300, 999), spec("walkTo", -1, 240, 999),
+        spec("walkTo", -1, 120, 999), spec("walkTo", -1, 240, 999), spec("walkTo", -1, 300, 999),
         spec("walkTo", -1, 60, 60), spec("walkTo", -1, 70, 60), spec("walkTo", -1, 80, 60),
         spec("runJump", 1, 80, 25), spec("runJump", 1, 85, 25), spec("runJump", 1, 90, 25),
-        spec("runJump", 1, 95, 25), spec("runJump", 1, 100, 25), spec("sleep", 10)],
-      wg: [spec("sleep", 20), spec("sleep", 30), spec("sleep", 45),
-        spec("walkTo", -1, 60, 60), spec("walkTo", -1, 70, 60), spec("walkTo", -1, 80, 60),
-        spec("runJump", 1, 80, 25), spec("runJump", 1, 85, 25), spec("runJump", 1, 90, 25),
-        spec("runJump", 1, 95, 25), spec("runJump", 1, 100, 25), spec("sleep", 10)],
-    },
-  },
-  I3b: {
-    maxDepth: 8, capFb: 6, capWg: 6, horizonF: 420,
-    recipe: {
-      // I3b 首级(604@x132-160)→deck-476(x192+)：加速横穿首级 walkTo(1,140,999) 带速至东缘
-      //   runJump(1,152,12)（弧穿三角斜瓦 x160-188 下方）落 524 台（x208-236）；jd(-1,0,4) 升 40
-      //   落三角顶 484@188；8px 阶 walkTo 上 deck。
-      fb: [spec("runJump", 1, 152, 14), spec("walkTo", 1, 215, 999),
-        spec("jumpDrift", -1, 0, 4), spec("walkTo", 1, 260, 999), spec("sleep", 10)],
-      wg: [spec("runJump", 1, 152, 14), spec("walkTo", 1, 215, 999),
-        spec("jumpDrift", -1, 0, 4), spec("walkTo", 1, 260, 999), spec("sleep", 10)],
-    },
-    vocab: {
-      fb: [spec("walkTo", 1, 140, 999), spec("walkTo", 1, 150, 999),
-        spec("runJump", 1, 148, 10), spec("runJump", 1, 152, 12), spec("runJump", 1, 152, 14),
+        spec("runJump", 1, 95, 25), spec("runJump", 1, 100, 25),
+        spec("runJump", 1, 148, 12), spec("runJump", 1, 152, 14),
         spec("walkTo", 1, 210, 999), spec("walkTo", 1, 215, 999), spec("walkTo", 1, 220, 999),
         spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6),
         spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4),
         spec("walkTo", 1, 260, 999), spec("walkTo", 1, 300, 999), spec("sleep", 10)],
-      wg: [spec("walkTo", 1, 140, 999), spec("walkTo", 1, 150, 999),
-        spec("runJump", 1, 148, 10), spec("runJump", 1, 152, 12), spec("runJump", 1, 152, 14),
+      wg: [spec("sleep", 15), spec("sleep", 30), spec("sleep", 60), spec("sleep", 120),
+        spec("walkTo", 1, 120, 60), spec("walkTo", 1, 140, 60), spec("walkTo", 1, 160, 60),
+        spec("walkTo", -1, 90, 60), spec("walkTo", -1, 100, 60), spec("sleep", 15)],
+    },
+  },
+  I3b: {
+    maxDepth: 12, capFb: 4, capWg: 8, horizonF: 420,
+    recipe: {
+      // 独登接力·wg：fb 已停定 deck-476（稳定，无时效）；wg 自西岸 [60,180] 精停 70 后沿同链
+      //   登首级→524 台→三角顶→deck 会合。首级冰面 60f 滑落窗内单人完成两连跳（逐帧弹道实证）。
+      fb: [spec("sleep", 15)],
+      wg: [spec("walkTo", -1, 70, 60), spec("runJump", 1, 80, 25), spec("runJump", 1, 152, 14),
+        spec("walkTo", 1, 215, 999), spec("jumpDrift", -1, 0, 4), spec("walkTo", 1, 260, 999),
+        spec("sleep", 10)],
+    },
+    vocab: {
+      fb: [spec("sleep", 15), spec("sleep", 30), spec("sleep", 60)],
+      wg: [spec("walkTo", -1, 60, 60), spec("walkTo", -1, 70, 60), spec("walkTo", -1, 80, 60),
+        spec("runJump", 1, 80, 25), spec("runJump", 1, 85, 25), spec("runJump", 1, 90, 25),
+        spec("runJump", 1, 95, 25), spec("runJump", 1, 100, 25),
+        spec("runJump", 1, 148, 12), spec("runJump", 1, 152, 14),
         spec("walkTo", 1, 210, 999), spec("walkTo", 1, 215, 999), spec("walkTo", 1, 220, 999),
         spec("jumpDrift", -1, 0, 3), spec("jumpDrift", -1, 0, 4), spec("jumpDrift", -1, 0, 6),
         spec("jumpDrift", 1, 0, 3), spec("jumpDrift", 1, 0, 4),
