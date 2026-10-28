@@ -1,641 +1,680 @@
 {
- "level": "ice_02",
- "note": "ice_02 检查点链 v3（2026-10-28 物理支撑扫描+门位网格测定全图重证）。关键勘误史：早先 fixture 转储未加 body 变换且 x 轴未镜像（screen=-32*b2），旧地形图整体作废；tile gid1=背景瓦非实体。实证地形（TEMP/ice02-scan4/5 + ice02-door.mjs）：西台顶~700 仅 x40-136（b1 板[96,717 160,736]）；x160-560 底部=泳池（冻结后可行）；slab-east x664-784 顶~700；西梯/坡 x136-232（~596→~524）接长台 deck-476（x256-1120）；beam-380 x664-1024；东区 x1000 有 ~292 级、g2 块 x1088-1120 顶~320、计时按钮板[1136,301 1200,320]（gid38 time4000，站板=按压）；上梁顶~252 x232-1048；45° 斜瓦阶梯 x128-256（288→192）上门廊；门廊：细走面 ~124-128（x48-240+），门龛地板 ~184——fb 站 (x56-104,py181)、wg 站 (x192-208,py181) 实测 door.isOpen=1，双门同帧 isUp=won。闸 p2=[258,64 286,160]（dy3，gid38 联动）与 b0[928,493 992,512]（group1→p0 平台/红遮板）为支线，主路线不经过。I3-I6 双人同链：登西坡上长台→东行跳 beam-380→上梁西行→斜坡跳链上廊→双门 phaseWon。",
- "segments": [
-  {
-   "id": "I0",
-   "title": "出生东行：双人翻雪丘（row-25 台→顶 768）→短助跑东跳上 row-22(704)",
-   "entry": [
+  "level": "ice_02",
+  "note": "v8 链（2026-10-28）：I0-I2 前缀原封（849f：东阶梯→P1 踏板渡→b1 压→701 水道冻结，双西岸）；I3=西崖双梯×冰甲板→beam-380 会合；I4=beam-380→p0→上梁→坡唇→板台双门。v7 西塔线（台沿→楔坡→塔→斜坡→上梁→跳浆）证伪：楔坡 Δ128-160>119 几何不通，作废。机关实测（TEMP/ice02-probe1-5）：蓝光(416,576→626)被 P1 挡、P1 东移(415→479)即冻 701 水道；红光(368,320→354)被 p0 挡、p0 动即融甲板冰（陷阱）；t0 坐于 g2 板面(1168,320) 踏上即压但电梯 p2 死胡同。",
+  "segments": [
     {
-     "kind": "alive"
+      "id": "I0",
+      "title": "出生东行：双人翻雪丘（row-25 台→顶 768）→短助跑东跳上 row-22(704)",
+      "entry": [
+        {
+          "kind": "alive"
+        }
+      ],
+      "waypoints": [
+        [
+          {
+            "kind": "px",
+            "role": "fb",
+            "min": 880,
+            "max": 1040
+          },
+          {
+            "kind": "py",
+            "role": "fb",
+            "min": 715,
+            "max": 748
+          },
+          {
+            "kind": "grounded",
+            "role": "fb"
+          }
+        ],
+        [
+          {
+            "kind": "px",
+            "role": "wg",
+            "min": 880,
+            "max": 1040
+          },
+          {
+            "kind": "py",
+            "role": "wg",
+            "min": 715,
+            "max": 748
+          },
+          {
+            "kind": "grounded",
+            "role": "wg"
+          }
+        ]
+      ],
+      "target": [
+        {
+          "kind": "px",
+          "role": "fb",
+          "min": 1060,
+          "max": 1240
+        },
+        {
+          "kind": "py",
+          "role": "fb",
+          "min": 655,
+          "max": 682
+        },
+        {
+          "kind": "grounded",
+          "role": "fb"
+        },
+        {
+          "kind": "px",
+          "role": "wg",
+          "min": 1060,
+          "max": 1240
+        },
+        {
+          "kind": "py",
+          "role": "wg",
+          "min": 655,
+          "max": 682
+        },
+        {
+          "kind": "grounded",
+          "role": "wg"
+        },
+        {
+          "kind": "alive"
+        }
+      ],
+      "horizonF": 700
+    },
+    {
+      "id": "I1",
+      "title": "东线 v5：row-22(669) 西跳上 row-20(605)→西端回满速东跳 deck 东角(476)——满速 rise 实测 115-130 对 deck 需 ~126，apex 须过角",
+      "entry": [
+        {
+          "kind": "px",
+          "role": "fb",
+          "min": 1060,
+          "max": 1240
+        },
+        {
+          "kind": "py",
+          "role": "fb",
+          "min": 655,
+          "max": 682
+        },
+        {
+          "kind": "grounded",
+          "role": "fb"
+        },
+        {
+          "kind": "px",
+          "role": "wg",
+          "min": 1060,
+          "max": 1240
+        },
+        {
+          "kind": "py",
+          "role": "wg",
+          "min": 655,
+          "max": 682
+        },
+        {
+          "kind": "grounded",
+          "role": "wg"
+        },
+        {
+          "kind": "alive"
+        }
+      ],
+      "waypoints": [
+        [
+          {
+            "kind": "px",
+            "role": "fb",
+            "min": 850,
+            "max": 1010
+          },
+          {
+            "kind": "py",
+            "role": "fb",
+            "min": 588,
+            "max": 622
+          },
+          {
+            "kind": "grounded",
+            "role": "fb"
+          },
+          {
+            "kind": "alive"
+          }
+        ],
+        [
+          {
+            "kind": "px",
+            "role": "wg",
+            "min": 850,
+            "max": 1010
+          },
+          {
+            "kind": "py",
+            "role": "wg",
+            "min": 588,
+            "max": 622
+          },
+          {
+            "kind": "grounded",
+            "role": "wg"
+          },
+          {
+            "kind": "alive"
+          }
+        ]
+      ],
+      "target": [
+        {
+          "kind": "px",
+          "role": "fb",
+          "min": 1030,
+          "max": 1180
+        },
+        {
+          "kind": "py",
+          "role": "fb",
+          "min": 462,
+          "max": 496
+        },
+        {
+          "kind": "grounded",
+          "role": "fb"
+        },
+        {
+          "kind": "px",
+          "role": "wg",
+          "min": 1030,
+          "max": 1180
+        },
+        {
+          "kind": "py",
+          "role": "wg",
+          "min": 462,
+          "max": 496
+        },
+        {
+          "kind": "grounded",
+          "role": "wg"
+        },
+        {
+          "kind": "alive"
+        }
+      ],
+      "horizonF": 420
+    },
+    {
+      "id": "I2",
+      "title": "deck 西行长廊→x860-900 起跳上 beam-380（rise96 漂 130-135 落梁 x664-1024）",
+      "entry": [
+        {
+          "kind": "px",
+          "role": "fb",
+          "min": 1030,
+          "max": 1180
+        },
+        {
+          "kind": "py",
+          "role": "fb",
+          "min": 462,
+          "max": 496
+        },
+        {
+          "kind": "grounded",
+          "role": "fb"
+        },
+        {
+          "kind": "px",
+          "role": "wg",
+          "min": 1030,
+          "max": 1180
+        },
+        {
+          "kind": "py",
+          "role": "wg",
+          "min": 462,
+          "max": 496
+        },
+        {
+          "kind": "grounded",
+          "role": "wg"
+        },
+        {
+          "kind": "alive"
+        }
+      ],
+      "waypoints": [
+        [
+          {
+            "kind": "px",
+            "role": "fb",
+            "min": 850,
+            "max": 1010
+          },
+          {
+            "kind": "py",
+            "role": "fb",
+            "min": 462,
+            "max": 496
+          },
+          {
+            "kind": "grounded",
+            "role": "fb"
+          },
+          {
+            "kind": "px",
+            "role": "wg",
+            "min": 850,
+            "max": 1010
+          },
+          {
+            "kind": "py",
+            "role": "wg",
+            "min": 462,
+            "max": 496
+          },
+          {
+            "kind": "grounded",
+            "role": "wg"
+          },
+          {
+            "kind": "alive"
+          }
+        ]
+      ],
+      "target": [
+        {
+          "kind": "px",
+          "role": "fb",
+          "min": 680,
+          "max": 1010
+        },
+        {
+          "kind": "py",
+          "role": "fb",
+          "min": 356,
+          "max": 404
+        },
+        {
+          "kind": "grounded",
+          "role": "fb"
+        },
+        {
+          "kind": "px",
+          "role": "wg",
+          "min": 680,
+          "max": 1010
+        },
+        {
+          "kind": "py",
+          "role": "wg",
+          "min": 356,
+          "max": 404
+        },
+        {
+          "kind": "grounded",
+          "role": "wg"
+        },
+        {
+          "kind": "alive"
+        }
+      ],
+      "horizonF": 380
+    },
+    {
+      "id": "I3",
+      "note": "v9d（2026-10-28 纯种子 depth-1 实证 + probe21 物理口径；v8 西崖线/v9c 下地面绕行废弃）。【桥端直跳】rj(1,850,25)：冻桥(701) 满充跳过雪丘上空（apex 中心 582>544 甲板底不磕）直落 row-22(669)，种子 eval best=889 实证落点 ~1118；两人同键。→walkTo(1,1160,15) 定位→rj(-1,1120,25) 西跳上 row-20(605)（真实 harness 实证落 908,605）→walkTo(-1,845,15) 西端精停→walkTo(1,800,60) 回拉→rj(1,860,25) 低速过角跳（vx~190 过 x896 角 rise~102 够角；全速 vx250 过角 rise 仅 92 削角弹回 row-22，probe21 证伪；着陆 x905-915）→walkTo(-1,900,60)→rj(-1,860,25) 漂 130-135 落 beam-380(381) x725-730（I2 口径）。beam-380 真实西缘 ~664-725（probe21 G 实证 x673-692 落甲板）；岩浆区 x704-864 上空全被梁覆盖，落点安全。路点 6 按序：fb row-22→row-20→甲板东→wg row-22→row-20→甲板东（fb 先行无交集）。target=I4 entry（双人 540-1060/345-420 grounded）不变。",
+      "entry": [
+        {
+          "kind": "px",
+          "role": "wg",
+          "min": 105,
+          "max": 170
+        },
+        {
+          "kind": "py",
+          "role": "wg",
+          "min": 688,
+          "max": 712
+        },
+        {
+          "kind": "grounded",
+          "role": "wg"
+        },
+        {
+          "kind": "px",
+          "role": "fb",
+          "min": 600,
+          "max": 755
+        },
+        {
+          "kind": "py",
+          "role": "fb",
+          "min": 688,
+          "max": 712
+        },
+        {
+          "kind": "grounded",
+          "role": "fb"
+        },
+        {
+          "kind": "alive"
+        }
+      ],
+      "waypoints": [
+        [
+          {
+            "kind": "px",
+            "role": "fb",
+            "min": 1056,
+            "max": 1240
+          },
+          {
+            "kind": "py",
+            "role": "fb",
+            "min": 650,
+            "max": 685
+          },
+          {
+            "kind": "grounded",
+            "role": "fb"
+          }
+        ],
+        [
+          {
+            "kind": "px",
+            "role": "fb",
+            "min": 820,
+            "max": 995
+          },
+          {
+            "kind": "py",
+            "role": "fb",
+            "min": 585,
+            "max": 625
+          },
+          {
+            "kind": "grounded",
+            "role": "fb"
+          }
+        ],
+        [
+          {
+            "kind": "px",
+            "role": "fb",
+            "min": 896,
+            "max": 1216
+          },
+          {
+            "kind": "py",
+            "role": "fb",
+            "min": 458,
+            "max": 500
+          },
+          {
+            "kind": "grounded",
+            "role": "fb"
+          }
+        ],
+        [
+          {
+            "kind": "px",
+            "role": "wg",
+            "min": 1056,
+            "max": 1240
+          },
+          {
+            "kind": "py",
+            "role": "wg",
+            "min": 650,
+            "max": 685
+          },
+          {
+            "kind": "grounded",
+            "role": "wg"
+          }
+        ],
+        [
+          {
+            "kind": "px",
+            "role": "wg",
+            "min": 820,
+            "max": 995
+          },
+          {
+            "kind": "py",
+            "role": "wg",
+            "min": 585,
+            "max": 625
+          },
+          {
+            "kind": "grounded",
+            "role": "wg"
+          }
+        ],
+        [
+          {
+            "kind": "px",
+            "role": "wg",
+            "min": 896,
+            "max": 1216
+          },
+          {
+            "kind": "py",
+            "role": "wg",
+            "min": 458,
+            "max": 500
+          },
+          {
+            "kind": "grounded",
+            "role": "wg"
+          }
+        ]
+      ],
+      "target": [
+        {
+          "kind": "px",
+          "role": "fb",
+          "min": 540,
+          "max": 1060
+        },
+        {
+          "kind": "py",
+          "role": "fb",
+          "min": 345,
+          "max": 420
+        },
+        {
+          "kind": "grounded",
+          "role": "fb"
+        },
+        {
+          "kind": "px",
+          "role": "wg",
+          "min": 540,
+          "max": 1060
+        },
+        {
+          "kind": "py",
+          "role": "wg",
+          "min": 345,
+          "max": 420
+        },
+        {
+          "kind": "grounded",
+          "role": "wg"
+        },
+        {
+          "kind": "alive"
+        }
+      ],
+      "horizonF": 1200,
+      "title": "v9d 冻桥直跳线：桥端满充跳直上 row-22→西跳 row-20→低速过角跳甲板东→rj(-1,860) 上 beam-380 会合"
+    },
+    {
+      "id": "I4",
+      "note": "v8 终段：beam-380 西行东折长助跑跳西落 p0(317，短梭台 272-400 静止不动)→低速跳西北落上梁(253)→梁西端 x318 停步 jumpDrift 近垂直跳西漂 ≤22px 跃坡唇（板台东缘 288-320 SLOPE_B 斜砖，stand 125-157，Δ96-116 贴 119 极限）→ 步上板台(125) → wg 门(152-216)/fb 门(48-112) 双 doorUp 胜。板台下楼梯 x128-256 净空<48px 封死、电梯 p2 两端点(top64/-32)均不可自梁登乘=死胡同，均不用。红光/绿浆/岩浆全程不触。",
+      "entry": [
+        {
+          "kind": "px",
+          "role": "fb",
+          "min": 540,
+          "max": 1060
+        },
+        {
+          "kind": "py",
+          "role": "fb",
+          "min": 345,
+          "max": 420
+        },
+        {
+          "kind": "grounded",
+          "role": "fb"
+        },
+        {
+          "kind": "px",
+          "role": "wg",
+          "min": 540,
+          "max": 1060
+        },
+        {
+          "kind": "py",
+          "role": "wg",
+          "min": 345,
+          "max": 420
+        },
+        {
+          "kind": "grounded",
+          "role": "wg"
+        },
+        {
+          "kind": "alive"
+        }
+      ],
+      "waypoints": [
+        [
+          {
+            "kind": "px",
+            "role": "wg",
+            "min": 255,
+            "max": 415
+          },
+          {
+            "kind": "py",
+            "role": "wg",
+            "min": 280,
+            "max": 345
+          }
+        ],
+        [
+          {
+            "kind": "px",
+            "role": "wg",
+            "min": 250,
+            "max": 345
+          },
+          {
+            "kind": "py",
+            "role": "wg",
+            "min": 215,
+            "max": 270
+          },
+          {
+            "kind": "grounded",
+            "role": "wg"
+          }
+        ],
+        [
+          {
+            "kind": "px",
+            "role": "wg",
+            "min": 120,
+            "max": 240
+          },
+          {
+            "kind": "py",
+            "role": "wg",
+            "min": 90,
+            "max": 160
+          },
+          {
+            "kind": "grounded",
+            "role": "wg"
+          }
+        ],
+        [
+          {
+            "kind": "px",
+            "role": "fb",
+            "min": 255,
+            "max": 415
+          },
+          {
+            "kind": "py",
+            "role": "fb",
+            "min": 280,
+            "max": 345
+          }
+        ],
+        [
+          {
+            "kind": "px",
+            "role": "fb",
+            "min": 250,
+            "max": 345
+          },
+          {
+            "kind": "py",
+            "role": "fb",
+            "min": 215,
+            "max": 270
+          },
+          {
+            "kind": "grounded",
+            "role": "fb"
+          }
+        ],
+        [
+          {
+            "kind": "px",
+            "role": "fb",
+            "min": 30,
+            "max": 130
+          },
+          {
+            "kind": "py",
+            "role": "fb",
+            "min": 90,
+            "max": 160
+          },
+          {
+            "kind": "grounded",
+            "role": "fb"
+          }
+        ]
+      ],
+      "target": [
+        {
+          "kind": "doorUp",
+          "role": "wg"
+        },
+        {
+          "kind": "doorUp",
+          "role": "fb"
+        },
+        {
+          "kind": "alive"
+        }
+      ],
+      "horizonF": 900,
+      "title": "beam-380→p0→上梁→坡唇→板台双门"
     }
-   ],
-   "waypoints": [
-    [
-     {
-      "kind": "px",
-      "role": "fb",
-      "min": 880,
-      "max": 1040
-     },
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 715,
-      "max": 748
-     },
-     {
-      "kind": "grounded",
-      "role": "fb"
-     }
-    ],
-    [
-     {
-      "kind": "px",
-      "role": "wg",
-      "min": 880,
-      "max": 1040
-     },
-     {
-      "kind": "py",
-      "role": "wg",
-      "min": 715,
-      "max": 748
-     },
-     {
-      "kind": "grounded",
-      "role": "wg"
-     }
-    ]
-   ],
-   "target": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 1060,
-     "max": 1240
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 655,
-     "max": 682
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 1060,
-     "max": 1240
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 655,
-     "max": 682
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "horizonF": 700
-  },
-  {
-   "id": "I1",
-   "title": "东线 v5：row-22(669) 西跳上 row-20(605)→西端回满速东跳 deck 东角(476)——满速 rise 实测 115-130 对 deck 需 ~126，apex 须过角",
-   "entry": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 1060,
-     "max": 1240
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 655,
-     "max": 682
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 1060,
-     "max": 1240
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 655,
-     "max": 682
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "waypoints": [
-    [
-     {
-      "kind": "px",
-      "role": "fb",
-      "min": 850,
-      "max": 1010
-     },
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 588,
-      "max": 622
-     },
-     {
-      "kind": "grounded",
-      "role": "fb"
-     },
-     {
-      "kind": "alive"
-     }
-    ],
-    [
-     {
-      "kind": "px",
-      "role": "wg",
-      "min": 850,
-      "max": 1010
-     },
-     {
-      "kind": "py",
-      "role": "wg",
-      "min": 588,
-      "max": 622
-     },
-     {
-      "kind": "grounded",
-      "role": "wg"
-     },
-     {
-      "kind": "alive"
-     }
-    ]
-   ],
-   "target": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 1030,
-     "max": 1180
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 462,
-     "max": 496
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 1030,
-     "max": 1180
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 462,
-     "max": 496
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "horizonF": 420
-  },
-  {
-   "id": "I2",
-   "title": "deck 西行长廊→x860-900 起跳上 beam-380（rise96 漂 130-135 落梁 x664-1024）",
-   "entry": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 1030,
-     "max": 1180
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 462,
-     "max": 496
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 1030,
-     "max": 1180
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 462,
-     "max": 496
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "waypoints": [
-    [
-     {
-      "kind": "px",
-      "role": "fb",
-      "min": 850,
-      "max": 1010
-     },
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 462,
-      "max": 496
-     },
-     {
-      "kind": "grounded",
-      "role": "fb"
-     },
-     {
-      "kind": "px",
-      "role": "wg",
-      "min": 850,
-      "max": 1010
-     },
-     {
-      "kind": "py",
-      "role": "wg",
-      "min": 462,
-      "max": 496
-     },
-     {
-      "kind": "grounded",
-      "role": "wg"
-     },
-     {
-      "kind": "alive"
-     }
-    ]
-   ],
-   "target": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 680,
-     "max": 1010
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 356,
-     "max": 404
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 680,
-     "max": 1010
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 356,
-     "max": 404
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "horizonF": 380
-  },
-  {
-   "id": "I3",
-   "note": "v7 西塔线：fb 借 P1 渡 701 水道(wg 压 b1 驱动)→双上 b1 座垂直跳 y608 台(573)→西跳楔形坡(448-480)→跃台阶上塔顶(381)→短跃 y384(349)→步上斜坡顶(317-339)→东跳上梁西端(253)→东行双跳绿浆(544-640)。地图口径：deck(512) 横贯 x160-1248 封洞顶(row-20 头槌实证)，全部静态跳升限 119。",
-   "entry": [
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 105,
-     "max": 170
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 688,
-     "max": 712
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    },
-    {
-     "kind": "pusherState",
-     "id": 1,
-     "value": 1
-    },
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 600,
-     "max": 755
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 688,
-     "max": 712
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "waypoints": [
-    [
-     {
-      "kind": "px",
-      "role": "fb",
-      "min": 60,
-      "max": 300
-     },
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 640,
-      "max": 730
-     },
-     {
-      "kind": "grounded",
-      "role": "fb"
-     }
-    ],
-    [
-     {
-      "kind": "px",
-      "role": "wg",
-      "min": 100,
-      "max": 200
-     },
-     {
-      "kind": "py",
-      "role": "wg",
-      "min": 540,
-      "max": 600
-     },
-     {
-      "kind": "grounded",
-      "role": "wg"
-     }
-    ],
-    [
-     {
-      "kind": "px",
-      "role": "wg",
-      "min": 25,
-      "max": 150
-     },
-     {
-      "kind": "py",
-      "role": "wg",
-      "min": 340,
-      "max": 480
-     }
-    ],
-    [
-     {
-      "kind": "px",
-      "role": "wg",
-      "min": 210,
-      "max": 540
-     },
-     {
-      "kind": "py",
-      "role": "wg",
-      "min": 225,
-      "max": 285
-     }
-    ],
-    [
-     {
-      "kind": "px",
-      "role": "fb",
-      "min": 650,
-      "max": 1060
-     },
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 225,
-      "max": 285
-     },
-     {
-      "kind": "px",
-      "role": "wg",
-      "min": 650,
-      "max": 1060
-     },
-     {
-      "kind": "py",
-      "role": "wg",
-      "min": 225,
-      "max": 285
-     }
-    ]
-   ],
-   "target": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 650,
-     "max": 1060
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 225,
-     "max": 285
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 650,
-     "max": 1060
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 225,
-     "max": 285
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "horizonF": 1500
-  },
-  {
-   "id": "I4",
-   "note": "v7 终段：fb 步落 g2 板(285) 待 wg 抵 y256(221) 后踏 t0(4s 电梯下行)→板西缘跳西落上梁(253)→西奔跳浆→梁西端步落 y256→跃接电梯(x224-320)→ride 唤醒随梯至顶(61)→落门厅(125)各归其门→双 isUp 同帧胜。电梯 p2 由计时推杆 t0(1168,320) 驱动：压=降(157) 弛=升(61)。",
-   "entry": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 650,
-     "max": 1060
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 225,
-     "max": 285
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 650,
-     "max": 1060
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 225,
-     "max": 285
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "waypoints": [
-    [
-     {
-      "kind": "px",
-      "role": "fb",
-      "min": 1080,
-      "max": 1240
-     },
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 255,
-      "max": 315
-     }
-    ],
-    [
-     {
-      "kind": "px",
-      "role": "wg",
-      "min": 170,
-      "max": 270
-     },
-     {
-      "kind": "py",
-      "role": "wg",
-      "min": 195,
-      "max": 250
-     }
-    ],
-    [
-     {
-      "kind": "platY",
-      "id": 2,
-      "min": 180,
-      "max": 240
-     }
-    ],
-    [
-     {
-      "kind": "py",
-      "role": "wg",
-      "min": 40,
-      "max": 180
-     },
-     {
-      "kind": "px",
-      "role": "wg",
-      "min": 210,
-      "max": 345
-     }
-    ],
-    [
-     {
-      "kind": "py",
-      "role": "wg",
-      "min": 100,
-      "max": 150
-     },
-     {
-      "kind": "px",
-      "role": "wg",
-      "min": 140,
-      "max": 240
-     }
-    ],
-    [
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 40,
-      "max": 180
-     },
-     {
-      "kind": "px",
-      "role": "fb",
-      "min": 210,
-      "max": 345
-     }
-    ],
-    [
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 100,
-      "max": 150
-     },
-     {
-      "kind": "px",
-      "role": "fb",
-      "min": 40,
-      "max": 240
-     }
-    ]
-   ],
-   "target": [
-    {
-     "kind": "doorUp",
-     "role": "wg"
-    },
-    {
-     "kind": "doorUp",
-     "role": "fb"
-    },
-    {
-     "kind": "alive"
-    }
-   ],
-   "horizonF": 1300
-  }
- ]
+  ]
 }
