@@ -43,7 +43,7 @@ sudo ./deploy.sh                            # ④ 部署 + 自验收（一条命
 
 ## 0.1 本包是什么
 
-- 《Fireboy & Watergirl》复刻（gyのFW）**仅第一部森林神庙**的可部署服务端：Node 单进程同时服务 HTTP 静态资源与 WebSocket 联机（Colyseus 同端口），48 关（forest_01–47 + forest_01 教学副本）+ 双人联机房间（房间名 `forest`）。
+- 《Fireboy & Watergirl》复刻（gyのFW）**仅第一部森林神庙**的可部署服务端：Node 单进程同时服务 HTTP 静态资源与 WebSocket 联机（Colyseus 同端口），48 个关卡节点（32 个主关 + 12 个 `_1` 变体 + 3 个 bonus + 教学关 `forest_01`；编号到 `forest_32`，**没有** `forest_33`–`forest_47`）+ 双人联机房间（房间名 `forest`）。
 - 包内已含**预装好的生产依赖**（`node_modules/`，linux-x64）、**已构建的客户端**（`packages/client/dist/`）与**已预转译的服务端 JS**——**目标机不需要 npm、不需要 tsx、不需要构建工具链，解包即可运行**。
 - 明确**不含**：第二部（light 灯光神庙）、第三部（ice 冰雪神庙）的关卡/图集/专属音频；开发源码测试；构建链。深链访问 `?level=light_xx` 等会得到 404，这是分发边界，见 §9。
 
@@ -62,9 +62,9 @@ sudo ./deploy.sh                            # ④ 部署 + 自验收（一条命
 ## 2. 快速起步（前台试跑）
 
 ```bash
-sha256sum -c gy-fw-forest-1.0.3.tar.gz.sha256     # 校验（1.0.x 按实际版本号）
-tar -xzf gy-fw-forest-1.0.3.tar.gz
-cd gy-fw-forest-1.0.3
+sha256sum -c gy-fw-forest-1.0.4.tar.gz.sha256     # 校验（1.0.x 按实际版本号）
+tar -xzf gy-fw-forest-1.0.4.tar.gz
+cd gy-fw-forest-1.0.4
 node packages/server/src/index.js                 # 前台起服（默认 127.0.0.1:2567）
 ```
 
@@ -107,7 +107,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 # ↓↓↓ 按实际部署路径与端口修改这两行 ↓↓↓
-WorkingDirectory=/opt/gy-fw-forest-1.0.3
+WorkingDirectory=/opt/gy-fw-forest-1.0.4
 Environment=PORT=2567
 # 对外直连时加：Environment=FW_HOST=0.0.0.0
 # 反代后加：Environment=FW_TRUST_PROXY=1
@@ -119,7 +119,7 @@ RestartSec=3
 User=nobody
 NoNewPrivileges=true
 ProtectSystem=strict
-ReadWritePaths=/opt/gy-fw-forest-1.0.3
+ReadWritePaths=/opt/gy-fw-forest-1.0.4
 
 [Install]
 WantedBy=multi-user.target
@@ -228,7 +228,7 @@ server {
 
 ## 8. 升级与回滚
 
-- **升级**：新版本包解到并列目录（如 `/opt/gy-fw-forest-1.0.3/`）→ 修改 unit 的 `WorkingDirectory`/`ReadWritePaths` → `daemon-reload && restart`。停机窗口=重启秒级；房间状态不持久（对局中断即散）。
+- **升级**：新版本包解到并列目录（如 `/opt/gy-fw-forest-1.0.4/`）→ 修改 unit 的 `WorkingDirectory`/`ReadWritePaths` → `daemon-reload && restart`。停机窗口=重启秒级；房间状态不持久（对局中断即散）。
 - **回滚**：`WorkingDirectory` 改回旧目录 → `daemon-reload && restart`。
 
 ## 9. 分发边界声明（预期行为，非故障）
