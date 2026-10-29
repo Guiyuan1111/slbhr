@@ -607,46 +607,61 @@ const SEGI = {
     },
   },
   I4: {
-    maxDepth: 16, capFb: 20, capWg: 20, horizonF: 900,
+    // v28-seed（2026-10-28 探针 v19-v28 定稿，证据链见链 JSON I4.note）：闸门必须开——
+    // 站台层面 x256-288 被 p2(y64-160)+顶棚瓦(y32-64) 完全封死，唯一入口=闸门竖井；
+    // 双角色上塔踩计时板(t0, gid38@x1136-1200，踏板顶288/踩沉~310)。窗口律（E-B/v26/v27
+    // 三跑交叉）：落板=首次按压注册+~390f（"踩住重置/松开+240"两说均否），落板 ~110f、
+    // 其中可通过约前 ~55f（E-B fb 曾穿行落板中的闸门）⇒ 有效窗口 ≈ 按压+~445f。
+    // 横渡：出板(消东向动量 walkTo-1102/1135)→rj-1@1130 直跳落西板(880-910)→西坡沿弧
+    // 越池缘擦碰（生还线 x≈625-630，链时序确定性函数：v26 fb630/wg638 双生还、v28 fb619
+    // 死/v28 wg648 生还）→rj-1@645 上 mound-A 顶 192（note 实证 645→437）→波浪路
+    // \../ x[288,448]→rj-1@430 缺口跳落门板斜坡→40px/s 冰行穿闸进场。
+    // 种子时差：fb 清闸 ~miss 60f、wg ~miss 140f（截止≈按压+445）——交搜索 shaving；
+    // 池缘擦碰对评测无碍（确定性重放），fragility 记 exFatal 档。
+    maxDepth: 22, capFb: 24, capWg: 24, horizonF: 1100,
     recipe: {
-      // v8 终段：beam-380 东折长助跑跳西落 p0(317) → 巡航刹停 x310 低速跳西北落上梁(253) → 东折
-      // 贴停 x334 → runJump(-1,332,6) 短弧(rise≈96) 西跳越坡唇东面落坡顶（板台东缘 288-320 斜砖
-      // stand125-157）→ 步上板台(125) → wg 门(152-216)/fb 门(48-112) 双 doorUp。楼梯封死、p2 死胡同。
-      wg: [spec("walkTo", 1, 700, 999), spec("runJump", -1, 556, 25), spec("sleep", 10),
-        spec("walkTo", -1, 316, 60), spec("sleep", 5),
-        spec("walkTo", -1, 310, 15), spec("runJump", -1, 306, 25), spec("sleep", 10),
-        spec("walkTo", 1, 334, 40), spec("runJump", -1, 332, 6), spec("sleep", 15),
-        spec("walkTo", -1, 170, 40), spec("sleep", 30)],
-      fb: [spec("walkTo", 1, 700, 999), spec("waitPx", "wg", 120, 240), spec("sleep", 5),
-        spec("runJump", -1, 556, 25), spec("sleep", 10),
-        spec("walkTo", -1, 316, 60), spec("sleep", 5),
-        spec("walkTo", -1, 310, 15), spec("runJump", -1, 306, 25), spec("sleep", 10),
-        spec("walkTo", 1, 334, 40), spec("runJump", -1, 332, 6), spec("sleep", 15),
-        spec("walkTo", -1, 60, 40), spec("sleep", 30)],
+      fb: [spec("walkTo", 1, 940, 999), spec("runJump", 1, 1000, 25), spec("sleep", 10),
+        spec("walkTo", 1, 1168, 30), spec("sleep", 10),
+        spec("walkTo", -1, 1102, 40), spec("runJump", -1, 1130, 25),
+        spec("runJump", -1, 645, 25),
+        spec("walkTo", -1, 400, 999), spec("runJump", -1, 430, 25),
+        spec("walkTo", -1, 80, 60), spec("sleep", 40)],
+      wg: [spec("walkTo", 1, 940, 999), spec("runJump", 1, 1000, 25), spec("sleep", 10),
+        spec("walkTo", 1, 1168, 30), spec("sleep", 40),
+        spec("walkTo", -1, 1102, 40), spec("runJump", -1, 1130, 25),
+        spec("runJump", -1, 645, 25),
+        spec("walkTo", -1, 400, 999), spec("runJump", -1, 430, 25),
+        spec("walkTo", -1, 184, 60), spec("sleep", 40)],
     },
     vocab: {
-      wg: [spec("walkTo", 1, 660, 999), spec("walkTo", 1, 700, 999), spec("walkTo", 1, 740, 999),
-        spec("runJump", -1, 540, 25), spec("runJump", -1, 556, 25), spec("runJump", -1, 572, 25),
-        spec("walkTo", -1, 310, 60), spec("walkTo", -1, 316, 60), spec("walkTo", -1, 322, 60),
-        spec("runJump", -1, 298, 25), spec("runJump", -1, 306, 25), spec("runJump", -1, 314, 25),
-        spec("walkTo", 1, 328, 40), spec("walkTo", 1, 334, 40), spec("walkTo", 1, 340, 40),
-        spec("runJump", -1, 328, 5), spec("runJump", -1, 332, 6), spec("runJump", -1, 336, 7),
-        spec("runJump", -1, 332, 8), spec("jumpDrift", -1, 334, 8),
-        spec("jumpOnto", -1, 170), spec("jumpOnto", -1, 190),
-        spec("runJump", -1, 288, 25), spec("runJump", -1, 296, 25),
-        spec("walkTo", -1, 150, 40), spec("walkTo", -1, 170, 40), spec("walkTo", -1, 200, 40),
-        spec("sleep", 10), spec("sleep", 30)],
-      fb: [spec("walkTo", 1, 660, 999), spec("walkTo", 1, 700, 999), spec("walkTo", 1, 740, 999),
-        spec("runJump", -1, 540, 25), spec("runJump", -1, 556, 25), spec("runJump", -1, 572, 25),
-        spec("walkTo", -1, 310, 60), spec("walkTo", -1, 316, 60), spec("walkTo", -1, 322, 60),
-        spec("runJump", -1, 298, 25), spec("runJump", -1, 306, 25), spec("runJump", -1, 314, 25),
-        spec("walkTo", 1, 328, 40), spec("walkTo", 1, 334, 40), spec("walkTo", 1, 340, 40),
-        spec("runJump", -1, 328, 5), spec("runJump", -1, 332, 6), spec("runJump", -1, 336, 7),
-        spec("runJump", -1, 332, 8), spec("jumpDrift", -1, 334, 8),
-        spec("jumpOnto", -1, 170), spec("jumpOnto", -1, 190),
-        spec("runJump", -1, 288, 25), spec("runJump", -1, 296, 25),
-        spec("walkTo", -1, 50, 40), spec("walkTo", -1, 60, 40), spec("walkTo", -1, 90, 40),
-        spec("sleep", 10), spec("sleep", 30)],
+      fb: [spec("walkTo", 1, 900, 999), spec("walkTo", 1, 940, 999), spec("walkTo", 1, 980, 999),
+        spec("runJump", 1, 980, 25), spec("runJump", 1, 1000, 25), spec("runJump", 1, 1020, 25),
+        spec("walkTo", 1, 1160, 30), spec("walkTo", 1, 1168, 30), spec("walkTo", 1, 1180, 30),
+        spec("sleep", 2), spec("sleep", 5), spec("sleep", 10), spec("sleep", 20), spec("sleep", 40), spec("sleep", 80),
+        spec("walkTo", -1, 1102, 40), spec("walkTo", -1, 1120, 30), spec("walkTo", -1, 1135, 20),
+        spec("runJump", -1, 1115, 25), spec("runJump", -1, 1130, 25), spec("runJump", -1, 1140, 25),
+        spec("runJump", -1, 600, 25), spec("runJump", -1, 620, 25), spec("runJump", -1, 645, 25),
+        spec("runJump", -1, 665, 25), spec("runJump", -1, 690, 25),
+        spec("jumpDrift", -1, 0, 8), spec("jumpDrift", -1, 0, 12),
+        spec("walkTo", -1, 380, 999), spec("walkTo", -1, 400, 999), spec("walkTo", -1, 420, 999),
+        spec("runJump", -1, 405, 25), spec("runJump", -1, 415, 25), spec("runJump", -1, 430, 25), spec("runJump", -1, 445, 25),
+        spec("walkTo", -1, 64, 60), spec("walkTo", -1, 80, 60), spec("walkTo", -1, 96, 60),
+        spec("waitPx", "wg", 100, 330), spec("waitPx", "wg", 200, 330),
+        spec("sleep", 30), spec("sleep", 60)],
+      wg: [spec("walkTo", 1, 900, 999), spec("walkTo", 1, 940, 999), spec("walkTo", 1, 980, 999),
+        spec("runJump", 1, 980, 25), spec("runJump", 1, 1000, 25), spec("runJump", 1, 1020, 25),
+        spec("walkTo", 1, 1160, 30), spec("walkTo", 1, 1168, 30), spec("walkTo", 1, 1180, 30),
+        spec("sleep", 2), spec("sleep", 5), spec("sleep", 10), spec("sleep", 20), spec("sleep", 40), spec("sleep", 80),
+        spec("walkTo", -1, 1102, 40), spec("walkTo", -1, 1120, 30), spec("walkTo", -1, 1135, 20),
+        spec("runJump", -1, 1115, 25), spec("runJump", -1, 1130, 25), spec("runJump", -1, 1140, 25),
+        spec("runJump", -1, 600, 25), spec("runJump", -1, 620, 25), spec("runJump", -1, 645, 25),
+        spec("runJump", -1, 665, 25), spec("runJump", -1, 690, 25),
+        spec("jumpDrift", -1, 0, 8), spec("jumpDrift", -1, 0, 12),
+        spec("walkTo", -1, 380, 999), spec("walkTo", -1, 400, 999), spec("walkTo", -1, 420, 999),
+        spec("runJump", -1, 405, 25), spec("runJump", -1, 415, 25), spec("runJump", -1, 430, 25), spec("runJump", -1, 445, 25),
+        spec("walkTo", -1, 168, 60), spec("walkTo", -1, 184, 60), spec("walkTo", -1, 200, 60),
+        spec("waitPx", "fb", 100, 330), spec("waitPx", "fb", 200, 330),
+        spec("sleep", 30), spec("sleep", 60)],
     },
   },
 };
@@ -710,7 +725,7 @@ function evaluate(segC, sf, sw, totalCapF) {
     if (entryF < 0 && allS(segC.entryG, Sx, Mx, Dx)) { entryF = f; entryS = Sx; }
     if (process.env.AS_DBG === segC.id && f % Number(process.env.AS_DBG_MOD ?? 40) === 0) {
       const t = (g, name) => { try { return allS([g], Sx, Mx, Dx) ? 1 : 0; } catch { return "E"; } };
-      log(`    [dbg${segC.id}] f${f} fb[${a.x.toFixed(0)},${a.y.toFixed(0)},g${w.players.fireboy.feetContacts.length > 0 ? 1 : 0}] wg[${b.x.toFixed(0)},${b.y.toFixed(0)},g${w.players.watergirl.feetContacts.length > 0 ? 1 : 0}] P1=[${(Mx.platforms[1]?.x ?? -1).toFixed(0)},${(Mx.platforms[1]?.y ?? -1).toFixed(0)}] entry=${entryF >= 0 ? entryF : "no"} terms=[plat,fbx,fby,wgx,wgy]=${segC.entryG.map((g) => t(g)).join(",")}`);
+      log(`    [dbg${segC.id}] f${f} fb[${a.x.toFixed(0)},${a.y.toFixed(0)},g${w.players.fireboy.feetContacts.length > 0 ? 1 : 0}] wg[${b.x.toFixed(0)},${b.y.toFixed(0)},g${w.players.watergirl.feetContacts.length > 0 ? 1 : 0}] P1=[${(Mx.platforms[1]?.x ?? -1).toFixed(0)},${(Mx.platforms[1]?.y ?? -1).toFixed(0)}] P2=[${(Mx.platforms[2]?.x ?? -1).toFixed(0)},${(Mx.platforms[2]?.y ?? -1).toFixed(0)}] entry=${entryF >= 0 ? entryF : "no"} terms=[plat,fbx,fby,wgx,wgy]=${segC.entryG.map((g) => t(g)).join(",")}`);
     }
     if (entryF >= 0) {
       const segF = f - entryF;
