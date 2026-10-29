@@ -48,7 +48,7 @@
 
 1. **帧级自研链**：以 v26 双生还链为基，手工逐帧 shaving（rj 触发线 ±10、sleep ±2f、爬升错峰 ±15f），每步用 probe AS_DBG_MOD=20 验擦碰落点 ≥635——目标 fb 清闸 −50f、wg −130f。风险：每次 shave 挪擦碰，需同步补偿（如出场多走 3px）。
 2. **改搜索器**：beam 候选加「存活且提前」细粒度奖励（如 fb 最西 x 每西 1px +分），把平台变斜坡；或变异步长含 2-3 联合改动。
-3. **机制参数面**：确认 timeMs 4000 是否为官方关卡通参——若上游 chain 定义允许 override（当前 checkpoints 链不含机制改写），窗口可研。**注意 oracle 素材只读约束**：不能改关卡文件本身。
+3. **机制参数面**：确认 timeMs 4000 是否为官方关卡通参——若上游 chain 定义允许 override（当前 checkpoints 链不含机制改写），窗口可研。**oracle 约束（2026-10-29 用户澄清）**：原件只读，但可复制关卡 JSON 副本改参实验（如 timeMs 缩放测窗口迁移函数），副本私有、不入库不分发、用后即清。
 4. **换关**：#50 需 ice 系 2-3 关全解；ice_02 已 4/5。现存 ice 关卡目录 `data/ice/levels/`（ice_03…ice_36 + _1 变体 + bonus×2，共 50 档；无 ice_00/ice_01，tutorials 层仅 ice_02），管线 LEVELS_DIRS 已含该目录（`scripts/e2e/routetool/kernel.mjs:19`），任一关可直接 `--level ice_NN` 开链。ice_02 留作 6 号能力位（帧级链）回收。
 
 ## 7. 关键文件

@@ -15,7 +15,7 @@
 - 确定性 fuzz：`node --import tsx benchmark/det-fuzz.mjs --level <lv> --seed <n> --minutes <m>`
 
 ## 工程纪律（硬性）
-- oracle（官方源码）严格只读；官方素材私有使用不分发
+- oracle（官方源码/素材）原件严格只读；可复制副本做修改实验（2026-10-29 用户澄清）——私有使用不分发，副本不入库/外发，实验副本按 TEMP 惯例用后即清
 - 凡含账号/密码/token/真实姓名的文件严禁入库或外发
 - commit 细粒度；禁 `git add -A`（只 add 自己的文件）；禁 co-author
 - TEMP/ 测试环境用后必清；非复用缓存必清；唯一载体（断点/探针/切片）先收容 note/**/tools/breakpoint-*（附收容注明+引用档卷）并 commit 后再清（2026-10-27 惯例）
