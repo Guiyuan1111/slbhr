@@ -164,6 +164,12 @@ jobs:
           node --import tsx packages/server/src/index.ts &
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:2567/healthz >/dev/null && break; sleep 1; done
           node scripts/e2e/browser-room.mjs --base http://127.0.0.1:2567
+      # 2026-10-29：窄屏 HUD 布局门禁。#hud-top 是「居中 + nowrap + 无宽度上限」，
+      # 内容超视口时向两侧等比溢出（390px 竖屏实测 left:-113 right:503），而父层
+      # fixed inset:0 不产生横向滚动条——桌面上完全看不出，只在手机上裁掉房间码。
+      # 这类回退靠肉眼必漏（改一行 padding 就能复现），故用几何断言在六档视口钉住。
+      - name: HUD 窄屏布局（六档视口几何断言）
+        run: node scripts/e2e/hud-narrow.mjs --base http://127.0.0.1:2567
 
   deploy-smoke:
     # #51 回归门禁：能起服 ≠ 能开局。1.0.0 分发包六步验收全绿，玩家一建房却必崩——
