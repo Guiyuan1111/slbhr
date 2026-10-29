@@ -14,7 +14,20 @@ const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 
 /** 按顺序查找的关卡目录（相对项目根）。light 第二部、ice 第三部（2026-10-25）、crystal 第四部
  *  （2026-10-30）入库；各部首关（forest_01/light_01/ice_02 等）在 tutorials 目录，故其优先级最低兜底。 */
-const LEVEL_DIRS = ["data/forest/levels", "data/light/levels", "data/ice/levels", "data/crystal/levels", "data/tutorials/levels"];
+const LEVEL_DIRS = [
+  "data/forest/levels",
+  "data/light/levels",
+  "data/ice/levels",
+  "data/crystal/levels",
+  "data/elements/crystal/levels",
+  "data/elements/fire/levels",
+  "data/elements/forest/levels",
+  "data/elements/ice/levels",
+  "data/elements/light/levels",
+  "data/elements/water/levels",
+  "data/elements/wind/levels",
+  "data/tutorials/levels",
+];
 
 export interface LevelBundle {
   id: string;

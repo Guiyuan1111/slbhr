@@ -17,7 +17,7 @@
  */
 import Phaser from "phaser";
 import { AUDIO_MENU, AUDIO_SFX, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadAudioPack } from "../audio.js";
-import { templeIdOf } from "../templeData";
+import { templeIdOf, type TempleKey } from "../templeData";
 import { guardLoadErrors } from "./loadGuard";
 
 export const ATLAS_CHARS = "chars";
@@ -36,7 +36,7 @@ export const FONT_MAIN = "font";
 export const PLAYER_SCALE = 0.95;
 
 /** 当前神庙（URL ?level= 关卡前缀；Boot 期即可判——第二部 light 换 TempleAssets/TempleHall/GameName） */
-function currentTemple(): "forest" | "light" | "ice" | "crystal" {
+function currentTemple(): TempleKey {
   const level = new URLSearchParams(location.search).get("level");
   return templeIdOf(level);
 }
@@ -49,9 +49,9 @@ function currentTemple(): "forest" | "light" | "ice" | "crystal" {
 const atlasInflight = new Set<string>();
 
 /** ATLAS_TEMPLE 当前已装载的庙域（#47-6：跨庙换载判定用） */
-let loadedTempleAtlas: "forest" | "light" | "ice" | "crystal" | null = null;
+let loadedTempleAtlas: TempleKey | null = null;
 
-export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin, templeOverride?: "forest" | "light" | "ice" | "crystal"): void {
+export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin, templeOverride?: TempleKey): void {
   const queue = (key: string, url: string): void => {
     if (load.textureManager.exists(key) || atlasInflight.has(key)) return;
     atlasInflight.add(key);
@@ -159,10 +159,23 @@ export class BootScene extends Phaser.Scene {
     // 原版画布内时钟的位图字（font 48 基准，LevelUI Clock 用 24 号 = 半缩放）
     this.load.bitmapFont(FONT_MAIN, "/assets/fonts/chinese/font.png", "/assets/fonts/chinese/font.fnt");
     // 独立图片（0.3.12 起开始界面引用，此前漏载致缺纹理静默空白——差距审计 P0）
-    const suffix = { forest: "Forest", light: "Light", ice: "Ice", crystal: "Crystal" }[currentTemple()];
+    // E 部（elements/<x>）：大厅逐元素换肤（Fire/Water/Wind/Crystal 新图，Forest/Light/Ice 字节同三部复用），
+    // GameName 统一 Elements 单图（01号档 §5）
+    const HALL_SUFFIX: Record<TempleKey, string> = {
+      forest: "Forest", light: "Light", ice: "Ice", crystal: "Crystal",
+      "elements/fire": "Fire", "elements/water": "Water", "elements/wind": "Wind",
+      "elements/crystal": "Crystal", "elements/forest": "Forest", "elements/ice": "Ice", "elements/light": "Light",
+    };
+    const NAME_SUFFIX: Record<TempleKey, string> = {
+      forest: "Forest", light: "Light", ice: "Ice", crystal: "Crystal",
+      "elements/fire": "Elements", "elements/water": "Elements", "elements/wind": "Elements",
+      "elements/crystal": "Elements", "elements/forest": "Elements", "elements/ice": "Elements", "elements/light": "Elements",
+    };
+    const cur = currentTemple();
+    const suffix = HALL_SUFFIX[cur];
     this.load.image("TempleHall", `/assets/images/TempleHall${suffix}.jpg`);
     this.load.image("Beam", "/assets/images/Beam.png");
-    this.load.image("GameName", `/assets/images/GameName${suffix}.png`);
+    this.load.image("GameName", `/assets/images/GameName${NAME_SUFFIX[cur]}.png`);
     this.load.image("KiziLogo", "/assets/images/branding/branding_logo_kizi.png");
 
     // 音频仅装 menu 批（bgm_menu）；游戏内 18 键 ≈2.0MB（0.3.21 起 Menu 冷启动不再为其付出
