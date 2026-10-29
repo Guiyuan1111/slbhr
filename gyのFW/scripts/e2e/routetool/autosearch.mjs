@@ -583,33 +583,31 @@ const SEGI = {
         spec("runJump", 1, 435, 25), spec("sleep", 20)],
     },
     vocab: {
-      fb: [spec("sleep", 5), spec("sleep", 10), spec("sleep", 15), spec("sleep", 20),
-        spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 400, 704),
-        spec("walkTo", -1, 140, 999), spec("walkTo", -1, 160, 999), spec("walkTo", -1, 200, 999),
-        spec("walkTo", -1, 128, 60),
-        spec("runJump", -1, 112, 6), spec("runJump", -1, 120, 6), spec("runJump", -1, 128, 6),
-        spec("runJump", -1, 120, 10), spec("runJump", -1, 120, 15),
-        spec("runJump", 1, 72, 6), spec("runJump", 1, 80, 6), spec("runJump", 1, 80, 10),
-        spec("runJump", 1, 88, 10), spec("runJump", 1, 80, 15), spec("runJump", 1, 88, 15),
-        spec("walkTo", 1, 144, 40), spec("walkTo", 1, 148, 40), spec("walkTo", 1, 152, 40),
-        spec("walkTo", 1, 148, 60),
-        spec("brakedHop", 1, 515, 172), spec("brakedHop", 1, 525, 178), spec("brakedHop", 1, 535, 182),
-        spec("runJump", 1, 415, 25), spec("runJump", 1, 425, 25), spec("runJump", 1, 435, 25),
-        spec("runJump", 1, 445, 25), spec("runJump", 1, 455, 25), spec("runJump", 1, 465, 25),
-        spec("runJump", 1, 435, 20), spec("runJump", 1, 435, 30),
-        spec("sleep", 20)],
-      wg: [spec("sleep", 5), spec("sleep", 10), spec("sleep", 15), spec("sleep", 20),
-        spec("runJump", -1, 112, 6), spec("runJump", -1, 120, 6), spec("runJump", -1, 128, 6),
-        spec("runJump", -1, 120, 10), spec("runJump", -1, 120, 15),
-        spec("runJump", 1, 72, 6), spec("runJump", 1, 80, 6), spec("runJump", 1, 80, 10),
-        spec("runJump", 1, 88, 10), spec("runJump", 1, 80, 15), spec("runJump", 1, 88, 15),
-        spec("walkTo", 1, 144, 40), spec("walkTo", 1, 148, 40), spec("walkTo", 1, 152, 40),
-        spec("walkTo", 1, 148, 60),
-        spec("brakedHop", 1, 515, 172), spec("brakedHop", 1, 525, 178), spec("brakedHop", 1, 535, 182),
-        spec("runJump", 1, 415, 25), spec("runJump", 1, 425, 25), spec("runJump", 1, 435, 25),
-        spec("runJump", 1, 445, 25), spec("runJump", 1, 455, 25), spec("runJump", 1, 465, 25),
-        spec("runJump", 1, 435, 20), spec("runJump", 1, 435, 30),
-        spec("sleep", 20)],
+      fb: [      spec("runJump", -1, 112, 6), spec("runJump", -1, 120, 6), spec("runJump", -1, 128, 6),
+      spec("runJump", -1, 120, 10), spec("runJump", -1, 120, 15),
+      spec("runJump", 1, 72, 6), spec("runJump", 1, 80, 6), spec("runJump", 1, 80, 10),
+      spec("runJump", 1, 88, 10), spec("runJump", 1, 80, 15), spec("runJump", 1, 88, 15),
+      spec("runJump", 1, 415, 25), spec("runJump", 1, 425, 25), spec("runJump", 1, 435, 25),
+      spec("runJump", 1, 445, 25), spec("runJump", 1, 455, 25), spec("runJump", 1, 465, 25),
+      spec("runJump", 1, 435, 20), spec("runJump", 1, 435, 30),
+      spec("brakedHop", 1, 515, 172), spec("brakedHop", 1, 525, 178), spec("brakedHop", 1, 535, 182),
+      spec("walkTo", -1, 140, 999), spec("walkTo", -1, 160, 999), spec("walkTo", -1, 200, 999),
+      spec("walkTo", -1, 128, 60),
+      spec("walkTo", 1, 144, 40), spec("walkTo", 1, 148, 40), spec("walkTo", 1, 152, 40),
+      spec("walkTo", 1, 148, 60),
+      spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 400, 704),
+      spec("sleep", 5), spec("sleep", 10), spec("sleep", 15), spec("sleep", 20)],
+      wg: [      spec("runJump", -1, 112, 6), spec("runJump", -1, 120, 6), spec("runJump", -1, 128, 6),
+      spec("runJump", -1, 120, 10), spec("runJump", -1, 120, 15),
+      spec("runJump", 1, 72, 6), spec("runJump", 1, 80, 6), spec("runJump", 1, 80, 10),
+      spec("runJump", 1, 88, 10), spec("runJump", 1, 80, 15), spec("runJump", 1, 88, 15),
+      spec("runJump", 1, 415, 25), spec("runJump", 1, 425, 25), spec("runJump", 1, 435, 25),
+      spec("runJump", 1, 445, 25), spec("runJump", 1, 455, 25), spec("runJump", 1, 465, 25),
+      spec("runJump", 1, 435, 20), spec("runJump", 1, 435, 30),
+      spec("brakedHop", 1, 515, 172), spec("brakedHop", 1, 525, 178), spec("brakedHop", 1, 535, 182),
+      spec("walkTo", 1, 144, 40), spec("walkTo", 1, 148, 40), spec("walkTo", 1, 152, 40),
+      spec("walkTo", 1, 148, 60),
+      spec("sleep", 5), spec("sleep", 10), spec("sleep", 15), spec("sleep", 20)],
     },
   },
   I4: {
@@ -747,30 +745,40 @@ function evaluate(segC, sf, sw, totalCapF) {
 const EVAL_LOG = process.env.AS_EVALLOG;
 let evalSeq = 0;
 const EVAL_CHILD = hasFlag("evalchild");
-const EVAL_CHILD_EVERY = Number(argOf("evalchildEvery", "1"));
+const EVAL_BATCH = EVAL_CHILD; // evalchild 即批量分块（块大小见 evalbatch，默认 16）
+const EVAL_BATCH_N = Number(argOf("evalbatch", "16"));
 const RESULT_MARK = "##EVALRESULT##";
 
-/** 子进程隔离转发：Box2D vendor 层跨 b2World 累积状态会在 ~20 个世界后翻转边缘行为
- *  （2026-10-28 ice_02 I3 诊断：同程序两次评估 1 例翻转、进程级 ~21 eval 集体翻转、
- *  单候选 40 连跑零混杂——vendor/box2d.js 字节冻结不宜本会话修，改为每 eval 新鲜子进程）。 */
-function evaluateVia(segDef, segC, sf, sw, totalCapF) {
-  if (!EVAL_CHILD || evalSeq % EVAL_CHILD_EVERY !== 0) return evaluate(segC, sf, sw, totalCapF);
-  const payload = JSON.stringify({ level: LEVEL, segDef, sf, sw, totalCapF });
+/** 子进程隔离转发（批量）：Box2D vendor 层跨 b2World 累积状态会在 ~20 个世界后翻转
+ *  边缘行为（2026-10-28 ice_02 I3 诊断：同程序两次评估 1 例翻转、进程级 ~21 eval 集体翻转、
+ *  单候选 40 连跑零混杂、阈值跨运行漂移 ±1——vendor/box2d.js 字节冻结，以进程隔离绕过）。
+ *  同层候选彼此独立 → 每 EVAL_BATCH_N 个候选一个新鲜子进程（块内 eval 数远低于阈值），
+ *  父进程除 replayEvents（鲁棒采样，evalchild 下经 ROB_TOP=0 关闭）外零 makeWorld。 */
+function batchEvalChild(segDef, chunk, totalCapF) {
   const jobPath = join(tmpdir(), `autosearch-evaljob-${process.pid}-${evalSeq}.json`);
-  writeFileSync(jobPath, payload);
+  writeFileSync(jobPath, JSON.stringify({ level: LEVEL, segDef, totalCapF,
+    batch: chunk.map((p) => ({ sf: p.sf2, sw: p.sw2 })) }));
   const here = fileURLToPath(import.meta.url);
-  const res = spawnSync(process.execPath, ["--import", "tsx", here, "--level", LEVEL,
-    "--evalchild", "--evaljob", jobPath], { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
+  const args = ["--import", "tsx", here, "--level", LEVEL, "--evalchild", "--evaljob", jobPath];
+  let out = "";
+  let errTail = "";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    writeFileSync(jobPath, JSON.stringify({ level: LEVEL, segDef, totalCapF,
+      batch: chunk.map((p) => ({ sf: p.sf2, sw: p.sw2 })) }));
+    const res = spawnSync(process.execPath, args, { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
+    out = res.stdout ?? "";
+    errTail = res.stderr?.slice(-400) ?? "";
+    if (out.includes(RESULT_MARK)) break;
+  }
   try { unlinkSync(jobPath); } catch {}
-  const out = res.stdout ?? "";
   const i = out.indexOf(RESULT_MARK);
-  if (i < 0) throw new Error(`evalchild failed: ${res.stderr?.slice(-400)}`);
+  if (i < 0) throw new Error(`evalchild failed: ${errTail}`);
   return JSON.parse(out.slice(i + RESULT_MARK.length));
 }
 
 
 const GRACE_F = Number(argOf("grace", "25"));
-const ROB_TOP = Number(argOf("robtop", "14"));         // 层内鲁棒采样候选数（0=关闭，退回纯前沿分）
+const ROB_TOP = EVAL_CHILD ? 0 : Number(argOf("robtop", "14")); // evalchild: 父进程 replayEvents 泄漏不可信，采样关闭         // 层内鲁棒采样候选数（0=关闭，退回纯前沿分）
 const ROB_SAMPLES = Number(argOf("robsamples", "6"));  // 每候选 ±1f 采样组数
 const ROB_W = Number(argOf("robw", "2000"));           // fatal 率折分权重（满脆 −ROB_W，量级=2 路标解锁）
 
@@ -909,29 +917,15 @@ function searchSegment(segDef, seeds, opts) {
   for (let depth = 1; depth <= maxDepth; depth++) {
     const cands = [];
     let deadKept = [];
-    // recipe 宏候选（cfg.recipe）：d1 直接种子+整组宏注入一次，评估/评分与词表候选同轨
+    // 收集本层候选（recipe 宏 d1 一次 + beam×词表），批量评估——
+    // evalchild 分块子进程：同层候选彼此独立，块 ≤ evalbatch（默认 16 < vendor 泄漏阈值 ~20），
+    // 顺序对齐 pending（recipe 先、词表序次）以保持死谱/软回退既有次序语义。
+    const pending = [];
     if (depth === 1 && cfg.recipe) {
       const sf2 = [...beam[0].sf, ...cfg.recipe.fb];
       const sw2 = [...beam[0].sw, ...cfg.recipe.wg];
       const sig = sigOf(sf2, sw2);
-      if (!seen.has(sig)) {
-        seen.add(sig);
-        const r = evaluateVia(segDef, segC, sf2, sw2, totalCapF);
-        if (process.env.AS_REPEAT) {
-          const K = Number(process.env.AS_REPEAT);
-          for (let k = 0; k < K; k++) {
-            const rk = evaluate(segC, sf2, sw2, totalCapF);
-            if (EVAL_LOG) console.error(`[rep ${k}] ${rk.deathF}/${rk.entryF} wgEnd[${rk.S.wg.x.toFixed(1)},${rk.S.wg.y.toFixed(1)}]`);
-          }
-        }
-        const __evTag = `${++evalSeq}|${progNames(sf2).slice(-50)}|${progNames(sw2).slice(-50)}`;
-        if (EVAL_LOG) console.error(`[evalResult ${__evTag}]`);
-        evals++;
-        const sc = scoreOf(segC, sf2, sw2, r);
-        const cand = { sf: sf2, sw: sw2, ...sc, r };
-        if (r.deathF >= 0) deadKept.push(cand); else cands.push(cand);
-        log(`  ${segDef.id} d${depth}: recipe 宏 evals=${evals} score=${sc.score.toFixed(0)} wp=${sc.unlocked}/${segC.wpG.length} met=${sc.met} death@${r.deathF} entry@${r.entryF}`);
-      }
+      if (!seen.has(sig)) { seen.add(sig); pending.push({ sf2, sw2, isRecipe: true }); }
     }
     for (const node of beam) {
       const dFb = node.sf.length, dWg = node.sw.length;
@@ -946,21 +940,23 @@ function searchSegment(segDef, seeds, opts) {
         const sig = sigOf(sf2, sw2);
         if (seen.has(sig)) continue;
         seen.add(sig);
-        const r = evaluateVia(segDef, segC, sf2, sw2, totalCapF);
-        if (process.env.AS_REPEAT) {
-          const K = Number(process.env.AS_REPEAT);
-          for (let k = 0; k < K; k++) {
-            const rk = evaluate(segC, sf2, sw2, totalCapF);
-            if (EVAL_LOG) console.error(`[rep ${k}] ${rk.deathF}/${rk.entryF} wgEnd[${rk.S.wg.x.toFixed(1)},${rk.S.wg.y.toFixed(1)}]`);
-          }
-        }
-        const __evTag = `${++evalSeq}|${progNames(sf2).slice(-50)}|${progNames(sw2).slice(-50)}`;
+        pending.push({ sf2, sw2, isRecipe: false });
+      }
+    }
+    for (let pi = 0; pi < pending.length; pi += EVAL_BATCH_N) {
+      const chunk = pending.slice(pi, pi + EVAL_BATCH_N);
+      const rs = EVAL_BATCH
+        ? batchEvalChild(segDef, chunk, totalCapF)
+        : chunk.map((p) => evaluate(segC, p.sf2, p.sw2, totalCapF));
+      evals += rs.length;
+      for (let ci = 0; ci < chunk.length; ci++) {
+        const p = chunk[ci], r = rs[ci];
+        const __evTag = `${++evalSeq}|${progNames(p.sf2).slice(-50)}|${progNames(p.sw2).slice(-50)}`;
         if (EVAL_LOG) console.error(`[evalResult ${__evTag}]`);
-        evals++;
-        const sc = scoreOf(segC, sf2, sw2, r);
-        const cand = { sf: sf2, sw: sw2, ...sc, r };
-        if (r.deathF >= 0) { deadKept.push(cand); continue; }
-        cands.push(cand);
+        const sc = scoreOf(segC, p.sf2, p.sw2, r);
+        const cand = { sf: p.sf2, sw: p.sw2, ...sc, r };
+        if (r.deathF >= 0) deadKept.push(cand); else cands.push(cand);
+        if (p.isRecipe) log(`  ${segDef.id} d${depth}: recipe 宏 evals=${evals} score=${sc.score.toFixed(0)} wp=${sc.unlocked}/${segC.wpG.length} met=${sc.met} death@${r.deathF} entry@${r.entryF}`);
       }
     }
     if (!cands.length) {
@@ -1163,8 +1159,10 @@ if (hasFlag("verify")) {
 if (EVAL_CHILD && argOf("evaljob")) {
   const job = JSON.parse(readFileSync(argOf("evaljob"), "utf8"));
   const segC = segCtxOf(job.segDef);
-  const r = evaluate(segC, job.sf, job.sw, job.totalCapF);
-  process.stdout.write(RESULT_MARK + JSON.stringify(r));
+  const rs = job.batch
+    ? job.batch.map((j) => evaluate(segC, j.sf, j.sw, job.totalCapF))
+    : [evaluate(segC, job.sf, job.sw, job.totalCapF)];
+  process.stdout.write(RESULT_MARK + JSON.stringify(rs));
   process.exit(0);
 }
 
