@@ -563,16 +563,15 @@ const SEGI = {
     recipe: {
       // 经验链种子 v12（2026-10-29 探针 met@498 实证，证据链见链 JSON I3.note）：
       // wg：西崖梯（ablation ③ 端到端实证：bank→岩架→甲板西→直跳上梁 [641,381]），
-      //   尾缀 sleep(500) 梁上待命——队列排干后锁存右跳会逐跳把 wg 送出梁东端。
-      // fb：延迟西渡同梯——sleep(300) 等 wg 前缀 walkTo 踩 b1 板（[96,768] g3，~f850）
-      //   冻结水域后再 walkTo(-1,140,999) 过冻桥，其后与 wg 同梯（M1=rj(-1,120,6)）。
-      //   v10c 西渡死因=时机：f670 未踩板即渡 → 水未冻 → fb@[604,708]@704 淹毙（消融②）。
+      //   尾缀 waitPx 互等（v12b）：先到者站立等对方入梁窗，对方入窗瞬间双侧同时排干
+      //   （seam 契约：排干近 met+锁存 NONE 站立=入窗态存续。sleep 尾缀排干太晚 not-drained，
+      //   裁 sleep 锁存右跳弹梁 entry-no-fire——fin ladder 双向全败实证，exec_31b7e740）。
       wg: [spec("runJump", -1, 112, 6), spec("runJump", 1, 80, 15),
         spec("runJump", 1, 72, 6), spec("runJump", 1, 72, 6), spec("runJump", 1, 445, 25),
-        spec("sleep", 500)],
+        spec("waitPx", "fb", 540, 1060)],
       fb: [spec("sleep", 300), spec("walkTo", -1, 140, 999), spec("runJump", -1, 120, 6),
         spec("runJump", 1, 80, 15), spec("runJump", 1, 72, 6), spec("runJump", 1, 72, 6),
-        spec("runJump", 1, 445, 25), spec("sleep", 400)],
+        spec("runJump", 1, 445, 25), spec("waitPx", "wg", 540, 1060)],
     },
     vocab: {
       // fb 词表 v12：西渡线（东线词表整体作废——甲板板底封顶，apex 过不了角，探针 E/F/G 实证）。
@@ -750,16 +749,19 @@ const RESULT_MARK = "##EVALRESULT##";
  *  同层候选彼此独立 → 每 EVAL_BATCH_N 个候选一个新鲜子进程（块内 eval 数远低于阈值），
  *  父进程除 replayEvents（鲁棒采样，evalchild 下经 ROB_TOP=0 关闭）外零 makeWorld。 */
 function batchEvalChild(segDef, chunk, totalCapF) {
-  const jobPath = join(tmpdir(), `autosearch-evaljob-${process.pid}-${evalSeq}.json`);
-  writeFileSync(jobPath, JSON.stringify({ level: LEVEL, segDef, totalCapF,
-    batch: chunk.map((p) => ({ sf: p.sf2, sw: p.sw2 })) }));
+  return runChildJob({ level: LEVEL, segDef, totalCapF,
+    batch: chunk.map((p) => ({ sf: p.sf2, sw: p.sw2 })) }, "evaljob");
+}
+
+/** 子进程通用转发：robjob（鲁棒采样）与 evaljob（批量评估）共用孵化/重试/解析管道。 */
+function runChildJob(job, tag) {
+  const jobPath = join(tmpdir(), `autosearch-${tag}-${process.pid}-${evalSeq}.json`);
   const here = fileURLToPath(import.meta.url);
-  const args = ["--import", "tsx", here, "--level", LEVEL, "--evalchild", "--evaljob", jobPath];
+  const args = ["--import", "tsx", here, "--level", LEVEL, "--evalchild", `--${tag}`, jobPath];
   let out = "";
   let errTail = "";
   for (let attempt = 0; attempt < 2; attempt++) {
-    writeFileSync(jobPath, JSON.stringify({ level: LEVEL, segDef, totalCapF,
-      batch: chunk.map((p) => ({ sf: p.sf2, sw: p.sw2 })) }));
+    writeFileSync(jobPath, JSON.stringify(job));
     const res = spawnSync(process.execPath, args, { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
     out = res.stdout ?? "";
     errTail = res.stderr?.slice(-400) ?? "";
@@ -767,13 +769,13 @@ function batchEvalChild(segDef, chunk, totalCapF) {
   }
   try { unlinkSync(jobPath); } catch {}
   const i = out.indexOf(RESULT_MARK);
-  if (i < 0) throw new Error(`evalchild failed: ${errTail}`);
+  if (i < 0) throw new Error(`${tag} child failed: ${errTail}`);
   return JSON.parse(out.slice(i + RESULT_MARK.length));
 }
 
 
 const GRACE_F = Number(argOf("grace", "25"));
-const ROB_TOP = EVAL_CHILD ? 0 : Number(argOf("robtop", "14")); // evalchild: 父进程 replayEvents 泄漏不可信，采样关闭         // 层内鲁棒采样候选数（0=关闭，退回纯前沿分）
+const ROB_TOP = Number(argOf("robtop", "14"));         // 层内鲁棒采样候选数（0=关闭；evalchild 下经 robjob 子进程采样，父进程零泄漏）
 const ROB_SAMPLES = Number(argOf("robsamples", "6"));  // 每候选 ±1f 采样组数
 const ROB_W = Number(argOf("robw", "2000"));           // fatal 率折分权重（满脆 −ROB_W，量级=2 路标解锁）
 
@@ -973,15 +975,26 @@ function searchSegment(segDef, seeds, opts) {
     // 层内不淘汰脆谱系，末端必然组装出纸牌屋。met 候选判"扰动后仍达标"，
     // 非 met 候选判"扰动后仍存活"（target 未达是常态，不能按未达罚）。
     if (ROB_TOP > 0) {
-      for (const c of cands.slice(0, Math.min(ROB_TOP, cands.length))) {
-        if (c.r.entryF < 0) { c.rob = null; continue; }
-        const dr = replayEvents(c.sf, c.sw, Math.max(1, c.r.endF) + 2);
-        const deadlineAbsF = c.r.entryF + segC.horizonF;
-        const ins = inlineSample(dr.events, segC, deadlineAbsF, ROB_SAMPLES, c.r.entryF, !!c.met);
-        c.rob = { fatal: ins.fatal, n: ROB_SAMPLES };
-        c.score -= ROB_W * (ins.fatal / ROB_SAMPLES);
+      for (const c of cands) c.rob = null;
+      const top = cands.slice(0, Math.min(ROB_TOP, cands.length)).filter((c) => c.r.entryF >= 0);
+      if (top.length) {
+        // v12c：evalchild 下采样下沉 robjob 子进程（每子 ≤ROB_TOP 次重放 < 泄漏阈值）；
+        // 进程内跑仅在无 evalchild 时启用（原语义）。
+        const rs = EVAL_CHILD
+          ? runChildJob({ level: LEVEL, segDef,
+              cands: top.map((c) => ({ sf: c.sf, sw: c.sw, entryF: c.r.entryF, endF: c.r.endF, met: !!c.met })),
+              robSamples: ROB_SAMPLES }, "robjob")
+          : top.map((c) => {
+              const dr = replayEvents(c.sf, c.sw, Math.max(1, c.r.endF) + 2);
+              return inlineSample(dr.events, segC, c.r.entryF + segC.horizonF, ROB_SAMPLES, c.r.entryF, !!c.met);
+            });
+        for (let ti = 0; ti < top.length; ti++) {
+          const c = top[ti];
+          c.rob = { fatal: rs[ti].fatal, n: ROB_SAMPLES };
+          c.score -= ROB_W * (rs[ti].fatal / ROB_SAMPLES);
+        }
+        cands.sort((x, y) => y.score - x.score);
       }
-      cands.sort((x, y) => y.score - x.score);
     }
     beam = cands.slice(0, BEAM); // 仅前沿 beam（E3 定版：时长惩罚使父代恒优于子代，同池会耗尽前沿）
     const b = beam[0];
@@ -1151,8 +1164,21 @@ if (hasFlag("verify")) {
   process.exit(base.won ? 0 : 1);
 }
 
-if (EVAL_CHILD && argOf("evaljob")) {
-  const job = JSON.parse(readFileSync(argOf("evaljob"), "utf8"));
+if (EVAL_CHILD && (argOf("evaljob") || argOf("robjob"))) {
+  const job = JSON.parse(readFileSync(argOf("evaljob") ?? argOf("robjob"), "utf8"));
+  if (job.cands) {
+    // robjob：每候选子进程内重放全事件并 ±1f 采样（v12c：鲁棒采样随 evalchild 下沉子进程，
+    // 父进程零 makeWorld——原 ROB_TOP=0 强制关闭使 beam 无从分辨脆谱系，fin exFatal=1 全灭实证）
+    const segC = segCtxOf(job.segDef);
+    const rs = job.cands.map((cd) => {
+      const dr = replayEvents(cd.sf, cd.sw, Math.max(1, cd.endF) + 2);
+      const deadlineAbsF = (cd.entryF >= 0 ? cd.entryF : 0) + segC.horizonF;
+      const ins = inlineSample(dr.events, segC, deadlineAbsF, job.robSamples ?? ROB_SAMPLES, Math.max(0, cd.entryF), !!cd.met);
+      return { fatal: ins.fatal };
+    });
+    process.stdout.write(RESULT_MARK + JSON.stringify(rs));
+    process.exit(0);
+  }
   const segC = segCtxOf(job.segDef);
   const rs = job.batch
     ? job.batch.map((j) => evaluate(segC, j.sf, j.sw, job.totalCapF))
