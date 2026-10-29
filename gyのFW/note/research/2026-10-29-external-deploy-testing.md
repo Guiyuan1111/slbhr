@@ -107,3 +107,24 @@ node TEMP/hud-fix-test.mjs    --base http://110.42.36.114:2567   # HUD 全视口
 
 `TEMP/` 为临时目录，按项目约定测试完清理；需要留档请把脚本迁入
 `scripts/e2e/`（HUD 回归脚本建议迁，它防的是一类会静默复发的布局回退）。
+
+---
+
+## 六、收尾（1.0.4 上线后复跑）
+
+1.0.4 部署到服务器后，对**生产实例**重跑关键面，确认修复生效且无退化：
+
+| 测试 | 结果 |
+|---|---|
+| `hud-narrow`（六档视口 30 条断言） | ALL GREEN（线上 dist） |
+| `net-test` 双客户端 | 全绿，58.2 / 59.0 patch/s |
+| `play-test` 双浏览器真人操作 | 全绿，fireboy x 96→469，**两端坐标一致** |
+| `touch-ext-test` 触屏 | 全绿，跳跃 Δy=30.8px、右移 Δx=298.8px |
+| `reconnect-test` 断线重连 | 全绿（paused→started、刷新回座） |
+
+服务器状态：零异常日志、`NRestarts=0`、内存 53 MB（1.0.3 时 66 MB）、
+负载 0.03 / 可用 1497 MiB。旧版 1.0.3 目录与 tar 已删，`/opt/slbhr` 只留 1.0.4。
+
+测试脚本中具长期价值的已留档于
+[2026-10-29-external-test-tools/](2026-10-29-external-test-tools/)（含两个测量陷阱说明），
+HUD 回归则正式迁入 `scripts/e2e/hud-narrow.mjs` 并接入 CI。
