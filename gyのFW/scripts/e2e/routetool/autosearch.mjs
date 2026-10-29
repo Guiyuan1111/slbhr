@@ -26,7 +26,7 @@
  *     扩展原语只用 {f,w,me,other,mem,jumpHeld} 上下文面，保证与 drive 定稿重放零漂移
  *     （§1.3 边界约定；push 为待决②的 S6 词表补件，不改 botcore.mjs）。
  */
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, unlinkSync } from "node:fs";
 import { dirname, join, resolve, isAbsolute } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -43,6 +43,8 @@ const { NONE, S, S2, drive, toRouteDoc } = botcore;
 
 // ---------------------------------------------------------------- CLI
 const argv = process.argv.slice(2);
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
 const argOf = (k, d) => { const i = argv.indexOf(`--${k}`); return i >= 0 && argv[i + 1] !== undefined ? argv[i + 1] : d; };
 const hasFlag = (k) => argv.includes(`--${k}`);
 
@@ -742,6 +744,31 @@ function evaluate(segC, sf, sw, totalCapF) {
     D: { won: w.phase === "won", doors: { fireboy: { isUp: w.doors.fireboy.isUp }, watergirl: { isUp: w.doors.watergirl.isUp } } },
   };
 }
+const EVAL_LOG = process.env.AS_EVALLOG;
+let evalSeq = 0;
+const EVAL_CHILD = hasFlag("evalchild");
+const EVAL_CHILD_EVERY = Number(argOf("evalchildEvery", "1"));
+const RESULT_MARK = "##EVALRESULT##";
+
+/** 子进程隔离转发：Box2D vendor 层跨 b2World 累积状态会在 ~20 个世界后翻转边缘行为
+ *  （2026-10-28 ice_02 I3 诊断：同程序两次评估 1 例翻转、进程级 ~21 eval 集体翻转、
+ *  单候选 40 连跑零混杂——vendor/box2d.js 字节冻结不宜本会话修，改为每 eval 新鲜子进程）。 */
+function evaluateVia(segDef, segC, sf, sw, totalCapF) {
+  if (!EVAL_CHILD || evalSeq % EVAL_CHILD_EVERY !== 0) return evaluate(segC, sf, sw, totalCapF);
+  const payload = JSON.stringify({ level: LEVEL, segDef, sf, sw, totalCapF });
+  const jobPath = join(tmpdir(), `autosearch-evaljob-${process.pid}-${evalSeq}.json`);
+  writeFileSync(jobPath, payload);
+  const here = fileURLToPath(import.meta.url);
+  const res = spawnSync(process.execPath, ["--import", "tsx", here, "--level", LEVEL,
+    "--evalchild", "--evaljob", jobPath], { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
+  try { unlinkSync(jobPath); } catch {}
+  const out = res.stdout ?? "";
+  const i = out.indexOf(RESULT_MARK);
+  if (i < 0) throw new Error(`evalchild failed: ${res.stderr?.slice(-400)}`);
+  return JSON.parse(out.slice(i + RESULT_MARK.length));
+}
+
+
 const GRACE_F = Number(argOf("grace", "25"));
 const ROB_TOP = Number(argOf("robtop", "14"));         // 层内鲁棒采样候选数（0=关闭，退回纯前沿分）
 const ROB_SAMPLES = Number(argOf("robsamples", "6"));  // 每候选 ±1f 采样组数
@@ -889,7 +916,16 @@ function searchSegment(segDef, seeds, opts) {
       const sig = sigOf(sf2, sw2);
       if (!seen.has(sig)) {
         seen.add(sig);
-        const r = evaluate(segC, sf2, sw2, totalCapF);
+        const r = evaluateVia(segDef, segC, sf2, sw2, totalCapF);
+        if (process.env.AS_REPEAT) {
+          const K = Number(process.env.AS_REPEAT);
+          for (let k = 0; k < K; k++) {
+            const rk = evaluate(segC, sf2, sw2, totalCapF);
+            if (EVAL_LOG) console.error(`[rep ${k}] ${rk.deathF}/${rk.entryF} wgEnd[${rk.S.wg.x.toFixed(1)},${rk.S.wg.y.toFixed(1)}]`);
+          }
+        }
+        const __evTag = `${++evalSeq}|${progNames(sf2).slice(-50)}|${progNames(sw2).slice(-50)}`;
+        if (EVAL_LOG) console.error(`[evalResult ${__evTag}]`);
         evals++;
         const sc = scoreOf(segC, sf2, sw2, r);
         const cand = { sf: sf2, sw: sw2, ...sc, r };
@@ -910,7 +946,16 @@ function searchSegment(segDef, seeds, opts) {
         const sig = sigOf(sf2, sw2);
         if (seen.has(sig)) continue;
         seen.add(sig);
-        const r = evaluate(segC, sf2, sw2, totalCapF);
+        const r = evaluateVia(segDef, segC, sf2, sw2, totalCapF);
+        if (process.env.AS_REPEAT) {
+          const K = Number(process.env.AS_REPEAT);
+          for (let k = 0; k < K; k++) {
+            const rk = evaluate(segC, sf2, sw2, totalCapF);
+            if (EVAL_LOG) console.error(`[rep ${k}] ${rk.deathF}/${rk.entryF} wgEnd[${rk.S.wg.x.toFixed(1)},${rk.S.wg.y.toFixed(1)}]`);
+          }
+        }
+        const __evTag = `${++evalSeq}|${progNames(sf2).slice(-50)}|${progNames(sw2).slice(-50)}`;
+        if (EVAL_LOG) console.error(`[evalResult ${__evTag}]`);
         evals++;
         const sc = scoreOf(segC, sf2, sw2, r);
         const cand = { sf: sf2, sw: sw2, ...sc, r };
@@ -921,6 +966,11 @@ function searchSegment(segDef, seeds, opts) {
     if (!cands.length) {
       if (!deadKept.length) { log(`  ${segDef.id} d${depth}: 前沿耗尽（深度上限/词表空转）`); exhausted = true; break; }
       deadKept.sort((x, y) => y.r.deathF - x.r.deathF);
+      for (const c of deadKept.slice(0, 8)) {
+        const tailFb = c.sf[c.sf.length - 1], tailWg = c.sw[c.sw.length - 1];
+        const fmt = (p) => p ? `${p.n}(${p.a.join(",")})` : "-";
+        log(`    死谱 fb:${fmt(tailFb)} | wg:${fmt(tailWg)} → ${c.r.deadWho}@f${c.r.deathF}`);
+      }
       beam = deadKept.slice(0, 3).map((c) => ({ ...c, score: -1e5 + c.r.deathF })); // 全灭层软回退（§4.1）
       log(`  ${segDef.id} d${depth}: 全灭层（最晚死者 ${deadKept[0].r.deadWho}@f${deadKept[0].r.deathF}）→ 软回退 3 候选`);
       continue;
@@ -1108,6 +1158,14 @@ if (hasFlag("verify")) {
     }
   }
   process.exit(base.won ? 0 : 1);
+}
+
+if (EVAL_CHILD && argOf("evaljob")) {
+  const job = JSON.parse(readFileSync(argOf("evaljob"), "utf8"));
+  const segC = segCtxOf(job.segDef);
+  const r = evaluate(segC, job.sf, job.sw, job.totalCapF);
+  process.stdout.write(RESULT_MARK + JSON.stringify(r));
+  process.exit(0);
 }
 
 // ---------------------------------------------------------------- 搜索主循环（--segs i-j）
