@@ -276,6 +276,21 @@ export interface SliderDef {
 
 /** 定时推杆（ice 部，Pusher 同体）：按压 state=1 保持 time 毫秒自动回弹；
  *  doRegister 覆写为空=不进 MechManager 组（C bundle @1707424），独立计时件 */
+/** 传送门 def（crystal/elements 部；LargeObjects localId 0/1=type portal，
+ *  tileproperties {group, portalId, inverted}——inverted 区分出入口两端） */
+export interface PortalDef {
+  id: string;
+  /** 对象矩形（顶边系，px） */
+  rect: Rect;
+  /** 度（Tiled 对象 rotation，出入口朝向语义待内核取证） */
+  rotation: number;
+  group: number;
+  /** 配对 id（同 group+portalId 两端成对；运行时语义待内核取证） */
+  portalId: number;
+  /** true=出口端（tile 1），false=入口端（tile 0） */
+  inverted: boolean;
+}
+
 export interface TimedPusherDef {
   id: string;
   x: number;
@@ -342,6 +357,7 @@ export interface LevelData {
   lightPushers: LightPusherDef[];
   sliders: SliderDef[];
   timedPushers: TimedPusherDef[];
+  portals: PortalDef[];
   /** 教学步骤（已按 id 配对触发区与文本；选层优先级 dual > keyboard > single > 任意） */
   tutorials: TutorialStep[];
   /** 各教学层变体（layer 名 → 步骤），原版按 settings.controls 选层 */
@@ -526,6 +542,7 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
   const lightPushers: LightPusherDef[] = [];
   const sliders: SliderDef[] = [];
   const timedPushers: TimedPusherDef[] = [];
+  const portals: PortalDef[] = [];
   const unknown: string[] = [];
   const tutorialVariants: Record<string, TutorialStep[]> = {};
 
@@ -786,6 +803,17 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
               initialState: num(props.initialState),
               windWidth: props.windWidth === undefined ? undefined : num(props.windWidth),
             });
+          } else if (typeName === "portal") {
+            // 传送门（crystal/elements）：def 只做数据提取——成对/触发/速度/冷却等运行时
+            // 语义由内核按 oracle 取证实现（note/evidence/2026-10-30-crystal-temple/）
+            portals.push({
+              id: `P${portals.length}`,
+              rect: r,
+              rotation: num(o.rotation),
+              group: num(props.group),
+              portalId: num(props.portalId),
+              inverted: props.inverted === true,
+            });
           } else {
             unknown.push(`LargeObjects:${typeName || `local${localId}`}`);
           }
@@ -873,6 +901,7 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
     lightPushers,
     sliders,
     timedPushers,
+    portals,
     tutorials,
     tutorialVariants,
     unknown,
