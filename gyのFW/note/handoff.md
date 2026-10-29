@@ -17,6 +17,8 @@
 ④ **文档勘误**：DEPLOY.md 原称「48 关（forest_01–47）」事实错误，实为 32 主关+12 `_1`+3 bonus+教学关，编号止于 forest_32，无 forest_33–47。已改；多关卡冒烟改测真实关卡全绿。
 ⑤ **测法两坑（曾造成假失败）**：跳跃高度不能 Node 侧定时 evaluate（跨公网往返 100ms 漏顶点，随机 0~39px）；触屏须 CDP 顺序注入并按压 240ms（90ms 只抬 23px，tap 并发对消恒 0）。详见留档 README。
 ⑥ **上线**：1.0.4 已部署 /opt/slbhr/gy-fw-forest-1.0.4，NRestarts=0、内存 53MB、负载 0.03、零 error 日志；线上 dist 复跑 hud-narrow 30/30 ALL GREEN。旧版目录与 tar 已清。
+⑦ **二次部署（用户令「推送后再次部署」）**：从 HEAD 重建→打包（01dba89）→上传校验→停服换目录→`./deploy.sh --public` 八项验收全绿（patch 59.4/s）。公网复测四组全绿：hud-narrow 30/30、net-test 双端 58.2/58.8、play-test x96→482 两端一致、reconnect paused→started。线上 HTML 与本地 dist 同哈希 75b25413。旧目录已删。
+⑧ **回灌补齐（重要）**：HUD 修复与 hud-narrow 门禁原先只落在 release/1.0-forest，违反本仓版本线方案 §四（UI/引擎修复必须回灌 main）。已 cherry-pick 至 main（f610723 / 5e6c2b9），main 上重建+门禁 30/30 全绿、typecheck 零错、CI success；两分支 index.html 与 hud-narrow.mjs blob 现已逐字节相同。
 
 **更新**：2026-10-28（1.0.2——一键部署闭环 + 三部分发共用打包链）
 ① **交付形态**：包内新增 `deploy.sh`（自检→生成 systemd unit→起服→验收，一条命令到底）与 `verify.mjs`（9 项：healthz/首页/关卡清单==包内实装/本部首关 200+别部 404/音频流/建房/双人 started/patch 持续/浏览器进 Game）。服务名 `gy-fw-<部>`、端口缺省、本部首关、成员边界全部由包内 `data/` 自动认定，三种包共用同一份脚本。实测干净目录 `./deploy.sh --no-service` 全绿。
