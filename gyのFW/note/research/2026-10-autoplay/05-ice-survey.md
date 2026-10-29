@@ -70,3 +70,4 @@ ice_bonus_2  d=10  lever×3 pusher×9 timedPusher×1 ball×12 wind×1 platform×
 - 解码用项目自身 `parseLevel`（`packages/shared/src/level2.ts:421`）经 tsx 直载，与游戏同一实现；一次性盘点脚本已按 TEMP 惯例用后即删，原始计数存于本档 §3（脚本输出直接誊录）。
 - 光学系机构在 ice 库出现频度高（beamer 20+ 关、镜面族 10+ 关）。回放实证现状：`slider` 已被 light_01 路线（corpus 在档）覆盖；**beamer / rotMirror / boxMirror / infiniteMirror / lightPusher 无任何路线实证**——首个含这些机构的 ice 关开链前，先做 segcheck 式机构冒烟（构造→step→快照非 NaN/非静止异常），再写链。
 - ice_02 的绿池属 tutorials 层特设；主库 ice 关无液，威胁面=几何+机构。
+- **ice_27 内核冒烟已过**（2026-10-28）：makeWorld 加载即 playing，空输入 300 帧双方存活（fb 1168,125 / wg 80,125 对角出生）——零机构关可直接开链。
