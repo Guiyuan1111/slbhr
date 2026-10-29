@@ -453,6 +453,12 @@
         display: flex;
         gap: 14px;
         align-items: center;
+        /* 窄屏兜底：不设上限时 nowrap 内容会把居中的栏向两侧顶出视口（390px 竖屏实测
+           左右各溢出 ~113px，房间码与邀请钮被裁掉）。上限 + 允许换行是唯一不回流的解法。 */
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: calc(100vw - 16px);
+        box-sizing: border-box;
         background: var(--panel);
         border: 1px solid var(--line);
         border-radius: 12px;
@@ -462,6 +468,22 @@
         white-space: nowrap;
         box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
         transition: opacity 0.45s ease;
+      }
+      /* 手机竖屏（≤560px）：缩字号与内距，让「房间码 + 复制邀请链接 + 等待」排成两行而非溢出 */
+      @media (max-width: 560px) {
+        #hud-top {
+          gap: 6px 10px;
+          padding: 7px 10px;
+          font-size: 12px;
+          border-radius: 10px;
+        }
+        #hud-role { font-size: 11px; }
+        /* 极窄屏（320px 档）房间码整串仍超一行宽：允许行内折行，否则它作为 flex item
+           会以 min-content 撑出去（实测 320px 下宽 344px、左右各溢 12px）。 */
+        #hud-room { font-size: 12px; white-space: normal; text-align: center; min-width: 0; }
+        #hud-room b { font-size: 13.5px; letter-spacing: 1px; }
+        #hud-status { font-size: 12px; }
+        #btn-invite { font-size: 11px; padding: 5px 9px; }
       }
       /* 自动收起（用户裁定 2026-10-24：常驻压住画布计时钟）——visibility 延迟翻转让淡出播完，
          收起后 #btn-invite 一并不可点（visibility 继承，防隐身可点） */
@@ -483,8 +505,7 @@
       }
       #hud-time { font-variant-numeric: tabular-nums; font-weight: 700; }
       #hud-role { font-size: 12.5px; color: #b9c6b2; }
-      #hud-room { font-size: 14px; color: #cfc2a4; }
-      #hud-room b {
+      #hud-room { font-size: 14px; color: #cfc2a4; }      #hud-room b {
         color: var(--amber);
         font-size: 16px;
         letter-spacing: 2px;
