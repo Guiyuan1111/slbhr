@@ -561,34 +561,36 @@ const SEGI = {
   I3: {
     maxDepth: 22, capFb: 28, capWg: 28, horizonF: 1200,
     recipe: {
-      // 经验链种子（2026-10-29 两次 beam24 全量跑独立收敛同形，非 armchair 设计）：
-      // wg：b1 足印短充西跳 rj(-1,112,6)（落 ~49-59 岸线）→ rj(1,80,15) 上岩架 →
-      //   rj(1,72,6)×2 岩架东坡短跳上甲板西肩（holdF15 升限 119 够 581→477）→
-      //   rj(1,445,25) 甲板全速滑满充直跳 beam-380（甲板 477-119=358 < 381 ✓）。
-      //   甲板→梁直跳取代 v10c 冰滑长助跑（probe23 的 435 线只在甲板西肩起跳才需要）。
-      // fb：先 walkTo(-1,140,999) 冻桥全速西渡（冻桥被 I0 b1→P1 链锁存，不随 b1 释放融化，
-      //   两次跑 fb 步行过桥均存活实证）→ 其后与 wg 同梯。
+      // 经验链种子 v12（2026-10-29 探针 met@498 实证，证据链见链 JSON I3.note）：
+      // wg：西崖梯（ablation ③ 端到端实证：bank→岩架→甲板西→直跳上梁 [641,381]），
+      //   尾缀 sleep(500) 梁上待命——队列排干后锁存右跳会逐跳把 wg 送出梁东端。
+      // fb：延迟西渡同梯——sleep(300) 等 wg 前缀 walkTo 踩 b1 板（[96,768] g3，~f850）
+      //   冻结水域后再 walkTo(-1,140,999) 过冻桥，其后与 wg 同梯（M1=rj(-1,120,6)）。
+      //   v10c 西渡死因=时机：f670 未踩板即渡 → 水未冻 → fb@[604,708]@704 淹毙（消融②）。
       wg: [spec("runJump", -1, 112, 6), spec("runJump", 1, 80, 15),
-        spec("runJump", 1, 72, 6), spec("runJump", 1, 72, 6), spec("runJump", 1, 445, 25)],
-      fb: [spec("walkTo", -1, 140, 999), spec("runJump", -1, 120, 6),
+        spec("runJump", 1, 72, 6), spec("runJump", 1, 72, 6), spec("runJump", 1, 445, 25),
+        spec("sleep", 500)],
+      fb: [spec("sleep", 300), spec("walkTo", -1, 140, 999), spec("runJump", -1, 120, 6),
         spec("runJump", 1, 80, 15), spec("runJump", 1, 72, 6), spec("runJump", 1, 72, 6),
-        spec("runJump", 1, 445, 25)],
+        spec("runJump", 1, 445, 25), spec("sleep", 400)],
     },
     vocab: {
-      fb: [spec("runJump", -1, 112, 6), spec("runJump", -1, 120, 6), spec("runJump", -1, 128, 6),
+      // fb 词表 v12：西渡线（东线词表整体作废——甲板板底封顶，apex 过不了角，探针 E/F/G 实证）。
+      // 梯首=冻结窗口延迟（sleep 200-450 踩板保险档）→ 西渡 walkTo → 西跳梯 ±变体 →
+      // 岩架定位 walkTo → 满充上梁 ±变体 → brakedHop 备用 → 协同 waitPx → 长 sleep。
+      fb: [spec("sleep", 300), spec("sleep", 200), spec("sleep", 450),
+        spec("walkTo", -1, 140, 999), spec("walkTo", -1, 160, 999), spec("walkTo", -1, 200, 999),
+        spec("runJump", -1, 112, 6), spec("runJump", -1, 120, 6), spec("runJump", -1, 128, 6),
         spec("runJump", -1, 120, 10), spec("runJump", -1, 120, 15),
         spec("runJump", 1, 72, 6), spec("runJump", 1, 80, 6), spec("runJump", 1, 80, 10),
         spec("runJump", 1, 88, 10), spec("runJump", 1, 80, 15), spec("runJump", 1, 88, 15),
-        spec("runJump", 1, 415, 25), spec("runJump", 1, 425, 25), spec("runJump", 1, 435, 25),
-        spec("runJump", 1, 445, 25), spec("runJump", 1, 455, 25), spec("runJump", 1, 465, 25),
-        spec("runJump", 1, 435, 20), spec("runJump", 1, 435, 30),
-        spec("brakedHop", 1, 515, 172), spec("brakedHop", 1, 525, 178), spec("brakedHop", 1, 535, 182),
-        spec("walkTo", -1, 140, 999), spec("walkTo", -1, 160, 999), spec("walkTo", -1, 200, 999),
-        spec("walkTo", -1, 128, 60),
+        spec("runJump", 1, 415, 25), spec("runJump", 1, 435, 25), spec("runJump", 1, 445, 25),
+        spec("runJump", 1, 455, 25), spec("runJump", 1, 465, 25),
         spec("walkTo", 1, 144, 40), spec("walkTo", 1, 148, 40), spec("walkTo", 1, 152, 40),
-        spec("walkTo", 1, 148, 60),
-        spec("waitPx", "wg", 100, 180), spec("waitPx", "wg", 400, 704),
-        spec("sleep", 5), spec("sleep", 10), spec("sleep", 15), spec("sleep", 20)],
+        spec("brakedHop", 1, 515, 172), spec("brakedHop", 1, 525, 178), spec("brakedHop", 1, 535, 182),
+        spec("waitPx", "wg", 512, 1060), spec("waitPx", "wg", 300, 700),
+        spec("sleep", 400), spec("sleep", 150),
+        spec("sleep", 5), spec("sleep", 15)],
       wg: [spec("runJump", -1, 112, 6), spec("runJump", -1, 120, 6), spec("runJump", -1, 128, 6),
         spec("runJump", -1, 120, 10), spec("runJump", -1, 120, 15),
         spec("runJump", 1, 72, 6), spec("runJump", 1, 80, 6), spec("runJump", 1, 80, 10),
@@ -599,7 +601,8 @@ const SEGI = {
         spec("brakedHop", 1, 515, 172), spec("brakedHop", 1, 525, 178), spec("brakedHop", 1, 535, 182),
         spec("walkTo", 1, 144, 40), spec("walkTo", 1, 148, 40), spec("walkTo", 1, 152, 40),
         spec("walkTo", 1, 148, 60),
-        spec("sleep", 5), spec("sleep", 10), spec("sleep", 15), spec("sleep", 20)],
+        spec("sleep", 5), spec("sleep", 10), spec("sleep", 15), spec("sleep", 20),
+        spec("sleep", 300), spec("sleep", 600)],
     },
   },
   I4: {
