@@ -36,7 +36,7 @@ export const FONT_MAIN = "font";
 export const PLAYER_SCALE = 0.95;
 
 /** 当前神庙（URL ?level= 关卡前缀；Boot 期即可判——第二部 light 换 TempleAssets/TempleHall/GameName） */
-function currentTemple(): "forest" | "light" | "ice" {
+function currentTemple(): "forest" | "light" | "ice" | "crystal" {
   const level = new URLSearchParams(location.search).get("level");
   return templeIdOf(level);
 }
@@ -49,9 +49,9 @@ function currentTemple(): "forest" | "light" | "ice" {
 const atlasInflight = new Set<string>();
 
 /** ATLAS_TEMPLE 当前已装载的庙域（#47-6：跨庙换载判定用） */
-let loadedTempleAtlas: "forest" | "light" | "ice" | null = null;
+let loadedTempleAtlas: "forest" | "light" | "ice" | "crystal" | null = null;
 
-export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin, templeOverride?: "forest" | "light" | "ice"): void {
+export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin, templeOverride?: "forest" | "light" | "ice" | "crystal"): void {
   const queue = (key: string, url: string): void => {
     if (load.textureManager.exists(key) || atlasInflight.has(key)) return;
     atlasInflight.add(key);
@@ -159,7 +159,7 @@ export class BootScene extends Phaser.Scene {
     // 原版画布内时钟的位图字（font 48 基准，LevelUI Clock 用 24 号 = 半缩放）
     this.load.bitmapFont(FONT_MAIN, "/assets/fonts/chinese/font.png", "/assets/fonts/chinese/font.fnt");
     // 独立图片（0.3.12 起开始界面引用，此前漏载致缺纹理静默空白——差距审计 P0）
-    const suffix = { forest: "Forest", light: "Light", ice: "Ice" }[currentTemple()];
+    const suffix = { forest: "Forest", light: "Light", ice: "Ice", crystal: "Crystal" }[currentTemple()];
     this.load.image("TempleHall", `/assets/images/TempleHall${suffix}.jpg`);
     this.load.image("Beam", "/assets/images/Beam.png");
     this.load.image("GameName", `/assets/images/GameName${suffix}.png`);
