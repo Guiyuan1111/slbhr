@@ -10,6 +10,14 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-10-29（1.0.4——外网真机测试：修窄屏 HUD 裁切 + DEPLOY 关卡构成更正）
+① **外部测试面**：从公网（非本机回环）对 110.42.36.114:2567 全量打真机——双客户端 58-61 patch/s 两端角色坐标逐位一致（服务端权威实证）、5 房并发房号唯一/超员锁房、断网 paused 冻结→恢复 started、刷新回座、iPhone 描述符触屏三键驱动角色。报告 note/research/2026-10-29-external-deploy-testing.md，脚本留档同目录 2026-10-29-external-test-tools/。
+② **唯一真缺陷**：390px 竖屏 HUD 顶栏 nowrap + 居中无上限 → 内容 617px 左右各溢出 113px，房间码与邀请钮被裁。修法是 max-width:calc(100vw-16px)+flex-wrap+≤560px 媒体查询；320px 档 `#hud-room` 作为 flex item 仍按 min-content 撑出 ±12px，需再给 white-space:normal+min-width:0。实测 390px 由 -113..503 收敛到 98..293。
+③ **回归门禁**：新增 scripts/e2e/hud-narrow.mjs（6 视口×5 断言=30 条）接入 ci.yml browser-room 作业；负对照实测——回退 CSS 精确产 5 条 FAIL，证明门禁真能抓。
+④ **文档勘误**：DEPLOY.md 原称「48 关（forest_01–47）」事实错误，实为 32 主关+12 `_1`+3 bonus+教学关，编号止于 forest_32，无 forest_33–47。已改；多关卡冒烟改测真实关卡全绿。
+⑤ **测法两坑（曾造成假失败）**：跳跃高度不能 Node 侧定时 evaluate（跨公网往返 100ms 漏顶点，随机 0~39px）；触屏须 CDP 顺序注入并按压 240ms（90ms 只抬 23px，tap 并发对消恒 0）。详见留档 README。
+⑥ **上线**：1.0.4 已部署 /opt/slbhr/gy-fw-forest-1.0.4，NRestarts=0、内存 53MB、负载 0.03、零 error 日志；线上 dist 复跑 hud-narrow 30/30 ALL GREEN。旧版目录与 tar 已清。
+
 **更新**：2026-10-28（1.0.2——一键部署闭环 + 三部分发共用打包链）
 ① **交付形态**：包内新增 `deploy.sh`（自检→生成 systemd unit→起服→验收，一条命令到底）与 `verify.mjs`（9 项：healthz/首页/关卡清单==包内实装/本部首关 200+别部 404/音频流/建房/双人 started/patch 持续/浏览器进 Game）。服务名 `gy-fw-<部>`、端口缺省、本部首关、成员边界全部由包内 `data/` 自动认定，三种包共用同一份脚本。实测干净目录 `./deploy.sh --no-service` 全绿。
 ② **打包链参数化**：`package-deploy.mjs --temple forest|light|ice`，剪裁集由该部 `temple.json` 清单推导（不再硬编码文件名；清单对别部教学关的交叉引用属本部内容、保留）；`--plan` 只打印计划。首关推导收口到 `scripts/first-level.mjs`（处理「首关在 tutorials」「ice 清单 initial 指别部关」两陷阱），打包器/verify/CI 三处复用。
