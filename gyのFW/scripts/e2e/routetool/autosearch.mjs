@@ -571,7 +571,7 @@ const SEGI = {
         spec("waitPx", "fb", 540, 1060)],
       fb: [spec("sleep", 300), spec("walkTo", -1, 140, 999), spec("runJump", -1, 120, 6),
         spec("runJump", 1, 80, 15), spec("runJump", 1, 72, 6), spec("runJump", 1, 72, 6),
-        spec("runJump", 1, 445, 25), spec("waitPx", "wg", 540, 1060)],
+        spec("walkTo", 1, 360, 999), spec("runJump", 1, 360, 25), spec("waitPx", "wg", 540, 1060)],
     },
     vocab: {
       // fb 词表 v12：西渡线（东线词表整体作废——甲板板底封顶，apex 过不了角，探针 E/F/G 实证）。
@@ -585,6 +585,8 @@ const SEGI = {
         spec("runJump", 1, 88, 10), spec("runJump", 1, 80, 15), spec("runJump", 1, 88, 15),
         spec("runJump", 1, 415, 25), spec("runJump", 1, 435, 25), spec("runJump", 1, 445, 25),
         spec("runJump", 1, 455, 25), spec("runJump", 1, 465, 25),
+        spec("walkTo", 1, 360, 999), spec("walkTo", 1, 380, 999),
+        spec("runJump", 1, 360, 25), spec("runJump", 1, 380, 25),
         spec("walkTo", 1, 144, 40), spec("walkTo", 1, 148, 40), spec("walkTo", 1, 152, 40),
         spec("brakedHop", 1, 515, 172), spec("brakedHop", 1, 525, 178), spec("brakedHop", 1, 535, 182),
         spec("waitPx", "wg", 512, 1060), spec("waitPx", "wg", 300, 700),
@@ -771,6 +773,27 @@ function runChildJob(job, tag) {
   const i = out.indexOf(RESULT_MARK);
   if (i < 0) throw new Error(`${tag} child failed: ${errTail}`);
   return JSON.parse(out.slice(i + RESULT_MARK.length));
+}
+
+/** seam 评估子进程化（v12d）：evaluate 下沉子进程，finalize 父进程零世界
+ *  （原：首个过 seam 的 try 穷举 ~100 世界后，后续 seam 评估全在 vendor 泄漏区，阶梯不可信）。 */
+function childSeamEval(nextDef, sf, sw, capF) {
+  return runChildJob({ level: LEVEL, segDef: nextDef, sf, sw, totalCapF: capF }, "evaljob")[0];
+}
+
+/** 穷举 ±1f 门子进程化（v12d）：事件表按 8 事件分块，每子 16 世界；聚合早退语义同 exhaustiveSample。 */
+function childExhaustive(events, segDef, deadlineAbsF, minF) {
+  const all = [];
+  for (const side of ["fb", "wg"]) for (let i = 0; i < events[side].length; i++) { if (events[side][i].f < minF) continue; all.push({ side, i, f: events[side][i].f }); }
+  const out = { fatal: 0, groups: [] };
+  for (let k = 0; k < all.length; k += 8) {
+    const slice = all.slice(k, k + 8);
+    const list = slice.flatMap((e) => [{ ...e, dir: -1 }, { ...e, dir: 1 }]);
+    const rs = runChildJob({ level: LEVEL, segDef, events, deadlineAbsF, requireMet: true, list }, "exjob");
+    rs.forEach((r, j) => { if (!r.ok) { out.fatal = 1; out.groups.push({ ...list[j], ev: events[list[j].side][list[j].i], why: r.why }); } });
+    if (out.fatal) break;
+  }
+  return out;
 }
 
 
@@ -1083,14 +1106,18 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
       const deadlineAbsF = (cand.entryF >= 0 ? cand.entryF : 0) + segC.horizonF;
       let seamEntryF = -1, seamWhy = "";
       if (nextC) {
-        const nr = evaluate(nextC, trimmed.sf, trimmed.sw, cand.endF + SEAM_GRACE_F + 120);
+        const nr = EVAL_CHILD
+          ? childSeamEval(nextDef, trimmed.sf, trimmed.sw, cand.endF + SEAM_GRACE_F + 120)
+          : evaluate(nextC, trimmed.sf, trimmed.sw, cand.endF + SEAM_GRACE_F + 120);
         const sv = seamOkNr(nr, trimmed, nextC);
         if (sv === true) seamEntryF = nr.entryF; else seamWhy = String(sv);
       }
       // 穷举 ±1f 验收门（seam 过后对本段新增事件全量扰动；绿路线 fatal=0/222 实证可达）
       let exFatal = 1, exGroups = [];
       if (seamEntryF >= 0 || !nextC) {
-        const ex = exhaustiveSample(dr.events, segC, deadlineAbsF, Math.max(0, cand.entryF));
+        const ex = EVAL_CHILD
+          ? childExhaustive(dr.events, segDef, deadlineAbsF, Math.max(0, cand.entryF))
+          : exhaustiveSample(dr.events, segC, deadlineAbsF, Math.max(0, cand.entryF));
         exFatal = ex.fatal; exGroups = ex.groups;
       }
       const rec = { cand: trimmed, events: dr.events, inline: { fatal: exFatal, groups: exGroups }, exhaustiveFatal: exFatal, score2: cand.score - 500 * exFatal, seamEntryF, trimDepth: [kFb, kWg] };
@@ -1127,7 +1154,9 @@ function seamOkNr(nr, trimmed, nextC) {
  *  旧版先断言修剪前存储终态 = 假阳性（修剪剪掉的在飞原语弧线可能正是入窗穿越，S0b 饥饿实证），废除。 */
 function seamCheck(final, nextSegDef) {
   const nextC = segCtxOf(nextSegDef);
-  const nr = evaluate(nextC, final.cand.sf, final.cand.sw, final.cand.endF + SEAM_GRACE_F + 120);
+  const nr = EVAL_CHILD
+    ? childSeamEval(nextSegDef, final.cand.sf, final.cand.sw, final.cand.endF + SEAM_GRACE_F + 120)
+    : evaluate(nextC, final.cand.sf, final.cand.sw, final.cand.endF + SEAM_GRACE_F + 120);
   if (seamOkNr(nr, final.cand, nextC) !== true) return { ok: false };
   return { ok: true, entryF: nr.entryF, grace: Math.max(0, nr.entryF - final.cand.endF) };
 }
@@ -1164,8 +1193,20 @@ if (hasFlag("verify")) {
   process.exit(base.won ? 0 : 1);
 }
 
-if (EVAL_CHILD && (argOf("evaljob") || argOf("robjob"))) {
-  const job = JSON.parse(readFileSync(argOf("evaljob") ?? argOf("robjob"), "utf8"));
+if (EVAL_CHILD && (argOf("evaljob") || argOf("robjob") || argOf("exjob"))) {
+  const job = JSON.parse(readFileSync(argOf("evaljob") ?? argOf("robjob") ?? argOf("exjob"), "utf8"));
+  if (job.list) {
+    // exjob：穷举 ±1f 门分块子进程（每子 ≤8 事件 ×±1 = 16 世界 < 泄漏阈值 ~20）
+    const segC = segCtxOf(job.segDef);
+    const rs = job.list.map((it) => {
+      const T = { fb: job.events.fb.map((e) => ({ ...e })), wg: job.events.wg.map((e) => ({ ...e })) };
+      T[it.side][it.i].f += it.dir;
+      const rr = replayEventRoute(T, segC, job.deadlineAbsF, job.requireMet !== false);
+      return { ok: !!rr.ok, why: rr.why ?? "" };
+    });
+    process.stdout.write(RESULT_MARK + JSON.stringify(rs));
+    process.exit(0);
+  }
   if (job.cands) {
     // robjob：每候选子进程内重放全事件并 ±1f 采样（v12c：鲁棒采样随 evalchild 下沉子进程，
     // 父进程零 makeWorld——原 ROB_TOP=0 强制关闭使 beam 无从分辨脆谱系，fin exFatal=1 全灭实证）
