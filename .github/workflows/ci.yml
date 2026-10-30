@@ -70,7 +70,10 @@ jobs:
         run: npm run test:coverage
 
   determinism:
-    name: determinism (forest r0-baseline)
+    # 六部锚全量比对（forest/light/ice + 三续作 crystal/elements/fairytales，2026-10-31
+    # 三续作锚入库；ice 锚=r2-tpgate 2026-10-28 重锚）。多部共库后任何内核改动都
+    # 必须六锚同绿——只绿自家部而打崩别部物理的改动拦在这里。
+    name: determinism (all 6 anchors)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -84,6 +87,16 @@ jobs:
         run: npm ci
       - name: Compare forest 48-level determinism against r0-baseline
         run: node --import tsx benchmark/perf-determinism.mjs --compare r0-baseline --filter forest
+      - name: Compare light 40-level determinism against r0-light
+        run: node --import tsx benchmark/perf-determinism.mjs --compare r0-light --filter light
+      - name: Compare ice 51-level determinism against r2-tpgate
+        run: node --import tsx benchmark/perf-determinism.mjs --compare r2-tpgate --filter ice
+      - name: Compare crystal 36-level determinism against r0-crystal
+        run: node --import tsx benchmark/perf-determinism.mjs --compare r0-crystal --filter crystal
+      - name: Compare elements 35-level determinism against r0-elements
+        run: node --import tsx benchmark/perf-determinism.mjs --compare r0-elements --filter e
+      - name: Compare fairytales 31-level determinism against r0-fairytales
+        run: node --import tsx benchmark/perf-determinism.mjs --compare r0-fairytales --filter fairies
 
   routes-smoke:
     name: routes smoke (route-node real-server sample)
