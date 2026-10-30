@@ -18,6 +18,7 @@ import { GROUND_TYPE } from "../level2.js";
 import { buildLevelWorld, type BuiltWorld, type DoorInfo } from "./build.js";
 import { Character, type AnimState, type InputState } from "./character.js";
 import { buildMechanisms, type MechEvent, type Mechanisms } from "./mechanisms.js";
+import { RespawnManager } from "./respawn.js";
 
 /** 坐标换算再导出（r1 perf 件3）：服务器序列化侧（ForestRoom/基准镜像）直读 mechanisms
  *  写 RoomState 时需要 m2px——保持单一换算定义，避免内联魔数漂移 */
@@ -94,6 +95,10 @@ export class World {
   private simTimeS = 0;
   /** 传送门 200ms 每体冷却（oracle body.lastTransport；键=body 跨门共享） */
   private portalLastTransport = new WeakMap<object, number>();
+  /** F 部检查点/复活管理器（构造尾创建；respawn.ts 档头=oracle L61065-61179 对位） */
+  respawn!: RespawnManager;
+  /** R2 免费复活一次门禁（oracle 走激励广告，我方裁定=免费一次） */
+  revived = false;
   /** 风力时基（F6）：缺省仿真时间，生产传墙钟（见 WorldOptions 注释） */
   private windClockS: () => number;
 
@@ -145,6 +150,8 @@ export class World {
     for (const liq of this.built.liquids) {
       if (liq.startFrozen && liq.liquidType === GROUND_TYPE.WATER) this.freezeLiquid(liq, startEvents);
     }
+    // F 部 RespawnManager（F 专属但恒挂：站定抓取纯记录，无 F 数据时队列恒空）
+    this.respawn = new RespawnManager(this);
   }
 
   private installContactListener(): void {
@@ -421,6 +428,8 @@ export class World {
     this.flushPendingRemove();
 
     if (this.phase === "playing") {
+      // F 部站定检查点（oracle Level.update 每帧 respawnManager.update；纯记录不改物理）
+      this.respawn.maybeCheckpoint(this.simTimeS * 1000, inputs);
       this.checkEnd(events);
       this.timerMs += dt * 1000;
     }
@@ -699,5 +708,30 @@ export class World {
     this.stepEvents = null;
     this.pendingRemove.length = 0;
     this.installContactListener();
+    this.respawn.clear(); // 旧快照引用的 body 已随重建销毁
+    this.revived = false;
+  }
+
+  /** F 部免费复活一次（R2；oracle Level.revive @L62017：销毁重建双角 → 检查点回放 →
+   *  计时回拨）。队列空（开局即死未抓过）返回 false，宿主退化整关 retry。 */
+  revive(): boolean {
+    if (this.revived || this.phase !== "gameover") return false;
+    for (const c of [this.chars.fireboy, this.chars.watergirl]) this.built.world.DestroyBody(c.body);
+    this.chars = {
+      fireboy: new Character(this.B, this.built.world, "fireboy", this.level.spawn.fireboy),
+      watergirl: new Character(this.B, this.built.world, "watergirl", this.level.spawn.watergirl),
+    };
+    for (const wind of this.mechs.winds) {
+      wind.registerCharBodies([
+        ["fireboy", this.chars.fireboy.body],
+        ["watergirl", this.chars.watergirl.body],
+      ]);
+    }
+    const t = this.respawn.loadLatest(this.simTimeS * 1000);
+    if (t === null) return false;
+    this.phase = "playing";
+    this.timerMs = t; // oracle clock.resumeAt(gameTime) 的计时回拨
+    this.revived = true;
+    return true;
   }
 }
