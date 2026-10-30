@@ -92,6 +92,13 @@
 ⑥ **挂账分流**：Colyseus 0.18（12 漏洞含 1 高危 nanoid，候选待裁档已有）；#49/#50；noUncheckedIndexedAccess 实测 304 错随 #49 推进；staticGz 预压缩可选；~/.qoder detached 工作树含 209 未并入提交（10-23 r42/r43 线，patch-id 与 main 全不等价）去留待用户裁决。
 ⑦ **0.3.52 发版**：45 文件 319 测试绿（+4）、typecheck 零输出、bump --verify 六处一致；CI run 40511798794 八作业绿后注解 tag 0.3.52（同指 477c484）+Release 已发（Latest，无附件口径）。
 
+**更新**：2026-10-30（续作三部开发启动——crystal/elements/fairytales Phase 1 全落 + F 部内核两批，用户令"继续开发后面几部，免视觉测试保逻辑一致，之后用户验收"）
+① **三部 Phase 1 入库**：crystal 35+4 关（44b62c1，portal×184 唯一新机关）/elements 32+3 关（2935bb7，六元素 1.json 撞车以 e<元素>_ 命名空间化+temple.json filename 同步改写；cover=纯视觉忽略）/fairytales 30+2 关（5e79de8，Tiled 1.x 归一化解析+共享 Chars/Objects tileset 加性合并 id8 fairy/id3 fairycup）。三部 tileset 与 repo 语义级一致或加性空洞合并，A–E det 三锚（r0-baseline/r0-light/r2-tpgate）位级一致零影响实锤。
+② **F 部内核**（dc2cd83+da42ec2）：Fairy 零重力体+anchor-elbow-ball 刚性链+mouse 拖拽关节+Lissajous 悬浮（仿真钟/按序偏移替代 oracle 墙钟/构造随机，偏差记档）；FairyCup 杯口 r1.3 sensor 色配+按钮语义派发；锁链 25+3 只解析。fairies_000 拖 group4 仙女入 group41 杯 state 0→1 与 oracle 实跑逐点吻合；363 测试绿。
+③ **取证槽**：E/F 槽已收官（note/evidence/2026-10-30-{elements,fairytales}/，cover 语义/multi 结构/引擎同源/fairy 三件套全解）；**D 槽（portal 语义）超 2h 未归已问询**。E 槽勘误：portal gid 逐关随 LargeObjects firstgid 漂移，严禁硬编码。
+④ **待办序**：portal 内核（等 D 槽，crystal 184+E 42+F 16 处依赖）→ RespawnManager 检查点/复活（canRevive 复刻为免费一次，档卷 R2）→ net 批（仙女拖拽输入/状态同步/netDto 契约更新）→ 三部 det 锚（r0-crystal/r0-elements/r0-fairytales）+CI 作业 → 客户端 View（portal/仙女/杯/E 条带 UI）→ 路线样例 → 总门禁+发版。ice 锚注意：现行=r2-tpgate（10-28 重锚，勿再用 r1-ice）。
+⑤ 用户验收口径：免我方视觉测试，逻辑一致为准；游玩验收由用户做。
+
 **更新**：2026-10-27（GitHub Issues 全量清偿批 + 0.3.51 发版——该批 16 件开放 issue 全数关闭（#49/#50 同日新挂账另立，见⑦）、TEMP 清库归零（口径：gyのFW/TEMP））
 ① **16 issue 修复关闭附证据**（#32、#34–#48）：ice 雪地碰撞+冰面摩擦移植（det 重锚 r1-ice，4870d55/ec03e06）；won 双断线补发解耦（a7d08e3）；重连 5s 护栏+tryResume 清理（c7a62b0）；冰膜索引同域化+机关视图跨关清空（1a52f66）；客户端低危七件（097a2f7）；占座 DoS 密码前置（6852825）；matchmake GET 放行（afffb28）；bump 脚本跨平台事务化（86b112f）。教训：issue 关闭曾只落一半（8 个开放 0 评论），gh issue list 实查后补齐——"自述不算完成"再次验证。
 ② **安全面 #45**（791501c/c3bb076）：Origin allowlist（FW_ALLOWED_ORIGINS）+WS verifyClient+CSP（内联 hash 启动提取）+/api 固定窗口限流+levelExists stat 缓存+房间 onUncaughtException 隔离+staticGz 方法闸门；vite ^6.4.5。
