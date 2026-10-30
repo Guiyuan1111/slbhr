@@ -792,60 +792,70 @@ const SEGC = {
     },
   },
   C2: {
-    maxDepth: 10, capFb: 6, capWg: 4, horizonF: 700,
+    maxDepth: 10, capFb: 6, capWg: 5, horizonF: 700,
+    // 拉杆(杆体实体,东压翻转+翻后挡东行 fb 钉~487 实证)：fb 东压 hold(1,484-487) 触翻转,
+    // jd 漂移回落杆西(静跳漂移 8-50px,落 430-487 窗内)；wg 东行 565 短停(杆西面 502.6 东侧自由)。
     recipe: {
-      fb: [spec("hold", 1, 545), spec("sleep", 6), spec("jumpDrift", -1, 0, 55), spec("sleep", 20)],
+      fb: [spec("hold", 1, 486), spec("jumpDrift", -1, 0, 45), spec("sleep", 40)],
       wg: [spec("hold", 1, 565), spec("sleep", 20)],
     },
     vocab: {
-      fb: [spec("hold", 1, 537), spec("hold", 1, 545), spec("hold", 1, 553),
-        spec("sleep", 4), spec("sleep", 6), spec("sleep", 10),
-        spec("jumpDrift", -1, 0, 50), spec("jumpDrift", -1, 0, 55), spec("jumpDrift", -1, 0, 62),
-        spec("sleep", 20), spec("sleep", 30)],
-      wg: [spec("hold", 1, 557), spec("hold", 1, 565), spec("hold", 1, 573), spec("sleep", 20)],
+      fb: [spec("hold", 1, 470), spec("hold", 1, 478), spec("hold", 1, 486),
+        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 45), spec("jumpDrift", -1, 0, 50),
+        spec("walkTo", -1, 420, 60), spec("walkTo", -1, 440, 60),
+        spec("sleep", 40), spec("sleep", 70)],
+      wg: [spec("hold", 1, 545), spec("hold", 1, 565), spec("hold", 1, 585),
+        spec("sleep", 20), spec("sleep", 40), spec("sleep", 70)],
     },
   },
   C3: {
-    maxDepth: 10, capFb: 6, capWg: 6, horizonF: 800,
-    // P3 入场同 C0 弧过带口径：y736 地板西缘满速西跳（jd 连跳保速），弧升段过 P3 带 [25.6,38.4]×[576,672]
-    // （站心 700.5，col0 台顶 672 无顶板不封顶，满弧升 123 过带缘时 y~640-660 在带内）。
+    maxDepth: 10, capFb: 7, capWg: 7, horizonF: 800,
+    // P3 井弧(笼式封顶弧,rise≈70px 顶板 608 封顶,与 C0 同机制)：fb 杆西直西行入链;wg 需先
+    // 东行 575 助跑再 runJump(-1,550) 空中越杆(杆翻后西行踏杆=unflip,空中安全),落杆西后接链。
+    // 满速 jd 链:弧1 落 ~135,弧2 落墙钉 ~48-90,弧3 按压传送(P0 同机制 f209 实证)。
+    // 出口残速 vy≈0(顶板滑行) → P2 出口 y≈118 抛体落 row-6 (~1134,156.8)。
     recipe: {
-      fb: [spec("hold", -1, 150), spec("jumpDrift", -1, 0, 45), spec("sleep", 40)],
-      wg: [spec("hold", -1, 150), spec("jumpDrift", -1, 0, 45), spec("sleep", 40)],
+      fb: [spec("hold", -1, 300), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("sleep", 40)],
+      wg: [spec("hold", 1, 575), spec("runJump", -1, 550, 25), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("sleep", 40)],
     },
     vocab: {
-      fb: [spec("hold", -1, 120), spec("hold", -1, 150), spec("hold", -1, 180),
-        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 45), spec("jumpDrift", -1, 0, 50),
-        spec("runJump", -1, 120, 25), spec("runJump", -1, 160, 25),
+      fb: [spec("hold", -1, 280), spec("hold", -1, 300), spec("hold", -1, 320),
+        spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 44),
+        spec("runJump", -1, 240, 25), spec("runJump", -1, 280, 25),
         spec("sleep", 40), spec("sleep", 70)],
-      wg: [spec("hold", -1, 120), spec("hold", -1, 150), spec("hold", -1, 180),
-        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 45), spec("jumpDrift", -1, 0, 50),
-        spec("runJump", -1, 120, 25), spec("runJump", -1, 160, 25),
+      wg: [spec("hold", 1, 560), spec("hold", 1, 575), spec("hold", 1, 590),
+        spec("runJump", -1, 540, 25), spec("runJump", -1, 550, 25), spec("runJump", -1, 560, 25),
+        spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 44),
+        spec("hold", -1, 280), spec("hold", -1, 300),
         spec("sleep", 40), spec("sleep", 70)],
     },
   },
   C4: {
-    maxDepth: 12, capFb: 8, capWg: 8, horizonF: 900,
+    maxDepth: 12, capFb: 8, capWg: 9, horizonF: 900,
+    // 终章(v9 全图复核)：row-6 西行抵西墙钉 975.6→jd 纯垂直+漂移越 [928,960] 墙顶(y128)落 row-4
+    // (wp 672-928)→西行穿 672 唇口 448px 落 row-18 板台→基座东面钉 335.6→jd 漂移蹬顶落基座
+    // (~254)→hold 东行 P6 带内按压即传(杆钉 265.34 诱导电弧,C0 同机制)→P7 出(278.4,220.8)。
+    // fb 就近东行 404 进东门；wg 出口即跳 jd(-1) 纯垂直越带(y 先出带 y-range<160 冷却内)落台
+    // ~196,walkTo 刹车 288 后跳防杆带重传,hold(-1,72) 进西门。
     recipe: {
-      fb: [spec("hold", 1, 960), spec("hold", -1, 700), spec("jumpDrift", -1, 0, 40),
-        spec("hold", -1, 250), spec("jumpDrift", 1, 0, 50), spec("hold", 1, 300), spec("sleep", 40)],
-      wg: [spec("hold", 1, 980), spec("hold", -1, 700), spec("jumpDrift", -1, 0, 40),
-        spec("hold", -1, 230), spec("runJump", 1, 90, 55), spec("hold", 1, 310), spec("sleep", 40)],
+      fb: [spec("hold", -1, 990), spec("jumpDrift", -1, 0, 40), spec("hold", -1, 700), spec("jumpDrift", -1, 0, 45), spec("hold", 1, 404), spec("sleep", 40)],
+      wg: [spec("hold", -1, 990), spec("jumpDrift", -1, 0, 40), spec("hold", -1, 700), spec("jumpDrift", -1, 0, 45), spec("hold", 1, 300), spec("walkTo", -1, 288, 60), spec("jumpDrift", -1, 0, 40), spec("hold", -1, 72), spec("sleep", 40)],
     },
     vocab: {
-      fb: [spec("hold", 1, 940), spec("hold", 1, 960), spec("hold", 1, 980),
+      fb: [spec("hold", -1, 970), spec("hold", -1, 990), spec("hold", -1, 1010),
+        spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 44),
         spec("hold", -1, 680), spec("hold", -1, 700), spec("hold", -1, 720),
-        spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 46),
-        spec("hold", -1, 230), spec("hold", -1, 250), spec("hold", -1, 270),
-        spec("jumpDrift", 1, 0, 46), spec("jumpDrift", 1, 0, 50), spec("jumpDrift", 1, 0, 55),
-        spec("hold", 1, 288), spec("hold", 1, 300), spec("hold", 1, 312),
-        spec("sleep", 40), spec("sleep", 60)],
-      wg: [spec("hold", 1, 960), spec("hold", 1, 980), spec("hold", 1, 1000),
+        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 45), spec("jumpDrift", -1, 0, 50),
+        spec("hold", 1, 290), spec("hold", 1, 300), spec("hold", 1, 310),
+        spec("hold", 1, 388), spec("hold", 1, 404), spec("sleep", 40), spec("sleep", 60)],
+      wg: [spec("hold", -1, 970), spec("hold", -1, 990), spec("hold", -1, 1010),
+        spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 44),
         spec("hold", -1, 680), spec("hold", -1, 700), spec("hold", -1, 720),
-        spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 46),
-        spec("hold", -1, 210), spec("hold", -1, 230), spec("hold", -1, 250),
-        spec("runJump", 1, 84, 50), spec("runJump", 1, 90, 55), spec("runJump", 1, 96, 60),
-        spec("hold", 1, 300), spec("hold", 1, 312), spec("hold", 1, 324),
+        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 45), spec("jumpDrift", -1, 0, 50),
+        spec("hold", 1, 290), spec("hold", 1, 300), spec("hold", 1, 310),
+        spec("walkTo", -1, 284, 60), spec("walkTo", -1, 288, 60), spec("walkTo", -1, 292, 60),
+        spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 44),
+        spec("hold", -1, 66), spec("hold", -1, 72), spec("hold", -1, 78),
         spec("sleep", 40), spec("sleep", 60)],
     },
   },
@@ -967,6 +977,7 @@ function runChildJob(job, tag) {
     const res = spawnSync(process.execPath, args, { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
     out = res.stdout ?? "";
     errTail = res.stderr?.slice(-400) ?? "";
+    try { writeFileSync(join(tmpdir(), `as-child-dbg-${evalSeq}.txt`), `JOB=${jobPath}\nJOBFILE=${JSON.stringify(job).slice(0,6000)}\n=== STDERR ===\n${res.stderr ?? ""}`) } catch {}
     if (out.includes(RESULT_MARK)) break;
   }
   try { unlinkSync(jobPath); } catch {}
