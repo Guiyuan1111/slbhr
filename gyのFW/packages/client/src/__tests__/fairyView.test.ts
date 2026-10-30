@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { deviceTintOf, extractCovers, FAIRY_GROUP_COLORS, pickFairy, SHARED_GROUP_COLORS } from "../scenes/fairyView";
+import { deviceTintOf, extractCovers, FAIRY_GROUP_COLORS, lerpColorTowardWhite, pickFairy, SHARED_GROUP_COLORS } from "../scenes/fairyView";
 
 /** repo 根（__tests__ → src → client → packages → gyのFW） */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -72,6 +72,17 @@ describe("extractCovers（真数据 fairies_000 + 健壮性）", () => {
   it("森林关（无 cover）提取为空数组", () => {
     const json = JSON.parse(readFileSync(join(ROOT, "data/forest/levels/forest_02.json"), "utf-8"));
     expect(extractCovers(json)).toEqual([]);
+  });
+});
+
+describe("lerpColorTowardWhite（尾迹粒子色，oracle interpolateColor 3/5 向白）", () => {
+  it("k=0.6：组色各通道向白走 60%；白进白出；黑→0.6 白", () => {
+    const g = (c: number) => [(c >> 16) & 0xff, (c >> 8) & 0xff, c & 0xff];
+    expect(g(lerpColorTowardWhite(0xff0000, 0.6))).toEqual([255, 153, 153]); // 红→粉
+    expect(lerpColorTowardWhite(0xffffff, 0.6)).toBe(0xffffff);
+    expect(g(lerpColorTowardWhite(0x000000, 0.6))).toEqual([153, 153, 153]);
+    expect(lerpColorTowardWhite(0x123456, 0)).toBe(0x123456);
+    expect(lerpColorTowardWhite(0x123456, 1)).toBe(0xffffff);
   });
 });
 

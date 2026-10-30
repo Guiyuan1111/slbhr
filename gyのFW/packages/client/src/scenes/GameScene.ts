@@ -34,7 +34,7 @@ import { MechanismSmoother } from "./mechSmoothing";
 import { PlatformSoundTracker } from "./platformSound";
 import { GroundCache } from "./groundCache";
 import { clockSoundDecision, needsDarkRt, needsDust, resolveBeamCache } from "./gameGuards";
-import { deviceTintOf, pickFairy, type CoverRect, type FairyCupSnap, type FairySnap } from "./fairyView";
+import { deviceTintOf, lerpColorTowardWhite, pickFairy, type CoverRect, type FairyCupSnap, type FairySnap } from "./fairyView";
 
 export interface GameInit {
   net: Net;
@@ -176,6 +176,14 @@ interface FairyView {
   /** 上次写入位置（脏守卫） */
   lx: number;
   ly: number;
+  /** 尾迹粒子（oracle Fairy.createParticles/updateParticles；background 层≈深度 0.8） */
+  trail?: Phaser.GameObjects.Particles.ParticleEmitter;
+  /** 上一帧位移（px/帧，速度分档发射用） */
+  pvx: number;
+  pvy: number;
+  /** 上帧位移的再上一帧（加速度差分用） */
+  lvx?: number;
+  lvy?: number;
 }
 
 /**
@@ -1273,7 +1281,23 @@ export class GameScene extends Phaser.Scene {
           .setAlpha(0.5)
           .setBlendMode(Phaser.BlendModes.LIGHTEN)
           .setDepth(4.42);
-        this.fairyViews.set(f.id, { body, glow, innerGlow, group: f.group, locked: f.lockGroup !== undefined, lx: x, ly: y });
+        // 尾迹粒子（oracle createParticles：MenuAssets Navy0000、700ms、scale 1.5→0.1、
+        // α .5→0、LIGHTEN、gravity 300、minSpeed(5,5)（二次赋值覆盖为正=原版死存储怪味照抄）、
+        // tint=组色向白 3/5；挂 background 层≈0.8（地形之下）。发射频率按 updateParticles
+        // 速度分档动态切（e=0/4/8 档 → 18/90/162 粒·秒⁻¹，慢速关断）。
+        const trail = this.add.particles(0, 0, ATLAS_MENU, {
+          frame: "Navy0000",
+          lifespan: 700,
+          speedX: { min: 5, max: 100 },
+          speedY: { min: 5, max: 100 },
+          gravityY: 300,
+          scale: { start: 1.5, end: 0.1 },
+          alpha: { start: 0.5, end: 0 },
+          blendMode: Phaser.BlendModes.LIGHTEN,
+          tint: lerpColorTowardWhite(tint, 0.6),
+          emitting: false,
+        }).setDepth(0.8);
+        this.fairyViews.set(f.id, { body, glow, innerGlow, group: f.group, locked: f.lockGroup !== undefined, lx: x, ly: y, trail, pvx: 0, pvy: 0 });
       }
       // 仙女杯（oracle Devices/FairyCup L53157）：back 常驻 overGround(3) 不 tint；
       // glow=fairycup_glow 12fps 循环挂 liquids(7)——先于 buildLiquids 建入（同深度稳定
@@ -2316,6 +2340,30 @@ export class GameScene extends Phaser.Scene {
       v.glow.setPosition(x, y);
       v.innerGlow.setPosition(x, y);
     }
+    // 尾迹发射分档（oracle updateParticles：c=|Δv|·0.8、h=|v|，m/s 口径——客户端以
+    // px/帧差分换算 32px/m；档位 e=0/4/8 → 频率 18/90/162 粒·秒⁻¹，其余关断）
+    if (v.trail) {
+      const vx = x - (v.pvx || x);
+      const vy = y - (v.pvy || y);
+      v.pvx = x;
+      v.pvy = y;
+      const K = 60 / 32; // px/帧 → m/s（60fps、32px/m）
+      const h = Math.hypot(vx, vy) * K;
+      const c = Math.hypot(vx - (v.lvx ?? vx), vy - (v.lvy ?? vy)) * K * 0.8;
+      v.lvx = vx;
+      v.lvy = vy;
+      const e = c < 1 ? (h < 14 ? -1 : 0) : c < 3 ? 4 : c < 6 ? 8 : -1;
+      const freq = e < 0 ? 0 : 1000 / (18 * (e + 1));
+      v.trail.setPosition(x, y);
+      if (freq > 0 && !v.trail.emitting) {
+        v.trail.setFrequency(freq);
+        v.trail.start();
+      } else if (freq > 0 && v.trail.emitting) {
+        v.trail.setFrequency(freq);
+      } else if (v.trail.emitting) {
+        v.trail.stop();
+      }
+    }
     // innerGlow 逐帧随机闪烁（oracle updateSprites：random()>0.7 → α=.4+.3·random()）
     if (Math.random() > 0.7) v.innerGlow.setAlpha(0.4 + 0.3 * Math.random());
     // 锁定镜像（R1：oracle 无视觉差异，仅存态；拖拽不门控）
@@ -2541,6 +2589,12 @@ export class GameScene extends Phaser.Scene {
     // 角色 r180（bundle character 20→180，无条件）
     if (this.pFb) halo(Number(this.pFb.x) + PAD, Number(this.pFb.y) + PAD, 180);
     if (this.pWg) halo(Number(this.pWg.x) + PAD, Number(this.pWg.y) + PAD, 180);
+    // F 部仙女/杯（fairies-XX-dark）：仙女 r220 恒亮（oracle Fairy.drawDarkMask 20→180
+    // 渐变半径 220）；杯 r60 仅 state1（oracle FairyCup.drawDarkMask，晕心=杯口上 0.8m）
+    this.fairyViews.forEach((v) => halo(v.lx, v.ly, 220));
+    this.fairyCupViews.forEach((v) => {
+      if (v.state === 1) halo(v.mouthX + PAD, v.mouthY + PAD, 60);
+    });
     // lever r50（state 1；晕心=杆尖≈stick 位——杆微动，留动态层逐帧擦）
     this.leverViews.forEach((v) => {
       if (v.lightOn) halo(v.stick.x, v.stick.y, 50);

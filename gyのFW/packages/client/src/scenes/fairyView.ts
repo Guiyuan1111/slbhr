@@ -108,6 +108,16 @@ export interface FairyDragMsg {
  * R1：oracle 拖拽无 locked 物理门控（锁定只门控相机 focus 与教学矩形，
  * L59692/L61934），此处亦不按 locked 过滤。
  */
+/** oracle Phaser.Color.interpolateColor(groupColor, 0xFFFFFF, 5, 3)：
+ *  组色向白插值 k∈[0,1]（尾迹粒子色，3/5=0.6） */
+export function lerpColorTowardWhite(color: number, k: number): number {
+  const r = (color >> 16) & 0xff;
+  const g = (color >> 8) & 0xff;
+  const b = color & 0xff;
+  const m = (c: number): number => Math.round(c + (255 - c) * k);
+  return (m(r) << 16) | (m(g) << 8) | m(b);
+}
+
 export function pickFairy(items: ReadonlyArray<{ id: string; x: number; y: number }>, px: number, py: number, radius: number): string | null {
   let best: string | null = null;
   let bestD = radius * radius;
