@@ -777,6 +777,8 @@ interface RayHit {
   ny: number;
   mirror: boolean;
   sensorLp: LightProperties | null;
+  /** 光学传送门命中（D 槽 §1.5：开门入射面）——Beamer 跳出口门续射 */
+  portal: any;
 }
 const rcCtx = {
   hit: null as RayHit | null,
@@ -791,6 +793,7 @@ const rcCtx = {
       h.py = point.y;
       h.mirror = false;
       h.sensorLp = null;
+      h.portal = null;
       return fraction;
     }
     if (lp.type === "transparent") {
@@ -806,6 +809,7 @@ const rcCtx = {
       h.py = point.y;
       h.mirror = false;
       h.sensorLp = lp.sensor ? lp : null;
+      h.portal = null;
       return fraction;
     }
     if (lp.type === "mirror") {
@@ -816,9 +820,25 @@ const rcCtx = {
       h.ny = normal.y;
       h.mirror = true;
       h.sensorLp = lp.sensor ? lp : null;
+      h.portal = null;
       return fraction;
     }
-    return undefined; // portal 等：light 数据未用
+    if (lp.type === "portal") {
+      // 光学传送门（D 槽 §1.5）：开门且已配对=入射面命中，束线跳出口门续射；
+      // 关门（filter 已 0，oracle 语义=光不交互）/未配对 → 直穿
+      const portal = ud.portal;
+      if (portal && portal.state === 1 && portal.other) {
+        h.hit = true;
+        h.px = point.x;
+        h.py = point.y;
+        h.mirror = false;
+        h.sensorLp = null;
+        h.portal = portal;
+        return fraction;
+      }
+      return undefined;
+    }
+    return undefined;
   },
 };
 
@@ -844,7 +864,7 @@ export class Beamer extends Device {
   private readonly tmpDir: any;
   private readonly tmpB: any;
   private readonly tmpF: any;
-  private readonly hit: RayHit = { hit: false, px: 0, py: 0, nx: 0, ny: 0, mirror: false, sensorLp: null };
+  private readonly hit: RayHit = { hit: false, px: 0, py: 0, nx: 0, ny: 0, mirror: false, sensorLp: null, portal: null };
 
   constructor(B: B2, world: any, def: BeamerDef) {
     super(B, def.group, false);
@@ -952,7 +972,8 @@ export class Beamer extends Device {
       }
       marksLen++;
     };
-    for (let seg = 0; seg < 10 && len < 11; seg++) {
+    let extraSeg = 0; // 光学传送门 hop 预算（D 槽 §1.5：一次射线最多 12 段，逐 hop 放宽）
+    for (let seg = 0; seg < 10 + extraSeg && len < 11 + extraSeg; seg++) {
       const from = this.tmpB;
       from.SetXY(p.x, p.y);
       const to = this.tmpTo;
@@ -983,6 +1004,32 @@ export class Beamer extends Device {
         const dot = bvec.x * f.x + bvec.y * f.y;
         dir.SetXY(bvec.x - f.x * 2 * dot, bvec.y - f.y * 2 * dot);
         p.SetXY(hit.px, hit.py);
+      } else if (hit.portal) {
+        // 光学传送门（§1.5，getOutput @1687274 / getPoint @1687675）：束线画到入口命中点
+        // （已 put），跳到出口门映射点续射。方向=dir 旋 Δ（同 inverted 再 +π）；点映射=
+        // transport 偏移同式（inv 不同才门平面镜像，再旋 Δ，加 other 位）。⚠ 原版光与
+        // 实体在同 inverted 对的出口变换本就不一致（vy 符号差），两套公式照抄不统一。
+        const portal: Portal = hit.portal;
+        const other = portal.other!;
+        const rot = portal.body.GetAngle();
+        const delta = other.body.GetAngle() - rot;
+        const ex = -Math.sin(rot);
+        const ey = Math.cos(rot); // e=(0,1).SelfRotate(rot)：门平面方向
+        const ppos = portal.body.GetPosition();
+        let dx = hit.px - ppos.x;
+        let dy = hit.py - ppos.y;
+        if (other.inverted !== portal.inverted) {
+          const k = (2 * (dx * ex + dy * ey)) / (ex * ex + ey * ey);
+          dx = ex * k - dx;
+          dy = ey * k - dy;
+        }
+        const cd = Math.cos(delta);
+        const sd = Math.sin(delta);
+        const opos = other.body.GetPosition();
+        p.SetXY(opos.x + dx * cd - dy * sd, opos.y + dx * sd + dy * cd);
+        put(p.x, p.y); // 出口门映射点入折线（束线段从出口门画起）
+        dir.SelfRotateRadians(delta + (other.inverted === portal.inverted ? Math.PI : 0));
+        extraSeg++;
       } else {
         break; // 停束
       }
@@ -1706,7 +1753,7 @@ export class Portal extends Device {
     const bd = new B.b2BodyDef();
     bd.type = B.b2BodyType.b2_staticBody;
     bd.position = c;
-    bd.angle = (-def.rotation * Math.PI) / 180;
+    bd.angle = (def.rotation * Math.PI) / 180; // 同全族机关正号口径（MovingPlatform/Beamer/RotMirror…）
     this.body = world.CreateBody(bd);
     const f = { friction: 0, density: 0 };
     this.sensorFixture = boxFixture(this.body, B, 2, 1.5, { x: 0, y: 0 }, 0, {
@@ -1720,7 +1767,8 @@ export class Portal extends Device {
       ...f,
       categoryBits: FILTER.PORTAL_CAT,
       maskBits: FILTER.PORTAL_MASK,
-      userData: { lightProperties: { type: "portal" } as LightProperties },
+      // userData.portal：Beamer raycast 命中入射面后由此取门状态与配对（§1.5）
+      userData: { lightProperties: { type: "portal" } as LightProperties, portal: this },
     });
     this.state = def.initialState || 0;
     if (tileTypeAt) this.connectToWall(B, world, tileTypeAt);

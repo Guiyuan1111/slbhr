@@ -117,6 +117,8 @@ export class World {
   private lightSigLen = -1;
   private lightSigStable = false;
   lightEpoch = 0;
+  /** 传送门开闭态签名（态变 bump lightEpoch，防 Beamer 折线缓存吃到过期穿门路径） */
+  private portalSig = "";
   private listener: any;
   private pendingRemove: any[] = [];
 
@@ -353,6 +355,15 @@ export class World {
       // Slider.checkState（连续 state 派发）→ RotMirror.update（钳角）；InfiniteMirror 走信号。
       // 派发即调 deviceChanged(group)（原版 signal.dispatch 同步语义）。
       if (this.mechs.lightDevices.length > 0) {
+        // 传送门开闭影响光束续射（D 槽 §1.5）：态变即失效 Beamer 折线缓存（bump epoch）
+        if (this.mechs.portals.length > 0) {
+          let sig = "";
+          for (const p of this.mechs.portals) sig += p.state ? "1" : "0";
+          if (sig !== this.portalSig) {
+            this.portalSig = sig;
+            this.lightEpoch++;
+          }
+        }
         this.collectLightSig();
         const lightEvents: MechEvent[] = [];
         for (let i = this.mechs.lightDevices.length - 1; i >= 0; i--) {

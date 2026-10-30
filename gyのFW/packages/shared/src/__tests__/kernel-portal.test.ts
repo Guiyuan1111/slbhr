@@ -35,9 +35,7 @@ function mkPair(
   const pb = new Portal(B, world, { id: "PB", x: 0, y: 0, rotation: b.rot, group: 0, portalId: 7, inverted: b.inv, initialState: 1 });
   // 直插物理位（def x/y 是屏幕 px，走 phys 换算；测试里用米级物理坐标直接 SetPosition）
   pa.body.SetPosition(new B.b2Vec2(a.x, a.y));
-  pa.body.SetAngle((-a.rot * Math.PI) / 180);
   pb.body.SetPosition(new B.b2Vec2(b.x, b.y));
-  pb.body.SetAngle((-b.rot * Math.PI) / 180);
   pa.other = pb;
   pb.other = pa;
   return [pa, pb];
@@ -115,9 +113,9 @@ describe("Portal 内核", () => {
     body.SetLinearVelocity(new B.b2Vec2(20, 0));
     a.transport(body, new WeakMap(), 0);
     const p = body.GetPosition();
-    // 混合对：d 镜像→(−0.5,0.7)；物理角 Δ=−π/2 → rd=(d·cosΔ−d·sinΔ, d·sinΔ+d·cosΔ)=(0.7,0.5)
-    expect(p.x).toBeCloseTo(-5 + 0.7, 9);
-    expect(p.y).toBeCloseTo(3 + 0.5, 9);
+    // 混合对：d 镜像→(−0.5,0.7)；Δ=+π/2 → rd=(d·cosΔ−d·sinΔ, d·sinΔ+d·cosΔ)=(−0.7,−0.5)
+    expect(p.x).toBeCloseTo(-5 - 0.7, 9);
+    expect(p.y).toBeCloseTo(3 - 0.5, 9);
     const v = body.GetLinearVelocity();
     expect(Math.hypot(v.x, v.y)).toBeCloseTo(20, 6); // 速度只转不镜、≥10 不触钳
   });
@@ -157,5 +155,33 @@ describe("Portal 内核", () => {
     body.SetPosition(new B.b2Vec2(10.05, 1.8)); // |y|=1.8 门外
     a.checkTransport([{ body }], lastT, 0);
     expect(body.GetPosition().y).toBeCloseTo(1.8, 9);
+  });
+
+  it("光束穿开门（§1.5）：Beamer 命中入射面 → 跳出口门续射；关门 → 光不交互直穿", async () => {
+    const { Beamer } = await import("../kernel/mechanisms.js");
+    // 门对：入口 (0,0) rot0 inv=false，出口 (−6,2) rot0 inv=true（混合对）
+    const world = new B.b2World(new B.b2Vec2(0, 0), true);
+    const pa = new Portal(B, world, { id: "PA", x: 0, y: 0, rotation: 0, group: 0, portalId: 3, inverted: false, initialState: 1 });
+    const pb = new Portal(B, world, { id: "PB", x: 0, y: 0, rotation: 0, group: 0, portalId: 3, inverted: true, initialState: 1 });
+    pa.body.SetPosition(new B.b2Vec2(0, 0));
+    pb.body.SetPosition(new B.b2Vec2(-6, 2));
+    pa.other = pb;
+    pb.other = pa;
+    // 发射座 (5,0) 朝 −x（rotation 0 默认向左）→ 射向入口门面（竖直）
+    const beamer = new Beamer(B, world, { id: "b0", x: -160, y: 0, rotation: 0, group: 0, color: "red", initialState: 1 });
+    beamer.body.SetPosition(new B.b2Vec2(5, 0));
+    beamer.update(true, 1);
+    let pts = beamer.beamPts!;
+    expect(pts.length).toBeGreaterThanOrEqual(3); // 座 → 入射点 → 出口门续射段
+    expect(pts[1].x).toBeCloseTo(0.1, 6); // 入射面 x=+0.1（eventHorizon 半厚）
+    // 出口续射原点：入射点 (0.1,0) 关于门面镜像→(−0.1,0)，加出口位 → (−6.1,2)
+    expect(pts[2].x).toBeCloseTo(-6.1, 6);
+    expect(pts[2].y).toBeCloseTo(2, 6);
+    // 关门（filter 0 语义=光不交互）：束线不再含入射点，直穿门位向世界边
+    pa.state = 0;
+    pa.signalApply();
+    beamer.update(false, 2);
+    pts = beamer.beamPts!;
+    expect(pts.some((q) => Math.abs(q.x - 0.1) < 1e-6)).toBe(false);
   });
 });
