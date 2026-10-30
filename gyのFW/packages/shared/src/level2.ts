@@ -657,11 +657,13 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
         const r = tileObjRect(o);
         if (kind === "char") {
           if (String(props.char) === "fairy") {
-            // F 部仙女：独立 def（零重力+拖拽，非可操角色）；出生点口径同角色底边中点
+            // F 部仙女：独立 def（零重力+拖拽，非可操角色）。出生点=图块中心（oracle Fairy
+            // 构造器 d+=mpx(1)/f−=mpx(1) 矫正，F bundle L59002-59003；与杯的 BoxedDevice
+            // {2,2} 矫正同值=centerOf——前版误用角色底边中点口径，y 恒低 32px，2026-10-31 勘误）
             fairies.push({
               id: `fy${fairies.length}`,
               x: r.x + r.w / 2,
-              y: r.y + r.h,
+              y: r.y + r.h / 2,
               group: num(props.group),
               lockGroup: props.lockToDeviceGroup === undefined ? undefined : num(props.lockToDeviceGroup),
               relockGroup: props.reLockToDeviceGroup === undefined ? undefined : num(props.reLockToDeviceGroup),
