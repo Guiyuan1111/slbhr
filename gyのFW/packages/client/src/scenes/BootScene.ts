@@ -23,6 +23,7 @@ import { guardLoadErrors } from "./loadGuard";
 export const ATLAS_CHARS = "chars";
 export const ATLAS_GROUND = "ground";
 export const ATLAS_MECH = "mech";
+export const ATLAS_NEWCHAR = "newchars";
 export const ATLAS_TEMPLE = "temple";
 export const ATLAS_POPUP = "popup";
 export const ATLAS_MENU = "menu";
@@ -51,6 +52,9 @@ const atlasInflight = new Set<string>();
 /** ATLAS_TEMPLE 当前已装载的庙域（#47-6：跨庙换载判定用） */
 let loadedTempleAtlas: TempleKey | null = null;
 
+/** ATLAS_MECH 当前已装载的域（fw-fairy-view：F 部 fairytales 换用变体图集，其余庙共享版） */
+let loadedMechDomain: TempleKey | "shared" | null = null;
+
 export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin, templeOverride?: TempleKey): void {
   const queue = (key: string, url: string): void => {
     if (load.textureManager.exists(key) || atlasInflight.has(key)) return;
@@ -63,12 +67,29 @@ export function loadGameAtlases(load: Phaser.Loader.LoaderPlugin, templeOverride
       if (file.key === key) atlasInflight.delete(key);
     });
   };
+  // F 部 fairytales：MechAssets 换变体（188 帧 = 共享 163 + fairycup_* 25：back/base/
+  // glow0000-0019/glow_front/light_off/light_on，01号档 §资产），并加装 NewCharAssets
+  // （仙女 7 帧：flying_body_idle0000-0003/flying_glow0000/fat_body/_default）；其余庙保持
+  // 共享版。域不符时移除旧纹理再重排队——照 ATLAS_TEMPLE #47-6 先例（变体对共享是严格
+  // 超集，帧名超集兼容，消费点无感）。已缓存同域则静默跳过。
+  const temple = templeOverride ?? currentTemple();
+  const mechDomain: TempleKey | "shared" = temple === "fairytales" ? "fairytales" : "shared";
+  if (load.textureManager.exists(ATLAS_MECH) && loadedMechDomain && loadedMechDomain !== mechDomain) {
+    load.textureManager.remove(ATLAS_MECH);
+    atlasInflight.delete(ATLAS_MECH);
+    loadedMechDomain = null;
+  }
+  if (!load.textureManager.exists(ATLAS_MECH)) {
+    queue(ATLAS_MECH, mechDomain === "fairytales" ? "/assets/atlasses/fairytales/MechAssets" : "/assets/atlasses/MechAssets");
+    loadedMechDomain = mechDomain;
+  }
+  // NewCharAssets 仅 fairytales 装（仙女帧他庙无用；换回他庙不卸载——≈0.3MB 纹理，
+  // 反复跨庙进出不值得重载抖动，随页面生命周期释放）。
+  if (temple === "fairytales") queue(ATLAS_NEWCHAR, "/assets/atlasses/fairytales/NewCharAssets");
   queue(ATLAS_GROUND, "/assets/atlasses/GroundAssets");
-  queue(ATLAS_MECH, "/assets/atlasses/MechAssets");
   // #47-6：神庙图集按关卡实际庙域装载——URL ?level= 只决定 create 流初值；用房间码加入
   // 时房间真实关卡可属其它庙（GameScene 以 state.levelId 传 override）。键同为
   // ATLAS_TEMPLE，庙域不符时移除旧纹理再重排队（帧名跨庙同构，引用点无感）。
-  const temple = templeOverride ?? currentTemple();
   if (load.textureManager.exists(ATLAS_TEMPLE) && loadedTempleAtlas && loadedTempleAtlas !== temple) {
     load.textureManager.remove(ATLAS_TEMPLE);
     atlasInflight.delete(ATLAS_TEMPLE);
@@ -292,4 +313,21 @@ export function buildGameAnims(a: Phaser.Animations.AnimationManager): void {
     seq(`finish_stone_${tag}_2`, ATLAS_POPUP, base, 8, 14, 30, 0);
     seq(`finish_stone_${tag}_3`, ATLAS_POPUP, base, 15, 21, 30, 0);
   }
+}
+
+/**
+ * F 部 fairytales 动画（fairytales 变体 MechAssets fairycup 帧 + NewCharAssets 仙女帧；
+ * 仅 fairytales 庙由 GameScene.create 调——他庙图集无这些帧，注册即缺帧告警源）。
+ * oracle 帧面差异记档（01号档 §资产/R4）：
+ * - flying_body_idle 注册 0..3——oracle generateFrameNames(0,8) 申请 0..8，图集实有 0..3，
+ *   4..8 为告警级缺帧，等效拍法=只注册实有段；
+ * - flying_glow 图集仅 0000（oracle 申请 0..1，0001 缺）→ 双层辉光按静帧 Image 处理，
+ *   不注册动画（播 1 帧动画与静帧逐像素等价）；
+ * - fairycup_glow 注册 0..19——oracle generateFrameNames(0,20) 申请 21 名，0020 缺帧，
+ *   等效 20 帧 @12fps 循环（oracle FairyCup h.animations 12fps 字证）。
+ */
+export function buildFairyAnims(a: Phaser.Animations.AnimationManager): void {
+  const seq = buildSeq(a);
+  seq("fairy_body", ATLAS_NEWCHAR, "flying_body_idle", 0, 3, 30, -1);
+  seq("fairycup_glow", ATLAS_MECH, "fairycup_glow", 0, 19, 12, -1);
 }
