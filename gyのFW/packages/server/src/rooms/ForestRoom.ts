@@ -23,7 +23,15 @@ import { ROLES, EMPTY_INPUT, type Role, type InputState } from "@fw/shared";
 import { World, m2px, type WorldEvent, type WorldPhase } from "@fw/shared/kernel";
 import { levelExists, loadLevel, type LevelBundle } from "../levels.js";
 import { BeamState,
-  TimedPusherState, RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState } from "./state.js";
+  TimedPusherState, RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState, FairyState, FairyCupState } from "./state.js";
+
+/**
+ * 屏幕 px → 物理 m（shared/src/kernel/b2.ts px2m 同式：physics = −screen/32）。
+ * kernel 出口 world.ts 只再导出 m2px（r1 perf 件3 注记），本槽禁改 packages/shared/kernel，
+ * 故此处单点复制；换算一致性由 fairy-net 集成测试端到端锚定（把仙女拖到杯口 px 坐标 →
+ * 杯 state=1——系数错了仙女就落不进杯）。
+ */
+const px2m = (px: number): number => -px / 32;
 
 interface JoinOptions {
   password?: string;
@@ -251,6 +259,23 @@ export class ForestRoom extends Room<RoomState> {
       if (this.inputQueue.length > 128) this.inputQueue.splice(0, this.inputQueue.length - 128);
     });
 
+    // F 部仙女拖拽（fw-net/fw-fairy-view 契约）：{id, x, y}（屏幕 px）→ px2m 后
+    // world.fairies[i].setDrag；x 非有限数/缺失 = 松手（oracle L59203 maxForce 降 5%）。
+    // 任何客户端可拖任何仙女（oracle 单机鼠标口径的联机化，无角色归属校验）。
+    // 仅 started（=内核 playing，物理运转中）受理——lobby/ready/won/gameover 无可拖物理；
+    // 玩家暂停期不拦（相位仍 started，拖拽目标照常更新，恢复即生效——同 input 键掩码语义）。
+    // id 找不到（非 fy{n} / 序号越界，含换关重建窗的瞬时错位）一律静默忽略。
+    this.onMessage("fairydrag", (_client, data: { id?: unknown; x?: unknown; y?: unknown }) => {
+      if (this.state.phase !== "started") return;
+      const m = /^fy(\d+)$/.exec(typeof data?.id === "string" ? data.id : "");
+      if (!m) return;
+      const fairy = this.world.fairies[Number(m[1])];
+      if (!fairy) return;
+      const x = typeof data.x === "number" && Number.isFinite(data.x) ? data.x : null;
+      const y = typeof data.y === "number" && Number.isFinite(data.y) ? data.y : null;
+      fairy.setDrag(x !== null && y !== null ? { x: px2m(x), y: px2m(y) } : null);
+    });
+
     this.onMessage("restart", () => {
       // won/gameover 阶段任意客户端可重开（原版 GameOverMenu/EndMenu Retry 的联机化映射）
       if (this.state.phase === "won" || this.state.phase === "gameover") {
@@ -296,6 +321,10 @@ export class ForestRoom extends Room<RoomState> {
       this.state.timedPushers.clear();
       this.state.liquids = "";
       this.state.romans.clear();
+      // F 部仙女/杯：换关必重建（新关数量/组色不同；数组序=新 world 数组序，
+      // syncState 在 restartLevel 里按空数组重新 push 并派生 fy{n}/fc{n} id）
+      this.state.fairies.clear();
+      this.state.fairyCups.clear();
       this.restartLevel();
     });
 
@@ -914,6 +943,35 @@ export class ForestRoom extends Room<RoomState> {
       const pos = m.body.GetPosition();
       ps.x = Math.round(m2px(pos.x) * 10) / 10;
       ps.y = Math.round(m2px(pos.y) * 10) / 10;
+    }
+    // ---- F 部仙女/仙女杯（fairies_000 等非空；forest 等恒零循环零开销）----
+    // 位置每 tick 全量写（同 BodyState/角色节奏，patch 帧出增量）；locked/杯 state
+    // 同写法（timedPusher 先例：逐 tick 写，框架只在值变化帧出字节=事件沿同步）。
+    // 杯 state 迁移的音效广播不在此处——world.step 已产 {kind:"fairycup"} mech 事件，
+    // handleEvents 统一 sfx 下发。数组条目按内核数组序首次补建，id=fy{n}/fc{n}（state.ts 注）。
+    for (let i = 0; i < this.world.fairies.length; i++) {
+      const f = this.world.fairies[i];
+      let fs = this.state.fairies.at(i);
+      if (!fs) {
+        fs = new FairyState();
+        fs.id = `fy${i}`;
+        this.state.fairies.push(fs);
+      }
+      const fpos = f.body.GetPosition();
+      fs.x = Math.round(m2px(fpos.x) * 10) / 10;
+      fs.y = Math.round(m2px(fpos.y) * 10) / 10;
+      fs.group = f.group;
+      fs.locked = f.locked;
+    }
+    for (let i = 0; i < this.world.fairyCups.length; i++) {
+      const c = this.world.fairyCups[i];
+      let cs = this.state.fairyCups.at(i);
+      if (!cs) {
+        cs = new FairyCupState();
+        cs.id = `fc${i}`;
+        this.state.fairyCups.push(cs);
+      }
+      cs.state = c.state;
     }
     // 液体冻结旗标（行段序 0/1 串）
     const liquidsFlag = this.world.liquids.map((l: any) => (l.frozen ? "1" : "0")).join("");
