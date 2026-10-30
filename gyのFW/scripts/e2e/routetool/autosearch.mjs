@@ -679,9 +679,10 @@ const SEGI = {
 //   结构封死（5.3 裁决项）：两门均在封闭上部复合体——row-14 上行口全部升 128-256>123 跳限；mesa 唯一电梯 p1 由
 //   mesa 上的 b1 控制=自锁；wg 西界 352 熔岩墙；x1/板A 联动激活点在不可达 row-4-west。v3 链止于 E2 可达西端。
 const SEGE = {
-  // v3.1（2026-10-26 probe13-17 实测；v2 出生角色反置已废弃；v3 首跑实证 S.hold 无 f0 护栏——
-  // recipe 首步 hold 在 f=0 压方向触发 kernel NaN 力永久毒化刚体（vx 冻结，fb 冻在出生点 1328,797），
-  // 故所有 fb 链首步插入 sleep(3) 作 f0 守护，方向输入最早落 f≥3）
+  // v5（2026-10-26 probe13-19 实测）：四段解耦——E0 fb 独自压板(wg 原地)、E1 wg 独自越熔岩
+  // （开局 p0 已稳 898-902，消 fb 相位 ±1f 抖动 → wg 弧线撞台死 die@470 wg[1049,971] 的时序耦合）、
+  // E2 楔顶中继、E3 西区地面终点。驻留一律用 goTo（done 自带 |vx|<40+grounded 刹车，vx 断言达成即驻留态，
+  // 免被 trim 裁掉尾件后出窗）。f0 守护：S.hold 无 f0 护栏，各链首步 sleep(3)。
   E0: {
     maxDepth: 12, capFb: 10, capWg: 4, horizonF: 700,
     recipe: {
@@ -740,6 +741,14 @@ const SEGE = {
     },
   },
 };
+Object.assign(SEG, SEGE);
+
+// ---------------------------------------------------------------- evaluate：单候选全量重放（进程内确定性，§1.4）
+// 语义对齐 botcore.drive（fb→wg→step，run→done→推进，队列空锁存末输入，死亡/WIN 短路），
+// 另加：entry 联合首帧（入场门控）、段相对 horizon、双队列空+宽限冻结。
+function evaluate(segC, sf, sw, totalCapF) {
+  const w = makeWorld(LEVEL);
+  const progs = { fb: sf.map(stepOf), wg: sw.map(stepOf) };
   const idx = { fb: 0, wg: 0 };
   const state = { fb: { ...NONE }, wg: { ...NONE } };
   const snapOf = (role) => {
