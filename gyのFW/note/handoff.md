@@ -136,6 +136,14 @@
 
 ## 条目
 
+**更新**：2026-10-31 二（代码逻辑验证轮：数据矩阵零差异 + 三缺口补链 + route 评估挂账）
+
+- **数据接线矩阵**（241 关×13 庙）：oracle↔我方 temple.json 序配对逐字段 diff=0（time/mobileTime/required/unlock_key/elements/type 全同）；E 部条目无 type 字段=oracle 忠实；e_tutorial 前缀映射勘误后 241 关 templeIdOf 全命中；portalId 桶普查 218 门 109 对零异常。
+- **三缺口补链**（逻辑验证查出）：①客户端 portal 渲染全链（门框/center40f/glow30f/子灯，30fps oracle 字证；开关态走新 PortalState 下发）；②F 部复活 UI 链（GameOverMenu 第三钮 canRevive&&!revived→revive 消息→world.revive→revived 广播，R2 免费一次）；③e_tutorial_(fire|water|wind)→elements/<元素> 映射（teaching 关 time 不再 forest 兜底）。仙女拖拽命中 40→136px（oracle hitArea 字证）。
+- **验证**：typecheck 0；vitest 64 文件 477/477（新增 portal-net 真房集成 3 例：crystal_04/ecrystal_ez-1/revive 相位门禁）；build 过；det 六锚 241 关位级一致（portal/revive 批纯 net/客户端面+world 复用，物理零扰动）。
+- **route 评估（如实挂账）**：autosearch 产线就绪但每关需人工检查点链设计（先例 light_01/02 各占独立批次）；三部样本关（crystal_03/e_tutorial_fire/fairies-01）未做，挂账为后续逐关批次，不阻塞游玩验收（真房冒烟+单测+det 已罩逻辑面）。
+- **待用户**：游玩验收三部（dev 起服即可）；验收通过后 bump 1.0.5 发版 + release/1.0-forest 归并 main。
+
 **更新**：2026-10-31（三部并发批收官：portal 内核全链路 + F 部客户端/网络 + 三部 det 锚 + 覆盖率恢复）
 
 - **portal 内核**（D/E 部）：0978a05 内核（portalId 配对/双 fixture 4096/组电路开闭/transport 数学逐字/低速钳 10·mass⁻¹/200ms 每体冷却/假墙 connectToWall）→ 02efc1d 光束穿门（getOutput/getPoint 两套公式照抄）+ 体角正号勘误 → crystal_04 真数据集成测试（9 件）。与原版两处已记偏离：接触回调改逐帧几何近面判定、transport 不嵌套积分一步（01号档 §1.3/§1.4）。
