@@ -686,7 +686,7 @@ const SEGE = {
     maxDepth: 14, capFb: 10, capWg: 10, horizonF: 800,
     recipe: {
       fb: [spec("sleep", 3), spec("hold", -1, 480), spec("jumpDrift", 1, 0, 50), spec("jumpDrift", 1, 0, 50), spec("hold", 1, 744), spec("sleep", 40)],
-      wg: [spec("waitPlat", 0, 884, 918), spec("hold", -1, 1234), spec("jumpDrift", -1, 0, 80), spec("sleep", 50)],
+      wg: [spec("waitPlat", 0, 884, 918), spec("hold", -1, 1234), spec("jumpDrift", -1, 0, 80), spec("goTo", 1030, 10), spec("sleep", 40)],
     },
     vocab: {
       fb: [spec("sleep", 3), spec("sleep", 6),
@@ -697,7 +697,7 @@ const SEGE = {
       wg: [spec("waitPlat", 0, 882, 910), spec("waitPlat", 0, 890, 918), spec("waitPlat", 0, 898, 926),
         spec("hold", -1, 1226), spec("hold", -1, 1234), spec("hold", -1, 1242),
         spec("jumpDrift", -1, 0, 65), spec("jumpDrift", -1, 0, 80), spec("jumpDrift", -1, 0, 95),
-        spec("sleep", 35), spec("sleep", 50), spec("sleep", 70)],
+        spec("goTo", 1030, 10), spec("goTo", 1042, 12), spec("sleep", 35), spec("sleep", 50), spec("sleep", 70)],
     },
   },
   E1: {
