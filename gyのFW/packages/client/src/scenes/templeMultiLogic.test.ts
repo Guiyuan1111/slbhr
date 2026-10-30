@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
 import {
   ICON_DISTANCE,
+  type MultiLevel,
   type MultiTemple,
   allIsLearned,
   completedCountOf,
@@ -26,14 +27,17 @@ import {
 } from "./templeMultiLogic";
 
 /** 合成庙：3 关 required 0/1/2，levels[0] elements 可配 */
-function mkTemple(over: Partial<MultiTemple> & { levels?: Partial<MultiTemple["levels"][number]>[] }): MultiTemple {
-  const base: MultiTemple["levels"] = [
+function mkTemple(over: Omit<Partial<MultiTemple>, "levels"> & { levels?: Array<Partial<MultiLevel>> }): MultiTemple {
+  const base: MultiLevel[] = [
     { id: 0, _id: 0, x: 0.2, y: 0.2, filename: "t.json", required: 0 },
     { id: 1, _id: 1, x: 0.5, y: 0.4, filename: "a.json", required: 1 },
     { id: 2, _id: 2, x: 0.8, y: 0.6, filename: "b.json", required: 2 },
   ];
-  for (let i = 0; i < base.length; i++) Object.assign(base[i], over.levels?.[i]);
-  return { id: "synth", index: 0, label: "Synth Temple", color: "#123456", type: "rows", levels: base, ...over, levels: base };
+  (over.levels ?? []).forEach((patch, i) => {
+    if (base[i]) Object.assign(base[i], patch);
+  });
+  const t: MultiTemple = { id: "synth", index: 0, label: "Synth Temple", color: "#123456", type: "rows", levels: base };
+  return { ...t, ...over, levels: base };
 }
 
 describe("rowsLevelState（setStates 非 tree 分支）", () => {
