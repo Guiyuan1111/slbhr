@@ -63,7 +63,11 @@ export class Character {
 
   private jumpedThisFrame = false;
 
-  constructor(B: B2, world: any, role: Role, spawn: { x: number; y: number }) {
+  /** 本角色跳跃初速（部别 vintage：F=16.5、A–E=15.5；World 按 level.id 注入） */
+  private readonly jumpV: number;
+
+  constructor(B: B2, world: any, role: Role, spawn: { x: number; y: number }, jumpVelocity?: number) {
+    this.jumpV = jumpVelocity ?? CHAR.jumpVelocity;
     this.role = role;
     this.char = role === "fireboy" ? "fb" : "wg";
     // 原版：d += mpx(1), f -= mpx(1)（自 RAW 图块对象 (o.x, o.y底边)）。
@@ -199,7 +203,7 @@ export class Character {
     }
 
     const k = CHAR.jumpImpulse;
-    const jumpVelocity = CHAR.jumpVelocity;
+    const jumpVelocity = this.jumpV;
     const s = CHAR.runForce;
     const h = CHAR.floatForce;
     const m = this.maxSpeed;

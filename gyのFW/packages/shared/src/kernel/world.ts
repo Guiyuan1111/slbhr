@@ -18,6 +18,7 @@ import { GROUND_TYPE } from "../level2.js";
 import { buildLevelWorld, type BuiltWorld, type DoorInfo } from "./build.js";
 import { Character, type AnimState, type InputState } from "./character.js";
 import { buildMechanisms, type MechEvent, type Mechanisms } from "./mechanisms.js";
+import { jumpVelocityOf } from "../params.js";
 import { RespawnManager } from "./respawn.js";
 
 /** 坐标换算再导出（r1 perf 件3）：服务器序列化侧（ForestRoom/基准镜像）直读 mechanisms
@@ -133,8 +134,8 @@ export class World {
     this.built = buildLevelWorld(level);
     this.mechs = buildMechanisms(this.B, this.built.world, this.built.groundBody, level);
     this.chars = {
-      fireboy: new Character(this.B, this.built.world, "fireboy", level.spawn.fireboy),
-      watergirl: new Character(this.B, this.built.world, "watergirl", level.spawn.watergirl),
+      fireboy: new Character(this.B, this.built.world, "fireboy", level.spawn.fireboy, jumpVelocityOf(level.id)),
+      watergirl: new Character(this.B, this.built.world, "watergirl", level.spawn.watergirl, jumpVelocityOf(level.id)),
     };
     this.windClockS = options.windClockS ?? (() => this.simTimeS);
     for (const wind of this.mechs.winds) {
@@ -699,8 +700,8 @@ export class World {
     this.built = buildLevelWorld(this.level);
     this.mechs = buildMechanisms(this.B, this.built.world, this.built.groundBody, this.level);
     this.chars = {
-      fireboy: new Character(this.B, this.built.world, "fireboy", this.level.spawn.fireboy),
-      watergirl: new Character(this.B, this.built.world, "watergirl", this.level.spawn.watergirl),
+      fireboy: new Character(this.B, this.built.world, "fireboy", this.level.spawn.fireboy, jumpVelocityOf(this.level.id)),
+      watergirl: new Character(this.B, this.built.world, "watergirl", this.level.spawn.watergirl, jumpVelocityOf(this.level.id)),
     };
     for (const wind of this.mechs.winds) {
       wind.registerCharBodies([
@@ -724,8 +725,8 @@ export class World {
     if (this.revived || this.phase !== "gameover") return false;
     for (const c of [this.chars.fireboy, this.chars.watergirl]) this.built.world.DestroyBody(c.body);
     this.chars = {
-      fireboy: new Character(this.B, this.built.world, "fireboy", this.level.spawn.fireboy),
-      watergirl: new Character(this.B, this.built.world, "watergirl", this.level.spawn.watergirl),
+      fireboy: new Character(this.B, this.built.world, "fireboy", this.level.spawn.fireboy, jumpVelocityOf(this.level.id)),
+      watergirl: new Character(this.B, this.built.world, "watergirl", this.level.spawn.watergirl, jumpVelocityOf(this.level.id)),
     };
     for (const wind of this.mechs.winds) {
       wind.registerCharBodies([
