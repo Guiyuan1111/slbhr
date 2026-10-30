@@ -672,7 +672,7 @@ const SEGI = {
 //   r31 底 992：SOLID 0-128 / LAVA 128-352 / SOLID 352-672 / LAVA 672-1216 / SOLID 1216-1440（岩浆仅杀 wg，fb 涉水底 1006.4）；
 //   r26 832：mesa 160-416(b1@240) / bump 672-832(b0@752) / fb 崖台 1248-1440；step=r27 斜坡 608-672(864-896) 接 r26 坡 640-672；
 //   全高立柱 512-544（r21-25 SOLID，顶 672）；塔墩 384-416（r25 SOLID 顶 800，r24 SLOPE/ 768）；
-//   p0(992-1088) 三态：静 848 / fb 单重压板 898-902 / fb+wg 双重 944（probe13/14）；p1(416-512) 静 1008(与地面平齐)/b1 压 848；
+//   p0(992-1088) 行程：静 848 / 载荷缓沉（probe20：fb 压板 f382=884 → 持续沉）/ 底 944（fb+wg；probe13/14 的 898-902 系短窗观测）；p1(416-512) 静 1008(与地面平齐)/b1 压 848；
 //   r20 640：SOLID 320-736 / LAVA 736-960 / SOLID 960-1248(x0 箱@1104)；row-14 992-1440(448, fb 门@1312)；
 //   island 736-864(416)；ridge 448-576(192)；row-4-west 608-736(128, x1 重箱@680)；board-a(741-827, 静144/载x1 411)；
 //   walkway 832-1024(128)；board-b(1157-1243, 静440/升172)；wg 门(1312,160) 在 r5 1280-1440(160)。
@@ -702,11 +702,11 @@ const SEGE = {
     maxDepth: 14, capFb: 4, capWg: 12, horizonF: 700,
     recipe: {
       fb: [spec("sleep", 120)],
-      wg: [spec("waitPlat", 0, 884, 918), spec("hold", -1, 1234), spec("jumpDrift", -1, 0, 80), spec("jumpDrift", -1, 0, 65), spec("goTo", 780, 10), spec("sleep", 30)],
+      wg: [spec("waitPlat", 0, 900, 956), spec("hold", -1, 1234), spec("jumpDrift", -1, 0, 80), spec("jumpDrift", -1, 0, 65), spec("goTo", 780, 10), spec("sleep", 30)],
     },
     vocab: {
       fb: [spec("sleep", 80), spec("sleep", 120), spec("sleep", 180)],
-      wg: [spec("waitPlat", 0, 882, 910), spec("waitPlat", 0, 890, 918), spec("waitPlat", 0, 898, 926),
+      wg: [spec("waitPlat", 0, 900, 940), spec("waitPlat", 0, 910, 950), spec("waitPlat", 0, 920, 956),
         spec("hold", -1, 1226), spec("hold", -1, 1234), spec("hold", -1, 1242),
         spec("jumpDrift", -1, 0, 65), spec("jumpDrift", -1, 0, 80), spec("jumpDrift", -1, 0, 95),
         spec("jumpDrift", -1, 0, 50), spec("jumpDrift", -1, 0, 65), spec("jumpDrift", -1, 0, 80),
