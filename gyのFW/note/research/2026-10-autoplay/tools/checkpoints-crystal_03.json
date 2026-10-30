@@ -1,330 +1,311 @@
 {
- "level": "crystal_03",
- "note": "v7 链（2026-10-30，fw-route-crystal 槽；地形/机关实测 TEMP/fw-route-crystal probe13b/16-21 + autosearch C0 实证 + mechanisms.ts/character.ts 源读）：\n【portal 入场口径（重要）】行走入场被钉死：触发带 |本地x|≤6.4px=条带半厚3.2+标记半径3.2，带内任何位置与实心 eventHorizon 重叠；地面行走因接触逐帧减速停 face+3.2+0.256px=38.656（触发边 38.4，probe20/21 三次实测同值）永不触发。但【满速横移(272px/s)跳跃弧中段过带】可入：bullet CCD TOI 把载体精确放在接触点（38.4 恰=阈值），下一 tick Step 前检查 |lx|=6.4≤6.4 触发（autosearch C0 实证 fb 三连跳后现身 P1 侧走廊 1108.9）。原版 begin-contact「贴面即传」（crystal-temple 档 §1.3）；内核几何近带判定+实体条带+CCD 的组合语义与原版有偏差，行走/贴面不可入、弧线可入——如实记档不下终判（01号档-crystal_03.md）。\nC0 出生笼西行（合并原 C0+C1 消 seam：锁存西走天然落走廊）：笼顶 768 封顶弧射程 ~150-180px，fb(632) 需 3 连跳、wg(560) 需 4 连跳逼近 nook，末跳起跳窗 x∈[38.4,75] 升段过 P0(32,848) 带→传 P1(1216,848) 口袋，传送后 goTo(1195) 停窗；C1 出口袋东廊会合；C2 西阶梯登 y736 地板；C3 拉杆 l0 东翻（fb 东越杆刹车+西跳回防 unflip；wg 短停不触杆）开 P2/P3；C4 双西行 y736 西缘满速西跳，弧升段过 P3(32,624) 带→传 P2(1216,112) 出 row-6；C5 row-6→[928,992] 阶梯→row-4→'/'@20 唇落 row-18 台→迷你梯[96,160]→512 块→基座台跳入 P6/P7(272,400/208)→双门 phaseWon。",
- "assertKinds": [
-  "alive",
-  "px",
-  "py",
-  "grounded",
-  "leverState",
-  "atDoor",
-  "phaseWon"
- ],
- "segments": [
-  {
-   "id": "C0",
-   "title": "出生笼西行合并段：fb jd×6、wg jd×7 连跳（笼顶封顶弧 ~150-180px/跳，末速 -272 保满速起跳），末跳 nook 内 x∈[38.4,75] 满速西跳弧升段穿 P0(32,848) 带→传 P1(1216,848) 口袋；锁存/摩擦滑停双落东廊 [900,1260]",
-   "entry": [
+  "level": "crystal_03",
+  "note": "v7 链（2026-10-30，fw-route-crystal 槽；地形/机关实测 TEMP/fw-route-crystal probe13b/16-21 + autosearch C0 实证 + mechanisms.ts/character.ts 源读）：\n【portal 入场口径（重要）】行走入场被钉死：触发带 |本地x|≤6.4px=条带半厚3.2+标记半径3.2，带内任何位置与实心 eventHorizon 重叠；地面行走因接触逐帧减速停 face+3.2+0.256px=38.656（触发边 38.4，probe20/21 三次实测同值）永不触发。但【满速横移(272px/s)跳跃弧中段过带】可入：bullet CCD TOI 把载体精确放在接触点（38.4 恰=阈值），下一 tick Step 前检查 |lx|=6.4≤6.4 触发（autosearch C0 实证 fb 三连跳后现身 P1 侧走廊 1108.9）。原版 begin-contact「贴面即传」（crystal-temple 档 §1.3）；内核几何近带判定+实体条带+CCD 的组合语义与原版有偏差，行走/贴面不可入、弧线可入——如实记档不下终判（01号档-crystal_03.md）。\nC0 出生笼西行（合并原 C0+C1 消 seam：锁存西走天然落走廊）：笼顶 768 封顶弧射程 ~150-180px，fb(632) 需 3 连跳、wg(560) 需 4 连跳逼近 nook，末跳起跳窗 x∈[38.4,75] 升段过 P0(32,848) 带→传 P1(1216,848) 口袋，传送后 goTo(1195) 停窗；C1 出口袋东廊会合；C2 西阶梯登 y736 地板；C3 拉杆 l0 东翻（fb 东越杆刹车+西跳回防 unflip；wg 短停不触杆）开 P2/P3；C4 双西行 y736 西缘满速西跳，弧升段过 P3(32,624) 带→传 P2(1216,112) 出 row-6；C5 row-6→[928,992] 阶梯→row-4→'/'@20 唇落 row-18 台→迷你梯[96,160]→512 块→基座台跳入 P6/P7(272,400/208)→双门 phaseWon。\n\n## v8 (2026-10-31 fw-route-crystal 槽，全图 39x29 复核后修订)\n- 角色碰撞=双圆+梯形：对开放门 horizon 只有 portal-marker(r3.2px@中心)参与(躯干 r15.36 filter 不撞 4096)→走行钉=面+3.2+0.256=38.656(P0 实证)；对实体块/墙=躯干圆 r15.36 参与→钉=面+15.6(基座东面 320→钉 335.6)。\n- 混合对 transport 速度只旋 Δ(Δ=0 世界方向不变,mechanisms.ts transport() 逐字)→出口保持入射世界速度。\n- P3 井弧：满速起跳弧在 x38.4 处 y~581 但躯干撞西墙(钉 47.6)残穿无法过带——须低速(walkTo 刹车 vx≤60)起跳，漂移弧 t~0.65 跨带 y~589∈[576,672] 且 vy~-160 升程 14px 不触 y69 出口高度的天花板。\n- P2 出口弧落 row-6（row-4 上空掠过）：落点 ~1010-1133，目标窗放宽 [960,1260]。\n- C4 全程靠 jd(-1) 自基座东面钉点 335.6 角蹬登顶(梯形底角 vs 檐角 ~4-8px 内嵌→box2d 顶面法线弹上,搜素实证为准)，顶上 hold(-1,240) 西行(西面钉 239.6)后 jd(1,0,40) 从 240 东跳：t0.096 跨带西缘 265.6 y~370∈[352,448] 传送。\n- P7 出口(278,186)残速 (+272,-400)：悬柱底 y160 在 t0.011 擦柱锁 vy，滑出柱影 x303 后抛体落台 ~(379,220.8)；fb 就近 hold(1,404) 进门；wg 需回西门：runJump(-1,350) 助跑 29px 满速欠佳(vx~187) 弧在带上方 y~104 越门(带 y[160,256]) 不回传，落台 ~164 再 hold(-1,86) 进西门 [32,96]。\n- 所有 leverState id=数字 0（mechSnapshot.levers 数组下标，v7 遗留字符串已清）。\n\n\n## v9 (2026-10-31 探针26/27 实证修订)\n- 拉杆杆体实体([502.6,542.6]×[~712,736] 实证钉点)：可穿行(西行穿越不翻),东行抵杆=按压翻转(+1),翻后杆挡东行(fb 钉 487/wg 钉 527 实证)。\n- 静跳(起跳 vx≈0)漂移射程仅 8-50px,弧线射程=起跳 vx×~0.75s(笼顶封跳 70px 时),必须 runJump/jd 链供给满速起跳。\n- 笼/井区顶板封跳:rise≈70px(头颅到顶板),弧长≈150-200px。\n- C2 窗口放宽 fb[280,490] wg[520,620](fb 漂移回落杆西实测 430-487);C3/C4 出口衔接窗 [960,1260]。\n",
+  "assertKinds": [
+    "alive",
+    "px",
+    "py",
+    "grounded",
+    "leverState",
+    "atDoor",
+    "phaseWon"
+  ],
+  "segments": [
     {
-     "kind": "alive"
+      "id": "C0",
+      "title": "出生笼西行合并段：fb jd×6、wg jd×7 连跳（笼顶封顶弧 ~150-180px/跳，末速 -272 保满速起跳），末跳 nook 内 x∈[38.4,75] 满速西跳弧升段穿 P0(32,848) 带→传 P1(1216,848) 口袋；锁存/摩擦滑停双落东廊 [900,1260]",
+      "entry": [
+        {
+          "kind": "alive"
+        }
+      ],
+      "waypoints": [
+        [
+          {
+            "kind": "px",
+            "role": "fb",
+            "min": 1080,
+            "max": 1260
+          },
+          {
+            "kind": "py",
+            "role": "fb",
+            "min": 800,
+            "max": 905
+          }
+        ]
+      ],
+      "target": [
+        {
+          "kind": "px",
+          "role": "fb",
+          "min": 900,
+          "max": 1260
+        },
+        {
+          "kind": "py",
+          "role": "fb",
+          "min": 820,
+          "max": 905
+        },
+        {
+          "kind": "grounded",
+          "role": "fb"
+        },
+        {
+          "kind": "px",
+          "role": "wg",
+          "min": 900,
+          "max": 1260
+        },
+        {
+          "kind": "py",
+          "role": "wg",
+          "min": 820,
+          "max": 905
+        },
+        {
+          "kind": "grounded",
+          "role": "wg"
+        }
+      ],
+      "horizonF": 800
+    },
+    {
+      "id": "C1",
+      "title": "东廊西行登 [608,800] 下降阶梯(896→736)，双抵 y736 地板杆西待命",
+      "entry": [
+        {
+          "kind": "px",
+          "role": "fb",
+          "min": 900,
+          "max": 1260
+        },
+        {
+          "kind": "px",
+          "role": "wg",
+          "min": 900,
+          "max": 1260
+        }
+      ],
+      "waypoints": [
+        [
+          {
+            "kind": "px",
+            "role": "fb",
+            "min": 560,
+            "max": 800
+          },
+          {
+            "kind": "py",
+            "role": "fb",
+            "min": 690,
+            "max": 905
+          }
+        ]
+      ],
+      "target": [
+        {
+          "kind": "px",
+          "role": "fb",
+          "min": 380,
+          "max": 470
+        },
+        {
+          "kind": "py",
+          "role": "fb",
+          "min": 690,
+          "max": 750
+        },
+        {
+          "kind": "grounded",
+          "role": "fb"
+        },
+        {
+          "kind": "px",
+          "role": "wg",
+          "min": 380,
+          "max": 560
+        },
+        {
+          "kind": "py",
+          "role": "wg",
+          "min": 690,
+          "max": 750
+        },
+        {
+          "kind": "grounded",
+          "role": "wg"
+        }
+      ],
+      "horizonF": 700
+    },
+    {
+      "id": "C2",
+      "title": "拉杆 l0(~496,~750) 东压翻杆(+1 开 P2/P3,杆翻后挡东行 fb 钉~487)：fb 东压 hold(1,484-487)→jd 漂移回落杆西；wg 东行 565 短停——leverState=+1 horizon=700f",
+      "entry": [
+        {
+          "kind": "px",
+          "role": "fb",
+          "min": 380,
+          "max": 470
+        },
+        {
+          "kind": "px",
+          "role": "wg",
+          "min": 380,
+          "max": 560
+        }
+      ],
+      "waypoints": [
+        [
+          {
+            "kind": "px",
+            "role": "fb",
+            "min": 520,
+            "max": 580
+          },
+          {
+            "kind": "grounded",
+            "role": "fb"
+          }
+        ]
+      ],
+      "target": [
+        {
+          "kind": "leverState",
+          "id": 0,
+          "value": 1
+        },
+        {
+          "kind": "px",
+          "role": "fb",
+          "min": 280,
+          "max": 490
+        },
+        {
+          "kind": "grounded",
+          "role": "fb"
+        },
+        {
+          "kind": "px",
+          "role": "wg",
+          "min": 520,
+          "max": 620
+        },
+        {
+          "kind": "grounded",
+          "role": "wg"
+        }
+      ],
+      "horizonF": 700
+    },
+    {
+      "id": "C3",
+      "title": "P3 井弧(笼式封顶弧 jd 链,满速起跳落墙钉触发按压传送,与 C0 同机制)→P2 出口残速落地 row-6——双落 row-6 [960,1260] horizon=800f",
+      "entry": [
+        {
+          "kind": "leverState",
+          "id": 0,
+          "value": 1
+        },
+        {
+          "kind": "px",
+          "role": "fb",
+          "min": 280,
+          "max": 490
+        },
+        {
+          "kind": "px",
+          "role": "wg",
+          "min": 520,
+          "max": 620
+        }
+      ],
+      "waypoints": [],
+      "target": [
+        {
+          "kind": "px",
+          "role": "fb",
+          "min": 960,
+          "max": 1260
+        },
+        {
+          "kind": "py",
+          "role": "fb",
+          "min": 60,
+          "max": 175
+        },
+        {
+          "kind": "grounded",
+          "role": "fb"
+        },
+        {
+          "kind": "px",
+          "role": "wg",
+          "min": 960,
+          "max": 1260
+        },
+        {
+          "kind": "py",
+          "role": "wg",
+          "min": 60,
+          "max": 175
+        },
+        {
+          "kind": "grounded",
+          "role": "wg"
+        }
+      ],
+      "horizonF": 800
+    },
+    {
+      "id": "C4",
+      "title": "row-6 西行→990 跳越 32px 缺口上 row-4(wp)→'/'672 唇落 row-18 板台→基座东面 335.6 钉→jd 登基座顶→240 东跳跨 P6 带(y~370)→P7 出(278,186 擦悬柱底滑落台~379)→fb 东 404 门/wg 350 西跳越门落 164→西门 horizon=900f",
+      "entry": [
+        {
+          "kind": "px",
+          "role": "fb",
+          "min": 960,
+          "max": 1260
+        },
+        {
+          "kind": "px",
+          "role": "wg",
+          "min": 960,
+          "max": 1260
+        }
+      ],
+      "waypoints": [
+        [
+          {
+            "kind": "px",
+            "role": "fb",
+            "min": 672,
+            "max": 928
+          },
+          {
+            "kind": "py",
+            "role": "fb",
+            "min": 90,
+            "max": 175
+          }
+        ]
+      ],
+      "target": [
+        {
+          "kind": "atDoor",
+          "role": "fb"
+        },
+        {
+          "kind": "atDoor",
+          "role": "wg"
+        },
+        {
+          "kind": "phaseWon"
+        }
+      ],
+      "horizonF": 900
     }
-   ],
-   "waypoints": [
-    [
-     {
-      "kind": "px",
-      "role": "fb",
-      "min": 1080,
-      "max": 1260
-     },
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 800,
-      "max": 905
-     }
-    ]
-   ],
-   "target": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 900,
-     "max": 1260
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 820,
-     "max": 905
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 900,
-     "max": 1260
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 820,
-     "max": 905
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    }
-   ],
-   "horizonF": 800
-  },
-  {
-   "id": "C1",
-   "title": "东廊西行登 [608,800] 下降阶梯(896→736)，双抵 y736 地板杆西待命",
-   "entry": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 900,
-     "max": 1260
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 900,
-     "max": 1260
-    }
-   ],
-   "waypoints": [
-    [
-     {
-      "kind": "px",
-      "role": "fb",
-      "min": 560,
-      "max": 800
-     },
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 690,
-      "max": 905
-     }
-    ]
-   ],
-   "target": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 380,
-     "max": 470
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 690,
-     "max": 750
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 380,
-     "max": 560
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 690,
-     "max": 750
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    }
-   ],
-   "horizonF": 700
-  },
-  {
-   "id": "C2",
-   "title": "拉杆 l0(496,736) 东翻：fb 东越杆至 545 刹车+西跳回落杆西(~360)；wg 东行 565 短停不触杆——leverState l0=+1 开 P2/P3",
-   "entry": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 380,
-     "max": 470
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 380,
-     "max": 560
-    }
-   ],
-   "waypoints": [
-    [
-     {
-      "kind": "px",
-      "role": "fb",
-      "min": 520,
-      "max": 580
-     },
-     {
-      "kind": "grounded",
-      "role": "fb"
-     }
-    ]
-   ],
-   "target": [
-    {
-     "kind": "leverState",
-     "id": 0,
-     "value": 1
-    },
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 280,
-     "max": 430
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 530,
-     "max": 620
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    }
-   ],
-   "horizonF": 700
-  },
-  {
-   "id": "C3",
-   "title": "双西行 y736 地板西缘满速西跳，弧升段穿 P3(32,624) 带→传 P2(1216,112) 出 row-6 板（同 C0 弧过带口径）",
-   "entry": [
-    {
-     "kind": "leverState",
-     "id": "l0",
-     "value": 1
-    },
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 280,
-     "max": 430
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 530,
-     "max": 620
-    }
-   ],
-   "waypoints": [
-    [
-     {
-      "kind": "px",
-      "role": "fb",
-      "min": 60,
-      "max": 110
-     },
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 690,
-      "max": 750
-     },
-     {
-      "kind": "grounded",
-      "role": "fb"
-     }
-    ]
-   ],
-   "target": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 1000,
-     "max": 1260
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 60,
-     "max": 175
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 1000,
-     "max": 1260
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 60,
-     "max": 175
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    }
-   ],
-   "horizonF": 800
-  },
-  {
-   "id": "C4",
-   "title": "row-6 东行→[928,992] 阶梯→row-4(672-928,顶128)西行→'/'@20 唇落 row-18 台(160-768,顶576)→迷你梯[96,160]→512 块→基座台跳 P6/P7(272,400/208)→双门 phaseWon",
-   "entry": [
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 1000,
-     "max": 1260
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 1000,
-     "max": 1260
-    }
-   ],
-   "waypoints": [
-    [
-     {
-      "kind": "px",
-      "role": "fb",
-      "min": 672,
-      "max": 928
-     },
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 90,
-      "max": 175
-     }
-    ]
-   ],
-   "target": [
-    {
-     "kind": "atDoor",
-     "role": "fb"
-    },
-    {
-     "kind": "atDoor",
-     "role": "wg"
-    },
-    {
-     "kind": "phaseWon"
-    }
-   ],
-   "horizonF": 900
-  }
- ]
+  ]
 }
