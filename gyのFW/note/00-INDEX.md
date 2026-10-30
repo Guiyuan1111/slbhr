@@ -28,6 +28,9 @@
 | 机器探索线 | [research/2026-10-autoplay/00-INDEX.md](research/2026-10-autoplay/00-INDEX.md) | 自动通关路线搜索（S1–S5，断点 tools/ 收容） |
 | 早期性能剖析 | [research/2026-10-18-perf-hotspot/00-INDEX.md](research/2026-10-18-perf-hotspot/00-INDEX.md) | 性能战役前身的热点剖析 |
 | 连接界面调研 | [research/2026-10-19-connect-ui/00-INDEX.md](research/2026-10-19-connect-ui/00-INDEX.md) | 石板大厅方向调研+三份可开 mockup |
+| **水晶神庙（第四部）取证档卷** | [evidence/2026-10-30-crystal-temple/00-INDEX.md](evidence/2026-10-30-crystal-temple/00-INDEX.md) | 2026-10-30 立项：portal 五问全解（配对/触发/传送/乒乓/光束穿门）+Ground -1 背衬墙+资产差仅 5 组（01号档+实机探针） |
+| **元素合集（第五部）取证档卷** | [evidence/2026-10-30-elements/00-INDEX.md](evidence/2026-10-30-elements/00-INDEX.md) | 2026-10-30 立项：multi 七庙 rows 选关+元素学习门、cover=纯视觉、firstgid 漂移勘误（01号档） |
+| **童话神庙（第六部）取证档卷** | [evidence/2026-10-30-fairytales/00-INDEX.md](evidence/2026-10-30-fairytales/00-INDEX.md) | 2026-10-30 立项：引擎同源判定+fairy 三件套+Tiled 1.x 归一化+尺寸全谱（01号档+无头实跑） |
 
 ## 报告与版本
 
