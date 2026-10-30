@@ -169,3 +169,39 @@ TEMP 用后必清；保真是默认、优化是例外且逐条经用户裁定；
 - 资产：全系列共享基础资产+音频（A/B 音频树一致 33 文件），每部仅差 TempleAssets 图集+GameName+TempleHall 三件。
 - det 基线分部制：r0-baseline(forest 48) / r0-light(40) 分文件，`--filter <前缀>` 闭合比对（详见档卷 01号档 §5）。
 - 档卷：[evidence/2026-10-25-light-temple/00-INDEX.md](evidence/2026-10-25-light-temple/00-INDEX.md)。
+
+---
+
+## §9 水晶神庙（crystal，第四部）取证要点（2026-10-30 立项，进行中）
+
+- 快照：`output/D`，35 自有关（crystal_04…crystal_38）+4 共享教学关；39×29；temple 39 节点 general 25/puzzle 9/speed 5，**无 dark**。
+- **portal 五问速览**（唯一新机制，D 独有使用）：①配对=`portalId`（每 id 恰 2 个，缺省 portalId=0 归并，connectPortals 无守卫）；②group=电路（同组 lever/pusher 开关 portal，`initialState:1`=初始开）；③触发=eventHorizon 实体薄片（0.1×1.5m）+载体 r=0.1 `portal-sensor` 标记（cat/mask 4096：角色/箱/球可传，液体/钻石不传）。
+- ④传送=出口偏移保留（inverted 相异才镜像）+Δ 旋转+速度地板 `normalize(v)×(10/mass)`（角色 10.4734 m/s，10 除的是**质量**）+200ms 墙钟冷却+内嵌一步 `physics.update()`；⑤光束穿门是一等语义（getPoint/getOutput），**光与实体在同 inverted 对的出口变换原版就不一致——两套公式照抄勿统一**（存疑待实机对拍）。
+- **same-inverted 对出口速度镜像回射=原版固有乒乓**（实测 7486 次/4 分钟），须复刻勿"修"。
+- Ground `-1` = **portal 背衬墙**（D 独有新增：无地面碰撞，solidity 由所属 portal 假墙按开关供给；D 198 块）；11/12/55/10 均为 C 已有语义——普查勘误：D 新增只有 -1。
+- 资产差：D 与 C 文件级差仅 5 组（TempleAssets/GameName/TempleHall 三件套+data+bundle）；**portal 零新资产**——74 帧全在共享 MechAssets，四音效四部同库。
+- 数据坑：crystal_20 无 LargeObjects 引用（tilesets 不恒 4 项）；92 对构成 mixed 32/same0 50/same1 10（逐关验收清单见档卷 §5.4）。
+- 档卷：[evidence/2026-10-30-crystal-temple/00-INDEX.md](evidence/2026-10-30-crystal-temple/00-INDEX.md)。
+
+## §10 元素合集（elements，第五部）取证要点（2026-10-30 立项，进行中）
+
+- 快照：`output/E`，系列唯一 `type:"multi"`：39 关=7 教学+32 自有（forest5/fire4/light4/crystal5/water5/wind4/ice5）；`id` 不连续、顺序语义只看 `required`；**无 initial/opened 字段**（required=0 即首关）；无 dark/speed 关。
+- multi 选关：七庙 temple.json 全 `type:"rows"`，横向条带按 `index` 排开（ice −3…crystal 3，forest 居中）；解锁链=元素学习门（教学关 elements `slice(0,-1)` 去尾、庙 softLocked=首关前置未学齐）。
+- **cover=纯视觉遮罩**（47 处）：BackgroundCover extends Phaser.Group 非 Device——32×32 纯黑帧拉伸铺 background 层+ocupy 抑制 decor 撒布；无碰撞/不挡光/无每帧行为，level2 解析忽略即可，客户端可选补黑矩形。
+- **入库命名空间化决策**（2935bb7）：六元素 `1.json` 同名撞车 → 关卡文件 `e<元素>_<原名>` + temple.json filename 同步改写（关卡 JSON 本体保持 oracle 字节）；E 独有教学 `e_tutorial_{fire,water,wind}`。
+- **firstgid 漂移勘误（重要）**：LargeObjects firstgid 逐关漂移（40/24/16/1/不引用五态），portal/wind gid 随之变——严禁硬编码 gid，按逐关 firstgid 区间解析（"portal(42)"实为首 gid 40 关的 wind 位误锚）。
+- 教学关共用：forest_01/crystal_03/ice_02/light_01 与前部内容全同（仅 Tiled 元数据代差），只补 3 件 e_tutorial。
+- 资产：audio 33 文件与 A 字节一致、无 per-element 曲目；七套 TempleAssets 换皮结构零差异；Ground 10/11/12/55/−1 对 E 零新增工作（level2.ts 已全支持）。
+- 档卷：[evidence/2026-10-30-elements/00-INDEX.md](evidence/2026-10-30-elements/00-INDEX.md)。
+
+## §11 童话神庙（fairytales，第六部）取证要点（2026-10-30 立项，进行中）
+
+- 快照：`output/F`，32 关=forest_01 共享教学+fairies_000 树图 hub+自有 30（tree 四枝 wing 1..4）；六部唯一 `canRevive:true`。
+- **引擎同源判定**：F 与 A–E 同一代码库（`define("States/…")` 模块树同构、createGroundShape/parseMapPropper 指纹同数、classNames 仅多 `fairycup`）——"单文件引擎不可反解"先验不成立；异构只是包 vintage：Phaser 2.6.15（A–E 2.6.2）+Tiled 1.x 新格式。
+- **fairy 三件套**：①Fairy 角色（零重力 r=0.3+anchor/elbow 距离关节提线+mouse joint 拖拽+`group` 首位数字取色）；②FairyCup 杯机关（r=1.3 杯口 sensor 色配→state 0→1 派发，音效复用 lightPusher）；③`lockToDeviceGroup/reLockToDeviceGroup` 锁链（25+3 只，运行时仅影响相机 focus 与教学提示——存疑留观）。
+- RespawnManager：双足着地静止每 ≥667ms 自动检查点、环形 5 份、复活取 4 秒前最近份+计时回拨；canRevive 复活链依赖 h5ads 无法无头实测，复刻按免费一次。
+- **Tiled 1.x 归一化**：对象/瓦片属性数组化 `[{name,value}]` 压平、tileset `tiles[]` 数组式、Ground 排首外链合并——归一化后即可复用 A–E 解析管线。
+- **尺寸全谱**：F 关卡**不是 39×29**——30×40…61×25 全谱（竖 31×56/横 61×25），静态相机整图适配照用；firstgid 两套排布（fairies-01 一份、其余 31 关另一份），必须按各关 tilesets 归属。
+- oracle 数据瑕疵如实记录（复刻照旧勿"修"）：fairies-22 ball 属性 typo `donFocus`、fairies-20 Objects 层 2 颗 diamond 被引擎丢弃、NewCharAssets 缺 `flying_glow0001` 帧、R 键调未定义 `setCheckpoint`（被 jQuery handler 吞）。
+- 资产/音频：audio 33 文件与 C 字节一致零新增；新图集 NewCharAssets（仙女 7 帧）+MechAssets +25 fairycup 帧+TempleAssets/fairy 三件套。
+- 档卷：[evidence/2026-10-30-fairytales/00-INDEX.md](evidence/2026-10-30-fairytales/00-INDEX.md)。
