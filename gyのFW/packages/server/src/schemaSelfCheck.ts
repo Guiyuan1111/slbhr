@@ -26,7 +26,7 @@
  *
  * 只读、无副作用：用状态类的零值构造实例，不碰真实房间。
  */
-import { RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState, BeamState, TimedPusherState, DoorState } from "./rooms/state.js";
+import { RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState, BeamState, TimedPusherState, DoorState, FairyState, FairyCupState } from "./rooms/state.js";
 
 /** 待检类的清单：state.ts 全部导出 Schema 类（新增类必须同步登记，见同名单测） */
 export const CHECKED_CLASSES = {
@@ -40,6 +40,8 @@ export const CHECKED_CLASSES = {
   BeamState,
   TimedPusherState,
   DoorState,
+  FairyState,
+  FairyCupState,
 } as const;
 
 export interface CheckFailure {

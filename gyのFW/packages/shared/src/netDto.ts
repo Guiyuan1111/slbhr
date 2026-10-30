@@ -140,6 +140,25 @@ export interface TimedPusherSnapshotDto {
 }
 
 /**
+ * 对应 state.ts `FairyState`（F 部仙女：id=内核数组序 fy{n}；x,y=身体中心屏幕 px；
+ * locked=lockToDeviceGroup/reLockToDeviceGroup 链运行时镜像）。房间级集合为
+ * ArraySchema 按内核数组序（fw-net/fw-fairy-view 契约），拖拽经 "fairydrag" 消息。
+ */
+export interface FairySnapshotDto {
+  id: string;
+  x: number;
+  y: number;
+  group: number;
+  locked: boolean;
+}
+
+/** 对应 state.ts `FairyCupState`（F 部仙女杯：id=fc{n}；state 0/1=杯内有无色配仙女） */
+export interface FairyCupSnapshotDto {
+  id: string;
+  state: number;
+}
+
+/**
  * 对应 state.ts `DoorState`（类声明 L119，defineTypes 注册 L222-229）。
  * 每关恰一对门、单条目（RoomState.doors 为引用非 Map）。
  * ⚠ 现状：客户端 GameScene 当前不读此结构（门开合走 PlayerState.doorFrame），
@@ -191,6 +210,9 @@ export interface RoomSnapshotDto {
   /** 液体冻结旗标串（每行段一位 0/1） */
   liquids: string;
   doors: DoorSnapshotDto;
+  // ---- F 部仙女（fairy 关非空，forest 等恒空数组）----
+  fairies: ReadonlyArray<FairySnapshotDto>;
+  fairyCups: ReadonlyArray<FairyCupSnapshotDto>;
 }
 
 // ---------------------------------------------------------------------------
@@ -207,7 +229,9 @@ export type SchemaChildName =
   | "WindState"
   | "BeamState"
   | "TimedPusherState"
-  | "DoorState";
+  | "DoorState"
+  | "FairyState"
+  | "FairyCupState";
 
 export const PLAYER_SNAPSHOT_FIELDS: WireSpecOf<PlayerSnapshotDto> = {
   x: "number",
@@ -275,12 +299,15 @@ export const CHILD_SNAPSHOT_FIELDS: Record<SchemaChildName, Readonly<Record<stri
   DoorState: DOOR_SNAPSHOT_FIELDS,
   BeamState: { state: "number", pts: "string" },
   TimedPusherState: { state: "number", frac: "number", downState: "number", x: "number", y: "number" },
+  FairyState: { id: "string", x: "number", y: "number", group: "number", locked: "boolean" },
+  FairyCupState: { id: "string", state: "number" },
 };
 
-/** 房间字段 spec：标量 WireKind；集合 { map: 子类名 }；单引用 { ref: 子类名 } */
+/** 房间字段 spec：标量 WireKind；集合 { map: 子类名 }；数组 { array: 子类名 }；单引用 { ref: 子类名 } */
 export type RoomFieldSpec =
   | WireKind
   | { readonly map: SchemaChildName }
+  | { readonly array: SchemaChildName }
   | { readonly ref: SchemaChildName };
 
 export const ROOM_SNAPSHOT_FIELDS = {
@@ -307,6 +334,8 @@ export const ROOM_SNAPSHOT_FIELDS = {
   timedPushers: { map: "TimedPusherState" },
   liquids: "string",
   doors: { ref: "DoorState" },
+  fairies: { array: "FairyState" },
+  fairyCups: { array: "FairyCupState" },
 } as const satisfies Record<keyof RoomSnapshotDto, RoomFieldSpec>;
 
 // ---------------------------------------------------------------------------
@@ -323,7 +352,7 @@ export function numericFieldNames(spec: Readonly<Record<string, unknown>>): read
   return Object.keys(spec).filter((k) => spec[k] === "number");
 }
 
-/** 房间根字段名清单（23；0.3.49 新增 f 后同步，#44） */
+/** 房间根字段名清单（25；0.3.49 新增 f、2026-10-30 fairy 批新增 fairies/fairyCups 后同步） */
 export const ROOM_SNAPSHOT_FIELD_NAMES: readonly string[] = fieldNamesOf(ROOM_SNAPSHOT_FIELDS);
 
 /** 各子状态类字段名清单（键=服务端类名） */
@@ -337,9 +366,11 @@ export const CHILD_SNAPSHOT_FIELD_NAMES: Record<SchemaChildName, readonly string
   DoorState: fieldNamesOf(DOOR_SNAPSHOT_FIELDS),
   BeamState: fieldNamesOf({ state: "number", pts: "string" }),
   TimedPusherState: fieldNamesOf({ state: "number", frac: "number", downState: "number", x: "number", y: "number" }),
+  FairyState: fieldNamesOf(CHILD_SNAPSHOT_FIELDS.FairyState),
+  FairyCupState: fieldNamesOf(CHILD_SNAPSHOT_FIELDS.FairyCupState),
 };
 
-/** 房间集合字段 → 子状态类名（MapSchema 拓扑，供校验器遍历集合条目） */
+/** 房间集合字段 → 子状态类名（MapSchema/ArraySchema 拓扑，供校验器遍历集合条目） */
 export const ROOM_COLLECTION_CHILD: Readonly<Record<string, SchemaChildName>> = {
   players: "PlayerState",
   diamonds: "DiamondState",
@@ -358,6 +389,8 @@ export const ROOM_COLLECTION_CHILD: Readonly<Record<string, SchemaChildName>> = 
   lightPushers: "PusherState",
   sliders: "BodyState",
   timedPushers: "TimedPusherState",
+  fairies: "FairyState",
+  fairyCups: "FairyCupState",
 };
 
 /** 房间单引用字段（非集合非标量） */

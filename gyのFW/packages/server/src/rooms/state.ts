@@ -11,8 +11,8 @@
  * phase 词汇：lobby | ready | started | paused | won | gameover
  * （原版：双人就绪后延时开钟；任一人死整关重开；门扫帧 21 帧到位双门→won）
  */
-import { Schema, MapSchema, defineTypes, $filter } from "../colyseus.cjs.js";
-import type { MapSchema as MapSchemaType } from "@colyseus/schema";
+import { Schema, MapSchema, ArraySchema, defineTypes, $filter } from "../colyseus.cjs.js";
+import type { MapSchema as MapSchemaType, ArraySchema as ArraySchemaType } from "@colyseus/schema";
 
 export class PlayerState extends Schema {
   declare x: number;
@@ -166,6 +166,41 @@ export class DoorState extends Schema {
   }
 }
 
+/**
+ * 仙女（F 部 fairytales，fw-net/fw-fairy-view 契约）：数组条目按内核 world.fairies
+ * 序稳定排序，id = `fy{数组序}`（与 level2 解析器 FairyDef.id 同构——buildMechanisms
+ * 按 level.fairies 序构造）。x/y = 仙女身体中心屏幕 px（BodyState 口径：m2px 后保留
+ * 1 位小数）；locked 为内核 lockToDeviceGroup/reLockToDeviceGroup 链的运行时镜像。
+ */
+export class FairyState extends Schema {
+  declare id: string;
+  declare x: number;
+  declare y: number;
+  declare group: number;
+  declare locked: boolean;
+
+  constructor() {
+    super();
+    this.id = "";
+    this.x = 0;
+    this.y = 0;
+    this.group = 0;
+    this.locked = false;
+  }
+}
+
+/** 仙女杯（F 部）：id = `fc{数组序}`（同 FairyState 口径）；state 0/1=杯内有无色配仙女 */
+export class FairyCupState extends Schema {
+  declare id: string;
+  declare state: number;
+
+  constructor() {
+    super();
+    this.id = "";
+    this.state = 0;
+  }
+}
+
 export class RoomState extends Schema {
   declare phase: string;
   declare levelId: string;
@@ -194,6 +229,10 @@ export class RoomState extends Schema {
   /** 液体冻结旗标串（每行段一位 0/1；无液体=""） */
   declare liquids: string;
   declare doors: DoorState;
+  // ---- F 部仙女（fairy 关非空，forest 等恒空数组，零编码开销）----
+  /** 契约（fw-net/fw-fairy-view）：ArraySchema 按内核数组序；拖拽经 "fairydrag" 消息 */
+  declare fairies: ArraySchemaType<FairyState>;
+  declare fairyCups: ArraySchemaType<FairyCupState>;
 
   constructor() {
     super();
@@ -220,6 +259,8 @@ export class RoomState extends Schema {
     this.timedPushers = new MapSchema();
     this.liquids = "";
     this.doors = new DoorState();
+    this.fairies = new ArraySchema();
+    this.fairyCups = new ArraySchema();
   }
 }
 
@@ -293,6 +334,19 @@ defineTypes(DoorState, {
   wgUp: "boolean",
 });
 
+defineTypes(FairyState, {
+  id: "string",
+  x: "number",
+  y: "number",
+  group: "number",
+  locked: "boolean",
+});
+
+defineTypes(FairyCupState, {
+  id: "string",
+  state: "number",
+});
+
 defineTypes(RoomState, {
   phase: "string",
   levelId: "string",
@@ -317,6 +371,8 @@ defineTypes(RoomState, {
   timedPushers: { map: TimedPusherState },
   liquids: "string",
   doors: DoorState,
+  fairies: { array: FairyState },
+  fairyCups: { array: FairyCupState },
 });
 
 /**
@@ -332,6 +388,6 @@ defineTypes(RoomState, {
  * StateView/encodeView 路径被触及。
  */
 // #26：BeamState/TimedPusherState（0.3.45/0.3.47 新增）曾漏登记，每字段编码白付一次 filter 调用
-for (const cls of [RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState, DoorState, BeamState, TimedPusherState]) {
+for (const cls of [RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState, DoorState, BeamState, TimedPusherState, FairyState, FairyCupState]) {
   (cls as unknown as Record<string, unknown>)[$filter as string] = undefined;
 }

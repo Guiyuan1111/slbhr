@@ -67,6 +67,10 @@ function kindOf(decl: unknown): unknown {
     const child = (decl as { map: unknown }).map;
     if (typeof child === "function") return { map: child.name };
   }
+  if (decl && typeof decl === "object" && "array" in (decl as Record<string, unknown>)) {
+    const child = (decl as { array: unknown }).array;
+    if (typeof child === "function") return { array: child.name };
+  }
   throw new Error(`无法识别的注册声明: ${String(decl)}`);
 }
 
@@ -98,13 +102,15 @@ const CHILD_CLASSES: Record<SchemaChildName, abstract new () => unknown> = {
   DoorState: state.DoorState,
   BeamState: state.BeamState,
   TimedPusherState: state.TimedPusherState,
+  FairyState: state.FairyState,
+  FairyCupState: state.FairyCupState,
 };
 const CHILD_NAMES = Object.keys(CHILD_CLASSES) as SchemaChildName[];
 
 // ---------------------------------------------------------------------------
 
 describe("服务端 Schema 类注册面（可编程对照源可用性）", () => {
-  it("8 个状态类全部有自身 defineTypes 注册元数据", () => {
+  it("11 个状态类全部有自身 defineTypes 注册元数据", () => {
     for (const name of [...CHILD_NAMES, "RoomState"] as const) {
       const ctor = name === "RoomState" ? state.RoomState : CHILD_CLASSES[name];
       expect(() => registeredFields(ctor), `${name} 应有自身注册元数据`).not.toThrow();
@@ -130,16 +136,16 @@ describe("DTO 字段清单 ↔ 服务端注册字段逐一相符", () => {
     });
   }
 
-  it("RoomState: 23 个字段（5 标量 + 17 集合 + 1 引用）名与种类逐一相符", () => {
+  it("RoomState: 25 个字段（5 标量 + 19 集合 + 1 引用）名与种类逐一相符", () => {
     expect(diffSpec(ROOM_SNAPSHOT_FIELDS, registeredFields(state.RoomState))).toEqual({
       dtoMissing: [],
       serverMissing: [],
       typeMismatch: [],
     });
-    expect(Object.keys(ROOM_SNAPSHOT_FIELDS)).toHaveLength(23);
+    expect(Object.keys(ROOM_SNAPSHOT_FIELDS)).toHaveLength(25);
   });
 
-  it("总量锚：两侧字段总数一致且等于 64（2026-10-26 0.3.49 房间帧号镜像 f：房间+1 标量；扩字段须同步 DTO 并更新本锚）", () => {
+  it("总量锚：两侧字段总数一致且等于 73（2026-10-30 fairy 批：房间+2 数组集合 + FairyState 5 字段 + FairyCupState 2 字段；扩字段须同步 DTO 并更新本锚）", () => {
     const serverTotal =
       Object.keys(registeredFields(state.RoomState)).length +
       CHILD_NAMES.reduce((n, name) => n + Object.keys(registeredFields(CHILD_CLASSES[name])).length, 0);
@@ -147,7 +153,7 @@ describe("DTO 字段清单 ↔ 服务端注册字段逐一相符", () => {
       Object.keys(ROOM_SNAPSHOT_FIELDS).length +
       CHILD_NAMES.reduce((n, name) => n + Object.keys(CHILD_SNAPSHOT_FIELDS[name]).length, 0);
     expect(dtoTotal).toBe(serverTotal);
-    expect(serverTotal).toBe(64);
+    expect(serverTotal).toBe(73);
   });
 });
 
@@ -183,11 +189,12 @@ describe("任务点名覆盖面", () => {
     expect(CHILD_SNAPSHOT_FIELDS.DiamondState).toEqual({ collected: "boolean" });
   });
 
-  it("十六条机关数值组全部挂对子类且字段相符（platforms/props/hangings/pulleys/romans 复用 BodyState）", () => {
+  it("十八条机关/仙女集合全部挂对子类且字段相符（platforms/props/hangings/pulleys/romans 复用 BodyState；fairies/fairyCups 为 ArraySchema）", () => {
     const server = registeredFields(state.RoomState);
     for (const [field, child] of Object.entries(ROOM_COLLECTION_CHILD)) {
-      const decl = server[field];
-      expect(decl, `${field} 应为 { map: ${child} }`).toEqual({ map: state[child] });
+      const decl = server[field] as unknown;
+      const isMap = typeof decl === "object" && decl !== null && "map" in (decl as object);
+      expect(decl, `${field} 应挂子类 ${child}`).toEqual(isMap ? { map: state[child] } : { array: state[child] });
       expect(diffSpec(CHILD_SNAPSHOT_FIELDS[child], registeredFields(CHILD_CLASSES[child]))).toEqual({
         dtoMissing: [],
         serverMissing: [],
@@ -197,6 +204,10 @@ describe("任务点名覆盖面", () => {
     // 复用 BodyState 的五条集合
     for (const field of ["platforms", "props", "hangings", "pulleys", "romans"]) {
       expect(ROOM_COLLECTION_CHILD[field]).toBe("BodyState");
+    }
+    // F 部仙女两条数组集合（fw-net/fw-fairy-view 契约）
+    for (const field of ["fairies", "fairyCups"]) {
+      expect(server[field]).toEqual({ array: state[ROOM_COLLECTION_CHILD[field]] });
     }
   });
 
