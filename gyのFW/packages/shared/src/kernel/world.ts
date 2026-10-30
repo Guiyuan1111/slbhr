@@ -312,6 +312,12 @@ export class World {
     this.chars.fireboy.update(this.B, dt, inputs.fireboy, jumpSoundHook);
     this.chars.watergirl.update(this.B, dt, inputs.watergirl, jumpSoundHook);
 
+    // F 部仙女步进（oracle Fairy.update 每帧；时基=仿真钟保 det，oracle 墙钟偏差记档）
+    if (this.mechs.fairies.length > 0) {
+      const cps = [this.chars.fireboy.body.GetPosition(), this.chars.watergirl.body.GetPosition()];
+      for (const f of this.mechs.fairies) f.update(this.simTimeS * 1000, cps);
+    }
+
     // 原版帧序（运行时探针 2026-10-09，forest_01 实测）：doors → wg → fb → 设备(逆注册序) → Step。
     // 机关检查与门扫帧在 Step【前】：checkState 读的是上一步的关节角，状态变化当帧进入求解。
     // 原实现放在 Step 后（反应滞后 1 帧）——research/11 §2B 驱动序残余的确定性来源之一。
@@ -361,6 +367,18 @@ export class World {
           if (tp.state !== prev) this.mechs.manager.deviceChanged(tp.group);
         }
         for (const ev of this.tpEvents) events.push({ type: "mech", event: ev });
+      }
+      // F 部仙女杯（oracle 走 contact 回调；内核确定性全量重算——圆-圆重叠与
+      // TestOverlap 等价）：新成员设杯口吸附目标，checkState 迁移沿同步派发组信号
+      if (this.mechs.fairyCups.length > 0) {
+        const fEvents: MechEvent[] = [];
+        for (const cup of this.mechs.fairyCups) {
+          cup.refreshMembership(this.mechs.fairies);
+          const prev = cup.state;
+          cup.checkState(fEvents);
+          if (cup.state !== prev) this.mechs.manager.deviceChanged(cup.group);
+        }
+        for (const ev of fEvents) events.push({ type: "mech", event: ev });
       }
       this.updateDoors(dt, events);
     }

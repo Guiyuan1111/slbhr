@@ -22,7 +22,8 @@ export type MechEvent =
   | { kind: "lever"; group: number; state: number }
   | { kind: "pusher"; group: number; state: number }
   | { kind: "lightpusher"; group: number; state: number }
-  | { kind: "slider"; group: number; state: number };
+  | { kind: "slider"; group: number; state: number }
+  | { kind: "fairycup"; group: number; state: number };
 
 /** 光束交互属性（fixture userData.lightProperties；02号档 §8/§9）。
  * iluminated/lightAt 由 Beamer raycast 写入，LightPusher 消费后自清，Liquid 只读不清（原版 quirk）。 */
@@ -1347,6 +1348,314 @@ export class Slider extends Device {
 
 // ---------------------------------------------------------------- 总装
 
+// ---------------------------------------------------------------- FairyCup / Fairy（F 部 fairytales）
+// oracle F fairy-tales.min.js：FairyCup L53157（extends BoxedDevice）、Fairy L58979。
+// 逐条参数锚见 note/evidence/2026-10-30-fairytales/01号档 §2。
+
+/** 仙女（L58979，extends Phaser.Group；物理段 createShapes L59058）：
+ *  主圆 r=0.3（density .1/friction 0/mask 257/cat 4112）+ portal-sensor 圆 r=0.1
+ *  （cat/mask 4096、groupIndex -1、density 0）；gravityScale 0、linearDamping 5、
+ *  angularDamping 5、bullet、fixedRotation、userData "pers"。
+ *  骨架 anchor—elbow—ball 两根刚性 b2DistanceJoint（Initialize，collideConnected=false，
+ *  L59115-59148；anchor/elbow 零重力小圆 r=0.1 density .1 不与任何东西碰撞）。
+ *  拖拽=anchor 上的 b2MouseJoint（maxForce 3.5 / dampingRatio .3 / frequencyHz 10，
+ *  L59052/59177；松手 maxForce 降为 5%，L59203）。 */
+export class Fairy {
+  readonly body: any;
+  readonly anchor: any;
+  readonly elbow: any;
+  private readonly B: B2;
+  private readonly joint: any;
+  private readonly jointForce = 3.5;
+  /** 组色（properties.group 首位数字，L52418 色表；0=白/百搭） */
+  readonly group: number;
+  /** 锁定（lockToDeviceGroup/reLockToDeviceGroup）——oracle 仅门控相机 focus 与教学
+   *  矩形（L59692/L61934），无物理门控（01号档 R1）；内核保留态供视图/教学消费 */
+  locked = false;
+  readonly lockGroups: number[];
+  readonly relockGroups: number[];
+  /** 杯口吸附目标（FairyCup 感应色配后设置；null=自由态） */
+  externalTarget: { x: number; y: number } | null = null;
+  externalCup: FairyCup | null = null;
+  dragging = false;
+  private dragTarget: { x: number; y: number };
+  /** oracle toffset/aoffset 为构造期 Math.random（L59010，非确定）；det 内核改为按
+   *  序确定性偏移（值域同 oracle：toffset∈[0,1000)/aoffset∈[0,2000)）——偏差记档 */
+  private readonly toffset: number;
+  private readonly aoffset: number;
+  /** 视觉朝向（L59253 平滑；纯表现，内核仅维护供视图取用） */
+  targetAngle = 0;
+
+  constructor(B: B2, world: any, groundBody: any, def: { x: number; y: number; group: number; idx: number; lockGroups?: number[]; relockGroups?: number[] }) {
+    this.B = B;
+    this.group = def.group;
+    this.lockGroups = def.lockGroups ?? [];
+    this.relockGroups = def.relockGroups ?? [];
+    this.locked = this.lockGroups.length > 0;
+    this.toffset = (def.idx * 618) % 1000;
+    this.aoffset = (def.idx * 1337) % 2000;
+    const c = phys(B, def.x, def.y);
+    const bd = () => {
+      const b = new B.b2BodyDef();
+      b.type = B.b2BodyType.b2_dynamicBody;
+      return b;
+    };
+    // 主体
+    const mb = bd();
+    mb.bullet = true;
+    mb.fixedRotation = true;
+    this.body = world.CreateBody(mb);
+    this.body.SetUserData("pers");
+    this.body.SetGravityScale(0);
+    this.body.SetLinearDamping(5);
+    this.body.SetAngularDamping(5);
+    const main = new B.b2CircleShape(0.3);
+    const mf = new B.b2FixtureDef();
+    mf.shape = main;
+    mf.density = 0.1;
+    mf.friction = 0;
+    mf.filter.maskBits = 257;
+    mf.filter.categoryBits = 4112;
+    this.body.CreateFixture(mf);
+    // portal-sensor（供 Portal 检测仙女；不与任何常规体碰撞）
+    const ps = new B.b2CircleShape(0.1);
+    const pf = new B.b2FixtureDef();
+    pf.shape = ps;
+    pf.density = 0;
+    pf.friction = 0;
+    pf.filter.categoryBits = 4096;
+    pf.filter.maskBits = 4096;
+    pf.filter.groupIndex = -1;
+    pf.isSensor = true;
+    this.body.CreateFixture(pf);
+    // anchor / elbow（零重力、不碰撞、fixedRotation）
+    const mkLimb = (withGroup: boolean) => {
+      const b = bd();
+      b.fixedRotation = true;
+      const body = world.CreateBody(b);
+      const sh = new B.b2CircleShape(0.1);
+      const fd = new B.b2FixtureDef();
+      fd.shape = sh;
+      fd.density = 0.1;
+      fd.friction = 0;
+      fd.filter.categoryBits = 0;
+      fd.filter.maskBits = 0;
+      if (withGroup) fd.filter.groupIndex = 22;
+      body.CreateFixture(fd);
+      body.SetGravityScale(0);
+      return body;
+    };
+    this.anchor = mkLimb(true);
+    this.elbow = mkLimb(false);
+    this.anchor.SetPosition(c);
+    this.elbow.SetPosition(new B.b2Vec2(c.x, c.y - 0.5)); // oracle h=.5（y 向上取负 0.5m）
+    this.body.SetPosition(this.anchor.GetPosition());
+    const link = (a: any, b: any) => {
+      const dj = new B.b2DistanceJointDef();
+      dj.collideConnected = false;
+      dj.Initialize(a, b, a.GetPosition(), b.GetPosition());
+      return world.CreateJoint(dj);
+    };
+    link(this.anchor, this.elbow);
+    link(this.elbow, this.body);
+    // 拖拽 mouse joint（anchor—groundBody）
+    const mj = new B.b2MouseJointDef();
+    mj.bodyA = groundBody;
+    mj.bodyB = this.anchor;
+    mj.target = new B.b2Vec2(c.x, c.y);
+    mj.maxForce = this.jointForce;
+    mj.frequencyHz = 10;
+    mj.dampingRatio = 0.3;
+    this.joint = world.CreateJoint(mj);
+    this.dragTarget = { x: c.x, y: c.y };
+  }
+
+  /** 拖拽入口（net 层）：target=null 松手（oracle 松手 maxForce 降 5%，L59203） */
+  setDrag(target: { x: number; y: number } | null): void {
+    if (target) {
+      this.dragging = true;
+      this.dragTarget = { ...target };
+      this.joint.SetMaxForce(this.jointForce);
+    } else {
+      this.dragging = false;
+      this.joint.SetMaxForce(0.05 * this.jointForce);
+    }
+  }
+
+  /** 每帧步进（oracle Fairy.update L59210 逐句；simTimeMs=仿真钟毫秒，
+   *  oracle 用 game.time.time 墙钟——内核换仿真钟保 det，偏差记档） */
+  update(simTimeMs: number, charBodies: Array<{ x: number; y: number }>): void {
+    const B = this.B;
+    const bp = this.body.GetPosition();
+    if (this.externalTarget) {
+      // 吸附力=位移矢量×1（L59213）
+      this.body.ApplyForce(new B.b2Vec2(this.externalTarget.x - bp.x, this.externalTarget.y - bp.y), bp);
+      if (!this.dragging) {
+        this.dragTarget = { ...this.externalTarget };
+        this.joint.SetMaxForce(this.jointForce);
+      }
+    } else if (!this.dragging) {
+      const v = this.body.GetLinearVelocity();
+      if (Math.hypot(v.x, v.y) > 2) this.dragTarget = { x: this.anchor.GetPosition().x, y: this.anchor.GetPosition().y };
+    }
+    // dragTarget 与双角色保持 ≥1.2m（L59223：f.Length()<1.2 → 推到 1.2m 外）
+    for (const ch of charBodies) {
+      const fx = this.dragTarget.x - ch.x;
+      const fy = this.dragTarget.y - ch.y;
+      const fl = Math.hypot(fx, fy);
+      if (fl < 1.2 && fl > 1e-9) {
+        this.dragTarget = { x: ch.x + (fx / fl) * 1.2, y: ch.y + (fy / fl) * 1.2 };
+      }
+    }
+    this.joint.SetTarget(new B.b2Vec2(this.dragTarget.x, this.dragTarget.y));
+    // Lissajous 悬浮目标 h（相对 anchor；externalTarget 态用小抖动分支，L59228-59236）
+    const t = simTimeMs;
+    let hx: number;
+    let hy: number;
+    if (this.externalTarget) {
+      const p = (t + this.toffset) / 1000;
+      const a = 0.4 * (Math.sin((t + this.aoffset) / 2300) - 0.5);
+      const s = a / Math.abs(a || 1);
+      hx = a * Math.sin(p * s);
+      hy = a * Math.cos(p * s);
+    } else {
+      const p = (t + this.toffset) / 1000;
+      const a = 0.5 + 0.2 * Math.sin((t + this.aoffset) / (2300 * Math.sin(p || 1e-9) || 1e-9));
+      const den = 1 + Math.sin(p) * Math.sin(p);
+      hx = (a * Math.SQRT2 * Math.cos(p)) / den;
+      hy = (a * Math.SQRT2 * Math.cos(p) * Math.sin(p)) / den;
+      const deg = ((t + this.aoffset) / this.toffset) * (Math.PI / 180);
+      const rx = hx * Math.cos(deg) - hy * Math.sin(deg);
+      const ry = hx * Math.sin(deg) + hy * Math.cos(deg);
+      hx = rx;
+      hy = ry;
+    }
+    const ap = this.anchor.GetPosition();
+    this.body.ApplyForce(new B.b2Vec2(hx - (bp.x - ap.x), hy - (bp.y - ap.y)), bp);
+    // anchor 速度钳 40（absoluteMaxSpeed，L59055）
+    const q = this.anchor.GetLinearVelocity();
+    const ql = Math.hypot(q.x, q.y);
+    if (ql > 40) this.anchor.SetLinearVelocity(new B.b2Vec2((q.x / ql) * 40, (q.y / ql) * 40));
+  }
+
+  /** lockGroups 任一机关 state 变真解锁 / relockGroups 任一变真重锁（L59266-59279）。
+   *  由 world 每帧在 deviceChanged 后调用（组内含信号源即视为真）。 */
+  checkLock(groupsActive: (g: number) => boolean): void {
+    if (this.locked && this.lockGroups.some((g) => groupsActive(g))) this.locked = false;
+    else if (!this.locked && this.relockGroups.some((g) => groupsActive(g))) this.locked = true;
+  }
+}
+
+/** 仙女杯（L53157，extends BoxedDevice；hasSignal=按钮语义）：
+ *  本体静态（body.mass=0，L53191）+ 杯形 polygon（pusherWidth .4/pusherHeight .3 外扩，
+ *  L53252-53260）+ 杯口圆 sensor r=1.3 @cupOffset(0,.65) 随 rotation 旋转（L53191-53200）。
+ *  checkState（L53326）：currentFairies>0 → state=1 + signal.dispatch（接通 device group）；
+ *  清空 → state=0。色配（L53252）：fairy.group === 杯组首位 || fairy.group===0 || 杯组首位===0。 */
+export class FairyCup extends Device {
+  readonly body: any;
+  /** 杯口世界坐标（sensor 圆心；每帧从 body 变换重算，供色配吸附目标） */
+  private cupCenter: { x: number; y: number };
+  readonly cupGroupFirst: number;
+  currentFairies: Fairy[] = [];
+
+  constructor(B: B2, world: any, def: { x: number; y: number; group: number; rotation: number }) {
+    super(B, def.group, true);
+    this.cupGroupFirst = Number(String(def.group)[0]) || 0;
+    const bd = new B.b2BodyDef();
+    bd.type = B.b2BodyType.b2_staticBody;
+    bd.position = phys(B, def.x, def.y);
+    const th = (def.rotation * Math.PI) / 180;
+    if (th) bd.angle = th;
+    this.body = world.CreateBody(bd);
+    // 杯形（oracle 顶点表：x 外扩 ±(pw/2+.5)，y 上沿 ph-0.1；pw=.4 ph=.3）
+    const pw = 0.4;
+    const ph = 0.3;
+    const poly = new B.b2PolygonShape();
+    poly.Set([
+      new B.b2Vec2(-pw / 2 - 0.5, 0),
+      new B.b2Vec2(pw / 2 + 0.5, 0),
+      new B.b2Vec2(pw / 2, ph - 0.1),
+      new B.b2Vec2(-pw / 2, ph - 0.1),
+    ]);
+    const fd = new B.b2FixtureDef();
+    fd.shape = poly;
+    fd.density = 0;
+    fd.friction = 0.7;
+    fd.restitution = 0;
+    this.body.CreateFixture(fd);
+    // 杯口 sensor（r=1.3 @ (0,0.65)，本体系；世界中心由 GetWorldPoint 派生）
+    const cshape = new B.b2CircleShape(1.3);
+    cshape.m_p.SetXY(0, 0.65);
+    const sfd = new B.b2FixtureDef();
+    sfd.shape = cshape;
+    sfd.density = 0;
+    sfd.friction = 0.7;
+    sfd.restitution = 0;
+    sfd.isSensor = true;
+    this.body.CreateFixture(sfd);
+    // 杯口世界中心（静态体构造期一次）：local (0,0.65) 随 body 角旋转 + 平移
+    const oc = new B.b2Vec2(0, 0.65);
+    const cpos = this.body.GetPosition();
+    const cang = this.body.GetAngle();
+    this.cupCenter = {
+      x: cpos.x + oc.x * Math.cos(cang) - oc.y * Math.sin(cang),
+      y: cpos.y + oc.x * Math.sin(cang) + oc.y * Math.cos(cang),
+    };
+  }
+
+  /** 杯口世界坐标（body 静态恒定；构造期缓存） */
+  get center(): { x: number; y: number } {
+    return this.cupCenter;
+  }
+
+  /** 色配（L53252） */
+  matches(fairy: Fairy): boolean {
+    return fairy.group === this.cupGroupFirst || fairy.group === 0 || this.cupGroupFirst === 0;
+  }
+
+  /** 感应：sensor r=1.3 与 fairy 主圆 r=0.3 的圆-圆重叠（圆对圆与 TestOverlap 等价） */
+  contains(fairy: Fairy): boolean {
+    const p = fairy.body.GetPosition();
+    return Math.hypot(p.x - this.cupCenter.x, p.y - this.cupCenter.y) < 1.3 + 0.3;
+  }
+
+  /** 每帧成员重建（oracle 走 contact begin/end；内核按确定性序全量重算，语义等价）：
+   *  新入成员设 externalTarget（杯口，L53257），离席清除。 */
+  refreshMembership(fairies: Fairy[]): void {
+    for (const f of fairies) {
+      const inRange = this.contains(f);
+      const member = this.currentFairies.includes(f);
+      if (inRange && this.matches(f)) {
+        if (!member) {
+          this.currentFairies.push(f);
+          f.externalTarget = { ...this.cupCenter };
+          f.externalCup = this;
+        }
+      } else if (member) {
+        this.currentFairies = this.currentFairies.filter((x) => x !== f);
+        if (f.externalCup === this) {
+          f.externalTarget = null;
+          f.externalCup = null;
+        }
+      }
+    }
+  }
+
+  checkState(events: MechEvent[]): void {
+    if (this.state === 0 && this.currentFairies.length > 0) {
+      this.state = 1;
+      events.push({ kind: "fairycup", group: this.group, state: 1 });
+    } else if (this.state === 1 && this.currentFairies.length === 0) {
+      this.state = 0;
+      events.push({ kind: "fairycup", group: this.group, state: 0 });
+    }
+  }
+
+  updateState(): void {
+    /* 杯静态无物理迁移；state 由 checkState 维护 */
+  }
+}
+
 export interface Mechanisms {
   manager: MechManager;
   levers: Lever[];
@@ -1365,6 +1674,8 @@ export interface Mechanisms {
   lightPushers: LightPusher[];
   sliders: Slider[];
   timedPushers: TimedPusher[];
+  fairies: Fairy[];
+  fairyCups: FairyCup[];
   /** 光设备统一创建序（world 按【逆序】逐帧步进——原版 sprite 更新序探针口径） */
   lightDevices: Array<{ order: number; beamer?: Beamer; rotMirror?: RotMirror; lightPusher?: LightPusher; slider?: Slider; infiniteMirror?: InfiniteMirror }>;
 }
@@ -1448,6 +1759,17 @@ export function buildMechanisms(B: B2, world: any, groundBody: any, level: Level
     lightDevices.push({ order: lightDevices.length, slider: m });
   }
   const timedPushers: TimedPusher[] = [];
+  const fairies: Fairy[] = [];
+  const fairyCups: FairyCup[] = [];
+  // F 部仙女/仙女杯（lockToDeviceGroup 解析随 net 批补，暂空）
+  for (const d of level.fairies) {
+    fairies.push(new Fairy(B, world, groundBody, { x: d.x, y: d.y, group: d.group, idx: fairies.length, lockGroups: [], relockGroups: [] }));
+  }
+  for (const d of level.fairyCups) {
+    const cup = new FairyCup(B, world, { x: d.x, y: d.y, group: d.group, rotation: 0 });
+    fairyCups.push(cup);
+    manager.register(cup);
+  }
   for (const d of level.timedPushers) {
     // oracle C @1726729：构造器末尾 registerDevice() → 入组为信号源（doRegister 空覆盖
     // 只废 Pusher 构造器那条路径，TimedPusher 自身的基类注册仍生效）——ice_02 闸门链
@@ -1456,5 +1778,5 @@ export function buildMechanisms(B: B2, world: any, groundBody: any, level: Level
     manager.register(tp);
   }
 
-  return { manager, levers, pushers, platforms, props, winds, hangings, pulleys, romans, beamers, rotMirrors, boxMirrors, infiniteMirrors, lightPushers, sliders, timedPushers, lightDevices };
+  return { manager, levers, pushers, platforms, props, winds, hangings, pulleys, romans, beamers, rotMirrors, boxMirrors, infiniteMirrors, lightPushers, sliders, timedPushers, fairies, fairyCups, lightDevices };
 }
