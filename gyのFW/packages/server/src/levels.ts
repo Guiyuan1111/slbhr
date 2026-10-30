@@ -26,6 +26,7 @@ const LEVEL_DIRS = [
   "data/elements/light/levels",
   "data/elements/water/levels",
   "data/elements/wind/levels",
+  "data/fairytales/levels",
   "data/tutorials/levels",
 ];
 

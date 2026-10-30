@@ -291,6 +291,27 @@ export interface PortalDef {
   inverted: boolean;
 }
 
+/** 仙女 def（F 部 fairytales；Chars 层 char tile，props.char="fairy"）——
+ *  零重力圆体+拖拽提线，组色首位配杯；运行时语义（drag/lock/相机 focus）待内核取证 */
+export interface FairyDef {
+  id: string;
+  /** 出生点（图块对象底边中点，同角色口径） */
+  x: number;
+  y: number;
+  /** 组色（properties.group；与杯组首位数字配对，0=百搭） */
+  group: number;
+}
+
+/** 仙女杯 def（F 部；Objects 层 gid，tiles id3 type=fairycup）——杯口 r=1.3 圆 sensor，
+ *  色配仙女牵引入杯 → state 0→1 接通 device group（按钮语义）；语义细节待内核取证 */
+export interface FairyCupDef {
+  id: string;
+  /** 对象矩形中心（杯口 sensor 定位由内核按 oracle 调整） */
+  x: number;
+  y: number;
+  group: number;
+}
+
 export interface TimedPusherDef {
   id: string;
   x: number;
@@ -358,6 +379,8 @@ export interface LevelData {
   sliders: SliderDef[];
   timedPushers: TimedPusherDef[];
   portals: PortalDef[];
+  fairies: FairyDef[];
+  fairyCups: FairyCupDef[];
   /** 教学步骤（已按 id 配对触发区与文本；选层优先级 dual > keyboard > single > 任意） */
   tutorials: TutorialStep[];
   /** 各教学层变体（layer 名 → 步骤），原版按 settings.controls 选层 */
@@ -434,6 +457,51 @@ function absPoints(o: any): Point[] {
 /** #44 未知 gid 告警去重：关卡×gid 只警告一次 */
 const unknownGidWarned = new Set<string>();
 
+/** Tiled 1.x（F 部 fairytales）数组式属性 [{name,type,value}] → 对象式；已是对象式原样返回（幂等） */
+function propsToObj(p: any): any {
+  if (!Array.isArray(p)) return p;
+  const out: Record<string, unknown> = {};
+  for (const e of p) if (e && typeof e.name === "string") out[e.name] = e.value;
+  return out;
+}
+
+/** Tiled 1.x 图块集归一化：tiles/tileproperties 列表态 → A–E 字典态（幂等；WeakMap 缓存免重复转换） */
+const normTilesetCache = new WeakMap<object, any>();
+function normTileset(ts: any): any {
+  if (!ts || typeof ts !== "object") return ts;
+  const hit = normTilesetCache.get(ts);
+  if (hit) return hit;
+  let out = ts;
+  const listToDict = (arr: any[] | undefined) => {
+    if (!Array.isArray(arr)) return undefined;
+    const d: Record<string, any> = {};
+    for (const e of arr) d[String(e.id)] = e;
+    return d;
+  };
+  const tilesDict = listToDict(ts.tiles);
+  const tpDict = listToDict(ts.tileproperties);
+  if (tilesDict || tpDict) {
+    out = { ...ts };
+    if (tilesDict) {
+      out.tiles = tilesDict;
+      // Tiled 1.x 把图块默认属性折进 tiles[].properties（原版 parseMapPropper 现场压平，
+      // 01号档）；并入 tileproperties 供 mergedProps/Ground 读取口径复用
+      const folded: Record<string, any> = { ...(out.tileproperties ?? {}) };
+      for (const k of Object.keys(out.tiles)) {
+        const e = { ...out.tiles[k] };
+        const props = propsToObj(e.properties);
+        e.properties = props;
+        out.tiles[k] = e;
+        if (props && typeof props === "object" && Object.keys(props).length) folded[k] = { ...(folded[k] ?? {}), ...props };
+      }
+      out.tileproperties = folded;
+    }
+    if (tpDict) out.tileproperties = { ...(out.tileproperties ?? {}), ...tpDict };
+  }
+  normTilesetCache.set(ts, out);
+  return out;
+}
+
 export function parseLevel(id: string, json: any, getTileset: TilesetProvider): LevelData {
   // #44 最小 schema 校验：新数据入库时在解析期显式失败（报文含关卡 id 与字段名），
   // 不再裸 TypeError / 静默 NaN / 超大尺寸 RangeError。当前库内数据均受
@@ -457,8 +525,19 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
   const groundLayer = (json.layers as any[]).find((l) => l.type === "tilelayer" && l.name === "Ground");
   if (!groundLayer) throw new Error(`关卡 ${id} 缺少 Ground 层`);
 
+  // F 部（Tiled 1.x）兼容：provider 出口归一化 + 关卡对象属性数组式展平（幂等，
+  // 调用方缓存对象上重复执行无副作用）——A–E 对象式数据零影响
+  const getTs = (src: string) => normTileset(getTileset(src));
+  for (const layer of json.layers as any[]) {
+    if (Array.isArray(layer?.objects)) {
+      for (const o of layer.objects) {
+        if (o && Array.isArray(o.properties)) o.properties = propsToObj(o.properties);
+      }
+    }
+  }
+
   const groundRef = refOf(json, "Ground");
-  const groundTs = getTileset(groundRef.source) as any;
+  const groundTs = getTs(groundRef.source) as any;
 
   // ---- Ground 网格 ----
   const ground = new Uint16Array(cols * rows);
@@ -543,6 +622,8 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
   const sliders: SliderDef[] = [];
   const timedPushers: TimedPusherDef[] = [];
   const portals: PortalDef[] = [];
+  const fairies: FairyDef[] = [];
+  const fairyCups: FairyCupDef[] = [];
   const unknown: string[] = [];
   const tutorialVariants: Record<string, TutorialStep[]> = {};
 
@@ -560,14 +641,24 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
         }
         const ref = resolveGid(json, Number(o.gid));
         const localId = Number(o.gid) - ref.firstgid;
-        const ts = getTileset(ref.source) as any;
+        const ts = getTs(ref.source) as any;
         const kind = ts?.tiles?.[String(localId)]?.type;
         const props = mergedProps(ts, localId, o);
         const r = tileObjRect(o);
         if (kind === "char") {
-          const role: Role = props.char === "wg" ? "watergirl" : "fireboy";
-          // 出生点 = 图块对象底边中点（原版 new character 前的锚点）
-          spawn[role] = { x: r.x + r.w / 2, y: r.y + r.h };
+          if (String(props.char) === "fairy") {
+            // F 部仙女：独立 def（零重力+拖拽，非可操角色）；出生点口径同角色底边中点
+            fairies.push({
+              id: `fy${fairies.length}`,
+              x: r.x + r.w / 2,
+              y: r.y + r.h,
+              group: num(props.group),
+            });
+          } else {
+            const role: Role = props.char === "wg" ? "watergirl" : "fireboy";
+            // 出生点 = 图块对象底边中点（原版 new character 前的锚点）
+            spawn[role] = { x: r.x + r.w / 2, y: r.y + r.h };
+          }
         } else if (kind === "door") {
           doors[props.char === "wg" ? "watergirl" : "fireboy"] = r;
         } else if (kind === "diamond") {
@@ -655,7 +746,7 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
         const gid = Number(o.gid);
         const ref = resolveGid(json, gid);
         const localId = gid - ref.firstgid;
-        const ts = getTileset(ref.source) as any;
+        const ts = getTs(ref.source) as any;
         const typeName = String(ts?.tiles?.[String(localId)]?.type ?? "");
         const r = tileObjRect(o);
         const c = centerOf(r);
@@ -767,6 +858,17 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
                 rotation: num(o.rotation),
                 group: num(props.group),
                 time: num(props.time, 2000),
+              });
+              break;
+            }
+            case "fairycup": {
+              // F 部仙女杯：def 只做数据提取；杯口 sensor/牵引/接通语义内核实现
+              const c0 = centerOf(r);
+              fairyCups.push({
+                id: `fc${fairyCups.length}`,
+                x: c0.x,
+                y: c0.y,
+                group: num(props.group),
               });
               break;
             }
@@ -902,6 +1004,8 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
     sliders,
     timedPushers,
     portals,
+    fairies,
+    fairyCups,
     tutorials,
     tutorialVariants,
     unknown,

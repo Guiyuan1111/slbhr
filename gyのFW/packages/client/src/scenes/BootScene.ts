@@ -162,12 +162,12 @@ export class BootScene extends Phaser.Scene {
     // E 部（elements/<x>）：大厅逐元素换肤（Fire/Water/Wind/Crystal 新图，Forest/Light/Ice 字节同三部复用），
     // GameName 统一 Elements 单图（01号档 §5）
     const HALL_SUFFIX: Record<TempleKey, string> = {
-      forest: "Forest", light: "Light", ice: "Ice", crystal: "Crystal",
+      forest: "Forest", light: "Light", ice: "Ice", crystal: "Crystal", fairytales: "Fairy",
       "elements/fire": "Fire", "elements/water": "Water", "elements/wind": "Wind",
       "elements/crystal": "Crystal", "elements/forest": "Forest", "elements/ice": "Ice", "elements/light": "Light",
     };
     const NAME_SUFFIX: Record<TempleKey, string> = {
-      forest: "Forest", light: "Light", ice: "Ice", crystal: "Crystal",
+      forest: "Forest", light: "Light", ice: "Ice", crystal: "Crystal", fairytales: "Fairy",
       "elements/fire": "Elements", "elements/water": "Elements", "elements/wind": "Elements",
       "elements/crystal": "Elements", "elements/forest": "Elements", "elements/ice": "Elements", "elements/light": "Elements",
     };
