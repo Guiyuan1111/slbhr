@@ -8,6 +8,8 @@ import { Portal } from "../kernel/mechanisms.js";
 import { b2 } from "../kernel/b2.js";
 
 const B = b2();
+
+const IDLE = { fireboy: { up: false, left: false, right: false }, watergirl: { up: false, left: false, right: false } };
 import { circleFixture } from "../kernel/b2.js";
 
 // packages/shared/src/__tests__ → 仓库根
@@ -183,5 +185,30 @@ describe("Portal 内核", () => {
     beamer.update(false, 2);
     pts = beamer.beamPts!;
     expect(pts.some((q) => Math.abs(q.x - 0.1) < 1e-6)).toBe(false);
+  });
+
+  it("crystal_04 真数据集成：initialState 开门对全链路传送（World.step 含 Step 求解）", () => {
+    const lv = loadLevel("crystal_04", "crystal/levels");
+    const w = new World(lv);
+    const open = w.portals.find((p) => p.state === 1 && p.other);
+    expect(open).toBeDefined();
+    const other = open!.other!;
+    // 角色置于入口门触发带（本地 +x 0.15、门高 +0.5 处）
+    const ang = open!.body.GetAngle();
+    const pos = open!.body.GetPosition();
+    const nx = Math.cos(ang);
+    const ny = Math.sin(ang);
+    const ex = -Math.sin(ang);
+    const ey = Math.cos(ang);
+    const fb = w.players.fireboy.body;
+    fb.SetPosition(new B.b2Vec2(pos.x + nx * 0.15 + ex * 0.5, pos.y + ny * 0.15 + ey * 0.5));
+    fb.SetLinearVelocity(new B.b2Vec2(0, 0));
+    const ev1 = w.step(1 / 60, IDLE);
+    const p2 = fb.GetPosition();
+    const opos = other.body.GetPosition();
+    // 已传到出口门邻域（≤2.5m；含重力一步/低速钳推进）
+    expect(Math.hypot(p2.x - opos.x, p2.y - opos.y)).toBeLessThan(2.5);
+    // 传送帧 portalTransport 音效排水为 mech 事件
+    expect(ev1.some((e) => e.type === "mech" && e.event.kind === "portal")).toBe(true);
   });
 });
