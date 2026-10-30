@@ -679,15 +679,18 @@ const SEGI = {
 //   结构封死（5.3 裁决项）：两门均在封闭上部复合体——row-14 上行口全部升 128-256>123 跳限；mesa 唯一电梯 p1 由
 //   mesa 上的 b1 控制=自锁；wg 西界 352 熔岩墙；x1/板A 联动激活点在不可达 row-4-west。v3 链止于 E2 可达西端。
 const SEGE = {
-  // v3（2026-10-26 probe13-16 实测；v2 出生角色反置已废弃——autosearch 首跑实证 fb 生于崖台 832、wg 生于口袋 992）
+  // v3.1（2026-10-26 probe13-17 实测；v2 出生角色反置已废弃；v3 首跑实证 S.hold 无 f0 护栏——
+  // recipe 首步 hold 在 f=0 压方向触发 kernel NaN 力永久毒化刚体（vx 冻结，fb 冻在出生点 1328,797），
+  // 故所有 fb 链首步插入 sleep(3) 作 f0 守护，方向输入最早落 f≥3）
   E0: {
     maxDepth: 14, capFb: 10, capWg: 10, horizonF: 800,
     recipe: {
-      fb: [spec("hold", -1, 480), spec("jumpDrift", 1, 0, 50), spec("jumpDrift", 1, 0, 50), spec("hold", 1, 744), spec("sleep", 40)],
+      fb: [spec("sleep", 3), spec("hold", -1, 480), spec("jumpDrift", 1, 0, 50), spec("jumpDrift", 1, 0, 50), spec("hold", 1, 744), spec("sleep", 40)],
       wg: [spec("waitPlat", 0, 884, 918), spec("hold", -1, 1234), spec("jumpDrift", -1, 0, 80), spec("sleep", 50)],
     },
     vocab: {
-      fb: [spec("hold", -1, 468), spec("hold", -1, 480), spec("hold", -1, 492),
+      fb: [spec("sleep", 3), spec("sleep", 6),
+        spec("hold", -1, 468), spec("hold", -1, 480), spec("hold", -1, 492),
         spec("jumpDrift", 1, 0, 40), spec("jumpDrift", 1, 0, 50), spec("jumpDrift", 1, 0, 60),
         spec("jumpDrift", 1, 0, 40), spec("jumpDrift", 1, 0, 50), spec("jumpDrift", 1, 0, 60),
         spec("hold", 1, 730), spec("hold", 1, 744), spec("hold", 1, 758), spec("sleep", 30), spec("sleep", 40), spec("sleep", 60)],
@@ -700,11 +703,12 @@ const SEGE = {
   E1: {
     maxDepth: 12, capFb: 8, capWg: 10, horizonF: 700,
     recipe: {
-      fb: [spec("hold", -1, 700), spec("sleep", 60)],
+      fb: [spec("sleep", 3), spec("hold", -1, 700), spec("sleep", 60)],
       wg: [spec("waitPlat", 0, 884, 918), spec("jumpDrift", -1, 0, 65), spec("hold", -1, 780), spec("sleep", 20)],
     },
     vocab: {
-      fb: [spec("hold", -1, 688), spec("hold", -1, 700), spec("hold", -1, 714),
+      fb: [spec("sleep", 3), spec("sleep", 6),
+        spec("hold", -1, 688), spec("hold", -1, 700), spec("hold", -1, 714),
         spec("sleep", 40), spec("sleep", 60), spec("sleep", 90)],
       wg: [spec("waitPlat", 0, 882, 910), spec("waitPlat", 0, 890, 918), spec("waitPlat", 0, 898, 926),
         spec("jumpDrift", -1, 0, 55), spec("jumpDrift", -1, 0, 65), spec("jumpDrift", -1, 0, 80),
@@ -716,11 +720,12 @@ const SEGE = {
     maxDepth: 12, capFb: 6, capWg: 10, horizonF: 700,
     recipe: {
       fb: [spec("sleep", 200)],
-      wg: [spec("hold", -1, 660), spec("jumpDrift", -1, 0, 40), spec("hold", -1, 500), spec("sleep", 30)],
+      wg: [spec("sleep", 3), spec("hold", -1, 660), spec("jumpDrift", -1, 0, 40), spec("hold", -1, 500), spec("sleep", 30)],
     },
     vocab: {
       fb: [spec("sleep", 100), spec("sleep", 200), spec("sleep", 320)],
-      wg: [spec("hold", -1, 648), spec("hold", -1, 660), spec("hold", -1, 672),
+      wg: [spec("sleep", 3), spec("sleep", 6),
+        spec("hold", -1, 648), spec("hold", -1, 660), spec("hold", -1, 672),
         spec("jumpDrift", -1, 0, 35), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 50),
         spec("hold", -1, 484), spec("hold", -1, 500), spec("hold", -1, 516),
         spec("sleep", 20), spec("sleep", 30), spec("sleep", 45)],
