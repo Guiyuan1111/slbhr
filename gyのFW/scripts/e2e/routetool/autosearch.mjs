@@ -683,10 +683,10 @@ const SEGE = {
   // recipe 首步 hold 在 f=0 压方向触发 kernel NaN 力永久毒化刚体（vx 冻结，fb 冻在出生点 1328,797），
   // 故所有 fb 链首步插入 sleep(3) 作 f0 守护，方向输入最早落 f≥3）
   E0: {
-    maxDepth: 16, capFb: 10, capWg: 12, horizonF: 900,
+    maxDepth: 12, capFb: 10, capWg: 4, horizonF: 700,
     recipe: {
       fb: [spec("sleep", 3), spec("hold", -1, 480), spec("jumpDrift", 1, 0, 50), spec("jumpDrift", 1, 0, 50), spec("hold", 1, 744), spec("sleep", 40)],
-      wg: [spec("waitPlat", 0, 884, 918), spec("hold", -1, 1234), spec("jumpDrift", -1, 0, 80), spec("jumpDrift", -1, 0, 65), spec("goTo", 780, 10), spec("sleep", 30)],
+      wg: [spec("sleep", 600)],
     },
     vocab: {
       fb: [spec("sleep", 3), spec("sleep", 6),
@@ -694,16 +694,27 @@ const SEGE = {
         spec("jumpDrift", 1, 0, 40), spec("jumpDrift", 1, 0, 50), spec("jumpDrift", 1, 0, 60),
         spec("jumpDrift", 1, 0, 40), spec("jumpDrift", 1, 0, 50), spec("jumpDrift", 1, 0, 60),
         spec("hold", 1, 730), spec("hold", 1, 744), spec("hold", 1, 758), spec("sleep", 30), spec("sleep", 40), spec("sleep", 60)],
+      wg: [spec("sleep", 500), spec("sleep", 600), spec("sleep", 700)],
+    },
+  },
+  E1: {
+    maxDepth: 14, capFb: 4, capWg: 12, horizonF: 700,
+    recipe: {
+      fb: [spec("sleep", 120)],
+      wg: [spec("waitPlat", 0, 884, 918), spec("hold", -1, 1234), spec("jumpDrift", -1, 0, 80), spec("jumpDrift", -1, 0, 65), spec("goTo", 780, 10), spec("sleep", 30)],
+    },
+    vocab: {
+      fb: [spec("sleep", 80), spec("sleep", 120), spec("sleep", 180)],
       wg: [spec("waitPlat", 0, 882, 910), spec("waitPlat", 0, 890, 918), spec("waitPlat", 0, 898, 926),
         spec("hold", -1, 1226), spec("hold", -1, 1234), spec("hold", -1, 1242),
         spec("jumpDrift", -1, 0, 65), spec("jumpDrift", -1, 0, 80), spec("jumpDrift", -1, 0, 95),
         spec("jumpDrift", -1, 0, 50), spec("jumpDrift", -1, 0, 65), spec("jumpDrift", -1, 0, 80),
         spec("goTo", 770, 10), spec("goTo", 780, 10), spec("goTo", 792, 10),
-        spec("goTo", 790, 12), spec("sleep", 20), spec("sleep", 30), spec("sleep", 45)],
+        spec("sleep", 20), spec("sleep", 30), spec("sleep", 45)],
     },
   },
-  E1: {
-    maxDepth: 12, capFb: 6, capWg: 10, horizonF: 700,
+  E2: {
+    maxDepth: 12, capFb: 6, capWg: 8, horizonF: 700,
     recipe: {
       fb: [spec("sleep", 150)],
       wg: [spec("sleep", 3), spec("hold", -1, 660), spec("jumpDrift", -1, 0, 40), spec("sleep", 20)],
@@ -716,8 +727,8 @@ const SEGE = {
         spec("sleep", 15), spec("sleep", 20), spec("sleep", 30)],
     },
   },
-  E2: {
-    maxDepth: 12, capFb: 6, capWg: 10, horizonF: 700,
+  E3: {
+    maxDepth: 12, capFb: 6, capWg: 8, horizonF: 700,
     recipe: {
       fb: [spec("sleep", 200)],
       wg: [spec("goTo", 500, 10), spec("sleep", 30)],
@@ -729,14 +740,6 @@ const SEGE = {
     },
   },
 };
-Object.assign(SEG, SEGE);
-
-// ---------------------------------------------------------------- evaluate：单候选全量重放（进程内确定性，§1.4）
-// 语义对齐 botcore.drive（fb→wg→step，run→done→推进，队列空锁存末输入，死亡/WIN 短路），
-// 另加：entry 联合首帧（入场门控）、段相对 horizon、双队列空+宽限冻结。
-function evaluate(segC, sf, sw, totalCapF) {
-  const w = makeWorld(LEVEL);
-  const progs = { fb: sf.map(stepOf), wg: sw.map(stepOf) };
   const idx = { fb: 0, wg: 0 };
   const state = { fb: { ...NONE }, wg: { ...NONE } };
   const snapOf = (role) => {
