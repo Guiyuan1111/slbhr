@@ -220,6 +220,7 @@ export class World {
     lightPushers: Array<{ id: number; group: number; state: number; x: number; y: number }>;
     sliders: Array<{ id: number; x: number; y: number }>;
     timedPushers: Array<{ id: number; state: number; x: number; y: number }>;
+    portals: Array<{ id: number; state: number; x: number; y: number; angle: number }>;
     liquidsFrozen: boolean[];
   } {
     return {
@@ -280,6 +281,11 @@ export class World {
       timedPushers: this.mechs.timedPushers.map((m, id) => {
         const pos = m.body.GetPosition();
         return { id, state: m.state, x: m2px(pos.x), y: m2px(pos.y) };
+      }),
+      // 传送门（D/E 部；开门态+体位供客户端帧动画/开关演出，角度同 rotMirror 体角原值）
+      portals: this.mechs.portals.map((m, id) => {
+        const pos = m.body.GetPosition();
+        return { id, state: m.state, x: m2px(pos.x), y: m2px(pos.y), angle: m.body.GetAngle() };
       }),
       liquidsFrozen: this.built.liquids.map((l) => l.frozen),
     };
