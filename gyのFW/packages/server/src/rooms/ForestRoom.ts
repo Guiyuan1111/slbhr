@@ -23,7 +23,7 @@ import { ROLES, EMPTY_INPUT, type Role, type InputState } from "@fw/shared";
 import { World, m2px, type WorldEvent, type WorldPhase } from "@fw/shared/kernel";
 import { levelExists, loadLevel, type LevelBundle } from "../levels.js";
 import { BeamState,
-  TimedPusherState, RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState, FairyState, FairyCupState } from "./state.js";
+  TimedPusherState, RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState, FairyState, FairyCupState, PortalState } from "./state.js";
 
 /**
  * 屏幕 px → 物理 m（shared/src/kernel/b2.ts px2m 同式：physics = −screen/32）。
@@ -292,6 +292,19 @@ export class ForestRoom extends Room<RoomState> {
       }
     });
 
+    // F 部免费复活一次（R2；oracle GameOverMenu 第三钮 showRewardedAndRevive 的联机化，
+    // 原版走激励广告，我方裁定免费）：gameover 相位受理 → world.revive()（内核门禁
+    // revived 一次性+重建双角+检查点回放）→ 成功即回 started 广播 revived，失败静默
+    // （客户端维持 gameover，可照常 Retry）。
+    this.onMessage("revive", () => {
+      if (this.state.phase !== "gameover") return;
+      const ok = this.world.revive();
+      if (!ok) return;
+      this.state.phase = "started";
+      this.syncState();
+      this.broadcast("revived", { timerMs: this.state.timerMs });
+    });
+
     // 结算「继续」直进下一关（原版 EndMenu Continue 的联机化，2026-10-12 实玩反馈）：
     // 活房间内换关、双方席位保留，不再回大厅重建房间。下一关 id 由发起端按 temple.json
     // 序算好带上（关卡合法性以服务端为准），仅 won 受理——双端各点一次时第二发在
@@ -325,6 +338,7 @@ export class ForestRoom extends Room<RoomState> {
       // syncState 在 restartLevel 里按空数组重新 push 并派生 fy{n}/fc{n} id）
       this.state.fairies.clear();
       this.state.fairyCups.clear();
+      this.state.portals.clear();
       this.restartLevel();
     });
 
@@ -973,6 +987,19 @@ export class ForestRoom extends Room<RoomState> {
       }
       cs.state = c.state;
     }
+    // ---- D/E 部传送门开关态（静态体只同步 state；id=pt{数组序}）----
+    for (let i = 0; i < this.world.portals.length; i++) {
+      const p = this.world.portals[i];
+      let ps = this.state.portals.at(i);
+      if (!ps) {
+        ps = new PortalState();
+        ps.id = `pt${i}`;
+        this.state.portals.push(ps);
+      }
+      ps.state = p.state;
+    }
+    // F 部复活门禁镜像（R2：复活钮显隐；restart/advance 重建 world 时自动回 false）
+    this.state.revived = this.world.revived;
     // 液体冻结旗标（行段序 0/1 串）
     const liquidsFlag = this.world.liquids.map((l: any) => (l.frozen ? "1" : "0")).join("");
     if (this.state.liquids !== liquidsFlag) this.state.liquids = liquidsFlag;

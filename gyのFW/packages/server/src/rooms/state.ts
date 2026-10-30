@@ -201,6 +201,19 @@ export class FairyCupState extends Schema {
   }
 }
 
+/** 传送门（D/E 部）：id=`pt{数组序}`；state 0/1=关门/开门。体静态（x/y/angle 不下发，
+ *  客户端自 level.portals 取几何），只同步开关态 */
+export class PortalState extends Schema {
+  declare id: string;
+  declare state: number;
+
+  constructor() {
+    super();
+    this.id = "";
+    this.state = 0;
+  }
+}
+
 export class RoomState extends Schema {
   declare phase: string;
   declare levelId: string;
@@ -233,6 +246,10 @@ export class RoomState extends Schema {
   /** 契约（fw-net/fw-fairy-view）：ArraySchema 按内核数组序；拖拽经 "fairydrag" 消息 */
   declare fairies: ArraySchemaType<FairyState>;
   declare fairyCups: ArraySchemaType<FairyCupState>;
+  /** D/E 部传送门开关态（crystal/elements 关非空；forest/light/ice/fairytales 恒空数组） */
+  declare portals: ArraySchemaType<PortalState>;
+  /** 本局已免费复活（R2；oracle level.revived——复活钮显隐与 revive 消息门禁共用） */
+  declare revived: boolean;
 
   constructor() {
     super();
@@ -261,6 +278,8 @@ export class RoomState extends Schema {
     this.doors = new DoorState();
     this.fairies = new ArraySchema();
     this.fairyCups = new ArraySchema();
+    this.portals = new ArraySchema();
+    this.revived = false;
   }
 }
 
@@ -347,6 +366,11 @@ defineTypes(FairyCupState, {
   state: "number",
 });
 
+defineTypes(PortalState, {
+  id: "string",
+  state: "number",
+});
+
 defineTypes(RoomState, {
   phase: "string",
   levelId: "string",
@@ -373,6 +397,8 @@ defineTypes(RoomState, {
   doors: DoorState,
   fairies: { array: FairyState },
   fairyCups: { array: FairyCupState },
+  portals: { array: PortalState },
+  revived: "boolean",
 });
 
 /**
@@ -388,6 +414,6 @@ defineTypes(RoomState, {
  * StateView/encodeView 路径被触及。
  */
 // #26：BeamState/TimedPusherState（0.3.45/0.3.47 新增）曾漏登记，每字段编码白付一次 filter 调用
-for (const cls of [RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState, DoorState, BeamState, TimedPusherState, FairyState, FairyCupState]) {
+for (const cls of [RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState, DoorState, BeamState, TimedPusherState, FairyState, FairyCupState, PortalState]) {
   (cls as unknown as Record<string, unknown>)[$filter as string] = undefined;
 }

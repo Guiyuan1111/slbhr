@@ -152,6 +152,13 @@ export interface FairySnapshotDto {
   locked: boolean;
 }
 
+/** 对应 state.ts `PortalState`（D/E 部传送门：id=pt{数组序}；state 0/1=关门/开门；
+ *  体静态，几何由客户端 level.portals 自取） */
+export interface PortalSnapshotDto {
+  id: string;
+  state: number;
+}
+
 /** 对应 state.ts `FairyCupState`（F 部仙女杯：id=fc{n}；state 0/1=杯内有无色配仙女） */
 export interface FairyCupSnapshotDto {
   id: string;
@@ -213,6 +220,9 @@ export interface RoomSnapshotDto {
   // ---- F 部仙女（fairy 关非空，forest 等恒空数组）----
   fairies: ReadonlyArray<FairySnapshotDto>;
   fairyCups: ReadonlyArray<FairyCupSnapshotDto>;
+  portals: ReadonlyArray<PortalSnapshotDto>;
+  /** 本局已免费复活（R2） */
+  revived: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -231,7 +241,8 @@ export type SchemaChildName =
   | "TimedPusherState"
   | "DoorState"
   | "FairyState"
-  | "FairyCupState";
+  | "FairyCupState"
+  | "PortalState";
 
 export const PLAYER_SNAPSHOT_FIELDS: WireSpecOf<PlayerSnapshotDto> = {
   x: "number",
@@ -301,6 +312,7 @@ export const CHILD_SNAPSHOT_FIELDS: Record<SchemaChildName, Readonly<Record<stri
   TimedPusherState: { state: "number", frac: "number", downState: "number", x: "number", y: "number" },
   FairyState: { id: "string", x: "number", y: "number", group: "number", locked: "boolean" },
   FairyCupState: { id: "string", state: "number" },
+  PortalState: { id: "string", state: "number" },
 };
 
 /** 房间字段 spec：标量 WireKind；集合 { map: 子类名 }；数组 { array: 子类名 }；单引用 { ref: 子类名 } */
@@ -336,6 +348,8 @@ export const ROOM_SNAPSHOT_FIELDS = {
   doors: { ref: "DoorState" },
   fairies: { array: "FairyState" },
   fairyCups: { array: "FairyCupState" },
+  portals: { array: "PortalState" },
+  revived: "boolean",
 } as const satisfies Record<keyof RoomSnapshotDto, RoomFieldSpec>;
 
 // ---------------------------------------------------------------------------
@@ -368,6 +382,7 @@ export const CHILD_SNAPSHOT_FIELD_NAMES: Record<SchemaChildName, readonly string
   TimedPusherState: fieldNamesOf({ state: "number", frac: "number", downState: "number", x: "number", y: "number" }),
   FairyState: fieldNamesOf(CHILD_SNAPSHOT_FIELDS.FairyState),
   FairyCupState: fieldNamesOf(CHILD_SNAPSHOT_FIELDS.FairyCupState),
+  PortalState: fieldNamesOf(CHILD_SNAPSHOT_FIELDS.PortalState),
 };
 
 /** 房间集合字段 → 子状态类名（MapSchema/ArraySchema 拓扑，供校验器遍历集合条目） */
