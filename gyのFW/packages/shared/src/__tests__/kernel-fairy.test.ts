@@ -23,7 +23,7 @@ function loadLevel(id: string, dir: string) {
 const IDLE = { fireboy: { up: false, left: false, right: false }, watergirl: { up: false, left: false, right: false } };
 
 function fairyPos(w: World): number[][] {
-  return w.mechs.fairies.map((f) => {
+  return w.fairies.map((f) => {
     const p = f.body.GetPosition();
     return [Math.round(p.x * 100) / 100, Math.round(p.y * 100) / 100];
   });
@@ -48,8 +48,8 @@ describe("Fairy/FairyCup 内核（fairies_000 真数据）", () => {
     const lv = loadLevel("fairies_000", "tutorials/levels");
     const w = new World(lv);
     for (let i = 0; i < 30; i++) w.step(1 / 60, IDLE);
-    const cup = w.mechs.fairyCups.find((c) => c.group === 41)!;
-    const fy = w.mechs.fairies.find((f) => f.group === 4)!;
+    const cup = w.fairyCups.find((c) => c.group === 41)!;
+    const fy = w.fairies.find((f) => f.group === 4)!;
     for (let i = 0; i < 120; i++) {
       fy.setDrag({ x: cup.center.x, y: cup.center.y });
       w.step(1 / 60, IDLE);
@@ -57,7 +57,7 @@ describe("Fairy/FairyCup 内核（fairies_000 真数据）", () => {
     expect(cup.state).toBe(1);
     expect(cup.currentFairies).toContain(fy);
     expect(fy.externalCup).toBe(cup);
-    expect(w.mechs.fairyCups.filter((c) => c !== cup).every((c) => c.state === 0)).toBe(true);
+    expect(w.fairyCups.filter((c) => c !== cup).every((c) => c.state === 0)).toBe(true);
     // 事件谱出现 fairycup 迁移
   });
 
@@ -66,8 +66,8 @@ describe("Fairy/FairyCup 内核（fairies_000 真数据）", () => {
     const w = new World(lv);
     for (let i = 0; i < 30; i++) w.step(1 / 60, IDLE);
     // fairies_000 杯组：5/3/1/41——group5 仙女组只有 4/0/5，取 group1 杯（首位 1）+ group4 仙女 = 不配
-    const cup1 = w.mechs.fairyCups.find((c) => String(c.group).startsWith("1") && c.group !== 41)!;
-    const fy4 = w.mechs.fairies.find((f) => f.group === 4)!;
+    const cup1 = w.fairyCups.find((c) => String(c.group).startsWith("1") && c.group !== 41)!;
+    const fy4 = w.fairies.find((f) => f.group === 4)!;
     for (let i = 0; i < 120; i++) {
       fy4.setDrag({ x: cup1.center.x, y: cup1.center.y });
       w.step(1 / 60, IDLE);
@@ -79,7 +79,7 @@ describe("Fairy/FairyCup 内核（fairies_000 真数据）", () => {
   it("松手 maxForce 降 5%：就地漂浮停驻（速度衰减，不继续飞离拖拽点——oracle 无回原点语义）", () => {
     const lv = loadLevel("fairies_000", "tutorials/levels");
     const w = new World(lv);
-    const fy = w.mechs.fairies[0];
+    const fy = w.fairies[0];
     for (let i = 0; i < 60; i++) {
       fy.setDrag({ x: fy.body.GetPosition().x + 5, y: fy.body.GetPosition().y });
       w.step(1 / 60, IDLE);

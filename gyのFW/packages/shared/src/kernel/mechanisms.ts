@@ -82,6 +82,12 @@ export class MechManager {
    * group 缺省=全组遍历（forest 0/1 源下与旧布尔 OR 等价；传 group 时只处理该组——
    * 滑轨连续态下全组遍历会把其它组的分数态布尔化成 1，2026-10-25 light 集成修正）。
    */
+  /** 组内任一成员 state 真（Fairy 锁定/解锁判定用，oracle fairy.lockedBy 语义） */
+  queryActive(group: number): boolean {
+    const list = this.groups.get(group);
+    return list ? list.some((m) => m.state !== 0) : false;
+  }
+
   deviceChanged(group?: number): void {
     const process = (list: GroupMember[]): void => {
       const sources = list.filter((d) => d.hasSignal);
@@ -1763,7 +1769,16 @@ export function buildMechanisms(B: B2, world: any, groundBody: any, level: Level
   const fairyCups: FairyCup[] = [];
   // F 部仙女/仙女杯（lockToDeviceGroup 解析随 net 批补，暂空）
   for (const d of level.fairies) {
-    fairies.push(new Fairy(B, world, groundBody, { x: d.x, y: d.y, group: d.group, idx: fairies.length, lockGroups: [], relockGroups: [] }));
+    fairies.push(
+      new Fairy(B, world, groundBody, {
+        x: d.x,
+        y: d.y,
+        group: d.group,
+        idx: fairies.length,
+        lockGroups: d.lockGroup === undefined ? [] : [d.lockGroup],
+        relockGroups: d.relockGroup === undefined ? [] : [d.relockGroup],
+      }),
+    );
   }
   for (const d of level.fairyCups) {
     const cup = new FairyCup(B, world, { x: d.x, y: d.y, group: d.group, rotation: 0 });

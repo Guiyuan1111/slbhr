@@ -301,6 +301,15 @@ export class World {
 
   // -------------------------------------------------- 步进
 
+  /** F 部仙女/杯访问（视图与测试用；mechs 本体保持私有） */
+  get fairies() {
+    return this.mechs.fairies;
+  }
+
+  get fairyCups() {
+    return this.mechs.fairyCups;
+  }
+
   /** 推进一帧。dt 秒（服务端 1/60；对拍时喂录制 dt 序列）。返回本帧事件。 */
   step(dt: number, inputs: Record<Role, InputState>): WorldEvent[] {
     const events: WorldEvent[] = [];
@@ -316,6 +325,7 @@ export class World {
     if (this.mechs.fairies.length > 0) {
       const cps = [this.chars.fireboy.body.GetPosition(), this.chars.watergirl.body.GetPosition()];
       for (const f of this.mechs.fairies) f.update(this.simTimeS * 1000, cps);
+      for (const f of this.mechs.fairies) f.checkLock((g) => this.mechs.manager.queryActive(g));
     }
 
     // 原版帧序（运行时探针 2026-10-09，forest_01 实测）：doors → wg → fb → 设备(逆注册序) → Step。

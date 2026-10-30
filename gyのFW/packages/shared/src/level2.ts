@@ -300,6 +300,10 @@ export interface FairyDef {
   y: number;
   /** 组色（properties.group；与杯组首位数字配对，0=百搭） */
   group: number;
+  /** lockToDeviceGroup（生成即 locked；组内任一机关 state 真→解锁，oracle L59033） */
+  lockGroup?: number;
+  /** reLockToDeviceGroup（组内任一机关 state 真→重锁） */
+  relockGroup?: number;
 }
 
 /** 仙女杯 def（F 部；Objects 层 gid，tiles id3 type=fairycup）——杯口 r=1.3 圆 sensor，
@@ -653,6 +657,8 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
               x: r.x + r.w / 2,
               y: r.y + r.h,
               group: num(props.group),
+              lockGroup: props.lockToDeviceGroup === undefined ? undefined : num(props.lockToDeviceGroup),
+              relockGroup: props.reLockToDeviceGroup === undefined ? undefined : num(props.reLockToDeviceGroup),
             });
           } else {
             const role: Role = props.char === "wg" ? "watergirl" : "fireboy";
