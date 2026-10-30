@@ -135,6 +135,16 @@
 今日（2026-10-20）起新条目写在文件顶部。
 
 ## 条目
+
+**更新**：2026-10-31（三部并发批收官：portal 内核全链路 + F 部客户端/网络 + 三部 det 锚 + 覆盖率恢复）
+
+- **portal 内核**（D/E 部）：0978a05 内核（portalId 配对/双 fixture 4096/组电路开闭/transport 数学逐字/低速钳 10·mass⁻¹/200ms 每体冷却/假墙 connectToWall）→ 02efc1d 光束穿门（getOutput/getPoint 两套公式照抄）+ 体角正号勘误 → crystal_04 真数据集成测试（9 件）。与原版两处已记偏离：接触回调改逐帧几何近面判定、transport 不嵌套积分一步（01号档 §1.3/§1.4）。
+- **F 部收口**：RespawnManager 内核（ce7f130）+ world 四挂点/revive() 免费一次（602de18）；net 槽 schema/fairydrag/syncState（e4d3e9c/4460b61/30830cf）；fairy-view 槽仙女/杯/cover 渲染+拖拽+组色异表（70420bb/50de49b/e000404/cd11ecd）；emenu 槽 E 部 multi 选关+SoftLock（45bae04/66e6def）。
+- **勘误**：仙女出生点 y 恒低 32px → 图块中心（oracle F L59002 字证，7254417，r0-fairytales 重锚）。
+- **det 六锚**：r0-crystal(36)/r0-elements(35)/r0-fairytales(31) 入库（fdf9638），CI determinism 扩六锚全量比对；portalId 桶普查 218 门 109 对零异常。
+- **覆盖率**：fw-cov 批 50 例补测，阈值恢复抬升 90.78/82.23/90.33/91.53（3814638；cb697dd 临时下移注记清账）。
+- **门禁**：typecheck 0 错 / vitest 63 文件 472 例全绿 / build 过 / 六 det 锚 241 关位级一致。
+- **待用户**：①三部游玩验收（免我方视觉测试口径）；②分支归并——本会话全部工作在 release/1.0-forest（与 main 互有领先），是否合 main 待裁决。
 **更新**：2026-10-26 六（**light 路线批收官 + 0.3.49 发版——前会话五项计划（light 路线→体验定稿→打包轮→ice 立项）全数完成**）
 ① **light_01 通关路线入库**（9e57372）：箱舞 mount（东推带镜箱≥1045 让缝→穿缝→越箱过东→点喷推回 988-1034 亮窗→1048 静定 {up,left} 飞越 c29 坡链）+ 伺服滑钮（亮窗实测 S∈[455,466]，走推必过冲至 473，1-2f 点喷+滑停入窗）。FSM WIN@f2914×3 逐位一致→路线 JSON 内核回放 WIN@f2943+validate 0+真服 route-node 3/3 PASS。
 ② **接线考古**（light_01 攻坚最大产出）：lever(g2) 体在基座台顶 (862,385) **走近即翻（sensor，不按键）**→rotMirror(1021,163) 转 90°→黄光上折→g42(1024,32) 亮→p1 沉（+90f）；翻杆不可逆——黄光永离东侧→g41(1208,736) 永灭→p2 永升台口封死⇒**双人须先过台口再翻杆**；fb 候杆驻停必须 ≤810（v34 停 859 压杆 sensor 酿无翻杆翻杆）。档卷 note/evidence/2026-10-26-light01-route/（接线表+l1both35.mjs）+note/light01-route.md。
