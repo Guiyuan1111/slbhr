@@ -683,10 +683,10 @@ const SEGE = {
   // recipe 首步 hold 在 f=0 压方向触发 kernel NaN 力永久毒化刚体（vx 冻结，fb 冻在出生点 1328,797），
   // 故所有 fb 链首步插入 sleep(3) 作 f0 守护，方向输入最早落 f≥3）
   E0: {
-    maxDepth: 14, capFb: 10, capWg: 10, horizonF: 800,
+    maxDepth: 16, capFb: 10, capWg: 12, horizonF: 900,
     recipe: {
       fb: [spec("sleep", 3), spec("hold", -1, 480), spec("jumpDrift", 1, 0, 50), spec("jumpDrift", 1, 0, 50), spec("hold", 1, 744), spec("sleep", 40)],
-      wg: [spec("waitPlat", 0, 884, 918), spec("hold", -1, 1234), spec("jumpDrift", -1, 0, 80), spec("goTo", 1030, 10), spec("sleep", 40)],
+      wg: [spec("waitPlat", 0, 884, 918), spec("hold", -1, 1234), spec("jumpDrift", -1, 0, 80), spec("jumpDrift", -1, 0, 65), spec("hold", -1, 780), spec("sleep", 30)],
     },
     vocab: {
       fb: [spec("sleep", 3), spec("sleep", 6),
@@ -697,37 +697,34 @@ const SEGE = {
       wg: [spec("waitPlat", 0, 882, 910), spec("waitPlat", 0, 890, 918), spec("waitPlat", 0, 898, 926),
         spec("hold", -1, 1226), spec("hold", -1, 1234), spec("hold", -1, 1242),
         spec("jumpDrift", -1, 0, 65), spec("jumpDrift", -1, 0, 80), spec("jumpDrift", -1, 0, 95),
-        spec("goTo", 1030, 10), spec("goTo", 1042, 12), spec("sleep", 35), spec("sleep", 50), spec("sleep", 70)],
+        spec("jumpDrift", -1, 0, 50), spec("jumpDrift", -1, 0, 65), spec("jumpDrift", -1, 0, 80),
+        spec("hold", -1, 770), spec("hold", -1, 780), spec("hold", -1, 792),
+        spec("goTo", 790, 12), spec("sleep", 20), spec("sleep", 30), spec("sleep", 45)],
     },
   },
   E1: {
-    maxDepth: 12, capFb: 8, capWg: 10, horizonF: 700,
+    maxDepth: 12, capFb: 6, capWg: 10, horizonF: 700,
     recipe: {
-      fb: [spec("sleep", 3), spec("hold", -1, 700), spec("sleep", 60)],
-      wg: [spec("waitPlat", 0, 884, 918), spec("jumpDrift", -1, 0, 65), spec("hold", -1, 780), spec("sleep", 20)],
+      fb: [spec("sleep", 150)],
+      wg: [spec("sleep", 3), spec("hold", -1, 660), spec("jumpDrift", -1, 0, 40), spec("sleep", 20)],
     },
     vocab: {
-      fb: [spec("sleep", 3), spec("sleep", 6),
-        spec("hold", -1, 688), spec("hold", -1, 700), spec("hold", -1, 714),
-        spec("sleep", 40), spec("sleep", 60), spec("sleep", 90)],
-      wg: [spec("waitPlat", 0, 882, 910), spec("waitPlat", 0, 890, 918), spec("waitPlat", 0, 898, 926),
-        spec("jumpDrift", -1, 0, 55), spec("jumpDrift", -1, 0, 65), spec("jumpDrift", -1, 0, 80),
-        spec("hold", -1, 770), spec("hold", -1, 780), spec("hold", -1, 792),
-        spec("sleep", 15), spec("sleep", 20), spec("sleep", 35)],
+      fb: [spec("sleep", 100), spec("sleep", 150), spec("sleep", 220)],
+      wg: [spec("sleep", 3), spec("sleep", 6),
+        spec("hold", -1, 648), spec("hold", -1, 660), spec("hold", -1, 672),
+        spec("jumpDrift", -1, 0, 35), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 50),
+        spec("sleep", 15), spec("sleep", 20), spec("sleep", 30)],
     },
   },
   E2: {
     maxDepth: 12, capFb: 6, capWg: 10, horizonF: 700,
     recipe: {
       fb: [spec("sleep", 200)],
-      wg: [spec("sleep", 3), spec("hold", -1, 660), spec("jumpDrift", -1, 0, 40), spec("hold", -1, 500), spec("sleep", 30)],
+      wg: [spec("hold", -1, 500), spec("sleep", 30)],
     },
     vocab: {
       fb: [spec("sleep", 100), spec("sleep", 200), spec("sleep", 320)],
-      wg: [spec("sleep", 3), spec("sleep", 6),
-        spec("hold", -1, 648), spec("hold", -1, 660), spec("hold", -1, 672),
-        spec("jumpDrift", -1, 0, 35), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 50),
-        spec("hold", -1, 484), spec("hold", -1, 500), spec("hold", -1, 516),
+      wg: [spec("hold", -1, 484), spec("hold", -1, 500), spec("hold", -1, 516),
         spec("sleep", 20), spec("sleep", 30), spec("sleep", 45)],
     },
   },

@@ -1,6 +1,6 @@
 {
  "level": "e_tutorial_fire",
- "note": "v3.2 链（2026-10-26，E0/E1/E2 终点断言加 vx∈[-40,40] 驻留判定——E0 两轮定稿均因 wg 落 p0 后残余 vx 滑出西缘 992/东缘 1088 坠沟致 seam 失败，fin 实证 evaporated wg[923,921]/die@470 wg[1081,971]；v3 链（2026-10-26，TEMP/fw-route-efire probe13-16 实测，正确出生角色）。【v2 教训】autosearch 首跑实证出生点与 v2 假设相反：fb 出生崖台(1248-1440,832)、wg 出生东南口袋(1216-1440,992)，v2 种子链致 wg f670 坠熔岩死亡（search 报告 E0 0/2，evals=3839）。v3 全部三段为 probe13-16 逐跳实测可达：E0 fb 崖台西坠口袋→涉熔岩(672-1216)→jd50 上 step→jd50 上 bump→b0 板(752) 单重压 p0 至 898-902；wg 等 waitPlat(0,884,918) 后口袋西缘 1234 满drift 立跳 196px 越熔岩落 p0 → 双重沉 944（probe14 全 12 参数组成功）。E1 fb 离板西行走回 bump(700)；p0 载 wg 单重回升 ~900，wg 满 drift 立跳西越 160px 落 bump 东段 826→west 780（probe15）。E2 wg bump 西缘 660 jd40 落 step 楔顶(626,875)→西行坠西区地面(992)→站 ~520（probe15 f472/f554 实测）。E2 即双角色可达西端终点。【结构封死证据（grid.mjs 权威网格 + probe16，存疑待核归 5.3 裁决）】(1) 两门均在封闭上部复合体：fb 门(1312,448) 在 row-14(992-1440,448)，wg 门(1312,160) 在 r5(1280-1440,160)；(2) row-14 上行口全部超跳限：row-20-east(640)→r15 台(480) 升 160、x0 顶(576)→row-14 升 128（且净空 96px 禁跳）、柱顶(512-544,r21-25,顶672)→r13 岛(736-864,416) 升 256；(3) mesa(160-416,832) 唯一电梯 p1(416-512) 由 b1(240,mesa上) 控制，b1 仅 mesa 可按=自锁；柱顶 672 需从 bump(832) 升 160，塔墩(384-416,r24-25,顶768-800) 需从柱顶起跳均不可达；(4) wg 西界=西区地面 352 处熔岩墙(128-352)，r20 岩浆(736-960/1248-1376) 杀 wg；(5) 板A/B(x1 压板联动,probe5) 激活点 x1(648-712,128) 在不可达 row-4-west。py 口径=snapshot 中心 y=脚−35。机关三态实测：p0 静 848 / fb 单重压板 898-902 / fb+wg 双重 944（probe13/14）。",
+ "note": "v4 链（2026-10-26，E0 终点改双角色会合 bump——p0 仅作 wg 二跳中转不驻留（p0 西缘外即死沟，两轮定稿 wg 驻留被残余 vx/±1f 抖动甩出缘坠沟，fin 实证 wg[958,903]/[923,921]）；E0 终点改双角色会合 bump——，E0/E1/E2 终点断言加 vx∈[-40,40] 驻留判定——E0 两轮定稿均因 wg 落 p0 后残余 vx 滑出西缘 992/东缘 1088 坠沟致 seam 失败，fin 实证 evaporated wg[923,921]/die@470 wg[1081,971]；v3 链（2026-10-26，TEMP/fw-route-efire probe13-16 实测，正确出生角色）。【v2 教训】autosearch 首跑实证出生点与 v2 假设相反：fb 出生崖台(1248-1440,832)、wg 出生东南口袋(1216-1440,992)，v2 种子链致 wg f670 坠熔岩死亡（search 报告 E0 0/2，evals=3839）。v3 全部三段为 probe13-16 逐跳实测可达：E0 fb 崖台西坠口袋→涉熔岩(672-1216)→jd50 上 step→jd50 上 bump→b0 板(752) 单重压 p0 至 898-902；wg 等 waitPlat(0,884,918) 后口袋西缘 1234 满drift 立跳 196px 越熔岩落 p0 → 双重沉 944（probe14 全 12 参数组成功）。E1 fb 离板西行走回 bump(700)；p0 载 wg 单重回升 ~900，wg 满 drift 立跳西越 160px 落 bump 东段 826→west 780（probe15）。E2 wg bump 西缘 660 jd40 落 step 楔顶(626,875)→西行坠西区地面(992)→站 ~520（probe15 f472/f554 实测）。E2 即双角色可达西端终点。【结构封死证据（grid.mjs 权威网格 + probe16，存疑待核归 5.3 裁决）】(1) 两门均在封闭上部复合体：fb 门(1312,448) 在 row-14(992-1440,448)，wg 门(1312,160) 在 r5(1280-1440,160)；(2) row-14 上行口全部超跳限：row-20-east(640)→r15 台(480) 升 160、x0 顶(576)→row-14 升 128（且净空 96px 禁跳）、柱顶(512-544,r21-25,顶672)→r13 岛(736-864,416) 升 256；(3) mesa(160-416,832) 唯一电梯 p1(416-512) 由 b1(240,mesa上) 控制，b1 仅 mesa 可按=自锁；柱顶 672 需从 bump(832) 升 160，塔墩(384-416,r24-25,顶768-800) 需从柱顶起跳均不可达；(4) wg 西界=西区地面 352 处熔岩墙(128-352)，r20 岩浆(736-960/1248-1376) 杀 wg；(5) 板A/B(x1 压板联动,probe5) 激活点 x1(648-712,128) 在不可达 row-4-west。py 口径=snapshot 中心 y=脚−35。机关三态实测：p0 静 848 / fb 单重压板 898-902 / fb+wg 双重 944（probe13/14）。",
  "assertKinds": [
   "px",
   "py",
@@ -20,7 +20,7 @@
  "segments": [
   {
    "id": "E0",
-   "title": "fb 崖台西坠口袋→涉熔岩→jd 上 step→上 bump→压 b0 板(752)；wg 等 p0 单重沉态后口袋西缘 1234 满 drift 越熔岩登 p0→双重沉 944",
+   "title": "fb 崖台西坠口袋→涉熔岩→jd 上 step→上 bump→压 b0 板；wg 等 p0 单重沉态后西缘 1234 jd80 越熔岩落 p0→即 jd65 二跳上 bump→west 780——双角色会合 bump 顶",
    "entry": [
     {
      "kind": "alive"
@@ -47,153 +47,6 @@
     ],
     [
      {
-      "kind": "platY",
-      "id": 0,
-      "min": 935,
-      "max": 956
-     },
-     {
-      "kind": "px",
-      "role": "wg",
-      "min": 995,
-      "max": 1085
-     },
-     {
-      "kind": "py",
-      "role": "wg",
-      "min": 876,
-      "max": 935
-     },
-     {
-      "kind": "grounded",
-      "role": "wg"
-     },
-     {
-      "kind": "vx",
-      "role": "wg",
-      "min": -40,
-      "max": 40
-     }
-    ]
-   ],
-   "target": [
-    {
-     "kind": "alive"
-    },
-    {
-     "kind": "vx",
-     "role": "wg",
-     "min": -40,
-     "max": 40
-    },
-    {
-     "kind": "platY",
-     "id": 0,
-     "min": 935,
-     "max": 956
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 995,
-     "max": 1085
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 876,
-     "max": 935
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    },
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 700,
-     "max": 800
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 775,
-     "max": 808
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    }
-   ],
-   "horizonF": 800
-  },
-  {
-   "id": "E1",
-   "title": "fb 离板西行走回 bump(700)；p0 载 wg 单重回升 ~900，wg 满 drift 立跳西越 160px 落 bump 东段(826)→west 780 会合",
-   "entry": [
-    {
-     "kind": "alive"
-    },
-    {
-     "kind": "platY",
-     "id": 0,
-     "min": 935,
-     "max": 956
-    },
-    {
-     "kind": "px",
-     "role": "wg",
-     "min": 995,
-     "max": 1085
-    },
-    {
-     "kind": "py",
-     "role": "wg",
-     "min": 876,
-     "max": 935
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
-    },
-    {
-     "kind": "px",
-     "role": "fb",
-     "min": 700,
-     "max": 800
-    },
-    {
-     "kind": "py",
-     "role": "fb",
-     "min": 775,
-     "max": 808
-    },
-    {
-     "kind": "grounded",
-     "role": "fb"
-    }
-   ],
-   "waypoints": [
-    [
-     {
-      "kind": "px",
-      "role": "fb",
-      "min": 660,
-      "max": 830
-     },
-     {
-      "kind": "py",
-      "role": "fb",
-      "min": 775,
-      "max": 808
-     },
-     {
-      "kind": "grounded",
-      "role": "fb"
-     }
-    ],
-    [
-     {
       "kind": "px",
       "role": "wg",
       "min": 640,
@@ -250,21 +103,21 @@
      "max": 808
     },
     {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
      "kind": "vx",
      "role": "wg",
      "min": -40,
      "max": 40
-    },
-    {
-     "kind": "grounded",
-     "role": "wg"
     }
    ],
-   "horizonF": 700
+   "horizonF": 900
   },
   {
-   "id": "E2",
-   "title": "wg bump 西缘(660) jd40 落 step 楔顶(626,875)→西行坠西区地面(992)→站 400-560；fb 留 bump——双角色可达西端终点（更西 352 熔岩墙、上行全部封死，见 note）",
+   "id": "E1",
+   "title": "wg bump 西缘(660) jd40 落 step 楔顶(626,875)驻点；fb 驻留 bump——E1=楔顶中继段",
    "entry": [
     {
      "kind": "alive"
@@ -300,6 +153,12 @@
     {
      "kind": "grounded",
      "role": "wg"
+    },
+    {
+     "kind": "vx",
+     "role": "wg",
+     "min": -40,
+     "max": 40
     }
    ],
    "waypoints": [
@@ -319,8 +178,105 @@
      {
       "kind": "grounded",
       "role": "wg"
+     },
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 660,
+      "max": 830
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 775,
+      "max": 808
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
      }
-    ],
+    ]
+   ],
+   "target": [
+    {
+     "kind": "alive"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 580,
+     "max": 660
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 840,
+     "max": 900
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 660,
+     "max": 830
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 775,
+     "max": 808
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    }
+   ],
+   "horizonF": 700
+  },
+  {
+   "id": "E2",
+   "title": "wg 楔顶西行坠西区地面(992)→刹车驻留 400-560；fb 驻留 bump——双角色可达西端终点（更西 352 熔岩墙、上行全部封死，见 note）",
+   "entry": [
+    {
+     "kind": "alive"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 580,
+     "max": 660
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 840,
+     "max": 900
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 660,
+     "max": 830
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 775,
+     "max": 808
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    }
+   ],
+   "waypoints": [
     [
      {
       "kind": "px",
@@ -347,7 +303,7 @@
      {
       "kind": "px",
       "role": "fb",
-      "min": 640,
+      "min": 660,
       "max": 830
      },
      {
@@ -379,19 +335,19 @@
      "max": 975
     },
     {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
      "kind": "vx",
      "role": "wg",
      "min": -40,
      "max": 40
     },
     {
-     "kind": "grounded",
-     "role": "wg"
-    },
-    {
      "kind": "px",
      "role": "fb",
-     "min": 640,
+     "min": 660,
      "max": 830
     },
     {
