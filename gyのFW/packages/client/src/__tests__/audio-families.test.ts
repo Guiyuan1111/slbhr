@@ -90,7 +90,7 @@ describe("族包拆分（r21/r25）：loop 与 terminal 两支", () => {
     for (const s of ["sfx_wind", "sfx_freeze", "sfx_melt", "sfx_slider", "sfx_lightpusher", "sfx_clock"]) {
       expect(ks, `缺 ${s}`).toContain(s);
     }
-    expect(ks).toHaveLength(18);
+    expect(ks).toHaveLength(22);
     expect(keys(AUDIO_BGM_OVER)).toEqual(["bgm_over"]);
   });
 });

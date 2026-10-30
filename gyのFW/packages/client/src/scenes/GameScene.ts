@@ -23,7 +23,7 @@ import { AUDIO_SFX, LEVEL_BGM_KEYS, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadA
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
-import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_NEWCHAR, ATLAS_POPUP, ATLAS_TEMPLE, FONT_MAIN, PLAYER_SCALE, buildFairyAnims, buildGameAnims, loadGameAtlases } from "./BootScene";
+import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_NEWCHAR, ATLAS_POPUP, ATLAS_TEMPLE, FONT_MAIN, PLAYER_SCALE, buildFairyAnims, buildGameAnims, buildPortalAnims, loadGameAtlases } from "./BootScene";
 import { CameraRig, PAD, type CamApply } from "./cameraRig";
 import { clearSceneStates, resetFxStates, SCENE_STATE_KEYS } from "./sceneState";
 import { getSettings } from "../settings";
@@ -157,6 +157,15 @@ interface RomanView {
  * R1 锁定：oracle 无锁形标记（锁定仅门控相机 focus/教学矩形），不做任何视觉差异；
  * targetAngle 视觉朝向不在状态契约（{id,x,y,group,locked}）→ 不转（记档）。
  */
+interface PortalView {
+  frame: Phaser.GameObjects.Image;
+  center: Phaser.GameObjects.Sprite;
+  glowL: Phaser.GameObjects.Sprite;
+  glowR: Phaser.GameObjects.Sprite;
+  light: Phaser.GameObjects.Image;
+  lastState: number;
+}
+
 interface FairyView {
   body: Phaser.GameObjects.Sprite;
   glow: Phaser.GameObjects.Image;
@@ -297,6 +306,8 @@ export class GameScene extends Phaser.Scene {
   // ---- F 部 fairytales（fw-fairy-view）：仙女/仙女杯视图 ----
   private fairyViews = new Map<string, FairyView>();
   private fairyCupViews = new Map<string, FairyCupView>();
+  /** D/E 部传送门视图（portal 渲染批）：静态几何自 level.portals，开关态自 st.portals */
+  private portalViews = new Map<string, PortalView>();
   /** 逐帧仙女点位（关卡 px，updateFairies 收集；杯口 α/百搭 recolor 与拖拽命中共用） */
   private fairyPts: Array<{ id: string; x: number; y: number; group: number }> = [];
   // ---- F 部仙女拖拽输入态（bindFairyDragInput 接线；init 复位，离屏/抬起即 null）----
@@ -423,6 +434,7 @@ export class GameScene extends Phaser.Scene {
     this.romanViews.clear();
     this.fairyViews.clear();
     this.fairyCupViews.clear();
+    this.portalViews.clear();
     this.fairyPts.length = 0;
     this.dragFairyId = null;
     this.dragPending = null;
@@ -482,6 +494,7 @@ export class GameScene extends Phaser.Scene {
     buildGameAnims(this.anims);
     // F 部 fairytales 动画（仙女机身/杯 glow——帧只在 fairytales 变体图集，他庙注册即缺帧告警源）
     if (templeIdOf(level.id) === "fairytales") buildFairyAnims(this.anims);
+    if (level.portals.length > 0) buildPortalAnims(this.anims);
     // 相机管理（F4 翻转，原版 CameraManager @1881500）：此前固定全景（冻结偏离）。
     // 原版行为：加载期 camFreeze 在全图 minScale，started 解冻后每帧自动适配双角色。
     // settled 口径（F2 后）：标准关 settled 恒钉关卡矩形中心 → scroll(16,16)
@@ -580,7 +593,7 @@ export class GameScene extends Phaser.Scene {
         }
       }
       // bgm_level 三键清单与 stopLevelBgm 同源（LEVEL_BGM_KEYS，#49）
-      for (const k of ["bgm_menu", ...LEVEL_BGM_KEYS, "sfx_clock", "bgm_over", "bgm_finish", "bgm_finish_speed", "sfx_wind", "sfx_door"]) {
+      for (const k of ["bgm_menu", ...LEVEL_BGM_KEYS, "sfx_clock", "bgm_over", "bgm_finish", "bgm_finish_speed", "sfx_wind", "sfx_door", "sfx_portalLoop"]) {
         this.sound.stopByKey(k);
       }
     });
@@ -1298,6 +1311,24 @@ export class GameScene extends Phaser.Scene {
         });
       }
     }
+
+    // ---- D/E 部传送门（01号档 §1.7 视觉构成；其余庙 def 恒空数组，此段整体跳过）----
+    // 门框 portal0000 常驻 + center 40帧循环（开门可见/关门隐藏）+ 双侧 glow（左片镜像）
+    // + 子灯 off（lights 机制仅 dark 关点亮，crystal 无 dark → 恒 off）。inverted 整体
+    // 水平翻转。全部挂 liquids 层（§1.7）≈ 深度 7 带；开关态每帧 updatePortals 消费。
+    for (const p of level.portals) {
+      const x = p.x + PAD;
+      const y = p.y + PAD;
+      const frame = this.add.image(x, y, ATLAS_MECH, "portal0000").setOrigin(0.5).setDepth(6.9);
+      const center = this.add.sprite(x, y, ATLAS_MECH, "portal_center0000").setOrigin(0.5).setDepth(6.95).setFlipX(p.inverted).setVisible(false);
+      center.play("portal_center");
+      const glowL = this.add.sprite(x - 32, y, ATLAS_MECH, "portal_glow0000").setOrigin(0.5).setDepth(6.96).setScale(p.inverted ? 1 : -1, 1).setVisible(false);
+      glowL.play("portal_glow");
+      const glowR = this.add.sprite(x + 32, y, ATLAS_MECH, "portal_glow0000").setOrigin(0.5).setDepth(6.96).setScale(p.inverted ? -1 : 1, 1).setVisible(false);
+      glowR.play("portal_glow");
+      const light = this.add.image(x, y, ATLAS_MECH, "portal_light_off0000").setOrigin(0.5).setDepth(6.97);
+      this.portalViews.set(p.id, { frame, center, glowL, glowR, light, lastState: -1 });
+    }
   }
 
   /**
@@ -1731,6 +1762,7 @@ export class GameScene extends Phaser.Scene {
     this.updateDiamonds(st);
     this.updateMechs(st, nowMs, delta);
     this.updateFairies(st);
+    this.updatePortals(st);
     this.flushFairyDrag();
     this.updateDust();
     this.drawDarkness();
@@ -1857,6 +1889,8 @@ export class GameScene extends Phaser.Scene {
       else if (m.kind === "slider") this.sfx("sfx_slider");
       else if (m.kind === "liquid-frozen") this.sfx("sfx_freeze");
       else if (m.kind === "liquid-melted") this.sfx("sfx_melt");
+      // D/E 部传送门音效（oracle Portal.sounds 四键；sfx 载荷=portal.soundQueue 排水）
+      else if (m.kind === "portal") this.sfx(`sfx_${m.sfx}`);
     }
   }
 
@@ -2228,6 +2262,40 @@ export class GameScene extends Phaser.Scene {
     return this.fairyCupViews.get(`fc${idx}`) ?? null;
   }
 
+  /** 每帧传送门消费（开关态迁移沿驱动显隐 + portalLoop 循环音全局单键，wind 同式）。
+   *  状态契约：state.portals=ArraySchema<{id,state}>（服务器 PortalState，id=pt{序}）；
+   *  字段未落地期间 st.portals?.forEach?. 静默跳过，渲染零影响。 */
+  private updatePortals(st: any): void {
+    if (this.portalViews.size === 0) return;
+    let anyOpen = false;
+    st.portals?.forEach?.((s: { id?: string; state?: number }, idx: number) => {
+      const v = this.portalViewOf(s, idx);
+      if (!v) return;
+      const state = Number(s.state) || 0;
+      if (state === v.lastState) {
+        if (state === 1) anyOpen = true;
+        return;
+      }
+      v.lastState = state;
+      const open = state === 1;
+      v.center.setVisible(open);
+      v.glowL.setVisible(open);
+      v.glowR.setVisible(open);
+      if (open) anyOpen = true;
+    });
+    if (anyOpen && !this.sound.isPlaying("sfx_portalLoop")) this.sfx("sfx_portalLoop", { loop: true, volume: 0.3 });
+    if (!anyOpen) this.sound.stopByKey("sfx_portalLoop");
+  }
+
+  /** 快照条目 → 传送门视图：id 键优先，回退 P{idx}（level2 def id 序=world 数组序） */
+  private portalViewOf(s: { id?: string }, idx: number): PortalView | null {
+    if (s.id !== undefined && s.id !== null && String(s.id) !== "") {
+      const v = this.portalViews.get(String(s.id).replace(/^pt/, "P"));
+      if (v) return v;
+    }
+    return this.portalViews.get(`P${idx}`) ?? null;
+  }
+
   /** 每帧仙女/杯消费（updateMechs 后调用；fairyPts 先清后填——杯 α 与拖拽命中共用） */
   private updateFairies(st: any): void {
     if (this.fairyViews.size === 0 && this.fairyCupViews.size === 0) return;
@@ -2310,7 +2378,7 @@ export class GameScene extends Phaser.Scene {
   //  即拖、持续跟随指针、抬起/离屏松手（mouse joint maxForce 降 5% 由服务端执行）。
   //  R1：无 locked 门控——oracle 锁定只门控相机 focus/教学矩形，拖拽照常允许；
   //  无 phase 门控——server 权威裁决消息，客户端不预判）。命中半径 40px（oracle
-  //  hitArea=2×身高≈136px 偏宽，取手感值——任务口径，见 pickFairy 注）。
+  //  hitArea=2×身高≈136px，2026-10-31 用户裁定跟原版口径，见 pickFairy 注）。
   private bindFairyDragInput(): void {
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onFairyDragDown, this);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, this.onFairyDragMove, this);
@@ -2328,7 +2396,7 @@ export class GameScene extends Phaser.Scene {
   private onFairyDragDown(pointer: Phaser.Input.Pointer): void {
     if (this.dragFairyId) return;
     const p = this.pointerToLevel(pointer);
-    const id = pickFairy(this.fairyPts, p.x, p.y, 40);
+    const id = pickFairy(this.fairyPts, p.x, p.y, 136); // oracle hitArea≈136px（2026-10-31 用户裁定跟原版）
     if (!id) return;
     this.dragFairyId = id;
     this.dragPending = p;

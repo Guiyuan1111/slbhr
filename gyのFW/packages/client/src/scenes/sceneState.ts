@@ -62,6 +62,8 @@ export const SCENE_STATE_KEYS = [
   // F 部 fairytales（fw-fairy-view）：仙女/仙女杯视图 + 逐帧仙女点位表
   "fairyViews",
   "fairyCupViews",
+  // D/E 部传送门视图（portal 渲染批）
+  "portalViews",
   "fairyPts",
 ] as const;
 

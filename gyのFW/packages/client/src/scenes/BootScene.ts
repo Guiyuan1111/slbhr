@@ -331,3 +331,11 @@ export function buildFairyAnims(a: Phaser.Animations.AnimationManager): void {
   seq("fairy_body", ATLAS_NEWCHAR, "flying_body_idle", 0, 3, 30, -1);
   seq("fairycup_glow", ATLAS_MECH, "fairycup_glow", 0, 19, 12, -1);
 }
+
+/** D/E 部传送门帧动画（oracle Portal 构造器 generateFrameNames 零填充 4 + add(...,30,!0)
+ *  字证，D bundle：center 40 帧/glow 30 帧均 30fps 循环） */
+export function buildPortalAnims(a: Phaser.Animations.AnimationManager): void {
+  const seq = buildSeq(a);
+  seq("portal_center", ATLAS_MECH, "portal_center", 0, 39, 30, -1);
+  seq("portal_glow", ATLAS_MECH, "portal_glow", 0, 29, 30, -1);
+}

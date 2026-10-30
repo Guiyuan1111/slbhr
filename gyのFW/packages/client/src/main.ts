@@ -15,6 +15,7 @@ import { KeyboardInput } from "./input";
 import { TouchControls } from "./touch";
 import { BootScene, bgWarmSettled, setWarmBgmFamily } from "./scenes/BootScene";
 import { releaseGameBgms } from "./audio";
+import { templeIdOf } from "./templeData";
 import { MenuScene } from "./scenes/MenuScene";
 import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
@@ -442,6 +443,8 @@ async function enterGame(): Promise<void> {
   // 黑幕包络下停面板+发 restart，服务端重置回声链不变。0.3.39 R 键同走此信封（restartWithFade），
   // 键盘/鼠标路径归一。
   (globalThis as unknown as Record<string, unknown>).__fwRestart = restartWithFade;
+  // F 部免费复活（R2）：GameOverMenu「复活」钮 → 服务端 gameover 相位门禁受理
+  (globalThis as unknown as Record<string, unknown>).__fwRevive = () => net?.sendRevive();
   // 结算「继续」：原版 Continue 直进下一关（bundle EndMenu 44360 区段）。联机形态
   // = 活房间内 advance 换关（席位保留、双端同跳，2026-10-12 实玩反馈：不再回大厅
   // 重建房间）；无后继或已离房 → 回选关树（原版最后一关无 Continue 后继）。
@@ -566,6 +569,14 @@ function netHandlers(): NetCallbacks {
         else phaser?.scene.stop("PauseMenu");
       }
     },
+    onRevived: () => {
+      // 复活成功（服务端 world.revive() 过）：关失败面板回对战；计时回拨已在服务端 state
+      const gm = phaser?.scene.getScene("GameOverMenu");
+      if (gm) phaser?.scene.stop("GameOverMenu");
+      keyboard?.setPaused(false);
+      $("#toast").textContent = "复活成功！";
+      setTimeout(() => ($("#toast").textContent = ""), 2000);
+    },
     onPhase: (phase) => {
       updateHud();
       if (phase === "won") {
@@ -578,6 +589,10 @@ function netHandlers(): NetCallbacks {
         phaser?.scene.stop("EndMenu");
         phaser?.scene.stop("GameOverMenu");
       } else if (phase === "gameover") {
+        // F 部复活钮显隐（oracle canRevive && !level.revived :60509）：庙域 + 服务端
+        // revived 旗标（R2 免费一次；A-E 部恒 false 不出钮）
+        (globalThis as unknown as Record<string, unknown>).__fwCanRevive =
+          currentLevel != null && templeIdOf(currentLevel.id) === "fairytales" && net?.room?.state?.revived !== true;
         if (!pausedByUser) phaser?.scene.start("GameOverMenu");
       }
     },

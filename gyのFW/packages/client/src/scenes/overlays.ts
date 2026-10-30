@@ -360,5 +360,13 @@ export class GameOverMenu extends Phaser.Scene {
     stoneButton(this, board, CX + HALF_W / 3, CY + 0.4 * HALF_H, "再试一次", () => {
       handle().__fwRestart?.();
     });
+    // F 部免费复活（R2；oracle GameOverMenu 第三钮 canRevive && !revived →
+    // showRewardedAndRevive :60509，我方免费）。canRevive 由 main.ts 在 gameover 相位
+    // 按庙域+服务端 revived 旗标写入 __fwCanRevive；A-E 部恒 false 不出钮。
+    if ((globalThis as unknown as Record<string, unknown>).__fwCanRevive === true) {
+      stoneButton(this, board, CX, CY + 0.4 * HALF_H - 110, "复活", () => {
+        handle().__fwRevive?.();
+      });
+    }
   }
 }

@@ -75,7 +75,7 @@ describe("extractCovers（真数据 fairies_000 + 健壮性）", () => {
   });
 });
 
-describe("pickFairy 拖拽命中（40px 手感半径）", () => {
+describe("pickFairy 拖拽命中（半径参数化；调用点传 oracle hitArea 136px）", () => {
   const pts = [
     { id: "f0", x: 100, y: 100 },
     { id: "f1", x: 200, y: 200 },
@@ -92,5 +92,11 @@ describe("pickFairy 拖拽命中（40px 手感半径）", () => {
   it("不按 locked 过滤（R1：oracle 拖拽无锁定门控）", () => {
     const lockedPts = [{ id: "f0", x: 0, y: 0, locked: true }];
     expect(pickFairy(lockedPts, 5, 5, 40)).toBe("f0");
+  });
+
+  it("调用点口径 136px：100px 外仍命中、取最近者", () => {
+    expect(pickFairy(pts, 150, 150, 136)).toBe("f0"); // 距 f0≈70.7、距 f1≈70.7 → 序先者
+    expect(pickFairy(pts, 60, 100, 136)).toBe("f0"); // 距 f0=40 < 距 f1≈197
+    expect(pickFairy(pts, 400, 400, 136)).toBeNull(); // 距 f1≈283 出圈
   });
 });

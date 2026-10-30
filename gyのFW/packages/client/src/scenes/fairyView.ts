@@ -104,7 +104,7 @@ export interface FairyDragMsg {
 
 /**
  * 拖拽命中：距指针 (px,py) ≤ radius 的最近仙女 id，无命中返回 null。
- * 命中半径 40px（原版 hitArea=2×身高≈136px 偏宽，取手感值——任务口径）；
+ * 命中半径 136px（oracle hitArea=2×身高≈136px 字证，2026-10-31 用户裁定跟原版口径）；
  * R1：oracle 拖拽无 locked 物理门控（锁定只门控相机 focus 与教学矩形，
  * L59692/L61934），此处亦不按 locked 过滤。
  */
