@@ -92,6 +92,8 @@ export class World {
   private chars: Record<Role, Character>;
   /** 原版 data.diamonds 等价物从 Character 取 */
   private simTimeS = 0;
+  /** 传送门 200ms 每体冷却（oracle body.lastTransport；键=body 跨门共享） */
+  private portalLastTransport = new WeakMap<object, number>();
   /** 风力时基（F6）：缺省仿真时间，生产传墙钟（见 WorldOptions 注释） */
   private windClockS: () => number;
 
@@ -310,6 +312,11 @@ export class World {
     return this.mechs.fairyCups;
   }
 
+  /** D/E 部传送门访问（视图与测试用；mechs 本体保持私有） */
+  get portals() {
+    return this.mechs.portals;
+  }
+
   /** 推进一帧。dt 秒（服务端 1/60；对拍时喂录制 dt 序列）。返回本帧事件。 */
   step(dt: number, inputs: Record<Role, InputState>): WorldEvent[] {
     const events: WorldEvent[] = [];
@@ -357,7 +364,7 @@ export class World {
         }
         for (const ev of lightEvents) {
           events.push({ type: "mech", event: ev });
-          this.mechs.manager.deviceChanged(ev.group);
+          if ("group" in ev) this.mechs.manager.deviceChanged(ev.group);
         }
         // 液体光照检查（原版 Liquid.update：蓝照水冻/红照水融，iluminated 不清=原版 quirk）
         for (const liq of this.built.liquids) {
@@ -390,6 +397,9 @@ export class World {
         }
         for (const ev of fEvents) events.push({ type: "mech", event: ev });
       }
+      // D/E 部传送门：开门近面判定 + transport（oracle begin-contact 回调的确定性等价）。
+      // 放 Step 前：出门位置当帧进求解；冷却=仿真钟 200ms 每体跨门共享（oracle body.lastTransport）
+      if (this.mechs.portals.length > 0) this.updatePortals(events);
       this.updateDoors(dt, events);
     }
 
@@ -517,6 +527,25 @@ export class World {
   private roleOfBody(body: any): Role | undefined {
     if (!body || body.GetUserData() !== "pers") return undefined;
     return this.chars.fireboy.body === body ? "fireboy" : this.chars.watergirl.body === body ? "watergirl" : undefined;
+  }
+
+  /** 传送门逐帧步进（Step 前）：开门对全部可传载体（角色/箱/球/仙女——均带
+   *  portal-sensor 标记）做近面判定，命中即 transport；音效队列排水为 mech 事件。 */
+  private updatePortals(events: WorldEvent[]): void {
+    const bodies: Array<{ body: any }> = [
+      { body: this.chars.fireboy.body },
+      { body: this.chars.watergirl.body },
+    ];
+    for (const p of this.mechs.props) bodies.push({ body: p.body });
+    for (const f of this.mechs.fairies) bodies.push({ body: f.body });
+    const nowMs = this.simTimeS * 1000;
+    for (const p of this.mechs.portals) {
+      p.checkTransport(bodies, this.portalLastTransport, nowMs);
+      for (const sfx of p.soundQueue) {
+        events.push({ type: "mech", event: { kind: "portal", sfx } });
+      }
+      p.soundQueue.length = 0;
+    }
   }
 
   /** 门 25fps 扫帧（原版 Door.update：isOpen 推进 25·dt 帧，21 帧到位，闭合反向） */

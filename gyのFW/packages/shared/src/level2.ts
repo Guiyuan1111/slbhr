@@ -277,18 +277,24 @@ export interface SliderDef {
 /** 定时推杆（ice 部，Pusher 同体）：按压 state=1 保持 time 毫秒自动回弹；
  *  doRegister 覆写为空=不进 MechManager 组（C bundle @1707424），独立计时件 */
 /** 传送门 def（crystal/elements 部；LargeObjects localId 0/1=type portal，
- *  tileproperties {group, portalId, inverted}——inverted 区分出入口两端） */
+ *  tileproperties {group, portalId, inverted}——inverted 区分出入口两端；
+ *  运行时语义=内核 Portal（01号档 §1.1-1.7） */
 export interface PortalDef {
   id: string;
   /** 对象矩形（顶边系，px） */
   rect: Rect;
-  /** 度（Tiled 对象 rotation，出入口朝向语义待内核取证） */
+  /** BoxedDevice 体中心（px；boxSize{2,3}→e=(32,48) 按 −rotation 旋转，同 box 分支口径） */
+  x: number;
+  y: number;
+  /** 度（Tiled 对象 rotation，门面朝向；SetAngle 用） */
   rotation: number;
   group: number;
-  /** 配对 id（同 group+portalId 两端成对；运行时语义待内核取证） */
+  /** 配对 id（portalId 桶两端成对，与 group 无关——§1.2） */
   portalId: number;
   /** true=出口端（tile 1），false=入口端（tile 0） */
   inverted: boolean;
+  /** 1=初始开门（crystal_04 id66 实测缺省补齐链）；缺省 0=常闭 */
+  initialState: number;
 }
 
 /** 仙女 def（F 部 fairytales；Chars 层 char tile，props.char="fairy"）——
@@ -912,15 +918,21 @@ export function parseLevel(id: string, json: any, getTileset: TilesetProvider): 
               windWidth: props.windWidth === undefined ? undefined : num(props.windWidth),
             });
           } else if (typeName === "portal") {
-            // 传送门（crystal/elements）：def 只做数据提取——成对/触发/速度/冷却等运行时
-            // 语义由内核按 oracle 取证实现（note/evidence/2026-10-30-crystal-temple/）
+            // 传送门（crystal/elements）：BoxedDevice 中心矫正同 box 分支，半尺寸 e=(32,48)
+            const rot = num(o.rotation);
+            const th = (-rot * Math.PI) / 180;
+            const ex = 32 * Math.cos(th) - 48 * Math.sin(th);
+            const ey = 32 * Math.sin(th) + 48 * Math.cos(th);
             portals.push({
               id: `P${portals.length}`,
               rect: r,
-              rotation: num(o.rotation),
+              x: num(o.x) + ex,
+              y: num(o.y) - ey,
+              rotation: rot,
               group: num(props.group),
               portalId: num(props.portalId),
               inverted: props.inverted === true,
+              initialState: num(props.initialState),
             });
           } else {
             unknown.push(`LargeObjects:${typeName || `local${localId}`}`);

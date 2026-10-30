@@ -706,8 +706,12 @@ export class ForestRoom extends Room<RoomState> {
         // 原版语义（F2 翻转）：gameover 静置，GameOverMenu Retry 点击才整关重开（onMessage restart）
         this.state.phase = "gameover";
       } else if (ev.type === "mech") {
-        // 机关音效/灯事件直发（lever/pusher 翻转）
-        this.broadcast("sfx", { kind: ev.event.kind, group: ev.event.group, state: ev.event.state });
+        // 机关音效/灯事件直发（lever/pusher 翻转；portal 音效只有 kind 无 group/state）
+        if ("group" in ev.event) {
+          this.broadcast("sfx", { kind: ev.event.kind, group: ev.event.group, state: ev.event.state });
+        } else {
+          this.broadcast("sfx", { kind: ev.event.kind });
+        }
       } else if (ev.type === "liquid-frozen") {
         this.broadcast("sfx", { kind: "liquid-frozen" });
       } else if (ev.type === "liquid-melted") {
