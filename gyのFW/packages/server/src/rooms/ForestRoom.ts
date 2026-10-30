@@ -753,7 +753,7 @@ export class ForestRoom extends Room<RoomState> {
         if ("group" in ev.event) {
           this.broadcast("sfx", { kind: ev.event.kind, group: ev.event.group, state: ev.event.state });
         } else {
-          this.broadcast("sfx", { kind: ev.event.kind });
+          this.broadcast("sfx", { kind: ev.event.kind, sfx: ev.event.sfx });
         }
       } else if (ev.type === "liquid-frozen") {
         this.broadcast("sfx", { kind: "liquid-frozen" });
