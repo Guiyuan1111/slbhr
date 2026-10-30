@@ -744,6 +744,114 @@ const SEGE = {
 };
 Object.assign(SEG, SEGE);
 
+// ---------------------------------------------------------------- crystal_03（fw-route-crystal 槽，2026-10-26，纯增量 SEGC）
+// 地形/机关实测（TEMP/fw-route-crystal probe13b/16-21 + mechanisms.ts:1714-1892 / character.ts:75-104 源读，坐标=屏幕px，py=snapshot 中心 y）：
+//   出生笼 [64,608]×[768,896]（顶 768 封板=y736 地板底面，升力封顶 ~70px）；fb 出(632,896) wg 出(560,896)；
+//   西出 nook [0,64]×[800,896]（笼西无墙直接连通，probe20/21 行走实测）→P0(32,848) 门；
+//   【C0 结构性阻断】portal 触发带 |lx|≤6.4px=条带半厚3.2+标记半径3.2，而标记圆与条带均实体：
+//   bullet CCD+求解器钉 face+3.2+0.256px=38.656（触发边 38.4；probe20/21 行走/全速三次实测同值）；
+//   world.updatePortals 在 Step 前读 post-solve 位置，永不满足。原版 begin-contact「贴面即传」
+//   （crystal-temple 档 §1.3），内核改几何近带判定后入场语义不等效——01号档-crystal_03.md 记档不下终判。
+//   东口袋 [608,704] 顶 832（'#'@21 全实心）隧道死口 704.1（'c'@22 楔）；西阶梯 [608,800] 896→736；
+//   y736 地板 [64,608]（杆 l0@496 东翻开 P2/P3；西行越杆=unflip，需越杆跳）；col0 台顶 [0,32] 顶 672（P3@32,624）；
+//   东廊 [800,1152] 底 896 + SE 口袋 [1184,1248]×[800,896]（P1@1216,848）；row-6 [992,1248] 顶 192（P2@1216,112）；
+//   阶梯 [928,992] 128→192；row-4 [672,928] 顶 128；'/'@20 唇 [640,672] 西落 row-18 台 [160,768] 顶 576；
+//   迷你梯 [96,160] 576→512 连续 45°；512 块 [0,96] 顶 512；基座台 [192,320] 顶 448（P6@272,400）；
+//   门台 [0,512] 顶 256（P7@272,208；fb 门(416,192) wg 门(64,192)）。P2/P3 初始关（l0=+1 开），余门开。
+const SEGC = {
+  // C0 合并段（2026-10-31，消 seam）：干净内核实测（TEMP probe23 单世界）fb jd×6 链 f209 传送触发
+  // （末跳满速弧跨带缘 raw 位置落 38.35 在带内被 Step 前检查捕获；jd×5 末弧跨带时 y~786 高于带顶 800
+  // 不触发、停 38.656 钉死）。jd 连跳每跳落点 vx≈-272 保满速起跳；传送后锁存/摩擦滑停自然落东廊。
+  // wg spawn 560 需 7 跳。事件表尾部 NONE 被裁→末事件锁存西走：落廊窗口 [900,1260] 已覆盖。
+  C0: {
+    maxDepth: 12, capFb: 10, capWg: 10, horizonF: 800,
+    recipe: {
+      fb: [spec("sleep", 3), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40),
+        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("sleep", 40)],
+      wg: [spec("sleep", 3), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40),
+        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("sleep", 40)],
+    },
+    vocab: {
+      fb: [spec("sleep", 3), spec("sleep", 6),
+        spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 44),
+        spec("sleep", 40), spec("sleep", 70)],
+      wg: [spec("sleep", 3), spec("sleep", 6),
+        spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 44),
+        spec("sleep", 40), spec("sleep", 70)],
+    },
+  },
+  C1: {
+    maxDepth: 8, capFb: 4, capWg: 4, horizonF: 700,
+    recipe: {
+      fb: [spec("hold", -1, 420), spec("sleep", 15)],
+      wg: [spec("hold", -1, 500), spec("sleep", 15)],
+    },
+    vocab: {
+      fb: [spec("hold", -1, 380), spec("hold", -1, 420), spec("hold", -1, 460), spec("sleep", 15)],
+      wg: [spec("hold", -1, 460), spec("hold", -1, 500), spec("hold", -1, 540), spec("sleep", 15)],
+    },
+  },
+  C2: {
+    maxDepth: 10, capFb: 6, capWg: 4, horizonF: 700,
+    recipe: {
+      fb: [spec("hold", 1, 545), spec("sleep", 6), spec("jumpDrift", -1, 0, 55), spec("sleep", 20)],
+      wg: [spec("hold", 1, 565), spec("sleep", 20)],
+    },
+    vocab: {
+      fb: [spec("hold", 1, 537), spec("hold", 1, 545), spec("hold", 1, 553),
+        spec("sleep", 4), spec("sleep", 6), spec("sleep", 10),
+        spec("jumpDrift", -1, 0, 50), spec("jumpDrift", -1, 0, 55), spec("jumpDrift", -1, 0, 62),
+        spec("sleep", 20), spec("sleep", 30)],
+      wg: [spec("hold", 1, 557), spec("hold", 1, 565), spec("hold", 1, 573), spec("sleep", 20)],
+    },
+  },
+  C3: {
+    maxDepth: 10, capFb: 6, capWg: 6, horizonF: 800,
+    // P3 入场同 C0 弧过带口径：y736 地板西缘满速西跳（jd 连跳保速），弧升段过 P3 带 [25.6,38.4]×[576,672]
+    // （站心 700.5，col0 台顶 672 无顶板不封顶，满弧升 123 过带缘时 y~640-660 在带内）。
+    recipe: {
+      fb: [spec("hold", -1, 150), spec("jumpDrift", -1, 0, 45), spec("sleep", 40)],
+      wg: [spec("hold", -1, 150), spec("jumpDrift", -1, 0, 45), spec("sleep", 40)],
+    },
+    vocab: {
+      fb: [spec("hold", -1, 120), spec("hold", -1, 150), spec("hold", -1, 180),
+        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 45), spec("jumpDrift", -1, 0, 50),
+        spec("runJump", -1, 120, 25), spec("runJump", -1, 160, 25),
+        spec("sleep", 40), spec("sleep", 70)],
+      wg: [spec("hold", -1, 120), spec("hold", -1, 150), spec("hold", -1, 180),
+        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 45), spec("jumpDrift", -1, 0, 50),
+        spec("runJump", -1, 120, 25), spec("runJump", -1, 160, 25),
+        spec("sleep", 40), spec("sleep", 70)],
+    },
+  },
+  C4: {
+    maxDepth: 12, capFb: 8, capWg: 8, horizonF: 900,
+    recipe: {
+      fb: [spec("hold", 1, 960), spec("hold", -1, 700), spec("jumpDrift", -1, 0, 40),
+        spec("hold", -1, 250), spec("jumpDrift", 1, 0, 50), spec("hold", 1, 300), spec("sleep", 40)],
+      wg: [spec("hold", 1, 980), spec("hold", -1, 700), spec("jumpDrift", -1, 0, 40),
+        spec("hold", -1, 230), spec("runJump", 1, 90, 55), spec("hold", 1, 310), spec("sleep", 40)],
+    },
+    vocab: {
+      fb: [spec("hold", 1, 940), spec("hold", 1, 960), spec("hold", 1, 980),
+        spec("hold", -1, 680), spec("hold", -1, 700), spec("hold", -1, 720),
+        spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 46),
+        spec("hold", -1, 230), spec("hold", -1, 250), spec("hold", -1, 270),
+        spec("jumpDrift", 1, 0, 46), spec("jumpDrift", 1, 0, 50), spec("jumpDrift", 1, 0, 55),
+        spec("hold", 1, 288), spec("hold", 1, 300), spec("hold", 1, 312),
+        spec("sleep", 40), spec("sleep", 60)],
+      wg: [spec("hold", 1, 960), spec("hold", 1, 980), spec("hold", 1, 1000),
+        spec("hold", -1, 680), spec("hold", -1, 700), spec("hold", -1, 720),
+        spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 46),
+        spec("hold", -1, 210), spec("hold", -1, 230), spec("hold", -1, 250),
+        spec("runJump", 1, 84, 50), spec("runJump", 1, 90, 55), spec("runJump", 1, 96, 60),
+        spec("hold", 1, 300), spec("hold", 1, 312), spec("hold", 1, 324),
+        spec("sleep", 40), spec("sleep", 60)],
+    },
+  },
+};
+Object.assign(SEG, SEGC);
+
 // ---------------------------------------------------------------- evaluate：单候选全量重放（进程内确定性，§1.4）
 // 语义对齐 botcore.drive（fb→wg→step，run→done→推进，队列空锁存末输入，死亡/WIN 短路），
 // 另加：entry 联合首帧（入场门控）、段相对 horizon、双队列空+宽限冻结。
