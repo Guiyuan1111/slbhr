@@ -1,260 +1,108 @@
 {
  "level": "e_tutorial_fire",
- "note": "v1 链（2026-10-26，TEMP/fw-route-efire probe5-10 实测）：核心发现=①r13 岩浆涉水底 430.4 只比 shelf 东缘低 ~110px，fb 从 (571,430) 全hold左跳落 (455,320) 登 shelf——西塔唯一入口，破『板B必须先有人才能载 wg 上 wg-ledge』死锁；②x1 重箱东推离 row-4-west 东缘坠 board-a→板A 沉 island(实测 u0a 411)→板B 载 wg 升 172（实测 u0b 172-173，稳定 600f）→wg 东跳 37px 上 wg-ledge；③wg 西行正道：bump 西坡→step(864)→step 西缘坠立柱(512-544)与台阶间竖井(544-608, 底 992 实心无岩浆)→步行上 p1 静位(top 992 与地面平齐)→fb 压 b1 载升 832→西行上 mesa。bump→p1 同层 832 直跳被立柱挡死（几何证伪）。py 口径=snapshot 中心 y=脚−35。机关实测：p0 静 848/沉 944（b0@752），p1 静 1008/升 848（b1@240），u0 板A 静144/岛面411、板B 静440/升172。路线：E0 fb 涉水压 b0+wg 登沉 p0；E1 fb 弃板西涉上 mesa 压 b1，wg 经 bump/竖井上 p1 静位乘升；E2 wg 上 mesa 西跳 shelf→row-20 西段；E3 wg 东越岩浆→x0 箱顶→row-14→登 board-b 静位；E4 fb 抄近路 row-14→island→涉水→台唇跳上 shelf→ridge→row-4-west 推 x1 落 board-a，板B 载 wg 升 172；E5 fb 走 walkway 坠井至 row-14 入 fb 门，wg 板顶东跳 wg-ledge 入 wg 门，双门升 WIN。",
+ "note": "v3 链（2026-10-26，TEMP/fw-route-efire probe13-16 实测，正确出生角色）。【v2 教训】autosearch 首跑实证出生点与 v2 假设相反：fb 出生崖台(1248-1440,832)、wg 出生东南口袋(1216-1440,992)，v2 种子链致 wg f670 坠熔岩死亡（search 报告 E0 0/2，evals=3839）。v3 全部三段为 probe13-16 逐跳实测可达：E0 fb 崖台西坠口袋→涉熔岩(672-1216)→jd50 上 step→jd50 上 bump→b0 板(752) 单重压 p0 至 898-902；wg 等 waitPlat(0,884,918) 后口袋西缘 1234 满drift 立跳 196px 越熔岩落 p0 → 双重沉 944（probe14 全 12 参数组成功）。E1 fb 离板西行走回 bump(700)；p0 载 wg 单重回升 ~900，wg 满 drift 立跳西越 160px 落 bump 东段 826→west 780（probe15）。E2 wg bump 西缘 660 jd40 落 step 楔顶(626,875)→西行坠西区地面(992)→站 ~520（probe15 f472/f554 实测）。E2 即双角色可达西端终点。【结构封死证据（grid.mjs 权威网格 + probe16，存疑待核归 5.3 裁决）】(1) 两门均在封闭上部复合体：fb 门(1312,448) 在 row-14(992-1440,448)，wg 门(1312,160) 在 r5(1280-1440,160)；(2) row-14 上行口全部超跳限：row-20-east(640)→r15 台(480) 升 160、x0 顶(576)→row-14 升 128（且净空 96px 禁跳）、柱顶(512-544,r21-25,顶672)→r13 岛(736-864,416) 升 256；(3) mesa(160-416,832) 唯一电梯 p1(416-512) 由 b1(240,mesa上) 控制，b1 仅 mesa 可按=自锁；柱顶 672 需从 bump(832) 升 160，塔墩(384-416,r24-25,顶768-800) 需从柱顶起跳均不可达；(4) wg 西界=西区地面 352 处熔岩墙(128-352)，r20 岩浆(736-960/1248-1376) 杀 wg；(5) 板A/B(x1 压板联动,probe5) 激活点 x1(648-712,128) 在不可达 row-4-west。py 口径=snapshot 中心 y=脚−35。机关三态实测：p0 静 848 / fb 单重压板 898-902 / fb+wg 双重 944（probe13/14）。",
  "assertKinds": ["px", "py", "vx", "grounded", "alive", "leverState", "platY", "platState", "pusherState", "propX", "propY", "atDoor", "doorUp", "phaseWon"],
  "segments": [
   {
    "id": "E0",
-   "title": "fb 出生台西坠涉水→step(632,869)→bump 顶压 b0（p0 沉 944）；wg 西跳 136px/升64 登沉 p0(995-1085,脚928)",
-   "entry": [
-    { "kind": "alive" }
-   ],
+   "title": "fb 崖台西坠口袋→涉熔岩→jd 上 step→上 bump→压 b0 板(752)；wg 等 p0 单重沉态后口袋西缘 1234 满 drift 越熔岩登 p0→双重沉 944",
+   "entry": [ { "kind": "alive" } ],
    "waypoints": [
     [
-     { "kind": "px", "role": "fb", "min": 720, "max": 790 },
-     { "kind": "py", "role": "fb", "min": 775, "max": 805 },
+     { "kind": "px", "role": "fb", "min": 700, "max": 800 },
+     { "kind": "py", "role": "fb", "min": 775, "max": 808 },
      { "kind": "grounded", "role": "fb" }
     ],
     [
-     { "kind": "platY", "id": 0, "min": 928, "max": 956 },
+     { "kind": "platY", "id": 0, "min": 935, "max": 956 },
      { "kind": "px", "role": "wg", "min": 995, "max": 1085 },
-     { "kind": "py", "role": "wg", "min": 876, "max": 908 },
+     { "kind": "py", "role": "wg", "min": 876, "max": 935 },
      { "kind": "grounded", "role": "wg" }
     ]
    ],
    "target": [
     { "kind": "alive" },
-    { "kind": "platY", "id": 0, "min": 928, "max": 956 },
+    { "kind": "platY", "id": 0, "min": 935, "max": 956 },
     { "kind": "px", "role": "wg", "min": 995, "max": 1085 },
-    { "kind": "py", "role": "wg", "min": 876, "max": 908 },
+    { "kind": "py", "role": "wg", "min": 876, "max": 935 },
     { "kind": "grounded", "role": "wg" },
-    { "kind": "px", "role": "fb", "min": 715, "max": 795 },
+    { "kind": "px", "role": "fb", "min": 700, "max": 800 },
     { "kind": "py", "role": "fb", "min": 775, "max": 808 },
     { "kind": "grounded", "role": "fb" }
    ],
-   "horizonF": 700
+   "horizonF": 800
   },
   {
    "id": "E1",
-   "title": "fb 弃 b0 东坠岩浆回涉西→r30 西端 JR 上 mesa→压 b1（p1 升 848）；wg 乘 p0 复升西跳 bump 东坡→西坡下 step→坠竖井(544-608)→步上 p1 静位→乘升至 832",
+   "title": "fb 离板西行走回 bump(700)；p0 载 wg 单重回升 ~900，wg 满 drift 立跳西越 160px 落 bump 东段(826)→west 780 会合",
    "entry": [
     { "kind": "alive" },
-    { "kind": "platY", "id": 0, "min": 928, "max": 956 },
+    { "kind": "platY", "id": 0, "min": 935, "max": 956 },
     { "kind": "px", "role": "wg", "min": 995, "max": 1085 },
-    { "kind": "py", "role": "wg", "min": 876, "max": 908 },
+    { "kind": "py", "role": "wg", "min": 876, "max": 935 },
     { "kind": "grounded", "role": "wg" },
-    { "kind": "px", "role": "fb", "min": 715, "max": 795 },
+    { "kind": "px", "role": "fb", "min": 700, "max": 800 },
     { "kind": "py", "role": "fb", "min": 775, "max": 808 },
     { "kind": "grounded", "role": "fb" }
    ],
    "waypoints": [
     [
-     { "kind": "px", "role": "wg", "min": 808, "max": 882 },
-     { "kind": "py", "role": "wg", "min": 788, "max": 840 },
-     { "kind": "grounded", "role": "wg" }
-    ],
-    [
-     { "kind": "px", "role": "wg", "min": 418, "max": 512 },
-     { "kind": "py", "role": "wg", "min": 940, "max": 974 },
-     { "kind": "grounded", "role": "wg" }
-    ],
-    [
-     { "kind": "platY", "id": 1, "min": 836, "max": 860 },
-     { "kind": "px", "role": "fb", "min": 205, "max": 278 },
-     { "kind": "py", "role": "fb", "min": 780, "max": 812 },
-     { "kind": "grounded", "role": "fb" },
-     { "kind": "px", "role": "wg", "min": 418, "max": 512 },
-     { "kind": "py", "role": "wg", "min": 780, "max": 812 },
-     { "kind": "grounded", "role": "wg" }
-    ]
-   ],
-   "target": [
-    { "kind": "alive" },
-    { "kind": "platY", "id": 1, "min": 836, "max": 860 },
-    { "kind": "px", "role": "fb", "min": 205, "max": 278 },
-    { "kind": "py", "role": "fb", "min": 780, "max": 812 },
-    { "kind": "grounded", "role": "fb" },
-    { "kind": "px", "role": "wg", "min": 418, "max": 512 },
-    { "kind": "py", "role": "wg", "min": 780, "max": 812 },
-    { "kind": "grounded", "role": "wg" }
-   ],
-   "horizonF": 950
-  },
-  {
-   "id": "E2",
-   "title": "fb 让位退 mesa 西缘(160-210)；wg 西行上 mesa→西跳上 r22-shelf(704)→东跳上 row-20 西段(640)",
-   "entry": [
-    { "kind": "alive" },
-    { "kind": "platY", "id": 1, "min": 836, "max": 860 },
-    { "kind": "px", "role": "fb", "min": 205, "max": 278 },
-    { "kind": "py", "role": "fb", "min": 780, "max": 812 },
-    { "kind": "grounded", "role": "fb" },
-    { "kind": "px", "role": "wg", "min": 418, "max": 512 },
-    { "kind": "py", "role": "wg", "min": 780, "max": 812 },
-    { "kind": "grounded", "role": "wg" }
-   ],
-   "waypoints": [
-    [
-     { "kind": "px", "role": "wg", "min": 330, "max": 412 },
-     { "kind": "py", "role": "wg", "min": 780, "max": 812 },
-     { "kind": "grounded", "role": "wg" },
-     { "kind": "px", "role": "fb", "min": 158, "max": 212 },
-     { "kind": "py", "role": "fb", "min": 780, "max": 812 },
+     { "kind": "px", "role": "fb", "min": 660, "max": 830 },
+     { "kind": "py", "role": "fb", "min": 775, "max": 808 },
      { "kind": "grounded", "role": "fb" }
     ],
     [
-     { "kind": "px", "role": "wg", "min": 58, "max": 188 },
-     { "kind": "py", "role": "wg", "min": 648, "max": 686 },
-     { "kind": "grounded", "role": "wg" }
-    ],
-    [
-     { "kind": "px", "role": "wg", "min": 330, "max": 700 },
-     { "kind": "py", "role": "wg", "min": 586, "max": 620 },
+     { "kind": "px", "role": "wg", "min": 640, "max": 830 },
+     { "kind": "py", "role": "wg", "min": 775, "max": 808 },
      { "kind": "grounded", "role": "wg" }
     ]
    ],
    "target": [
     { "kind": "alive" },
-    { "kind": "px", "role": "wg", "min": 330, "max": 700 },
-    { "kind": "py", "role": "wg", "min": 586, "max": 620 },
+    { "kind": "px", "role": "fb", "min": 660, "max": 830 },
+    { "kind": "py", "role": "fb", "min": 775, "max": 808 },
+    { "kind": "grounded", "role": "fb" },
+    { "kind": "px", "role": "wg", "min": 640, "max": 830 },
+    { "kind": "py", "role": "wg", "min": 775, "max": 808 },
     { "kind": "grounded", "role": "wg" }
-   ],
-   "horizonF": 600
-  },
-  {
-   "id": "E3",
-   "title": "wg 东越 row-20 岩浆(716→956 实测)→登 x0 箱顶(576)→西跳 row-14 西坡(960-992,480→448)→东行登 board-b 静位(1157-1243)；fb 守 mesa 西缘",
-   "entry": [
-    { "kind": "alive" },
-    { "kind": "px", "role": "wg", "min": 330, "max": 700 },
-    { "kind": "py", "role": "wg", "min": 586, "max": 620 },
-    { "kind": "grounded", "role": "wg" }
-   ],
-   "waypoints": [
-    [
-     { "kind": "px", "role": "wg", "min": 960, "max": 1240 },
-     { "kind": "py", "role": "wg", "min": 586, "max": 620 },
-     { "kind": "grounded", "role": "wg" }
-    ],
-    [
-     { "kind": "px", "role": "wg", "min": 1068, "max": 1142 },
-     { "kind": "py", "role": "wg", "min": 518, "max": 562 },
-     { "kind": "grounded", "role": "wg" }
-    ],
-    [
-     { "kind": "px", "role": "wg", "min": 982, "max": 1108 },
-     { "kind": "py", "role": "wg", "min": 398, "max": 452 },
-     { "kind": "grounded", "role": "wg" }
-    ],
-    [
-     { "kind": "px", "role": "wg", "min": 1156, "max": 1244 },
-     { "kind": "py", "role": "wg", "min": 362, "max": 408 },
-     { "kind": "grounded", "role": "wg" }
-    ]
-   ],
-   "target": [
-    { "kind": "alive" },
-    { "kind": "px", "role": "wg", "min": 1156, "max": 1244 },
-    { "kind": "py", "role": "wg", "min": 362, "max": 408 },
-    { "kind": "grounded", "role": "wg" },
-    { "kind": "px", "role": "fb", "min": 158, "max": 260 },
-    { "kind": "py", "role": "fb", "min": 780, "max": 812 },
-    { "kind": "grounded", "role": "fb" }
    ],
    "horizonF": 700
   },
   {
-   "id": "E4",
-   "title": "fb 抄近路：row-14 西跳 island(416)→西涉 r13 岩浆(底430.4)→(571,430)全hold左跳登 shelf(455,320 实测)→东跳 ridge(192)→东北跳 row-4-west(128)→东推 x1 坠 board-a；板A沉岛411 板B载wg升172",
+   "id": "E2",
+   "title": "wg bump 西缘(660) jd40 落 step 楔顶(626,875)→西行坠西区地面(992)→站 400-560；fb 留 bump——双角色可达西端终点（更西 352 熔岩墙、上行全部封死，见 note）",
    "entry": [
     { "kind": "alive" },
-    { "kind": "px", "role": "wg", "min": 1156, "max": 1244 },
-    { "kind": "py", "role": "wg", "min": 362, "max": 408 },
+    { "kind": "px", "role": "fb", "min": 660, "max": 830 },
+    { "kind": "py", "role": "fb", "min": 775, "max": 808 },
+    { "kind": "grounded", "role": "fb" },
+    { "kind": "px", "role": "wg", "min": 640, "max": 830 },
+    { "kind": "py", "role": "wg", "min": 775, "max": 808 },
+    { "kind": "grounded", "role": "wg" }
+   ],
+   "waypoints": [
+    [
+     { "kind": "px", "role": "wg", "min": 580, "max": 660 },
+     { "kind": "py", "role": "wg", "min": 840, "max": 900 },
+     { "kind": "grounded", "role": "wg" }
+    ],
+    [
+     { "kind": "px", "role": "wg", "min": 400, "max": 560 },
+     { "kind": "py", "role": "wg", "min": 940, "max": 975 },
+     { "kind": "grounded", "role": "wg" },
+     { "kind": "px", "role": "fb", "min": 640, "max": 830 },
+     { "kind": "py", "role": "fb", "min": 775, "max": 808 },
+     { "kind": "grounded", "role": "fb" }
+    ]
+   ],
+   "target": [
+    { "kind": "alive" },
+    { "kind": "px", "role": "wg", "min": 400, "max": 560 },
+    { "kind": "py", "role": "wg", "min": 940, "max": 975 },
     { "kind": "grounded", "role": "wg" },
-    { "kind": "px", "role": "fb", "min": 158, "max": 260 },
-    { "kind": "py", "role": "fb", "min": 780, "max": 812 },
+    { "kind": "px", "role": "fb", "min": 640, "max": 830 },
+    { "kind": "py", "role": "fb", "min": 775, "max": 808 },
     { "kind": "grounded", "role": "fb" }
-   ],
-   "waypoints": [
-    [
-     { "kind": "px", "role": "fb", "min": 742, "max": 862 },
-     { "kind": "py", "role": "fb", "min": 368, "max": 396 },
-     { "kind": "grounded", "role": "fb" }
-    ],
-    [
-     { "kind": "px", "role": "fb", "min": 328, "max": 472 },
-     { "kind": "py", "role": "fb", "min": 266, "max": 300 },
-     { "kind": "grounded", "role": "fb" }
-    ],
-    [
-     { "kind": "px", "role": "fb", "min": 452, "max": 568 },
-     { "kind": "py", "role": "fb", "min": 138, "max": 172 },
-     { "kind": "grounded", "role": "fb" }
-    ],
-    [
-     { "kind": "px", "role": "fb", "min": 602, "max": 738 },
-     { "kind": "py", "role": "fb", "min": 76, "max": 110 },
-     { "kind": "grounded", "role": "fb" }
-    ],
-    [
-     { "kind": "propY", "id": 1, "min": 342, "max": 394 },
-     { "kind": "propX", "id": 1, "min": 742, "max": 832 },
-     { "kind": "px", "role": "wg", "min": 1152, "max": 1248 },
-     { "kind": "py", "role": "wg", "min": 96, "max": 148 },
-     { "kind": "grounded", "role": "wg" }
-    ]
-   ],
-   "target": [
-    { "kind": "alive" },
-    { "kind": "propY", "id": 1, "min": 342, "max": 394 },
-    { "kind": "propX", "id": 1, "min": 742, "max": 832 },
-    { "kind": "px", "role": "wg", "min": 1152, "max": 1248 },
-    { "kind": "py", "role": "wg", "min": 96, "max": 148 },
-    { "kind": "grounded", "role": "wg" }
-   ],
-   "horizonF": 950
-  },
-  {
-   "id": "E5",
-   "title": "fb 东跳 walkway(832-1024,128)→东端坠井至 row-14→东行入 fb 门(1312,448)站门升；wg 板B@172 东跳 37px 上 wg-ledge 楔坡(160)→东行入 wg 门(1312,160)→双门升 WIN",
-   "entry": [
-    { "kind": "alive" },
-    { "kind": "propY", "id": 1, "min": 342, "max": 394 },
-    { "kind": "propX", "id": 1, "min": 742, "max": 832 },
-    { "kind": "px", "role": "wg", "min": 1152, "max": 1248 },
-    { "kind": "py", "role": "wg", "min": 96, "max": 148 },
-    { "kind": "grounded", "role": "wg" }
-   ],
-   "waypoints": [
-    [
-     { "kind": "px", "role": "fb", "min": 835, "max": 1020 },
-     { "kind": "py", "role": "fb", "min": 76, "max": 110 },
-     { "kind": "grounded", "role": "fb" },
-     { "kind": "py", "role": "wg", "min": 96, "max": 148 },
-     { "kind": "grounded", "role": "wg" }
-    ],
-    [
-     { "kind": "atDoor", "role": "fb" },
-     { "kind": "py", "role": "fb", "min": 396, "max": 430 },
-     { "kind": "grounded", "role": "fb" },
-     { "kind": "py", "role": "wg", "min": 96, "max": 148 },
-     { "kind": "grounded", "role": "wg" }
-    ],
-    [
-     { "kind": "doorUp", "role": "fb" },
-     { "kind": "px", "role": "wg", "min": 1278, "max": 1404 },
-     { "kind": "py", "role": "wg", "min": 103, "max": 138 },
-     { "kind": "grounded", "role": "wg" }
-    ],
-    [
-     { "kind": "atDoor", "role": "wg" },
-     { "kind": "doorUp", "role": "fb" },
-     { "kind": "phaseWon" }
-    ]
-   ],
-   "target": [
-    { "kind": "alive" },
-    { "kind": "phaseWon" }
    ],
    "horizonF": 700
   }

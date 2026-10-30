@@ -665,7 +665,69 @@ const SEGI = {
     },
   },
 };
-Object.assign(SEG, SEGI);
+
+// ---------------------------------------------------------------- e_tutorial_fire（fw-route-efire 槽，2026-10-26，纯增量 SEGE）
+// 地形/机关实测（TEMP/fw-route-efire probe1-16 + explore1 + grid.mjs 权威网格，坐标=屏幕px，py=snapshot 中心 y=脚−35）：
+//   出生（autosearch 首跑实证，v2 曾反置）：fb=崖台 1248-1440(832)，wg=东南口袋 1216-1440(992)；
+//   r31 底 992：SOLID 0-128 / LAVA 128-352 / SOLID 352-672 / LAVA 672-1216 / SOLID 1216-1440（岩浆仅杀 wg，fb 涉水底 1006.4）；
+//   r26 832：mesa 160-416(b1@240) / bump 672-832(b0@752) / fb 崖台 1248-1440；step=r27 斜坡 608-672(864-896) 接 r26 坡 640-672；
+//   全高立柱 512-544（r21-25 SOLID，顶 672）；塔墩 384-416（r25 SOLID 顶 800，r24 SLOPE/ 768）；
+//   p0(992-1088) 三态：静 848 / fb 单重压板 898-902 / fb+wg 双重 944（probe13/14）；p1(416-512) 静 1008(与地面平齐)/b1 压 848；
+//   r20 640：SOLID 320-736 / LAVA 736-960 / SOLID 960-1248(x0 箱@1104)；row-14 992-1440(448, fb 门@1312)；
+//   island 736-864(416)；ridge 448-576(192)；row-4-west 608-736(128, x1 重箱@680)；board-a(741-827, 静144/载x1 411)；
+//   walkway 832-1024(128)；board-b(1157-1243, 静440/升172)；wg 门(1312,160) 在 r5 1280-1440(160)。
+//   结构封死（5.3 裁决项）：两门均在封闭上部复合体——row-14 上行口全部升 128-256>123 跳限；mesa 唯一电梯 p1 由
+//   mesa 上的 b1 控制=自锁；wg 西界 352 熔岩墙；x1/板A 联动激活点在不可达 row-4-west。v3 链止于 E2 可达西端。
+const SEGE = {
+  // v3（2026-10-26 probe13-16 实测；v2 出生角色反置已废弃——autosearch 首跑实证 fb 生于崖台 832、wg 生于口袋 992）
+  E0: {
+    maxDepth: 14, capFb: 10, capWg: 10, horizonF: 800,
+    recipe: {
+      fb: [spec("hold", -1, 480), spec("jumpDrift", 1, 0, 50), spec("jumpDrift", 1, 0, 50), spec("hold", 1, 744), spec("sleep", 40)],
+      wg: [spec("waitPlat", 0, 884, 918), spec("hold", -1, 1234), spec("jumpDrift", -1, 0, 80), spec("sleep", 50)],
+    },
+    vocab: {
+      fb: [spec("hold", -1, 468), spec("hold", -1, 480), spec("hold", -1, 492),
+        spec("jumpDrift", 1, 0, 40), spec("jumpDrift", 1, 0, 50), spec("jumpDrift", 1, 0, 60),
+        spec("jumpDrift", 1, 0, 40), spec("jumpDrift", 1, 0, 50), spec("jumpDrift", 1, 0, 60),
+        spec("hold", 1, 730), spec("hold", 1, 744), spec("hold", 1, 758), spec("sleep", 30), spec("sleep", 40), spec("sleep", 60)],
+      wg: [spec("waitPlat", 0, 882, 910), spec("waitPlat", 0, 890, 918), spec("waitPlat", 0, 898, 926),
+        spec("hold", -1, 1226), spec("hold", -1, 1234), spec("hold", -1, 1242),
+        spec("jumpDrift", -1, 0, 65), spec("jumpDrift", -1, 0, 80), spec("jumpDrift", -1, 0, 95),
+        spec("sleep", 35), spec("sleep", 50), spec("sleep", 70)],
+    },
+  },
+  E1: {
+    maxDepth: 12, capFb: 8, capWg: 10, horizonF: 700,
+    recipe: {
+      fb: [spec("hold", -1, 700), spec("sleep", 60)],
+      wg: [spec("waitPlat", 0, 884, 918), spec("jumpDrift", -1, 0, 65), spec("hold", -1, 780), spec("sleep", 20)],
+    },
+    vocab: {
+      fb: [spec("hold", -1, 688), spec("hold", -1, 700), spec("hold", -1, 714),
+        spec("sleep", 40), spec("sleep", 60), spec("sleep", 90)],
+      wg: [spec("waitPlat", 0, 882, 910), spec("waitPlat", 0, 890, 918), spec("waitPlat", 0, 898, 926),
+        spec("jumpDrift", -1, 0, 55), spec("jumpDrift", -1, 0, 65), spec("jumpDrift", -1, 0, 80),
+        spec("hold", -1, 770), spec("hold", -1, 780), spec("hold", -1, 792),
+        spec("sleep", 15), spec("sleep", 20), spec("sleep", 35)],
+    },
+  },
+  E2: {
+    maxDepth: 12, capFb: 6, capWg: 10, horizonF: 700,
+    recipe: {
+      fb: [spec("sleep", 200)],
+      wg: [spec("hold", -1, 660), spec("jumpDrift", -1, 0, 40), spec("hold", -1, 500), spec("sleep", 30)],
+    },
+    vocab: {
+      fb: [spec("sleep", 100), spec("sleep", 200), spec("sleep", 320)],
+      wg: [spec("hold", -1, 648), spec("hold", -1, 660), spec("hold", -1, 672),
+        spec("jumpDrift", -1, 0, 35), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 50),
+        spec("hold", -1, 484), spec("hold", -1, 500), spec("hold", -1, 516),
+        spec("sleep", 20), spec("sleep", 30), spec("sleep", 45)],
+    },
+  },
+};
+Object.assign(SEG, SEGE);
 
 // ---------------------------------------------------------------- evaluate：单候选全量重放（进程内确定性，§1.4）
 // 语义对齐 botcore.drive（fb→wg→step，run→done→推进，队列空锁存末输入，死亡/WIN 短路），
