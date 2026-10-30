@@ -10,6 +10,11 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-10-30（续作开发并发批启动——六槽分工并发推进；契约与待办序沿用同日"续作三部开发启动"条目（e735e1c））
+① **分工**：主会话=portal 内核（crystal 184+E 50+F 16 处依赖）；并发子槽六路：fairy-view（F 部仙女/杯客户端 View）、emenu（E 部 multi 选关 UI：条带+rows 网格+元素学习门）、respawn（RespawnManager 检查点/复活）、net（仙女拖拽输入/状态同步/netDto 契约更新）、cov（覆盖率阈值恢复抬升，接 cb697dd 临时下移注记）、docs（文档收容：三部取证要点入 playbook §9–§11+00-INDEX 登记+README 进行时注记）。
+② **契约**：各槽以 e735e1c 条目为共享契约源——待办序 portal 内核→respawn→net→三部 det 锚（r0-crystal/r0-elements/r0-fairytales）→客户端 View→路线样例→总门禁+发版；ice 锚用 r2-tpgate；验收口径=免我方视觉测试、逻辑一致，游玩验收归用户。
+③ **边界**：并发期间子槽禁改 packages/**（主会话落码中），文档改动限定 note/ 与 README；取证一律以已落库档卷为准（note/evidence/2026-10-30-{crystal-temple,elements,fairytales}/）。
+
 **更新**：2026-10-29（1.0.4——外网真机测试：修窄屏 HUD 裁切 + DEPLOY 关卡构成更正）
 ① **外部测试面**：从公网（非本机回环）对 110.42.36.114:2567 全量打真机——双客户端 58-61 patch/s 两端角色坐标逐位一致（服务端权威实证）、5 房并发房号唯一/超员锁房、断网 paused 冻结→恢复 started、刷新回座、iPhone 描述符触屏三键驱动角色。报告 note/research/2026-10-29-external-deploy-testing.md，脚本留档同目录 2026-10-29-external-test-tools/。
 ② **唯一真缺陷**：390px 竖屏 HUD 顶栏 nowrap + 居中无上限 → 内容 617px 左右各溢出 113px，房间码与邀请钮被裁。修法是 max-width:calc(100vw-16px)+flex-wrap+≤560px 媒体查询；320px 档 `#hud-room` 作为 flex item 仍按 min-content 撑出 ±12px，需再给 white-space:normal+min-width:0。实测 390px 由 -113..503 收敛到 98..293。
