@@ -23,7 +23,7 @@ import { AUDIO_SFX, LEVEL_BGM_KEYS, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadA
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
-import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_MAIN, PLAYER_SCALE, buildGameAnims, loadGameAtlases } from "./BootScene";
+import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_NEWCHAR, ATLAS_POPUP, ATLAS_TEMPLE, FONT_MAIN, PLAYER_SCALE, buildFairyAnims, buildGameAnims, loadGameAtlases } from "./BootScene";
 import { CameraRig, PAD, type CamApply } from "./cameraRig";
 import { clearSceneStates, resetFxStates, SCENE_STATE_KEYS } from "./sceneState";
 import { getSettings } from "../settings";
@@ -34,6 +34,7 @@ import { MechanismSmoother } from "./mechSmoothing";
 import { PlatformSoundTracker } from "./platformSound";
 import { GroundCache } from "./groundCache";
 import { clockSoundDecision, needsDarkRt, needsDust, resolveBeamCache } from "./gameGuards";
+import { deviceTintOf, pickFairy, type CoverRect, type FairyCupSnap, type FairySnap } from "./fairyView";
 
 export interface GameInit {
   net: Net;
@@ -42,13 +43,14 @@ export interface GameInit {
   /** 服务端入关时附带的 temple.json 条目（main.ts 注入）：create 同步选 BGM 用；
    *  缺省时仍由 fetchTempleTime 异步兜底。 */
   templeEntry?: { filename: string; time: number; type: string } | null;
+  /** cover 纯视觉矩形（main.ts fetchLevel 顺带从关卡原始 JSON Objects 层提取，
+   *  extractCovers；level2 解析不收——shared 禁改。fairytales/elements 部分关卡非空） */
+  covers?: CoverRect[];
 }
 
-/** 关卡四周留白（原版 groundTexture 1312×992 @(-32,-32) 实测）——常量本体已移 cameraRig.ts 统一导出 */
-/** 机关组色（原版 Device.groupColors），用于点亮贴图 tint */
-const GROUP_COLORS: Record<number, number> = {
-  1: 0xff0000, 2: 0x00cc00, 3: 0x0d3eff, 4: 0xffff00, 5: 0xec0ef1, 6: 0x57beff, 7: 0x9933ff,
-};
+/** 关卡四周留白（原版 groundTexture 1312×992 @(-32,-32) 实测）——常量本体已移 cameraRig.ts 统一导出
+ *  机关组色已迁 fairyView.ts（deviceTintOf：fairytales 庙走 F 部表，其余庙共享表——
+ *  oracle F 部 Device.groupColors 与 A–E 部不同，逐 bundle 字证） */
 
 const EMPTY_TYPE = -99;
 const LIQUID_ATLAS: Record<string, string> = { water: "WaterBox", lava: "FireBox", green: "GreenBox" };
@@ -145,6 +147,49 @@ interface PulleyView {
 /** 罗马杠（原版 §10）：杠容器（杠面+两端）随 bar 体位姿，中轴/底座静态 */
 interface RomanView {
   bar: Phaser.GameObjects.Container;
+}
+
+/**
+ * 仙女视图（oracle States/Level/Characters/Fairy createSprites L59294：body 精灵 +
+ * 双层 flying_glow，glow scale1.2/α.7、innerGlow scale.4/α.5 恒白+逐帧随机闪烁；
+ * body+glow tint 组色，双层辉光 LIGHTEN——档卷 §2.1 口径；body 恒常混合保留 NORMAL，
+ * oracle 的 LIGHTEN 挂在空白载体精灵上，档卷按辉光层记录）。
+ * R1 锁定：oracle 无锁形标记（锁定仅门控相机 focus/教学矩形），不做任何视觉差异；
+ * targetAngle 视觉朝向不在状态契约（{id,x,y,group,locked}）→ 不转（记档）。
+ */
+interface FairyView {
+  body: Phaser.GameObjects.Sprite;
+  glow: Phaser.GameObjects.Image;
+  innerGlow: Phaser.GameObjects.Image;
+  group: number;
+  /** 快照 locked 镜像（当前无视觉消费，保留供调试/后续消费） */
+  locked: boolean;
+  /** 上次写入位置（脏守卫） */
+  lx: number;
+  ly: number;
+}
+
+/**
+ * 仙女杯视图（oracle States/Level/Devices/FairyCup：back 常驻 overGround；glow=12fps
+ * 循环挂 liquids 层 sendToBack；base（BoxedDevice 主帧）+light 挂 overChars；glowFront
+ * 为 base 顶层子帧。glow/glowFront/light tint=杯组首位色；glow/glowFront 随 state=1 显，
+ * α=1−最近杯仙女距离/64，百搭杯（首位 0）glow 染入杯仙女组色）。
+ */
+interface FairyCupView {
+  back: Phaser.GameObjects.Image;
+  glow: Phaser.GameObjects.Sprite;
+  base: Phaser.GameObjects.Image;
+  light: Phaser.GameObjects.Image;
+  glowFront: Phaser.GameObjects.Image;
+  group: number;
+  cupGroupFirst: number;
+  /** 杯口（关卡 px：def 中心上方 20.8px=0.65m，rotation 恒 0） */
+  mouthX: number;
+  mouthY: number;
+  state: number;
+  /** α/tint 脏守卫（state=1 期间逐帧计算，值不变不写） */
+  lastAlpha: number;
+  lastTint: number;
 }
 
 interface WindView {
@@ -249,6 +294,18 @@ export class GameScene extends Phaser.Scene {
   private hangingViews = new Map<string, HangingView>();
   private pulleyViews = new Map<string, PulleyView>();
   private romanViews = new Map<string, RomanView>();
+  // ---- F 部 fairytales（fw-fairy-view）：仙女/仙女杯视图 ----
+  private fairyViews = new Map<string, FairyView>();
+  private fairyCupViews = new Map<string, FairyCupView>();
+  /** 逐帧仙女点位（关卡 px，updateFairies 收集；杯口 α/百搭 recolor 与拖拽命中共用） */
+  private fairyPts: Array<{ id: string; x: number; y: number; group: number }> = [];
+  // ---- F 部仙女拖拽输入态（bindFairyDragInput 接线；init 复位，离屏/抬起即 null）----
+  /** 当前拖拽的仙女 id（null=未拖拽） */
+  private dragFairyId: string | null = null;
+  /** 指针最新关卡坐标（pointermove 记账，update 每帧统一发送——节流到帧率） */
+  private dragPending: { x: number; y: number } | null = null;
+  /** 上次已发送坐标（未变不发） */
+  private dragLastSent: { x: number; y: number } | null = null;
   private doorSprites = new Map<Role, Phaser.GameObjects.Sprite>();
   private doorFrames = new Map<Role, number>();
   private clockText!: Phaser.GameObjects.BitmapText;
@@ -321,6 +378,8 @@ export class GameScene extends Phaser.Scene {
   private cbRomans!: (s: { x: number; y: number; angle: number }, id: string) => void;
   private cbDiamonds!: (ds: { collected: boolean }, id: string) => void;
   private cbPlatSnd!: (b: { x: number; y: number }, id: string) => void;
+  private cbFairies!: (s: FairySnap, idx: number) => void;
+  private cbFairyCups!: (s: FairyCupSnap, idx: number) => void;
 
   constructor() {
     super("Game");
@@ -362,6 +421,12 @@ export class GameScene extends Phaser.Scene {
     this.hangingViews.clear();
     this.pulleyViews.clear();
     this.romanViews.clear();
+    this.fairyViews.clear();
+    this.fairyCupViews.clear();
+    this.fairyPts.length = 0;
+    this.dragFairyId = null;
+    this.dragPending = null;
+    this.dragLastSent = null;
     this.doorSprites.clear();
     this.doorFrames.clear();
     this.navyItems = [];
@@ -415,6 +480,8 @@ export class GameScene extends Phaser.Scene {
     // 游戏内动画注册（r5 随装载序从 BootScene 迁来：wind/liquid/finish_stone 的帧在
     // ground/mech/popup 图集，Boot 阶段尚未装载；exists 幂等，重开/换关不重复建）
     buildGameAnims(this.anims);
+    // F 部 fairytales 动画（仙女机身/杯 glow——帧只在 fairytales 变体图集，他庙注册即缺帧告警源）
+    if (templeIdOf(level.id) === "fairytales") buildFairyAnims(this.anims);
     // 相机管理（F4 翻转，原版 CameraManager @1881500）：此前固定全景（冻结偏离）。
     // 原版行为：加载期 camFreeze 在全图 minScale，started 解冻后每帧自动适配双角色。
     // settled 口径（F2 后）：标准关 settled 恒钉关卡矩形中心 → scroll(16,16)
@@ -432,6 +499,8 @@ export class GameScene extends Phaser.Scene {
     this.cbRomans = this.stepRomans.bind(this);
     this.cbDiamonds = this.stepDiamonds.bind(this);
     this.cbPlatSnd = this.stepPlatSnd.bind(this);
+    this.cbFairies = this.stepFairies.bind(this);
+    this.cbFairyCups = this.stepFairyCups.bind(this);
 
     for (const d of level.diamonds) {
       this.diamondKinds.set(d.id, d.kind);
@@ -448,6 +517,7 @@ export class GameScene extends Phaser.Scene {
     this.buildDoors(level); // 原版门挂在 background 层（背景之上、地面之下）
     this.buildTutorial(level);
     this.buildDiamonds(level);
+    this.buildCovers(); // cover 纯视觉黑矩形（fairytales/elements 部分关卡；overGround 层）
     this.buildMechs(level);
     // dark 关黑幕（templeType 异步填充，ensureDarkRt 幂等兜底）
     this.ensureDarkRt(level);
@@ -459,6 +529,7 @@ export class GameScene extends Phaser.Scene {
     this.buildLiquids(level);
     this.buildNavies(level); // 替换 0.2.0 臆造 buildDust（G13：森林从不出现 BeamDust/Dust）
     this.buildHud();
+    this.bindFairyDragInput(); // F 部仙女拖拽（fairydrag 消息；他庙无仙女视图时命中恒空）
     this.fetchTempleTime(level);
 
     this.stopLevelBgm();
@@ -496,6 +567,8 @@ export class GameScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.stopWater();
       this.platformSounds.clear();
+      // 仙女拖拽在拖即松手（服务端 mouse joint 降 5% 力回落悬浮，防跨场景残留拖拽目标）
+      this.releaseFairyDrag();
       // #22：clock 是 this.sound.add 挂在全局 SoundManager 上的实例，不随场景关闭销毁——
       // 反复重开/换关会累积 WebAudioSound，旧实例仍可能发声。逐视图 stop+destroy，
       // sfx_clock 另入下方兜底 stopByKey 列表。
@@ -798,6 +871,8 @@ export class GameScene extends Phaser.Scene {
    * LevelData v2 的 id（l0/b0/p0/x0/a0/f0），消费时按下标回映射。
    */
   private buildMechs(level: LevelData): void {
+    // 组色按庙选表（oracle F 部 Device.groupColors 与 A–E 部不同——fairyView.ts 字证注）
+    const temple = templeIdOf(level.id);
     // 推块（underGround）：block + 点亮层（tint 组色）。快照只有压下二值（state 0|1），
     // 贴图压下取 6px≈0.2m 阈值位移（0.3.1 起快照下发连续 x/y，块体贴图随体——原版 0.7m 连续行程已对齐）
     for (const m of level.pushers) {
@@ -805,7 +880,7 @@ export class GameScene extends Phaser.Scene {
       const light = this.add
         .image(m.x + PAD, m.y + PAD, ATLAS_MECH, "pusher_block_light0000")
         .setOrigin(0.5)
-        .setTint(GROUP_COLORS[m.group] ?? 0xffffff)
+        .setTint(deviceTintOf(temple, m.group))
         .setDepth(1.2);
       this.pusherViews.set(m.id, { block, light, state: 0 });
     }
@@ -820,13 +895,13 @@ export class GameScene extends Phaser.Scene {
         .image(m.x + PAD, m.y + PAD, ATLAS_MECH, "pusher_block_light0000")
         .setOrigin(0.5)
         .setAngle(m.rotation)
-        .setTint(GROUP_COLORS[m.group] ?? 0xffffff)
+        .setTint(deviceTintOf(temple, m.group))
         .setDepth(1.2);
       const base = this.add.image(m.x + PAD, m.y + 16 + PAD, ATLAS_MECH, "timed_pusher_base0000").setOrigin(0.5).setDepth(3);
       const ring = this.add
         .image(m.x + PAD, m.y + 16 + PAD, ATLAS_MECH, "timed_pusher_light_off0000")
         .setOrigin(0.5)
-        .setTint(GROUP_COLORS[m.group] ?? 0xffffff)
+        .setTint(deviceTintOf(temple, m.group))
         .setDepth(3.01);
       const maskG = this.add.graphics().setVisible(false);
       this.timedPusherViews.set(m.id, { block, blockLight, base, ring, maskG, mask: maskG.createGeometryMask(), timeMs: m.time, on: false, lastH: null, clockSnd: null });
@@ -844,7 +919,7 @@ export class GameScene extends Phaser.Scene {
       const rad = (phi0 * Math.PI) / 180;
       const sx = pivotX + 4.8 * Math.sin(rad);
       const sy = pivotY - 4.8 * Math.cos(rad);
-      const tint = GROUP_COLORS[m.group] ?? 0xffffff;
+      const tint = deviceTintOf(temple, m.group);
       const stick = this.add.image(sx, sy, ATLAS_MECH, "lever_stick0000").setOrigin(0.5).setAngle(phi0).setDepth(3);
       const stickLight = this.add
         .image(sx, sy, ATLAS_MECH, "lever_stick_light_off0000")
@@ -898,7 +973,7 @@ export class GameScene extends Phaser.Scene {
       const light = this.add
         .image(0, 0, ATLAS_MECH, "moving_platform_light_off0000")
         .setOrigin(0.5)
-        .setTint(GROUP_COLORS[p.group] ?? 0xffffff);
+        .setTint(deviceTintOf(temple, p.group));
       light.scaleX = (wSw / 32 - 1) / 3; // 原版 scale.x=(宽格-1)/3
       const inner = this.add.container(0, 0, [capL, capR, mid, light]);
       if (vert) inner.setAngle(-90); // 内组 n=−π/2 常驻（原版 shapeSprite.rotation）
@@ -1040,7 +1115,7 @@ export class GameScene extends Phaser.Scene {
         .setOrigin(0.5)
         .setDepth(7.1)
         .setAngle(base.angle)
-        .setTint(GROUP_COLORS[w.group] ?? 0xffffff);
+        .setTint(deviceTintOf(temple, w.group));
       this.windViews.set(w.id, { base, light, effect, on: false });
     }
 
@@ -1076,7 +1151,7 @@ export class GameScene extends Phaser.Scene {
     }
     // ---- 灯光神庙机关视图（light 关非空；02号档 §2-§7 帧名/层级逐条对齐）----
     // 灯层为独立 Image（Phaser Image 无子树），消费端与宿主同位同角同步
-    const lightTint = (group: number): number => GROUP_COLORS[Number(String(group)[0])] ?? 0xffffff; // 原版取组号首位
+    const lightTint = (group: number): number => deviceTintOf(temple, group); // 原版取组号首位
     for (const m of level.beamers) {
       const base = this.add.image(m.x + PAD, m.y + PAD, ATLAS_MECH, "beamer0000").setOrigin(0.5).setAngle(m.rotation).setDepth(3);
       const light = this.add
@@ -1155,6 +1230,92 @@ export class GameScene extends Phaser.Scene {
       this.iceViews.set(`${run.row}:${run.col0}`, c);
     }
 
+    // ---- F 部 fairytales：仙女/仙女杯（01号档 §2；其余庙 def 恒空数组，此段整体跳过）----
+    if (temple === "fairytales") {
+      // 仙女（oracle Characters/Fairy L58979）：chars 层。body=flying_body_idle 30fps 循环
+      // （图集实有 0..3）；双层辉光 flying_glow0000 静帧（图集仅 0000，R4）——glow scale1.2/
+      // α.7 tint 组色，innerGlow scale.4/α.5 恒白；辉光层 LIGHTEN（档卷 §2.1），body 恒常
+      // 混合（oracle LIGHTEN 挂空白载体精灵上，档卷按辉光层记录）。位置=快照体心（kernel
+      // Lissajous 悬浮已在服务端物理内，客户端不做二次摆动；targetAngle 朝向不在状态契约，
+      // 不转——记档）。层序：三层均在角色下方（4.4<legs 4.9）。
+      // R1 锁定：oracle 无锁形标记，不做视觉差异；拖拽亦不受限（见拖拽输入段）。
+      for (const f of level.fairies) {
+        const x = f.x + PAD;
+        const y = f.y + PAD;
+        const tint = deviceTintOf(temple, f.group);
+        const body = this.add.sprite(x, y, ATLAS_NEWCHAR, "flying_body_idle0000").setOrigin(0.5).setDepth(4.4);
+        body.play("fairy_body");
+        const glow = this.add
+          .image(x, y, ATLAS_NEWCHAR, "flying_glow0000")
+          .setOrigin(0.5)
+          .setScale(1.2)
+          .setAlpha(0.7)
+          .setTint(tint)
+          .setBlendMode(Phaser.BlendModes.LIGHTEN)
+          .setDepth(4.41);
+        const innerGlow = this.add
+          .image(x, y, ATLAS_NEWCHAR, "flying_glow0000")
+          .setOrigin(0.5)
+          .setScale(0.4)
+          .setAlpha(0.5)
+          .setBlendMode(Phaser.BlendModes.LIGHTEN)
+          .setDepth(4.42);
+        this.fairyViews.set(f.id, { body, glow, innerGlow, group: f.group, locked: f.lockGroup !== undefined, lx: x, ly: y });
+      }
+      // 仙女杯（oracle Devices/FairyCup L53157）：back 常驻 overGround(3) 不 tint；
+      // glow=fairycup_glow 12fps 循环挂 liquids(7)——先于 buildLiquids 建入（同深度稳定
+      // 排序垫底 ≡ oracle sendToBack）；base+light 挂 overChars(4.95/4.96，light off 起、
+      // 双态同 tint=Device.setupLight 字证)；glowFront 为 base 顶子帧(4.97)。glow/glowFront
+      // 初始隐藏随 state=1 显（updateFairies）。杯口=def 中心上方 20.8px（cupOffset 0.65m）。
+      for (const c of level.fairyCups) {
+        const x = c.x + PAD;
+        const y = c.y + PAD;
+        const tint = deviceTintOf(temple, c.group);
+        const back = this.add.image(x, y, ATLAS_MECH, "fairycup_back0000").setOrigin(0.5).setDepth(3);
+        const glow = this.add.sprite(x, y, ATLAS_MECH, "fairycup_glow0000").setOrigin(0.5).setDepth(7).setTint(tint).setVisible(false);
+        glow.play("fairycup_glow");
+        const base = this.add.image(x, y, ATLAS_MECH, "fairycup_base0000").setOrigin(0.5).setDepth(4.95);
+        const light = this.add.image(x, y, ATLAS_MECH, "fairycup_light_off0000").setOrigin(0.5).setDepth(4.96).setTint(tint);
+        const glowFront = this.add
+          .image(x, y, ATLAS_MECH, "fairycup_glow_front0000")
+          .setOrigin(0.5)
+          .setDepth(4.97)
+          .setTint(tint)
+          .setVisible(false);
+        this.fairyCupViews.set(c.id, {
+          back,
+          glow,
+          base,
+          light,
+          glowFront,
+          group: c.group,
+          cupGroupFirst: Number(String(c.group)[0]) || 0,
+          mouthX: c.x,
+          mouthY: c.y - 20.8,
+          state: 0,
+          lastAlpha: -1,
+          lastTint: -1,
+        });
+      }
+    }
+  }
+
+  /**
+   * cover 纯视觉黑矩形（oracle States/Level/Devices/BackgroundCover @1696081：
+   * BackgroundCover0000 32×32 黑帧以 width/height 拉伸到对象矩形、overGround 层、
+   * anchor 缺省(0,0)；options.rotation 不消费——oracle 亦忽略）。帧共享 MechAssets
+   * 163 帧版已含（A–E 全庙通用）。数据=关卡原始 JSON Objects 层 type=cover
+   * （main.ts fetchLevel 经 extractCovers 注入 GameInit.covers）。
+   */
+  private buildCovers(): void {
+    for (const c of this.d.covers ?? []) {
+      if (!(c.w > 0) || !(c.h > 0)) continue;
+      this.add
+        .image(c.x + PAD, c.y + PAD, ATLAS_MECH, "BackgroundCover0000")
+        .setOrigin(0, 0)
+        .setDisplaySize(c.w, c.h)
+        .setDepth(3);
+    }
   }
 
   /** props 快照 key（"box:0"/"boxheavy:2"/"ball:3"）→ 视图 key（x 下标 / a 下标-boxes 数） */
@@ -1569,6 +1730,8 @@ export class GameScene extends Phaser.Scene {
     this.updatePlayers(st, delta);
     this.updateDiamonds(st);
     this.updateMechs(st, nowMs, delta);
+    this.updateFairies(st);
+    this.flushFairyDrag();
     this.updateDust();
     this.drawDarkness();
     this.updatePlatformSound(st);
@@ -2041,6 +2204,166 @@ export class GameScene extends Phaser.Scene {
     v.dot.setPosition(Number(bs.x) + PAD, Number(bs.y) + PAD);
     v.light.setPosition(Number(bs.x) + PAD, Number(bs.y) + PAD);
   };
+
+  // ---- F 部 fairytales 快照消费（fw-fairy-view）：仙女位姿/闪烁 + 杯 glow 显隐/α/百搭 recolor ----
+  // 状态契约（net 槽当日落地，消费端先行）：state.fairies=ArraySchema<{id,x,y,group,locked}>
+  // （x/y=屏幕 px 同 BodyState 口径）、state.fairyCups=ArraySchema<{id,state}>。字段未落地
+  // 期间 `st.fairies?.forEach?.` 静默跳过，渲染零影响。
+
+  /** 快照条目 → 仙女视图：id 键优先（契约 id=关卡 def id），空/未命中回退下标键 f{idx} */
+  private fairyViewOf(s: { id?: string }, idx: number): FairyView | null {
+    if (s.id !== undefined && s.id !== null && String(s.id) !== "") {
+      const v = this.fairyViews.get(String(s.id));
+      if (v) return v;
+    }
+    return this.fairyViews.get(`f${idx}`) ?? null;
+  }
+
+  /** 快照条目 → 仙女杯视图：同上，回退键 fc{idx} */
+  private fairyCupViewOf(s: { id?: string }, idx: number): FairyCupView | null {
+    if (s.id !== undefined && s.id !== null && String(s.id) !== "") {
+      const v = this.fairyCupViews.get(String(s.id));
+      if (v) return v;
+    }
+    return this.fairyCupViews.get(`fc${idx}`) ?? null;
+  }
+
+  /** 每帧仙女/杯消费（updateMechs 后调用；fairyPts 先清后填——杯 α 与拖拽命中共用） */
+  private updateFairies(st: any): void {
+    if (this.fairyViews.size === 0 && this.fairyCupViews.size === 0) return;
+    this.fairyPts.length = 0;
+    st.fairies?.forEach?.(this.cbFairies);
+    st.fairyCups?.forEach?.(this.cbFairyCups);
+  }
+
+  private stepFairies(s: FairySnap, idx: number): void {
+    const v = this.fairyViewOf(s, idx);
+    if (!v) return;
+    const x = (Number(s.x) || 0) + PAD;
+    const y = (Number(s.y) || 0) + PAD;
+    if (x !== v.lx || y !== v.ly) {
+      v.lx = x;
+      v.ly = y;
+      v.body.setPosition(x, y);
+      v.glow.setPosition(x, y);
+      v.innerGlow.setPosition(x, y);
+    }
+    // innerGlow 逐帧随机闪烁（oracle updateSprites：random()>0.7 → α=.4+.3·random()）
+    if (Math.random() > 0.7) v.innerGlow.setAlpha(0.4 + 0.3 * Math.random());
+    // 锁定镜像（R1：oracle 无视觉差异，仅存态；拖拽不门控）
+    v.locked = s.locked === true;
+    v.group = Number(s.group) || 0;
+    // 点位表：关卡 px 坐标 + 快照 id（fairydrag 上行回带同一 id；id 缺省回退下标键）
+    this.fairyPts.push({ id: String(s.id ?? `f${idx}`), x: Number(s.x) || 0, y: Number(s.y) || 0, group: v.group });
+  }
+
+  private stepFairyCups(s: FairyCupSnap, idx: number): void {
+    const v = this.fairyCupViewOf(s, idx);
+    if (!v) return;
+    const on = Number(s.state) === 1;
+    if (on !== (v.state === 1)) {
+      v.state = on ? 1 : 0;
+      // state1 显 glow/glowFront + light_on（oracle update L53289：显隐切 visible，动画建时
+      // 即播不停→相位连续）；state0 全隐（α 脏值一并作废）
+      v.glow.setVisible(on);
+      v.glowFront.setVisible(on);
+      v.light.setFrame(on ? "fairycup_light_on0000" : "fairycup_light_off0000");
+      v.lastAlpha = -1;
+      v.lastTint = -1;
+    }
+    if (!on) return;
+    // 杯口辉光 α=1−dist/64（oracle 同函数：取 currentFairies 最近者到杯口距离；客户端以
+    // 快照全体仙女最近者近似——state=1 时在杯仙女必为最近，近似偏差记档）
+    let best = Infinity;
+    for (const p of this.fairyPts) {
+      const d = Math.hypot(p.x - v.mouthX, p.y - v.mouthY);
+      if (d < best) best = d;
+    }
+    const alpha = best === Infinity ? 1 : Math.max(0, 1 - best / 64);
+    if (alpha !== v.lastAlpha) {
+      v.lastAlpha = alpha;
+      v.glow.setAlpha(alpha);
+      v.glowFront.setAlpha(alpha);
+    }
+    // 百搭杯（首位 0）glow/glowFront 染入杯仙女组色（oracle 0===getColorIndex 分支）——
+    // 以「最近且进入感应圈（sensor 1.3m+仙女 0.3m=51.2px）」近似 currentFairies 成员
+    if (v.cupGroupFirst === 0) {
+      let inCup: { x: number; y: number; group: number } | null = null;
+      let bestIn = 51.2;
+      for (const p of this.fairyPts) {
+        const d = Math.hypot(p.x - v.mouthX, p.y - v.mouthY);
+        if (d < bestIn) {
+          bestIn = d;
+          inCup = p;
+        }
+      }
+      const want = inCup ? deviceTintOf("fairytales", inCup.group) : 0xffffff;
+      if (want !== v.lastTint) {
+        v.lastTint = want;
+        v.glow.setTint(want);
+        v.glowFront.setTint(want);
+      }
+    }
+  }
+
+  // ---- F 部仙女拖拽输入（oracle Fairy.startDrag/endDrag L59177 区：pointerdown 命中
+  //  即拖、持续跟随指针、抬起/离屏松手（mouse joint maxForce 降 5% 由服务端执行）。
+  //  R1：无 locked 门控——oracle 锁定只门控相机 focus/教学矩形，拖拽照常允许；
+  //  无 phase 门控——server 权威裁决消息，客户端不预判）。命中半径 40px（oracle
+  //  hitArea=2×身高≈136px 偏宽，取手感值——任务口径，见 pickFairy 注）。
+  private bindFairyDragInput(): void {
+    this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onFairyDragDown, this);
+    this.input.on(Phaser.Input.Events.POINTER_MOVE, this.onFairyDragMove, this);
+    this.input.on(Phaser.Input.Events.POINTER_UP, this.onFairyDragUp, this);
+    this.input.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onFairyDragUp, this);
+    this.input.on(Phaser.Input.Events.GAME_OUT, this.onFairyDragUp, this);
+  }
+
+  /** 屏幕指针坐标 → 关卡 px（静态相机 zoom/scroll 由 getWorldPoint 统一换算） */
+  private pointerToLevel(pointer: Phaser.Input.Pointer): { x: number; y: number } {
+    const w = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+    return { x: w.x - PAD, y: w.y - PAD };
+  }
+
+  private onFairyDragDown(pointer: Phaser.Input.Pointer): void {
+    if (this.dragFairyId) return;
+    const p = this.pointerToLevel(pointer);
+    const id = pickFairy(this.fairyPts, p.x, p.y, 40);
+    if (!id) return;
+    this.dragFairyId = id;
+    this.dragPending = p;
+    this.dragLastSent = null; // 首发交本帧 flushFairyDrag
+  }
+
+  private onFairyDragMove(pointer: Phaser.Input.Pointer): void {
+    if (!this.dragFairyId) return;
+    this.dragPending = this.pointerToLevel(pointer);
+  }
+
+  private onFairyDragUp(): void {
+    this.releaseFairyDrag();
+  }
+
+  /** 松手（x=null 契约）：服务端把 mouse joint maxForce 降到 5%，仙女回落悬浮 */
+  private releaseFairyDrag(): void {
+    const id = this.dragFairyId;
+    if (!id) return;
+    this.dragFairyId = null;
+    this.dragPending = null;
+    this.dragLastSent = null;
+    this.d.net.sendFairyDrag(id, null, null);
+  }
+
+  /** 每帧统一发送（节流到帧率）：坐标未变不发；仅拖拽激活期有开销 */
+  private flushFairyDrag(): void {
+    const id = this.dragFairyId;
+    const p = this.dragPending;
+    if (!id || !p) return;
+    const last = this.dragLastSent;
+    if (last && last.x === p.x && last.y === p.y) return;
+    this.dragLastSent = { x: p.x, y: p.y };
+    this.d.net.sendFairyDrag(id, p.x, p.y);
+  }
 
   /** 光柱浮尘装配（原版 fillDustLayer @1908496 逐字：ceil(width/10) 粒 BeamDust0000、
    *  随机位/随机转角；几何掩膜=光束路径描线，dust 仅光柱内可见） */

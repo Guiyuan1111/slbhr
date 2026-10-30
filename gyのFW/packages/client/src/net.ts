@@ -328,6 +328,15 @@ export class Net {
     this.room.send("input", input);
   }
 
+  /**
+   * F 部仙女拖拽（fw-fairy-view；状态契约与 net 槽对齐）：{id, x, y}（关卡 px，
+   * 服务端换算 mouse joint target）；x=null=松手（maxForce 降 5% 回落悬浮）。
+   * 服务端 handler 由 net 槽当日落地——先发不炸（Colyseus 未知消息类型服务端忽略）。
+   */
+  sendFairyDrag(id: string, x: number | null, y: number | null): void {
+    this.room.send("fairydrag", { id, x, y });
+  }
+
   restart(): void {
     this.room.send("restart", {});
   }

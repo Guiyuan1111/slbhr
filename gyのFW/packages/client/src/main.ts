@@ -24,6 +24,7 @@ import { FadeScene, fadeSwitch } from "./scenes/transition";
 import { loadTempleLevels } from "./templeData";
 import { markPlayed, processWinResult, saveBest, starsOf } from "./progress";
 import { getSettings } from "./settings";
+import { extractCovers, type CoverRect } from "./scenes/fairyView";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => {
   const el = document.querySelector(sel);
@@ -83,6 +84,8 @@ async function fetchLevel(id: string): Promise<LevelData> {
     throw new Error(msg);
   }
   const { json } = (await res.json()) as { id: string; json: unknown };
+  // cover 纯视觉矩形（F 部 fairytales/elements 部分关卡有；无 cover 关为空数组）
+  coversByLevel.set(id, extractCovers(json));
   // parseLevel 是同步取用，必须先预取全部图块集再以同步 getter 提供（直接传
   // Promise 会让 tileTypeOf 全部失败，地面/液体类型全部退化为 0）。
   const sources = new Set<string>();
@@ -101,6 +104,10 @@ async function fetchLevel(id: string): Promise<LevelData> {
     return ts;
   });
 }
+
+/** 关卡 cover 矩形按 id 缓存（fetchLevel 顺带从原始 JSON Objects 层提取——level2 解析
+ *  不收 cover（shared 禁改，纯视觉对象）；GameScene 经 GameInit.covers 消费渲染） */
+const coversByLevel = new Map<string, CoverRect[]>();
 
 /** 关卡数据客户端缓存（r8 perf 件4）：LevelData 只读（场景构建遍历读，不改写），
  *  同关重进（离房再建/邀请深链重复进出）零重复拉取；失败逐出保证可重试。 */
@@ -170,7 +177,7 @@ async function reloadLevel(levelId: string): Promise<void> {
   // NewSign played 标记（13 号档 #13，0.3.39）：oracle setPlayed 于 startLevel 进关即置
   // （bundle:1935016）；换关亦属进关（advance 回声同达）。
   if (currentTempleEntry) markPlayed(currentTempleEntry.filename);
-  (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level: currentLevel, keyboard, templeEntry: currentTempleEntry, game: phaser };
+  (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level: currentLevel, keyboard, templeEntry: currentTempleEntry, covers: coversByLevel.get(levelId), game: phaser };
   hudTopShow(); // 换关同样展示几秒（双人可能在新关前重新约人），随后自动收起
   // 换关黑幕（oracle LevelMenu.startLevel fade("level") :1935281；EndMenu Continue→advance 回声双侧同达）
   const sm = phaser!.scene;
@@ -384,7 +391,7 @@ async function enterGame(): Promise<void> {
   // （bundle:1935016）。时点注记：oracle 单机=点击节点直进；我方联机=此处真进关
   // （弹面板间隔不计），语义取「进过这关」。
   if (currentTempleEntry) markPlayed(currentTempleEntry.filename);
-  (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level, keyboard, templeEntry: currentTempleEntry, game: phaser };
+  (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level, keyboard, templeEntry: currentTempleEntry, covers: coversByLevel.get(levelId), game: phaser };
   (globalThis as unknown as Record<string, unknown>).__fwRestart = () => net?.restart();
   (globalThis as unknown as Record<string, unknown>).__fwPauseKeyboard = (b: boolean) => keyboard?.setPaused(b);
   // F3：P 键/暂停菜单「继续」统一入口——只发请求，画面以服务端 pause-changed 回声为准

@@ -59,6 +59,10 @@ export const SCENE_STATE_KEYS = [
   "hangingSnaps",
   "pulleySnaps",
   "romanSnaps",
+  // F 部 fairytales（fw-fairy-view）：仙女/仙女杯视图 + 逐帧仙女点位表
+  "fairyViews",
+  "fairyCupViews",
+  "fairyPts",
 ] as const;
 
 export type SceneStateKey = (typeof SCENE_STATE_KEYS)[number];
