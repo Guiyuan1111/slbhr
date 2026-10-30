@@ -220,7 +220,7 @@ describe("Wind 施力", () => {
 describe("TimedPusher 计时谱", () => {
   it("压下计时/持续按压重置/到时回弹/早松复位（C @1726729 计时器换仿真钟）", () => {
     const { B, world, ground } = makeWorld();
-    const tp = new TimedPusher(B, world, ground, { x: 500, y: 300, group: 5, time: 200, rotation: 90 });
+    const tp = new TimedPusher(B, world, ground, { id: "t0", x: 500, y: 300, group: 5, time: 200, rotation: 90 });
     const events: MechEvent[] = [];
     const dt = 1000 / 60;
     // 压下：持续下压 8 帧（translation 正方向=下压，gold-trace prismatic 轴语义）
@@ -233,7 +233,7 @@ describe("TimedPusher 计时谱", () => {
     expect(tp.state).toBe(1);
     expect(tp.timerActive).toBe(true);
     expect((tp as unknown as { joint: any }).joint.GetJointTranslation()).toBeGreaterThan(0.2);
-    const downEvents = events.filter((e) => e.state === 1);
+    const downEvents = events.filter((e) => e.kind !== "portal" && e.state === 1);
     expect(downEvents.length).toBe(1);
     // 持续按压：计时每帧重置（原版 timer.stop().start()）
     for (let i = 0; i < 20; i++) {
@@ -251,7 +251,7 @@ describe("TimedPusher 计时谱", () => {
     }
     expect(tp.timerActive).toBe(false);
     expect(tp.state).toBe(0);
-    expect(events.some((e) => e.state === 0)).toBe(true);
+    expect(events.some((e) => e.kind !== "portal" && e.state === 0)).toBe(true);
     // 早松分支：state 尚 1 且计时未激活 → 立即复位
     tp.state = 1;
     tp.timerActive = false;
@@ -265,8 +265,8 @@ describe("TimedPusher 计时谱", () => {
 describe("RotMirror / InfiniteMirror / Slider（灯光神庙件）", () => {
   it("RotMirror：负角归一化循环 + dir 双限位支 + updateState 马达 + update 回钳", () => {
     const { B, world, ground } = makeWorld();
-    const rm1 = new RotMirror(B, world, ground, { x: 600, y: 300, group: 6, rotation: -90, dir: 1 });
-    const rm0 = new RotMirror(B, world, ground, { x: 700, y: 300, group: 6, rotation: 45, dir: 0 });
+    const rm1 = new RotMirror(B, world, ground, { id: "rm1", x: 600, y: 300, group: 6, rotation: -90, dir: 1, bringToBack: false });
+    const rm0 = new RotMirror(B, world, ground, { id: "rm0", x: 700, y: 300, group: 6, rotation: 45, dir: 0, bringToBack: false });
     const j1 = (rm1 as unknown as { joint: any }).joint;
     const j0 = (rm0 as unknown as { joint: any }).joint;
     // dir=1 → [−rot, −rot+π/2]；rot −90° 归一化到 270° → −rot = −4.712 → +2π? 归一化 [0,2π)：−π/2→3π/2
@@ -290,7 +290,7 @@ describe("RotMirror / InfiniteMirror / Slider（灯光神庙件）", () => {
 
   it("InfiniteMirror：SetLimits(state,state) 随滑轨连续态（@1750060）", () => {
     const { B, world, ground } = makeWorld();
-    const im = new InfiniteMirror(B, world, ground, { x: 800, y: 300, group: 7, rotation: 30 });
+    const im = new InfiniteMirror(B, world, ground, { id: "im0", x: 800, y: 300, group: 7, rotation: 30 });
     const joint = (im as unknown as { joint: any }).joint;
     im.state = 2;
     im.updateState(false);
@@ -302,7 +302,7 @@ describe("RotMirror / InfiniteMirror / Slider（灯光神庙件）", () => {
 
   it("Slider：平移量变化才派发连续 state（@1721500；state=π·t·max/(w/32)）", () => {
     const { B, world, ground } = makeWorld();
-    const slider = new Slider(B, world, ground, { x: 900, y: 300, group: 8, max: 2, widthPx: 128 });
+    const slider = new Slider(B, world, ground, { id: "s0", x: 900, y: 300, group: 8, max: 2, widthPx: 128 });
     const events: MechEvent[] = [];
     // 未动：不派发
     slider.checkState(events);
@@ -313,11 +313,11 @@ describe("RotMirror / InfiniteMirror / Slider（灯光神庙件）", () => {
       world.Step(1 / 60, 8, 3);
       slider.checkState(events);
     }
-    expect(events.length).toBeGreaterThan(0);
-    expect(events[0].kind).toBe("slider");
-    expect(events[0].group).toBe(8);
-    expect(events[0].state).toBeLessThan(0); // t<0 → state<0
-    const last = events[events.length - 1].state;
+    const evs = events.filter((e) => e.kind === "slider");
+    expect(evs.length).toBeGreaterThan(0);
+    expect(evs[0].group).toBe(8);
+    expect(evs[0].state).toBeLessThan(0); // t<0 → state<0
+    const last = evs[evs.length - 1].state;
     // 静止后不再派发
     slider.body.SetLinearVelocity(new B.b2Vec2(0, 0));
     world.Step(1 / 60, 8, 3);
@@ -434,9 +434,9 @@ describe("构造函数支路（window 窄窗交换 / boxmirror 显式属性）",
 
   it("buildBoxMirror：显式 boxSize/friction 与缺省两支", () => {
     const { B, world } = makeWorld();
-    const m1 = buildBoxMirror(B, world, { x: 300, y: 300, rotation: 45, boxSize: 2.4, friction: 0.55 });
+    const m1 = buildBoxMirror(B, world, { id: "bm1", x: 300, y: 300, rotation: 45, boxSize: 2.4, friction: 0.55 });
     expect(m1.body).toBeDefined();
-    const m2 = buildBoxMirror(B, world, { x: 400, y: 300, rotation: 0 });
+    const m2 = buildBoxMirror(B, world, { id: "bm2", x: 400, y: 300, rotation: 0 });
     expect(m2.body).toBeDefined();
   });
 });
