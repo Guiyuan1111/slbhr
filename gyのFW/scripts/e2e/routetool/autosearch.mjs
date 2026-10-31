@@ -38,7 +38,7 @@ function findRoot(dir) {
 const ROOT = findRoot(dirname(fileURLToPath(import.meta.url)));
 const kernel = await import(pathToFileURL(join(ROOT, "scripts", "e2e", "routetool", "kernel.mjs")).href);
 const botcore = await import(pathToFileURL(join(ROOT, "scripts", "e2e", "routetool", "botcore.mjs")).href);
-const { makeWorld, expandFlat } = kernel;
+const { makeWorld, expandFlat, fyByFrame, applyFy } = kernel;
 const { NONE, S, S2, drive, toRouteDoc } = botcore;
 
 // ---------------------------------------------------------------- CLI
@@ -82,7 +82,7 @@ const log = (...a) => { if (!QUIET) console.log(...a); };
 
 // ---------------------------------------------------------------- 断言编译（取数路径同 verify-chain.mjs，E1 已验证可计算）
 // S = {fb:{x,y,vx,vy,grounded,dead}, wg:{...}}（dead = dead||dying，与 botcore.drive snapOf 同构）
-// M = w.mechSnapshot()；D = {won, doors}
+// M = w.mechSnapshot()；D = {won, doors}；F = 仙女位置数组 [{x,y}]（屏幕 px，fw-fairydrag 槽新增）
 function compileGroup(list) {
   return list.map((a) => {
     switch (a.kind) {
@@ -103,11 +103,17 @@ function compileGroup(list) {
       case "atDoor": return { a, f: (Sx) => Sx[a.role].atDoor };
       case "doorUp": return { a, f: (Sx, Mx, Dx) => Dx.doors[a.role === "fb" ? "fireboy" : "watergirl"].isUp };
       case "phaseWon": return { a, f: (Sx, Mx, Dx) => Dx.won };
+      // 仙女位置窗（fw-fairydrag 槽）：idx=内核 fairies 数组序，坐标屏幕 px。
+      // Fx 缺省（旧子进程 JSON）→ 恒 false，不炸。
+      case "fairyPx": case "fairyPy": {
+        const k = a.kind === "fairyPx" ? "x" : "y";
+        return { a, f: (Sx, Mx, Dx, Fx) => Fx?.[a.idx]?.[k] !== undefined && Fx[a.idx][k] >= a.min && Fx[a.idx][k] <= a.max };
+      }
       default: throw new Error(`未知断言 kind: ${a.kind}`);
     }
   });
 }
-const allS = (g, Sx, Mx, Dx) => g.every((c) => c.f(Sx, Mx, Dx));
+const allS = (g, Sx, Mx, Dx, Fx) => g.every((c) => c.f(Sx, Mx, Dx, Fx));
 
 // ---------------------------------------------------------------- 原语词表
 // 标准件直包 botcore S/S2 工厂（搜索内循环与 drive 定稿重放运行同一份代码，零漂移）；
@@ -187,6 +193,11 @@ const PRIM_TABLE = {
   },
   brakedHop: (d, ...a) => wrapTap(S2.brakedHop(ds(d), ...a)),
   edgeDrop: (d, ...a) => S2.edgeDrop(ds(d), ...a),
+  // 仙女拖拽（fw-fairydrag 槽，2026-10-31）：S2 工厂直包（搜索内循环与 drive 定稿重放
+  // 同一份代码，零漂移）。坐标=关卡 px，米制换算在 S2 内部。spec 形态：
+  //   fdrag(i,x,y) / fdrag(i,x,y,hold) / frelease(i)
+  fdrag: (...a) => S2.fdrag(...a),
+  frelease: (...a) => S2.frelease(...a),
   /** 推箱（待决②）：持续压 dir 直到 props[propId] 质心到 untilX（box 落层/转弯由物理自然承接） */
   push: (dir, untilX, propId = 0) => {
     const D = dir > 0 ? "right" : "left";
@@ -884,9 +895,195 @@ const SEGC = {
 };
 Object.assign(SEG, SEGC);
 
+// ---------------------------------------------------------------- fairies-01（fw-fairydrag 槽，2026-10-31，纯增量 SEGF）
+// 地形/机关实测（TEMP/fw-fd-01 probe1-6 + grid3.py 权威网格 + mechanisms.ts/level2.ts 源读，
+// 坐标=屏幕px，py=snapshot 中心 y=脚−35.2）：
+//   出生 fb(320,~893) wg(416,~893)（底层走廊 928，行29 cols22-28=x[704,928] 是水池——fb 涉水即死
+//   【probe3 实证 DEAD@111】，wg 可涉）；东线：floor→'/'col30(960,928→992,896)→矮台[992,1056]896
+//   →'\col33(1056,896→1088,928)→floor→'/'col34@row25(1088,832→1120,800) 需自矮台跳上→R25R顶[1120,1248]800；
+//   b_g2 按钮在 R25R 顶 (1200,800)（pusher 静息 y800，按压=上移 +19px→state1，probe2/3）——
+//   【03号档勘误】按钮在搁板顶非袋内 (1200,864)；p0(id380,[1120,1152]) 默认升起 slab[832,928] 封死东袋
+//   （probe1：仙女起拖 (900,880) 钉死 x=1159.9=p0 东面+9.6），b_g2 压下→p0 沉 96→slab[928,1024]
+//   （probe3 实测中心 976）；仙女出生 (1200,880) 在袋内、袋口唯一 → 【必须先由玩家压 b_g2 仙女才可出袋】
+//   （probe2：仙女压不动 pusher——pusher=物理配重件，仙女零重力无力；
+//   03号档 §2 S0「直接拖 1170px」在 p0 封袋前提下不可行，本链前置 F0 压钮段）。
+//   拖拽走廊：洞穴全段顶=R25 系底面 832，仙女 r9.6 → 中心 y∈[841.6,~] 贴顶飞行；玩家站姿头=脚−64
+//   （脚928→头864），y=845 仙女与玩家头净空 ~9.4px、与穴顶净空 ~3.4px（probe3 全程无碰撞实证，
+//   仙女 fixture friction=0 蹭顶无阻）；拖速巡航 ~9.2px/f（probe3 f230→f360 1100px）。
+//   杯 fc0 杯口中心 (32,803.2)（level2 未应用 rotation=90 杯直立——存疑待核记 04号档），sensor
+//   r=1.3m+仙女 0.3m=51.2px；杯体 polygon [817.6,824] 埋于 R25L 实心内；R25L 顶 800——洞穴西侧
+//   顶 832 下贴顶飞至 x≤83 即入感应球（(41.6,841.6) 距杯心 39.6<51.2）。入杯后持续按住拖拽 →
+//   p1(id382,[160,192] slab[704,800]) 下沉 128 → slab[832,928] 中心 880（probe3 f480 起保持 2000f+）。
+//   S1 帆跃（内核 15.5 可行，probe6 实测）：走廊满速东行至 627-634 起跳（该处头顶 R21L 底 704，
+//   净空 160px），jd 西漂 minFeet 815-818（≤828.8 檐角要求）→ 落 '\'col18@row25(576,800→608,832)
+//   斜面 [599,610] → 续压西键上 45° 斜面走平 R25L(800)。
+//   c5 坡尖 (160,704)：'/'col5@row21 对角 (160,704)-(192,672)，圆-角捕捉 center-x∈[153.6,166.4]
+//   feet≈704.3（03号档 §1.1）；内核 15.5 满充跳升 ~113px（probe4 minFeet 815=928−113）覆盖 96px 设计位。
+//   上层链（03号档 §2 S3-S6 未逐段内核验证，交 autosearch）：R21L 东行 x288 跳顶撞杠杆 l0(288,~480)
+//   → l0 ON → p3(id419,[192,224] slab[448,544]) 下沉 128 → 顶 576；跳上 p3 → 西跳 R17L(544,x0-256)
+//   → 东跳 R16L(512,x448-704) → 西跳 R13L(416,x160-416)；R13L 西缘坠 R7L(224,x96-416) → 东行助跑
+//   越岩浆(r7 cols13-18=x[416,608]；岩浆杀 wg，fb 免疫) → 落 '/'col18@row4(576,160→608,128)/R4E(128,
+//   x608-864) → 东缘楔(col27 d) 走落 R9E(288) → 西跳 32 上 R8(256,x768-896) → 东助跑 x≈878 跳
+//   R6R(192,x1088-1280) → fb 门(1072-1136) wg 门(1168-1232) = WIN。
+const SEGF = {
+  // F0 压钮段：wg 独走东线（涉水池）上 R25R 顶压 b_g2 至 p0 沉位驻留；fb 原地。
+  //   【probe3 实证链】[settle, goTo(1040,14), jd(+1,0,30), goTo(1200,14), stand] f240 压着 p0 沉。
+  F0: {
+    maxDepth: 12, capFb: 3, capWg: 8, horizonF: 500,
+    recipe: {
+      fb: [spec("settle"), spec("sleep", 60)],
+      wg: [spec("settle"), spec("goTo", 1040, 14), spec("jumpDrift", 1, 0, 30), spec("goTo", 1200, 14), spec("sleep", 15)],
+    },
+    vocab: {
+      fb: [spec("settle"), spec("sleep", 30), spec("sleep", 60)],
+      wg: [spec("settle"), spec("sleep", 3), spec("sleep", 6),
+        spec("goTo", 1020, 14), spec("goTo", 1040, 14), spec("goTo", 1060, 14),
+        spec("jumpDrift", 1, 0, 24), spec("jumpDrift", 1, 0, 30), spec("jumpDrift", 1, 0, 36),
+        spec("jumpOnto", 1, 786), spec("jumpOnto", 1, 796),
+        spec("goTo", 1180, 14), spec("goTo", 1200, 14), spec("goTo", 1220, 14),
+        spec("hold", 1, 1190), spec("hold", 1, 1210), spec("sleep", 15)],
+    },
+  },
+  // F1 拖拽段：fb 程序挂 fdrag——仙女 (1200,880) 贴顶走廊 y845 西飞入杯（fb 原地举拖）；
+  //   wg 按钮驻留 sleep 后原路西返（下坡涉池）驻 560——仙女过闸后才离钮（p0 回升无碍）。
+  //   拖拽粘滞：fdrag 完成后拖拽态长持（无 frelease），p1 持续下沉。
+  F1: {
+    maxDepth: 10, capFb: 4, capWg: 6, horizonF: 800,
+    recipe: {
+      fb: [spec("fdrag", 0, 40, 845), spec("sleep", 30)],
+      wg: [spec("sleep", 90), spec("hold", -1, 700), spec("goTo", 560, 12), spec("sleep", 30)],
+    },
+    vocab: {
+      fb: [spec("fdrag", 0, 40, 845), spec("fdrag", 0, 36, 842), spec("fdrag", 0, 52, 848),
+        spec("fdrag", 0, 600, 845), spec("fdrag", 0, 300, 845), spec("sleep", 15), spec("sleep", 30)],
+      wg: [spec("sleep", 60), spec("sleep", 90), spec("sleep", 120),
+        spec("hold", -1, 700), spec("hold", -1, 760), spec("goTo", 540, 12), spec("goTo", 560, 12), spec("goTo", 580, 12),
+        spec("sleep", 30)],
+    },
+  },
+  // F2 帆跃段：双角色走廊满速东行→线位起跳 jd 西漂越 c18' 檐角→落斜面续压西上 R25L 分泊
+  //   （fb 泊 240 近 p1 / wg 泊 430 东段，错位防同点碰撞）。【probe6 实证 line627/holdF36 → 落 602.5】
+  F2: {
+    maxDepth: 12, capFb: 7, capWg: 7, horizonF: 600,
+    recipe: {
+      fb: [spec("hold", 1, 627), spec("jumpDrift", -1, 0, 36), spec("hold", -1, 240), spec("sleep", 15)],
+      wg: [spec("hold", 1, 634), spec("jumpDrift", -1, 0, 36), spec("hold", -1, 430), spec("sleep", 15)],
+    },
+    vocab: {
+      fb: [spec("hold", 1, 614), spec("hold", 1, 620), spec("hold", 1, 627), spec("hold", 1, 634), spec("hold", 1, 641),
+        spec("jumpDrift", -1, 0, 30), spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 45),
+        spec("hold", -1, 220), spec("hold", -1, 240), spec("hold", -1, 280),
+        spec("goTo", 240, 12), spec("sleep", 15), spec("sleep", 30)],
+      wg: [spec("hold", 1, 620), spec("hold", 1, 627), spec("hold", 1, 634), spec("hold", 1, 641), spec("hold", 1, 648),
+        spec("jumpDrift", -1, 0, 30), spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 45),
+        spec("hold", -1, 400), spec("hold", -1, 430), spec("hold", -1, 470), spec("hold", -1, 510),
+        spec("goTo", 430, 12), spec("sleep", 15), spec("sleep", 30)],
+    },
+  },
+  // F3 坡尖段：双角色先后圆-角捕捉 c5 坡尖 (160,704) 上 R21L（fb 先行，wg sleep 错峰——
+  //   l0 杠杆第二次撞击会翻回 OFF，wg 路线不过 x288 杠杆正下）。
+  F3: {
+    maxDepth: 14, capFb: 6, capWg: 6, horizonF: 600,
+    recipe: {
+      fb: [spec("goTo", 160, 4), spec("jumpOnto", 1, 672), spec("goTo", 250, 10), spec("sleep", 15)],
+      wg: [spec("sleep", 140), spec("goTo", 160, 4), spec("jumpOnto", 1, 672), spec("goTo", 340, 10), spec("sleep", 15)],
+    },
+    vocab: {
+      fb: [spec("goTo", 156, 4), spec("goTo", 160, 4), spec("goTo", 166, 4),
+        spec("jumpOnto", 1, 666), spec("jumpOnto", 1, 672), spec("jumpOnto", 1, 678),
+        spec("jumpDrift", 1, 0, 20), spec("jumpDrift", 1, 0, 26),
+        spec("goTo", 220, 10), spec("goTo", 250, 10), spec("goTo", 290, 10), spec("sleep", 15)],
+      wg: [spec("sleep", 100), spec("sleep", 140), spec("sleep", 180),
+        spec("goTo", 156, 4), spec("goTo", 160, 4), spec("goTo", 166, 4),
+        spec("jumpOnto", 1, 666), spec("jumpOnto", 1, 672), spec("jumpOnto", 1, 678),
+        spec("jumpDrift", 1, 0, 20), spec("jumpDrift", 1, 0, 26),
+        spec("goTo", 300, 10), spec("goTo", 340, 10), spec("sleep", 15)],
+    },
+  },
+  // F4 机关段：fb R21L 东行 x288 跳顶撞 l0 → p3 沉（leverState+platY 断言）→ 西跳上 p3 →
+  //   西跳 R17L → 东跳 R16L → 西跳 R13L；wg 延迟跟链（跳 p3 不撞 l0）。
+  F4: {
+    maxDepth: 14, capFb: 10, capWg: 10, horizonF: 900,
+    recipe: {
+      fb: [spec("goTo", 288, 8), spec("jump", "tapL0"), spec("goTo", 210, 8), spec("jumpDrift", -1, 0, 24),
+        spec("jumpDrift", 1, 0, 40), spec("runJump", 1, 300, 20), spec("jumpDrift", -1, 0, 30), spec("sleep", 15)],
+      wg: [spec("sleep", 220), spec("goTo", 210, 8), spec("jumpDrift", -1, 0, 24),
+        spec("jumpDrift", 1, 0, 40), spec("runJump", 1, 300, 20), spec("jumpDrift", -1, 0, 30), spec("sleep", 15)],
+    },
+    vocab: {
+      fb: [spec("goTo", 280, 8), spec("goTo", 288, 8), spec("goTo", 296, 8),
+        spec("jump", "tapL0"), spec("jumpDrift", 1, 0, 18), spec("jumpDrift", 1, 0, 24),
+        spec("goTo", 200, 8), spec("goTo", 210, 8), spec("goTo", 220, 8),
+        spec("jumpDrift", -1, 0, 20), spec("jumpDrift", -1, 0, 24), spec("jumpDrift", -1, 0, 30),
+        spec("jumpDrift", 1, 0, 36), spec("jumpDrift", 1, 0, 40), spec("jumpDrift", 1, 0, 46),
+        spec("runJump", 1, 290, 20), spec("runJump", 1, 310, 20), spec("runJump", 1, 330, 20),
+        spec("jumpDrift", -1, 0, 26), spec("jumpDrift", -1, 0, 30), spec("jumpDrift", -1, 0, 36),
+        spec("goTo", 360, 10), spec("goTo", 390, 10), spec("sleep", 15)],
+      wg: [spec("sleep", 180), spec("sleep", 220), spec("sleep", 260),
+        spec("goTo", 200, 8), spec("goTo", 210, 8), spec("goTo", 220, 8),
+        spec("jumpDrift", -1, 0, 20), spec("jumpDrift", -1, 0, 24), spec("jumpDrift", -1, 0, 30),
+        spec("jumpDrift", 1, 0, 36), spec("jumpDrift", 1, 0, 40), spec("jumpDrift", 1, 0, 46),
+        spec("runJump", 1, 290, 20), spec("runJump", 1, 310, 20), spec("runJump", 1, 330, 20),
+        spec("jumpDrift", -1, 0, 26), spec("jumpDrift", -1, 0, 30), spec("jumpDrift", -1, 0, 36),
+        spec("goTo", 240, 10), spec("goTo", 280, 10), spec("sleep", 15)],
+    },
+  },
+  // F5 岩浆段：R13L 西缘坠 R7L(224) → 东行助跑 x≈390 满速跳越岩浆[416,608] → 落 col18'@row4
+  //   斜面/R4E(128)；wg 同链（岩浆杀 wg——跳为硬门）。
+  F5: {
+    maxDepth: 12, capFb: 6, capWg: 6, horizonF: 600,
+    recipe: {
+      fb: [spec("hold", -1, 150), spec("runJump", 1, 380, 25), spec("goTo", 700, 12), spec("sleep", 15)],
+      wg: [spec("sleep", 60), spec("hold", -1, 150), spec("runJump", 1, 380, 25), spec("goTo", 640, 12), spec("sleep", 15)],
+    },
+    vocab: {
+      fb: [spec("hold", -1, 140), spec("hold", -1, 150), spec("hold", -1, 160),
+        spec("runJump", 1, 360, 25), spec("runJump", 1, 380, 25), spec("runJump", 1, 400, 25),
+        spec("goTo", 660, 12), spec("goTo", 700, 12), spec("goTo", 740, 12), spec("sleep", 15)],
+      wg: [spec("sleep", 30), spec("sleep", 60), spec("sleep", 90),
+        spec("hold", -1, 140), spec("hold", -1, 150), spec("hold", -1, 160),
+        spec("runJump", 1, 360, 25), spec("runJump", 1, 380, 25), spec("runJump", 1, 400, 25),
+        spec("goTo", 600, 12), spec("goTo", 640, 12), spec("goTo", 680, 12), spec("sleep", 15)],
+    },
+  },
+  // F6 终章段：R4E 东行走落 R9E(288) → 西跳 32 上 R8(256) → 东助跑 x≈878 跳 R6R(192)
+  //   → 双门位驻留（fb 1100 / wg 1200）= WIN（phaseWon 断言）。
+  F6: {
+    maxDepth: 14, capFb: 9, capWg: 9, horizonF: 800,
+    recipe: {
+      fb: [spec("goTo", 850, 10), spec("sleep", 30), spec("jumpDrift", -1, 0, 24), spec("goTo", 800, 10),
+        spec("hold", 1, 878), spec("jumpDrift", 1, 0, 30), spec("goTo", 1100, 10), spec("sleep", 15)],
+      wg: [spec("sleep", 90), spec("goTo", 850, 10), spec("sleep", 30), spec("jumpDrift", -1, 0, 24), spec("goTo", 820, 10),
+        spec("hold", 1, 878), spec("jumpDrift", 1, 0, 30), spec("goTo", 1200, 10), spec("sleep", 15)],
+    },
+    vocab: {
+      fb: [spec("goTo", 830, 10), spec("goTo", 850, 10), spec("goTo", 870, 10),
+        spec("jumpDrift", -1, 0, 20), spec("jumpDrift", -1, 0, 24), spec("jumpDrift", -1, 0, 28),
+        spec("goTo", 780, 10), spec("goTo", 800, 10), spec("goTo", 820, 10),
+        spec("hold", 1, 866), spec("hold", 1, 878), spec("hold", 1, 890),
+        spec("jumpDrift", 1, 0, 26), spec("jumpDrift", 1, 0, 30), spec("jumpDrift", 1, 0, 36),
+        spec("goTo", 1080, 10), spec("goTo", 1100, 10), spec("goTo", 1120, 10), spec("sleep", 15)],
+      wg: [spec("sleep", 60), spec("sleep", 90), spec("sleep", 120),
+        spec("goTo", 830, 10), spec("goTo", 850, 10), spec("goTo", 870, 10),
+        spec("jumpDrift", -1, 0, 20), spec("jumpDrift", -1, 0, 24), spec("jumpDrift", -1, 0, 28),
+        spec("goTo", 780, 10), spec("goTo", 800, 10), spec("goTo", 820, 10),
+        spec("hold", 1, 866), spec("hold", 1, 878), spec("hold", 1, 890),
+        spec("jumpDrift", 1, 0, 26), spec("jumpDrift", 1, 0, 30), spec("jumpDrift", 1, 0, 36),
+        spec("goTo", 1180, 10), spec("goTo", 1200, 10), spec("goTo", 1220, 10), spec("sleep", 15)],
+    },
+  },
+};
+Object.assign(SEG, SEGF);
+// F 部段词表缺省 horizon 覆盖：F1/F2/F4/F6 段内声明（SEGF 项内 horizonF），无链侧 ovr。
+
 // ---------------------------------------------------------------- evaluate：单候选全量重放（进程内确定性，§1.4）
 // 语义对齐 botcore.drive（fb→wg→step，run→done→推进，队列空锁存末输入，死亡/WIN 短路），
 // 另加：entry 联合首帧（入场门控）、段相对 horizon、双队列空+宽限冻结。
+/** 仙女位置快照（屏幕 px；fw-fairydrag 槽 fairyPx/fairyPy 断言与 shaping 取数面） */
+const fairyPosOf = (w) => (w.fairies ?? []).map((fy) => {
+  const p = fy.body.GetPosition();
+  return { x: -p.x * 32, y: -p.y * 32 };
+});
 function evaluate(segC, sf, sw, totalCapF) {
   const w = makeWorld(LEVEL);
   const progs = { fb: sf.map(stepOf), wg: sw.map(stepOf) };
@@ -939,15 +1136,16 @@ function evaluate(segC, sf, sw, totalCapF) {
     };
     const Mx = w.mechSnapshot();
     const Dx = { won: w.phase === "won", doors: w.doors };
-    if (entryF < 0 && allS(segC.entryG, Sx, Mx, Dx)) { entryF = f; entryS = Sx; }
+    const Fx = fairyPosOf(w);
+    if (entryF < 0 && allS(segC.entryG, Sx, Mx, Dx, Fx)) { entryF = f; entryS = Sx; }
     if (process.env.AS_DBG === segC.id && f % Number(process.env.AS_DBG_MOD ?? 40) === 0) {
-      const t = (g, name) => { try { return allS([g], Sx, Mx, Dx) ? 1 : 0; } catch { return "E"; } };
-      log(`    [dbg${segC.id}] f${f} fb[${a.x.toFixed(0)},${a.y.toFixed(0)},g${w.players.fireboy.feetContacts.length > 0 ? 1 : 0}] wg[${b.x.toFixed(0)},${b.y.toFixed(0)},g${w.players.watergirl.feetContacts.length > 0 ? 1 : 0}] P1=[${(Mx.platforms[1]?.x ?? -1).toFixed(0)},${(Mx.platforms[1]?.y ?? -1).toFixed(0)}] P2=[${(Mx.platforms[2]?.x ?? -1).toFixed(0)},${(Mx.platforms[2]?.y ?? -1).toFixed(0)}] entry=${entryF >= 0 ? entryF : "no"} terms=[plat,fbx,fby,wgx,wgy]=${segC.entryG.map((g) => t(g)).join(",")}`);
+      const t = (g, name) => { try { return allS([g], Sx, Mx, Dx, Fx) ? 1 : 0; } catch { return "E"; } };
+      log(`    [dbg${segC.id}] f${f} fb[${a.x.toFixed(0)},${a.y.toFixed(0)},g${w.players.fireboy.feetContacts.length > 0 ? 1 : 0}] wg[${b.x.toFixed(0)},${b.y.toFixed(0)},g${w.players.watergirl.feetContacts.length > 0 ? 1 : 0}] fy[${Fx[0]?.x.toFixed(0) ?? "?"},${Fx[0]?.y.toFixed(0) ?? "?"}] P1=[${(Mx.platforms[1]?.x ?? -1).toFixed(0)},${(Mx.platforms[1]?.y ?? -1).toFixed(0)}] P2=[${(Mx.platforms[2]?.x ?? -1).toFixed(0)},${(Mx.platforms[2]?.y ?? -1).toFixed(0)}] entry=${entryF >= 0 ? entryF : "no"} terms=[plat,fbx,fby,wgx,wgy]=${segC.entryG.map((g) => t(g)).join(",")}`);
     }
     if (entryF >= 0) {
       const segF = f - entryF;
-      for (let wi = 0; wi < segC.wpG.length; wi++) if (wpMetF[wi] < 0 && allS(segC.wpG[wi], Sx, Mx, Dx)) wpMetF[wi] = segF;
-      if (metAt < 0 && allS(segC.targetG, Sx, Mx, Dx)) { metAt = segF; metIdx = { ...idxSnap }; endF = f; break; }
+      for (let wi = 0; wi < segC.wpG.length; wi++) if (wpMetF[wi] < 0 && allS(segC.wpG[wi], Sx, Mx, Dx, Fx)) wpMetF[wi] = segF;
+      if (metAt < 0 && allS(segC.targetG, Sx, Mx, Dx, Fx)) { metAt = segF; metIdx = { ...idxSnap }; endF = f; break; }
       if (segF >= segC.horizonF) { endF = f; break; }                    // 段超时冻结
       // 双队列空：再给 GRACE 帧看残余物理（平台滑行/落体），仍不达则冻结
       const queuesEmpty = idx.fb >= progs.fb.length && idx.wg >= progs.wg.length;
@@ -966,7 +1164,7 @@ function evaluate(segC, sf, sw, totalCapF) {
   };
   return {
     deathF, deadWho, entryF, entryS, wpMetF, metAt, wonAt, endF, metIdx, drainF, idxEnd: { fb: idx.fb, wg: idx.wg },
-    S: Send, M: w.mechSnapshot(),
+    S: Send, M: w.mechSnapshot(), F: fairyPosOf(w),
     D: { won: w.phase === "won", doors: { fireboy: { isUp: w.doors.fireboy.isUp }, watergirl: { isUp: w.doors.watergirl.isUp } } },
   };
 }
@@ -1052,12 +1250,17 @@ function scoreOf(segC, sf, sw, r) {
       if (c.a.kind === "propX") s -= Math.abs(r.M.props[c.a.id].x - (c.a.min + c.a.max) / 2);
       if (c.a.kind === "propY") s -= 2 * Math.abs(r.M.props[c.a.id].y - (c.a.min + c.a.max) / 2);
       if (c.a.kind === "platY") s -= Math.abs(r.M.platforms[c.a.id].y - (c.a.min + c.a.max) / 2);
+      // 仙女位置 shaping（fw-fairydrag 槽）：F 缺省（旧子进程）按 600px 惩罚兜底不炸
+      if (c.a.kind === "fairyPx") s -= r.F?.[c.a.idx] ? Math.abs(r.F[c.a.idx].x - (c.a.min + c.a.max) / 2) : 600;
+      if (c.a.kind === "fairyPy") s -= r.F?.[c.a.idx] ? 2 * Math.abs(r.F[c.a.idx].y - (c.a.min + c.a.max) / 2) : 600;
     }
     for (const c of segC.targetG) {
       if (c.a.kind === "px") s -= 0.3 * Math.abs((c.a.role === "fb" ? r.S.fb.x : r.S.wg.x) - (c.a.min + c.a.max) / 2);
       if (c.a.kind === "py") s -= 0.6 * Math.abs((c.a.role === "fb" ? r.S.fb.y : r.S.wg.y) - (c.a.min + c.a.max) / 2);
       if (c.a.kind === "propX") s -= 0.3 * Math.abs(r.M.props[c.a.id].x - (c.a.min + c.a.max) / 2);
       if (c.a.kind === "propY") s -= 0.6 * Math.abs(r.M.props[c.a.id].y - (c.a.min + c.a.max) / 2);
+      if (c.a.kind === "fairyPx") s -= r.F?.[c.a.idx] ? 0.3 * Math.abs(r.F[c.a.idx].x - (c.a.min + c.a.max) / 2) : 200;
+      if (c.a.kind === "fairyPy") s -= r.F?.[c.a.idx] ? 0.6 * Math.abs(r.F[c.a.idx].y - (c.a.min + c.a.max) / 2) : 200;
     }
     s -= Math.max(0, segEnd) * 0.3;
   }
@@ -1077,7 +1280,7 @@ function replayEvents(sf, sw, totalFrames) {
 // minF：只采样 f≥minF 的事件（链式搜索下前缀事件已冻结，均匀罚全候选无区分度；
 // 本段新增事件的 ±1f 脆弱度才是本层可控量——s7j 全链 365/614 诊断结论）。
 function inlineSample(baseEvents, segC, deadlineAbsF, R, minF = 0, requireMet = true) {
-  const evs = { fb: baseEvents.fb, wg: baseEvents.wg };
+  const evs = { fb: baseEvents.fb, wg: baseEvents.wg, fy: baseEvents.fy ?? [] };
   const all = [];
   for (const side of ["fb", "wg"]) for (let i = 0; i < evs[side].length; i++) { if (evs[side][i].f < minF) continue; all.push({ side, i }); }
   if (!all.length) return { fatal: 0, groups: [] };
@@ -1086,7 +1289,7 @@ function inlineSample(baseEvents, segC, deadlineAbsF, R, minF = 0, requireMet = 
   for (let g = 0; g < R; g++) {
     const pick = all[Math.floor(Math.random() * all.length)];
     const dir = Math.random() < 0.5 ? -1 : 1;
-    const T = { fb: evs.fb.map((e) => ({ ...e })), wg: evs.wg.map((e) => ({ ...e })) };
+    const T = { fb: evs.fb.map((e) => ({ ...e })), wg: evs.wg.map((e) => ({ ...e })), fy: evs.fy };
     T[pick.side][pick.i].f += dir;
     const ok = replayEventRoute(T, segC, deadlineAbsF, requireMet);
     if (!ok.ok) { fatal++; groups.push({ side: pick.side, i: pick.i, f: evs[pick.side][pick.i].f, dir }); }
@@ -1101,7 +1304,7 @@ function exhaustiveSample(baseEvents, segC, deadlineAbsF, minF = 0) {
   for (const side of ["fb", "wg"]) for (let i = 0; i < baseEvents[side].length; i++) { if (baseEvents[side][i].f < minF) continue; all.push({ side, i }); }
   for (const { side, i } of all) {
     for (const dir of [-1, 1]) {
-      const T = { fb: baseEvents.fb.map((e) => ({ ...e })), wg: baseEvents.wg.map((e) => ({ ...e })) };
+      const T = { fb: baseEvents.fb.map((e) => ({ ...e })), wg: baseEvents.wg.map((e) => ({ ...e })), fy: baseEvents.fy ?? [] };
       T[side][i].f += dir;
       const rr = replayEventRoute(T, segC, deadlineAbsF);
       if (!rr.ok) return { fatal: 1, groups: [{ side, i, f: baseEvents[side][i].f, dir, ev: baseEvents[side][i], why: rr.why }] };
@@ -1110,12 +1313,16 @@ function exhaustiveSample(baseEvents, segC, deadlineAbsF, minF = 0) {
   return { fatal: 0, groups: [] };
 }
 /** 扰动事件表回放：requireMet=true 时死亡或 deadlineAbsF 内 target 未达 → false；
- *  false 时仅死亡判 fatal（层内非 met 候选的存活鲁棒度判据，到 deadline 仍活着即通过） */
+ *  false 时仅死亡判 fatal（层内非 met 候选的存活鲁棒度判据，到 deadline 仍活着即通过）。
+ *  fy 轨（fw-fairydrag 槽）原样随行（±1f 扰动只施于 fb/wg 键事件；拖拽为状态锚定件，
+ *  到点/驻留语义对 ±1f 免疫，扰动无信息量——04号档记档） */
 function replayEventRoute(T, segC, deadlineAbsF, requireMet = true) {
   const w = makeWorld(LEVEL);
   const ins = expandFlat(T.fb, T.wg, deadlineAbsF + 2);
+  const fyF = fyByFrame(T.fy);
   let met = false, Sx = null;
   for (let f = 0; f <= deadlineAbsF; f++) {
+    applyFy(w, fyF.get(f));
     w.step(1 / 60, { fireboy: ins.fb[f], watergirl: ins.wg[f] });
     const a = w.snapshotPlayer("fireboy"), b = w.snapshotPlayer("watergirl");
     if (a.dead || a.dying || b.dead || b.dying) return { ok: false, why: `die@${f} fb[${a.x.toFixed(0)},${a.y.toFixed(0)}] wg[${b.x.toFixed(0)},${b.y.toFixed(0)}]` };
@@ -1125,7 +1332,7 @@ function replayEventRoute(T, segC, deadlineAbsF, requireMet = true) {
     };
     const Mx = w.mechSnapshot();
     const Dx = { won: w.phase === "won", doors: w.doors };
-    if (allS(segC.targetG, Sx, Mx, Dx)) { met = true; break; }
+    if (allS(segC.targetG, Sx, Mx, Dx, fairyPosOf(w))) { met = true; break; }
   }
   if (!requireMet) return { ok: true, why: "alive" };
   if (!met) return { ok: false, why: `no-met fb[${Sx?.fb.x.toFixed(0) ?? "?"},${Sx?.fb.y.toFixed(0) ?? "?"}] wg[${Sx?.wg.x.toFixed(0) ?? "?"},${Sx?.wg.y.toFixed(0) ?? "?"}]` };
@@ -1379,7 +1586,7 @@ function seamOkNr(nr, trimmed, nextC) {
   const pre = (r) => nr.drainF[r] >= 0 && nr.entryF <= nr.drainF[r];
   const moving = (r) => Math.abs(nr.entryS[r].vx) > 25;
   for (const r of ["fb", "wg"]) if (moving(r) && !pre(r)) return `moving-${r}-post-drain`;
-  if (nextC && !allS(nextC.entryG, nr.S, nr.M, nr.D)) return `end-state-evaporated fb[${nr.S.fb.x.toFixed(0)},${nr.S.fb.y.toFixed(0)}] wg[${nr.S.wg.x.toFixed(0)},${nr.S.wg.y.toFixed(0)}]`;
+  if (nextC && !allS(nextC.entryG, nr.S, nr.M, nr.D, nr.F)) return `end-state-evaporated fb[${nr.S.fb.x.toFixed(0)},${nr.S.fb.y.toFixed(0)}] wg[${nr.S.wg.x.toFixed(0)},${nr.S.wg.y.toFixed(0)}]`;
   return true;
 }
 
@@ -1432,7 +1639,7 @@ if (EVAL_CHILD && (argOf("evaljob") || argOf("robjob") || argOf("exjob"))) {
     // exjob：穷举 ±1f 门分块子进程（每子 ≤8 事件 ×±1 = 16 世界 < 泄漏阈值 ~20）
     const segC = segCtxOf(job.segDef);
     const rs = job.list.map((it) => {
-      const T = { fb: job.events.fb.map((e) => ({ ...e })), wg: job.events.wg.map((e) => ({ ...e })) };
+      const T = { fb: job.events.fb.map((e) => ({ ...e })), wg: job.events.wg.map((e) => ({ ...e })), fy: job.events.fy ?? [] };
       T[it.side][it.i].f += it.dir;
       const rr = replayEventRoute(T, segC, job.deadlineAbsF, job.requireMet !== false);
       return { ok: !!rr.ok, why: rr.why ?? "" };
