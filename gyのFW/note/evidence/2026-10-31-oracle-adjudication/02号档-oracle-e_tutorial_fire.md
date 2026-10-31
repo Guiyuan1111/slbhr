@@ -122,3 +122,16 @@ node note/evidence/2026-10-31-oracle-adjudication/tools/04-harness.mjs note/evid
 ```
 
 关键 case 一览：`maxrise-clean`（净升 118.9）、`T1`（row-20-east→r15 台最高 537.5）、`T2`（箱顶西跳削顶 537.5）、`b0`/`b1`（锁存+行程）、`pulley`（盘静息 144/440、x1 下落不触 A）、`doorpc`（双门→endGame success 正向对照）。
+
+
+---
+
+## 主会话复核（2026-10-31，pusher「锁存」观测定谳=瞬时语义一致，无内核缺口）
+
+本档 §3.3「oracle pusher 为一次性锁存（state 0→1 永不回落）」复核为**探针假象**：oracle
+Pusher.checkState 原文（A bundle `define("States/Level/Devices/Pusher"` @39854 起，checkState
+在类内 +67 行）为 `0===state && translation>0.2 → 1；1===state && translation≤0.2 → 0`
+——与内核 `packages/shared/src/kernel/mechanisms.ts` Pusher.checkState 逐字同语义（瞬时，
+松手回 0）。b0 在 fb 离板后仍 state=1 的真因=**x0 箱仍留在板上**（translation 持续 >0.2），
+属"有载荷持续施压"而非锁存。四项行为差异记录中第①项撤销，②③④（滑轮盘端点静息/
+p0 驻留/门无钻石门槛）为 oracle 行为实录，我方待对拍项不变。
