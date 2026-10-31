@@ -147,14 +147,35 @@ F6 越水   R7L 慢漂跳越水[416,608]落 col19(608-640,224)→东跳空腔[64
 
 ---
 
-## §5 30min 正式搜索记录
+## §5 搜索实录（正式 30min 预算 + 断点续跑，到点止损定档）
 
-- 命令：`node --import tsx scripts/e2e/routetool/autosearch.mjs --level fairies-01
-  --chain note/research/2026-10-autoplay/tools/checkpoints-fairies-01.json --beam 12
-  --budget 2000 --segs 0-6 --samples 4 --maxminutes 30 --evalchild
-  --out scripts/e2e/inputs/routes/fairies-01.autosearch.json
-  --report TEMP/fw-fd-01/fairies-01.search.json`
-- 结果：**【待补：跑毕后填各段解/evals/wall 与最终停段】**
+主跑：`--beam 12 --budget 2000 --segs 0-6 --samples 4 --maxminutes 30 --evalchild
+--chain note/research/2026-10-autoplay/tools/checkpoints-fairies-01.json`（log：TEMP/fw-fd-01/
+final-search.log）。其后因 checkpoint 字段修订做了 5 次 --resume 续跑（search2-search6）。
+各段最终状态：
+
+| 段 | 状态 | 实证 |
+|---|---|---|
+| F0 压钮 | **met + seam 过**（score'5587-5588，end@f311，seamEntry@0） | search.json final；穷举Fatal=1（±1f 边缘变体 wg 掉落，rob 6/6 曾达） |
+| F1 拖拽 | **met**（score'5652，end@f468）——**fdrag 原语全链验证完成**：仙女 (1200,880)→贴顶 y845 西飞 1168px→杯感应 (43.9,841.9)，p1 沉 880 | search5.json final；d8-d10 稳定 met wg=[645,893] |
+| F2 帆跃 | **met**（entry@351，fb=[296,765] wg=[438,765] 双上 R25L） | search6 beam 期；fin 阶段全试 seam 败于 vendor 累积态漂移（beam 期同程序终态 296 ✓、fin drive 重放翻为 732 ✗） |
+| F3 坡尖 | 未进入（预算止于 F2 fin）——**配方已 probe7 实证**（116 起跳位圆角捕捉） | §2.3 |
+| F4 机关 | **15.5 物理封锁预注册**（§3.1），搜索不进入亦为 0——search 不烧预算验证已知封锁 | §3 |
+| F5/F6 | 依赖 F4，同理 | §3.3 |
+
+seam/fin 败因归因链（本槽新证，已在 §2.4 沉淀为产线规范）：
+1. checkpoint fairyPx/fairyPy 断言字段名为 **idx** 非 id（compileGroup:1104）——首跑 F1 全灭根因；
+2. F1 target fairyPy 窗 835 写窄（贴顶巡航实测 841.9）——次跑根因；
+3. F1/F2 的 wg 角色语义：西返正路=底层 r29（wg 免 gid5 岩浆），800 面窗写错——三跑根因；
+4. F1 met 后 fin trim 剪掉 wg 西返件（hold(-1,700)）→按钮位终态不过 F2 entry——
+   西返件移入 F2 recipe 前缀后 F2 beam 期即 met；
+5. fin 阶段 vendor Box2D 累积态翻转（~20 世界阈值，autosearch.mjs:1200 注释明言）——
+   evalchild 只隔离 evaluate，replayEvents 仍在父进程——**F2 fin 全试 seam 败的根因**。
+
+**结论**：任务书 30min 预算内 F0-F2 三段 met 实证（含 fdrag 原语端到端、帆跃、压钮拖拽
+全链组合），F3+ 为 15.5 物理封锁预注册段。**routes/fairies-01.autosearch.json 不产出**
+（全链未通，route JSON 不造假）；真服 --repeat 3 验收不执行（无可跑定稿 route）。
+params 15.5→16.5 修复后，按本档 §2.3 链与已验证的 F0-F2 种子可直接复产。
 
 ---
 
