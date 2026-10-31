@@ -796,13 +796,16 @@ const SEGC = {
     // 拉杆(杆体实体,东压翻转+翻后挡东行 fb 钉~487 实证)：fb 东压 hold(1,484-487) 触翻转,
     // jd 漂移回落杆西(静跳漂移 8-50px,落 430-487 窗内)；wg 东行 565 短停(杆西面 502.6 东侧自由)。
     recipe: {
-      fb: [spec("hold", 1, 486), spec("jumpDrift", -1, 0, 45), spec("sleep", 40)],
+      // v10：完成线 486 在满速区间 → jd 带残速 +290 被抛过杆顶落 638-691（resume4 实证）。
+      // 改为压到钉点本身：杆西面 502.6-15.6=487 钉点（probe26 实证按压可达 487-489），
+      // 完成线 488 于钉点零速完成，终态即钉点，落入 C3 入窗 [280,490] 且按压已保翻转。
+      fb: [spec("hold", 1, 488), spec("sleep", 40)],
       wg: [spec("hold", 1, 565), spec("sleep", 20)],
     },
     vocab: {
-      fb: [spec("hold", 1, 470), spec("hold", 1, 478), spec("hold", 1, 486),
-        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 45), spec("jumpDrift", -1, 0, 50),
-        spec("walkTo", -1, 420, 60), spec("walkTo", -1, 440, 60),
+      fb: [spec("hold", 1, 486), spec("hold", 1, 487), spec("hold", 1, 489),
+        spec("hold", 1, 490), spec("hold", 1, 478),
+        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 45),
         spec("sleep", 40), spec("sleep", 70)],
       wg: [spec("hold", 1, 545), spec("hold", 1, 565), spec("hold", 1, 585),
         spec("sleep", 20), spec("sleep", 40), spec("sleep", 70)],
@@ -815,8 +818,11 @@ const SEGC = {
     // 满速 jd 链:弧1 落 ~135,弧2 落墙钉 ~48-90,弧3 按压传送(P0 同机制 f209 实证)。
     // 出口残速 vy≈0(顶板滑行) → P2 出口 y≈118 抛体落 row-6 (~1134,156.8)。
     recipe: {
-      fb: [spec("hold", -1, 300), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("sleep", 40)],
-      wg: [spec("hold", 1, 575), spec("runJump", -1, 550, 25), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("sleep", 40)],
+      // v11（probe28 实证）：封顶弧射程≈vx×0.45、链内 vx 每弧衰减×0.76（fb 300→186→99→48 钉点）。
+      // fb 差 0.6px 未入 P3 带——弧 3 落钉点后必须补钉点按压跳 jd4（C0 机制 raw 深入带内）。
+      // wg 的 runJump(-1,550) 链一路衰到 132 冲过头——改为越杆短跳落 [280,490] 后与 fb 同款归位流程。
+      fb: [spec("hold", -1, 300), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 55), spec("sleep", 40)],
+      wg: [spec("hold", 1, 575), spec("runJump", -1, 535, 25), spec("hold", -1, 300), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 55), spec("sleep", 40)],
     },
     vocab: {
       fb: [spec("hold", -1, 280), spec("hold", -1, 300), spec("hold", -1, 320),
@@ -832,31 +838,47 @@ const SEGC = {
   },
   C4: {
     maxDepth: 12, capFb: 8, capWg: 9, horizonF: 900,
-    // 终章(v9 全图复核)：row-6 西行抵西墙钉 975.6→jd 纯垂直+漂移越 [928,960] 墙顶(y128)落 row-4
-    // (wp 672-928)→西行穿 672 唇口 448px 落 row-18 板台→基座东面钉 335.6→jd 漂移蹬顶落基座
-    // (~254)→hold 东行 P6 带内按压即传(杆钉 265.34 诱导电弧,C0 同机制)→P7 出(278.4,220.8)。
-    // fb 就近东行 404 进东门；wg 出口即跳 jd(-1) 纯垂直越带(y 先出带 y-range<160 冷却内)落台
-    // ~196,walkTo 刹车 288 后跳防杆带重传,hold(-1,72) 进西门。
+    // 【终章结构性封锁——2026-10-31 audit 终稿，全证见 note/evidence/2026-10-31-route-samples/01号档-crystal_03.md】
+    //   本段目标态（任一角色触发 P6 传部门台）在内核几何下不可达，search 不再 resume，route JSON 不造假。
+    //   唯一 win 路径 = P6(272,400，带 x[240,304]×y[448,544]) ↔ P7(272,208 门台) → 双门 isUp。
+    //   P6 带 y[448,544] 仅与 row-18 台顶站姿(feet 576, body y[531,576])相交（基座顶 448 站姿 body
+    //   y[363,448] 零交）→ 必须站上 row-18 台西段 [160,706] 顶 576，而其三向封死（probe31-45 内核实测
+    //   + dumpgrid 逐格复核）：
+    //   a) 东端 col24 '3' 斜面 [768,800] 45°：满助跑西行仍钉 750（probe44/45；45°坡仅动量可攀、落地即滞），
+    //      r19 西缘 jd 弧能落 750（台面级 feet 576）但随即止于 b)；
+    //   b) [706,734] 停驻升降柱 [480,576]：prismatic lower=-3/upper=0，0=创建位即驻位，state1 目标向下
+    //      96px 压入 row-18 板=死位（probelev 实测永不动）→ 柱东面 749.7=750 钉点；柱顶 480 与上方
+    //      r13 板底 448 夹 32px 横缝（char 直径 31.4px，理论过缝中心窗仅 0.6px，不可操）→ row-18 顶
+    //      东西两段物理隔断；
+    //   c) 西域唯一坠落入口=row-4 唇口：[640,672]'2' 斜面西滑坠落被 row-8 架 [576,672] 顶 256 接住成
+    //      口袋（probe34-38）；口袋西=col16 全高柱 [512,544]×[32,288] 封、上方开放竖井无落点（跳升
+    //      ~115px 无檐可落）、东北下行阶梯循环回口袋；r13 阳台 [704,832] 顶 416 西端被 col21 柱
+    //      [672,704]×[320,448] 东面（高出 96px）拦（本轮逐格复核新证：col21 柱 r10-r13 连体，西行死）。
+    //   ⇒ P6 触发态不可达 ⇒ crystal_03 内核数据下结构性无解。疑似关卡数据缺陷候选：原版同图若可通关，
+    //     则差异在 P6 带语义或升降柱初始 translation——存疑待核，不下原版终判。
+    //   v20 最远链（probe44/45 内核实证，止于 b 的 750 钉点，未 won）：row-6 冲刺越阶→row-4→唇口滑落
+    //   口袋→东下行阶梯→r13→东尖落 r19→jd 弧落 750；fb sleep(300) 错峰防双角色 750 同帧互堵。
     recipe: {
-      fb: [spec("hold", -1, 990), spec("jumpDrift", -1, 0, 40), spec("hold", -1, 700), spec("jumpDrift", -1, 0, 45), spec("hold", 1, 404), spec("sleep", 40)],
-      wg: [spec("hold", -1, 990), spec("jumpDrift", -1, 0, 40), spec("hold", -1, 700), spec("jumpDrift", -1, 0, 45), spec("hold", 1, 300), spec("walkTo", -1, 288, 60), spec("jumpDrift", -1, 0, 40), spec("hold", -1, 72), spec("sleep", 40)],
+      fb: [spec("hold", -1, 900), spec("walkTo", -1, 684, 90), spec("walkTo", -1, 660, 20), spec("walkTo", -1, 612, 30),
+        spec("hold", 1, 690), spec("walkTo", 1, 704, 200), spec("hold", 1, 836), spec("sleep", 300),
+        spec("jumpDrift", -1, 0, 40), spec("walkTo", -1, 300, 250), spec("walkTo", 1, 448, 60), spec("sleep", 200)],
+      wg: [spec("hold", -1, 900), spec("walkTo", -1, 684, 90), spec("walkTo", -1, 660, 20), spec("walkTo", -1, 612, 30),
+        spec("hold", 1, 690), spec("walkTo", 1, 704, 200), spec("hold", 1, 836),
+        spec("jumpDrift", -1, 0, 40), spec("walkTo", -1, 300, 250), spec("jumpDrift", -1, 0, 40), spec("walkTo", -1, 96, 200)],
     },
     vocab: {
-      fb: [spec("hold", -1, 970), spec("hold", -1, 990), spec("hold", -1, 1010),
+      fb: [spec("hold", -1, 900), spec("hold", -1, 880), spec("hold", -1, 920),
+        spec("walkTo", -1, 684, 90), spec("walkTo", -1, 672, 90),
+        spec("hold", 1, 690), spec("hold", 1, 710),
+        spec("hold", 1, 836), spec("sleep", 240), spec("sleep", 360),
         spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 44),
-        spec("hold", -1, 680), spec("hold", -1, 700), spec("hold", -1, 720),
-        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 45), spec("jumpDrift", -1, 0, 50),
-        spec("hold", 1, 290), spec("hold", 1, 300), spec("hold", 1, 310),
-        spec("hold", 1, 388), spec("hold", 1, 404), spec("sleep", 40), spec("sleep", 60)],
-      wg: [spec("hold", -1, 970), spec("hold", -1, 990), spec("hold", -1, 1010),
+        spec("walkTo", -1, 300, 250), spec("walkTo", -1, 320, 250),
+        spec("walkTo", 1, 448, 60), spec("sleep", 200)],
+      wg: [spec("hold", -1, 900), spec("hold", -1, 880),
+        spec("walkTo", -1, 684, 90), spec("hold", 1, 690), spec("walkTo", 1, 704, 200), spec("hold", 1, 836),
         spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 44),
-        spec("hold", -1, 680), spec("hold", -1, 700), spec("hold", -1, 720),
-        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 45), spec("jumpDrift", -1, 0, 50),
-        spec("hold", 1, 290), spec("hold", 1, 300), spec("hold", 1, 310),
-        spec("walkTo", -1, 284, 60), spec("walkTo", -1, 288, 60), spec("walkTo", -1, 292, 60),
-        spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 44),
-        spec("hold", -1, 66), spec("hold", -1, 72), spec("hold", -1, 78),
-        spec("sleep", 40), spec("sleep", 60)],
+        spec("walkTo", -1, 300, 250), spec("jumpDrift", -1, 0, 40), spec("walkTo", -1, 96, 200),
+        spec("walkTo", -1, 112, 200), spec("sleep", 200)],
     },
   },
 };

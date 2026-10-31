@@ -1,0 +1,667 @@
+{
+ "level": "crystal_03",
+ "chain": "/home/gy/桌面/dev/slbhr/gyのFW/note/research/2026-10-autoplay/tools/checkpoints-crystal_03.json",
+ "beam": 24,
+ "budget": 6000,
+ "samples": 10,
+ "startedAt": "2026-10-30T21:39:37.048Z",
+ "segs": [
+  {
+   "id": "C1",
+   "title": "东廊西行登 [608,800] 下降阶梯(896→736)，双抵 y736 地板杆西待命",
+   "solved": true,
+   "exhausted": false,
+   "evals": 9,
+   "wallS": 11.8,
+   "layers": [
+    {
+     "depth": 1,
+     "evals": 9,
+     "best": 6194,
+     "unlocked": 1,
+     "met": true,
+     "rob": "0/6",
+     "entryF": 209,
+     "endF": 484,
+     "fb": [
+      396,
+      701
+     ],
+     "wg": [
+      501,
+      700
+     ],
+     "path": "sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,420) sleep(15) | sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,500) sleep"
+    }
+   ],
+   "bestEver": {
+    "score": 6194,
+    "unlocked": 1,
+    "met": true,
+    "entryF": 209,
+    "endF": 484,
+    "fb": [
+     396,
+     701
+    ],
+    "wg": [
+     501,
+     700
+    ]
+   },
+   "final": {
+    "sf": [
+     {
+      "n": "sleep",
+      "a": [
+       3
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "hold",
+      "a": [
+       -1,
+       420
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       15
+      ]
+     }
+    ],
+    "sw": [
+     {
+      "n": "sleep",
+      "a": [
+       3
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "hold",
+      "a": [
+       -1,
+       500
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       15
+      ]
+     }
+    ],
+    "score": 6194,
+    "score2": 6194,
+    "entryF": 209,
+    "endF": 484,
+    "metAt": 275,
+    "inlineFatal": 0,
+    "inlineGroups": [],
+    "trimDepth": [
+     9,
+     10
+    ],
+    "seamEntryF": 47,
+    "prog": {
+     "fb": "sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,420) sleep(15)",
+     "wg": "sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,500) sleep(15)"
+    }
+   },
+   "seam": {
+    "ok": true,
+    "entryF": 47,
+    "grace": 0
+   }
+  },
+  {
+   "id": "C2",
+   "title": "拉杆 l0(496,736) 东翻：fb 东越杆至 545 刹车+西跳回落杆西(~360)；wg 东行 565 短停不触杆——leverState l0=+1 开 P2/P3",
+   "solved": true,
+   "exhausted": false,
+   "evals": 1852,
+   "wallS": 309.5,
+   "layers": [
+    {
+     "depth": 1,
+     "evals": 16,
+     "best": 689,
+     "unlocked": 1,
+     "met": false,
+     "rob": "0/6",
+     "entryF": 47,
+     "endF": 522,
+     "fb": [
+      396,
+      701
+     ],
+     "wg": [
+      501,
+      700
+     ],
+     "path": "sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,420) sleep(15) sleep(4) | sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,500) sleep"
+    },
+    {
+     "depth": 2,
+     "evals": 76,
+     "best": 688,
+     "unlocked": 1,
+     "met": false,
+     "rob": "0/6",
+     "entryF": 47,
+     "endF": 522,
+     "fb": [
+      396,
+      701
+     ],
+     "wg": [
+      501,
+      700
+     ],
+     "path": "sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,420) sleep(15) sleep(4) | sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,500) sleep"
+    },
+    {
+     "depth": 3,
+     "evals": 340,
+     "best": 6005,
+     "unlocked": 1,
+     "met": true,
+     "rob": "0/6",
+     "entryF": 47,
+     "endF": 682,
+     "fb": [
+      342,
+      701
+     ],
+     "wg": [
+      588,
+      700
+     ],
+     "path": "sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,420) sleep(15) hold(1,545) sl | sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,500) sleep"
+    },
+    {
+     "depth": 4,
+     "evals": 436,
+     "best": 6004,
+     "unlocked": 1,
+     "met": true,
+     "rob": "0/6",
+     "entryF": 47,
+     "endF": 682,
+     "fb": [
+      342,
+      701
+     ],
+     "wg": [
+      588,
+      700
+     ],
+     "path": "sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,420) sleep(15) hold(1,545) sl | sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,500) sleep"
+    },
+    {
+     "depth": 5,
+     "evals": 700,
+     "best": 6003,
+     "unlocked": 1,
+     "met": true,
+     "rob": "0/6",
+     "entryF": 47,
+     "endF": 682,
+     "fb": [
+      342,
+      701
+     ],
+     "wg": [
+      588,
+      700
+     ],
+     "path": "sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,420) sleep(15) hold(1,545) sl | sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,500) sleep"
+    },
+    {
+     "depth": 6,
+     "evals": 796,
+     "best": 6002,
+     "unlocked": 1,
+     "met": true,
+     "rob": "0/6",
+     "entryF": 47,
+     "endF": 682,
+     "fb": [
+      342,
+      701
+     ],
+     "wg": [
+      588,
+      700
+     ],
+     "path": "sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,420) sleep(15) hold(1,545) sl | sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,500) sleep"
+    },
+    {
+     "depth": 7,
+     "evals": 1060,
+     "best": 6001,
+     "unlocked": 1,
+     "met": true,
+     "rob": "0/6",
+     "entryF": 47,
+     "endF": 682,
+     "fb": [
+      342,
+      701
+     ],
+     "wg": [
+      588,
+      700
+     ],
+     "path": "sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,420) sleep(15) hold(1,545) sl | sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,500) sleep"
+    },
+    {
+     "depth": 8,
+     "evals": 1324,
+     "best": 6000,
+     "unlocked": 1,
+     "met": true,
+     "rob": "0/6",
+     "entryF": 47,
+     "endF": 682,
+     "fb": [
+      342,
+      701
+     ],
+     "wg": [
+      588,
+      700
+     ],
+     "path": "sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,420) sleep(15) hold(1,545) sl | sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,500) sleep"
+    },
+    {
+     "depth": 9,
+     "evals": 1588,
+     "best": 5999,
+     "unlocked": 1,
+     "met": true,
+     "rob": "0/6",
+     "entryF": 47,
+     "endF": 682,
+     "fb": [
+      342,
+      701
+     ],
+     "wg": [
+      588,
+      700
+     ],
+     "path": "sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,420) sleep(15) hold(1,545) sl | sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,500) sleep"
+    },
+    {
+     "depth": 10,
+     "evals": 1852,
+     "best": 5998,
+     "unlocked": 1,
+     "met": true,
+     "rob": "0/6",
+     "entryF": 47,
+     "endF": 682,
+     "fb": [
+      342,
+      701
+     ],
+     "wg": [
+      588,
+      700
+     ],
+     "path": "sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,420) sleep(15) hold(1,545) sl | sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,500) sleep"
+    }
+   ],
+   "bestEver": {
+    "score": 6005,
+    "unlocked": 1,
+    "met": true,
+    "entryF": 47,
+    "endF": 682,
+    "fb": [
+     342,
+     701
+    ],
+    "wg": [
+     588,
+     700
+    ]
+   },
+   "final": {
+    "sf": [
+     {
+      "n": "sleep",
+      "a": [
+       3
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "hold",
+      "a": [
+       -1,
+       420
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       15
+      ]
+     },
+     {
+      "n": "hold",
+      "a": [
+       1,
+       545
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       6
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       55
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       20
+      ]
+     }
+    ],
+    "sw": [
+     {
+      "n": "sleep",
+      "a": [
+       3
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "jumpDrift",
+      "a": [
+       -1,
+       0,
+       40
+      ]
+     },
+     {
+      "n": "hold",
+      "a": [
+       -1,
+       500
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       15
+      ]
+     },
+     {
+      "n": "hold",
+      "a": [
+       1,
+       565
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       20
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       20
+      ]
+     },
+     {
+      "n": "sleep",
+      "a": [
+       20
+      ]
+     }
+    ],
+    "score": 6005,
+    "score2": 5505,
+    "entryF": 47,
+    "endF": 682,
+    "metAt": 635,
+    "inlineFatal": 1,
+    "inlineGroups": [],
+    "trimDepth": [
+     13,
+     14
+    ],
+    "seamEntryF": -1,
+    "prog": {
+     "fb": "sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,420) sleep(15) hold(1,545) sleep(6) jumpDrift(-1,0,55) sleep(20)",
+     "wg": "sleep(3) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) jumpDrift(-1,0,40) hold(-1,500) sleep(15) hold(1,565) sleep(20) sleep(20) sleep(20)"
+    }
+   },
+   "seam": {
+    "ok": false
+   }
+  }
+ ],
+ "totals": {
+  "segsSolved": 1,
+  "segsTotal": 5,
+  "evals": 1861,
+  "wallS": 340.9,
+  "fullAuto": false
+ },
+ "robust": null,
+ "export": null,
+ "greenCompare": null
+}
