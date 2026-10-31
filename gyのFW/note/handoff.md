@@ -136,6 +136,14 @@
 
 ## 条目
 
+**更新**：2026-10-31 三（夜批：route 样本关三槽 0/3 全撞硬边界如实写档 + F 部打磨/跳速修正落库）
+
+- **route 样本关批结果（零造假，全部档卷化）**：fairies-01=通关必须仙女拖拽（botcore 无该原语，p1 封锁 R25L 实证，03号档）；e_tutorial_fire=12 轮搜索 E0 段内达成但定稿 trim/seam 败（autosearch 工具链已知问题）+疑似结构不可通关（02号档 §4）；crystal_03=C0-C3 内核实证解、C4 必经触发态不可达（停驻升降柱封死，01号档）。**关键交叉证据**：e_tutorial_fire 等三样本关 JSON 与 oracle 逐字节一致（主会话 38 件字节审计）→「不可通关」若实属 oracle 原件固有或我方平台/电梯语义保真缺口，两条候选待 oracle 实机裁决。
+- **route 批衍生内核修正（已落）**：F 部跳速 per-vintage——fairies 前缀 16.5、A–E 15.5（六部原型字证；fairies-01 槽量化背书 0.3-7px 临界 vs 5-15px 余量），jumpVelocityOf(levelId) 注入 Character，r0-fairytales 重锚。
+- **F 部打磨两件（已落 263fc98）**：仙女尾迹粒子（Navy0000/700ms/LIGHTEN/速度分档 18-90-162 粒·秒⁻¹）+ dark 关仙女 r220/杯 r60 光源。
+- **后续裁决项（归用户/5.3）**：①oracle 实机探针裁决 crystal_03 电梯初位与 P6 带、e_tutorial_fire 门区（oracle 快照本地可跑，headless 探针件先例齐）；②botcore fairydrag 原语扩展（route 通道+fairydrag 消息，解 F 部 route 族前提）；③autosearch 定稿管线三修（trim 保驻留件/缓沉行程建模/进程隔离，02号档 §5）。
+- **门禁**：typecheck 0；vitest 64 文件 478/478；build 过；det 六锚 241 关位级一致。样本关未入 CI（无 route 产出，按计划只收已验路线）。
+
 **更新**：2026-10-31 二（代码逻辑验证轮：数据矩阵零差异 + 三缺口补链 + route 评估挂账）
 
 - **数据接线矩阵**（241 关×13 庙）：oracle↔我方 temple.json 序配对逐字段 diff=0（time/mobileTime/required/unlock_key/elements/type 全同）；E 部条目无 type 字段=oracle 忠实；e_tutorial 前缀映射勘误后 241 关 templeIdOf 全命中；portalId 桶普查 218 门 109 对零异常。
