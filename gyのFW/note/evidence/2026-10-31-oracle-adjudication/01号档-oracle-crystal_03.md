@@ -80,3 +80,23 @@
 - `tools/`：probe1-dump.mjs（静态几何/机构 dump）、probe2/3（方向约定与 D/E2 场景）、probe4-links.mjs（E/F/G：翻杆实穿、板跳、柱收+柱下通行+回落）、probe5-e2box.mjs、probe5b-boxburst.mjs、probe5c-boxviaP5.mjs（box 传送抛送+西推）、probe5d-boxlatch.mjs（锁存终证）、probe6c-playthrough3.mjs（v1–v8 端到端走查解释器，头部注释含演进记录）
 - `tools/artifacts/`：probe1-dump.json、probe3-out.json、probe4-out.json、probe5c-out.json、probe5d-out.json、probe6c-out.json（v8）
 - TEMP/fw-oc-8871 已清理；serve-8871.cjs 已停。oracle 快照全程只读。
+
+
+---
+
+## 主会话复核（2026-10-31）：五项内核缺口候选逐一裁决=全部不成立；route 槽 C4「结构性封锁」系探针误读
+
+对本档 §6 五项候选，主会话以内核直测（TEMP 探针，可复现）逐项裁决：
+
+1. **P6 触发带 +96px——否决**。直接扫掠探针（合成标记体沿 x=272 垂直扫过 P6，逐行步进冷却）：我方内核触发带 y∈[352,448]（中心 400±48），与 oracle fixture 实测 [352,448] **完全一致**。route 槽与 A 槽测得的 [448,544] 均系探针坐标映射假象（ Bodies 系字符体心 vs 足位混用）。
+2. **关闭 slit solid——无缺口**。我方 -1 背衬普查：8 门各恰有单侧 -1 列（6/0、0/6 瓦），connectToWall 逐门建 1 假墙=数据一致涌现；route 槽 v7 楔住正是假墙拦截（与 oracle 行为同源）。oracle「slit solid」现象即背衬墙效应，两边机制同构。
+3. **升降柱初位——一致**（本档已证 oracle=延伸封堵=我方 tr0）。
+4. **杆翻转 grounded 持续压——涌现一致**。我方 Lever=物理杆（revolute+maxMotorTorque 10），翻转需持续推力转过角度阈值，机制与 oracle 同（金轨迹 forest 校准件）。
+5. **box 压板锁存——一致**。我方 Pusher=瞬时（oracle A bundle @39854+67 逐字同）+箱体持续施压=锁存保持，与 oracle G/probe5d 观测同构。
+
+**关键更正（推翻 route 槽 01号档-crystal_03 §4「结构性封锁」）**：内核直测柱受压运动——
+组 4 信号（state=1+updateState）后柱 **上移 96px**：[480,576]→[384,480]（240 帧仿真，f120 即
+稳态），与 oracle「柱收起让行」**完全一致**。route 槽 probelev「state1 向下压入 row-18 板=
+死位、永不动」系其探针未真正使组信号到达平台（deviceChanged 链未通）所致误读。**C4 的
+750 钉点在三向封锁中唯一真封锁=未触发柱收起；按本档 oracle 路径（box→P5→P4→row19→
+压板锁存→柱收起→柱下通道→P6→P7）我方内核应当可解**——crystal_03 路线可复产。
