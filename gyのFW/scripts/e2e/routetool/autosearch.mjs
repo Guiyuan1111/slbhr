@@ -919,12 +919,19 @@ Object.assign(SEG, SEGC);
 //   斜面 [599,610] → 续压西键上 45° 斜面走平 R25L(800)。
 //   c5 坡尖 (160,704)：'/'col5@row21 对角 (160,704)-(192,672)，圆-角捕捉 center-x∈[153.6,166.4]
 //   feet≈704.3（03号档 §1.1）；内核 15.5 满充跳升 ~113px（probe4 minFeet 815=928−113）覆盖 96px 设计位。
-//   上层链（03号档 §2 S3-S6 未逐段内核验证，交 autosearch）：R21L 东行 x288 跳顶撞杠杆 l0(288,~480)
-//   → l0 ON → p3(id419,[192,224] slab[448,544]) 下沉 128 → 顶 576；跳上 p3 → 西跳 R17L(544,x0-256)
-//   → 东跳 R16L(512,x448-704) → 西跳 R13L(416,x160-416)；R13L 西缘坠 R7L(224,x96-416) → 东行助跑
-//   越岩浆(r7 cols13-18=x[416,608]；岩浆杀 wg，fb 免疫) → 落 '/'col18@row4(576,160→608,128)/R4E(128,
-//   x608-864) → 东缘楔(col27 d) 走落 R9E(288) → 西跳 32 上 R8(256,x768-896) → 东助跑 x≈878 跳
-//   R6R(192,x1088-1280) → fb 门(1072-1136) wg 门(1168-1232) = WIN。
+//   上层链（2026-10-31 raw-gid 权威网格重验+probe7/8a 实测修订）：R21L 东行 x288 跳顶撞杠杆
+//   l0（杆 fixture y[440,484.8]@x[280,311]）→ l0 ON → p3(id419,[192,224] slab[448,544]) 沉 128 →
+//   顶 576；西跳上 p3 → 西跳落 R17L(544,x0-256) → 东跳圆-角捕捉 col5'/'坡(160-192,448→416) 上
+//   R13L(416,x192-384) → 西跳上 R10(320,西北角块 x0-128) → 东跳上 col4'/'坡(128-160,256→224)/
+//   R7L(224,x160-416) → 越水[416,608]（gid7 全杀）→ col19'?'(608-640,224) → col23 柱(736,224) →
+//   走落 R8(256,x768-896) → 东助跑 x≈878 跳 R6R(192,x1056-1280) → fb 门(1072-1136) wg 门
+//   (1168-1232) = WIN。
+//   【15.5 封锁（probe7/8a 实测+窗口数学，详见 04号档 §3）】内核 jumpVelocity 15.5 静跳净升
+//   96-103px：R21L(672) 起跳玩家头顶至 505-512，距杆底 485 差 16-23px——l0 任何物体够不着；
+//   仙女替撞被 p1 时窗封死（p1 释放后上升实测 1.49px/f、~86f 满位封 r22-23 slot，而仙女杯→
+//   东袋→折返最早 t≈113 回 slot）。l0 翻转需 jumpVelocity≥16.5（净升 138px，头顶 470-477 入
+//   杆带）——修 params 归主会话（本槽禁碰 packages/**），本 SEGF/checkpoints 按 16.5 语义预置，
+//   15.5 搜索预期 E0-E3 通、E4=0。
 const SEGF = {
   // F0 压钮段：wg 独走东线（涉水池）上 R25R 顶压 b_g2 至 p0 沉位驻留；fb 原地。
   //   【probe3 实证链】[settle, goTo(1040,14), jd(+1,0,30), goTo(1200,14), stand] f240 压着 p0 沉。
@@ -932,7 +939,7 @@ const SEGF = {
     maxDepth: 12, capFb: 3, capWg: 8, horizonF: 500,
     recipe: {
       fb: [spec("settle"), spec("sleep", 60)],
-      wg: [spec("settle"), spec("goTo", 1040, 14), spec("jumpDrift", 1, 0, 30), spec("goTo", 1200, 14), spec("sleep", 15)],
+      wg: [spec("settle"), spec("goTo", 1040, 14), spec("jumpDrift", 1, 0, 30), spec("goTo", 1200, 20), spec("sleep", 180)],
     },
     vocab: {
       fb: [spec("settle"), spec("sleep", 30), spec("sleep", 60)],
@@ -941,7 +948,8 @@ const SEGF = {
         spec("jumpDrift", 1, 0, 24), spec("jumpDrift", 1, 0, 30), spec("jumpDrift", 1, 0, 36),
         spec("jumpOnto", 1, 786), spec("jumpOnto", 1, 796),
         spec("goTo", 1180, 14), spec("goTo", 1200, 14), spec("goTo", 1220, 14),
-        spec("hold", 1, 1190), spec("hold", 1, 1210), spec("sleep", 15)],
+        spec("hold", 1, 1180), spec("hold", 1, 1190), spec("hold", 1, 1196), spec("hold", 1, 1210),
+        spec("sleep", 15), spec("sleep", 60), spec("sleep", 180)],
     },
   },
   // F1 拖拽段：fb 程序挂 fdrag——仙女 (1200,880) 贴顶走廊 y845 西飞入杯（fb 原地举拖）；
@@ -950,12 +958,12 @@ const SEGF = {
   F1: {
     maxDepth: 10, capFb: 4, capWg: 6, horizonF: 800,
     recipe: {
-      fb: [spec("fdrag", 0, 40, 845), spec("sleep", 30)],
+      fb: [spec("fdrag", 0, 40, 845), spec("sleep", 240)],
       wg: [spec("sleep", 90), spec("hold", -1, 700), spec("goTo", 560, 12), spec("sleep", 30)],
     },
     vocab: {
       fb: [spec("fdrag", 0, 40, 845), spec("fdrag", 0, 36, 842), spec("fdrag", 0, 52, 848),
-        spec("fdrag", 0, 600, 845), spec("fdrag", 0, 300, 845), spec("sleep", 15), spec("sleep", 30)],
+        spec("fdrag", 0, 600, 845), spec("fdrag", 0, 300, 845), spec("sleep", 15), spec("sleep", 30), spec("sleep", 240)],
       wg: [spec("sleep", 60), spec("sleep", 90), spec("sleep", 120),
         spec("hold", -1, 700), spec("hold", -1, 760), spec("goTo", 540, 12), spec("goTo", 560, 12), spec("goTo", 580, 12),
         spec("sleep", 30)],
@@ -982,91 +990,104 @@ const SEGF = {
   },
   // F3 坡尖段：双角色先后圆-角捕捉 c5 坡尖 (160,704) 上 R21L（fb 先行，wg sleep 错峰——
   //   l0 杠杆第二次撞击会翻回 OFF，wg 路线不过 x288 杠杆正下）。
+  //   【probe7 实证 2026-10-31】起跳位必须 116（坡底 (160,672→704 '/' 对角) 西 44px 助跑）：
+  //   goTo(160,4) 原地起跳顶死坡面卡 r21 实心——坏种子已废。
   F3: {
     maxDepth: 14, capFb: 6, capWg: 6, horizonF: 600,
     recipe: {
-      fb: [spec("goTo", 160, 4), spec("jumpOnto", 1, 672), spec("goTo", 250, 10), spec("sleep", 15)],
-      wg: [spec("sleep", 140), spec("goTo", 160, 4), spec("jumpOnto", 1, 672), spec("goTo", 340, 10), spec("sleep", 15)],
+      fb: [spec("goTo", 116, 4), spec("jumpOnto", 1, 672), spec("goTo", 250, 10), spec("sleep", 15)],
+      wg: [spec("sleep", 140), spec("goTo", 116, 4), spec("jumpOnto", 1, 672), spec("goTo", 340, 10), spec("sleep", 15)],
     },
     vocab: {
-      fb: [spec("goTo", 156, 4), spec("goTo", 160, 4), spec("goTo", 166, 4),
+      fb: [spec("goTo", 112, 4), spec("goTo", 116, 4), spec("goTo", 122, 4),
         spec("jumpOnto", 1, 666), spec("jumpOnto", 1, 672), spec("jumpOnto", 1, 678),
         spec("jumpDrift", 1, 0, 20), spec("jumpDrift", 1, 0, 26),
         spec("goTo", 220, 10), spec("goTo", 250, 10), spec("goTo", 290, 10), spec("sleep", 15)],
       wg: [spec("sleep", 100), spec("sleep", 140), spec("sleep", 180),
-        spec("goTo", 156, 4), spec("goTo", 160, 4), spec("goTo", 166, 4),
+        spec("goTo", 112, 4), spec("goTo", 116, 4), spec("goTo", 122, 4),
         spec("jumpOnto", 1, 666), spec("jumpOnto", 1, 672), spec("jumpOnto", 1, 678),
         spec("jumpDrift", 1, 0, 20), spec("jumpDrift", 1, 0, 26),
         spec("goTo", 300, 10), spec("goTo", 340, 10), spec("sleep", 15)],
     },
   },
-  // F4 机关段：fb R21L 东行 x288 跳顶撞 l0 → p3 沉（leverState+platY 断言）→ 西跳上 p3 →
-  //   西跳 R17L → 东跳 R16L → 西跳 R13L；wg 延迟跟链（跳 p3 不撞 l0）。
+  // F4 机关段：fb R21L 东行 x288 跳顶撞 l0（杆 fixture y[440,484.8]@x[280,311]，probe8a 实测
+  //   动态体中心 [290.4,416.7] 角 30.7°）→ p3 沉（leverState+platY 断言）→ 西跳上沉 p3(576)
+  //   → 西跳落 R17L(544)；wg 泊 R21L 中段（不过 x288 杆下防二次翻杆）。
+  //   【15.5 封锁预注册】内核 jumpVelocity 15.5 静跳净升 96-103px：R21L(672) 起跳头顶至
+  //   505-512，距杆底 485 差 16-23px——probe7/8a 实证 tapL0 类配方全部 0 接触。杆翻转需
+  //   jumpVelocity≥16.5（净升 138px，头顶 470-477 入杆带）。修 params 归主会话（本槽禁碰
+  //   packages/**）；本段种子按 16.5 语义预置，15.5 搜索预期 E4=0（04号档 §3）。
   F4: {
     maxDepth: 14, capFb: 10, capWg: 10, horizonF: 900,
     recipe: {
       fb: [spec("goTo", 288, 8), spec("jump", "tapL0"), spec("goTo", 210, 8), spec("jumpDrift", -1, 0, 24),
-        spec("jumpDrift", 1, 0, 40), spec("runJump", 1, 300, 20), spec("jumpDrift", -1, 0, 30), spec("sleep", 15)],
-      wg: [spec("sleep", 220), spec("goTo", 210, 8), spec("jumpDrift", -1, 0, 24),
-        spec("jumpDrift", 1, 0, 40), spec("runJump", 1, 300, 20), spec("jumpDrift", -1, 0, 30), spec("sleep", 15)],
+        spec("goTo", 120, 10), spec("sleep", 240)],
+      wg: [spec("sleep", 220), spec("goTo", 250, 8), spec("sleep", 15)],
     },
     vocab: {
       fb: [spec("goTo", 280, 8), spec("goTo", 288, 8), spec("goTo", 296, 8),
         spec("jump", "tapL0"), spec("jumpDrift", 1, 0, 18), spec("jumpDrift", 1, 0, 24),
         spec("goTo", 200, 8), spec("goTo", 210, 8), spec("goTo", 220, 8),
         spec("jumpDrift", -1, 0, 20), spec("jumpDrift", -1, 0, 24), spec("jumpDrift", -1, 0, 30),
-        spec("jumpDrift", 1, 0, 36), spec("jumpDrift", 1, 0, 40), spec("jumpDrift", 1, 0, 46),
-        spec("runJump", 1, 290, 20), spec("runJump", 1, 310, 20), spec("runJump", 1, 330, 20),
-        spec("jumpDrift", -1, 0, 26), spec("jumpDrift", -1, 0, 30), spec("jumpDrift", -1, 0, 36),
-        spec("goTo", 360, 10), spec("goTo", 390, 10), spec("sleep", 15)],
+        spec("goTo", 100, 10), spec("goTo", 120, 10), spec("goTo", 140, 10), spec("sleep", 15), spec("sleep", 240)],
       wg: [spec("sleep", 180), spec("sleep", 220), spec("sleep", 260),
-        spec("goTo", 200, 8), spec("goTo", 210, 8), spec("goTo", 220, 8),
-        spec("jumpDrift", -1, 0, 20), spec("jumpDrift", -1, 0, 24), spec("jumpDrift", -1, 0, 30),
-        spec("jumpDrift", 1, 0, 36), spec("jumpDrift", 1, 0, 40), spec("jumpDrift", 1, 0, 46),
-        spec("runJump", 1, 290, 20), spec("runJump", 1, 310, 20), spec("runJump", 1, 330, 20),
-        spec("jumpDrift", -1, 0, 26), spec("jumpDrift", -1, 0, 30), spec("jumpDrift", -1, 0, 36),
-        spec("goTo", 240, 10), spec("goTo", 280, 10), spec("sleep", 15)],
+        spec("goTo", 230, 8), spec("goTo", 250, 8), spec("goTo", 270, 8), spec("sleep", 15), spec("sleep", 240)],
     },
   },
-  // F5 岩浆段：R13L 西缘坠 R7L(224) → 东行助跑 x≈390 满速跳越岩浆[416,608] → 落 col18'@row4
-  //   斜面/R4E(128)；wg 同链（岩浆杀 wg——跳为硬门）。
+  // F5 塔腰段（校准网格 2026-10-31 raw-gid 重验）：R17L(544) 东跳圆-角捕捉 col5'/'坡
+  //   (160-192,448→416) 上 R13L(416,x192-384) → 西跳上 R10(320,塔区西北角块 x0-128) →
+  //   东跳上 col4'/'坡(128-160,256→224)/R7L(224,x160-416) 驻留东段。96px 设计位双临界
+  //   跳（416→320、320→224 净升恰 96-103px）。【r7 cols13-18=x[416,608] gid7=水，全杀
+  //   （fb 不免疫——03号档 §2"岩浆"系误记，gid5 岩浆实测在 r29[704,928]/r9[832,864]/
+  //   r15[736,768]）；满速平跳滞空 ~66f×4.53≈299px 落点 ~715 差 21px 不及东柱 col23
+  //   (736,224)——越水留 F6 由 beam 探索慢漂跳窗口（站定跳空中加速漂 ~230-260px 可落
+  //   col19'?'[608,640]）】；wg 同链错峰。
   F5: {
-    maxDepth: 12, capFb: 6, capWg: 6, horizonF: 600,
+    maxDepth: 12, capFb: 8, capWg: 8, horizonF: 900,
     recipe: {
-      fb: [spec("hold", -1, 150), spec("runJump", 1, 380, 25), spec("goTo", 700, 12), spec("sleep", 15)],
-      wg: [spec("sleep", 60), spec("hold", -1, 150), spec("runJump", 1, 380, 25), spec("goTo", 640, 12), spec("sleep", 15)],
+      fb: [spec("goTo", 120, 10), spec("jumpOnto", 1, 448), spec("goTo", 280, 10), spec("jumpOnto", -1, 320),
+        spec("jumpOnto", 1, 224), spec("goTo", 360, 10), spec("sleep", 15)],
+      wg: [spec("sleep", 60), spec("goTo", 120, 10), spec("jumpOnto", 1, 448), spec("goTo", 280, 10),
+        spec("jumpOnto", -1, 320), spec("jumpOnto", 1, 224), spec("goTo", 330, 10), spec("sleep", 15)],
     },
     vocab: {
-      fb: [spec("hold", -1, 140), spec("hold", -1, 150), spec("hold", -1, 160),
-        spec("runJump", 1, 360, 25), spec("runJump", 1, 380, 25), spec("runJump", 1, 400, 25),
-        spec("goTo", 660, 12), spec("goTo", 700, 12), spec("goTo", 740, 12), spec("sleep", 15)],
+      fb: [spec("goTo", 100, 10), spec("goTo", 120, 10), spec("goTo", 140, 10),
+        spec("jumpOnto", 1, 442), spec("jumpOnto", 1, 448), spec("jumpOnto", 1, 454),
+        spec("goTo", 260, 10), spec("goTo", 280, 10), spec("goTo", 300, 10),
+        spec("jumpOnto", -1, 314), spec("jumpOnto", -1, 320), spec("jumpOnto", -1, 326),
+        spec("jumpOnto", 1, 218), spec("jumpOnto", 1, 224), spec("jumpOnto", 1, 230),
+        spec("goTo", 320, 10), spec("goTo", 360, 10), spec("goTo", 400, 10), spec("sleep", 15)],
       wg: [spec("sleep", 30), spec("sleep", 60), spec("sleep", 90),
-        spec("hold", -1, 140), spec("hold", -1, 150), spec("hold", -1, 160),
-        spec("runJump", 1, 360, 25), spec("runJump", 1, 380, 25), spec("runJump", 1, 400, 25),
-        spec("goTo", 600, 12), spec("goTo", 640, 12), spec("goTo", 680, 12), spec("sleep", 15)],
+        spec("goTo", 100, 10), spec("goTo", 120, 10), spec("goTo", 140, 10),
+        spec("jumpOnto", 1, 442), spec("jumpOnto", 1, 448), spec("jumpOnto", 1, 454),
+        spec("goTo", 260, 10), spec("goTo", 280, 10), spec("goTo", 300, 10),
+        spec("jumpOnto", -1, 314), spec("jumpOnto", -1, 320), spec("jumpOnto", -1, 326),
+        spec("jumpOnto", 1, 218), spec("jumpOnto", 1, 224), spec("jumpOnto", 1, 230),
+        spec("goTo", 290, 10), spec("goTo", 330, 10), spec("sleep", 15)],
     },
   },
-  // F6 终章段：R4E 东行走落 R9E(288) → 西跳 32 上 R8(256) → 东助跑 x≈878 跳 R6R(192)
-  //   → 双门位驻留（fb 1100 / wg 1200）= WIN（phaseWon 断言）。
+  // F6 越水终章段：R7L(224) 慢漂跳越水[416,608] 落 col19'?'(608-640,224) → 东跳越空腔
+  //   [640,736] 落 col23 柱(736-768,224) → 东行走落 R8(256,x768-896) → 东助跑 x≈878 跳
+  //   R6R(192,x1056+) → 双门位驻留（fb 1100 / wg 1200）= WIN（phaseWon 断言）。
   F6: {
-    maxDepth: 14, capFb: 9, capWg: 9, horizonF: 800,
+    maxDepth: 14, capFb: 10, capWg: 10, horizonF: 1000,
     recipe: {
-      fb: [spec("goTo", 850, 10), spec("sleep", 30), spec("jumpDrift", -1, 0, 24), spec("goTo", 800, 10),
+      fb: [spec("jumpOnto", 1, 185), spec("jumpDrift", 1, 0, 20), spec("goTo", 850, 10), spec("sleep", 30),
         spec("hold", 1, 878), spec("jumpDrift", 1, 0, 30), spec("goTo", 1100, 10), spec("sleep", 15)],
-      wg: [spec("sleep", 90), spec("goTo", 850, 10), spec("sleep", 30), spec("jumpDrift", -1, 0, 24), spec("goTo", 820, 10),
-        spec("hold", 1, 878), spec("jumpDrift", 1, 0, 30), spec("goTo", 1200, 10), spec("sleep", 15)],
+      wg: [spec("sleep", 90), spec("jumpOnto", 1, 185), spec("jumpDrift", 1, 0, 20), spec("goTo", 850, 10),
+        spec("sleep", 30), spec("hold", 1, 878), spec("jumpDrift", 1, 0, 30), spec("goTo", 1200, 10), spec("sleep", 15)],
     },
     vocab: {
-      fb: [spec("goTo", 830, 10), spec("goTo", 850, 10), spec("goTo", 870, 10),
-        spec("jumpDrift", -1, 0, 20), spec("jumpDrift", -1, 0, 24), spec("jumpDrift", -1, 0, 28),
-        spec("goTo", 780, 10), spec("goTo", 800, 10), spec("goTo", 820, 10),
+      fb: [spec("jumpOnto", 1, 175), spec("jumpOnto", 1, 180), spec("jumpOnto", 1, 185), spec("jumpOnto", 1, 190),
+        spec("jumpDrift", 1, 0, 16), spec("jumpDrift", 1, 0, 20), spec("jumpDrift", 1, 0, 24),
+        spec("goTo", 830, 10), spec("goTo", 850, 10), spec("goTo", 870, 10),
         spec("hold", 1, 866), spec("hold", 1, 878), spec("hold", 1, 890),
         spec("jumpDrift", 1, 0, 26), spec("jumpDrift", 1, 0, 30), spec("jumpDrift", 1, 0, 36),
         spec("goTo", 1080, 10), spec("goTo", 1100, 10), spec("goTo", 1120, 10), spec("sleep", 15)],
       wg: [spec("sleep", 60), spec("sleep", 90), spec("sleep", 120),
+        spec("jumpOnto", 1, 175), spec("jumpOnto", 1, 180), spec("jumpOnto", 1, 185), spec("jumpOnto", 1, 190),
+        spec("jumpDrift", 1, 0, 16), spec("jumpDrift", 1, 0, 20), spec("jumpDrift", 1, 0, 24),
         spec("goTo", 830, 10), spec("goTo", 850, 10), spec("goTo", 870, 10),
-        spec("jumpDrift", -1, 0, 20), spec("jumpDrift", -1, 0, 24), spec("jumpDrift", -1, 0, 28),
-        spec("goTo", 780, 10), spec("goTo", 800, 10), spec("goTo", 820, 10),
         spec("hold", 1, 866), spec("hold", 1, 878), spec("hold", 1, 890),
         spec("jumpDrift", 1, 0, 26), spec("jumpDrift", 1, 0, 30), spec("jumpDrift", 1, 0, 36),
         spec("goTo", 1180, 10), spec("goTo", 1200, 10), spec("goTo", 1220, 10), spec("sleep", 15)],

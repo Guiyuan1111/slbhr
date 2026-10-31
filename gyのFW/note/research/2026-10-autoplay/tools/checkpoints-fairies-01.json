@@ -1,0 +1,151 @@
+{
+  "level": "fairies-01",
+  "note": "v2 链（2026-10-31，fw-fairydrag 槽；03号档 §2 六段链前插拖拽段后按 raw-gid 权威网格+probe3/6/7/8a 实测修订为 7 段 F0-F6）。py 口径=snapshot 中心 y=脚−35.2。平台 id：p0=380/p1=382/p3=419。【15.5 封锁预注册】内核 jumpVelocity 15.5 静跳净升 96-103px：F4 撞杆需头顶入杆带 y[440,484.8]，R21L(672) 起跳头顶至 505-512 差 16-23px——probe7/8a 实证 0 接触；仙女替撞被 p1 时窗封死（上升 1.49px/f、~86f 满位 vs 仙女折返最早 t≈113）。l0 翻转需 ≥16.5，修 params 归主会话；本链按 16.5 语义预置，15.5 搜索预期 E0-E3 通、E4=0。",
+  "segments": [
+    {
+      "id": "F0",
+      "title": "压钮段：wg 独走东线（涉水 r29 L[704,928] 为岩浆 gid5 只杀 fb——wg 可涉）上 R25R 顶压 b_g2(1200,800) 至 p0 沉位（slab 976）驻留开东袋口；fb 原地",
+      "entry": [{ "kind": "alive" }],
+      "waypoints": [
+        [{ "kind": "px", "role": "wg", "min": 1120, "max": 1260 }, { "kind": "grounded", "role": "wg" }]
+      ],
+      "target": [
+        { "kind": "pusherState", "id": 0, "value": 1 },
+        { "kind": "platY", "id": 0, "min": 968, "max": 984 },
+        { "kind": "py", "role": "wg", "min": 740, "max": 790 },
+        { "kind": "grounded", "role": "wg" },
+        { "kind": "alive" }
+      ],
+      "horizonF": 500
+    },
+    {
+      "id": "F1",
+      "title": "拖拽段（仙女原语首用）：fb 原地 fdrag 拖仙女贴顶走廊 y845 西飞 1168px 入杯 fc0(32,803.2)（感应球 r51.2）；入杯后拖拽长持，p1(382) 沉至 880 开 r22-23 slot；wg 按钮驻留至仙女过闸后西返泊 560",
+      "entry": [{ "kind": "alive" }],
+      "waypoints": [
+        [{ "kind": "fairyPx", "id": 0, "min": 500, "max": 800 }]
+      ],
+      "target": [
+        { "kind": "fairyPx", "id": 0, "min": 8, "max": 64 },
+        { "kind": "fairyPy", "id": 0, "min": 775, "max": 835 },
+        { "kind": "platY", "id": 1, "min": 872, "max": 888 },
+        { "kind": "py", "role": "wg", "min": 740, "max": 800 },
+        { "kind": "alive" }
+      ],
+      "horizonF": 800
+    },
+    {
+      "id": "F2",
+      "title": "帆跃段：双角色走廊满速东行至线位（fb 627/wg 634）起跳西漂越 c18' 檐角（minFeet ≤828.8）落 '\\'col18@row25 斜面续压西上 R25L(800) 分泊（fb 240/wg 430）",
+      "entry": [
+        { "kind": "px", "role": "fb", "min": 180, "max": 300 },
+        { "kind": "py", "role": "fb", "min": 740, "max": 800 },
+        { "kind": "px", "role": "wg", "min": 380, "max": 560 },
+        { "kind": "py", "role": "wg", "min": 740, "max": 800 }
+      ],
+      "waypoints": [
+        [{ "kind": "px", "role": "fb", "min": 560, "max": 660 }, { "kind": "py", "role": "fb", "min": 760, "max": 830 }]
+      ],
+      "target": [
+        { "kind": "px", "role": "fb", "min": 200, "max": 300 },
+        { "kind": "py", "role": "fb", "min": 740, "max": 790 },
+        { "kind": "grounded", "role": "fb" },
+        { "kind": "px", "role": "wg", "min": 380, "max": 500 },
+        { "kind": "py", "role": "wg", "min": 740, "max": 790 },
+        { "kind": "grounded", "role": "wg" },
+        { "kind": "alive" }
+      ],
+      "horizonF": 600
+    },
+    {
+      "id": "F3",
+      "title": "坡尖段：双角色先后（wg sleep 错峰）走 116 起跳位（probe7 实证，160 会顶死坡面）圆-角捕捉 c5 坡尖 (160,704) 上 R21L(672)；fb 泊 250/wg 泊 340 避 x288 杆下",
+      "entry": [
+        { "kind": "px", "role": "fb", "min": 200, "max": 300 },
+        { "kind": "py", "role": "fb", "min": 740, "max": 790 },
+        { "kind": "px", "role": "wg", "min": 380, "max": 500 },
+        { "kind": "py", "role": "wg", "min": 740, "max": 790 }
+      ],
+      "waypoints": [
+        [{ "kind": "px", "role": "fb", "min": 140, "max": 190 }, { "kind": "py", "role": "fb", "min": 610, "max": 690 }]
+      ],
+      "target": [
+        { "kind": "px", "role": "fb", "min": 192, "max": 380 },
+        { "kind": "py", "role": "fb", "min": 610, "max": 665 },
+        { "kind": "grounded", "role": "fb" },
+        { "kind": "px", "role": "wg", "min": 192, "max": 460 },
+        { "kind": "py", "role": "wg", "min": 610, "max": 665 },
+        { "kind": "grounded", "role": "wg" },
+        { "kind": "alive" }
+      ],
+      "horizonF": 600
+    },
+    {
+      "id": "F4",
+      "title": "机关段（15.5 封锁预注册——预期 E4=0）：fb R21L 东行 x288 跳顶撞 l0（需 16.5：头顶 470-477 入杆带 y[440,484.8]；15.5 头顶 505-512 差 16-23px probe7/8a 实证 0 接触）→ l0 ON p3(419) 沉顶 576 → 西跳上 p3 → 西跳落 R17L(544) 泊 120；wg 泊 R21L 中段 250",
+      "entry": [
+        { "kind": "px", "role": "fb", "min": 192, "max": 380 },
+        { "kind": "py", "role": "fb", "min": 610, "max": 665 },
+        { "kind": "px", "role": "wg", "min": 192, "max": 460 },
+        { "kind": "py", "role": "wg", "min": 610, "max": 665 }
+      ],
+      "waypoints": [
+        [{ "kind": "leverState", "id": 0, "value": 1 }, { "kind": "platY", "id": 3, "min": 616, "max": 632 }]
+      ],
+      "target": [
+        { "kind": "leverState", "id": 0, "value": 1 },
+        { "kind": "platY", "id": 3, "min": 616, "max": 632 },
+        { "kind": "px", "role": "fb", "min": 40, "max": 240 },
+        { "kind": "py", "role": "fb", "min": 480, "max": 530 },
+        { "kind": "grounded", "role": "fb" },
+        { "kind": "px", "role": "wg", "min": 192, "max": 420 },
+        { "kind": "py", "role": "wg", "min": 610, "max": 665 },
+        { "kind": "grounded", "role": "wg" },
+        { "kind": "alive" }
+      ],
+      "horizonF": 900
+    },
+    {
+      "id": "F5",
+      "title": "塔腰段：R17L(544) 东跳圆-角捕捉 col5'/'坡(160-192,448→416) 上 R13L(416) → 西跳上 R10(320,西北角块 x0-128) → 东跳上 col4'/'坡/R7L(224,x160-416) 驻留东段（双 96px 临界跳）",
+      "entry": [
+        { "kind": "px", "role": "fb", "min": 40, "max": 240 },
+        { "kind": "py", "role": "fb", "min": 480, "max": 530 },
+        { "kind": "px", "role": "wg", "min": 192, "max": 420 },
+        { "kind": "py", "role": "wg", "min": 610, "max": 665 }
+      ],
+      "waypoints": [
+        [{ "kind": "px", "role": "fb", "min": 160, "max": 384 }, { "kind": "py", "role": "fb", "min": 350, "max": 410 }]
+      ],
+      "target": [
+        { "kind": "px", "role": "fb", "min": 160, "max": 410 },
+        { "kind": "py", "role": "fb", "min": 160, "max": 215 },
+        { "kind": "grounded", "role": "fb" },
+        { "kind": "px", "role": "wg", "min": 160, "max": 410 },
+        { "kind": "py", "role": "wg", "min": 160, "max": 215 },
+        { "kind": "grounded", "role": "wg" },
+        { "kind": "alive" }
+      ],
+      "horizonF": 900
+    },
+    {
+      "id": "F6",
+      "title": "越水终章段：R7L 慢漂跳越水 gid7[416,608]（全杀含 fb）落 col19'?'(608-640,224) → 东跳越空腔[640,736] 落 col23 柱(736,224) → 走落 R8(256) → 东助跑 x≈878 跳 R6R(192) → fb 门 1100/wg 门 1200 = WIN",
+      "entry": [
+        { "kind": "px", "role": "fb", "min": 160, "max": 410 },
+        { "kind": "py", "role": "fb", "min": 160, "max": 215 },
+        { "kind": "px", "role": "wg", "min": 160, "max": 410 },
+        { "kind": "py", "role": "wg", "min": 160, "max": 215 }
+      ],
+      "waypoints": [
+        [{ "kind": "px", "role": "fb", "min": 590, "max": 680 }, { "kind": "py", "role": "fb", "min": 160, "max": 215 }],
+        [{ "kind": "px", "role": "fb", "min": 736, "max": 900 }, { "kind": "py", "role": "fb", "min": 190, "max": 280 }],
+        [{ "kind": "px", "role": "wg", "min": 736, "max": 900 }, { "kind": "py", "role": "wg", "min": 190, "max": 280 }]
+      ],
+      "target": [
+        { "kind": "phaseWon" }
+      ],
+      "horizonF": 1000
+    }
+  ]
+}
