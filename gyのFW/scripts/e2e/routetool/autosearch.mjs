@@ -139,7 +139,18 @@ const ds = (d) => (d > 0 ? "right" : "left");
 const PRIM_TABLE = {
   settle: (...a) => S.settle(...a),
   sleep: (...a) => S.sleep(...a),
-  goTo: (...a) => S.goTo(...a),
+  /** goTo 完成帧零出力包装（02号档 §5-a 驻留语义补全，fw-autosearch-fix 槽）：S.goTo 内部
+   *  cur 有 3 帧更新门，done 判据（|Δx|≤tol+grounded+|vx|<40）满足帧 run 仍可能回出行进方向
+   *  键——队列恰在该帧排干时此键被锁存，slick 面滑行出泊位窗（E0 定稿 try[5,1] 全保留 goTo
+   *  仍 end-state-evaporated fb[730]→[642,802] 实证；链侧「done 自带刹车=零出力驻留」前提见
+   *  3fbbb6a/989ac21）。done 只读 ctx 快照可先于 run 判定：本帧将 done 直接回 NONE
+   *  （包装先例=wrapTap/runJump；evaluate 与 drive 定稿重放同走本表，零漂移）。 */
+  goTo: (...a) => {
+    const stp = S.goTo(...a);
+    const orig = stp.run.bind(stp);
+    stp.run = (c) => (stp.done(c) ? NONE : orig(c));
+    return stp;
+  },
   jump: (...a) => S.jump(...a),
   /** 定向持键到位置线（墙角归一化件）：按 dir 前进直到跨线即完成——后续原语接管时
    *  物理状态由墙/线锚定（冲墙滑行 v→0、后撤步离面），事件表 ±1f 只影响到达帧不影响终态。 */
@@ -1207,8 +1218,8 @@ const RESULT_MARK = "##EVALRESULT##";
  *  边缘行为（2026-10-28 ice_02 I3 诊断：同程序两次评估 1 例翻转、进程级 ~21 eval 集体翻转、
  *  单候选 40 连跑零混杂、阈值跨运行漂移 ±1——vendor/box2d.js 字节冻结，以进程隔离绕过）。
  *  同层候选彼此独立 → 每 EVAL_BATCH_N 个候选一个新鲜子进程（块内 eval 数远低于阈值），
- *  父进程零 makeWorld（v12c robjob / v12d evaljob+exjob 全下沉；残留父进程面=finalizeSegment
- *  的 drive 重放 replayEvents 与导出终验重放——定稿重试少时世界数远低于阈值 ~20，fw-autosearch-fix 槽审计注记）。 */
+ *  父进程零 makeWorld（v12c robjob / v12d evaljob+exjob / fw-autosearch-fix finjob 全下沉，
+ *  含 finalizeSegment 的 drive 重放；导出终验重放为父进程仅存世界 ~1-2 个）。 */
 function batchEvalChild(segDef, chunk, totalCapF) {
   return runChildJob({ level: LEVEL, segDef, totalCapF,
     batch: chunk.map((p) => ({ sf: p.sf2, sw: p.sw2 })) }, "evaljob");
@@ -1254,6 +1265,14 @@ function childExhaustive(events, segDef, deadlineAbsF, minF) {
     if (out.fatal) break;
   }
   return out;
+}
+/** 定稿 drive 重放子进程化（fw-autosearch-fix 槽，(c) 残留面收口）：finalizeSegment 的
+ *  replayEvents 原在父进程执行——evalchild 下每次定稿重试父进程仍 +1 世界，met 层多/阶梯
+ *  重试多时父进程世界数远超 vendor 泄漏阈值 ~20（E0 实测 12 层×8 节点×4 级 ≈380 世界），
+ *  事件表在泄漏区产出后再喂 exjob 干净子进程 = 基线漂移。下沉后搜索+定稿全程父进程零世界，
+ *  导出终验重放成为父进程仅存世界（~1-2 个）。 */
+function childFinReplay(sf, sw, totalFrames) {
+  return runChildJob({ level: LEVEL, sf, sw, totalFrames }, "finjob");
 }
 
 
@@ -1545,7 +1564,7 @@ function dwellFloorOf(specList) {
   for (let i = specList.length - 1; i >= 0; i--) if (DWELL_PRIMS.has(specList[i]?.n)) return i + 1;
   return 0;
 }
-export { dwellFloorOf };
+export { dwellFloorOf, PRIM_TABLE };
 
 /** 段定稿：beam 前 8 达标者，各做【修剪深度阶梯】+ drive 重放收事件表 + inline 采样 + 下段 entry 实测，
  *  按（seam 通过, score′）字典序定稿（§4.3 阶段一）。
@@ -1604,7 +1623,10 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
     for (const [kFb, kWg] of depthTries) {
       const trimmed = { ...cand, sf: cand.sf.slice(0, Math.max(1, kFb)), sw: cand.sw.slice(0, Math.max(1, kWg)), parked: true };
       const totalFrames = (cand.endF > 0 ? cand.endF : prefixF + segC.horizonF) + 30;
-      const dr = replayEvents(trimmed.sf, trimmed.sw, totalFrames);
+      // drive 重放经 finjob 子进程（evalchild 下父进程零世界，防 vendor 泄漏区产事件表）
+      const dr = EVAL_CHILD
+        ? childFinReplay(trimmed.sf, trimmed.sw, totalFrames)
+        : replayEvents(trimmed.sf, trimmed.sw, totalFrames);
       if (!dr.result.won && dr.result.deathF >= 0) {
         // 修剪重放死亡只作兜底记录，继续试更深保留（浅剪死亡→深保留可能不死且过窗）
         const rec = { cand: trimmed, inline: { fatal: SAMPLES, groups: [] }, exhaustiveFatal: 1, score2: -1e6, seamEntryF: -1, trimDepth: [kFb, kWg] };
@@ -1704,8 +1726,13 @@ if (hasFlag("verify")) {
   process.exit(base.won ? 0 : 1);
 }
 
-if (EVAL_CHILD && (argOf("evaljob") || argOf("robjob") || argOf("exjob"))) {
-  const job = JSON.parse(readFileSync(argOf("evaljob") ?? argOf("robjob") ?? argOf("exjob"), "utf8"));
+if (EVAL_CHILD && (argOf("evaljob") || argOf("robjob") || argOf("exjob") || argOf("finjob"))) {
+  const job = JSON.parse(readFileSync(argOf("evaljob") ?? argOf("robjob") ?? argOf("exjob") ?? argOf("finjob"), "utf8"));
+  if (job.sf && job.sw && job.totalFrames !== undefined && !job.list && !job.cands && !job.batch) {
+    // finjob：定稿 drive 重放收事件表（fw-autosearch-fix 槽：finalize 重放下沉，父进程零世界）
+    process.stdout.write(RESULT_MARK + JSON.stringify(replayEvents(job.sf, job.sw, job.totalFrames)));
+    process.exit(0);
+  }
   if (job.list) {
     // exjob：穷举 ±1f 门分块子进程（每子 ≤8 事件 ×±1 = 16 世界 < 泄漏阈值 ~20）
     const segC = segCtxOf(job.segDef);

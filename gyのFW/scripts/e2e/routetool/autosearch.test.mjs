@@ -10,7 +10,8 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { dwellFloorOf } from "./autosearch.mjs";
+import { NONE } from "./botcore.mjs";
+import { dwellFloorOf, PRIM_TABLE } from "./autosearch.mjs";
 
 const sp = (n, ...a) => ({ n, a });
 
@@ -34,4 +35,17 @@ test("dwellFloorOf: holdLev 状态门件不计入驻留件（完成后锁存方�
   // 混合程序只认最后一个 goTo/walkTo
   const sf = [sp("holdLev", 1, 0, 1), sp("walkTo", -1, 460, 70), sp("sleep", 40)];
   assert.equal(dwellFloorOf(sf), 2);
+});
+
+test("PRIM_TABLE.goTo 完成帧零出力（锁存不带走行进方向键，E0 fb[730]→[642] 滑出窗实证的修复）", () => {
+  const stp = PRIM_TABLE.goTo(744, 10);
+  // done 判据满足帧（|Δx|≤10+grounded+|vx|<40）→ run 必须 NONE——S.goTo 内部 cur 有 3 帧
+  // 更新门，原始实现此帧仍回行进方向键，队列恰在此帧排干即被锁存滑行出泊位窗
+  assert.deepEqual(stp.run({ f: 380, me: { x: 740, vx: -30, grounded: true } }), NONE);
+  // 未 done 帧 → 原始行进行为不变（位于线西侧 → 压右行进）
+  assert.equal(stp.run({ f: 381, me: { x: 700, vx: 0, grounded: true } }).right, true);
+  // 未 done 帧（在线东 754=tol 边缘、|vx|≤50）→ 不强行出力（want=0 经 3 帧门，此处 cur 已 =−1）
+  const stp2 = PRIM_TABLE.goTo(744, 10);
+  assert.equal(stp2.run({ f: 100, me: { x: 900, vx: 0, grounded: true } }).left, true); // 先建立 cur=−1
+  assert.deepEqual(stp2.run({ f: 103, me: { x: 740, vx: -45, grounded: true } }), NONE); // tol 内 |vx|≤50 → want=0
 });
