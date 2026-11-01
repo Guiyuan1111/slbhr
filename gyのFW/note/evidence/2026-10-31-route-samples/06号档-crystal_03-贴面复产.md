@@ -150,3 +150,9 @@ v11 封印结论复核仍成立（checkpoints C5 段注记 + SEGC C5 注记，co
   其 wg 门可达性从未被 oracle 实测支持。
 - route 定稿维持 693fcad（C0-C4 全链诚实未胜）；C5 封印维持。fb 侧链路可作后续解封的
   已证资产（若 wg 门机制获裁决放开，fb 半链现成）。
+
+### 7.6 主会话复核（2026-11-01）：§7 附带发现「NaN 力永久毒化」机理勘误
+
+- A 槽附带发现「currentRunForce 初始 undefined，首帧按键=NaN 力永不动」的**现象成立、机理误诊**：NaN 力向量实际被 character.ts:297-298 的施加守卫（`i.x > 0 && u.x < m` / `i.x < 0 && u.x > -m`，NaN 比较恒 false）**静默丢弃，物理永不被毒化**。oracle 原件同位置逐字同构（init.beautified.js @63321-63330）。
+- 实测真语义（probe12-f0nan.mjs，forest_01 直测复跑逐位一致）：f0 起按=按住期间冻结（crf 停留 undefined）→ ~30 帧零速后 Box2D 正常睡眠 → **松键一帧即初始化 0.475·runForce、再按真实力唤醒睡眠体完全恢复**（xEnd=232.9）。与 params.ts:60 既有注记「初值 undefined 是原版事实——首按不发力，松键→0.475·runForce 初始化」吻合。
+- 处置：内核零缺陷、不改内核（保真）；配方 sleep(3) 前缀仍是正确实用规避；02号档 §3 第 2 轮「kernel NaN 力永久毒化」与本档 §7 同句按本节更正。
