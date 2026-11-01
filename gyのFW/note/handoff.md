@@ -136,6 +136,17 @@
 
 ## 条目
 
+**更新**：2026-11-01（oracle 四裁决批收官：两关原版固有死关定谳 + portal 贴面语义修正落地 + fairydrag 产线 + crystal_03 C0-C4 求解/C5 封印）
+
+- **oracle 实机裁决×3**（output/D/E/F 本地快照 headless 探针，全程只读）：①e_tutorial_fire=**oracle 原件不可通关**（双门与出生区零物理通路，实测跳升 118.9px vs 需 160）；②fairies-01=**oracle 原件不可通关**（上层四道封顶隔绝+杆-柱循环自锁，两轮全流程无 WIN）；③crystal_03=**oracle 可通关**（12 环路径逐环实测）。档卷 note/evidence/2026-10-31-oracle-adjudication/01-03 号档+工具集。三样本关数据与 oracle 逐字节一致（38 件审计）。
+- **内核语义复核（主会话直测）**：A 槽五项缺口候选全否决（P6 带扫掠=oracle 一致/平台柱受压上移 96px=oracle 一致/Pusher-Lever 逐字同源）；F 杆解析锚点偏差（oracle (256,448) vs 我方 (288,416)）记档为后续课题。
+- **portal 贴面即传修正（真内核修复，b0566ae）**：checkTransport 近面带 0.2+ε（ε=0.02m）——oracle=begin-contact 贴面即传，我方求解器分离距 0.2003 使慢走贴门永不触发（须快穿）；crystal_03 三度封锁根因。r0-crystal（6 关）/r0-elements（1 关）重锚（漂移纯 scripted），余四锚不变。
+- **fairydrag 产线（C 槽）**：botcore S2.fdrag/frelease+fy 轨双通道（kernel 回放+route-node 派发）+autosearch SEGF；F0-F2 段实证（仙女拖入杯端到端）。
+- **crystal_03 route**：三槽累计——C0-C4' 全链搜索求解并导出（route JSON 1285 帧在库，**非通关稿**：C5 未解真服 0/3 如实记录）；C5=穿 544 屏障段，净升 119<128 封印（oracle 可通 vs 我方不可达的矛盾留档，06号档 §6/05号档 §7——下一步=oracle/内核同坐标系并排站位探针裁决）。CI 未纳入（无通关 route）。
+- **工具链**：fixture 四 main 基线重录（纯新增快照键 9 枚，6/6 PASS）；autosearch 多项定稿管线修复（beam 摊平/finPass 直传/walkTo 刹车门/holdLev）。
+- **门禁**：typecheck 0；vitest 64 文件 479/479；build 过；det 六锚 241 关位级一致。
+- **待用户**：三部游玩验收（crystal/elements/fairytales 已可玩；两教学关原版固有死关与验收无关）；验收后 bump 1.0.5 + 归并 main 裁决。
+
 **更新**：2026-10-31 三（夜批：route 样本关三槽 0/3 全撞硬边界如实写档 + F 部打磨/跳速修正落库）
 
 - **route 样本关批结果（零造假，全部档卷化）**：fairies-01=通关必须仙女拖拽（botcore 无该原语，p1 封锁 R25L 实证，03号档）；e_tutorial_fire=12 轮搜索 E0 段内达成但定稿 trim/seam 败（autosearch 工具链已知问题）+疑似结构不可通关（02号档 §4）；crystal_03=C0-C3 内核实证解、C4 必经触发态不可达（停驻升降柱封死，01号档）。**关键交叉证据**：e_tutorial_fire 等三样本关 JSON 与 oracle 逐字节一致（主会话 38 件字节审计）→「不可通关」若实属 oracle 原件固有或我方平台/电梯语义保真缺口，两条候选待 oracle 实机裁决。
