@@ -1207,7 +1207,8 @@ const RESULT_MARK = "##EVALRESULT##";
  *  边缘行为（2026-10-28 ice_02 I3 诊断：同程序两次评估 1 例翻转、进程级 ~21 eval 集体翻转、
  *  单候选 40 连跑零混杂、阈值跨运行漂移 ±1——vendor/box2d.js 字节冻结，以进程隔离绕过）。
  *  同层候选彼此独立 → 每 EVAL_BATCH_N 个候选一个新鲜子进程（块内 eval 数远低于阈值），
- *  父进程除 replayEvents（鲁棒采样，evalchild 下经 ROB_TOP=0 关闭）外零 makeWorld。 */
+ *  父进程零 makeWorld（v12c robjob / v12d evaljob+exjob 全下沉；残留父进程面=finalizeSegment
+ *  的 drive 重放 replayEvents 与导出终验重放——定稿重试少时世界数远低于阈值 ~20，fw-autosearch-fix 槽审计注记）。 */
 function batchEvalChild(segDef, chunk, totalCapF) {
   return runChildJob({ level: LEVEL, segDef, totalCapF,
     batch: chunk.map((p) => ({ sf: p.sf2, sw: p.sw2 })) }, "evaljob");
@@ -1529,6 +1530,23 @@ function searchSegment(segDef, seeds, opts) {
   };
 }
 
+// ---------------------------------------------------------------- 定稿修剪·驻留件地板（02号档 §5-a 移交项，2026-11-01 fw-autosearch-fix 槽）
+// 带刹车 done 的驻留原语：goTo（botcore，done=|Δx|≤tol+grounded+|vx|<40）与 walkTo（本文件，
+// done=过线+|vx|≤20+grounded+刹车方向门）。二者完成帧即「零出力泊位」——队列排干后锁存末输入
+// =NONE，角色停在完成点。metIdx 浅剪若把尾驻留件裁掉，锁存退化为在飞跳件的行进方向键
+// （jd/jo/rj 完成后仍压 dir），角色滑行冲出目标窗——02号档 §3 轮 4/5/9/12 E0 十二轮「定稿
+// trim 裁 goTo 必败」实证；3fbbb6a/989ac21/e17e5b2 均为逐段词表侧代偿，非通用修复。
+// holdLev 是状态门件不在此列：完成后锁存方向键恰是 e17e5b2 要治的病，保留它反而引入行进。
+// 修剪上界一律抬到【最后一个驻留件之后】（无驻留件=0 不约束，浅剪优先语义不变）。
+const DWELL_PRIMS = new Set(["goTo", "walkTo"]);
+/** 程序的驻留件地板：最后一个 goTo/walkTo 的下标+1（无驻留件返回 0）。纯函数，供 finalizeSegment
+ *  修剪阶梯与 R3 换种子回退共用；单测见 scripts/e2e/routetool/autosearch.test.mjs。 */
+function dwellFloorOf(specList) {
+  for (let i = specList.length - 1; i >= 0; i--) if (DWELL_PRIMS.has(specList[i]?.n)) return i + 1;
+  return 0;
+}
+export { dwellFloorOf };
+
 /** 段定稿：beam 前 8 达标者，各做【修剪深度阶梯】+ drive 重放收事件表 + inline 采样 + 下段 entry 实测，
  *  按（seam 通过, score′）字典序定稿（§4.3 阶段一）。
  *  修剪深度阶梯（S0b 饥饿实证）：泊位修剪剪掉 metAt 在飞原语，其弧线可能正是下段 entry
@@ -1571,12 +1589,17 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
       metIdx: node.metIdx ?? R.metIdx,
     };
     const mi = cand.metIdx ?? { fb: cand.sf.length, wg: cand.sw.length };
-    const depthTries = [[mi.fb, mi.wg]];
+    // 驻留件地板（02号档 §5-a）：修剪上界不得低于末驻留件（goTo/walkTo）之后——浅剪裁掉它
+    // 会把锁存退化成行进方向键出窗（E0 12 轮 trim=[4,1] 裁 goTo(744) 实证）。mi 已在地板
+    // 之后时 max() 无感，阶梯次序（浅→深、末级不剪）与去重语义不变。
+    const loFb = dwellFloorOf(cand.sf), loWg = dwellFloorOf(cand.sw);
+    const depthTries = [], seenTry = new Set();
+    const addTry = (t) => { const k = `${t[0]}/${t[1]}`; if (!seenTry.has(k)) { seenTry.add(k); depthTries.push(t); } };
+    addTry([Math.max(mi.fb, loFb), Math.max(mi.wg, loWg)]);
     for (const k of [1, 2, 3]) {
-      const t = [Math.min(cand.sf.length, mi.fb + k), Math.min(cand.sw.length, mi.wg + k)];
-      if (t[0] !== depthTries.at(-1)[0] || t[1] !== depthTries.at(-1)[1]) depthTries.push(t);
+      addTry([Math.min(cand.sf.length, Math.max(mi.fb + k, loFb)), Math.min(cand.sw.length, Math.max(mi.wg + k, loWg))]);
     }
-    depthTries.push([cand.sf.length, cand.sw.length]);
+    addTry([cand.sf.length, cand.sw.length]);
     let best = null;
     for (const [kFb, kWg] of depthTries) {
       const trimmed = { ...cand, sf: cand.sf.slice(0, Math.max(1, kFb)), sw: cand.sw.slice(0, Math.max(1, kWg)), parked: true };
@@ -1717,204 +1740,210 @@ if (EVAL_CHILD && (argOf("evaljob") || argOf("robjob") || argOf("exjob"))) {
 }
 
 // ---------------------------------------------------------------- 搜索主循环（--segs i-j）
-const t0All = Date.now();
-const wallBudgetS = MAXMINUTES * 60;
-const report = {
-  level: LEVEL, chain: CHAIN_PATH, beam: BEAM, budget: BUDGET, samples: SAMPLES,
-  startedAt: new Date().toISOString(), segs: [], totals: null, robust: null, export: null,
-};
-
-// resume：载入先前各段定稿程序作为种子前缀。
-// 注意：定稿程序是【累积制】（f0 起全链前缀），取最后一段的 sf/sw 即可——
-// 若逐段 push 拼接会得到 O(n²) 重复巨型程序（历史块重放导致轨迹发散，S7 实证）。
-let seedSf = [], seedSw = [], prefixF = 0, startIdx = segRange[0];
-const resumePath = argOf("resume");
-if (resumePath) {
-  const prev = JSON.parse(readFileSync(isAbsolute(resumePath) ? resumePath : resolve(ROOT, resumePath), "utf8"));
-  for (const s of prev.segs) {
-    if (!s.final) break;
-    seedSf = [...s.final.sf]; seedSw = [...s.final.sw]; prefixF = s.final.endF;
-  }
-  startIdx = Math.max(segRange[0], prev.segs.filter((s) => s.final).length);
-  // --forcestart N：配方返工时强制从段 N 重搜（种子仍取前一最终稿的累积程序前缀）
-  if (argOf("forcestart")) startIdx = Math.max(segRange[0], Number(argOf("forcestart")));
-  log(`resume: 载入前 ${startIdx} 段定稿（累积程序 fb ${seedSf.length} / wg ${seedSw.length} 原语，前缀 ${prefixF}f）`);
-}
-
-let okSegs = 0;
-for (let si = startIdx; si <= segRange[1]; si++) {
-  const segDef = chain.segments[si];
-  if (!segDef) break;
-  const wallLeftS = wallBudgetS - (Date.now() - t0All) / 1000;
-  if (wallLeftS <= 60) { log(`整关墙钟预算（${MAXMINUTES}min）耗尽，停在段 ${segDef.id}`); break; }
-  log(`== 段 ${segDef.id}（${si + 1}/${chain.segments.length}）${segDef.title} horizon=${segDef.horizonF}f`);
-  const seeds = seedSf.length || seedSw.length ? [{ sf: seedSf, sw: seedSw }] : [{ sf: [], sw: [] }];
-  // recipe 作种子后缀（第二 beam 起点）：宏直评从 f0 起跑必死（无前缀），旧语义无效（I3 首跑实证
-  // recipe score=-1e6 纯噪声）；改为把「预期路线」接到种子尾部供搜索在 seam 后邻域修复/扩展。
-  // cap 基线取 seeds 最长者（下方 seedFb/seedWg），短种子节点永不触 cap——语义不变。
-  const segRecipe = (SEG[segDef.id] ?? {}).recipe;
-  if (segRecipe) seeds.push({ sf: [...seeds[0].sf, ...segRecipe.fb], sw: [...seeds[0].sw, ...segRecipe.wg] });
-  const segRes = searchSegment(segDef, seeds, { t0: t0All, wallBudgetS, prefixF, nextDef: chain.segments[si + 1] ?? null });
-  const segReport = { id: segRes.id, title: segRes.title, solved: segRes.solved, exhausted: segRes.exhausted, evals: segRes.evals, wallS: segRes.wallS, layers: segRes.layers, bestEver: segRes.bestEver ? { ...segRes.bestEver, sf: undefined, sw: undefined } : null };
-
-  if (!segRes.solved) {
-    // 失败语义工件（§6）：最高解锁路标 / 卡点断言 / 逐层曲线 / 死因 / 前沿 beam 程序（复活与词表修补的实证依据）
-    segReport.failure = {
-      bestUnlocked: segRes.bestEver?.unlocked ?? 0,
-      note: "机器穷尽报告：见 layers 曲线与 bestEver 终态；卡点=首个未达 waypoint 组",
-    };
-    segReport.beam = segRes.beam.slice(0, 6).map((n) => ({
-      score: +n.score.toFixed(0), met: !!n.met, entryF: n.entryF, endF: n.endF,
-      S: { fb: [+n.S.fb.x.toFixed(1), +n.S.fb.y.toFixed(1)], wg: [+n.S.wg.x.toFixed(1), +n.S.wg.y.toFixed(1)] },
-      sf: n.sf, sw: n.sw,
-    }));
-    report.segs.push(segReport);
-    log(`${segDef.id} 未解——后续段中止`);
-    break;
-  }
-
-  // 段定稿（top-8 inline 采样 + 修剪阶梯 + 下段 entry 实测，seam 优先定稿）+ 种子泊位
-  // （搜索期已获过关稿 finPass 时直接复用——末层 beam 池可能只剩失败族，见 searchSegment 返回注）
-  const nextDef0 = chain.segments[si + 1] ?? null;
-  const fin = segRes.finPass ?? await finalizeSegment(segRes, segDef, prefixF, nextDef0);
-  if (!fin) {
-    segReport.failure = { ...(segReport.failure ?? {}), note: "定稿池空（beam 无 met 候选）" };
-    report.segs.push(segReport);
-    log(`${segDef.id} 定稿池空——后续段中止`);
-    break;
-  }
-  segReport.final = {
-    sf: fin.cand.sf, sw: fin.cand.sw, score: +fin.cand.score.toFixed(0), score2: +fin.score2.toFixed(0),
-    entryF: fin.cand.entryF, endF: fin.cand.endF, metAt: fin.cand.metAt,
-    inlineFatal: fin.inline.fatal, inlineGroups: fin.inline.groups,
-    trimDepth: fin.trimDepth ?? null, seamEntryF: fin.seamEntryF ?? null,
-    prog: { fb: progNames(fin.cand.sf), wg: progNames(fin.cand.sw) },
+// 仅 CLI 直跑时执行主循环；被 import（单测/工具复用纯函数）时跳过（fw-autosearch-fix 槽钩子，
+// 单测见 scripts/e2e/routetool/autosearch.test.mjs）。CLI 直跑判据=argv[1] 指向本文件。
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const t0All = Date.now();
+  const wallBudgetS = MAXMINUTES * 60;
+  const report = {
+    level: LEVEL, chain: CHAIN_PATH, beam: BEAM, budget: BUDGET, samples: SAMPLES,
+    startedAt: new Date().toISOString(), segs: [], totals: null, robust: null, export: null,
   };
-  log(`  ${segDef.id} 定稿: score'=${fin.score2.toFixed(0)} 穷举Fatal=${fin.exhaustiveFatal ?? "?"} end@f${fin.cand.endF} trim=${(fin.trimDepth ?? []).join("/")} seamEntry@${fin.seamEntryF ?? "-"}`);
 
-  // seam 校验（对下一段 entry；末段无）
-  const nextDef = chain.segments[si + 1];
-  if (nextDef) {
-    const seam = seamCheck(fin, nextDef);
-    segReport.seam = seam;
-    if (!seam.ok) {
-      log(`  ${segDef.id}→${nextDef.id} seam 失败（定稿终态不过下段 entry，宽限 ${SEAM_GRACE_F}f 内亦未达）`);
-      // 回退路径（R3）：换种子——用 beam 次优定稿重试一次
-      const alt = segRes.beam.filter((n) => n.met && n !== fin.cand).slice(0, 2);
-      let salvaged = null;
-      for (const altCand of alt) {
-        const ami = altCand.metIdx ?? { fb: altCand.sf.length, wg: altCand.sw.length };
-        const trimmed = { ...altCand, sf: altCand.sf.slice(0, Math.max(1, ami.fb)), sw: altCand.sw.slice(0, Math.max(1, ami.wg)), parked: true };
-        const altFin = { cand: trimmed, inline: { fatal: 0, groups: [] }, score2: altCand.score };
-        const s2 = seamCheck(altFin, nextDef);
-        if (s2.ok) {
-          salvaged = true; segReport.final = { sf: trimmed.sf, sw: trimmed.sw, score: +altCand.score.toFixed(0), score2: +altCand.score.toFixed(0), entryF: altCand.entryF, endF: altCand.endF, metAt: altCand.metAt, inlineFatal: null, inlineGroups: [], prog: { fb: progNames(trimmed.sf), wg: progNames(trimmed.sw) }, seamRescued: true }; segReport.seam = s2; fin.cand = trimmed; fin.inline = { fatal: 0, groups: [] }; break;
+  // resume：载入先前各段定稿程序作为种子前缀。
+  // 注意：定稿程序是【累积制】（f0 起全链前缀），取最后一段的 sf/sw 即可——
+  // 若逐段 push 拼接会得到 O(n²) 重复巨型程序（历史块重放导致轨迹发散，S7 实证）。
+  let seedSf = [], seedSw = [], prefixF = 0, startIdx = segRange[0];
+  const resumePath = argOf("resume");
+  if (resumePath) {
+    const prev = JSON.parse(readFileSync(isAbsolute(resumePath) ? resumePath : resolve(ROOT, resumePath), "utf8"));
+    for (const s of prev.segs) {
+      if (!s.final) break;
+      seedSf = [...s.final.sf]; seedSw = [...s.final.sw]; prefixF = s.final.endF;
+    }
+    startIdx = Math.max(segRange[0], prev.segs.filter((s) => s.final).length);
+    // --forcestart N：配方返工时强制从段 N 重搜（种子仍取前一最终稿的累积程序前缀）
+    if (argOf("forcestart")) startIdx = Math.max(segRange[0], Number(argOf("forcestart")));
+    log(`resume: 载入前 ${startIdx} 段定稿（累积程序 fb ${seedSf.length} / wg ${seedSw.length} 原语，前缀 ${prefixF}f）`);
+  }
+
+  let okSegs = 0;
+  for (let si = startIdx; si <= segRange[1]; si++) {
+    const segDef = chain.segments[si];
+    if (!segDef) break;
+    const wallLeftS = wallBudgetS - (Date.now() - t0All) / 1000;
+    if (wallLeftS <= 60) { log(`整关墙钟预算（${MAXMINUTES}min）耗尽，停在段 ${segDef.id}`); break; }
+    log(`== 段 ${segDef.id}（${si + 1}/${chain.segments.length}）${segDef.title} horizon=${segDef.horizonF}f`);
+    const seeds = seedSf.length || seedSw.length ? [{ sf: seedSf, sw: seedSw }] : [{ sf: [], sw: [] }];
+    // recipe 作种子后缀（第二 beam 起点）：宏直评从 f0 起跑必死（无前缀），旧语义无效（I3 首跑实证
+    // recipe score=-1e6 纯噪声）；改为把「预期路线」接到种子尾部供搜索在 seam 后邻域修复/扩展。
+    // cap 基线取 seeds 最长者（下方 seedFb/seedWg），短种子节点永不触 cap——语义不变。
+    const segRecipe = (SEG[segDef.id] ?? {}).recipe;
+    if (segRecipe) seeds.push({ sf: [...seeds[0].sf, ...segRecipe.fb], sw: [...seeds[0].sw, ...segRecipe.wg] });
+    const segRes = searchSegment(segDef, seeds, { t0: t0All, wallBudgetS, prefixF, nextDef: chain.segments[si + 1] ?? null });
+    const segReport = { id: segRes.id, title: segRes.title, solved: segRes.solved, exhausted: segRes.exhausted, evals: segRes.evals, wallS: segRes.wallS, layers: segRes.layers, bestEver: segRes.bestEver ? { ...segRes.bestEver, sf: undefined, sw: undefined } : null };
+
+    if (!segRes.solved) {
+      // 失败语义工件（§6）：最高解锁路标 / 卡点断言 / 逐层曲线 / 死因 / 前沿 beam 程序（复活与词表修补的实证依据）
+      segReport.failure = {
+        bestUnlocked: segRes.bestEver?.unlocked ?? 0,
+        note: "机器穷尽报告：见 layers 曲线与 bestEver 终态；卡点=首个未达 waypoint 组",
+      };
+      segReport.beam = segRes.beam.slice(0, 6).map((n) => ({
+        score: +n.score.toFixed(0), met: !!n.met, entryF: n.entryF, endF: n.endF,
+        S: { fb: [+n.S.fb.x.toFixed(1), +n.S.fb.y.toFixed(1)], wg: [+n.S.wg.x.toFixed(1), +n.S.wg.y.toFixed(1)] },
+        sf: n.sf, sw: n.sw,
+      }));
+      report.segs.push(segReport);
+      log(`${segDef.id} 未解——后续段中止`);
+      break;
+    }
+
+    // 段定稿（top-8 inline 采样 + 修剪阶梯 + 下段 entry 实测，seam 优先定稿）+ 种子泊位
+    // （搜索期已获过关稿 finPass 时直接复用——末层 beam 池可能只剩失败族，见 searchSegment 返回注）
+    const nextDef0 = chain.segments[si + 1] ?? null;
+    const fin = segRes.finPass ?? await finalizeSegment(segRes, segDef, prefixF, nextDef0);
+    if (!fin) {
+      segReport.failure = { ...(segReport.failure ?? {}), note: "定稿池空（beam 无 met 候选）" };
+      report.segs.push(segReport);
+      log(`${segDef.id} 定稿池空——后续段中止`);
+      break;
+    }
+    segReport.final = {
+      sf: fin.cand.sf, sw: fin.cand.sw, score: +fin.cand.score.toFixed(0), score2: +fin.score2.toFixed(0),
+      entryF: fin.cand.entryF, endF: fin.cand.endF, metAt: fin.cand.metAt,
+      inlineFatal: fin.inline.fatal, inlineGroups: fin.inline.groups,
+      trimDepth: fin.trimDepth ?? null, seamEntryF: fin.seamEntryF ?? null,
+      prog: { fb: progNames(fin.cand.sf), wg: progNames(fin.cand.sw) },
+    };
+    log(`  ${segDef.id} 定稿: score'=${fin.score2.toFixed(0)} 穷举Fatal=${fin.exhaustiveFatal ?? "?"} end@f${fin.cand.endF} trim=${(fin.trimDepth ?? []).join("/")} seamEntry@${fin.seamEntryF ?? "-"}`);
+
+    // seam 校验（对下一段 entry；末段无）
+    const nextDef = chain.segments[si + 1];
+    if (nextDef) {
+      const seam = seamCheck(fin, nextDef);
+      segReport.seam = seam;
+      if (!seam.ok) {
+        log(`  ${segDef.id}→${nextDef.id} seam 失败（定稿终态不过下段 entry，宽限 ${SEAM_GRACE_F}f 内亦未达）`);
+        // 回退路径（R3）：换种子——用 beam 次优定稿重试一次
+        const alt = segRes.beam.filter((n) => n.met && n !== fin.cand).slice(0, 2);
+        let salvaged = null;
+        for (const altCand of alt) {
+          const ami = altCand.metIdx ?? { fb: altCand.sf.length, wg: altCand.sw.length };
+          // 驻留件地板同 finalizeSegment（02号档 §5-a）：换种子浅剪同样不得裁尾驻留件
+          const trimmed = { ...altCand, sf: altCand.sf.slice(0, Math.max(1, ami.fb, dwellFloorOf(altCand.sf))), sw: altCand.sw.slice(0, Math.max(1, ami.wg, dwellFloorOf(altCand.sw))), parked: true };
+          const altFin = { cand: trimmed, inline: { fatal: 0, groups: [] }, score2: altCand.score };
+          const s2 = seamCheck(altFin, nextDef);
+          if (s2.ok) {
+            salvaged = true; segReport.final = { sf: trimmed.sf, sw: trimmed.sw, score: +altCand.score.toFixed(0), score2: +altCand.score.toFixed(0), entryF: altCand.entryF, endF: altCand.endF, metAt: altCand.metAt, inlineFatal: null, inlineGroups: [], prog: { fb: progNames(trimmed.sf), wg: progNames(trimmed.sw) }, seamRescued: true }; segReport.seam = s2; fin.cand = trimmed; fin.inline = { fatal: 0, groups: [] }; break;
+          }
         }
+        if (!salvaged) {
+          report.segs.push(segReport);
+          log(`${segDef.id} 换种子仍 seam 失败——停（R3 回退耗尽）`);
+          break;
+        }
+        log(`  ${segDef.id} seam 经换种子恢复（entry@f${segReport.seam.entryF}）`);
+      } else {
+        log(`  seam → ${nextDef.id} entry@f${seam.entryF}（grace ${seam.grace}f）`);
       }
-      if (!salvaged) {
-        report.segs.push(segReport);
-        log(`${segDef.id} 换种子仍 seam 失败——停（R3 回退耗尽）`);
-        break;
+      fin.entryF = segReport.seam.entryF;
+    }
+
+    // 前缀推进：候选程序已是 f0 起的全程序，整体替换
+    seedSf = [...fin.cand.sf];
+    seedSw = [...fin.cand.sw];
+    prefixF = fin.cand.endF;
+    report.segs.push(segReport);
+    okSegs++;
+  }
+
+  // ---------------------------------------------------------------- 导出 + 终验
+  let exportInfo = null;
+  if (okSegs >= 1) {
+    const last = report.segs[report.segs.length - 1];
+    const allSolved = report.segs.length === chain.segments.slice(segRange[0], segRange[1] + 1).length && report.segs.every((s) => s.solved);
+    if (allSolved) {
+      const sf = last.final.sf, sw = last.final.sw;
+      // 重放上限 = 前缀 + 末段 horizon + 宽限（WIN 帧可落在 entry 后数百帧，prefix+90 不够——S7 实证 WIN@f1978）
+      const segH = chain.segments[segRange[1]].horizonF ?? 500;
+      const dr = replayEvents(sf, sw, prefixF + segH + GRACE_F + 120);
+      log(`定稿重放: ${dr.result.won ? `WIN @f${dr.result.winF}` : dr.result.deathF >= 0 ? `死亡@f${dr.result.deathF}` : "未胜"}`);
+      if (dr.result.won) {
+        const totalFrames = dr.result.winF + 60;
+        const doc = toRouteDoc(LEVEL, dr.events, totalFrames, `autosearch (beam${BEAM}, samples${SAMPLES}, ${new Date().toISOString().slice(0, 10)})`);
+        mkdirSync(dirname(OUT_PATH), { recursive: true });
+        writeFileSync(OUT_PATH, JSON.stringify(doc, null, 1) + "\n");
+        const rk = kernel.runKernel(LEVEL, doc);
+        log(`runKernel 复核: ${rk.won ? `WIN @f${rk.winF}` : "FAIL"} → ${OUT_PATH}`);
+        exportInfo = { path: OUT_PATH, totalFrames, events: { fb: doc.fb.length, wg: doc.wg.length }, runKernel: rk };
+        report.export = exportInfo;
       }
-      log(`  ${segDef.id} seam 经换种子恢复（entry@f${segReport.seam.entryF}）`);
-    } else {
-      log(`  seam → ${nextDef.id} entry@f${seam.entryF}（grace ${seam.grace}f）`);
-    }
-    fin.entryF = segReport.seam.entryF;
-  }
-
-  // 前缀推进：候选程序已是 f0 起的全程序，整体替换
-  seedSf = [...fin.cand.sf];
-  seedSw = [...fin.cand.sw];
-  prefixF = fin.cand.endF;
-  report.segs.push(segReport);
-  okSegs++;
-}
-
-// ---------------------------------------------------------------- 导出 + 终验
-let exportInfo = null;
-if (okSegs >= 1) {
-  const last = report.segs[report.segs.length - 1];
-  const allSolved = report.segs.length === chain.segments.slice(segRange[0], segRange[1] + 1).length && report.segs.every((s) => s.solved);
-  if (allSolved) {
-    const sf = last.final.sf, sw = last.final.sw;
-    // 重放上限 = 前缀 + 末段 horizon + 宽限（WIN 帧可落在 entry 后数百帧，prefix+90 不够——S7 实证 WIN@f1978）
-    const segH = chain.segments[segRange[1]].horizonF ?? 500;
-    const dr = replayEvents(sf, sw, prefixF + segH + GRACE_F + 120);
-    log(`定稿重放: ${dr.result.won ? `WIN @f${dr.result.winF}` : dr.result.deathF >= 0 ? `死亡@f${dr.result.deathF}` : "未胜"}`);
-    if (dr.result.won) {
-      const totalFrames = dr.result.winF + 60;
-      const doc = toRouteDoc(LEVEL, dr.events, totalFrames, `autosearch (beam${BEAM}, samples${SAMPLES}, ${new Date().toISOString().slice(0, 10)})`);
-      mkdirSync(dirname(OUT_PATH), { recursive: true });
-      writeFileSync(OUT_PATH, JSON.stringify(doc, null, 1) + "\n");
-      const rk = kernel.runKernel(LEVEL, doc);
-      log(`runKernel 复核: ${rk.won ? `WIN @f${rk.winF}` : "FAIL"} → ${OUT_PATH}`);
-      exportInfo = { path: OUT_PATH, totalFrames, events: { fb: doc.fb.length, wg: doc.wg.length }, runKernel: rk };
-      report.export = exportInfo;
     }
   }
-}
 
-// ---------------------------------------------------------------- 与绿路线对比（仅最终对比用，不进搜索）
-function greenCompare() {
-  try {
-    const g = JSON.parse(readFileSync(join(ROOT, "scripts", "e2e", "inputs", "routes", `${LEVEL}.json`), "utf8"));
-    const rk = kernel.runKernel(LEVEL, g);
-    return { source: "forest_01.json(v38,人工)", winF: rk.winF ?? null, won: rk.won, events: { fb: g.fb.length, wg: g.wg.length } };
-  } catch { return null; }
-}
-
-// ---------------------------------------------------------------- 鲁棒验收（ScanPool，§4.3 阶段二）
-async function robustAcceptance() {
-  if (!exportInfo) return null;
-  const { ScanPool } = await import(pathToFileURL(join(ROOT, "scripts", "e2e", "routetool", "pool.mjs")).href);
-  const doc = JSON.parse(readFileSync(OUT_PATH, "utf8"));
-  const JOBS = Number(argOf("jobs", "7"));
-  const pool = new ScanPool(JOBS);
-  const out = { base: null, pm1: null, pm2: null };
-  // 基线用进程内 runKernel（scanworker 只回 won/deathF，无 winF——"WIN @fundefined" 假象即此）
-  const rkBase = kernel.runKernel(doc.level, doc);
-  out.base = { won: rkBase.won, winF: rkBase.winF ?? null };
-  log(`鲁棒验收基线: ${rkBase.won ? `WIN @f${rkBase.winF}` : "FAIL"}`);
-  for (const d of [1, 2]) {
-    const jobs = [];
-    for (const side of ["fb", "wg"])
-      for (let i = 0; i < doc[side].length; i++)
-        for (const dir of [-d, d]) jobs.push({ side, i, f: doc[side][i].f, dir });
-    const rs = await Promise.all(jobs.map((j) => {
-      const T = { fb: doc.fb.map((e) => ({ ...e })), wg: doc.wg.map((e) => ({ ...e })) };
-      T[j.side][j.i].f += j.dir;
-      return pool.run(doc.level, { totalFrames: doc.totalFrames, fb: T.fb, wg: T.wg }).then((r) => ({ ...j, won: r.won, deathF: r.deathF })).catch(() => ({ ...j, won: false, err: true }));
-    }));
-    const fatal = rs.filter((x) => !x.won);
-    const rec = { total: jobs.length, fatal: fatal.length, rate: +(fatal.length / jobs.length).toFixed(4), fatalList: fatal.slice(0, 40).map((x) => ({ side: x.side, i: x.i, f: x.f, dir: x.dir, deathF: x.deathF ?? null })) };
-    out[`pm${d}`] = rec;
-    log(`±${d}f fatal: ${fatal.length}/${jobs.length}`);
+  // ---------------------------------------------------------------- 与绿路线对比（仅最终对比用，不进搜索）
+  function greenCompare() {
+    try {
+      const g = JSON.parse(readFileSync(join(ROOT, "scripts", "e2e", "inputs", "routes", `${LEVEL}.json`), "utf8"));
+      const rk = kernel.runKernel(LEVEL, g);
+      return { source: "forest_01.json(v38,人工)", winF: rk.winF ?? null, won: rk.won, events: { fb: g.fb.length, wg: g.wg.length } };
+    } catch { return null; }
   }
-  pool.close();
-  return out;
-}
 
-if (exportInfo) {
-  report.robust = await robustAcceptance();
-  report.greenCompare = greenCompare();
-} else {
-  report.greenCompare = null;
-}
+  // ---------------------------------------------------------------- 鲁棒验收（ScanPool，§4.3 阶段二）
+  async function robustAcceptance() {
+    if (!exportInfo) return null;
+    const { ScanPool } = await import(pathToFileURL(join(ROOT, "scripts", "e2e", "routetool", "pool.mjs")).href);
+    const doc = JSON.parse(readFileSync(OUT_PATH, "utf8"));
+    const JOBS = Number(argOf("jobs", "7"));
+    const pool = new ScanPool(JOBS);
+    const out = { base: null, pm1: null, pm2: null };
+    // 基线用进程内 runKernel（scanworker 只回 won/deathF，无 winF——"WIN @fundefined" 假象即此）
+    const rkBase = kernel.runKernel(doc.level, doc);
+    out.base = { won: rkBase.won, winF: rkBase.winF ?? null };
+    log(`鲁棒验收基线: ${rkBase.won ? `WIN @f${rkBase.winF}` : "FAIL"}`);
+    for (const d of [1, 2]) {
+      const jobs = [];
+      for (const side of ["fb", "wg"])
+        for (let i = 0; i < doc[side].length; i++)
+          for (const dir of [-d, d]) jobs.push({ side, i, f: doc[side][i].f, dir });
+      const rs = await Promise.all(jobs.map((j) => {
+        const T = { fb: doc.fb.map((e) => ({ ...e })), wg: doc.wg.map((e) => ({ ...e })) };
+        T[j.side][j.i].f += j.dir;
+        return pool.run(doc.level, { totalFrames: doc.totalFrames, fb: T.fb, wg: T.wg }).then((r) => ({ ...j, won: r.won, deathF: r.deathF })).catch(() => ({ ...j, won: false, err: true }));
+      }));
+      const fatal = rs.filter((x) => !x.won);
+      const rec = { total: jobs.length, fatal: fatal.length, rate: +(fatal.length / jobs.length).toFixed(4), fatalList: fatal.slice(0, 40).map((x) => ({ side: x.side, i: x.i, f: x.f, dir: x.dir, deathF: x.deathF ?? null })) };
+      out[`pm${d}`] = rec;
+      log(`±${d}f fatal: ${fatal.length}/${jobs.length}`);
+    }
+    pool.close();
+    return out;
+  }
 
-report.totals = {
-  segsSolved: okSegs, segsTotal: chain.segments.slice(segRange[0], segRange[1] + 1).length,
-  evals: report.segs.reduce((a, s) => a + (s.evals ?? 0), 0),
-  wallS: +((Date.now() - t0All) / 1000).toFixed(1),
-  fullAuto: okSegs === chain.segments.length,
-};
+  if (exportInfo) {
+    report.robust = await robustAcceptance();
+    report.greenCompare = greenCompare();
+  } else {
+    report.greenCompare = null;
+  }
 
-mkdirSync(dirname(REPORT_PATH), { recursive: true });
-writeFileSync(REPORT_PATH, JSON.stringify(report, null, 1) + "\n");
-log(`\n搜索报告 → ${REPORT_PATH}`);
-log(`段 ${okSegs}/${report.totals.segsTotal} 解，evals=${report.totals.evals}，wall=${report.totals.wallS}s`);
-if (report.robust) {
-  const gate = report.robust.pm1.fatal === 0;
-  log(`±1f 门（fatal=0）: ${gate ? "PASS" : `FAIL（${report.robust.pm1.fatal}）`}; ±2f 计数: ${report.robust.pm2.fatal}/${report.robust.pm2.total}`);
+  report.totals = {
+    segsSolved: okSegs, segsTotal: chain.segments.slice(segRange[0], segRange[1] + 1).length,
+    evals: report.segs.reduce((a, s) => a + (s.evals ?? 0), 0),
+    wallS: +((Date.now() - t0All) / 1000).toFixed(1),
+    fullAuto: okSegs === chain.segments.length,
+  };
+
+  mkdirSync(dirname(REPORT_PATH), { recursive: true });
+  writeFileSync(REPORT_PATH, JSON.stringify(report, null, 1) + "\n");
+  log(`\n搜索报告 → ${REPORT_PATH}`);
+  log(`段 ${okSegs}/${report.totals.segsTotal} 解，evals=${report.totals.evals}，wall=${report.totals.wallS}s`);
+  if (report.robust) {
+    const gate = report.robust.pm1.fatal === 0;
+    log(`±1f 门（fatal=0）: ${gate ? "PASS" : `FAIL（${report.robust.pm1.fatal}）`}; ±2f 计数: ${report.robust.pm2.fatal}/${report.robust.pm2.total}`);
+  }
+  process.exit(0);
+
 }
-process.exit(0);
