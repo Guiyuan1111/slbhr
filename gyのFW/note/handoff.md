@@ -10,6 +10,12 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-11-01 晚（autosearch 定稿管线三修落地 + f0 NaN 机理勘误——e_tutorial_fire 十二轮「定稿必败」史终结）
+
+① **三修（fw-autosearch-fix 槽，ded4ef3/00a2b9c/53bb772/dc5972b）**：a) trim 驻留件地板 dwellFloorOf+goTo 完成帧零出力包装实修；b) 缓沉行程窗=链侧 v5.1 已解（37c87b8）；c) evalchild 残留面收口（finalize drive 重放下沉 finjob 子进程，父进程全程零 makeWorld）。**E0 实战回归 2/2 段解**（E0 trim[5,2] seamEntry@382 / E1 trim[5,7] seamEntry@520，12 轮假败史终结）；crystal_03 冒烟 2/2 无回归。档卷 note/research/2026-10-autoplay/06-autosearch-finalize-fix.md；单测 4 例（node:test）。残留穷举Fatal=1=配方族头部 ±1f 物理脆性，非进程漂移，如实记档。
+② **f0 NaN 机理勘误（主会话，86dfe80）**：A 槽「首帧按键 NaN 力永久毒化」误诊——NaN 力被 character.ts:297-298 施加守卫静默丢弃（oracle @63321-63330 逐字同构），实测松键一帧即初始化、再按唤醒睡眠体完全恢复（probe12-f0nan 直测件收容）。内核零缺陷不改内核；06号档 §7.6 勘误。
+③ 门禁：typecheck 0；vitest 64 文件 479/479；autosearch.test 4/4；packages/** 零触碰。根 TEMP 归零（4 个 10-28 废提交草稿+fw-of-1 孤儿件清除）。
+
 **更新**：2026-11-01（四槽并发批收官：crystal_03 终审=oracle 固有死关（wg 门不可达，双侧同构）+ e_tutorial_fire 复核维持 + oracle 连续通关档卷；门禁全绿、零内核改动）
 
 ① **crystal_03 终审（05号档-oracle-crystal_03-wg.md，2da9091）**：oracle 侧 wg 自然机制不可达 door2——col-8 竖墙+P7 实体带 isSensor:false+448 板东段无自然登板，22 变体/6 进路零入舱；门机制健康（预置舱内 isUp/双门同帧 WIN@f159 正控）。内核五重封死（route-samples/06号档 §7）逐条同构=双侧同构封锁非内核缺陷；01号档「可通关」环 12 系 fb 侧单边证据，已追加勘误。**crystal_03 入 oracle 固有死关候选（第三关），账目处置待用户追认**；route JSON（C0-C4 诚实未胜稿）与 checkpoints v13 留库。
