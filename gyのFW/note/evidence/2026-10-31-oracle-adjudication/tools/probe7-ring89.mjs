@@ -90,20 +90,20 @@ const INSTALL = `(function () {
     if (c.isDead) { if (!Q.deadLogged) { cap.events.push({ f: cap.frame, kind: 'death', who: 'fb' }); Q.deadLogged = true; cap.fatal = { f: cap.frame, kind: 'death' }; cap.done = true; } return; }
     var p = c.body.data.GetPosition(), x = -p.x * 32, y = -p.y * 32;
     Q.groundN = grounded(c) ? Q.groundN + 1 : 0;
-    if (s.op === 'place') { c.body.data.SetPosition(V(-s.x / 32, -s.y / 32)); c.body.data.SetLinearVelocity(V(0, 0)); Q.idx++; Q.st = null; return; }
+    if (s.op === 'place') { c.body.data.SetPosition(V(-s.x / 32, -s.y / 32)); c.body.data.SetLinearVelocity(V(0, 0)); c.body.data.SetAwake(!0); Q.idx++; Q.st = null; return; }
     if (s.op === 'waitf') { if (cap.frame - st.t0 >= s.f) { Q.idx++; Q.st = null; } return; }
-    if (s.op === 'jump') { c.body.data.SetLinearVelocity(V(c.body.data.GetLinearVelocity().x, 15.5)); cap.events.push({ f: cap.frame, kind: 'jump' }); Q.idx++; Q.st = null; return; }
+    if (s.op === 'jump') { c.body.data.SetAwake(!0); c.body.data.SetLinearVelocity(V(c.body.data.GetLinearVelocity().x, 15.5)); cap.events.push({ f: cap.frame, kind: 'jump' }); Q.idx++; Q.st = null; return; }
     if (s.op === 'walk') {
       var done = false, why = null;
       if (s.jumpAt != null && !st.jumped && ((s.dir > 0 && x <= s.jumpAt) || (s.dir < 0 && x >= s.jumpAt))) {
-        c.body.data.SetLinearVelocity(V(c.body.data.GetLinearVelocity().x, 15.5)); st.jumped = true;
+        c.body.data.SetAwake(!0); c.body.data.SetLinearVelocity(V(c.body.data.GetLinearVelocity().x, 15.5)); st.jumped = true;
         cap.events.push({ f: cap.frame, kind: 'jumpAt', at: s.jumpAt, x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 });
       }
       if (st.lastX == null) st.lastX = x;
       var moved = Math.abs(x - st.lastX) > 0.6; st.lastX = x;
       if (s.stallJump && !moved) st.stall++; else st.stall = 0;
-      if (s.stallJump && st.stall >= 22) { c.body.data.SetLinearVelocity(V(c.body.data.GetLinearVelocity().x, 15.5)); st.stall = -30; cap.events.push({ f: cap.frame, kind: 'stallJump', x: Math.round(x * 100) / 100 }); }
-      c.body.data.SetLinearVelocity(V(s.dir * 8.5, c.body.data.GetLinearVelocity().y));
+      if (s.stallJump && st.stall >= 22) { c.body.data.SetAwake(!0); c.body.data.SetLinearVelocity(V(c.body.data.GetLinearVelocity().x, 15.5)); st.stall = -30; cap.events.push({ f: cap.frame, kind: 'stallJump', x: Math.round(x * 100) / 100 }); }
+      c.body.data.SetAwake(!0); c.body.data.SetLinearVelocity(V(s.dir * (s.spd || 8.5), c.body.data.GetLinearVelocity().y));
       if (s.until != null) { if (s.dir > 0 ? x <= s.until : x >= s.until) { done = true; why = 'until'; } }
       if (!done && s.untilLev != null) { var lv = devSnap().lever; if (lv === s.untilLev) { done = true; why = 'untilLev'; } }
       if (!done && s.settle) { if (Q.groundN >= s.settle.g && y >= s.settle.y0 && y <= s.settle.y1) { done = true; why = 'settle'; } }
@@ -130,7 +130,7 @@ const INSTALL = `(function () {
     var smp = { f: f };
     if (c) {
       var p = c.body.data.GetPosition();
-      smp.fb = { x: Math.round(-p.x * 32 * 100) / 100, y: Math.round(-p.y * 32 * 100) / 100, gN: Q.groundN };
+      var lv = c.body.data.GetLinearVelocity(); smp.fb = { x: Math.round(-p.x * 32 * 100) / 100, y: Math.round(-p.y * 32 * 100) / 100, vx: Math.round(lv.x * 100) / 100, vy: Math.round(lv.y * 100) / 100, gN: Q.groundN, awake: c.body.data.IsAwake() };
       var lp = lastPos.fb;
       if (lp) { var dx = smp.fb.x - lp.x, dy = smp.fb.y - lp.y; if (Math.abs(dx) > 30 || Math.abs(dy) > 30) cap.events.push({ f: f, kind: 'tp?', from: lp, to: smp.fb }); }
       lastPos.fb = { x: smp.fb.x, y: smp.fb.y };
@@ -173,6 +173,26 @@ const SCEN = [
       { op: "walk", dir: -1, until: 862, or: 400 },
       { op: "walk", dir: 1, settle: { y0: 515, y1: 610, g: 8 }, or: 300 },
       { op: "walk", dir: 1, until: 745, or: 300 },
+    ],
+  },
+  {
+    // 柱顶跳复测 (place 抬 8px 落稳再跳; feet 峰值 ~452 < 柱顶 480)
+    name: "S12_pillar_jump_west",
+    maxF: 400,
+    steps: [
+      { op: "place", x: 749.7, y: 532 },
+      { op: "waitf", f: 40 },
+      { op: "walk", dir: 1, jumpAt: 750, until: 400, or: 160 },
+    ],
+  },
+  {
+    // 塔顶跳 walk 漂移实证落点 (纸面: 落 ~326 柱东侧; 空窗死区证明不可入西舱)
+    name: "S13_towerhop_walk",
+    maxF: 400,
+    steps: [
+      { op: "place", x: 559.64, y: 162 },
+      { op: "waitf", f: 40 },
+      { op: "walk", dir: 1, jumpAt: 560, until: 60, or: 220 },
     ],
   },
 ];
