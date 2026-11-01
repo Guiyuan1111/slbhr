@@ -837,27 +837,27 @@ const SEGC = {
   },
   C3: {
     maxDepth: 10, capFb: 7, capWg: 7, horizonF: 800,
-    // P3 井弧(笼式封顶弧,rise≈70px 顶板 608 封顶,与 C0 同机制)：fb 杆西直西行入链;wg 需先
-    // 东行 575 助跑再 runJump(-1,550) 空中越杆(杆翻后西行踏杆=unflip,空中安全),落杆西后接链。
-    // 满速 jd 链:弧1 落 ~135,弧2 落墙钉 ~48-90,弧3 按压传送(P0 同机制 f209 实证)。
-    // 出口残速 vy≈0(顶板滑行) → P2 出口 y≈118 抛体落 row-6 (~1134,156.8)。
+    // v12 重写（2026-11-02 fw-route-crystal3 槽，arcsweep3/c3v2 实证）：v11 的「钉点 0.6px 差」
+    // 根因是 portal 2 关门假墙——c3diag 时代 sweep 全程未拉杆，P3 west well（Tiled obj x=0,y=672
+    // w=64,h=96 → level2 中心矫正 (32,624)，带 x[24.96,39.04]×y[576,672]）state=0 闭（level2
+    // initialState 缺省 0，mechanisms.ts:1773），关门假墙实体化把行进钉死。真实 C3 入口 lever=1
+    // （C2 holdLev 断言）→ 门开。开门后实测（arcsweep3）：板缘静止 jd(-1) TP@f18、坑底 (48.7,713.1)
+    // jd(-1) TP@f13，落点东上门 (1216,112) 出口 [1205-1229,83-125] 抛体落 row-6 全窗内。
+    // 杆陷阱（c3v2 W2 反向实证）：西行【踏杆】=unflip→关门→双方困死坑底 [47.6,714.2]；
+    // wg（C2 出口 567.1 杆东）必须 runJump 空中越杆（W1 rj535 MET@1021；rj505 落杆上 unflip）。
+    // fb（C2 出口 ~457 杆西）walkTo 直行板缘 jd 即传。jd×6 链（W3 MET@1005）为备选族。
     recipe: {
-      // v11（probe28 实证）：封顶弧射程≈vx×0.45、链内 vx 每弧衰减×0.76（fb 300→186→99→48 钉点）。
-      // fb 差 0.6px 未入 P3 带——弧 3 落钉点后必须补钉点按压跳 jd4（C0 机制 raw 深入带内）。
-      // wg 的 runJump(-1,550) 链一路衰到 132 冲过头——改为越杆短跳落 [280,490] 后与 fb 同款归位流程。
-      fb: [spec("hold", -1, 300), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 55), spec("sleep", 40)],
-      wg: [spec("hold", 1, 575), spec("runJump", -1, 535, 25), spec("hold", -1, 300), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 55), spec("sleep", 40)],
+      fb: [spec("walkTo", -1, 84, 70), spec("jumpDrift", -1, 0, 40), spec("sleep", 60)],
+      wg: [spec("runJump", -1, 535, 25), spec("walkTo", -1, 84, 70), spec("jumpDrift", -1, 0, 40), spec("sleep", 60)],
     },
     vocab: {
-      fb: [spec("hold", -1, 280), spec("hold", -1, 300), spec("hold", -1, 320),
+      fb: [spec("walkTo", -1, 80, 70), spec("walkTo", -1, 84, 70), spec("walkTo", -1, 90, 70),
         spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 44),
-        spec("runJump", -1, 240, 25), spec("runJump", -1, 280, 25),
-        spec("sleep", 40), spec("sleep", 70)],
-      wg: [spec("hold", 1, 560), spec("hold", 1, 575), spec("hold", 1, 590),
-        spec("runJump", -1, 540, 25), spec("runJump", -1, 550, 25), spec("runJump", -1, 560, 25),
+        spec("sleep", 40), spec("sleep", 60), spec("sleep", 90)],
+      wg: [spec("runJump", -1, 505, 25), spec("runJump", -1, 535, 25), spec("runJump", -1, 560, 25),
         spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 44),
-        spec("hold", -1, 280), spec("hold", -1, 300),
-        spec("sleep", 40), spec("sleep", 70)],
+        spec("walkTo", -1, 80, 70), spec("walkTo", -1, 84, 70), spec("walkTo", -1, 90, 70),
+        spec("sleep", 40), spec("sleep", 60), spec("sleep", 90)],
     },
   },
   C4: {
