@@ -849,49 +849,36 @@ const SEGC = {
   },
   C4: {
     maxDepth: 12, capFb: 8, capWg: 9, horizonF: 900,
-    // 【终章结构性封锁——2026-10-31 audit 终稿，全证见 note/evidence/2026-10-31-route-samples/01号档-crystal_03.md】
-    //   本段目标态（任一角色触发 P6 传部门台）在内核几何下不可达，search 不再 resume，route JSON 不造假。
-    //   唯一 win 路径 = P6(272,400，带 x[240,304]×y[448,544]) ↔ P7(272,208 门台) → 双门 isUp。
-    //   P6 带 y[448,544] 仅与 row-18 台顶站姿(feet 576, body y[531,576])相交（基座顶 448 站姿 body
-    //   y[363,448] 零交）→ 必须站上 row-18 台西段 [160,706] 顶 576，而其三向封死（probe31-45 内核实测
-    //   + dumpgrid 逐格复核）：
-    //   a) 东端 col24 '3' 斜面 [768,800] 45°：满助跑西行仍钉 750（probe44/45；45°坡仅动量可攀、落地即滞），
-    //      r19 西缘 jd 弧能落 750（台面级 feet 576）但随即止于 b)；
-    //   b) [706,734] 停驻升降柱 [480,576]：prismatic lower=-3/upper=0，0=创建位即驻位，state1 目标向下
-    //      96px 压入 row-18 板=死位（probelev 实测永不动）→ 柱东面 749.7=750 钉点；柱顶 480 与上方
-    //      r13 板底 448 夹 32px 横缝（char 直径 31.4px，理论过缝中心窗仅 0.6px，不可操）→ row-18 顶
-    //      东西两段物理隔断；
-    //   c) 西域唯一坠落入口=row-4 唇口：[640,672]'2' 斜面西滑坠落被 row-8 架 [576,672] 顶 256 接住成
-    //      口袋（probe34-38）；口袋西=col16 全高柱 [512,544]×[32,288] 封、上方开放竖井无落点（跳升
-    //      ~115px 无檐可落）、东北下行阶梯循环回口袋；r13 阳台 [704,832] 顶 416 西端被 col21 柱
-    //      [672,704]×[320,448] 东面（高出 96px）拦（本轮逐格复核新证：col21 柱 r10-r13 连体，西行死）。
-    //   ⇒ P6 触发态不可达 ⇒ crystal_03 内核数据下结构性无解。疑似关卡数据缺陷候选：原版同图若可通关，
-    //     则差异在 P6 带语义或升降柱初始 translation——存疑待核，不下原版终判。
-    //   v20 最远链（probe44/45 内核实证，止于 b 的 750 钉点，未 won）：row-6 冲刺越阶→row-4→唇口滑落
-    //   口袋→东下行阶梯→r13→东尖落 r19→jd 弧落 750；fb sleep(300) 错峰防双角色 750 同帧互堵。
+    // 【v11 重写（2026-10-31 fw-route-crystal3 槽）：probe42 两次端到端已证走法直书（05号档 §1.6）——
+    //   P2 口袋地板 192 西行→992 缘 jd(-1,60) 漂 80-90px 登 row-4 板(128)→西行→672 唇落主地板东台
+    //   (611,256)。b0566ae 贴面即传(带 0.2→0.22)只放宽触发，不影响本段走法。封锁期 v20 最远链 recipe
+    //   已被本走法取代（历史见 git log 本文件；封锁分析全文存 01号档/checkpoints v10）。】
     recipe: {
-      fb: [spec("hold", -1, 900), spec("walkTo", -1, 684, 90), spec("walkTo", -1, 660, 20), spec("walkTo", -1, 612, 30),
-        spec("hold", 1, 690), spec("walkTo", 1, 704, 200), spec("hold", 1, 836), spec("sleep", 300),
-        spec("jumpDrift", -1, 0, 40), spec("walkTo", -1, 300, 250), spec("walkTo", 1, 448, 60), spec("sleep", 200)],
-      wg: [spec("hold", -1, 900), spec("walkTo", -1, 684, 90), spec("walkTo", -1, 660, 20), spec("walkTo", -1, 612, 30),
-        spec("hold", 1, 690), spec("walkTo", 1, 704, 200), spec("hold", 1, 836),
-        spec("jumpDrift", -1, 0, 40), spec("walkTo", -1, 300, 250), spec("jumpDrift", -1, 0, 40), spec("walkTo", -1, 96, 200)],
+      fb: [spec("hold", -1, 996), spec("jumpDrift", -1, 60, 40), spec("hold", -1, 676), spec("sleep", 60), spec("hold", -1, 614), spec("sleep", 30)],
+      wg: [spec("hold", -1, 996), spec("jumpDrift", -1, 60, 40), spec("hold", -1, 676), spec("sleep", 60), spec("hold", -1, 614), spec("sleep", 30)],
     },
     vocab: {
-      fb: [spec("hold", -1, 900), spec("hold", -1, 880), spec("hold", -1, 920),
-        spec("walkTo", -1, 684, 90), spec("walkTo", -1, 672, 90),
-        spec("hold", 1, 690), spec("hold", 1, 710),
-        spec("hold", 1, 836), spec("sleep", 240), spec("sleep", 360),
-        spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 44),
-        spec("walkTo", -1, 300, 250), spec("walkTo", -1, 320, 250),
-        spec("walkTo", 1, 448, 60), spec("sleep", 200)],
-      wg: [spec("hold", -1, 900), spec("hold", -1, 880),
-        spec("walkTo", -1, 684, 90), spec("hold", 1, 690), spec("walkTo", 1, 704, 200), spec("hold", 1, 836),
-        spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 44),
-        spec("walkTo", -1, 300, 250), spec("jumpDrift", -1, 0, 40), spec("walkTo", -1, 96, 200),
-        spec("walkTo", -1, 112, 200), spec("sleep", 200)],
+      fb: [spec("hold", -1, 996), spec("hold", -1, 1000), spec("hold", -1, 988),
+        spec("jumpDrift", -1, 40, 36), spec("jumpDrift", -1, 60, 40), spec("jumpDrift", -1, 80, 44),
+        spec("hold", -1, 676), spec("hold", -1, 668), spec("hold", -1, 684),
+        spec("sleep", 40), spec("sleep", 60), spec("sleep", 90),
+        spec("hold", -1, 614), spec("hold", -1, 604), spec("sleep", 30)],
+      wg: [spec("hold", -1, 996), spec("hold", -1, 1000), spec("hold", -1, 988),
+        spec("jumpDrift", -1, 40, 36), spec("jumpDrift", -1, 60, 40), spec("jumpDrift", -1, 80, 44),
+        spec("hold", -1, 676), spec("hold", -1, 668), spec("hold", -1, 684),
+        spec("sleep", 40), spec("sleep", 60), spec("sleep", 90),
+        spec("hold", -1, 614), spec("hold", -1, 604), spec("sleep", 30)],
     },
   },
+  // 【C5 预注册封印——v11（fw-route-crystal3 槽 2026-10-31），b0566ae 贴面即传复核后仍封】
+  //   语义实证全绿（probe1 A：慢走带缘 278.65 触发/静止贴面 f0 即传/wg 壁龛→P7 西出口→f63 AT-DOOR），
+  //   但 P6 带几何封闭：带 x[265,279]×中心y[352,448] 落在基座板 x[224,320]±，板实心 y[448,480] 占带下段，
+  //   带上段需 feet≤448=净升≥128px，实测静跳 118.95/跑跳≈95（合速钳 |v|≤496 与 oracle D.har 逐字同式）
+  //   ——差 5~9px；缓冲块封坡顶（头顶余隙 63-69<57+起跳量）；row-18 西段不可达（东链 probe2：板顶动量
+  //   跳→东阶梯→544 塔面钉 (559.68,239.6)，塔顶需升 143.6>119）；what-if probe3 十二组 jumpX 全落回。
+  //   数据保真：关卡 JSON 与 oracle har 响应体逐字节全等（无转换缺陷）；物理锚点同（gravity.y=1000px/s²）。
+  //   ⇒ 贴面即传下 C5 仍无解；任务书「oracle 路径 基座顶→P6 贴面」三重证伪（数据同/物理同/净升差），
+  //     终判留档不下。处置：search 不烧预算验证已知封锁（04号档 F4 先例），本段无 recipe，--segs 0-4 重认证。
 };
 Object.assign(SEG, SEGC);
 
