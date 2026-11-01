@@ -10,6 +10,15 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-11-01（四槽并发批收官：crystal_03 终审=oracle 固有死关（wg 门不可达，双侧同构）+ e_tutorial_fire 复核维持 + oracle 连续通关档卷；门禁全绿、零内核改动）
+
+① **crystal_03 终审（05号档-oracle-crystal_03-wg.md，2da9091）**：oracle 侧 wg 自然机制不可达 door2——col-8 竖墙+P7 实体带 isSensor:false+448 板东段无自然登板，22 变体/6 进路零入舱；门机制健康（预置舱内 isUp/双门同帧 WIN@f159 正控）。内核五重封死（route-samples/06号档 §7）逐条同构=双侧同构封锁非内核缺陷；01号档「可通关」环 12 系 fb 侧单边证据，已追加勘误。**crystal_03 入 oracle 固有死关候选（第三关），账目处置待用户追认**；route JSON（C0-C4 诚实未胜稿）与 checkpoints v13 留库。
+② **A 槽环 9-12 内核连链（51758f7/83229a7）**：fb 全通至门（atDoor=true 零死亡，站门 446.32）；环 9 落点 749.7 与 oracle 槽逐位互证；wg 五重封死（板东段不可达/带东向强制/horizon 钉 278.4/落点右界 17.8<25/腔室闭环）。附带实证 currentRunForce 首帧 NaN=全部配方 sleep(3) 根因，f0 护栏候选待裁。
+③ **e_tutorial_fire 独立复核（B 槽，cf041d2/0d3776e/73524ac）**：02号档 追加式复核 11 案承重数字全一致（站跳 118.9 逐位复现/削顶 537.2/mesa 自锁 p1→848），维持 oracle 原件不可通关（该裁决昨日 fw-oracle-efire 已完成，本次系重复派发后改复核）。
+④ **oracle 连续通关（C 槽，04号档，01a9e99..d25c4cb）**：10 轮 v9-v20 无 WIN；环 1-9 单脚本连续链+环 9 首次连续捕获+帧级时序表；压板质量感应 platTr 0→−0.7333→0 42f 扫摆实证；三存疑由 05号档 收敛（钉位=接触法向抵消非引擎冻结/柱体几何修正 [256,288]×[64,160]/出口散布 1.4-12px 有界）。
+⑤ **并行会话注记**：同日 13:38-14:09 前一 crystal3 窗口落五笔（11ec875 checkpoints v12/693fcad route 导出/117dc49 06号档/ffdb607 收容/68af028 本文件「## 条目」区前插）——与本批三槽文件域无冲突且互证良好；其 TEMP 清理使 resume 件缺失（可由 v13 配方重建，fw-rc3-1/README 注记）；窗口去留待用户定夺。
+⑥ **门禁**：typecheck 0；vitest 64 文件 479/479；det forest 48/48+crystal 36/36 位级一致；packages/** 自 723e934 零触碰。全部产物在 note/evidence/{2026-10-31-oracle-adjudication,2026-10-31-route-samples}/。
+
 **更新**：2026-10-30（续作开发并发批启动——六槽分工并发推进；契约与待办序沿用同日"续作三部开发启动"条目（e735e1c））
 ① **分工**：主会话=portal 内核（crystal 184+E 50+F 16 处依赖）；并发子槽六路：fairy-view（F 部仙女/杯客户端 View）、emenu（E 部 multi 选关 UI：条带+rows 网格+元素学习门）、respawn（RespawnManager 检查点/复活）、net（仙女拖拽输入/状态同步/netDto 契约更新）、cov（覆盖率阈值恢复抬升，接 cb697dd 临时下移注记）、docs（文档收容：三部取证要点入 playbook §9–§11+00-INDEX 登记+README 进行时注记）。
 ② **契约**：各槽以 e735e1c 条目为共享契约源——待办序 portal 内核→respawn→net→三部 det 锚（r0-crystal/r0-elements/r0-fairytales）→客户端 View→路线样例→总门禁+发版；ice 锚用 r2-tpgate；验收口径=免我方视觉测试、逻辑一致，游玩验收归用户。
