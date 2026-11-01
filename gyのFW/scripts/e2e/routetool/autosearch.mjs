@@ -770,25 +770,24 @@ Object.assign(SEG, SEGE);
 //   迷你梯 [96,160] 576→512 连续 45°；512 块 [0,96] 顶 512；基座台 [192,320] 顶 448（P6@272,400）；
 //   门台 [0,512] 顶 256（P7@272,208；fb 门(416,192) wg 门(64,192)）。P2/P3 初始关（l0=+1 开），余门开。
 const SEGC = {
-  // C0 合并段（2026-10-31，消 seam）：干净内核实测（TEMP probe23 单世界）fb jd×6 链 f209 传送触发
-  // （末跳满速弧跨带缘 raw 位置落 38.35 在带内被 Step 前检查捕获；jd×5 末弧跨带时 y~786 高于带顶 800
-  // 不触发、停 38.656 钉死）。jd 连跳每跳落点 vx≈-272 保满速起跳；传送后锁存/摩擦滑停自然落东廊。
-  // wg spawn 560 需 7 跳。事件表尾部 NONE 被裁→末事件锁存西走：落廊窗口 [900,1260] 已覆盖。
+  // C0 合并段（v11 重写，2026-10-31 fw-route-crystal3 槽）：b0566ae 贴面即传使带缘从 |lx|≤6.4 放宽到
+  // ≤7.04px，第 4 跳弧即触发（c0diag 实测 f~148 传送，落 P1 口袋 1206/1164）——旧 jd×7 链剩余 3 跳+
+  // 锁存西走会走穿落窗（search 首轮 best=211 未解实证）。截断为 jd×4：传送后 sleep 释放全键，
+  // 落地动量摩擦滑停 ~37px（无输入减速 i=7·−vx，τ≈0.136s），终态 ~1130-1170 ∈[900,1260] 且不再
+  // 东行撞 P1 带（hold 东行过头会 P1→P0 回传，c0diag f420 实证，禁用）。
   C0: {
-    maxDepth: 12, capFb: 10, capWg: 10, horizonF: 800,
+    maxDepth: 10, capFb: 8, capWg: 8, horizonF: 800,
     recipe: {
-      fb: [spec("sleep", 3), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40),
-        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("sleep", 40)],
-      wg: [spec("sleep", 3), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40),
-        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("sleep", 40)],
+      fb: [spec("sleep", 3), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("sleep", 60)],
+      wg: [spec("sleep", 3), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 40), spec("sleep", 60)],
     },
     vocab: {
       fb: [spec("sleep", 3), spec("sleep", 6),
         spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 44),
-        spec("sleep", 40), spec("sleep", 70)],
+        spec("sleep", 40), spec("sleep", 60), spec("sleep", 90)],
       wg: [spec("sleep", 3), spec("sleep", 6),
         spec("jumpDrift", -1, 0, 36), spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 44),
-        spec("sleep", 40), spec("sleep", 70)],
+        spec("sleep", 40), spec("sleep", 60), spec("sleep", 90)],
     },
   },
   C1: {
