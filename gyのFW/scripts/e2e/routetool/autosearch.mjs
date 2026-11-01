@@ -210,6 +210,13 @@ const PRIM_TABLE = {
       },
     };
   },
+  /** 压杆至状态位（crystal_03 fw-route-crystal3 槽，2026-11-01，c2diag 实证）：
+   *  压方向直到 levers[id].state==value 即完成。位置完成线不可用——杆钉点随入压速/时序
+   *  漂移 487→491→505（±1f/ vendor 漂移翻转，重跑 2/3 ladder fb[490,700]/[505,682] 实证），
+   *  完成线 488 在钉点 <488 时永不完成=队列悬挂（S5）；定时压 pressF 亦脆——压过头
+   *  30f 杆回翻 lev=0 且 fb 被关在杆东面钉 501.5（c2diag V8 实证）。状态门完成=压到即撤，
+   *  零过压、零悬挂，对入压时序漂移免疫（V10-13 四变体终态全在窗）。 */
+  holdLev: (d, id, value) => S.hold(ds(d), (c) => c.w.mechSnapshot().levers[id]?.state === value),
   /** 等另一角色进入 x 窗口（跨角色时序谓词，§5 备选 1 的 wait(pred) 形态；ctx.other 即对方） */
   waitPx: (role, min, max) => ({
     name: `wPx${role}${min}-${max}`,
@@ -803,21 +810,22 @@ const SEGC = {
   },
   C2: {
     maxDepth: 10, capFb: 6, capWg: 5, horizonF: 700,
-    // 拉杆(杆体实体,东压翻转+翻后挡东行 fb 钉~487 实证)：fb 东压 hold(1,484-487) 触翻转,
-    // jd 漂移回落杆西(静跳漂移 8-50px,落 430-487 窗内)；wg 东行 565 短停(杆西面 502.6 东侧自由)。
+    // 拉杆 l0 实证（c2diag v2，2026-11-01）：l0 仅 fb 压东翻转（wg 穿杆/压东 lev 恒 0——V1/V5），
+    // wg 西域自由穿行（杆体对 wg 无碰撞）；fb 压东钉点随入压态漂移 487→491→505 且压过头 30f
+    // 杆回翻（V8 lev=0）——位置/定时完成线全脆，配方改 holdLev(1,0,1) 状态门压+撤：
+    // 翻转即撤西 hold(-1,460)（终态 435.6 在窗），wg walkTo(1,565,70) 刹停（终态 567.1 在窗；
+    // hold(1,565) 满速释放滑 ~21px 至 586 近 608 唇缘，±1f 有越缘坠落蒸发风险——重跑 2 实证）。
     recipe: {
-      // v10：完成线 486 在满速区间 → jd 带残速 +290 被抛过杆顶落 638-691（resume4 实证）。
-      // 改为压到钉点本身：杆西面 502.6-15.6=487 钉点（probe26 实证按压可达 487-489），
-      // 完成线 488 于钉点零速完成，终态即钉点，落入 C3 入窗 [280,490] 且按压已保翻转。
-      fb: [spec("hold", 1, 488), spec("sleep", 40)],
-      wg: [spec("hold", 1, 565), spec("sleep", 20)],
+      fb: [spec("holdLev", 1, 0, 1), spec("hold", -1, 460), spec("sleep", 40)],
+      wg: [spec("walkTo", 1, 565, 70), spec("sleep", 20)],
     },
     vocab: {
-      fb: [spec("hold", 1, 486), spec("hold", 1, 487), spec("hold", 1, 489),
-        spec("hold", 1, 490), spec("hold", 1, 478),
-        spec("jumpDrift", -1, 0, 40), spec("jumpDrift", -1, 0, 45),
-        spec("sleep", 40), spec("sleep", 70)],
-      wg: [spec("hold", 1, 545), spec("hold", 1, 565), spec("hold", 1, 585),
+      fb: [spec("holdLev", 1, 0, 1),
+        spec("hold", -1, 450), spec("hold", -1, 460), spec("hold", -1, 470),
+        spec("sleep", 40), spec("sleep", 70),
+        spec("hold", 1, 488), spec("hold", 1, 486)],
+      wg: [spec("walkTo", 1, 545, 70), spec("walkTo", 1, 565, 70), spec("walkTo", 1, 585, 70),
+        spec("hold", 1, 565),
         spec("sleep", 20), spec("sleep", 40), spec("sleep", 70)],
     },
   },
