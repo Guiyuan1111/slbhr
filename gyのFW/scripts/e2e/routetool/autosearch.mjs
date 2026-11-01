@@ -156,7 +156,13 @@ const PRIM_TABLE = {
       run: (c) => {
         const past = d > 0 ? c.me.x >= xLine : c.me.x <= xLine;
         if (!past) return Math.abs(c.me.vx) > vMax ? NONE : { ...NONE, [D]: true };
-        return Math.abs(c.me.vx) > 20 ? { ...NONE, [O]: true } : NONE;
+        // 刹车方向门（crystal_03 fw-route-crystal3 槽 2026-11-01）：仅对【仍在行进方向上】
+        // 的速度反刹——原 |vx|>20 判据在刹车过冲翻越零点后（vx<-20）会把反刹键变成
+        // 持续反向行进力：wg 刹停 565 后过冲 vx=-21 → "brake"=持续压左 → 西行 ~500px
+        // 出 y736 板西缘(64) 坠 P0 龛/笼（重跑 5/6 穷举门 no-met wg[348,861]/[279,861]
+        // 实证，±1f 恰好决定过冲帧采样相位）。方向门后 vx 越零即松，摩擦自然衰减。
+        const overshoot = d > 0 ? c.me.vx > 20 : c.me.vx < -20;
+        return overshoot ? { ...NONE, [O]: true } : NONE;
       },
       done: (c) => (d > 0 ? c.me.x >= xLine : c.me.x <= xLine) && Math.abs(c.me.vx) <= 20 && c.me.grounded,
     };
@@ -1380,7 +1386,7 @@ function searchSegment(segDef, seeds, opts) {
   const t0 = Date.now();
   const layers = [];
   const seen = new Set();
-  let evals = 0, solved = null, bestEver = null;
+  let evals = 0, solved = null, bestEver = null, finPass = null;
   let metBeam = null; // 首个产出 met 候选的层前沿（早熟家系 seam 不过时继续搜，此快照供定稿兜底）
   // 总重放上限：种子程序长度估计 + horizon + 宽限（前缀帧数以种子 endF 为准，由调用方传入 opts.prefixF）
   const prefixF = opts.prefixF ?? 0;
@@ -1490,7 +1496,7 @@ function searchSegment(segDef, seeds, opts) {
       // met 不即停：先试定稿阶梯，seam 过关才收（早熟脆家系 met 会饿死下段——v4 实证
       // d8 4原语落窗即坠家系抢跑）；不过则继续加深让鲁棒家系上位，快照首个 met 前沿兜底
       const finTry = finalizeSegment({ beam }, segDef, prefixF, opts.nextDef ?? null);
-      if (finTry && finTry.exhaustiveFatal === 0 && (finTry.seamEntryF >= 0 || !opts.nextDef)) { solved = b; break; }
+      if (finTry && finTry.exhaustiveFatal === 0 && (finTry.seamEntryF >= 0 || !opts.nextDef)) { solved = b; finPass = finTry; break; }
       if (!metBeam) metBeam = beam;
     }
     if (evals > BUDGET) { log(`  ${segDef.id} evals 预算耗尽（${BUDGET}）`); exhausted = true; break; }
@@ -1501,6 +1507,12 @@ function searchSegment(segDef, seeds, opts) {
     id: segDef.id, title: segDef.title, horizonF: segC.horizonF, maxDepth,
     seedFb, seedWg,
     solved: !!solved, exhausted, evals, wallS: +((Date.now() - t0) / 1000).toFixed(1), layers,
+    // 搜索期 finalize 过关稿直传（crystal_03 fw-route-crystal3 槽 2026-11-01）：搜索期定稿
+    // 池=当层活 beam（8 met 族），链驱动二次 finalize 池=末层 beam 的 met 节点——末层常只剩
+    // 1 族且其阶梯恰失败（C2 实证：搜索期 trim[11/11] seam=565 exFatal=0 过关 vs 末层唯一
+    // met 族 trim[9/11] 全败），二次 finalize 会丢弃已过关稿回退失败族 → seam 假失败急停。
+    // 池不重排、直接复用过关稿（--evalchild 子进程确定性下 seam/exhaustive 判据逐位一致）。
+    finPass: finPass ?? null,
     bestEver: bestEver ? { score: +bestEver.score.toFixed(0), unlocked: bestEver.unlocked, met: bestEver.met, entryF: bestEver.r.entryF, endF: bestEver.r.endF, fb: [+bestEver.r.S.fb.x.toFixed(0), +bestEver.r.S.fb.y.toFixed(0)], wg: [+bestEver.r.S.wg.x.toFixed(0), +bestEver.r.S.wg.y.toFixed(0)], sf: bestEver.sf, sw: bestEver.sw } : null,
     solvedCand: solved ? { score: +solved.score.toFixed(0), unlocked: solved.unlocked, entryF: solved.r.entryF, endF: solved.r.endF, metAt: solved.r.metAt, sf: solved.sf, sw: solved.sw, S: solved.r.S, M: solved.r.M, D: solved.r.D } : null,
     // beam 摊平全量保留（原 slice(0,6)：crystal_03 重跑 5 实证——搜索期 finalize 的过关定稿
@@ -1534,6 +1546,13 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
     seenFam.add(key);
     pool.push(n);
     if (pool.length >= 8) break;
+  }
+  if (process.env.AS_POOL) {
+    log(`    [pool ${segDef.id}] sFb=${sFb} sWg=${sWg} nodes=${pool.length}`);
+    for (const n of pool) {
+      const mi = n.metIdx ?? n.r?.metIdx;
+      log(`      score=${n.score?.toFixed(0)} met=${!!n.met} metIdx=[${mi?.fb},${mi?.wg}] sfLen=${n.sf?.length} swLen=${n.sw?.length} fbSuf="${progNames((n.sf ?? []).slice(sFb))}" wgSuf="${progNames((n.sw ?? []).slice(sWg))}"`);
+    }
   }
   const out = [];
   for (const node of pool) {
@@ -1590,6 +1609,9 @@ function finalizeSegment(segRes, segDef, prefixF, nextDef) {
     out.push(best);
   }
   out.sort((x, y) => ((y.seamEntryF >= 0) - (x.seamEntryF >= 0)) || (y.score2 - x.score2));
+  if (process.env.AS_POOL) {
+    for (const r of out) log(`      [out] trim=[${(r.trimDepth ?? []).join("/")}] seam=${r.seamEntryF} exFatal=${r.exhaustiveFatal} score2=${r.score2?.toFixed(0)} prog="${progNames(r.cand.sf).slice(0, 80)}" | "${progNames(r.cand.sw).slice(0, 80)}"`);
+  }
   return out[0];
 }
 
@@ -1746,8 +1768,9 @@ for (let si = startIdx; si <= segRange[1]; si++) {
   }
 
   // 段定稿（top-8 inline 采样 + 修剪阶梯 + 下段 entry 实测，seam 优先定稿）+ 种子泊位
+  // （搜索期已获过关稿 finPass 时直接复用——末层 beam 池可能只剩失败族，见 searchSegment 返回注）
   const nextDef0 = chain.segments[si + 1] ?? null;
-  const fin = await finalizeSegment(segRes, segDef, prefixF, nextDef0);
+  const fin = segRes.finPass ?? await finalizeSegment(segRes, segDef, prefixF, nextDef0);
   if (!fin) {
     segReport.failure = { ...(segReport.failure ?? {}), note: "定稿池空（beam 无 met 候选）" };
     report.segs.push(segReport);
