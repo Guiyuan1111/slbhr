@@ -147,6 +147,19 @@ describe("Portal 内核", () => {
     expect(a.soundQueue).toContain("portalClose"); // 开关门音效入队
   });
 
+  it("贴面驻留即传（oracle begin-contact 语义）：solver 分离距 0.2003 在容差带内触发", () => {
+    const [a] = mkPair({ x: 10, y: 0, rot: 0, inv: false }, { x: -5, y: 3, rot: 0, inv: true });
+    const body = mkBody(0.5);
+    const lastT = new WeakMap<object, number>();
+    body.SetPosition(new B.b2Vec2(10.2003, 0.5)); // 贴面被求解器钉住的典型分离距（+0.3px）
+    a.checkTransport([{ body }], lastT, 0);
+    expect(body.GetPosition().x).toBeCloseTo(-5.2003, 6); // 已传（d 门平面镜像：|x| 保持）
+    // 容差外沿之外仍不触发（0.22m=7px 开外）
+    body.SetPosition(new B.b2Vec2(10.23, 0.5));
+    a.checkTransport([{ body }], lastT, 5000);
+    expect(body.GetPosition().x).toBeCloseTo(10.23, 9);
+  });
+
   it("带外不触发：本地 |x|>0.2（感应区外沿）与 |y|>1.5（门外高度）均不传", () => {
     const [a] = mkPair({ x: 10, y: 0, rot: 0, inv: false }, { x: -5, y: 3, rot: 0, inv: true });
     const body = mkBody(0.5);

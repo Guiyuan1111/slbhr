@@ -1823,21 +1823,26 @@ export class Portal extends Device {
   }
 
   /** 每帧传送检测（world 在 Step 前调；oracle eventHorizon begin-contact 的确定性等价）：
-   *  载体（带 portal-sensor 标记者）落在触发面近带（|本地 x| ≤ 0.2 = 半厚 0.1 + 标记半径 0.1，
-   *  |本地 y| ≤ 1.5）且过 200ms 每体冷却 → transport。冷却键=body（oracle body.lastTransport），
-   *  出体贴近出口门时由同一张表拦回传——跨门共享，由 world 持有。 */
+   *  载体（带 portal-sensor 标记者）落在触发面近带（|本地 x| ≤ 0.2+ε = 半厚 0.1 + 标记半径 0.1
+   *  + 贴面驻留容差，|本地 y| ≤ 1.5）且过 200ms 每体冷却 → transport。
+   *  ε=0.02m（0.64px）：oracle 语义=begin-contact 贴面即传（走到门面即触发）；我方求解器
+   *  把慢走角色钉在分离距 ~0.2003（面外 0.3px），若带严格取 0.2 则永远采样不到带内——
+   *  2026-10-31 crystal_03 C5 封锁根因（05号档 §7/01号档复核），容差覆盖分离距即对齐
+   *  oracle「贴面即传」。冷却键=body（oracle body.lastTransport），出体贴近出口门时由
+   *  同一张表拦回传——跨门共享，由 world 持有。 */
   checkTransport(bodies: Array<{ body: any }>, lastTransport: WeakMap<object, number>, nowMs: number): void {
     if (this.state !== 1 || !this.other) return;
     const ang = this.body.GetAngle();
     const pos = this.body.GetPosition();
     const cos = Math.cos(ang);
     const sin = Math.sin(ang);
+    const band = 0.2 + 0.02;
     for (const { body } of bodies) {
       const bp = body.GetPosition();
       const dx = bp.x - pos.x;
       const dy = bp.y - pos.y;
       const lx = dx * cos + dy * sin; // R(−ang)·d 的 x 分量
-      if (lx > 0.2 || lx < -0.2) continue;
+      if (lx > band || lx < -band) continue;
       const ly = -dx * sin + dy * cos;
       if (ly > 1.5 || ly < -1.5) continue;
       const last = lastTransport.get(body);
