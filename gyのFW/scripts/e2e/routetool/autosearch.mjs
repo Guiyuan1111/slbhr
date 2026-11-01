@@ -810,20 +810,20 @@ const SEGC = {
   },
   C2: {
     maxDepth: 10, capFb: 6, capWg: 5, horizonF: 700,
-    // 拉杆 l0 实证（c2diag v2，2026-11-01）：l0 仅 fb 压东翻转（wg 穿杆/压东 lev 恒 0——V1/V5），
-    // wg 西域自由穿行（杆体对 wg 无碰撞）；fb 压东钉点随入压态漂移 487→491→505 且压过头 30f
-    // 杆回翻（V8 lev=0）——位置/定时完成线全脆，配方改 holdLev(1,0,1) 状态门压+撤：
-    // 翻转即撤西 hold(-1,460)（终态 435.6 在窗），wg walkTo(1,565,70) 刹停（终态 567.1 在窗；
-    // hold(1,565) 满速释放滑 ~21px 至 586 近 608 唇缘，±1f 有越缘坠落蒸发风险——重跑 2 实证）。
+    // 拉杆 l0 实证（c2diag v2/v3，2026-11-01）：l0 仅 fb 压东翻转（wg 穿杆/压东 lev 恒 0——V1/V5），
+    // fb 压东钉点随入压态漂移 487→491→505 且压过头 30f 杆回翻（V8 lev=0）——改 holdLev(1,0,1)
+    // 状态门压（翻转即完成）。撤西必须 walkTo(-1,460,70)：hold(-1,460) 完成帧仍压左，trim 裁尾
+    // sleep 后锁存左=一路西走出 y736 板西缘(64) 坠 P0 龛/笼（V19 终态 fb[47.6,714.2]=重跑 4
+    // 穷举门 no-met fb[48,714] 逐位复现；V17/18 walkTo 撤=完成帧零出力锁存 NONE，终态 456.7 稳在窗）。
+    // wg walkTo(1,565,70) 刹停（终态 567.1 在窗；hold(1,565) 满速释放滑 ~21px 至 586 近 608 唇缘）。
     recipe: {
-      fb: [spec("holdLev", 1, 0, 1), spec("hold", -1, 460), spec("sleep", 40)],
+      fb: [spec("holdLev", 1, 0, 1), spec("walkTo", -1, 460, 70), spec("sleep", 40)],
       wg: [spec("walkTo", 1, 565, 70), spec("sleep", 20)],
     },
     vocab: {
       fb: [spec("holdLev", 1, 0, 1),
-        spec("hold", -1, 450), spec("hold", -1, 460), spec("hold", -1, 470),
-        spec("sleep", 40), spec("sleep", 70),
-        spec("hold", 1, 488), spec("hold", 1, 486)],
+        spec("walkTo", -1, 450, 70), spec("walkTo", -1, 460, 70), spec("walkTo", -1, 470, 70),
+        spec("sleep", 40), spec("sleep", 70)],
       wg: [spec("walkTo", 1, 545, 70), spec("walkTo", 1, 565, 70), spec("walkTo", 1, 585, 70),
         spec("hold", 1, 565),
         spec("sleep", 20), spec("sleep", 40), spec("sleep", 70)],
