@@ -1,183 +1,1360 @@
 {
  "level": "ice_03",
- "note": "v1 链（2026-11-01，fw-route-ice03）。架构：底层地板 y896，两块金字塔墩 x[768,832]/x[1024,1088] 顶 y840 东西向跳越；slider puck(x440, 轨 y872 x[304,576]) 由 wg 西侧右推至轨端 576（P1 实测：wg 钉 556.2/puck 576.3，推程 ~100f，三池按 C[464,480]→B(移动扫过 522/528 碎窗)→A[556,560] 全冻，冻结永久、马达保持）→ wg 折返经 blob(160,800)+链坡(160,800→351,641 sl-0.832) 兔跳登 B 西岸(576) → 渡 B 冰东行 → 砖 d(21,17)(664-704,544) → 塔顶[704,768](512) → 西跃落 A 东坡/冰缘 → 渡 A 西行 → 顶楼梯兔跳回舱 → wg 门(48-112,192)。fb：舱内东行至 A 西岸 waitPx(wg 100-200 防早渡) → 渡 A 东行 → A 东楼梯 walkTo 限速下行(640) → 跳砖 → 西跳 B 东岸 → 渡 B 西行 → 跳西阶 slab(512) → edgeDrop 落金字塔坡→滑落 blob→floor → 东行跳两墩 → fb 门(1136-1200,840)。不走南翼 C 池/塔坡 summit（45° 坡行走=楔卡死，免爬）。physics：跳跃 vy-479/rise119/水平 vx 清零、空中按向 20f 达 278px/s、站立 snapshot≈面-35.5、f0 NaN 冻结需前 3f 怠速。",
+ "note": "v4 链重构（2026-11-01，fw-route-ice03）。推镜机理定论（回放实证 v9-v15）：puck 为实体滑块，①不可穿越不可跳越（重叠态 jd 不起跳）；②西向拖拽 1:1 任意速度；③东推要求角色从未与 puck 重叠（v15a fb/wg 先穿体后东推彻底失效）；④冻结=驻留：连续推镜 ~3f/窗不冻结，须在 C[464,480]/B{522,528}/A[556,560] 各停 ~60f（P2 SetPosition+90f 口径）。⇒ 推镜由 fb 执行：出生舱(80,157)→顶楼梯东下→A 西岸(288)→西裙 'c' 下(224,320)→jd20 西跳越脊→落西岩架(480)→edgeDrop 西缘→落金字塔 45° 坡滑东→blob 顶(800)→floor(865)→东行新进入推 puck 分级驻留→钉死 576.2/fb≈556→回攀：blob mount(runJump125)→链跳→jd 东越帽尖落冻 B 冰→东渡→'d' 岆跳→砖→A 东梯西爬→渡冻 A→西岸→顶楼梯→舱门。wg：涉水 C 池西行（wg 免疫水）→床西缘落西地板→停 380（puck 以西，永不接触）。几何：东地板平 865 至 x1056；金字塔 E 东面 45° x[1024,1055] 769→800（基肩 x1072 可站）；西北角 768 帽下净高 64；床 704 WET x[842,991]+西帽缓坡 704→688@x841→768；床西落金字塔 W 东坡→西地板。物理：跳 vy−479/rise119/水平 vx 清零、空中 vx≈90px/s、站立 snapshot=面−35.5、f0 需 sleep3、45° 上坡步行卡死（下坡可走）。",
  "segments": [
   {
    "id": "G1",
-   "title": "双人底层就位+推镜三冻：wg 西行跳越两墩→抵 puck 东侧→右推至轨端(三池全冻)；fb 东行下顶楼梯至 A 西岸 waitPx",
-   "entry": [ { "kind": "alive" } ],
+   "title": "wg 涉水西越至地板停 puck 西侧；fb 舱→岸→西堆下降→地板东推分级驻留三冻→钉死",
+   "entry": null,
+   "horizonF": 1400,
+   "extras": [
+    "liquidsAllFrozen"
+   ],
    "waypoints": [
-    [ { "kind": "px", "role": "fb", "min": 250, "max": 300 }, { "kind": "py", "role": "fb", "min": 235, "max": 280 }, { "kind": "grounded", "role": "fb" } ],
-    [ { "kind": "px", "role": "wg", "min": 1000, "max": 1070 }, { "kind": "py", "role": "wg", "min": 780, "max": 882 }, { "kind": "grounded", "role": "wg" } ],
-    [ { "kind": "px", "role": "wg", "min": 700, "max": 870 }, { "kind": "py", "role": "wg", "min": 780, "max": 882 }, { "kind": "grounded", "role": "wg" } ],
-    [ { "kind": "px", "role": "wg", "min": 460, "max": 510 }, { "kind": "py", "role": "wg", "min": 840, "max": 882 }, { "kind": "grounded", "role": "wg" } ],
-    [ { "kind": "px", "role": "wg", "min": 540, "max": 566 }, { "kind": "py", "role": "wg", "min": 840, "max": 882 }, { "kind": "grounded", "role": "wg" } ]
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 245,
+      "max": 292
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 245,
+      "max": 285
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 150,
+      "max": 335
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 438,
+      "max": 500
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 120,
+      "max": 245
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 755,
+      "max": 800
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 826,
+      "max": 984
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 630,
+      "max": 686
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 355,
+      "max": 425
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 840,
+      "max": 882
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ]
    ],
    "target": [
-    { "kind": "px", "role": "fb", "min": 250, "max": 300 }, { "kind": "py", "role": "fb", "min": 235, "max": 280 }, { "kind": "grounded", "role": "fb" },
-    { "kind": "px", "role": "wg", "min": 548, "max": 566 }, { "kind": "py", "role": "wg", "min": 840, "max": 882 }, { "kind": "grounded", "role": "wg" }
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 540,
+     "max": 568
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 840,
+     "max": 882
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 355,
+     "max": 425
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 840,
+     "max": 882
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    }
    ],
-   "horizonF": 900,
-   "extras": ["liquidsAllFrozen"],
+   "targetNote": "fb 钉位 556.2±12（puck 576.2 已过 A 窗驻留）；wg 停 380（puck 以西不接触）。extras=驱动侧冻结门。",
    "cands": [
-    { "note": "wg: 慢行至墩2前→跳越(落墩顶)→西行→慢行→跳越墩1(落墩顶)→西行→抵 puck→右推至 552(钉 556.2)；fb: 东行 A 西岸→waitPx(wg 100-200)",
-     "dfb": [ { "n": "walkTo", "a": [1, 270, 70] }, { "n": "waitPx", "a": ["wg", 100, 200] } ],
-     "dwg": [ { "n": "walkTo", "a": [-1, 1150, 70] }, { "n": "jumpDrift", "a": [-1, 0, 25] }, { "n": "walkTo", "a": [-1, 1010, 70] },
-       { "n": "walkTo", "a": [-1, 880, 70] }, { "n": "jumpDrift", "a": [-1, 0, 25] }, { "n": "walkTo", "a": [-1, 465, 70] },
-       { "n": "hold", "a": [1, 552] } ] }
+    {
+     "note": "v16: fb 舱→岸→裙下→jd20越脊→岩架→edgeDrop→坡滑→blob→floor→东推C450/B502/B508/A538驻留60→钉556；wg涉水→停380",
+     "dfb": [
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        250,
+        60
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        224,
+        60
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        20
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        168,
+        60
+       ]
+      },
+      {
+       "n": "edgeDrop",
+       "a": [
+        -1,
+        10
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        424,
+        50
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        450,
+        40
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        60
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        502,
+        40
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        60
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        508,
+        40
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        60
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        538,
+        40
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        60
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        556,
+        40
+       ]
+      }
+     ],
+     "dwg": [
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        1075,
+        70
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        40
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        20
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        780,
+        60
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        380,
+        60
+       ]
+      }
+     ]
+    },
+    {
+     "note": "v16b: fb 越脊 jd24 / 推驻留 40f",
+     "dfb": [
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        250,
+        60
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        224,
+        60
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        168,
+        60
+       ]
+      },
+      {
+       "n": "edgeDrop",
+       "a": [
+        -1,
+        10
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        424,
+        50
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        450,
+        40
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        40
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        502,
+        40
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        40
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        508,
+        40
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        40
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        538,
+        40
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        40
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        556,
+        40
+       ]
+      }
+     ],
+     "dwg": [
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        1075,
+        70
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        40
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        20
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        780,
+        60
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        380,
+        60
+       ]
+      }
+     ]
+    }
    ]
   },
   {
    "id": "G2",
-   "title": "wg 登链上西岸：西折返跑道→runJump 东跃 mounting 链坡西段→兔跳×2 上链→调参跳上 B 西岸(576)；fb 停驻",
+   "title": "双角色西折返跑道→blob mount→链上东跳→jd 东越帽尖落冻 B 冰→东渡→'d' 岊跳上砖",
    "entry": [
-    { "kind": "px", "role": "fb", "min": 250, "max": 300 }, { "kind": "py", "role": "fb", "min": 235, "max": 280 }, { "kind": "grounded", "role": "fb" },
-    { "kind": "px", "role": "wg", "min": 548, "max": 566 }, { "kind": "py", "role": "wg", "min": 840, "max": 882 }, { "kind": "grounded", "role": "wg" }
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 540,
+     "max": 568
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 840,
+     "max": 882
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 355,
+     "max": 425
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 840,
+     "max": 882
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    }
    ],
+   "horizonF": 1300,
    "waypoints": [
-    [ { "kind": "px", "role": "wg", "min": 150, "max": 245 }, { "kind": "py", "role": "wg", "min": 725, "max": 795 }, { "kind": "grounded", "role": "wg" } ],
-    [ { "kind": "px", "role": "wg", "min": 250, "max": 315 }, { "kind": "py", "role": "wg", "min": 640, "max": 710 }, { "kind": "grounded", "role": "wg" } ],
-    [ { "kind": "px", "role": "wg", "min": 300, "max": 350 }, { "kind": "py", "role": "wg", "min": 580, "max": 652 }, { "kind": "grounded", "role": "wg" } ]
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 150,
+      "max": 310
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 720,
+      "max": 800
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     },
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 150,
+      "max": 310
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 720,
+      "max": 800
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 265,
+      "max": 340
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 630,
+      "max": 706
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     },
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 265,
+      "max": 340
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 630,
+      "max": 706
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 356,
+      "max": 545
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 520,
+      "max": 562
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     },
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 356,
+      "max": 545
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 520,
+      "max": 562
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ]
    ],
    "target": [
-    { "kind": "px", "role": "wg", "min": 312, "max": 356 }, { "kind": "py", "role": "wg", "min": 520, "max": 562 }, { "kind": "grounded", "role": "wg" }
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 612,
+     "max": 706
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 480,
+     "max": 548
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 612,
+     "max": 706
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 480,
+     "max": 548
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    }
    ],
-   "horizonF": 800,
+   "targetNote": "双角色上砖（612-706, 480-548）。fb 与 wg 同程序（fb 起点 556 / wg 起点 380，各自 west 折返）。",
    "cands": [
-    { "note": "wg: 折返 110→runJump(125) 挂坡→跳 24→跳 20→调参跳 8",
-     "dfb": [ { "n": "sleep", "a": [30] } ],
-     "dwg": [ { "n": "walkTo", "a": [-1, 110, 70] }, { "n": "runJump", "a": [1, 125] }, { "n": "jumpDrift", "a": [1, 0, 24] },
-       { "n": "jumpDrift", "a": [1, 0, 20] }, { "n": "jumpDrift", "a": [1, 0, 8] } ] },
-    { "note": "变体 B：跑道 100/线 118/中跳 20",
-     "dfb": [ { "n": "sleep", "a": [30] } ],
-     "dwg": [ { "n": "walkTo", "a": [-1, 100, 70] }, { "n": "runJump", "a": [1, 118] }, { "n": "jumpDrift", "a": [1, 0, 20] },
-       { "n": "jumpDrift", "a": [1, 0, 20] }, { "n": "jumpDrift", "a": [1, 0, 10] } ] },
-    { "note": "变体 C：跑道 120/线 132/长跳 30",
-     "dfb": [ { "n": "sleep", "a": [30] } ],
-     "dwg": [ { "n": "walkTo", "a": [-1, 120, 70] }, { "n": "runJump", "a": [1, 132] }, { "n": "jumpDrift", "a": [1, 0, 30] },
-       { "n": "jumpDrift", "a": [1, 0, 20] }, { "n": "jumpDrift", "a": [1, 0, 8] } ] }
+    {
+     "note": "v17: 跑道110→runJump125→链跳18,14→jd10越帽尖→渡B→wt600→jd6上岊",
+     "dfb": [
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        110,
+        70
+       ]
+      },
+      {
+       "n": "runJump",
+       "a": [
+        1,
+        125
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        18
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        14
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        10
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        600,
+        60
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        6
+       ]
+      }
+     ],
+     "dwg": [
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        110,
+        70
+       ]
+      },
+      {
+       "n": "runJump",
+       "a": [
+        1,
+        125
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        18
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        14
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        10
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        600,
+        60
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        6
+       ]
+      }
+     ]
+    },
+    {
+     "note": "v17b: 跑道100→runJump118→链跳20,16→jd8→wt590→jd8",
+     "dfb": [
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        100,
+        70
+       ]
+      },
+      {
+       "n": "runJump",
+       "a": [
+        1,
+        118
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        20
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        16
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        8
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        590,
+        60
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        8
+       ]
+      }
+     ],
+     "dwg": [
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        100,
+        70
+       ]
+      },
+      {
+       "n": "runJump",
+       "a": [
+        1,
+        118
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        20
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        16
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        8
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        590,
+        60
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        8
+       ]
+      }
+     ]
+    }
    ]
   },
   {
    "id": "G3",
-   "title": "wg 渡 B 冰东行(刹车走)→跳砖→跳塔顶；fb 停驻",
+   "title": "wg 砖→A 东梯 45° 西爬×3→踏冻 A 冰东端；fb 砖→jd 东上 512 平台→东阶梯三跳→西台座(416)",
    "entry": [
-    { "kind": "px", "role": "wg", "min": 312, "max": 356 }, { "kind": "py", "role": "wg", "min": 520, "max": 562 }, { "kind": "grounded", "role": "wg" }
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 612,
+     "max": 706
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 480,
+     "max": 548
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 612,
+     "max": "706"
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 480,
+     "max": 548
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    }
    ],
+   "horizonF": 900,
    "waypoints": [
-    [ { "kind": "px", "role": "wg", "min": 636, "max": 682 }, { "kind": "py", "role": "wg", "min": 520, "max": 562 }, { "kind": "grounded", "role": "wg" } ],
-    [ { "kind": "px", "role": "wg", "min": 658, "max": 708 }, { "kind": "py", "role": "wg", "min": 488, "max": 530 }, { "kind": "grounded", "role": "wg" } ]
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 555,
+      "max": 672
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 330,
+      "max": 435
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 745,
+      "max": 805
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 408,
+      "max": 465
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     }
+    ]
    ],
    "target": [
-    { "kind": "px", "role": "wg", "min": 700, "max": 768 }, { "kind": "py", "role": "wg", "min": 455, "max": 495 }, { "kind": "grounded", "role": "wg" }
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 492,
+     "max": 548
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 236,
+     "max": 280
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 795,
+     "max": 872
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 362,
+     "max": 398
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    }
    ],
-   "horizonF": 600,
+   "targetNote": "wg 上 A 冰东端（面 288→snapshot≈252）；fb 上西台座（416→snapshot≈380）。",
    "cands": [
-    { "note": "wg: 刹车走至 628→跳砖(8f)→跳塔(10f)；fb 停",
-     "dfb": [ { "n": "sleep", "a": [30] } ],
-     "dwg": [ { "n": "walkTo", "a": [1, 628, 60] }, { "n": "jumpDrift", "a": [1, 0, 10] }, { "n": "jumpDrift", "a": [1, 0, 10] } ] },
-    { "note": "变体 B：走 620/砖跳 12/塔跳 12",
-     "dfb": [ { "n": "sleep", "a": [30] } ],
-     "dwg": [ { "n": "walkTo", "a": [1, 620, 60] }, { "n": "jumpDrift", "a": [1, 0, 12] }, { "n": "jumpDrift", "a": [1, 0, 12] } ] }
+    {
+     "note": "v18: wg 西爬20×3→走525；fb jd6→jd12×3",
+     "dfb": [
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        6
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        12
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        12
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        12
+       ]
+      }
+     ],
+     "dwg": [
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        20
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        20
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        20
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        525,
+        60
+       ]
+      }
+     ]
+    },
+    {
+     "note": "v18b: wg 西爬24×3→走520；fb jd6→jd10×3→jd14",
+     "dfb": [
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        6
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        10
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        10
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        14
+       ]
+      }
+     ],
+     "dwg": [
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        520,
+        60
+       ]
+      }
+     ]
+    }
    ]
   },
   {
    "id": "G4",
-   "title": "wg 塔顶西跃（清 A 东楼梯 45° 面）落 A 东冰缘，西行 525；fb 停驻",
+   "title": "wg 渡冻 A 西行→顶楼梯西跳×2→舱入 wg 门；fb 台座东行落壕沟→冻 C 冰→东行走落→fb 门→phaseWon",
    "entry": [
-    { "kind": "px", "role": "wg", "min": 700, "max": 768 }, { "kind": "py", "role": "wg", "min": 455, "max": 495 }, { "kind": "grounded", "role": "wg" }
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 492,
+     "max": 548
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 236,
+     "max": 280
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 795,
+     "max": 872
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 362,
+     "max": 398
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    }
    ],
+   "horizonF": 1300,
    "waypoints": [
-    [ { "kind": "px", "role": "wg", "min": 700, "max": 730 }, { "kind": "py", "role": "wg", "min": 455, "max": 495 }, { "kind": "grounded", "role": "wg" } ],
-    [ { "kind": "px", "role": "wg", "min": 540, "max": 700 }, { "kind": "py", "role": "wg", "min": 240, "max": 480 } ]
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 900,
+      "max": 1005
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 600,
+      "max": 665
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 150,
+      "max": 225
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 195,
+      "max": 265
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ],
+    [
+     {
+      "kind": "atDoor",
+      "role": "fb"
+     }
+    ]
    ],
    "target": [
-    { "kind": "px", "role": "wg", "min": 495, "max": 548 }, { "kind": "py", "role": "wg", "min": 238, "max": 278 }, { "kind": "grounded", "role": "wg" }
+    {
+     "kind": "atDoor",
+     "role": "fb"
+    },
+    {
+     "kind": "atDoor",
+     "role": "wg"
+    },
+    {
+     "kind": "phaseWon"
+    }
    ],
-   "horizonF": 600,
+   "targetNote": "终局双门+phaseWon。",
    "cands": [
-    { "note": "wg: 走塔西缘 714→西跃 48f→保险跳 20f→西行 525；fb 停",
-     "dfb": [ { "n": "sleep", "a": [30] } ],
-     "dwg": [ { "n": "walkTo", "a": [-1, 714, 40] }, { "n": "jumpDrift", "a": [-1, 0, 48] }, { "n": "jumpDrift", "a": [-1, 0, 20] },
-       { "n": "walkTo", "a": [-1, 525, 60] } ] },
-    { "note": "变体 B：缘 710/跃 52f/保险跳 16f",
-     "dfb": [ { "n": "sleep", "a": [30] } ],
-     "dwg": [ { "n": "walkTo", "a": [-1, 710, 40] }, { "n": "jumpDrift", "a": [-1, 0, 52] }, { "n": "jumpDrift", "a": [-1, 0, 16] },
-       { "n": "walkTo", "a": [-1, 525, 60] } ] }
-   ]
-  },
-  {
-   "id": "G5",
-   "title": "wg 渡 A 冰西行至西岸(288)；fb 渡 A 东行→限速下 A 东楼梯至 640→跳砖(544)",
-   "entry": [
-    { "kind": "px", "role": "wg", "min": 495, "max": 548 }, { "kind": "py", "role": "wg", "min": 238, "max": 278 }, { "kind": "grounded", "role": "wg" }
-   ],
-   "waypoints": [
-    [ { "kind": "px", "role": "fb", "min": 500, "max": 545 }, { "kind": "py", "role": "fb", "min": 238, "max": 278 }, { "kind": "grounded", "role": "fb" } ],
-    [ { "kind": "px", "role": "fb", "min": 610, "max": 660 }, { "kind": "py", "role": "fb", "min": 330, "max": 375 }, { "kind": "grounded", "role": "fb" } ]
-   ],
-   "target": [
-    { "kind": "px", "role": "wg", "min": 250, "max": 292 }, { "kind": "py", "role": "wg", "min": 238, "max": 278 }, { "kind": "grounded", "role": "wg" },
-    { "kind": "px", "role": "fb", "min": 658, "max": 708 }, { "kind": "py", "role": "fb", "min": 488, "max": 530 }, { "kind": "grounded", "role": "fb" }
-   ],
-   "horizonF": 700,
-   "cands": [
-    { "note": "wg: 刹车走 262；fb: 走 528→限速下坡 640→跳砖 8f",
-     "dfb": [ { "n": "walkTo", "a": [1, 528, 60] }, { "n": "walkTo", "a": [1, 640, 60] }, { "n": "jumpDrift", "a": [1, 0, 8] } ],
-     "dwg": [ { "n": "walkTo", "a": [-1, 262, 60] } ] }
-   ]
-  },
-  {
-   "id": "G6",
-   "title": "fb 砖→西跳 B 东岸→渡 B 冰西行 330；wg 顶楼梯兔跳×2 回舱→入 wg 门",
-   "entry": [
-    { "kind": "px", "role": "wg", "min": 250, "max": 292 }, { "kind": "py", "role": "wg", "min": 238, "max": 278 }, { "kind": "grounded", "role": "wg" },
-    { "kind": "px", "role": "fb", "min": 658, "max": 708 }, { "kind": "py", "role": "fb", "min": 488, "max": 530 }, { "kind": "grounded", "role": "fb" }
-   ],
-   "waypoints": [
-    [ { "kind": "px", "role": "fb", "min": 636, "max": 682 }, { "kind": "py", "role": "fb", "min": 520, "max": 562 }, { "kind": "grounded", "role": "fb" } ],
-    [ { "kind": "px", "role": "fb", "min": 430, "max": 570 }, { "kind": "py", "role": "fb", "min": 520, "max": 562 }, { "kind": "grounded", "role": "fb" } ],
-    [ { "kind": "px", "role": "wg", "min": 150, "max": 225 }, { "kind": "py", "role": "wg", "min": 195, "max": 265 }, { "kind": "grounded", "role": "wg" } ],
-    [ { "kind": "px", "role": "wg", "min": 60, "max": 190 }, { "kind": "py", "role": "wg", "min": 130, "max": 178 }, { "kind": "grounded", "role": "wg" } ]
-   ],
-   "target": [
-    { "kind": "px", "role": "fb", "min": 312, "max": 356 }, { "kind": "py", "role": "fb", "min": 520, "max": 562 }, { "kind": "grounded", "role": "fb" },
-    { "kind": "atDoor", "role": "wg" }
-   ],
-   "horizonF": 800,
-   "cands": [
-    { "note": "fb: 西跳岸 8f→刹车走 330；wg: 兔跳 22×2→走 70 入门",
-     "dfb": [ { "n": "jumpDrift", "a": [-1, 0, 8] }, { "n": "walkTo", "a": [-1, 330, 60] } ],
-     "dwg": [ { "n": "jumpDrift", "a": [-1, 0, 22] }, { "n": "jumpDrift", "a": [-1, 0, 22] }, { "n": "walkTo", "a": [-1, 70] } ] },
-    { "note": "变体 B：fb 岸跳 10f/走 336；wg 跳 24×2",
-     "dfb": [ { "n": "jumpDrift", "a": [-1, 0, 10] }, { "n": "walkTo", "a": [-1, 336, 60] } ],
-     "dwg": [ { "n": "jumpDrift", "a": [-1, 0, 24] }, { "n": "jumpDrift", "a": [-1, 0, 24] }, { "n": "walkTo", "a": [-1, 70] } ] }
-   ]
-  },
-  {
-   "id": "G7",
-   "title": "fb 西跳 slab(512)→edgeDrop 落金字塔坡滑落 blob→floor→东行跳两墩→入 fb 门 → phaseWon",
-   "entry": [
-    { "kind": "px", "role": "fb", "min": 312, "max": 356 }, { "kind": "py", "role": "fb", "min": 520, "max": 562 }, { "kind": "grounded", "role": "fb" },
-    { "kind": "atDoor", "role": "wg" }
-   ],
-   "waypoints": [
-    [ { "kind": "px", "role": "fb", "min": 195, "max": 320 }, { "kind": "py", "role": "fb", "min": 460, "max": 505 }, { "kind": "grounded", "role": "fb" } ],
-    [ { "kind": "px", "role": "fb", "min": 100, "max": 245 }, { "kind": "py", "role": "fb", "min": 840, "max": 882 }, { "kind": "grounded", "role": "fb" } ],
-    [ { "kind": "px", "role": "fb", "min": 755, "max": 875 }, { "kind": "py", "role": "fb", "min": 780, "max": 882 }, { "kind": "grounded", "role": "fb" } ],
-    [ { "kind": "px", "role": "fb", "min": 1015, "max": 1135 }, { "kind": "py", "role": "fb", "min": 780, "max": 882 }, { "kind": "grounded", "role": "fb" } ],
-    [ { "kind": "atDoor", "role": "fb" } ]
-   ],
-   "target": [
-    { "kind": "atDoor", "role": "fb" }, { "kind": "atDoor", "role": "wg" }, { "kind": "phaseWon" }
-   ],
-   "horizonF": 1500,
-   "cands": [
-    { "note": "fb: 西跳 slab 16f→edgeDrop 落坡→保险跳→走 150(出 blob 缘落底)→东行→跳墩1(25f 落墩顶)→走 1000→跳墩2(22f)→走 1165 入门",
-     "dfb": [ { "n": "jumpDrift", "a": [-1, 0, 16] }, { "n": "edgeDrop", "a": [-1, 0] }, { "n": "jumpDrift", "a": [1, 0, 10] },
-       { "n": "walkTo", "a": [-1, 150] }, { "n": "walkTo", "a": [1, 700, 90] }, { "n": "jumpDrift", "a": [1, 0, 25] },
-       { "n": "walkTo", "a": [1, 1000, 90] }, { "n": "jumpDrift", "a": [1, 0, 22] }, { "n": "walkTo", "a": [1, 1165] } ],
-     "dwg": [ { "n": "sleep", "a": [30] } ] }
+    {
+     "note": "v19: wg 渡A走262→顶楼梯22×2→走70入门；fb 走930落壕→走1165",
+     "dfb": [
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        930,
+        60
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        1165,
+        90
+       ]
+      }
+     ],
+     "dwg": [
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        262,
+        60
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        22
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        22
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        70
+       ]
+      }
+     ]
+    },
+    {
+     "note": "v19b: wg 顶楼梯24×2；fb 走945→走1160",
+     "dfb": [
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        945,
+        60
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        1160,
+        90
+       ]
+      }
+     ],
+     "dwg": [
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        262,
+        60
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        70
+       ]
+      }
+     ]
+    }
    ]
   }
  ]
