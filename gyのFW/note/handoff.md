@@ -10,6 +10,14 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-11-02 晚（ice_02 批次收官：双侧收敛=第五死关候选 + etw/B2 终审 + oracle harness 抖动发现）
+
+① **C2 三部冒烟（814f3ff/6ec65ea/bc786f4）**：33/33 绿、CI temple-smoke 作业入门禁。重要发现：客户端 CSP（0.3.51 起）把 Playwright 字符串表达式拦成 EvalError——journey.mjs/lib.mjs 旧 e2e 件不可直接复用，新件须全函数化。
+② **etw 终审（79093b9/5ef82b4/a2b3d2f+复核 276ac9a/6960ae3）**：e_tutorial_water=oracle 固有死关（第四关）——唯一咽喉走廊 x[1120,1152] 三重封死，9/9 相位全灭（差 ≥60px）。主会话复跑发现 **oracle harness 运行间抖动**（中途采样 ±0.3px、末帧收敛）：oracle 档卷数值口径应读 ±~1.5px；复跑会覆写收容件（etw-harness.mjs:153），须先拷 case 到临时路径。
+③ **B2 oracle ice_02（d6de2e8..dd334c9）**：TimedPusher=hold-to-reset（压住每帧重置，推翻「一次性首压」）；末位过闸者窗口 ~337f<最优路 ~410f（缺口 ~73f），双侧同构死点候选。
+④ **ice02b 路线收官（f1b8673，诚实判负）**：内核 hold-to-reset 源码双证（mechanisms.ts:1335-1339，K=240f 主会话独立复算 246f@2f 步长）；正确窗口模型=末次离开+264f；fb 最优 262-266f 差 2-6f 刀锋、wg 314-319f 差 52f 冰拖角色物理墙（无动词可调）；60+ 配方 14 波，混沌三带交集空集。routes/ice_02.json 不出（无全链 WIN）。**ice_02=第五死关候选（双侧同构）**；台账 note/research/2026-11-02-dead-level-ledger.md。A2 前槽额度阵亡由 ice02b 继承收官（遗产 TEMP/fw-ri2-1 已归档清理）。
+⑤ **下一批已派**：ice_02 机制反事实（timeMs 4000→5600 副本因果验证）+ crystal_04 路线复产 + ice_03 路线复产。待用户：五死关追认/另一 crystal3 窗口去留/push（~48 笔领先）/三部游玩验收。
+
 **更新**：2026-11-02 早（ice_02 批次：A2 槽额度阵亡零提交后继派遣 + 三部冒烟 C2 槽收官）
 
 ① **A2 槽（fw-route-ice02）额度耗尽阵亡**：53 分钟零提交（遗产全在 TEMP/fw-ri2-1 未落库），但未弄脏任何已跟踪文件。终态：I4 计时板开门/出板/腾空全通，v28 种子越池弧 fb 落 619 差生还界 ~630 约 11px 坠池（death=1893，wg[481,187] 存活）；阵亡前写好未跑的变体批 v-batch1.json（W1 前缘修剪/W2 超级跳三档）。遗产=evalchild 直评探针管线（probe1/probe2/surface/surface2/trace-v28）。
