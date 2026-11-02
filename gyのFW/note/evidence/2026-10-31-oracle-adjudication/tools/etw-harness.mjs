@@ -6,6 +6,38 @@
 // 产出: <case>.out.json（与 case 同目录）
 import { chromium } from "playwright";
 import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
+import http from "node:http";
+import { createReadStream, statSync } from "node:fs";
+import { join, extname } from "node:path";
+
+// 内嵌只读静态伺服（ROOT=output/E 严格只读，GET/HEAD only，进程退出即自毁）
+const ROOT = "/home/gy/桌面/dev/slbhr/Fireboy-and-Watergirl/output/E";
+const PORT = 8877;
+const MIME = {
+  ".html": "text/html", ".js": "application/javascript", ".json": "application/json",
+  ".png": "image/png", ".jpg": "image/jpeg", ".mp3": "audio/mpeg", ".fnt": "text/plain",
+  ".ogg": "audio/ogg", ".wav": "audio/wav", ".m4a": "audio/mp4", ".webm": "video/webm",
+};
+function startServer() {
+  return new Promise((resolve, reject) => {
+    const srv = http.createServer((req, res) => {
+      if (req.method !== "GET" && req.method !== "HEAD") { res.writeHead(405).end(); return; }
+      let p = decodeURIComponent(new URL(req.url, "http://x").pathname);
+      if (p.endsWith("/")) p += "gameIndex.html";
+      const file = join(ROOT, p);
+      if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
+      try {
+        const st = statSync(file);
+        if (!st.isFile()) throw new Error("not file");
+        res.writeHead(200, { "Content-Type": MIME[extname(file)] ?? "application/octet-stream", "Content-Length": st.size });
+        if (req.method === "HEAD") res.end();
+        else createReadStream(file).pipe(res);
+      } catch { res.writeHead(404).end(); }
+    });
+    srv.on("error", reject);
+    srv.listen(PORT, "127.0.0.1", () => resolve(srv));
+  });
+}
 
 const GAME_URL = "http://127.0.0.1:8877/gameIndex.html";
 const caseFile = process.argv[2];
@@ -117,6 +149,7 @@ const INSTALL = `(function () {
 })()`;
 
 async function main() {
+  const srv = await startServer(); // 内嵌伺服；用毕自毁
   mkdirSync("/home/gy/桌面/dev/slbhr/TEMP/fw-oetw-1", { recursive: true });
   const browser = await chromium.launch({
     headless: true,
@@ -143,5 +176,6 @@ async function main() {
   console.log("min feetY fb:", Math.round(minFeet("fb") * 10) / 10, "wg:", Math.round(minFeet("wg") * 10) / 10);
   console.log("last g:", JSON.stringify(last.g));
   await browser.close();
+  srv.close(); // 收尾自毁
 }
 main().catch((e) => { console.error("PROBE FAILED:", e); process.exit(1); });
