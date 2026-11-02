@@ -10,6 +10,12 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-11-02 早（ice_02 批次：A2 槽额度阵亡零提交后继派遣 + 三部冒烟 C2 槽收官）
+
+① **A2 槽（fw-route-ice02）额度耗尽阵亡**：53 分钟零提交（遗产全在 TEMP/fw-ri2-1 未落库），但未弄脏任何已跟踪文件。终态：I4 计时板开门/出板/腾空全通，v28 种子越池弧 fb 落 619 差生还界 ~630 约 11px 坠池（death=1893，wg[481,187] 存活）；阵亡前写好未跑的变体批 v-batch1.json（W1 前缘修剪/W2 超级跳三档）。遗产=evalchild 直评探针管线（probe1/probe2/surface/surface2/trace-v28）。
+② **后继派遣**：fw-route-ice02b（继承 TEMP/fw-ri2-1 现场，第一步跑 v-batch1，目标 I4→全链→routes/ice_02.json 或诚实失败档卷，细粒度提交防额度中断）；fw-oracle-etwater（e_tutorial_water 通关性终审——三部冒烟替代选关的挂账项，补全死关台账，档卷入 2026-10-31-oracle-adjudication/ 下一空闲号）。
+③ **B2 槽（fw-oracle-ice02）仍在运行**：oracle ice_02 取证进行时（note/evidence/2026-10-25-ice-temple/tools/oracle-ice02-* 未跟踪件为其文件域，勿动）。C2 槽（三部冒烟+CI）已收官验证：814f3ff/6ec65ea/bc786f4，33/33 绿，CSP 拦 Playwright 字符串表达式发现记档。
+
 **更新**：2026-11-01 晚（autosearch 定稿管线三修落地 + f0 NaN 机理勘误——e_tutorial_fire 十二轮「定稿必败」史终结）
 
 ① **三修（fw-autosearch-fix 槽，ded4ef3/00a2b9c/53bb772/dc5972b）**：a) trim 驻留件地板 dwellFloorOf+goTo 完成帧零出力包装实修；b) 缓沉行程窗=链侧 v5.1 已解（37c87b8）；c) evalchild 残留面收口（finalize drive 重放下沉 finjob 子进程，父进程全程零 makeWorld）。**E0 实战回归 2/2 段解**（E0 trim[5,2] seamEntry@382 / E1 trim[5,7] seamEntry@520，12 轮假败史终结）；crystal_03 冒烟 2/2 无回归。档卷 note/research/2026-10-autoplay/06-autosearch-finalize-fix.md；单测 4 例（node:test）。残留穷举Fatal=1=配方族头部 ±1f 物理脆性，非进程漂移，如实记档。
