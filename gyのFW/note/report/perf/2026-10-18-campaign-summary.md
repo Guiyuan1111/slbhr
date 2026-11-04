@@ -1229,3 +1229,62 @@ oracle bundle `Fireboy-and-Watergirl/output/A/js/init.eb02fbdab2aa1d24.js`（md5
 **方法论沉淀（新增一条）**：**percent 级优化若无法在同会话配对 A/B 中超出臂内散布，就应
 如实判「不可量化」而不是挑一次最好看的结果上报。** 本轮为此三次加长采样窗，最终结论是
 否定性的——这与 r7r 的渲染段负结论、r24 的字体子集负结论同属「负产出入库」。
+
+## 四十二、r45 增补（2026-11-05，换关链双重构建消除 + b2Island 惰性预分配）
+
+> 完整报告：[`2026-11-05-r45-switch-build.md`](./2026-11-05-r45-switch-build.md)。
+> 起点 `c0f2181`（r44 收口），落点 `da871b0` + `271ce12`。
+> 门禁 typecheck 0 / vitest 479/479 / det 241/241。
+
+**本轮是全战役中少数有可主张正向收益的一轮**（对比 r44 的"不可量化"）：
+
+| 指标 | 前 | 后 | 变化 | 判定 |
+|---|---:|---:|---:|---|
+| 换关链（241 关均摊，配对 A/B） | 2.284 ms | 1.169 ms | **−48.8%** | 超出噪声（上界 6.2%），可主张 |
+| World 纯构建（241 关合计） | 434.01 ms | 367.11 ms | **−15.4%** | 两臂分布完全不重叠，可主张 |
+| 单 world 常驻内存 | 896.9 KiB | 646.6 KiB | **−27.9%** | 可主张 |
+
+**改动一：`advance` 消除双重构建（`da871b0`）**
+
+`advance` 原为 `buildWorld()`（按新关整建一次）+ `restartLevel()` → `world.reset()`
+（同一关再整建一次）。第一次建的 World 从未被使用，纯粹白付一次
+`buildLevelWorld + buildMechanisms + 双 Character`。
+
+改法：`World.reset(level?)` 支持改绑 + 与构造器抽出**同一条**构建链；
+`restartLevel(nextLevel?)` 接受目标关；`advance` 只建一次。
+分部收益：forest −54.8% / crystal −52.0% / elements −51.0% / ice −50.0% /
+light −49.7% / fairytales −45.6%。
+
+**改动二：b2Island 惰性预分配（`271ce12`）**
+
+vendor 一次铺满 5×1024 槽（`m_positions`/`m_velocities` 各 1024 个对象），
+单空 `b2World` 224 KiB 里 island 占 185 KiB（83%），而真实关卡活跃岛体远小于 1024。
+`load.ts` 覆写构造器为空数组起步，只改初始容量、不碰方法体（`Initialize` 本就有增长分支）。
+**坑**：vendor 方法体直接引用 `b2Island.s_timer`/`s_solverData`，漏搬静态成员会在首次
+`Solve` 崩（实测 TypeError），已逐个搬运。
+
+**顺带修复的复刻性缺陷（重要）**：`World.reset()` 此前**不执行**构造器里的
+`startFrozen` 初始冻结（oracle：`if (f.startFrozen) _.delay(this.initialFreeze, 10)`）。
+10 个含 55 型冰面砖的关（`eice_1`/`ice_02`/`ice_04`/`ice_04_1`/`ice_07_1`/`ice_12`/
+`ice_14`/`ice_31`/`ice_35`/`ice_35_1`）在 **retry 与 advance 后丢失初始冻结**，与原版不符。
+两条路径合并后一处修复，`perf-switch` 内置断言由 0/10 → **10/10**。
+
+**门禁缺口填补**：`perf-determinism` 原来只 `new World`，**reset 路径完全没有覆盖**——
+这正是上面那个缺陷能长期存活的原因。新增第三路哈希 `switched`（`reset(本关)` 后跑同一
+scripted 脚本，必须与 `scripted` 逐位相同），241/241 逐位等价；并保留原锚对比。
+
+**新增量具**：`benchmark/perf-switch.mjs`（换关链，含 startFrozen 断言）、
+`benchmark/perf-build.mjs`（纯构建 + `--mem` 常驻）。
+
+**回退的候选（负结论）**：groundFixture/quadFixture 顶点 scratch 复用。隔离实验 −19.2%，
+`-0` 陷阱已实证可修（vendor `b2Vec2` 构造器 `a||0` 会归一 `-0`，`SetXY` 不会，须补 `|| 0`），
+但**真实全库 8 轮交替 A/B 只有 +0.68%（噪声 7.94%）→ 带内，已回退**。
+原因：真实关卡里 vendor `CreateFixture` 每 fixture ~6.1 KB（占构建分配 ~74%）把自有侧
+顶点开销稀释掉了。ground shape 模板缓存同样未实施。
+
+**方法论沉淀（两条新）**：
+① **构建期改动必须用纯构建口径判定**。同一 lazyIsland，`perf-switch` 口径 −3.4%（带内）、
+`perf-build` 口径 −15.4%（两臂不重叠）——物理步进把构建占比稀释约 5 倍。
+② **修性能前先确认两条路径真的等价**。`advance` 的双重建看似"删一行即纯冗余"，但删之前
+发现 `reset()` 与构造器不等价；直接删会把「retry 丢冻结」扩大成「换关也丢冻结」。
+正确顺序是先统一构建链，再删冗余。

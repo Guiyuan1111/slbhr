@@ -10,6 +10,16 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-11-05 深夜（r45 性能轮：换关链 −48.8%、构建 −15.4%、world 常驻 −27.9%，首次拿到可主张正向收益）
+
+① **换关链双重构建（`da871b0`）**：`advance` 原是 `buildWorld()`（按新关整建）+ `restartLevel()`→`world.reset()`（同关再整建），第一次建的 World 从未使用。改法：`World.reset(level?)` 改绑 + 构造器/reset 抽出**同一条**构建链；`advance` 只建一次。配对 A/B（内容回退法 4 轮/臂）：**2.284 → 1.169ms，−48.8%**，噪声上界 6.2% → 超出噪声可主张。分部 −45.6%~−54.8%。
+② **b2Island 惰性预分配（`271ce12`）**：vendor 一次铺 5×1024 槽（positions/velocities 各 1024 对象），单空 b2World 224KiB 里 island 占 185KiB（83%）。`load.ts` 覆写构造器空数组起步，只改容量不碰方法体。**坑**：vendor 方法体直引 `b2Island.s_timer`/`s_solverData`，漏搬静态成员 → 首次 Solve `TypeError`，已逐个搬运。纯构建 241 关：434.01 → 367.11ms（**−15.4%**，六轮交替两臂分布完全不重叠）；单 world 常驻 896.9 → 646.6KiB（**−27.9%**）。
+③ **顺带修的复刻性缺陷（重要）**：`World.reset()` 此前不执行构造器的 `startFrozen` 初始冻结（oracle `if (f.startFrozen) _.delay(this.initialFreeze,10)`）。10 个含 55 型冰面砖的关（eice_1/ice_02/04/04_1/07_1/12/14/31/35/35_1）在 **retry 与 advance 后丢失初始冻结**。两条路径合并后一处修复；`perf-switch` 内置断言 0/10 → **10/10**。
+④ **门禁缺口填补**：`perf-determinism` 原只 `new World`，**reset 路径零覆盖**（正是③能长期存活的原因）。新增第三路哈希 `switched`（`reset(本关)` 后跑同一 scripted，须与 `scripted` 逐位相同）→ **241/241 逐位等价**；原锚 r44-full 仍 241/241。
+⑤ **新增量具**：`benchmark/perf-switch.mjs`（换关链 + startFrozen 断言）、`benchmark/perf-build.mjs`（纯构建 + `--mem`）。**口径教训**：同一 lazyIsland 在 perf-switch 口径仅 −3.4%（带内）、perf-build 口径 −15.4%（不重叠）——物理步进把构建占比稀释约 5 倍，构建期改动一律用纯构建口径判定。
+⑥ **回退的候选（负结论）**：groundFixture/quadFixture 顶点 scratch 复用。隔离实验 −19.2%，`-0` 陷阱已实证（vendor `b2Vec2` 构造器 `a||0` 归一 `-0`、`SetXY` 不归一，须补 `|| 0`），但真实全库 8 轮交替 A/B 仅 +0.68%（噪声 7.94%）→ 带内，**已回退**。ground shape 模板缓存同未实施。旧 b2World 泄漏担忧证伪（连换 50 次 GC 后仅 +5.87MiB）。
+⑦ **门禁**：typecheck 0；vitest 64 文件 479/479；det 241/241（含 switched 断言）。报告 `note/report/perf/2026-11-05-r45-switch-build.md`，战役总账 §四十二。
+
 **更新**：2026-11-05（r44 性能轮：六部 241 关首次进基准/位级锚；收益诚实判「不可量化」）
 
 ① **测量基础设施补齐（本轮唯一硬产出）**：新增 `benchmark/perf-r44.mjs`（六部 241 关 step/build/alloc，分部聚合）、`perf-r44-alloc.mjs`（9 代表用例分配专测）、`ab-r44.sh`（内容回退法配对 A/B，交替跑取中位+臂内散布）、`results/det-r44-full.json`（**首个 241 关位级锚**，链哈希 `16650daa83db0548…`）。此前三个锚只覆盖 forest/light/ice 139 关，第 4–6 部与 portal/仙女/复活内核**从未有位级门禁**。
