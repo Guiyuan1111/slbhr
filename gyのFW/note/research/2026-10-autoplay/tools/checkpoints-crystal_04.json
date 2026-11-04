@@ -1,0 +1,628 @@
+{
+ "level": "../../../data/crystal/levels/crystal_04",
+ "note": "crystal_04 链 v6（fw-route-crystal04 槽，2026-11-01）。路线：出生西行自动爬 ridge→r6 块东段驻定(784,192)；西跳越绿池(608-768)上西端帽(608-640,top182.4)/c18(576-608,top192)→西行走空下坠级联(\\17 r9 314→#18 r10 352→/18 西梢 540)→平台西段(~568,640)→/18+/19 连续 45° 坡(576,544→640,480)自动爬上 r15 架(480)→东行 P2(720,432) 传送→P1(32,336) 出带东坠西竖井→底厅西岸(~126,896)。末段双腿：fb 东行蹚 r28 熔岩池(352-544)→岛(544-736)→跳 /21+/22 坡(672,832→736,768)上 r24 熔岩带(736-928)→东帽→\\29 滑落(960,800)→r28 东岸(896)→从 /32(1024,832→1056,800)+d33 平顶(1056-1088@800) 下方 64px 净空(角色实高~44px)走入洞室(1088-1248,800-896)→fb 门带[1136,1200]x[896,904] 站门；wg 东行走 /9(288,832→320,800)→d10 平顶(320-352@800)→跳 r24 水带西帽(352-384@758.4)→蹚水带(352-544)→东帽(512-544@758.4)→d17 平顶(544-576@768)→东走下坠岛(585,896)→蹚 r28 水池(736-928)→东岸→跳 /32 坡→d33 平顶→32px 自动爬上 r24 檐(1088-1248@768)→wg 门带[1136,1200]x[768,776] 站门→双门 isUp→WIN。机关全数伪红鲱鱼：b0 推钮梯形埋于平台面下 45px(944,685-704) 永不可压；P3/P5 永闭；l0→p0(dy3 行程 96px 上顶实心柱 768-800x384-544、下顶平台实心，两头卡死)；P0/P4 对为绿池陷阱对。机制语义实证：角色碰撞体=梯形+双圆，总高~57px、头顶站高~44px（TEMP fw-rc4-1 fixdump/doordump）；d(4)楔=平顶填充(顶=砖顶)，c(3)楔=ridge 阶梯填充；门带=门矩形底边下 8px(x±32)，站立脚圆接触即门开（fixdump [1136,1200]x[768,776]/[896,904]）。",
+ "segments": [
+  {
+   "id": "C0",
+   "title": "出生西行：自动爬 ridge(288→256→224→192) 双驻 r6 块东段(770-800,192)，wg 迟 60f 跟进",
+   "entry": [
+    {
+     "kind": "alive"
+    }
+   ],
+   "waypoints": [
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 770,
+      "max": 802
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 138,
+      "max": 175
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 770,
+      "max": 802
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 138,
+      "max": 175
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 770,
+     "max": 802
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 138,
+     "max": 175
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 770,
+     "max": 802
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 138,
+     "max": 175
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    }
+   ],
+   "horizonF": 700,
+   "programs": {
+    "fb": [
+     [
+      "sleep",
+      3
+     ],
+     [
+      "walkTo",
+      -1,
+      790,
+      999
+     ],
+     [
+      "walkTo",
+      1,
+      796,
+      70
+     ]
+    ],
+    "wg": [
+     [
+      "sleep",
+      63
+     ],
+     [
+      "walkTo",
+      -1,
+      790,
+      999
+     ],
+     [
+      "walkTo",
+      1,
+      796,
+      70
+     ]
+    ]
+   }
+  },
+  {
+   "id": "C1",
+   "title": "r6 块东行 ~824 助跑→runJump(-1,780) 满速西跳越绿池酸液[608,768]→越 rect@160 落山脊顶 x[160,544]@128→西驻 ~378",
+   "entry": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 770,
+     "max": 802
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 138,
+     "max": 175
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 770,
+     "max": 802
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 138,
+     "max": 175
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    }
+   ],
+   "waypoints": [
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 340,
+      "max": 560
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 70,
+      "max": 160
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 340,
+      "max": 560
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 70,
+      "max": 160
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 340,
+     "max": 560
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 70,
+     "max": 160
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 340,
+     "max": 560
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 70,
+     "max": 160
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    }
+   ],
+   "horizonF": 900,
+   "programs": {
+    "fb": [
+     [
+      "walkTo",
+      1,
+      824,
+      999
+     ],
+     [
+      "runJump",
+      -1,
+      780,
+      30
+     ],
+     [
+      "walkTo",
+      -1,
+      400,
+      999
+     ]
+    ],
+    "wg": [
+     [
+      "walkTo",
+      1,
+      824,
+      999
+     ],
+     [
+      "runJump",
+      -1,
+      780,
+      30
+     ],
+     [
+      "walkTo",
+      -1,
+      400,
+      999
+     ]
+    ]
+   }
+  },
+  {
+   "id": "C2",
+   "title": "山脊顶西行穿传送垫(平面224,80)→塔顶(448,208)落地继续西行→塔西端c3台阶(96-128@224)东面卡驻(~142,line150 即done)→西跳越台阶→落c3(224)/直接下井→西行走空→d3(96-128@256)承接→再走空下段竖井→西壁钉落底厅(46,864)→东行驻(~130,896)",
+   "entry": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 340,
+     "max": 560
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 70,
+     "max": 160
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 340,
+     "max": 560
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 70,
+     "max": 160
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    }
+   ],
+   "waypoints": [
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 30,
+      "max": 170
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 810,
+      "max": 908
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 30,
+      "max": 170
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 810,
+      "max": 908
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 30,
+     "max": 170
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 810,
+     "max": 908
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 30,
+     "max": 170
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 810,
+     "max": 908
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    }
+   ],
+   "horizonF": 1400,
+   "programs": {
+    "fb": [
+     [
+      "walkTo",
+      -1,
+      160,
+      70
+     ],
+     [
+      "jumpDrift",
+      -1,
+      0,
+      30
+     ],
+     [
+      "walkTo",
+      -1,
+      60,
+      999
+     ],
+     [
+      "walkTo",
+      1,
+      130,
+      999
+     ]
+    ],
+    "wg": [
+     [
+      "walkTo",
+      -1,
+      160,
+      70
+     ],
+     [
+      "jumpDrift",
+      -1,
+      0,
+      30
+     ],
+     [
+      "walkTo",
+      -1,
+      60,
+      999
+     ],
+     [
+      "walkTo",
+      1,
+      130,
+      999
+     ]
+    ]
+   }
+  },
+  {
+   "id": "C3",
+   "title": "底厅双腿并发：fb 熔岩池→/21+/22→r24 熔岩带→\\29→东岸→/32+d33 下穿洞室→fb 门(896)；wg /9→d10→r24 水带→d17→岛→水池→/32 坡→d33 平顶→檐(768)→wg 门；双门 isUp→WON",
+   "entry": [
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 8,
+     "max": 170
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 810,
+     "max": 908
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    },
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 8,
+     "max": 170
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 810,
+     "max": 908
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    }
+   ],
+   "waypoints": [
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 1120,
+      "max": 1205
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 845,
+      "max": 908
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 1120,
+      "max": 1205
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 690,
+      "max": 772
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ],
+    [
+     {
+      "kind": "doorUp",
+      "role": "fb"
+     }
+    ],
+    [
+     {
+      "kind": "doorUp",
+      "role": "wg"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "phaseWon"
+    }
+   ],
+   "horizonF": 2400,
+   "programs": {
+    "fb": [
+     [
+      "walkTo",
+      1,
+      636,
+      90
+     ],
+     [
+      "jumpDrift",
+      1,
+      0,
+      16
+     ],
+     [
+      "walkTo",
+      1,
+      1168,
+      90
+     ],
+     [
+      "sleep",
+      400
+     ]
+    ],
+    "wg": [
+     [
+      "sleep",
+      40
+     ],
+     [
+      "walkTo",
+      1,
+      262,
+      90
+     ],
+     [
+      "jumpDrift",
+      1,
+      0,
+      12
+     ],
+     [
+      "walkTo",
+      1,
+      344,
+      90
+     ],
+     [
+      "jumpDrift",
+      1,
+      0,
+      8
+     ],
+     [
+      "walkTo",
+      1,
+      538,
+      90
+     ],
+     [
+      "walkTo",
+      1,
+      700,
+      90
+     ],
+     [
+      "walkTo",
+      1,
+      996,
+      90
+     ],
+     [
+      "jumpDrift",
+      1,
+      0,
+      16
+     ],
+     [
+      "walkTo",
+      1,
+      1180,
+      90
+     ],
+     [
+      "sleep",
+      400
+     ]
+    ]
+   }
+  }
+ ]
+}
