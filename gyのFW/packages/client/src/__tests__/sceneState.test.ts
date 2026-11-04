@@ -38,12 +38,15 @@ describe("clearSceneStates / resetFxStates 行为", () => {
   it("resetFxStates 复位 #29 八件且数组取新实例", () => {
     const target: Record<string, unknown> = {
       darkRt: {} as unknown,
-      dustMaskSig: "sig",
+      dustSigPrev: new Float64Array([1, 2, 3]),
+      dustSigLen: 3,
       dustWobble: [{ img: {} as never, dir: 1, angle: 0 }],
     };
     resetFxStates(target);
     expect(target.darkRt).toBeNull();
-    expect(target.dustMaskSig).toBe("");
+    // r44：dustMaskSig 字符串签名退役，改 Float64 指纹缓冲
+    expect(target.dustSigPrev).toEqual(new Float64Array(0));
+    expect(target.dustSigLen).toBe(0);
     expect(target.dustWobble).toEqual([]);
     expect(target.dustWobble).not.toBe(FX_STATE_INIT.dustWobble);
   });
@@ -60,7 +63,19 @@ describe("SCENE_STATE_KEYS 守卫（防同类新增漏网）", () => {
 
   it("FX_STATE_INIT 覆盖 #29 全部八件", () => {
     expect(Object.keys(FX_STATE_INIT).sort()).toEqual(
-      ["darkHalo", "darkRt", "dustContainer", "dustMask", "dustMaskSig", "dustWobble", "staticHaloRt", "staticHaloSig"].sort(),
+      [
+        "darkHalo",
+        "darkRt",
+        "dustContainer",
+        "dustMask",
+        // r44：dustMaskSig（字符串签名）→ dustSigPrev/dustSigCur/dustSigLen（Float64 指纹）
+        "dustSigPrev",
+        "dustSigCur",
+        "dustSigLen",
+        "dustWobble",
+        "staticHaloRt",
+        "staticHaloSig",
+      ].sort(),
     );
   });
   // #49：create 幂等条件的源码文本契约已退役——决策抽 gameGuards.needsDarkRt/needsDust，

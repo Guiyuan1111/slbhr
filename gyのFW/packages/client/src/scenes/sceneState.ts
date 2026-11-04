@@ -81,7 +81,11 @@ export const FX_STATE_INIT = {
   staticHaloSig: null,
   dustContainer: null,
   dustMask: null,
-  dustMaskSig: "",
+  // r44：掩膜几何指纹缓冲（原 dustMaskSig 字符串退役）——不清会让新关首帧误判「几何未变」
+  // 而跳过掩膜重建，尘埃带沿用上一关空 Graphics（=浮尘全不可见）
+  dustSigPrev: new Float64Array(0),
+  dustSigCur: new Float64Array(0),
+  dustSigLen: 0,
   dustWobble: [] as never[],
 } as const;
 

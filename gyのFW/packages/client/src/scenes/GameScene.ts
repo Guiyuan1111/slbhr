@@ -74,6 +74,8 @@ interface PlayerView {
   cy: number; // 平滑后的角色组中心 y
   anim: string;
   legsKey: string;
+  /** 上次腿部动画是否为 running（r44：布尔比较替代逐帧模板串比较） */
+  legsRun: boolean;
   dying: boolean;
   /** r3 脏守卫：上次写入的渲染状态（值未变跳过 setter，免无谓 dirty 标记/排序请求） */
   lx: number; // 上次写入的组中心 x
@@ -298,7 +300,14 @@ export class GameScene extends Phaser.Scene {
   //  掩膜=光束路径 40px 描线，尘只在光柱内可见；仅带 beamer 的关创建）----
   private dustContainer: Phaser.GameObjects.Container | null = null;
   private dustMask: Phaser.GameObjects.Graphics | null = null;
-  private dustMaskSig = "";
+  /** 上次掩膜几何指纹（r44：Float64 逐位，替代每帧拼字符串签名）。
+   *  dustSigCur 每帧由 lastBeamPts 填（键序 + 点数 + 逐点 x/y），dustSigPrev 存上次重建时的值。 */
+  private dustSigPrev = new Float64Array(0);
+  private dustSigCur = new Float64Array(0);
+  /** dustSigCur 的已填长度（0=本帧无光束） */
+  private dustSigLen = 0;
+  /** cbDustSig 写入游标（dustSigEquals 前清零） */
+  private dustSigCursor = 0;
   private dustWobble: Array<{ img: Phaser.GameObjects.Image; dir: number; angle: number }> = [];
   /** Round B 静态/动态分层：静态晕擦除图案缓存层（与 darkRt 同尺寸/同位/同原点，不上屏）。
    *  rotmirror/wind/platform 的晕画进本层（erase 只在此三者点亮集合/位姿变化时整层重画），
@@ -1464,7 +1473,7 @@ export class GameScene extends Phaser.Scene {
       smoke.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => smoke.setVisible(false));
       legs.play(`${p}_legs_idle`);
       head.play(`${p}_idle`);
-      this.views.set(role, { glow, legs, head, smoke, cx, cy, anim: "idle", legsKey: `${p}_legs_idle`, dying: false, lx: NaN, ly: NaN, legsDepth: 4.9, flip: false, tilt: 0 });
+      this.views.set(role, { glow, legs, head, smoke, cx, cy, anim: "idle", legsKey: `${p}_legs_idle`, legsRun: false, dying: false, lx: NaN, ly: NaN, legsDepth: 4.9, flip: false, tilt: 0 });
     }
   }
 
@@ -2042,10 +2051,13 @@ export class GameScene extends Phaser.Scene {
       }
       // 腿部规则（原版逐字）：b==="jumping" 无条件播 running（含地面顶墙跑），否则停帧 idle0000；
       // 此前的 |vx|>20 阈值是多余近似（空中低速带指令、地面顶墙两场景与原版不符）
-      const wantLegs = anim === "jumping" ? `${p}_legs_run` : `${p}_legs_idle`;
-      if (view.legsKey !== wantLegs) {
-        view.legsKey = wantLegs;
-        view.legs.play(wantLegs);
+      // r44：先比对布尔态再建键——原式每帧每角色新建 1 个模板串（`${p}_legs_run/idle`），
+      // 而状态绝大多数帧不变；改为布尔标志比较，仅切换帧建串并 play。
+      const wantLegsRun = anim === "jumping";
+      if (view.legsRun !== wantLegsRun) {
+        view.legsRun = wantLegsRun;
+        view.legsKey = wantLegsRun ? `${p}_legs_run` : `${p}_legs_idle`;
+        view.legs.play(view.legsKey);
       }
 
       // 水声（原版 @1868233：左右键按住 && isOnLiquid → waterSteps loop volume .5）
@@ -2525,32 +2537,93 @@ export class GameScene extends Phaser.Scene {
     this.dustContainer.setVisible(false); // 无光束=不可见（原版 a=true 分支）
   }
 
+  /**
+   * 掩膜几何指纹（r44）：把 lastBeamPts 的全部折线按「键长+键字符码 / 点数 / 逐点 x,y」
+   * 写入 dustSigCur，与 dustSigPrev 逐位比较。键也入指纹——光束集合变化（新 beamer 亮起/
+   * 熄灭）即便坐标巧合也不能误判为相同。返回 true=几何未变（可跳过掩膜重建）。
+   * 零分配要点：遍历走 create 期绑定的 cbDustSig（免每帧闭包），且**不用解构遍历**
+   * （`for (const [,v] of map)` 每项会建一个 entry 数组）。
+   */
+  private cbDustSig = (pts: number[][], k: string): void => {
+    if (!pts || pts.length === 0) return;
+    const needN = this.dustSigCursor + 3 + k.length + pts.length * 2;
+    let cur = this.dustSigCur;
+    if (needN > cur.length) {
+      const grown = new Float64Array(Math.max(needN, cur.length * 2 + 64));
+      grown.set(cur.subarray(0, this.dustSigCursor));
+      this.dustSigCur = cur = grown;
+    }
+    let n = this.dustSigCursor;
+    cur[n++] = k.length;
+    for (let c = 0; c < k.length; c++) cur[n++] = k.charCodeAt(c);
+    cur[n++] = pts.length;
+    for (let i = 0; i < pts.length; i++) {
+      cur[n++] = pts[i][0];
+      cur[n++] = pts[i][1];
+    }
+    this.dustSigCursor = n;
+  };
+
+  /** 掩膜重建（几何变化帧）：把 lastBeamPts 全部折线描进 dustMask（40px 描线，原版口径） */
+  private cbDustBuild = (pts: number[][]): void => {
+    const mask = this.dustMask;
+    if (!mask || !pts || pts.length === 0) return;
+    mask.beginPath();
+    mask.moveTo(pts[0][0] + PAD, pts[0][1] + PAD);
+    for (let i = 1; i < pts.length; i++) mask.lineTo(pts[i][0] + PAD, pts[i][1] + PAD);
+    mask.strokePath();
+  };
+
+  private dustSigEquals(): boolean {
+    this.dustSigCursor = 0;
+    this.lastBeamPts.forEach(this.cbDustSig);
+    const n = this.dustSigCursor;
+    this.dustSigLen = n;
+    const prev = this.dustSigPrev;
+    if (prev.length !== n) return false;
+    const cur = this.dustSigCur;
+    for (let i = 0; i < n; i++) if (prev[i] !== cur[i]) return false;
+    return true;
+  }
+
+  /** 存下本帧指纹（仅在确认变化、即将重建掩膜时调用一次；原地写入免新建数组） */
+  private dustSigCopy(): void {
+    const n = this.dustSigLen;
+    if (this.dustSigPrev.length !== n) this.dustSigPrev = new Float64Array(n);
+    this.dustSigPrev.set(this.dustSigCur.subarray(0, n));
+  }
+
   /** 逐帧浮尘（原版 updateDust @1908842）：光束变化才重建掩膜（40px 描线）；锚点正余弦摆动 */
   private updateDust(): void {
     const dust = this.dustContainer;
     if (!dust || !this.dustMask) return;
-    let anyBeam = false;
-    const sigs: string[] = [];
-    this.beamerViews.forEach((v, k) => {
-      const pts = this.lastBeamPts.get(k);
-      if (pts && pts.length > 0) {
-        anyBeam = true;
-        sigs.push(k + ":" + pts.map((p) => p[0] + "," + p[1]).join(";"));
+    // r44：尘埃不可见 = 无光束 = 无掩膜可重建——先判可见堆叠再决定是否付签名构建成本。
+    // 原实现无条件逐帧为每条光束拼 `k + ":" + pts.map(...).join(";")`（每帧 1 数组 +
+    // 每点 2 字符串 + 拼接串），再在签名单中重扫一遍完整几何——而乡大多数帧尘埃本就隐藏
+    // （无 beamer 关、光束熄灭关），这笔分配纯属白付。
+    // lastBeamPts 的每个键都由 cbBeamers 保证「视图在 + 亮 + 折线有效」才 set，其余路径 delete
+    // （见 resolveBeamCache 注释）——因此 size>0 即等价于原「任一 beamer 有非空折线」。
+    const anyBeam = this.lastBeamPts.size > 0;
+    if (!anyBeam) {
+      // 与下方签名路径逐操作等价（原实现：sig="" → 与残留比较 → 空掩膜 + 隐藏）
+      this.dustSigLen = 0;
+      if (this.dustSigPrev.length !== 0) {
+        this.dustSigPrev = new Float64Array(0);
+        this.dustMask.clear();
       }
-    });
-    const sig = sigs.join("|");
-    if (sig !== this.dustMaskSig) {
-      this.dustMaskSig = sig;
+      if (dust.visible) dust.setVisible(false);
+      return;
+    }
+    // r44：几何指纹走 Float64 缓冲逐位比较——原实现每帧为每条光束拼
+    // `k + ":" + pts.map(...).join(";")`（每帧 1 数组 + 每点 2 字符串 + 拼接串）再
+    // join 成总签名。掩膜重建只依赖「折线几何是否变化」，逐位比数值即可，判定与字符串
+    // 签名等价（同 Map 插入序 → 同 k 序，同点序，同坐标）。
+    if (!this.dustSigEquals()) {
+      this.dustSigCopy();
       this.dustMask.clear();
       this.dustMask.lineStyle(40, 0x000000, 1);
-      this.beamerViews.forEach((v, k) => {
-        const pts = this.lastBeamPts.get(k);
-        if (!pts || pts.length === 0) return;
-        this.dustMask!.beginPath();
-        this.dustMask!.moveTo(pts[0][0] + PAD, pts[0][1] + PAD);
-        for (let i = 1; i < pts.length; i++) this.dustMask!.lineTo(pts[i][0] + PAD, pts[i][1] + PAD);
-        this.dustMask!.strokePath();
-      });
+      // 重建路径只在几何变化帧走（光束移动/开关），闭包成本可忽略；仍用绑定回调免分配
+      this.lastBeamPts.forEach(this.cbDustBuild);
     }
     dust.setVisible(anyBeam);
     // 原版逐字：angle += 0.002·(±1 交替)；anchor.set(sin(angle), cos(angle))（纹理原点振荡=原地漂闪；
