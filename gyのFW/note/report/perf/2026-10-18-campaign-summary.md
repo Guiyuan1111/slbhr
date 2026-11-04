@@ -1174,3 +1174,58 @@ DOM 建房/受邀两条出口，r41/r42 用的单点 `leaveToMenu` 覆盖不到 
 `tree-big/tree-all/tree-done` 各 3.41MB（合计 10.24MB）、`popup` 2.88MB、`temple` 2.63MB；
 可勘察选关树三张画布的共用/交还与 `TempleHall` 相邻资源的归并；`groundTex` 逐关烘焙画布的
 换关释放口径仍待定。素材再编码（任务 #42）仍是用户保留项，未经裁决不动。
+
+## 四十一、r44 增补（2026-11-05，六部全库纳入 + 逐帧免分配，收益诚实判负）
+
+> 完整报告：[`2026-11-05-r44-six-temple-round.md`](./2026-11-05-r44-six-temple-round.md)。
+> 分支 `perf/r44`（自 `release/1.0-forest` 切出，理由见该报告 §七）；门禁 typecheck 0 /
+> vitest 479/479 / det 241/241。
+
+**为什么需要这一轮**：战役 r0–r43 的全部基准与位级锚只覆盖前三部（forest 48 / light 40 /
+ice 51 = 139 关）。第 4–6 部（crystal 36 / elements 35 / fairytales 31）与 portal/仙女/复活
+内核是 2026-10-30 之后入库的代码，**从未进入任何性能基线或位级门禁**。本轮先把这 102 关
+拉进口径，再在该口径上做优化。
+
+**新增测量件（本轮唯一可主张的产出）**
+
+| 件 | 内容 |
+|---|---|
+| `benchmark/perf-r44.mjs` | 六部 241 关 step（idle/scripted 双输入）/ build（中位 3 次）/ alloc（GC 堆差），分部聚合 + `--save`/`--compare` |
+| `benchmark/perf-r44-alloc.mjs` | 9 代表用例分配专项（GC 事件数/耗时） |
+| `benchmark/ab-r44.sh` | 配对 A/B：内容回退法换臂、同会话交替、取中位、打印臂内散布，**散布 ≥ 臂间差时拒绝给结论** |
+| `results/det-r44-full.json` | **首个 241 关位级锚**（此前 139 关），链哈希 `16650daa83db0548…`，600 步 idle+scripted |
+
+**改动（4 笔，全部位级中性）**
+
+1. `3a57b13` 仙女拖拽关节目标原位改写 + `ApplyForce` 入口收拢（`mechanisms.ts`）
+2. `c5115dd` Beamer 复用帧 `lightAt` 原位改写（`mechanisms.ts`）
+3. `ee01ba8` 客户端「快照键 → 视图」首见缓存（传送门/仙女/仙杯；含 `SCENE_STATE_KEYS` 登记防跨关残留）
+4. `c769ad5` 客户端逐帧分配削减（腿部动画键布尔化 / 掩膜几何指纹 Float64 化 / 浮尘无光束早退）
++ `08d5cf5` **补落** `world.ts` 内核免分配三件（见下「勘误」）
+
+**收益判定：不可量化，不作性能提升上报**
+
+- 全库 self-time 剖析：**88.2% 在 box2d vendor**（`b2World.Step` 9.4% / `b2Island.Solve` 4.5% /
+  `SolveTOI` 4.0% / `b2BroadPhase.UpdatePairs` 3.9%）；自有代码最大项 `world.step` 自身 2.2%、
+  `mechanisms.ts` 2.0%、`character.ts` 1.1%。可动杠杆已基本用尽。
+- 自有稳态分配（V8 采样剖析差分法，扣启动期）：约 **29 B/步**，且集中于 vendor 内部写法
+  （`b2Vec2.SelfAddXY` / `b2MulXV` / `b2Sweep.Normalize`），属红线不碰。
+- 客户端 CDP 堆采样配对 A/B（light_22 / light_32）：短窗（8s×3）单次见游戏包内
+  11,819 → 10,797 B/帧（−8.7%）；**加长窗（25s×3）两臂重合（8,669 vs 8,916），臂内散布
+  4% > 臂间差 2.8% → 带内，不主张**。
+- 全库 `--compare` 直比给出 +2.77%（70 关单关 >+5%），但这是**机器时段漂移**（同代码两跑
+  本底散布 ±5%），本报告不作为回归或收益证据。
+
+**勘误（重要，防虚账）**：`3a57b13` 提交信息列了 `world.ts` 改动，实际 stat 只含
+`mechanisms.ts`——内核三件（仙女位置缓冲 `fairyCharPos` / 传送门载体表 `portalBodies` /
+锁回调单例 `fairyGroupActive`）**当时并未落地**。由 `08d5cf5` 补落并复验 det 241/241。
+此后核对提交须逐文件看 `--stat`，不能只读提交信息。
+
+**红线事实归档（本轮新证据）**：`ice_17` 的 0.356ms/步 = 94% vendor `SolveTOI`；对照
+oracle bundle `Fireboy-and-Watergirl/output/A/js/init.eb02fbdab2aa1d24.js`（md5 `d637cb8c…`）
+逐字确认其 `SolveTOI` 内同样有 `j.SetAwake(!0), k.SetAwake(!0)`——**原版行为，非我方缺陷**，
+按 fidelity 红线不动。`forest_bonus_2` 的 0.548ms/步 同为 vendor 求解主导。
+
+**方法论沉淀（新增一条）**：**percent 级优化若无法在同会话配对 A/B 中超出臂内散布，就应
+如实判「不可量化」而不是挑一次最好看的结果上报。** 本轮为此三次加长采样窗，最终结论是
+否定性的——这与 r7r 的渲染段负结论、r24 的字体子集负结论同属「负产出入库」。

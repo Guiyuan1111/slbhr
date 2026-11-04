@@ -10,6 +10,16 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-11-05（r44 性能轮：六部 241 关首次进基准/位级锚；收益诚实判「不可量化」）
+
+① **测量基础设施补齐（本轮唯一硬产出）**：新增 `benchmark/perf-r44.mjs`（六部 241 关 step/build/alloc，分部聚合）、`perf-r44-alloc.mjs`（9 代表用例分配专测）、`ab-r44.sh`（内容回退法配对 A/B，交替跑取中位+臂内散布）、`results/det-r44-full.json`（**首个 241 关位级锚**，链哈希 `16650daa83db0548…`）。此前三个锚只覆盖 forest/light/ice 139 关，第 4–6 部与 portal/仙女/复活内核**从未有位级门禁**。
+② **收益判定：不可量化（如实记录）**。剖析显示全库 self-time 88.2% 在 box2d vendor；自有代码最大项 `world.step` 自身 2.2%、`mechanisms.ts` 2.0%。自有稳态分配差分法实测仅 ~29B/步且集中在 vendor 内部写法。客户端 CDP 堆采样配对 A/B：短窗单次见 −8.7%，**长窗（25s×3）两臂重合、臂内散布 4% > 臂间差 2.8% → 带内不主张**。故本轮**不作为性能提升上报**。
+③ **勘误（必读）**：`3a57b13` 提交信息列了 `world.ts` 改动但实际只提交 `mechanisms.ts`——内核免分配三件（仙女位置缓冲/传送门载体表/锁回调单例）当时**并未落地**，由 `08d5cf5` 补落。此后核对提交信息与实际 diff 须逐文件看 stat。
+④ **红线事实归档**：`ice_17` 0.356ms/步 = 94% vendor `SolveTOI`，oracle bundle（`output/A/js/init.eb02fbdab2aa1d24.js`，md5 `d637cb8c…`）逐字同含 `j.SetAwake(!0),k.SetAwake(!0)` → 原版行为，不动。`forest_bonus_2` 0.548ms/步 同为 vendor 求解主导。
+⑤ **顺带修复**：`9f9fd25` font-subset census 清单刷新（**既有失败**，`git stash` 验证在 `6c65c8d` 亦失败，非本轮回退）。
+⑥ **分支与版本线披露**：本轮在 `perf/r44`（自 `release/1.0-forest` 切出）。之所以未从 `main` 切：第 4–6 部与 portal/仙女/复活内核**只存在于 release 线**，`note/plans/2026-10-28-version-lines.md` 的「main 为源」规则当前与实际不符，回灌待用户定。
+⑦ **门禁**：typecheck 0；vitest 64 文件 479/479；det 241/241 位级一致。报告 `note/report/perf/2026-11-05-r44-six-temple-round.md`。
+
 **更新**：2026-11-02 晚（ice_02 批次收官：双侧收敛=第五死关候选 + etw/B2 终审 + oracle harness 抖动发现）
 
 ① **C2 三部冒烟（814f3ff/6ec65ea/bc786f4）**：33/33 绿、CI temple-smoke 作业入门禁。重要发现：客户端 CSP（0.3.51 起）把 Playwright 字符串表达式拦成 EvalError——journey.mjs/lib.mjs 旧 e2e 件不可直接复用，新件须全函数化。

@@ -79,6 +79,33 @@ node benchmark/perf-toolchain.mjs --save <label>                                
 node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>                  # GC 拆账（r11）
 ```
 
+### 六部全库基准（r44 起，覆盖全部 241 关）
+
+```bash
+node --expose-gc --import tsx benchmark/perf-r44.mjs                        # 跑分打印
+node --expose-gc --import tsx benchmark/perf-r44.mjs --save r44-after       # 存档
+node --expose-gc --import tsx benchmark/perf-r44.mjs --compare r44-before   # 与快照对比
+PERF_R44_TEMPLE=crystal,fairies   只跑指定部
+PERF_R44_STEPS=1200 PERF_R44_ALLOC_STEPS=3000
+
+node --expose-gc --import tsx benchmark/perf-r44-alloc.mjs --compare r44-alloc-before  # 分配专项
+bash benchmark/ab-r44.sh 6c65c8d 3        # 配对 A/B（<基线提交> [轮次] [--save 前缀]）
+```
+
+- `perf-r44`：**241 关**（forest 48 / light 40 / ice 51 / crystal 36 / elements 35 /
+  fairytales 31）的 step（idle+scripted）、build（中位 3 次）、alloc（GC 堆差）三面，
+  按「部」聚合避免轻关稀释；快照 `results/r44-<label>.json`。
+  **为何需要它**：r0–r43 的全部基准与位级锚只覆盖前三部 139 关，第 4–6 部是 2026-10-30
+  之后入库的代码，此前从未进入任何性能口径。
+- `perf-r44-alloc`：9 个代表用例（forest 轻/重、light 光束、ice 定时闸、ice TOI 极端、
+  crystal 传送门、elements、fairytales 仙女 ×2）的 GC 事件数与耗时；`results/r44alloc-*.json`。
+- `ab-r44`：**内容回退法**换臂（`git show <rev>:./<file> > <file>`，不切工作树，避免
+  `meta.git` 记成检出 HEAD 的旧坑），两臂在同会话内**交替**跑 A B A B…，取中位并打印
+  臂内散布；**散布 ≥ 臂间差时脚本明确拒绝给结论**。参与换臂的文件登记在脚本 `FILES`
+  数组——改动面变了要同步加。
+- 分配指标的已知局限：`allocBPerStep` 用 GC 前后堆差法，同代码两跑在服务端全库口径下
+  有 216/241 关给出不同数值，**不具 percent 级分辨力**；判定请以配对 A/B + 臂内散布为准。
+
 - `perf-step`：每关预热 90 步 + 600 步计时（`PERF_STEPS`/`PERF_LEVELS` 可覆盖），
   产出 avg/p95/p99、每仿真秒物理占用；快照 `results/perf-<label>.json`。
 - `perf-determinism`：48 关 × idle/scripted 双输入 × 600 步（`DET_STEPS` 可覆盖），

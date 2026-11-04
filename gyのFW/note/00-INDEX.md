@@ -36,7 +36,8 @@
 
 | 内容 | 位置 |
 |---|---|
-| 性能战役总账（r0–r7 七轮 + §八 r8–r11） | [report/perf/2026-10-18-campaign-summary.md](report/perf/2026-10-18-campaign-summary.md) + 同目录各轮报告 |
+| 性能战役总账（r0–r7 七轮 + §八 r8–r11 + … + §四十一 r44） | [report/perf/2026-10-18-campaign-summary.md](report/perf/2026-10-18-campaign-summary.md) + 同目录各轮报告 |
+| **r44 六部全库性能轮**（2026-11-05） | [report/perf/2026-11-05-r44-six-temple-round.md](report/perf/2026-11-05-r44-six-temple-round.md) | 首次把 241 关纳入基准与位级锚（此前仅前三部 139 关）；收益诚实判「不可量化」；含 `3a57b13` 漏提勘误 |
 | 代码结构分析（2026-10-18 时点快照） | [report/codebase-analysis/](report/codebase-analysis/) |
 
 ## 规划·方法·逆向·证据
