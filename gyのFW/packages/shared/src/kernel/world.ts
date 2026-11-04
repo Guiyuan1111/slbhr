@@ -87,11 +87,13 @@ const jumpSoundHook = (): void => {
 };
 
 export class World {
-  readonly level: LevelData;
-  private built: BuiltWorld;
-  private mechs: Mechanisms;
+  /** 当前关卡数据。r45 起可在 `loadLevel` 换关后经 `reset(level)` 改绑——构造器与 reset
+   *  共用同一条构建链，避免"先按新关建一次、再 reset 重建一次"的双重构建。 */
+  level: LevelData;
+  private built!: BuiltWorld;
+  private mechs!: Mechanisms;
   private B: B2;
-  private chars: Record<Role, Character>;
+  private chars!: Record<Role, Character>;
   /** 原版 data.diamonds 等价物从 Character 取 */
   private simTimeS = 0;
   /** 传送门 200ms 每体冷却（oracle body.lastTransport；键=body 跨门共享） */
@@ -137,28 +139,12 @@ export class World {
   constructor(level: LevelData, options: WorldOptions = {}) {
     this.level = level;
     this.B = b2();
-    this.built = buildLevelWorld(level);
-    this.mechs = buildMechanisms(this.B, this.built.world, this.built.groundBody, level);
-    this.chars = {
-      fireboy: new Character(this.B, this.built.world, "fireboy", level.spawn.fireboy, jumpVelocityOf(level.id)),
-      watergirl: new Character(this.B, this.built.world, "watergirl", level.spawn.watergirl, jumpVelocityOf(level.id)),
-    };
     this.windClockS = options.windClockS ?? (() => this.simTimeS);
-    for (const wind of this.mechs.winds) {
-      wind.registerCharBodies([
-        ["fireboy", this.chars.fireboy.body],
-        ["watergirl", this.chars.watergirl.body],
-      ]);
-    }
-    this.installContactListener();
-    // startFrozen（type55 冰面）：初始冻结（原版 _.delay(initialFreeze,10)——含一步 settle 物理，
-    // light 数据无 55 砖不走此路；语义保留，02号档 §10-5）
-    const startEvents: WorldEvent[] = [];
-    for (const liq of this.built.liquids) {
-      if (liq.startFrozen && liq.liquidType === GROUND_TYPE.WATER) this.freezeLiquid(liq, startEvents);
-    }
-    // F 部 RespawnManager（F 专属但恒挂：站定抓取纯记录，无 F 数据时队列恒空）
+    // r45：构造与 reset 共用同一条构建链（此前两份代码逐项重复，startFrozen 只在构造
+    // 分支里，导致 reset 走的那条链漏掉初始冻结）。
+    // RespawnManager 必须先建（reset 尾部调 respawn.clear()）。
     this.respawn = new RespawnManager(this);
+    this.reset();
   }
 
   private installContactListener(): void {
@@ -712,9 +698,11 @@ export class World {
     }
   }
 
-  /** 整关重开（原版 retry 语义 = 重建世界；房间层调这个而不是复用实例） */
-  reset(): void {
-    this.built = buildLevelWorld(this.level);
+  /** 整关重开（原版 retry 语义 = 重建世界；房间层调这个而不是复用实例）。
+   *  r45：`level` 非空即改绑——语义与「新建 World(level)」逐项等价（含构造器里的
+   *  startFrozen 初始冻结；此前 reset 漏掉，10 个冰关 retry/换关后丢失初始冻结）。 */
+  reset(level?: LevelData): void {
+    if (level !== undefined) this.level = level;    this.built = buildLevelWorld(this.level);
     this.mechs = buildMechanisms(this.B, this.built.world, this.built.groundBody, this.level);
     this.chars = {
       fireboy: new Character(this.B, this.built.world, "fireboy", this.level.spawn.fireboy, jumpVelocityOf(this.level.id)),
@@ -732,6 +720,16 @@ export class World {
     this.stepEvents = null;
     this.pendingRemove.length = 0;
     this.installContactListener();
+    // r45：与构造器同一套 startFrozen 初始冻结（oracle Liquid 构造尾
+    // `f.startFrozen && _.delay(this.initialFreeze,10)`，bundle @1660900 区）。
+    // 此前 reset 走的是另一个分支、从不执行本段 —— 10 个含 55 型冰面砖的关
+    // （ice_02/04/04_1/07_1/12/14/31/35/35_1、eice_1）在 retry 与 advance 换关后
+    // 丢失初始冻结，与原版不符。冻结是状态写入（不改体/夹具），且发生在 Step 前，
+    // 位级影响只经由既有的 frozen 分支，与构造路径同值。
+    const startEvents: WorldEvent[] = [];
+    for (const liq of this.built.liquids) {
+      if (liq.startFrozen && liq.liquidType === GROUND_TYPE.WATER) this.freezeLiquid(liq, startEvents);
+    }
     this.respawn.clear(); // 旧快照引用的 body 已随重建销毁
     this.revived = false;
   }

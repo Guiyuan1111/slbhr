@@ -22,6 +22,7 @@ import { Room, ServerError, matchMaker } from "../colyseus.cjs.js";
 import { ROLES, EMPTY_INPUT, type Role, type InputState } from "@fw/shared";
 import { World, m2px, type WorldEvent, type WorldPhase } from "@fw/shared/kernel";
 import { levelExists, loadLevel, type LevelBundle } from "../levels.js";
+import type { LevelData } from "@fw/shared/level2";
 import { BeamState,
   TimedPusherState, RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState, FairyState, FairyCupState, PortalState } from "./state.js";
 
@@ -314,7 +315,6 @@ export class ForestRoom extends Room<RoomState> {
       const id = String(data?.levelId ?? "");
       if (!id || !levelExists(id) || id === this.state.levelId) return;
       this.bundle = loadLevel(id);
-      this.buildWorld();
       this.state.levelId = id;
       // 旧关条目不能带进新关（syncState 只增不删，残留=幽灵机关/钻石/刚体）
       this.state.diamonds.clear();
@@ -339,7 +339,10 @@ export class ForestRoom extends Room<RoomState> {
       this.state.fairies.clear();
       this.state.fairyCups.clear();
       this.state.portals.clear();
-      this.restartLevel();
+      // r45：换关构建在此一次完成（改绑新关 + 全量重建），不再先 buildWorld 再 reset。
+      // 这里必须传新关的 level：restartLevel 内 world.reset(nextLevel) 的语义与
+      // 「new World(nextLevel)」逐项等价（含 startFrozen 初始冻结）。
+      this.restartLevel(this.bundle.level);
     });
 
     // 玩家暂停（F3 翻转，原版 E4 togglePause=game.paused 全场冻结）：任一端 P 键都打给
@@ -629,10 +632,14 @@ export class ForestRoom extends Room<RoomState> {
     }, READY_MS);
   }
 
-  /** 整关重开（原版 retry：整状态重载） */
-  private restartLevel() {
+  /** 整关重开（原版 retry：整状态重载）。
+   *  r45：`nextLevel` 非空时改绑新关并一并构建——advance 换关此前是
+   *  `buildWorld()`（按新关整建一次）+ `restartLevel()`（`reset()` 又整建一次），
+   *  第一次构建的 World 立刻被丢弃，白付一整次 buildLevelWorld+buildMechanisms+
+   *  双 Character（全库均 1.43ms，最重 4.4ms）。改绑后只建一次。 */
+  private restartLevel(nextLevel?: LevelData) {
     if (this.readyTimer) clearTimeout(this.readyTimer); // H-02：同 beginReady，防钟叠加
-    this.world.reset();
+    this.world.reset(nextLevel);
     // L-02：旧关结算不跨重开
     this.lastFinish = null;
     // 玩家暂停不跨重开（原版 retry 走完整 startLevel，game.paused 归 false）
