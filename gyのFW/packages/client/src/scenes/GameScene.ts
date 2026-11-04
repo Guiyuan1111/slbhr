@@ -314,8 +314,13 @@ export class GameScene extends Phaser.Scene {
   // ---- F 部 fairytales（fw-fairy-view）：仙女/仙女杯视图 ----
   private fairyViews = new Map<string, FairyView>();
   private fairyCupViews = new Map<string, FairyCupView>();
+  /** 仙女/杯快照 id → 视图解析首见缓存（r44；null=已确认无视图），同 portalSnaps 口径 */
+  private fairySnaps = new Map<string, FairyView | null>();
+  private fairyCupSnaps = new Map<string, FairyCupView | null>();
   /** D/E 部传送门视图（portal 渲染批）：静态几何自 level.portals，开关态自 st.portals */
   private portalViews = new Map<string, PortalView>();
+  /** 传送门快照 id → 视图解析首见缓存（r44；null=已确认无视图） */
+  private portalSnaps = new Map<string, PortalView | null>();
   /** 逐帧仙女点位（关卡 px，updateFairies 收集；杯口 α/百搭 recolor 与拖拽命中共用） */
   private fairyPts: Array<{ id: string; x: number; y: number; group: number }> = [];
   // ---- F 部仙女拖拽输入态（bindFairyDragInput 接线；init 复位，离屏/抬起即 null）----
@@ -442,7 +447,10 @@ export class GameScene extends Phaser.Scene {
     this.romanViews.clear();
     this.fairyViews.clear();
     this.fairyCupViews.clear();
+    this.fairySnaps.clear();
+    this.fairyCupSnaps.clear();
     this.portalViews.clear();
+    this.portalSnaps.clear();
     this.fairyPts.length = 0;
     this.dragFairyId = null;
     this.dragPending = null;
@@ -2268,20 +2276,29 @@ export class GameScene extends Phaser.Scene {
   // （x/y=屏幕 px 同 BodyState 口径）、state.fairyCups=ArraySchema<{id,state}>。字段未落地
   // 期间 `st.fairies?.forEach?.` 静默跳过，渲染零影响。
 
-  /** 快照条目 → 仙女视图：id 键优先（契约 id=关卡 def id），空/未命中回退下标键 f{idx} */
+  /** 快照条目 → 仙女视图：id 键优先（契约 id=关卡 def id），空/未命中回退下标键 f{idx}。
+   *  r44：首见缓存，免每帧 String(s.id) + 两次 Map 查找（视图在 create 期建定，稳定）。 */
   private fairyViewOf(s: { id?: string }, idx: number): FairyView | null {
     if (s.id !== undefined && s.id !== null && String(s.id) !== "") {
-      const v = this.fairyViews.get(String(s.id));
-      if (v) return v;
+      const key = String(s.id);
+      const cached = this.fairySnaps.get(key);
+      if (cached !== undefined) return cached;
+      const v = this.fairyViews.get(key) ?? this.fairyViews.get(`f${idx}`) ?? null;
+      this.fairySnaps.set(key, v);
+      return v;
     }
     return this.fairyViews.get(`f${idx}`) ?? null;
   }
 
-  /** 快照条目 → 仙女杯视图：同上，回退键 fc{idx} */
+  /** 快照条目 → 仙女杯视图：同上，回退键 fc{idx}（r44：首见缓存） */
   private fairyCupViewOf(s: { id?: string }, idx: number): FairyCupView | null {
     if (s.id !== undefined && s.id !== null && String(s.id) !== "") {
-      const v = this.fairyCupViews.get(String(s.id));
-      if (v) return v;
+      const key = String(s.id);
+      const cached = this.fairyCupSnaps.get(key);
+      if (cached !== undefined) return cached;
+      const v = this.fairyCupViews.get(key) ?? this.fairyCupViews.get(`fc${idx}`) ?? null;
+      this.fairyCupSnaps.set(key, v);
+      return v;
     }
     return this.fairyCupViews.get(`fc${idx}`) ?? null;
   }
@@ -2311,11 +2328,18 @@ export class GameScene extends Phaser.Scene {
     if (!anyOpen) this.sound.stopByKey("sfx_portalLoop");
   }
 
-  /** 快照条目 → 传送门视图：id 键优先，回退 P{idx}（level2 def id 序=world 数组序） */
+  /** 快照条目 → 传送门视图：id 键优先，回退 P{idx}（level2 def id 序=world 数组序）。
+   *  r44：首见缓存——原每帧每门做一次 `String(s.id).replace(/^pt/,"P")`（正则匹配 +
+   *  两次字符串分配），与 r3 已在同链消除的「快照键→视图解析」同类。缓存值为视图或
+   *  null（null=该 id 确无视图，避免每帧重复回退查找）；键为快照 id 本身（稳定）。 */
   private portalViewOf(s: { id?: string }, idx: number): PortalView | null {
     if (s.id !== undefined && s.id !== null && String(s.id) !== "") {
-      const v = this.portalViews.get(String(s.id).replace(/^pt/, "P"));
-      if (v) return v;
+      const key = String(s.id);
+      const cached = this.portalSnaps.get(key);
+      if (cached !== undefined) return cached;
+      const v = this.portalViews.get(key.replace(/^pt/, "P")) ?? this.portalViews.get(`P${idx}`) ?? null;
+      this.portalSnaps.set(key, v);
+      return v;
     }
     return this.portalViews.get(`P${idx}`) ?? null;
   }
