@@ -939,7 +939,16 @@ export class Beamer extends Device {
       for (let i = 0; i < this.marksLen; i++) {
         const mk = this.marks[i];
         mk.lp.iluminated = this.color;
-        mk.lp.lightAt = { x: mk.x, y: mk.y };
+        // r44：lightAt 原位改写（原每帧每 sensor 新建 {x,y}）。消费方（LightPusher /
+        // Liquid）只读 .x/.y，或整体判 null；不持有跨帧引用——标记载体本身在 marks 池里
+        // 逐帧重放，故原位写与新建对象在下游观测上等价。
+        const at = mk.lp.lightAt;
+        if (at) {
+          at.x = mk.x;
+          at.y = mk.y;
+        } else {
+          mk.lp.lightAt = { x: mk.x, y: mk.y };
+        }
       }
       return;
     }
