@@ -96,6 +96,12 @@ export class World {
   private simTimeS = 0;
   /** 传送门 200ms 每体冷却（oracle body.lastTransport；键=body 跨门共享） */
   private portalLastTransport = new WeakMap<object, number>();
+  /** 传送门载体表（r44：免每帧新建 body 包装对象数组；元素为稳定壳，仅 body 字段改写） */
+  private portalBodies: Array<{ body: any }> = [];
+  /** 仙女步进用的角色位置缓冲（r44：免每帧 2 元素数组分配） */
+  private fairyCharPos: Array<{ x: number; y: number }> = [];
+  /** 仙女锁判定回调（r44：实例单例，免每帧每仙女新建闭包） */
+  private fairyGroupActive = (g: number): boolean => this.mechs.manager.queryActive(g);
   /** F 部检查点/复活管理器（构造尾创建；respawn.ts 档头=oracle L61065-61179 对位） */
   respawn!: RespawnManager;
   /** R2 免费复活一次门禁（oracle 走激励广告，我方裁定=免费一次） */
@@ -346,9 +352,13 @@ export class World {
 
     // F 部仙女步进（oracle Fairy.update 每帧；时基=仿真钟保 det，oracle 墙钟偏差记档）
     if (this.mechs.fairies.length > 0) {
-      const cps = [this.chars.fireboy.body.GetPosition(), this.chars.watergirl.body.GetPosition()];
-      for (const f of this.mechs.fairies) f.update(this.simTimeS * 1000, cps);
-      for (const f of this.mechs.fairies) f.checkLock((g) => this.mechs.manager.queryActive(g));
+      // r44：位置缓冲与锁回调复用实例字段（原每帧分配 2 元素数组 + 每仙女一个闭包）
+      const cps = this.fairyCharPos;
+      cps[0] = this.chars.fireboy.body.GetPosition();
+      cps[1] = this.chars.watergirl.body.GetPosition();
+      const tMs = this.simTimeS * 1000;
+      for (const f of this.mechs.fairies) f.update(tMs, cps);
+      for (const f of this.mechs.fairies) f.checkLock(this.fairyGroupActive);
     }
 
     // 原版帧序（运行时探针 2026-10-09，forest_01 实测）：doors → wg → fb → 设备(逆注册序) → Step。
@@ -559,12 +569,19 @@ export class World {
   /** 传送门逐帧步进（Step 前）：开门对全部可传载体（角色/箱/球/仙女——均带
    *  portal-sensor 标记）做近面判定，命中即 transport；音效队列排水为 mech 事件。 */
   private updatePortals(events: WorldEvent[]): void {
-    const bodies: Array<{ body: any }> = [
-      { body: this.chars.fireboy.body },
-      { body: this.chars.watergirl.body },
-    ];
-    for (const p of this.mechs.props) bodies.push({ body: p.body });
-    for (const f of this.mechs.fairies) bodies.push({ body: f.body });
+    // r44：载体表复用（原每帧新建 N+2 个 {body} 包装对象；表内壳对象稳定，仅改写 body）
+    const bodies = this.portalBodies;
+    let n = 0;
+    const add = (body: any): void => {
+      if (n < bodies.length) bodies[n].body = body;
+      else bodies.push({ body });
+      n++;
+    };
+    add(this.chars.fireboy.body);
+    add(this.chars.watergirl.body);
+    for (const p of this.mechs.props) add(p.body);
+    for (const f of this.mechs.fairies) add(f.body);
+    if (bodies.length > n) bodies.length = n;
     const nowMs = this.simTimeS * 1000;
     for (const p of this.mechs.portals) {
       p.checkTransport(bodies, this.portalLastTransport, nowMs);
