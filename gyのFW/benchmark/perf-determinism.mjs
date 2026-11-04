@@ -100,14 +100,21 @@ function chainHash(world, mode) {
 }
 
 /** 单关全链：两个独立 World（idle/scripted）各跑满步数取链式哈希。纯函数：
- *  只依赖关卡数据×输入脚本×步数，线程/进程间零共享态。 */
+ *  只依赖关卡数据×输入脚本×步数，线程/进程间零共享态。
+ *  r45：新增第三条 `switched` —— 复用世界改绑到本关（`reset(thisLevel)`）后跑同一
+ *  scripted 脚本。这条路径此前**完全没有门禁覆盖**：advance/retry 都走 reset()，而旧
+ *  reset() 与构造器曾是两份代码（startFrozen 只在构造器分支）。2026-11-05 实测 10 个
+ *  含 55 型冰面砖的关在 reset 后丢失初始冻结。`switched` 与 `scripted` 必须逐位相同。 */
 function runLevel(id) {
   const t0 = Date.now();
   const w1 = new World(loadLevel(id).level);
   const idle = chainHash(w1, "idle");
   const w2 = new World(loadLevel(id).level);
   const scripted = chainHash(w2, "scripted");
-  return { id, steps: STEPS, idle, scripted, ms: Date.now() - t0 };
+  const w3 = new World(loadLevel(id).level);
+  w3.reset(loadLevel(id).level);
+  const switched = chainHash(w3, "scripted");
+  return { id, steps: STEPS, idle, scripted, switched, ms: Date.now() - t0 };
 }
 
 if (!isMainThread) {
@@ -141,8 +148,15 @@ async function main() {
   // ms 只进日志不进 rows（payload JSON 与旧串行版字节等价）
   const pushRow = ({ ms, ...rest }) => {
     rows.push(rest);
+    // r45：switched 必须与 scripted 逐位相同（reset 改绑路径 ≡ 新建路径）。
+    // 这条是自洽断言，不依赖快照；不一致即刻暴露为漂移。
+    if (rest.switched !== undefined && rest.switched !== rest.scripted) {
+      console.log(`${rest.id.padEnd(22)} ✗ switched≠scripted（reset 路径与构造路径不等价）`);
+      switchMismatch++;
+    }
     console.log(`${rest.id.padEnd(22)} idle=${rest.idle.slice(0, 12)} scripted=${rest.scripted.slice(0, 12)} (${(ms / 1000).toFixed(1)}s)`);
   };
+  let switchMismatch = 0;
 
   const t0 = Date.now();
   if (WORKERS <= 1) {
@@ -168,8 +182,7 @@ async function main() {
   rows.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)); // 行序=旧串行版（ids sort 序）
   console.log(`（本次 ${ids.length} 关合计 ${((Date.now() - t0) / 1000).toFixed(1)}s）`);
 
-  const combined = createHash("sha256").update(rows.map((r) => `${r.id}:${r.idle}:${r.scripted}`).join("\n")).digest("hex");
-  const payload = {
+  const combined = createHash("sha256").update(rows.map((r) => `${r.id}:${r.idle}:${r.scripted}`).join("\n")).digest("hex");  const payload = {
     meta: {
       label: argSave ?? argCompare ?? "(run)",
       git: execSync("git rev-parse --short HEAD", { cwd: ROOT }).toString().trim(),
@@ -181,6 +194,13 @@ async function main() {
     combined,
     rows,
   };
+
+  if (switchMismatch > 0) {
+    console.log(`\n✗ ${switchMismatch} 关 reset 改绑路径与构造路径不等价（switched≠scripted）`);
+    process.exitCode = 1;
+  } else if (rows.some((r) => r.switched !== undefined)) {
+    console.log(`\n✓ reset 改绑路径与构造路径逐位等价（${rows.filter((r) => r.switched !== undefined).length} 关）`);
+  }
 
   if (argSave) {
     writeFileSync(join(RESULTS, `det-${argSave}.json`), JSON.stringify(payload, null, 2));

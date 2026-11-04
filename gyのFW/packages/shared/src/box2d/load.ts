@@ -185,6 +185,41 @@ function fastCircleShapeDispatch(ns: Box2DNamespace): void {
   };
 }
 
+/**
+ * b2Island 惰性预分配（r45）。
+ *
+ * vendor 构造器一次就铺满 5×1024 槽：
+ *   `m_bodies/m_contacts/m_joints = new Array(1024)`、`m_positions/m_velocities =
+ *    b2Position/b2Velocity.MakeArray(1024)`
+ * 后两者各 1024 个对象，单个空 b2World 实测 224KiB、其中 b2Island 约占 185KiB（83%）。
+ * 而**真实关卡同时活跃的岛体数远小于 1024**（全库最重关 forest_bonus_2 也只有百余刚体）。
+ *
+ * `b2Island.prototype.Initialize` 本就有增长分支（`while (m_bodies.length < a) push null`、
+ * `if (m_positions.length < a) 扩到 max(2*len, a)`），因此空数组起步不会少任何元素——
+ * 只是把「一次性 1024」改成「按需增长」。Solve/Report 只读写 `[0, m_bodyCount)` 区间，
+ * 该区间在 Initialize 后必已存在。
+ *
+ * 位级中性依据：本覆写**只改构造器的初始容量，不碰任何方法体**。实测 40 关 × 200 步
+ * 逐体 6×f64 哈希与覆写前逐位相同；det 241/241 全绿。
+ * 静态成员（`s_timer`/`s_solverData`/`s_stack` 等）必须逐个搬过去——vendor 的方法体
+ * 直接引用 `box2d.b2Island.s_*`，漏搬会在首次 Solve 崩（实测 TypeError）。
+ */
+function lazyIslandPrealloc(ns: Box2DNamespace): void {
+  const Orig = ns.b2Island as unknown as new () => any;
+  function LazyIsland(this: any): void {
+    this.m_bodies = [];
+    this.m_contacts = [];
+    this.m_joints = [];
+    this.m_positions = [];
+    this.m_velocities = [];
+  }
+  LazyIsland.prototype = Orig.prototype;
+  for (const k of Object.keys(Orig)) {
+    (LazyIsland as unknown as Record<string, unknown>)[k] = (Orig as unknown as Record<string, unknown>)[k];
+  }
+  ns.b2Island = LazyIsland as any;
+}
+
 export function loadBox2d(): Box2DNamespace {
   if (cached) return cached;
   const buf = readFileSync(VENDOR);
@@ -241,6 +276,7 @@ export function loadBox2d(): Box2DNamespace {
   lazyContactPoolPrefill(ns);
   fastPolygonShapeDispatch(ns);
   fastCircleShapeDispatch(ns);
+  lazyIslandPrealloc(ns);
   cached = ns as Box2DNamespace;
   return cached;
 }
