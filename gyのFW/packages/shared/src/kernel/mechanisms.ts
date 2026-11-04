@@ -1438,6 +1438,8 @@ export class Fairy {
    *  序确定性偏移（值域同 oracle：toffset∈[0,1000)/aoffset∈[0,2000)）——偏差记档 */
   private readonly toffset: number;
   private readonly aoffset: number;
+  /** r44 分配收口：SetTarget 复用的目标缓冲（vendor SetTarget 内部 m_targetA.Copy(a)） */
+  private readonly setTargetVec: any;
   /** 视觉朝向（L59253 平滑；纯表现，内核仅维护供视图取用） */
   targetAngle = 0;
 
@@ -1523,6 +1525,15 @@ export class Fairy {
     mj.dampingRatio = 0.3;
     this.joint = world.CreateJoint(mj);
     this.dragTarget = { x: c.x, y: c.y };
+    this.setTargetVec = new B.b2Vec2(c.x, c.y);
+  }
+
+  /** ApplyForce 免分配入口。
+   *  注：力顶点缓冲**不可**)复用——ApplyForce 的第二参 `at` 在调用点常是
+   *  GetPosition() 的返回对象（vendor 的 m_out_xf.p 单例输出缓冲），与力向量若共用
+   *  同一对象会自引用成 NaN 力，F 部仙女关会退化成永不静止（实测 fairies-01 死循环）。 */
+  private applyForceXY(fx: number, fy: number, at: { x: number; y: number }): void {
+    this.body.ApplyForce(new this.B.b2Vec2(fx, fy), at);
   }
 
   /** 拖拽入口（net 层）：target=null 松手（oracle 松手 maxForce 降 5%，L59203） */
@@ -1538,20 +1549,27 @@ export class Fairy {
   }
 
   /** 每帧步进（oracle Fairy.update L59210 逐句；simTimeMs=仿真钟毫秒，
-   *  oracle 用 game.time.time 墙钟——内核换仿真钟保 det，偏差记档） */
+   *  oracle 用 game.time.time 墙钟——内核换仿真钟保 det，偏差记档）。
+   *  r44 分配收口：dragTarget 原位改写（原每帧多次 {...} 替身）、ApplyForce 顶点缓冲
+   *  复用（原每帧 2 个 new b2Vec2）——数值算式与调用序逐字不变，仅免对象分配。 */
   update(simTimeMs: number, charBodies: Array<{ x: number; y: number }>): void {
     const B = this.B;
     const bp = this.body.GetPosition();
     if (this.externalTarget) {
       // 吸附力=位移矢量×1（L59213）
-      this.body.ApplyForce(new B.b2Vec2(this.externalTarget.x - bp.x, this.externalTarget.y - bp.y), bp);
+      this.applyForceXY(this.externalTarget.x - bp.x, this.externalTarget.y - bp.y, bp);
       if (!this.dragging) {
-        this.dragTarget = { ...this.externalTarget };
+        this.dragTarget.x = this.externalTarget.x;
+        this.dragTarget.y = this.externalTarget.y;
         this.joint.SetMaxForce(this.jointForce);
       }
     } else if (!this.dragging) {
       const v = this.body.GetLinearVelocity();
-      if (Math.hypot(v.x, v.y) > 2) this.dragTarget = { x: this.anchor.GetPosition().x, y: this.anchor.GetPosition().y };
+      if (Math.hypot(v.x, v.y) > 2) {
+        const ap0 = this.anchor.GetPosition();
+        this.dragTarget.x = ap0.x;
+        this.dragTarget.y = ap0.y;
+      }
     }
     // dragTarget 与双角色保持 ≥1.2m（L59223：f.Length()<1.2 → 推到 1.2m 外）
     for (const ch of charBodies) {
@@ -1559,10 +1577,11 @@ export class Fairy {
       const fy = this.dragTarget.y - ch.y;
       const fl = Math.hypot(fx, fy);
       if (fl < 1.2 && fl > 1e-9) {
-        this.dragTarget = { x: ch.x + (fx / fl) * 1.2, y: ch.y + (fy / fl) * 1.2 };
+        this.dragTarget.x = ch.x + (fx / fl) * 1.2;
+        this.dragTarget.y = ch.y + (fy / fl) * 1.2;
       }
     }
-    this.joint.SetTarget(new B.b2Vec2(this.dragTarget.x, this.dragTarget.y));
+    this.joint.SetTarget(this.setTargetVec.SetXY(this.dragTarget.x, this.dragTarget.y));
     // Lissajous 悬浮目标 h（相对 anchor；externalTarget 态用小抖动分支，L59228-59236）
     const t = simTimeMs;
     let hx: number;
@@ -1586,7 +1605,7 @@ export class Fairy {
       hy = ry;
     }
     const ap = this.anchor.GetPosition();
-    this.body.ApplyForce(new B.b2Vec2(hx - (bp.x - ap.x), hy - (bp.y - ap.y)), bp);
+    this.applyForceXY(hx - (bp.x - ap.x), hy - (bp.y - ap.y), bp);
     // anchor 速度钳 40（absoluteMaxSpeed，L59055）
     const q = this.anchor.GetLinearVelocity();
     const ql = Math.hypot(q.x, q.y);
