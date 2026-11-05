@@ -10,6 +10,15 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-11-05（r47 性能轮：服务端每步分配归因——character.update 占自有代码 9.8%，零分配化后 −9.9%）
+
+① **新量具 `perf-server-alloc.mjs`**：`node:inspector` HeapProfiler 采样，**只覆盖步进窗口**。关键坑：整进程 profile 会被启动期 module loader 淹没（首版 top1 是 `compileForInternalLoader` 20.9%，与步进无关）。
+② **归因**（`crystal_20`，分配最重关）：vendor 的 `b2PrismaticJoint.InitVelocityConstraints` 13.6% + `b2Island.Solve` 13.0%（禁区不动），**自有代码里 `character.update` 9.8% 是最大一块**，`updateAnim` 2.9%。
+③ **改动（`a533aa3`）**：脚底法线排序 `[...arr].sort` → 索引表；力向量/速度/冲量/原点由每步 6–8 个对象字面量 → 4 个实例 scratch；`updateAnim` 去掉 `GetLinearVelocity()` 结果的冗余拷贝。逐项核对 vendor 语义（`Copy` 逐字段保 −0 / `ApplyForce` 只读 .x.y 不引用 / `GetWorldVector` 写 out）确认位级中性。
+④ **量化分面**：分配 **11758 → 10594 B/step（−9.9%）**，两臂 3 次区间完全不重叠 → **可主张**；`character.update` 占比 9.8%→5.4%。单步 CPU（3 关×5 轮配对 A/B）**全部带内**（−2.9%~+1.3%，散布 19–65µs）→ **不可主张**。收益在 GC 压力不在单步耗时。
+⑤ **负结论**：客户端逐帧分配 **86.8% 在 Phaser 内部**（`batchSprite` 61.3%，查源码确认零分配，是采样内联假象），自有 client 代码 **0%**。客户端 WebGL 11.1fps 但帧内 JS 仅 1.7ms → headless SwiftShader present 阻塞，非产品问题。vendor 侧 26.6% 属永挂账禁区。
+⑥ **门禁**：typecheck 0；vitest 479/479；det 241/241。报告 `note/report/perf/2026-11-05-r47-server-alloc.md`，总账 §四十四。
+
 **更新**：2026-11-05（r46 性能轮：换关链客户端半边——黑幕与 fetch 并行，拉关等待 −67.4%）
 
 ① **先量清结构再动手（本轮最大价值）**：新量具 `benchmark/perf-advance.mjs` 首次拆出换关 1.1s 的真实构成——黑幕淡入 **720.6ms（65%）**、拉关+回声 **319.7ms（29%）**、客户端场景重建**仅 61.9ms（5.6%）**。我最初假设重建是瓶颈，测量推翻了它。黑幕是 oracle 固定动画（改=复刻性偏差），故唯一可优化项是网络往返。

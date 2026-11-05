@@ -129,6 +129,23 @@ node --expose-gc --import tsx benchmark/perf-build.mjs --compare build-r44-basel
   须与新建路径**逐位相同**（自洽断言，不依赖历史快照）。reset 路径此前零覆盖，
   正是 `startFrozen` 缺陷能长期存活的原因；现 241/241 逐位等价。
 
+### 每步分配归因（r47 起）
+
+```bash
+LEVELS=crystal_20,light_23 STEPS=1500 WARM=600 PROF_MODE=1 \
+  node --expose-gc --import tsx benchmark/perf-server-alloc.mjs
+node --expose-gc --max-semi-space-size=1 --import tsx benchmark/perf-server-alloc.mjs   # 净堆量级（噪声大）
+```
+
+- `perf-server-alloc`：两种口径——**净堆增量**（GC×2 前后差，噪声大、同代码两跑可差 2 倍，
+  只作量级参考）与**采样归因**（`PROF_MODE=1`，`node:inspector` HeapProfiler，**只覆盖步进
+  窗口**，按函数聚合 selfSize）。
+- **关键坑**：整进程 `--heap-prof` 会被启动期 module loader/tsx 转译淹没（首版 top1 是
+  `compileForInternalLoader` 20.9%，与步进无关）。必须手动 start/stopSampling 圈窗口。
+- 首次归因结论（2026-11-05，`crystal_20`）：vendor 的 prismatic joint（13.6%）+ island solve
+  （13.0%）为禁区；**自有代码里 `character.update` 9.8% 是最大一块**，零分配化后降至 5.4%，
+  每步分配 11758→10594 B/step（−9.9%，两臂不重叠），但单步 CPU 带内——**分配与耗时分开主张**。
+
 ### 换关链客户端半边（r46 起）
 
 ```bash
