@@ -3053,16 +3053,32 @@ export class GameScene extends Phaser.Scene {
     this.platformSounds.update(id, p);
   }
 
+  /**
+   * r52：平台电机声实例池。
+   *
+   * 改造前每次起步 `sound.add("sfx_platform")` 新建 Phaser 音效实例、限位时
+   * `stop + destroy` 销毁——`forest_bonus_2` 300 帧实测 17 次新建 + 19 次销毁
+   * （`perf-sound-churn.mjs`），单次 add+play ≈ 0.09ms（页内实测 add 0.067 + play 0.025）。
+   *
+   * 池化语义：停掉的实例 `play()` 会从头重播，与新建实例的听感一致；每个平台
+   * 各持独立实例，重叠数不变（上限 = 同时运动平台数，`forest_bonus_2` 峰值 2）。
+   * 池不设上限也自然有界：池内实例数 ≤ 历史峰值并发数。
+   *
+   * 生命周期安全：GameScene 重建（换关/重开）时本字段随实例重建为空池，
+   * 旧实例由 Phaser 声音管理器随场景销毁，不会跨场景引用。
+   */
+  private readonly platSndPool: Phaser.Sound.BaseSound[] = [];
+
   private startPlatformSound(_id: string): Phaser.Sound.BaseSound | null {
     if (!getSettings().fx || !this.cache.audio.exists("sfx_platform")) return null;
-    const s = this.sound.add("sfx_platform");
+    const s = this.platSndPool.pop() ?? this.sound.add("sfx_platform");
     s.play();
     return s;
   }
 
   private stopPlatformSound(s: Phaser.Sound.BaseSound): void {
     s.stop();
-    s.destroy();
+    this.platSndPool.push(s);
   }
 
   /** Navies 漂移（原版每帧：r′+=speed.r → pos.r=offset.r·sin r′ → 极坐标转直角坐标） */
