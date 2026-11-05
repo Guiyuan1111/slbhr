@@ -357,3 +357,79 @@ LEVELS=ice_03,forest_bonus_2 ROUNDS=7 node --import tsx benchmark/perf-sleep.mjs
 **结论（r48）**：现象真实但**不可修**。平台经 prismatic/distance 关节直连 ground，
 box2d 的岛构建必然并入同一岛（实测 `ice_03` 孤岛 = `[dynamic, static(ground), dynamic]`），
 "排除静态体的岛"判据放行次数归零；"位形逐位不变即睡"则 det 门 13 关漂移。详见报告 §四。
+
+### perf-bake-cpu.mjs — 选关树烘焙 CPU 分阶段（r49 起）
+
+```bash
+node --import tsx benchmark/dump-tree-alpha.mjs           # 先导出真实 alpha（一次性）
+node --import tsx benchmark/perf-bake-cpu.mjs
+ROUNDS=7 node --import tsx benchmark/perf-bake-cpu.mjs --save r49-bake-cpu
+node --import tsx benchmark/perf-bake-cpu.mjs --compare r49-bake-cpu
+```
+
+把 `stepTreeBake` 的**纯 CPU 部分**拆到 stage 级（`alphaSat` / `bevel` / `satOut` /
+`outline` / `premult`），用**真实 alpha** 重放，Node 口径无 DOM。
+
+**为什么要它**：浏览器里 `toBaked` 的 1.5–2.0s 中有 **70.3% 是 `(program)`**
+（headless SwiftShader 合成等待），JS 只有约 350ms。要判断内核改动值多少，必须把 CPU
+单独拿出来量。r49 实测：`outlinePass` **48.7%** + `bevelColorMatrix` **40.4%** = 89.1%。
+
+**⚠ 数据来源是硬依赖**：缺 `benchmark/results/alpha-<temple>.json` 与对应 `.bin` 时报错
+退出，**不退回合成输入**——见下条。
+
+### perf-bevel.mjs — 烘焙内核配对 A/B（r49 起）
+
+```bash
+node --import tsx benchmark/perf-bevel.mjs
+ROUNDS=9 node --import tsx benchmark/perf-bevel.mjs --save r49-final
+```
+
+同进程**交替**跑参照臂（改造前实现）与当前臂，用区间是否分离判定，并把
+**位级一致作为每轮硬门禁**（不一致立即 exit 1）。覆盖 `bevelColorMatrix`（三层）与
+`outlinePass`。
+
+**为什么必须用真实数据（r49 最痛的教训）**：把 `sampleA2` 坐标分解改表驱动时漏了一个
+`fr()`，**33 条合成单测全绿，真实数据一跑就红**（偏移 613864）。事后量化盲区：
+
+| 探测 | 漏 `fr` 显形次数 |
+|---|---|
+| 24×20 随机噪声，144000 像素 | **0** |
+| 均匀块，255 种 alpha 全试 | **0** |
+| 真实全画布 1036×864 | **必红** |
+
+原因：`fr()` 直接作用于 alpha 通道时 0/256 值受影响（`round(a*255)` 吸收舍入），差异只在
+`gray*a` 的 double 乘法跨过 Uint8 台阶时显形。
+
+> **合成输入不能替代真实数据做等价性判定。** 单测保证"常规路径等价"，真实数据等价性
+> 必须靠本量具。
+
+**另两个位级必要条件**（写进实现注释）：
+- 坐标分解须逐字同序：`t0x=(x+0.5)*FX → tx=t0x+ox → px=tx−0.5`。合并成
+  `(x+0.5)*FX+ox−0.5` 会在边缘像素产生 1 ULP 偏差。
+- `FX = canvasW/Cf = 1036/1036.8 = 0.99923`（**不是 1**），`FY = 1`。
+
+### perf-bake.mjs — 选关树烘焙分帧预算（r49 起）
+
+```bash
+BUDGET=8 ROUNDS=7 node --import tsx benchmark/perf-bake.mjs --save r49-b8
+BUDGET=48 node --import tsx benchmark/perf-bake.mjs --compare r49-b8
+```
+
+浏览器口径：点 Play → 烘焙纹理上屏（`flatFallbacks` 清空）。量 `toActive` /
+`bakeSegment` / `toBaked`。两臂靠改 `TempleScene.mountBaked` 的预算常量区分，需重新 build。
+
+**⚠ 这个口径不可跨会话比较。** budget=8ms 时 headless 帧率本身只有 ~13fps，
+`bakeSegment` 由**帧数**而非 CPU 主导（实测 8→48ms 时 −53.3%、8→200ms −81.0%，
+但单帧 p95 飙到 240–280ms，玩家可感知卡顿）。r49 同会话交替 A/B 显示内核 −27.8%
+在这里只兑现 **−0.1%（带内）**——因为内核只占总时长 12.5%，其余 87.5% 是合成等待。
+
+### perf-create.mjs — GameScene.create 分段（r49 起）
+
+```bash
+node --import tsx benchmark/perf-create.mjs
+LEVEL=forest_bonus_2 ROUNDS=7 node --import tsx benchmark/perf-create.mjs --save r49-base
+```
+
+钩 `GameScene.create` 与 12 个 `build*` 方法，报每个的 self 时间 + `__buildSum` +
+`__unaccounted`。r49 实测总计仅 **9.5–14.4ms**（`buildMechs` 3.5ms 最大），
+相对换关链 1.1s 太小，**未立项优化**。

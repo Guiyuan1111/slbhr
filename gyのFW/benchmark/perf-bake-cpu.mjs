@@ -11,7 +11,7 @@
  * 除法——此前从没拆过。本件补上。
  *
  * ## 口径
- * 用 **真实 alpha**（`TEMP/r49-alphadump.mjs` 从页面 `getImageData` 导出，forest 三层的
+ * 用 **真实 alpha**（`benchmark/dump-tree-alpha.mjs` 从页面 `getImageData` 导出，forest 三层的
  * 原始 alpha 字节）重放 `stepTreeBake` 的纯 CPU 部分。不用合成输入——r49 实测证明合成
  * 形态会把结论量反：forest 厚层覆盖率 39.8%/29.6%、93% 的行都有 alpha（稠密），
  * 只有金星层 0.58% 稀疏。
@@ -61,7 +61,7 @@ const Cf = 1036, Kf = 864; // canvasW/H = floor(C/k)，FX=FY≈1
 function loadReal() {
   const manifestPath = join(RESULTS, `alpha-${TEMPLE}.json`);
   if (!existsSync(manifestPath)) {
-    throw new Error(`缺少 ${manifestPath}——先跑 TEMP/r49-alphadump.mjs 导出真实 alpha`);
+    throw new Error(`缺少 ${manifestPath}——先跑 benchmark/dump-tree-alpha.mjs 导出真实 alpha`);
   }
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   const out = new Map();

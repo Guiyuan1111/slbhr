@@ -13,11 +13,11 @@
  * 真实结构下才跨过 Uint8 台阶。**合成输入不能替代真实数据做等价性判定。**
  *
  * ## 真实数据来源
- * `TEMP/r49-alphadump.mjs` 从页面 `getImageData` 导出三层原始 alpha 到
+ * `benchmark/dump-tree-alpha.mjs` 从页面 `getImageData` 导出三层原始 alpha 到
  * `benchmark/results/alpha-<temple>-l*.bin`。缺该文件时本件报错退出，不退回合成输入。
  *
  * 用法：
- *   node --import tsx TEMP/r49-alphadump.mjs          # 先导出真实 alpha
+ *   node --import tsx benchmark/dump-tree-alpha.mjs          # 先导出真实 alpha
  *   node --import tsx benchmark/perf-bevel.mjs
  *   node --import tsx benchmark/perf-bevel.mjs --save r49-bevel
  */
@@ -124,7 +124,7 @@ function outlineRef(rgba, w, h, o) {
 // ── 真实数据装载 ─────────────────────────────────────────────────────────
 const manPath = join(RESULTS, `alpha-${TEMPLE}.json`);
 if (!existsSync(manPath)) {
-  console.error(`[bevel] 缺少 ${manPath}；先跑 \`node --import tsx TEMP/r49-alphadump.mjs\``);
+  console.error(`[bevel] 缺少 ${manPath}；先跑 \`node --import tsx benchmark/dump-tree-alpha.mjs\``);
   console.error(`[bevel] 本件不做合成输入的等价性判定——r49 实测合成输入抓不到真实缺陷。`);
   process.exit(1);
 }
