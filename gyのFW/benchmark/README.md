@@ -606,3 +606,20 @@ node --import tsx benchmark/perf-timer-res.mjs --save r53-coop
 **用确定性断言（如 exp 计数）故意验证它失败，确认旧码真的在跑** → 测 →
 恢复 → 重建 → 断言 ✓ 确认还原。r51 教训（页内量具必须验证被测代码在跑）
 的跨构建版。
+
+### perf-smoother-layout.mjs — 数据布局重写信号预估（r54）
+
+```bash
+node benchmark/perf-smoother-layout.mjs --trace benchmark/results/trace-r51-smoother.json --save r54-layout
+# trace 用 perf-smoother-ab.mjs --capture 抓取（2.8MB，用后即删，可再生）
+```
+
+四臂括弧回放真实调用序列：**Old**（r51 前锚点）/ **New**（现行，位级基准）/
+**Arr**（槽位布局原型：位置命中 + key 校验 + Map 兜底 + `beginFrame()` 游标）/
+**NoMap**（零 Map 零校验**天花板**）。天花板臂的存在理由：连它都够不到裁决线，
+则任何合法布局变体都够不到——一次测量封死整个方向。
+
+r54 实测：Arr 直中率 99.8%、位级 0 不一致（布局机械成立），但进程内信号
+−0.14µs（重叠）；**天花板 −0.47µs/帧 → ×10 整帧 ≈ −4.7µs ≪ 15µs 裁决线 →
+判负**。教训：**先量「方向的天花板」再动产线代码**——布局重写这类结构级
+改动的可行性，用一个不合法但上界最大的假想臂就能裁决。

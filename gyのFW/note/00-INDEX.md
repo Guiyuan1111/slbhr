@@ -36,7 +36,8 @@
 
 | 内容 | 位置 |
 |---|---|
-| 性能战役总账（r0–r7 七轮 + §八 r8–r11 + … + §五十 r53） | [report/perf/2026-10-18-campaign-summary.md](report/perf/2026-10-18-campaign-summary.md) + 同目录各轮报告 |
+| 性能战役总账（r0–r7 七轮 + §八 r8–r11 + … + §五十一 r54） | [report/perf/2026-10-18-campaign-summary.md](report/perf/2026-10-18-campaign-summary.md) + 同目录各轮报告 |
+| **r54 数据布局重写信号预估**（2026-11-05） | [report/perf/2026-11-05-r54-layout-signal.md](report/perf/2026-11-05-r54-layout-signal.md) | r51 最后挂账关闭：四臂括弧量具（含**零 Map 天花板臂**一次封死方向）——槽位直中率 99.8%、位级 0 不一致，但**天花板整帧预估 −4.7µs ≪ 15µs 裁决线**（Map.get 仅 ~5ns/次，大头是属性访问 × 缓存驱逐的物理成本）→ **判负，产线零改动**。客户端射程候选至此全部有裁决 |
 | **r53 COOP/COEP 跨源隔离**（2026-11-05） | [report/perf/2026-11-05-r53-coop-coep-timer.md](report/perf/2026-11-05-r53-coop-coep-timer.md) | 两个响应头（Spectre 缓解兼量具解锁）：页内时钟 **100µs→5µs**（确定性，e2e 浸泡零破坏）；r51 页内口径全数补判——**整帧 Δ−10.1µs/帧（−23.5%）与页内 A/B Δ−40.6% 均转可主张**（换臂重建法：exp 断言故意失败确认旧码在跑）；合并判负三度维持；**噪声底真相：消融噪声来自帧调度抖动非时钟** |
 | **r52 平台电机声实例池**（2026-11-05） | [report/perf/2026-11-05-r52-platform-sound-pool.md](report/perf/2026-11-05-r52-platform-sound-pool.md) | 角度来自 r51 顺带发现：平台声每次起步 `sound.add` 新建、限位即 `stop+destroy`，实例生命周期从未量化过。新量具 `perf-sound-churn.mjs`（确定性口径）基线 17 新建+19 销毁/300 帧、峰值并发 2；`platSndPool` 池化后 **新建/销毁双归零（−100%，确定性）**，语义等价四点论证（重播/重叠数/生命周期/`fx` 路径）；耗时口径不主张（期望节省低于噪声底，r51 纪律第三次执行） |
 | **r51 `updateMechs` 归因重构 + 平滑器优化**（2026-11-05） | [report/perf/2026-11-05-r51-update-mech.md](report/perf/2026-11-05-r51-update-mech.md) | **纠错轮**：实测 `performance.now()` 量化 100µs，**r50 分段表亚百微秒段全部作废**（`updatePlatformSound` 真值 ~7% 非 18.9%）；消融法立为新口径（`updateMechs` 67% / 平滑器 22%）；平滑器 exp 同帧缓存 + 静止快路——**exp 100/帧→1/帧（−99.0%）、快路命中 60.2%（确定性）**，40×120×7 差分逐位等价 0 不一致；合并候选与逐类优化均实测判负；含量具坑三连（**页内量具跑在旧构建上**靠确定性断言当场抓住） |
