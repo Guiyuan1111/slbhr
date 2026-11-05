@@ -86,10 +86,22 @@ export async function runInputs(page, timeline, totalMs) {
   }
 }
 
-/** 等权威相位到 started：必须读状态相位，DOM 文本轮询有 250ms 假空窗（见 regression 头注） */
+/** 等权威相位到 started：必须读状态相位，DOM 文本轮询有 250ms 假空窗（见 regression 头注）。
+ *  r46：用函数谓词而非字符串——生产 CSP 是 `script-src 'self'`（无 unsafe-eval），
+ *  字符串求值会被浏览器拒绝（EvalError: Evaluating a string as JavaScript…），
+ *  只要客户端带着 CSP 头跑，e2e 一进门就挂。函数形式走 Playwright 的常规注入，R 不受限。 */
 export async function waitForStarted(page, timeoutMs = 20000) {
-  const gate = `(() => { try { return window.__fwInit.net.room.state.phase === "started"; } catch { return false; } })()`;
-  await page.waitForFunction(gate, null, { timeout: timeoutMs });
+  await page.waitForFunction(
+    () => {
+      try {
+        return globalThis.__fwInit.net.room.state.phase === "started";
+      } catch {
+        return false;
+      }
+    },
+    null,
+    { timeout: timeoutMs },
+  );
 }
 
 /**
