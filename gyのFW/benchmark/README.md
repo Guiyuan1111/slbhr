@@ -623,3 +623,23 @@ r54 实测：Arr 直中率 99.8%、位级 0 不一致（布局机械成立），
 −0.14µs（重叠）；**天花板 −0.47µs/帧 → ×10 整帧 ≈ −4.7µs ≪ 15µs 裁决线 →
 判负**。教训：**先量「方向的天花板」再动产线代码**——布局重写这类结构级
 改动的可行性，用一个不合法但上界最大的假想臂就能裁决。
+
+### perf-net-payload.mjs — 网络载荷字节计数（r55）
+
+```bash
+LEVEL=forest_bonus_2 FRAMES=150 node --import tsx benchmark/perf-net-payload.mjs --save r55-net
+```
+
+双页真实会话，对**底层 WebSocket**（`room.connection.transport.ws`——Colyseus
+0.16 的 `connection` 是 events/transport 包装，不是 ws 本体）挂字节计数：
+入站 `message` 事件按 `byteLength/size/length` 计，出站包同实例 `send`。
+怠速/运动双窗各 N 个 started 帧。
+
+r55 实测：下行怠速 ~5.9 KB/s → 运动 ~8.7 KB/s（均长 17.2 B/msg，载荷由真实
+状态变化驱动）；上行 ~2 KB/s 恒定（客户端每帧上报输入）。**量级即否决，
+判不立项**。候选（恒脏字段 f+timerMs、出站改变化触发）分别栽在：帧锚/HUD
+红线、服务端「按住恢复」排水语义——**网络口径的复刻语义是承重墙，别碰**。
+
+**⚠ 双窗探针坑**：前一窗完成时若只还原 `sys.sceneUpdate` 不还原
+`scene.update`，下一窗把残留闭包当原件再包，首帧即被旧闭包踩死（第二窗永挂）。
+修法：以 `sys.sceneUpdate` 为活原件，完成时**两处都还原**。
