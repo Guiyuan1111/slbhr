@@ -330,6 +330,34 @@ describe("bevelColorMatrix offXY hoist 位级等价（r49）", () => {
     expect(diff, `首个差异 @${diff}: ${a[diff]} vs ${b[diff]}`).toBe(-1);
   });
 
+  /**
+   * r49 实测缺陷回归：真实菜单 canvasW=1036 / Cf=1036.8 → **FX=0.99923**，小数位极接近 1
+   * 但不等。这个临界区最容易因浮点结合顺序（`(x+0.5)*FX+ox−0.5` 合并写法）或漏 `fr()`
+   * 产生 1 ULP 偏差——本套测试原先只有 FX=1 与 FX=0.054 两端，恰好漏掉真实值：
+   * 表驱动改写漏掉 own 采样的 `fr()` 时，32 条测试仍全绿，靠真实数据 A/B 才抓到。
+   */
+  it("真实 FX=0.99923 / FY=1（canvasW/Cf 的真实比值）逐字节一致", () => {
+    const alpha = shapes()[2][1];
+    // 关键：FX = W/Cf。真实菜单 W=1036, Cf=1036.8 → FX≈0.99923。
+    // 小画布下要复现这个比值必须反推 Cf = W/0.99923，而不是直接抄 Cf=1036.8
+    // （那样得到 FX=56/1036.8=0.054，是另一个区间）。
+    //
+    // ⚠ 已知覆盖面局限（r49 实测，不掩饰）：本用例**抓不到**「own 采样漏 fr()」那类缺陷。
+    // 表驱动改写时确实漏了 fr，全部合成用例（33 条）仍全绿；漏 fr 在 24×20 随机噪声下
+    // 144000 像素显形 0 次、均匀块 255 种 alpha 也显形 0 次——它只在**全画布 1036×864
+    // 真实结构**下才产生 1 ULP 偏差。该缺陷由 `perf-bevel` 的真实数据 A/B 抓到。
+    // 因此本文件的合成用例只保证「常规路径等价」，真实数据等价性必须靠 A/B 量具。
+    const FXreal = 1036 / 1036.8;
+    for (const outer of [1, 0]) {
+      const opts = { thickness: 200, outer, dir: 1, tint: [216, 181, 27] as [number, number, number], Cf: W / FXreal, Kf: H };
+      const a = bevelColorMatrixRef(alpha, W, H, opts);
+      const b = bevelColorMatrix(alpha, W, H, opts);
+      let diff = -1;
+      for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) { diff = i; break; }
+      expect(diff, `outer=${outer} 首个差异 @${diff}: ${a[diff]} vs ${b[diff]}`).toBe(-1);
+    }
+  });
+
   it("分片边界（y0/y1 三段）逐字节一致", () => {
     const alpha = shapes()[4][1]; // 半透明渐变
     const opts = { thickness: 200, outer: 0, dir: -1, tint: [78, 60, 14] as [number, number, number], Cf: W, Kf: H };
