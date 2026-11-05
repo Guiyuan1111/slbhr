@@ -586,3 +586,23 @@ r52 实测（`forest_bonus_2`，300 帧）：基线 **17 新建 + 19 销毁**（
 `platSndPool` 池化后 **双归零（−100%）**。首版报告口径（`forest_bonus_2` 128 帧
 18 play + 18 stop、峰值 4）与终版（300 帧 17/19、峰值 2）的差异说明事件密度
 随会话浮动——**新建/销毁的归零才是指标，play/stop 计数不是**。
+
+### perf-timer-res.mjs — 页内时钟分辨率测定（r53）
+
+```bash
+node --import tsx benchmark/perf-timer-res.mjs --save r53-coop
+```
+
+连采 N 个 `performance.now()` 差值：隔离标志、非零差值集合、最小正差值、
+零差占比、`Date.now` 对照。r53 加 COOP/COEP 双头后 `crossOriginIsolated=true`，
+量化 **100µs→5µs**——r51 发现的「亚百微秒段不可测」自本轮解除，
+块计时类量具（perf-plat-merge / perf-smoother-ab）单趟/单帧信号直接可测。
+
+**⚠ 噪声底真相（r53）**：量化解除后，整帧消融（perf-update-ablate）的噪声底
+仍 ±5–7µs——主要来自 headless **帧调度抖动**，不是时钟。<10µs 的段改动在
+整帧口径依旧不可判，别指望精细时钟救消融。
+
+**换臂重建法（r53 立例）**：整帧 A/B 需要旧实现时——旧码入源 → 重建 →
+**用确定性断言（如 exp 计数）故意验证它失败，确认旧码真的在跑** → 测 →
+恢复 → 重建 → 断言 ✓ 确认还原。r51 教训（页内量具必须验证被测代码在跑）
+的跨构建版。
