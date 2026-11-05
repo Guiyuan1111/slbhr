@@ -36,7 +36,8 @@
 
 | 内容 | 位置 |
 |---|---|
-| 性能战役总账（r0–r7 七轮 + §八 r8–r11 + … + §四十八 r51） | [report/perf/2026-10-18-campaign-summary.md](report/perf/2026-10-18-campaign-summary.md) + 同目录各轮报告 |
+| 性能战役总账（r0–r7 七轮 + §八 r8–r11 + … + §四十九 r52） | [report/perf/2026-10-18-campaign-summary.md](report/perf/2026-10-18-campaign-summary.md) + 同目录各轮报告 |
+| **r52 平台电机声实例池**（2026-11-05） | [report/perf/2026-11-05-r52-platform-sound-pool.md](report/perf/2026-11-05-r52-platform-sound-pool.md) | 角度来自 r51 顺带发现：平台声每次起步 `sound.add` 新建、限位即 `stop+destroy`，实例生命周期从未量化过。新量具 `perf-sound-churn.mjs`（确定性口径）基线 17 新建+19 销毁/300 帧、峰值并发 2；`platSndPool` 池化后 **新建/销毁双归零（−100%，确定性）**，语义等价四点论证（重播/重叠数/生命周期/`fx` 路径）；耗时口径不主张（期望节省低于噪声底，r51 纪律第三次执行） |
 | **r51 `updateMechs` 归因重构 + 平滑器优化**（2026-11-05） | [report/perf/2026-11-05-r51-update-mech.md](report/perf/2026-11-05-r51-update-mech.md) | **纠错轮**：实测 `performance.now()` 量化 100µs，**r50 分段表亚百微秒段全部作废**（`updatePlatformSound` 真值 ~7% 非 18.9%）；消融法立为新口径（`updateMechs` 67% / 平滑器 22%）；平滑器 exp 同帧缓存 + 静止快路——**exp 100/帧→1/帧（−99.0%）、快路命中 60.2%（确定性）**，40×120×7 差分逐位等价 0 不一致；合并候选与逐类优化均实测判负；含量具坑三连（**页内量具跑在旧构建上**靠确定性断言当场抓住） |
 | **r50 客户端逐帧零分配化**（2026-11-05） | [report/perf/2026-11-05-r50-client-update.md](report/perf/2026-11-05-r50-client-update.md) | 新量具 `perf-update` 首次拆 `GameScene.update` 13 段（`updateMechs` 57.7% + `updatePlatformSound` 18.9% = 76.6%）；两处逐帧分配消除，**28200 次 update 的对象实例 28200 → 1（−100%，确定性）**，耗时带内不主张。含两个量具坑（Phaser `sys.sceneUpdate` 一次性快照使原型包装无效、堆差对短命对象失明）。另 `perf-static` 探测静态资源压缩判**不立项**（一次性成本）。**⚠ r51 已勘误：亚百微秒段受 100µs 计时器粗化影响，占比失真** |
 | **r50 r45 stash 处置**（2026-11-05） | [report/perf/2026-11-05-r50-stash-disposition.md](report/perf/2026-11-05-r50-stash-disposition.md) | 结论**丢弃**（已 drop）。勘误 r45 的「+0.68% 带内」：真值 **−1.43%（p=0.0022）**，当年是测量力不足。但结论仍成立——真实工作单元是单关，摊到单关仅 0.019ms，比单轮散布小两个数量级 |

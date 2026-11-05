@@ -567,3 +567,22 @@ r51 实测（`forest_bonus_2`，300 帧）：exp **100/帧 → 1/帧（−99.0%�
 **⚠ r51 最大教训：页内量具必须先验证被测代码真的在跑。**
 `dist` 是改动前构建的，`perf-smoother-ab` 两臂因此测出「新=旧」；
 靠确定性断言当场抓住，而不是靠时间数字的异常反推。改源码后先 `npm run build`。
+
+### perf-sound-churn.mjs — 平台电机声实例生命周期计数（r52）
+
+```bash
+LEVEL=forest_bonus_2 FRAMES=300 node --import tsx benchmark/perf-sound-churn.mjs --save r52-churn
+```
+
+包 `scene.sound.add` 与 `BaseSound.destroy/play/stop`（按 key `sfx_platform` 过滤），
+统计 N 个真实 started 帧内的实例生命周期事件：`sound.add` 新建数、destroy 数、
+play/stop 事件数（运动模式随会话浮动，仅作分母参照）、同时存活峰值。
+
+**确定性口径**（r50 实例计数、r51 exp 计数同一纪律）：池化前后新建/销毁数
+是结构性事实，不依赖统计判据。
+
+r52 实测（`forest_bonus_2`，300 帧）：基线 **17 新建 + 19 销毁**（destroy > add
+的差值来自探针挂上之前已建的 2 个实例在窗口内被销毁，账目自洽），峰值并发 2；
+`platSndPool` 池化后 **双归零（−100%）**。首版报告口径（`forest_bonus_2` 128 帧
+18 play + 18 stop、峰值 4）与终版（300 帧 17/19、峰值 2）的差异说明事件密度
+随会话浮动——**新建/销毁的归零才是指标，play/stop 计数不是**。

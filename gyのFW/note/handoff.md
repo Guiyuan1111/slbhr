@@ -10,6 +10,13 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-11-05（r52 性能轮：平台电机声实例池——`sound.add` 新建/destroy 双归零）
+
+① **新角度**（来自 r51 顺带发现）：`startPlatformSound` 每次起步 `sound.add` 新建 Phaser 音效实例、限位即 `stop+destroy`——实例生命周期从未被量化。新量具 `perf-sound-churn.mjs`（包 `sound.add`/`BaseSound.destroy/play/stop`）在真实页面计确定性生命周期事件。基线（`forest_bonus_2` 300 帧）：**17 新建 + 19 销毁**，峰值并发 2；单次 add+play ≈0.09ms，新建占 ~75%。
+② **改动**：`platSndPool` 实例池——起步 `pool.pop() ?? sound.add(...)`，限位 `stop` 后 `pool.push`（原为 `destroy`）。语义等价四点：停掉的实例 `play()` 从头重播；每平台独立实例重叠数不变；池自然有界 ≤ 峰值并发；GameScene 重建时字段随实例重建无跨场景泄漏，`fx` 关/静音路径不变。
+③ **确定性量化**：同口径复测 **`sound.add` 17→0、destroy 19→0（双 −100%）**；play/stop 事件数随运动模式浮动非指标。耗时口径不主张（~5µs/帧期望节省低于噪声底，事件密度随玩法浮动）——r51 纪律第三次执行。
+④ **门禁**：typecheck 0；vitest **512/512**；det **241/241**。报告 `note/report/perf/2026-11-05-r52-platform-sound-pool.md`，总账 §四十九。遗留不变：`updateMechs` 需数据布局级重写、计时器粗化需隔离上下文。
+
 **更新**：2026-11-05（r51 性能轮：`updateMechs` 归因重构 + 平滑器确定性优化——并纠错 r50 的分段表）
 
 ① **纠错优先（本轮最重要产出）**：实测 `performance.now()` 在本环境**量化到 100µs**（headless 非隔离上下文的 Chrome 计时器粗化，20000 次采样只有 0.1ms 一个非零差值）。**r50 分段表中小于 100µs 的段全部作废**：`updatePlatformSound` 真值 ~1.3–12.5µs（~7%），r50 报的 40.5µs（18.9%）是「撞 tick 帧数占比」的换算值。批量/消融/直方图三件独立量具同框交叉验证。

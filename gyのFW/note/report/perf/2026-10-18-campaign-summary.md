@@ -1808,3 +1808,36 @@ r50 的定性判断（副作用/顺序风险不值得）这次有了定量支撑
 typecheck 0；vitest **512/512**（+3 逐位等价测试）；det **241/241** 位级一致。
 新量具 7 件：`perf-update-ablate` / `perf-mech-class` / `perf-plat-pass` /
 `perf-plat-merge` / `perf-smoother-ab` / `perf-smoother-micro` / `perf-exp-count`。
+
+## 四十九、r52 增补（2026-11-05，平台电机声实例池）
+
+> 详报：[`2026-11-05-r52-platform-sound-pool.md`](2026-11-05-r52-platform-sound-pool.md)。
+
+### 49.1 角度与量具
+
+角度来自 r51 顺带发现：`startPlatformSound` 每次起步 `sound.add` 新建 Phaser
+音效实例、限位即 `stop+destroy`。新量具 `perf-sound-churn.mjs`（包
+`sound.add`/`BaseSound.destroy/play/stop`）在真实页面计实例生命周期事件——
+**确定性口径**（r50 实例计数、r51 exp 计数同一纪律）。
+
+基线（`forest_bonus_2`，300 帧）：**17 次新建 + 19 次销毁**，峰值并发 2。
+单次 add+play ≈ 0.09ms，新建占 ~75%。
+
+### 49.2 改动与确定性结果
+
+`platSndPool` 实例池：起步 `pool.pop() ?? sound.add(...)`，限位 `stop` 后
+`pool.push`（原为 `destroy`）。语义等价：停掉的实例 `play()` 从头重播，与新建
+一致；每平台独立实例，重叠数不变；池自然有界（≤ 峰值并发）；GameScene 重建
+时字段随实例重建，无跨场景泄漏；`fx` 关/全局静音路径不变。
+
+| 事件 | 前 | 后 |
+|---|---:|---:|
+| `sound.add` 新建 | 17 | **0（−100%）** |
+| destroy | 19 | **0（−100%）** |
+
+耗时口径不主张（~5µs/帧期望节省低于噪声底，事件密度随玩法浮动）——
+r51 立的纪律第三次执行。
+
+### 49.3 门禁
+
+typecheck 0；vitest **512/512**；det **241/241** 位级一致。
