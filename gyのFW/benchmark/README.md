@@ -643,3 +643,25 @@ r55 实测：下行怠速 ~5.9 KB/s → 运动 ~8.7 KB/s（均长 17.2 B/msg，�
 **⚠ 双窗探针坑**：前一窗完成时若只还原 `sys.sceneUpdate` 不还原
 `scene.update`，下一窗把残留闭包当原件再包，首帧即被旧闭包踩死（第二窗永挂）。
 修法：以 `sys.sceneUpdate` 为活原件，完成时**两处都还原**。
+
+### perf-mem-residency.mjs — 内存常驻画像（r56）
+
+```bash
+LEVEL=forest_bonus_2 SECS=150 node --import tsx benchmark/perf-mem-residency.mjs --save r56-mem
+```
+
+双页真实会话长浸泡：`--enable-precise-memory-info` 逐秒采样 `usedJSHeapSize`，
+同场确定性计数纹理（键数 + 源像素和）、音频（**`BaseCache.getKeys()`**——
+`cache.audio.keys` 不是可靠公开面）、房间实体。每 10s 注入 1s 移动输入，
+防「全静死房」假设失真。
+
+**⚠ 泄漏判据：用 GC 地板线，不用原始斜率。** JS 堆是锯齿，斜率符号由
+加载期垃圾排空节奏决定——r56 两场会话都测出 −750 KB/分钟「负斜率」（堆在
+缩小），拿它当趋势就是误读。正确做法：按 30s 桶取堆最低点（地板），
+**地板上升才叫泄漏**（r56 实测 +0.1 MB/分钟 = 平坦）。
+
+另一个坑：`window.__fw` **就是** Phaser.Game 实例（`main.ts:726`），没有
+`.game` 子柄；房间在 `scene.d.net.room`。
+
+r56 结论：堆常驻 ~27 MB、地板平坦、四缓存恒定 → **判不立项**（会话内存
+无可优化项）。
