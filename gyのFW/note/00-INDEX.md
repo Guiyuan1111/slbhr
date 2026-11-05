@@ -36,7 +36,9 @@
 
 | 内容 | 位置 |
 |---|---|
-| 性能战役总账（r0–r7 七轮 + §八 r8–r11 + … + §四十六 r49） | [report/perf/2026-10-18-campaign-summary.md](report/perf/2026-10-18-campaign-summary.md) + 同目录各轮报告 |
+| 性能战役总账（r0–r7 七轮 + §八 r8–r11 + … + §四十七 r50） | [report/perf/2026-10-18-campaign-summary.md](report/perf/2026-10-18-campaign-summary.md) + 同目录各轮报告 |
+| **r50 客户端逐帧零分配化**（2026-11-05） | [report/perf/2026-11-05-r50-client-update.md](report/perf/2026-11-05-r50-client-update.md) | 新量具 `perf-update` 首次拆 `GameScene.update` 13 段（`updateMechs` 57.7% + `updatePlatformSound` 18.9% = 76.6%）；两处逐帧分配消除，**28200 次 update 的对象实例 28200 → 1（−100%，确定性）**，耗时带内不主张。含两个量具坑（Phaser `sys.sceneUpdate` 一次性快照使原型包装无效、堆差对短命对象失明）。另 `perf-static` 探测静态资源压缩判**不立项**（一次性成本） |
+| **r50 r45 stash 处置**（2026-11-05） | [report/perf/2026-11-05-r50-stash-disposition.md](report/perf/2026-11-05-r50-stash-disposition.md) | 结论**丢弃**（已 drop）。勘误 r45 的「+0.68% 带内」：真值 **−1.43%（p=0.0022）**，当年是测量力不足。但结论仍成立——真实工作单元是单关，摊到单关仅 0.019ms，比单轮散布小两个数量级 |
 | **r49 选关树烘焙内核**（2026-11-05） | [report/perf/2026-11-05-r49-tree-bake.md](report/perf/2026-11-05-r49-tree-bake.md) | `outlinePass` 三角函数外提 **138.3→53.7ms（−61.8%，区间分离）**，内核合计 −27.8%；但**页面口径 −0.1% 完全带内**——内核收益在 headless 被 87.5% 合成等待淹死。含「合成输入把结论量反」的教训（真实厚层覆盖率 39.8%/29.6% 是稠密）与「合成单测抓不到 1 ULP 缺陷」的量化盲区披露 |
 | **r48 选关菜单进度读取**（2026-11-05） | [report/perf/2026-11-05-r48-temple-progress.md](report/perf/2026-11-05-r48-temple-progress.md) | `starsOf` 每次全量 `JSON.parse` 改按原文串记忆：微基准 **22.4ms→37.6µs（−99.8%，区间分离可主张）**，页面端 1147→1061ms 区间重叠不主张；新量具 `perf-step-cpu`（vendor 占 83–97%、自有内核仅 2–16%＝微优化天花板）与 `perf-sleep`（241 关 15 关中招"该睡没睡"，四个修法全被位级门禁否决）；含量具噪声底 ±10% 披露 |
 | **r47 服务端每步分配归因**（2026-11-05） | [report/perf/2026-11-05-r47-server-alloc.md](report/perf/2026-11-05-r47-server-alloc.md) | 新量具 `perf-server-alloc` 首次把每步分配归到函数（`character.update` 占自有代码 9.8%）；零分配化后每步分配 **−9.9%**（两臂不重叠），单步 CPU 带内不主张；含「整进程 profile 会被启动期 loader 淹没」的量具坑 |

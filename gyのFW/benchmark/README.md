@@ -433,3 +433,57 @@ LEVEL=forest_bonus_2 ROUNDS=7 node --import tsx benchmark/perf-create.mjs --save
 钩 `GameScene.create` 与 12 个 `build*` 方法，报每个的 self 时间 + `__buildSum` +
 `__unaccounted`。r49 实测总计仅 **9.5–14.4ms**（`buildMechs` 3.5ms 最大），
 相对换关链 1.1s 太小，**未立项优化**。
+
+### perf-update.mjs — GameScene.update 逐帧分段（r50 起）
+
+```bash
+FRAMES=200 ROUNDS=3 node --import tsx benchmark/perf-update.mjs --save r50-update
+node --import tsx benchmark/perf-update.mjs --compare r50-update
+```
+
+把 `GameScene.update` 拆到 13 个子步骤（角色/钻石/机关/仙女/传送门/浮尘/黑幕/教学…），
+页内 `performance.now()` 逐段累计，仅 `started` 相位。r50 实测 `forest_bonus_2`：
+`updateMechs` **57.7%** + `updatePlatformSound` **18.9%** = 76.6%，全程 214.0 µs/帧。
+
+**⚠ 两个坑（都踩过）**：
+1. **包装原型上的 `update` 完全无效。** Phaser 在 `SceneManager.bootScene` 里
+   `sys.sceneUpdate = scene.update`（`phaser/src/scene/SceneManager.js:636-638`）——
+   `create()` 结束后的**一次性快照**，之后不走原型链。只包原型会得到 `calls: 0`。
+   必须包**实例**的 `update` 并重指 `sys.sceneUpdate`。12 个分段方法走 `this.xxx()`
+   原型链，包原型有效——两类分开处理。
+2. **单页进不了 `started`。** 服务端权威双人房要求双人到齐 → ready 2s → started。
+   本件沿用 `scripts/e2e/lib.mjs` 的 `enterAs` / `waitForStarted` 双页流程。
+
+### perf-update-alloc.mjs — 逐帧分配消除的 A/B（r50 起）
+
+```bash
+ROUNDS=9 PLATFORMS=47 node --import tsx benchmark/perf-update-alloc.mjs --save r50-alloc
+```
+
+**主指标：对象实例身份计数**（把 `update` 桩收到的每个 `pose` 塞进 `Set`，
+`Set.size` = 不同实例数）——确定性，不依赖统计判据。r50 实测 28200 次 update：
+A 臂 28200 个实例 → B 臂 1 个（−100%）。耗时口径为次要指标。
+
+**⚠ 口径坑：堆差对短命对象失明。** 首版用 `--expose-gc` + `heapUsed` 前后差，
+两臂几乎相同（**2,034,416 vs 2,034,560 字节**）——V8 把短命对象分配在 new space，
+回收后堆差归零。与 r47「typed array 大块对采样器失明」同类。
+`perf-client` 的总量分配速率也不适用（r47 已量到 86.8% 在 Phaser 内部）。
+
+### perf-static.mjs — 静态资源服务（r50 起）
+
+```bash
+ROUNDS=7 node --import tsx benchmark/perf-static.mjs --save r50-static
+```
+
+真 HTTP 口径（**不用 mock req/res**：`compCache` 是模块级私有清不掉，冷测从第二轮起
+就是热缓存；mock res 缺 `getHeader` 时 express.static 异步回调会崩）。冷/热靠
+**重启服务进程**区分。
+
+r50 基线：首屏 3 chunk burst(cold) **88.96ms** / warm 12.21ms / 304 0.46ms；
+`brotliCompressSync` q5 单 1.4MB chunk **23.91ms**、`gzipSync` 6 27.01ms、
+`readFileSync` 0.87ms。
+
+**结论：不立项。** 一次性成本（systemd 长期运行，每文件只在 cache 冷时压一次；
+全量 280 文件 77ms、首屏 67ms），预压缩只影响「重启后第一个玩家」且启动反慢 67ms。
+另 `statSync` 每请求仅 0.95µs（1000 req/s 占 0.10% CPU），`compCache` 全量
+br+gz 常驻仅 1.3MB。
