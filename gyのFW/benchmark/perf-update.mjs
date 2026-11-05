@@ -76,6 +76,21 @@ const SEGMENTS = [
 ];
 
 /**
+ * r51：`updateMechs` 内部按 16 类机关再拆一层。
+ *
+ * ⚠ 这些 `cbXxx` 是 **create() 期 bind 出来的实例属性**（`GameScene.ts:530-539`），
+ * 不是原型方法——必须包实例属性（与 r50 发现的 Phaser `sys.sceneUpdate` 同类陷阱：
+ * 包错层级 = 包了个没人调的函数）。灯光族（beamers/rotMirrors/…）是类字段箭头函数，
+ * 同样在实例上。
+ */
+const MECH_CBS = [
+  "cbLevers", "cbPushers", "cbPlatforms", "cbProps", "cbWinds", "cbHangings",
+  "cbPulleys", "cbRomans", "cbBeamers", "cbRotMirrors", "cbBoxMirrors",
+  "cbInfiniteMirrors", "cbLightPushers", "cbSliders", "cbTimedPushers",
+  "cbPlatSnd",
+];
+
+/**
  * 页内钩子：包 GameScene.update + 12 个分段方法。
  *
  * ## 关键坑（r50 实测，浪费了两轮调试）
@@ -116,6 +131,25 @@ const HOOK = `(() => {
         finally { S.seg[name] = (S.seg[name] || 0) + (performance.now() - t0); }
       };
     });
+
+    // r51：机关类级分解——包**实例属性**（cbXxx 是 create 期 bind 出来的，不在原型上）
+    const mechKeys = ${JSON.stringify(MECH_CBS)};
+    const mech = {};
+    mechKeys.forEach((name) => {
+      const orig = scene[name];
+      if (typeof orig !== "function") return;
+      const key = "mech:" + name;
+      mech[name] = true;
+      scene[name] = function (...a) {
+        if (!S.running) return orig.apply(this, a);
+        const t0 = performance.now();
+        try { return orig.apply(this, a); }
+        finally { S.seg[key] = (S.seg[key] || 0) + (performance.now() - t0); }
+      };
+      // 同时记录调用次数（判断该类机关是否存在于本关）
+      scene[name].__orig = orig;
+    });
+    S.mechHooked = Object.keys(mech);
 
     // update：必须包**实例**并重指 sys.sceneUpdate（Phaser 已快照，原型无效）
     const origUpdate = scene.update;
@@ -209,7 +243,9 @@ const allSegKeys = [...new Set(rows.flatMap((r) => Object.keys(r.seg)))];
 const summary = [];
 const totalMed = med(rows.map(totalPerFrame));
 
-for (const k of SEGMENTS.filter((s) => allSegKeys.includes(s))) {
+for (const k of allSegKeys) {
+  // 顶层 13 段按固定顺序；机关类级（mech:）追加在后面
+  if (!SEGMENTS.includes(k) && !k.startsWith("mech:")) continue;
   const vals = rows.map((r) => perFrame(r, k));
   summary.push({
     key: k,
@@ -219,7 +255,8 @@ for (const k of SEGMENTS.filter((s) => allSegKeys.includes(s))) {
     pct: totalMed ? +((med(vals) / totalMed) * 100).toFixed(1) : 0,
   });
 }
-const segSum = summary.reduce((a, s) => a + s.perFrameMed, 0);
+// 段和只算顶层 13 段（机关类级是 updateMechs 的再分解，不能重复计入）
+const segSum = summary.filter((s) => SEGMENTS.includes(s.key)).reduce((a, s) => a + s.perFrameMed, 0);
 summary.push({
   key: "__unaccounted",
   perFrameMed: +(totalMed - segSum).toFixed(2),
@@ -233,6 +270,22 @@ console.log("  分段                 每帧(µs)   区间(µs)      占比");
 for (const s of summary) {
   const label = s.key === "__unaccounted" ? s.key : `  ${s.key}`;
   console.log(`  ${label.padEnd(20)} ${String(s.perFrameMed).padStart(8)}   [${s.min}–${s.max}]`.padEnd(30) + ` ${String(s.pct).padStart(5)}%`);
+}
+
+// r51：机关类级分解（updateMechs 内部）
+const mechRows = summary.filter((s) => s.key.startsWith("mech:"));
+if (mechRows.length) {
+  const mechTotal = summary.find((s) => s.key === "updateMechs")?.perFrameMed ?? 0;
+  const mechSum = mechRows.reduce((a, s) => a + s.perFrameMed, 0);
+  console.log(`\n  ── updateMechs 内部按机关类拆细（该段 ${mechTotal.toFixed(1)} µs/帧）──`);
+  console.log("  机关类                  每帧(µs)   占 updateMechs   占 update");
+  for (const s of [...mechRows].sort((a, b) => b.perFrameMed - a.perFrameMed)) {
+    const name = s.key.slice(5);
+    const ofMech = mechTotal ? ((s.perFrameMed / mechTotal) * 100).toFixed(1) : "0";
+    console.log(`  ${name.padEnd(20)} ${String(s.perFrameMed).padStart(8)}   ${String(ofMech).padStart(12)}%   ${String(s.pct).padStart(5)}%`);
+  }
+  const mechUnaccounted = mechTotal - mechSum;
+  console.log(`  ${"（未计入）".padEnd(20)} ${String(mechUnaccounted.toFixed(2)).padStart(8)}   ${String((mechTotal ? (mechUnaccounted / mechTotal) * 100 : 0).toFixed(1)).padStart(12)}%`);
 }
 
 if (argSave) {
