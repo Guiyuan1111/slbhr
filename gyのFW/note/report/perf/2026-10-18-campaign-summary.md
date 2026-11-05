@@ -1602,3 +1602,15 @@ alpha：
 
 typecheck 0；vitest **509/509**（原 483 + 新增 26）；det **241/241**；`perf-bevel`
 真实数据位级全一致。报告 `note/report/perf/2026-11-05-r49-tree-bake.md`。
+
+### 46.9 顺手发现的既有遗留：r45 的「已回退」没落地
+
+r49 收尾时 `git status` 显示 `packages/shared/src/kernel/build.ts` 有未提交改动。
+追查发现是 **r45 §5.1 的 `groundFixture`/`quadFixture` 顶点 scratch 复用实验**——
+r45 报告明确判定「带内 +0.68%（噪声 7.94%），**已回退**」，但工作区从未真正清掉。
+
+r49 处理：`git stash` 隔离（`stash@{0}`），不纳入 r49 提交，不擅自 drop（不可逆）。
+r49 三件门禁均在**隔离后**重跑：typecheck 0、vitest 509/509、det 241/241。
+
+> **教训**：报告里写「已回退」不等于工作区真的回退了。**回退动作必须落到
+> `git status` 干净这一可验证事实上**，否则会潜伏一整轮。
