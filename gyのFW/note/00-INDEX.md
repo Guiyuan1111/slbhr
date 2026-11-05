@@ -37,6 +37,7 @@
 | 内容 | 位置 |
 |---|---|
 | 性能战役总账（r0–r7 七轮 + §八 r8–r11 + … + §四十一 r44 + §四十二 r45） | [report/perf/2026-10-18-campaign-summary.md](report/perf/2026-10-18-campaign-summary.md) + 同目录各轮报告 |
+| **r46 换关链客户端半边**（2026-11-05） | [report/perf/2026-11-05-r46-advance-client.md](report/perf/2026-11-05-r46-advance-client.md) | 新量具 `perf-advance` 首次拆出换关 1.1s 结构（黑幕 65% / 拉关 29% / 重建 5.6%）；黑幕与 fetch 并行使拉关等待 **−67.4%**（两臂不重叠）；顺带修 e2e 与 CSP 不兼容（11 处谓词） |
 | **r45 换关链·构建性能轮**（2026-11-05） | [report/perf/2026-11-05-r45-switch-build.md](report/perf/2026-11-05-r45-switch-build.md) | 换关链 **−48.8%**（配对 A/B，超噪声）、World 构建 **−15.4%**、单 world 常驻 **−27.9%**；顺带修复 `reset()` 丢失 `startFrozen` 的复刻性缺陷（10 关），并把 reset 路径补进位级门禁 |
 | **r44 六部全库性能轮**（2026-11-05） | [report/perf/2026-11-05-r44-six-temple-round.md](report/perf/2026-11-05-r44-six-temple-round.md) | 首次把 241 关纳入基准与位级锚（此前仅前三部 139 关）；收益诚实判「不可量化」；含 `3a57b13` 漏提勘误 |
 | 代码结构分析（2026-10-18 时点快照） | [report/codebase-analysis/](report/codebase-analysis/) |

@@ -106,7 +106,7 @@ bash benchmark/ab-r44.sh 6c65c8d 3        # 配对 A/B（<基线提交> [轮次]
 - 分配指标的已知局限：`allocBPerStep` 用 GC 前后堆差法，同代码两跑在服务端全库口径下
   有 216/241 关给出不同数值，**不具 percent 级分辨力**；判定请以配对 A/B + 臂内散布为准。
 
-### 换关链与纯构建口径（r45 起）
+### 换关链与纯构建口径（r45/r46 起）
 
 ```bash
 PERF_SWITCH_ROUNDS=9 node --import tsx benchmark/perf-switch.mjs --save r45-final
@@ -128,6 +128,25 @@ node --expose-gc --import tsx benchmark/perf-build.mjs --compare build-r44-basel
 - `perf-determinism` 的第三条哈希 `switched`：`reset(本关)` 后跑同一 scripted 脚本，
   须与新建路径**逐位相同**（自洽断言，不依赖历史快照）。reset 路径此前零覆盖，
   正是 `startFrozen` 缺陷能长期存活的原因；现 241/241 逐位等价。
+
+### 换关链客户端半边（r46 起）
+
+```bash
+node --import tsx benchmark/perf-advance.mjs --runs 5 --save adv-r46   # 双页真房，FORCE_DOORS 真通关
+node --import tsx benchmark/perf-advance.mjs --no-build --compare adv-baseline
+```
+
+- `perf-advance`：量「won 点继续 → 下一关可玩」的**客户端半边**。双页入房（`enterAs` 走
+  DOM 表单，生产同构），通关走 `FW_DEBUG_FORCE_DOORS=1`（真实 25fps 扫帧，不注入假事件）。
+  六段里程碑：`clickToAdvanceSent` / `advanceSentToFadeIn` / `fadeInToOp` /
+  `opToGameCreate` / `createToFirstPlayable` / `clickToFirstPlayable`。
+  快照 `results/advance-<label>.json`。
+  **量具陷阱**（已写进脚本注释）：Phaser 把 `scene.stop+start` 排到下一帧批处理，2ms 轮询
+  永远看不到 inactive；`sys.events` 监听器在 shutdown 时被清空，需每 20ms 重挂；
+  入关时也会记 `firstPlayable`，须在点击时清空窗口。
+- 首次测量结论（2026-11-05）：换关 1.1s 中黑幕淡入占 **65%**（oracle 固定动画，不可动）、
+  拉关+回声 **29%**、客户端场景重建仅 **5.6%**。因此优化面只有网络往返——
+  黑幕与 fetch 并行后拉关等待 312→102ms（−67.4%，两臂不重叠）。
 
 - `perf-step`：每关预热 90 步 + 600 步计时（`PERF_STEPS`/`PERF_LEVELS` 可覆盖），
   产出 avg/p95/p99、每仿真秒物理占用；快照 `results/perf-<label>.json`。
