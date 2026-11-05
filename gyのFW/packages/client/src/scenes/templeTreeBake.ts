@@ -161,64 +161,26 @@ export function bevelColorMatrix(
   const maxOff = offs.length > 1 ? offs[offs.length - 1] * Math.max(WTX, WTY) : 0;
   const R = Math.ceil(maxOff) + 2;
   const sat = opts.sat ?? buildSAT(alpha, w, h);
-  // r49：采样坐标分解表。
-  // 每个采样项的 `t0x±ox` 只取决于像素列 x（`t0x=(x+0.5)*FX`，ox 与像素无关），
-  // 所以 (xa,xb,fx) 可以按 (采样项, x) 建表，(ya,yb,fy) 按 (采样项, y) 建表。
-  // 原实现逐像素、逐采样重算 Math.floor + 8 次边界比较 —— 真树数据下每层约 6.3M 次采样。
-  // 建表代价 O(项数×(w+h))，相对逐像素处理可忽略。表项 0 = own（无偏移），
-  // 其后交替 +offs[k] / −offs[k]（与 a1/a2 的取号顺序一致）。
-  const nEntry = 1 + offs.length * 2;
-  const entryOff = new Float64Array(nEntry * 2);
-  for (let k = 0; k < offs.length; k++) {
-    const ox = offs[k] * WTX, oy = offs[k] * WTY;
-    entryOff[(1 + k * 2) * 2] = ox; entryOff[(1 + k * 2) * 2 + 1] = oy;
-    entryOff[(2 + k * 2) * 2] = -ox; entryOff[(2 + k * 2) * 2 + 1] = -oy;
-  }
-  const xaT = new Int32Array(nEntry * w), xbT = new Int32Array(nEntry * w), fxT = new Float64Array(nEntry * w);
-  const yH = y1 - y0;
-  const yaT = new Int32Array(nEntry * yH), ybT = new Int32Array(nEntry * yH), fyT = new Float64Array(nEntry * yH);
-  for (let e = 0; e < nEntry; e++) {
-    const ox = entryOff[e * 2], oy = entryOff[e * 2 + 1];
-    const xbase = e * w;
-    for (let x = 0; x < w; x++) {
-      // 与 sampleA2 的算式**逐字同序**：t0x=(x+0.5)*FX → tx=t0x+ox → px=tx−0.5。
-      // 不可合并成 (x+0.5)*FX+ox−0.5——实测 that 会在边缘像素产生 1 ULP 偏差。
-      const t0x = (x + 0.5) * FX;
-      const px = (t0x + ox) - 0.5;
-      const x0 = Math.floor(px);
-      xaT[xbase + x] = x0 < 0 ? 0 : x0 >= w ? w - 1 : x0;
-      xbT[xbase + x] = x0 + 1 < 0 ? 0 : x0 + 1 >= w ? w - 1 : x0 + 1;
-      fxT[xbase + x] = px - x0;
-    }
-    const ybase = e * yH;
-    for (let y = y0; y < y1; y++) {
-      const t0y = (y + 0.5) * FY;
-      const py = (t0y + oy) - 0.5;
-      const y0i = Math.floor(py);
-      yaT[ybase + (y - y0)] = y0i < 0 ? 0 : y0i >= h ? h - 1 : y0i;
-      ybT[ybase + (y - y0)] = y0i + 1 < 0 ? 0 : y0i + 1 >= h ? h - 1 : y0i + 1;
-      fyT[ybase + (y - y0)] = py - y0i;
-    }
-  }
-  /** 按表项 e 在 (x, yi) 处采样；逐字对应 sampleA2 的算式 */
-  const sampleE = (e: number, x: number, yi: number): number => {
-    const xi = e * w + x, yj = e * yH + yi;
-    const xa = xaT[xi], xb = xbT[xi], fx = fxT[xi];
-    const ya = yaT[yj], yb = ybT[yj], fy = fyT[yj];
-    const r0 = ya * w, r1 = yb * w;
-    const top = alpha[r0 + xa] * (1 - fx) + alpha[r0 + xb] * fx;
-    const bot = alpha[r1 + xa] * (1 - fx) + alpha[r1 + xb] * fx;
-    return (top * (1 - fy) + bot * fy) / 255;
-  };
+  // r49：`o * WTX/WTY` 与像素无关，hoist 到循环外（offs 只有 3–4 项，但每个像素都要重算
+  // 两遍）。纯常量提取，与逐次乘法位级相同。
+  //
+  // 已试并撤回：把 sampleA2 的坐标分解 (xa,xb,fx)/(ya,yb,fy) 也建成表。微基准看似
+  // −51.7%，但真实全链配对 A/B 三层只有 −3.3%/−11.1%/−2.5%，**全部带内**——建表开销
+  // （7 项 × (w+h) + 每像素多一次表索引）抵消了省下的 Math.floor。且表驱动改写漏掉
+  // own 采样的 fr() 时只产生 1 ULP 偏差：33 条合成单测全绿而真实数据必红。
+  // 收益带内 + 复杂度上升 + 曾踩 1 ULP 坑 → 不留。
+  const offXY: number[] = [];
+  for (const o of offs) offXY.push(o * WTX, o * WTY);
   for (let y = y0; y < y1; y++) {
-    const yi = y - y0;
     for (let x = 0; x < w; x++) {
       const i = (y * w + x) * 4;
       if (alpha[y * w + x] === 0 && satSum(sat, w + 1, x - R, y - R, x + R + 1, y + R + 1) === 0) continue;
+      const t0x = (x + 0.5) * FX, t0y = (y + 0.5) * FY;
       let a1 = 0, a2 = 0;
-      for (let k = 0; k < offs.length; k++) {
-        a1 = fr(a1 + sampleE(1 + k * 2, x, yi));
-        a2 = fr(a2 + sampleE(2 + k * 2, x, yi));
+      for (let k = 0; k < offXY.length; k += 2) {
+        const ox = offXY[k], oy = offXY[k + 1];
+        a1 = fr(a1 + sampleA2(alpha, w, h, t0x + ox, t0y + oy));
+        a2 = fr(a2 + sampleA2(alpha, w, h, t0x - ox, t0y - oy));
       }
       a1 = fr(a1 / 3);
       a2 = fr(a2 / 3);
@@ -227,7 +189,7 @@ export function bevelColorMatrix(
         a = fr(a1 + a2);
         gray = fr(fr(0.5 - fr(fr(dir * a1) / 6)) + fr(fr(dir * a2) / 6));
       } else {
-        a = fr(sampleE(0, x, yi)); // own 采样于内容位置（FX 压缩同源）
+        a = fr(sampleA2(alpha, w, h, t0x, t0y)); // own 采样于内容位置（FX 压缩同源）
         gray = fr(fr(0.5 + fr(fr(dir * a1) / 6)) - fr(fr(dir * a2) / 6));
       }
       if (a > 0.5) a = 1;
