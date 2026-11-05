@@ -2917,7 +2917,10 @@ export class GameScene extends Phaser.Scene {
       });
     }
     // 原版 Wind.updateState：激活 playInstance 循环、失活停止（森林 14 关有风区）
-    const anyOn = [...this.windViews.values()].some((w) => w.on);
+    // r51：`[...values()]` 每帧每个风区各建一个数组（森林关最多 7 区 → 7 数组/帧）。
+    // 改为惰性短路遍历：`v.on` 是本类唯一显隐状态，语义等价于 `.some(w => w.on)`。
+    let anyOn = false;
+    for (const w of this.windViews.values()) if (w.on) { anyOn = true; break; }
     if (anyOn && !this.sound.isPlaying("sfx_wind")) this.sfx("sfx_wind", { loop: true, volume: 0.2 }); // 原版显式 0.2（bundle:1968490 附近）
     if (!anyOn) this.sound.stopByKey("sfx_wind");
   }
