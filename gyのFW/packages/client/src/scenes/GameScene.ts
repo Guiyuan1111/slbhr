@@ -2318,27 +2318,37 @@ export class GameScene extends Phaser.Scene {
   /** 每帧传送门消费（开关态迁移沿驱动显隐 + portalLoop 循环音全局单键，wind 同式）。
    *  状态契约：state.portals=ArraySchema<{id,state}>（服务器 PortalState，id=pt{序}）；
    *  字段未落地期间 st.portals?.forEach?. 静默跳过，渲染零影响。 */
+  /**
+   * r50：闭包改绑定回调 + 成员标志（原实现每帧 `forEach((s, idx) => ...)` 新建一个
+   * 捕获 `anyOpen` 的闭包——portal 关每帧一次，纯垃圾）。
+   * 与 updatemechs 的 `cbXxx` 同一模式（r3 已在该处采用）。
+   */
+  private portalAnyOpen = false;
+
   private updatePortals(st: any): void {
     if (this.portalViews.size === 0) return;
-    let anyOpen = false;
-    st.portals?.forEach?.((s: { id?: string; state?: number }, idx: number) => {
-      const v = this.portalViewOf(s, idx);
-      if (!v) return;
-      const state = Number(s.state) || 0;
-      if (state === v.lastState) {
-        if (state === 1) anyOpen = true;
-        return;
-      }
-      v.lastState = state;
-      const open = state === 1;
-      v.center.setVisible(open);
-      v.glowL.setVisible(open);
-      v.glowR.setVisible(open);
-      if (open) anyOpen = true;
-    });
+    this.portalAnyOpen = false;
+    st.portals?.forEach?.(this.cbPortals);
+    const anyOpen = this.portalAnyOpen;
     if (anyOpen && !this.sound.isPlaying("sfx_portalLoop")) this.sfx("sfx_portalLoop", { loop: true, volume: 0.3 });
     if (!anyOpen) this.sound.stopByKey("sfx_portalLoop");
   }
+
+  private readonly cbPortals = (s: { id?: string; state?: number }, idx: number): void => {
+    const v = this.portalViewOf(s, idx);
+    if (!v) return;
+    const state = Number(s.state) || 0;
+    if (state === v.lastState) {
+      if (state === 1) this.portalAnyOpen = true;
+      return;
+    }
+    v.lastState = state;
+    const open = state === 1;
+    v.center.setVisible(open);
+    v.glowL.setVisible(open);
+    v.glowR.setVisible(open);
+    if (open) this.portalAnyOpen = true;
+  };
 
   /** 快照条目 → 传送门视图：id 键优先，回退 P{idx}（level2 def id 序=world 数组序）。
    *  r44：首见缓存——原每帧每门做一次 `String(s.id).replace(/^pt/,"P")`（正则匹配 +
@@ -3018,12 +3028,26 @@ export class GameScene extends Phaser.Scene {
     st.platforms?.forEach?.(this.cbPlatSnd);
   }
 
+  /**
+   * r50：位姿对象改实例 scratch 复用。
+   *
+   * `platformSounds.update` 只读 `pose.x/y/angle` 三个数，不持有引用（见
+   * `platformSound.ts:44` 的 `update`：首见时把三值拷进 `Track`，之后只做差值比较）。
+   * 原实现每帧每个平台**新建一个对象字面量**——`forest_bonus_2` 47 个平台 × ~60fps
+   * = 2820 个对象/秒的纯垃圾。这是 r47 在服务端 `character.update` 修过的同类问题，
+   * 但客户端这一处从未被覆盖。
+   *
+   * 复用安全性：`forEach` 串行调用，前一次 `update` 已把三值拷进 `Track` 才返回，
+   * 下一次覆盖 scratch 不影响任何已存状态。
+   */
+  private readonly platPoseScratch: { x: number; y: number; angle: number } = { x: 0, y: 0, angle: 0 };
+
   private stepPlatSnd(b: { x: number; y: number; angle?: number }, id: string): void {
-    this.platformSounds.update(id, {
-      x: Number(b.x) || 0,
-      y: Number(b.y) || 0,
-      angle: Number(b.angle) || 0,
-    });
+    const p = this.platPoseScratch;
+    p.x = Number(b.x) || 0;
+    p.y = Number(b.y) || 0;
+    p.angle = Number(b.angle) || 0;
+    this.platformSounds.update(id, p);
   }
 
   private startPlatformSound(_id: string): Phaser.Sound.BaseSound | null {
