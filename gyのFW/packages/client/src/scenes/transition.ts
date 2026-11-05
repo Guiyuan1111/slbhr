@@ -51,22 +51,40 @@ export class FadeScene extends Phaser.Scene {
       ease: "Linear",
       onComplete: () => {
         // 幕下换场景（oracle：淡入完成 → showAd → state.start）
-        const ops = this.registry.get("xfade-ops") as (() => void) | undefined;
+        const ops = this.registry.get("xfade-ops") as (() => void | Promise<void>) | undefined;
         this.registry.remove("xfade-ops");
-        ops?.();
-        this.switched = true;
-        // oracle：旧 overlay（含文字）kill，新 overlay showText:false、alpha=1，下一 rAF 才起 q()
-        this.label.alpha = 0;
-        this.time.delayedCall(0, () => {
-          this.tweens.add({
-            targets: this.shade,
-            alpha: 0,
-            duration: FADE_MS,
-            ease: "Linear",
-            onComplete: () => this.scene.stop(),
-          });
-        });
+        // r46：ops 可为异步（换关把 fetch 与淡入并行，ops 内 await 数据）。异步时等它落定
+        // 再进淡出，否则会在新场景还没建好时就开始揭幕——与原实现的时序不等价。
+        // 同步 ops（其余 7 个调用点）走 Promise.resolve() 同一条路径，微任务内完成，
+        // 与旧实现"同帧设置 switched + delayedCall(0)"逐帧等价。
+        const r = ops?.();
+        const then = r && typeof (r as Promise<void>).then === "function" ? (r as Promise<void>) : Promise.resolve();
+        void then.then(
+          () => this.finishSwitch(),
+          (e) => {
+            // ops 抛错（如换关 fetch 失败）：直接揭幕回旧场景，不把玩家困在黑幕里。
+            // 旧实现是「黑幕根本不起来」，这里最接近的等价物是立刻淡出。
+            console.error("[fw] 转场 ops 失败，直接揭幕:", e);
+            this.finishSwitch();
+          },
+        );
       },
+    });
+  }
+
+  /** 淡出并自停（原 onComplete 内联体的抽出；r46 ops 异步化后两处复用） */
+  private finishSwitch(): void {
+    this.switched = true;
+    // oracle：旧 overlay（含文字）kill，新 overlay showText:false、alpha=1，下一 rAF 才起 q()
+    this.label.alpha = 0;
+    this.time.delayedCall(0, () => {
+      this.tweens.add({
+        targets: this.shade,
+        alpha: 0,
+        duration: FADE_MS,
+        ease: "Linear",
+        onComplete: () => this.scene.stop(),
+      });
     });
   }
 

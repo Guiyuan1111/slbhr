@@ -165,24 +165,34 @@ function restartWithFade(): void {
 }
 
 /** 活房间换关（服务端 advance 的 levelId 差分回声，双端同触发）：拉新关数据重建 Game
- *  场景；席位/键盘/触屏链路不动（仍绑在同一房间）。 */
+ *  场景；席位/键盘/触屏链路不动（仍绑在同一房间）。
+ *
+ *  r46：黑幕与 fetch 并行。原实现先 `await fetchLevelCached` 再 `fadeSwitch`——新关数据的
+ *  HTTP 往返（perf-advance 实测中位 266–320ms）整段暴露在玩家等待里，而黑幕淡入的 500ms
+ *  画面本来就是黑的，完全可以并行。改法：黑幕先起（fetch 同时已在飞），ops 返回 promise，
+ *  `FadeScene` 等它落定才揭幕（见 transition.ts 的异步 ops 分支）。
+ *  语义等价：`currentLevel` / `__fwInit` 仍在 `sm.start("Game")` 之前赋值，顺序不变；
+ *  fetch 失败时抛错 → FadeScene 把黑幕揭掉、不切场景（旧实现是黑幕根本不起，行为面同为
+ *  「玩家留在旧关」）。 */
 async function reloadLevel(levelId: string): Promise<void> {
   if (!net || !gameStarted) return;
-  try {
-    currentLevel = await fetchLevelCached(levelId);
-  } catch (e) {
-    console.error("[fw] 换关失败:", e);
-    return;
-  }
-  currentTempleEntry = findTempleEntry(levelId);
-  // NewSign played 标记（13 号档 #13，0.3.39）：oracle setPlayed 于 startLevel 进关即置
-  // （bundle:1935016）；换关亦属进关（advance 回声同达）。
-  if (currentTempleEntry) markPlayed(currentTempleEntry.filename);
-  (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level: currentLevel, keyboard, templeEntry: currentTempleEntry, covers: coversByLevel.get(levelId), game: phaser };
+  // 先发起请求不 await——与黑幕淡入并行；失败由 FadeScene 的 reject 分支处理
+  const levelPromise = fetchLevelCached(levelId);
   hudTopShow(); // 换关同样展示几秒（双人可能在新关前重新约人），随后自动收起
   // 换关黑幕（oracle LevelMenu.startLevel fade("level") :1935281；EndMenu Continue→advance 回声双侧同达）
   const sm = phaser!.scene;
-  fadeSwitch(phaser!, () => {
+  fadeSwitch(phaser!, async () => {
+    try {
+      currentLevel = await levelPromise;
+    } catch (e) {
+      console.error("[fw] 换关失败:", e);
+      throw e; // 交给 FadeScene 揭幕，不切场景（玩家留在旧关，与服务端相位可能短暂不一致）
+    }
+    currentTempleEntry = findTempleEntry(levelId);
+    // NewSign played 标记（13 号档 #13，0.3.39）：oracle setPlayed 于 startLevel 进关即置
+    // （bundle:1935016）；换关亦属进关（advance 回声同达）。
+    if (currentTempleEntry) markPlayed(currentTempleEntry.filename);
+    (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level: currentLevel, keyboard, templeEntry: currentTempleEntry, covers: coversByLevel.get(levelId), game: phaser };
     sm.stop("EndMenu");
     sm.stop("GameOverMenu");
     sm.stop("PauseMenu");
