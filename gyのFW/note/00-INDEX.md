@@ -36,7 +36,8 @@
 
 | 内容 | 位置 |
 |---|---|
-| 性能战役总账（r0–r7 七轮 + §八 r8–r11 + … + §四十四 r47） | [report/perf/2026-10-18-campaign-summary.md](report/perf/2026-10-18-campaign-summary.md) + 同目录各轮报告 |
+| 性能战役总账（r0–r7 七轮 + §八 r8–r11 + … + §四十五 r48） | [report/perf/2026-10-18-campaign-summary.md](report/perf/2026-10-18-campaign-summary.md) + 同目录各轮报告 |
+| **r48 选关菜单进度读取**（2026-11-05） | [report/perf/2026-11-05-r48-temple-progress.md](report/perf/2026-11-05-r48-temple-progress.md) | `starsOf` 每次全量 `JSON.parse` 改按原文串记忆：微基准 **22.4ms→37.6µs（−99.8%，区间分离可主张）**，页面端 1147→1061ms 区间重叠不主张；新量具 `perf-step-cpu`（vendor 占 83–97%、自有内核仅 2–16%＝微优化天花板）与 `perf-sleep`（241 关 15 关中招"该睡没睡"，四个修法全被位级门禁否决）；含量具噪声底 ±10% 披露 |
 | **r47 服务端每步分配归因**（2026-11-05） | [report/perf/2026-11-05-r47-server-alloc.md](report/perf/2026-11-05-r47-server-alloc.md) | 新量具 `perf-server-alloc` 首次把每步分配归到函数（`character.update` 占自有代码 9.8%）；零分配化后每步分配 **−9.9%**（两臂不重叠），单步 CPU 带内不主张；含「整进程 profile 会被启动期 loader 淹没」的量具坑 |
 | **r46 换关链客户端半边**（2026-11-05） | [report/perf/2026-11-05-r46-advance-client.md](report/perf/2026-11-05-r46-advance-client.md) | 新量具 `perf-advance` 首次拆出换关 1.1s 结构（黑幕 65% / 拉关 29% / 重建 5.6%）；黑幕与 fetch 并行使拉关等待 **−67.4%**（两臂不重叠）；顺带修 e2e 与 CSP 不兼容（11 处谓词） |
 | **r45 换关链·构建性能轮**（2026-11-05） | [report/perf/2026-11-05-r45-switch-build.md](report/perf/2026-11-05-r45-switch-build.md) | 换关链 **−48.8%**（配对 A/B，超噪声）、World 构建 **−15.4%**、单 world 常驻 **−27.9%**；顺带修复 `reset()` 丢失 `startFrozen` 的复刻性缺陷（10 关），并把 reset 路径补进位级门禁 |

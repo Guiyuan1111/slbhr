@@ -10,6 +10,17 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-11-05（r48 性能轮：选关菜单进度读取 −99.8%，物理优化空间量到顶）
+
+① **新角度**：前几轮都在量服务端物理与换关链，本轮转到**从未量过的客户端选关菜单入场**；同时用新量具把「服务端物理还能不能继续优化」一次量到底。
+② **主线**：`starsOf` = `loadProgress()[f]?.stars`，而 `loadProgress` 每次 `getItem` + **全量 `JSON.parse`**；菜单入场时调用次数是 O(关卡数)（tree 路径 done 扫描+节点循环+烘焙 `stateOf`+平色回退；multi 路径 `computeLearnedElements`+每庙 `completedCountOf`+`rowsLevelState`+`templeHasNew`）。微基准（252 条 13.4KB × 332 次调用 × 9 轮）：**22410.6 → 37.6 µs，−99.8%，区间完全分离 → 可主张**。
+③ **改动**：`loadProgress` 按原文串记忆（每次仍读串，变则重 parse）；`saveBest` 先 `{ ...loadProgress() }` 复制——否则命中缓存时改的是缓存对象本身，`setItem` 抛错会把缓存污染成"已写入"。新增 4 条单测钉语义边界（外部写入立即可见/写入后读到新值/抛错不污染缓存/损坏降级），13/13。
+④ **页面端诚实分面**：新量具 `perf-temple.mjs`（冷缓存每轮新 context）基线 1147.0ms → 975.9ms(7轮)/1060.8ms(15轮)，**区间重叠 → 不可主张**。22ms 落在 1000ms 入场路径里只占 2%。**收益只在 `starsOf` 这一段可主张，不能说菜单快了 15%。**
+⑤ **新量具 `perf-step-cpu.mjs`（CPU 自时间归因）+ 可复用上限结论**：vendor 占 **83–97%**，自有内核合计仅 **2–16%**，`forest_bonus_2` 甚至 97.5%/1.5%。**内核微优化的收益上限被 vendor 压死**——这就是 r44/r47 CPU 收益全落噪声带内的原因。两个口径坑：vendor 是 `new Function` 装载、栈帧 url 恒空（不能按 url 分桶）；剖析器自开销会超墙钟、必须剔出分母。
+⑥ **四个量化证否**：**①「关节卡限位→整岛永不睡」现象真实但不可修**——新量具 `perf-sleep.mjs` 扫描 241 关有 **15 关**中招（`forest_bonus_2` 5 平台 |v|≤4.4e−16、sleepTime 14s、3000 步位移精确为 0）；上界收益 `ice_03` −79% 等区间分离，但四个修法全被否——平台经关节**直连 ground**，box2d 岛构建必然并入同一岛（实测 `[dynamic, static(ground), dynamic]`），"排除静态体"判据放行次数归零；"位形逐位不变即睡"则 det 13 关漂移。**②光束签名收窄**前提错误——无 `lightProperties` 的 fixture 走 `if (!lp) h.hit=true`，是**不透明挡光体**。**③`syncState` 的 `String(id)`** 只值 0.35µs/tick（0.002%）。**④`getSettings`** 12 处全在菜单/场景初始化，无一在逐帧。
+⑦ **量具噪声底披露**：`perf-sleep` 配对 A/B 的**对照组（226 关无卡睡体）平均 Δ 也是 10.6%、81 关假阳性"区间分离"**→ 单关噪声底约 ±10%，±15% 内数字一律不采信。
+⑧ **门禁**：typecheck 0；vitest **483/483**（原 479 + 新增 4）；det **241/241** 位级一致。报告 `note/report/perf/2026-11-05-r48-temple-progress.md`，总账 §四十五。
+
 **更新**：2026-11-05（r47 性能轮：服务端每步分配归因——character.update 占自有代码 9.8%，零分配化后 −9.9%）
 
 ① **新量具 `perf-server-alloc.mjs`**：`node:inspector` HeapProfiler 采样，**只覆盖步进窗口**。关键坑：整进程 profile 会被启动期 module loader 淹没（首版 top1 是 `compileForInternalLoader` 20.9%，与步进无关）。

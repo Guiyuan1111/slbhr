@@ -285,3 +285,75 @@ node benchmark/audio-loudness.mjs --runtime --save f4
 静态解析客户端逐键音量对表原版（master 0.1 + waterSteps 0.5 / wind 0.2，余 1.0），
 --runtime 另起服读实机 `__fw.sound.volume`（WebAudio 挂起态需先派发手势解锁）。
 结果存 benchmark/results/audio-<tag>.json；exit 0 = 全对齐。
+
+### perf-progress.mjs — 选关菜单进度读取成本（r48 起）
+
+```bash
+node --import tsx benchmark/perf-progress.mjs
+N=332 ENTRIES=252 ROUNDS=9 node --import tsx benchmark/perf-progress.mjs
+```
+
+量 `progress.ts` 的 `starsOf` —— 原实现每次调用都 `getItem` + **全量 `JSON.parse`**，而
+选关菜单入场时它的调用次数是 O(关卡数)（同一批文件被反复问）。两臂在同一进程内**交替**
+测量（A=每次 parse，B=按原文串记忆），消除进程间 JIT/频率差异。
+
+**关键坑**：这是微基准，只代表 `starsOf` 这一段本身。页面端的整体入场耗时
+（`perf-temple.mjs`）噪声大得多，22ms 的省时在 1000ms 路径里只占 2%——**不要把微基准的
+−99.8% 说成"菜单快了 15%"**。
+
+### perf-temple.mjs — 选关菜单入场延迟（r48 起）
+
+```bash
+npm run build
+ROUNDS=15 node --import tsx benchmark/perf-temple.mjs --save r48-opt
+```
+
+真实浏览器测「点开始 → TempleScene 烘焙完成可交互」。里程碑：`click` / `templeActive` /
+`interactive`（节点数稳定 120ms 判定）。
+
+**口径要点**：每轮开新 browser context（冷缓存 + 干净 localStorage），否则
+`templeTreeBake` 的进程内 LRU 会让复访显著偏快。预置 252 条存档使 `starsOf` 成本落在
+真实上限。页内打点，不经 CDP。
+
+### perf-step-cpu.mjs — 单步 CPU 自时间归因（r48 起）
+
+```bash
+LEVELS=crystal_20,light_23,fairies-30 node --import tsx benchmark/perf-step-cpu.mjs
+STEPS=2500 WARM=600 INTERVAL=50 node --import tsx benchmark/perf-step-cpu.mjs
+```
+
+`Profiler`（samples + timeDeltas）按 self time 聚合，只覆盖步进窗口。与
+`perf-server-alloc.mjs` 分工：**那个量分配，这个量耗时**。
+
+**两个必须知道的口径坑**：
+
+1. **vendor 不能按 url 分类**——`box2d.js` 是 `new Function` 装载的，栈帧 url 恒空。
+   首版按 url 分桶，全部物理帧掉进 `native/other`，得出「vendor 不耗时」的荒谬结论。
+   现以函数名前缀 `box2d.` 为主判据。
+2. **剖析器自开销必须剔出分母**——实测 profile 总时长可超过墙钟（134ms 墙 vs 174ms 采样），
+   混进去会把 vendor 从 93% 稀释到 71%。
+
+**可复用结论**：vendor 占 **83–97%**，自有内核合计仅 **2–16%**。内核代码的 percent 级
+微优化收益上限被 vendor 压死——这是 r44/r47 CPU 收益全部落在噪声带内的根本原因。
+
+### perf-sleep.mjs — 「关节卡限位 → 整岛永不入睡」扫描（r48 起）
+
+```bash
+node --import tsx benchmark/perf-sleep.mjs --save r48-baseline
+LEVELS=ice_03,forest_bonus_2 ROUNDS=7 node --import tsx benchmark/perf-sleep.mjs
+```
+
+扫描全库：静止 900 步后统计「`m_sleepTime` 已越过 `b2_timeToSleep` 却仍醒着」的体，
+并用配对 A/B（B 臂=每步强制让静止体入睡）给出**上界**收益。
+
+**为什么单独建**：box2d 的岛入睡要求「低速够 0.5s」**且**「位置约束收敛」；被电机压在
+行程限位上的平台、以及互相挤压的紧贴平台让后者恒假 → 整岛永不入睡，哪怕位形几千步逐位
+不变。全库 241 关有 **15 关**中招，典型 `forest_bonus_2` 5 个紧贴平台
+（|v| ≤ 4.4e−16、sleepTime 14s、**3000 步位移精确为 0**）。
+
+**⚠ 这个量具的噪声底约 ±10%**：对照组（226 个无卡睡体的关）平均 Δ 也是 10.6%，
+其中 81 关假阳性"区间分离"。只有远超该量级（如 `ice_03` 的 −79%）才可信。
+
+**结论（r48）**：现象真实但**不可修**。平台经 prismatic/distance 关节直连 ground，
+box2d 的岛构建必然并入同一岛（实测 `ice_03` 孤岛 = `[dynamic, static(ground), dynamic]`），
+"排除静态体的岛"判据放行次数归零；"位形逐位不变即睡"则 det 门 13 关漂移。详见报告 §四。

@@ -112,8 +112,7 @@ describe("存储不可用降级（M13：隐私模式/配额满不阻断结算）
     expect(saveBest("tutorials/levels/forest_01.json", 3, 12)).toBe(true);
   });
 
-  it("读取抛错：loadProgress/loadGameComplete 返回安全缺省", () => {
-    Object.defineProperty(globalThis, "localStorage", {
+  it("读取抛错：loadProgress/loadGameComplete 返回安全缺省", () => {    Object.defineProperty(globalThis, "localStorage", {
       configurable: true,
       value: {
         getItem: () => {
@@ -125,5 +124,54 @@ describe("存储不可用降级（M13：隐私模式/配额满不阻断结算）
     });
     expect(loadProgress()).toEqual({});
     expect(loadGameComplete()).toBe(false);
+  });
+});
+
+/**
+ * r48：loadProgress 的原文串记忆缓存（选关菜单入场从 22.4ms 降到 37.6µs 的那一层）。
+ * 这里钉死三条语义边界——缓存必须对调用方完全透明，否则会静默丢存档/读到假成绩。
+ */
+describe("loadProgress 原文串缓存（r48）", () => {
+  it("外部写入立即可见（不返回陈旧数据）", () => {
+    backing["fw-temple-progress-v1"] = JSON.stringify({ a: { stars: 1, time: 10 } });
+    expect(loadProgress().a).toEqual({ stars: 1, time: 10 });
+    // 绕过本模块直接改底层串（模拟另一个标签页写入）
+    backing["fw-temple-progress-v1"] = JSON.stringify({ a: { stars: 3, time: 5 } });
+    expect(loadProgress().a).toEqual({ stars: 3, time: 5 });
+  });
+
+  it("saveBest 写入后再次读取拿到新值（缓存随串自动失效）", () => {
+    expect(saveBest("k", 2, 30)).toBe(true);
+    expect(loadProgress()["k"]).toEqual({ stars: 2, time: 30 });
+    expect(saveBest("k", 3, 20)).toBe(true);
+    expect(loadProgress()["k"]).toEqual({ stars: 3, time: 20 });
+  });
+
+  it("写入抛错时不污染缓存（配额满/隐私模式仍读到写前的真实存档）", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    backing["fw-temple-progress-v1"] = JSON.stringify({ k: { stars: 1, time: 99 } });
+    expect(loadProgress()["k"]).toEqual({ stars: 1, time: 99 }); // 先把缓存填上
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: (k: string): string | null => (k in backing ? backing[k] : null),
+        setItem: () => {
+          throw new Error("QuotaExceededError");
+        },
+        removeItem: () => {},
+      },
+    });
+    // saveBest 会复制缓存对象再改，写失败时底层串不变 → 再读仍是写前的值
+    expect(saveBest("k", 3, 1)).toBe(true);
+    expect(loadProgress()["k"]).toEqual({ stars: 1, time: 99 });
+  });
+
+  it("存档串损坏时按空存档降级，不抛错", () => {
+    backing["fw-temple-progress-v1"] = "{ 不是 JSON";
+    expect(loadProgress()).toEqual({});
+    // 后续写入仍可恢复正常工作
+    backing["fw-temple-progress-v1"] = "{}";
+    expect(saveBest("k", 2, 40)).toBe(true);
+    expect(loadProgress()["k"]).toEqual({ stars: 2, time: 40 });
   });
 });
