@@ -137,8 +137,7 @@ function runOnce() {
   for (const L of LAYERS) premultToStraight(outs[L.key]);
   t.premult = performance.now() - t0;
 
-  t.total = LAYERS.reduce((a, L) => 0, 0) +
-    t.alphaSat + t.bevel + t.satOut + t.outline + t.premult;
+  t.total = t.alphaSat + t.bevel + t.satOut + t.outline + t.premult;
   return { t, outs };
 }
 
