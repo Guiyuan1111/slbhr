@@ -445,6 +445,13 @@ node --import tsx benchmark/perf-update.mjs --compare r50-update
 页内 `performance.now()` 逐段累计，仅 `started` 相位。r50 实测 `forest_bonus_2`：
 `updateMechs` **57.7%** + `updatePlatformSound` **18.9%** = 76.6%，全程 214.0 µs/帧。
 
+**⚠ r51 勘误：本环境的 `performance.now()` 量化到 100µs**（headless 非隔离上下文的
+Chrome 计时器粗化）——**信号 < 100µs 的段读数是「撞 tick 帧数占比」的换算值，不是耗时**。
+`updatePlatformSound` 真值 ~1.3–12.5µs（约 7%，非 18.9%）；其余小段同理作废。
+亚百微秒段请改用下面的 `perf-update-ablate`（消融法）或确定性计数。
+r51 版还曾把 16 个机关回调也逐个包计时——钩子自身让整帧 214→270.5µs（+26.5%），
+测的是钩子不是代码，已保留但仅作反例快照（`results/update-r51-mech.json`）。
+
 **⚠ 两个坑（都踩过）**：
 1. **包装原型上的 `update` 完全无效。** Phaser 在 `SceneManager.bootScene` 里
    `sys.sceneUpdate = scene.update`（`phaser/src/scene/SceneManager.js:636-638`）——
@@ -487,3 +494,76 @@ r50 基线：首屏 3 chunk burst(cold) **88.96ms** / warm 12.21ms / 304 0.46ms�
 全量 280 文件 77ms、首屏 67ms），预压缩只影响「重启后第一个玩家」且启动反慢 67ms。
 另 `statSync` 每请求仅 0.95µs（1000 req/s 占 0.10% CPU），`compCache` 全量
 br+gz 常驻仅 1.3MB。
+
+### perf-update-ablate.mjs — GameScene.update 消融归因（r51 起，现役口径）
+
+```bash
+LEVEL=forest_bonus_2 ROUNDS=4 TOTAL_FRAMES=200 node --import tsx benchmark/perf-update-ablate.mjs --save r51-ablate
+MECH_MODE=1 ROUNDS=4 TOTAL_FRAMES=200 node --import tsx benchmark/perf-update-ablate.mjs --save r51-ablate-mech   # 逐机关类
+ABLATE_TARGETS=__smoother ROUNDS=8 TOTAL_FRAMES=150 node --import tsx benchmark/perf-update-ablate.mjs --save x   # 只跑指定臂
+```
+
+**口径：消融（ablation）**——不测「段内耗时」，测「把段拿掉后整帧少多少」。
+A 臂=真实 `update`，B 臂=目标方法换空桩，交替多轮取中位差。整帧 ~160–270µs
+是**信号 > 100µs 量子**的量，逐帧相对误差 ~2%，配对后更小。
+
+r51 实测 `forest_bonus_2`：`__views`（15 回调全空桩）**104.5µs（67.0%）**、
+`__smoother`（平滑管线归零）**34.5µs（22.1%）**、噪声底 ±5.5µs。
+
+**⚠ 固有局限**：①消融会改变下游工作量（视图停摆 → 脏守卫整链变便宜），
+是**上界估计**；②有跨段副作用的段（`updatePlayers` 提供 `pFb/pWg`）只能作参考值。
+**⚠ 坑**：`cbXxx` 是 create 期 `bind` 出的**实例属性**（`GameScene.ts:530-539`），
+不在原型上——钩 `proto[name]` 无效，会得到随机符号的无效臂（r50 `sys.sceneUpdate`
+快照坑同类）。结构性臂 `__smoother`/`__views` 走实例级钩子，始终有效。
+
+### perf-mech-class.mjs — `updateMechs` 批量按类分解 + 脏守卫对照（r51）
+
+```bash
+LEVEL=forest_bonus_2 ROUNDS=7 node --import tsx benchmark/perf-mech-class.mjs --save r51-mechclass
+```
+
+批量法（一趟只取 1 对时钟，趟数自适应到 ≥20ms）拆三类口径：稳态同值
+（8.02µs/趟）、脏守卫打开（+5.78µs）、真实 Colyseus 访问器 + 推进时间（8.38µs）。
+**与消融口径 104.5µs 差 13 倍 = 热循环 ≠ 真实帧**（页内工作集被渲染栈挤出缓存）。
+批量口径只能用于 A/B 相对比较与确定性计数，不能当量级看。
+
+### perf-plat-pass.mjs / perf-plat-merge.mjs — `st.platforms` 双趟遍历（r51）
+
+```bash
+node --import tsx benchmark/perf-plat-pass.mjs --save r51-platpass
+node --import tsx benchmark/perf-plat-merge.mjs --save r51-platmerge
+```
+
+`plat-pass` 拆双趟遍历的可回收量：纯遍历 0.23µs + 三属性读 0.48µs +
+tracker 0.44µs ≈ **0.90µs/帧**。`plat-merge` 直接 A/B「双趟 vs 合并单趟」：
+**Δ 0.0% 区间重叠 → 合并候选判负**（r50 的定性判断获得定量支撑）。
+
+### perf-smoother-ab.mjs / perf-smoother-micro.mjs — 平滑器 A/B（r51）
+
+```bash
+FRAMES=400 node --import tsx benchmark/perf-smoother-ab.mjs --save r51-smoother   # 页内配对 + 块计时
+FRAMES=400 node --import tsx benchmark/perf-smoother-ab.mjs --capture             # 导出真实调用序列
+node benchmark/perf-smoother-micro.mjs --trace benchmark/results/trace-r51-smoother.json --rounds 12 --repeat 20 --save r51-smoother
+```
+
+页内件把真实 `mechSmoother` 的调用参数逐帧抓下来，同页并联新/参考两实现交替计时
+（块计时：20 帧/块只取 1 对时钟）。微基准件回放**真实序列**（非合成数据），
+内置逐位一致性断言 + **确定性计数器**（exp 调用数、快路命中数）。
+r51 结果：热循环 −32.4%～−44.5%（区间分离），**页面口径不主张**（热循环不迁移）。
+
+### perf-exp-count.mjs — 页内确定性计数（r51）
+
+```bash
+LEVEL=forest_bonus_2 FRAMES=300 node --import tsx benchmark/perf-exp-count.mjs --save r51-expcount
+```
+
+在真实开局页面统计 smoother 的 `Math.exp` 调用与静止快路命中。**exp 桩只装在
+smoother 调用窗口内**——窗口外 `GameScene.ts:1967` 的相机收敛每帧还有 2 次 exp，
+首版全局计数实测 102 次/帧即此因。内置断言「每帧 exp ≤1.02」，不满足 exit 1。
+
+r51 实测（`forest_bonus_2`，300 帧）：exp **100/帧 → 1/帧（−99.0%）**、
+快路命中 **60.2%**——确定性事实，本轮主张的主指标。
+
+**⚠ r51 最大教训：页内量具必须先验证被测代码真的在跑。**
+`dist` 是改动前构建的，`perf-smoother-ab` 两臂因此测出「新=旧」；
+靠确定性断言当场抓住，而不是靠时间数字的异常反推。改源码后先 `npm run build`。
