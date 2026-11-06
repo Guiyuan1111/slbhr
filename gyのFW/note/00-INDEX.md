@@ -31,6 +31,7 @@
 | **水晶神庙（第四部）取证档卷** | [evidence/2026-10-30-crystal-temple/00-INDEX.md](evidence/2026-10-30-crystal-temple/00-INDEX.md) | 2026-10-30 立项：portal 五问全解（配对/触发/传送/乒乓/光束穿门）+Ground -1 背衬墙+资产差仅 5 组（01号档+实机探针） |
 | **元素合集（第五部）取证档卷** | [evidence/2026-10-30-elements/00-INDEX.md](evidence/2026-10-30-elements/00-INDEX.md) | 2026-10-30 立项：multi 七庙 rows 选关+元素学习门、cover=纯视觉、firstgid 漂移勘误（01号档） |
 | **童话神庙（第六部）取证档卷** | [evidence/2026-10-30-fairytales/00-INDEX.md](evidence/2026-10-30-fairytales/00-INDEX.md) | 2026-10-30 立项：引擎同源判定+fairy 三件套+Tiled 1.x 归一化+尺寸全谱（01号档+无头实跑） |
+| **复刻保真度评估标准调研** | [research/2026-11-06-replica-fidelity-metrics/00-INDEX.md](research/2026-11-06-replica-fidelity-metrics/00-INDEX.md) | 2026-11-06：结论=无单一"复刻度"国际标准（CLIR 2025 明示），六域事实标准（回放哈希/字节匹配/SSIM/BS.1770/significant properties/分歧时间）组合成记分卡；映射=本项目 oracle 对拍体系已 homemade 大半，真缺口是 oracle-gold 覆盖 6/48 与 SSIM/LUFS 可引用分量（候选登记复刻 INDEX §3.1 #11） |
 
 ## 报告与版本
 

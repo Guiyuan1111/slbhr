@@ -10,6 +10,13 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-11-06（复刻保真度评估标准调研——无单一国际标准，六域事实标准映射：oracle 对拍体系已 homemade 大半，真缺口=覆盖率与可引用分量）
+
+① **结论**（用户新需求调研）：数字保存领域 2025 权威综述（CLIR pub194）明示连模拟环境描述都无通用标准，更无"复刻度"评分标准；学术上 fidelity 几乎总作自变量不作被测指标。可用的=六域事实标准组合：反编译社区**字节级匹配**（zeldaret/oot shasum）、模拟器社区**录像回放+状态哈希/容差对照**（NESdev 工作流 + AccuracyCoin 147 测试）、形式化 **ioco 一致性**（Tretmans，ISO/IEC 9646 前身）、视觉 **SSIM/阈值像素差**（Wang 2004 IEEE TIP / pixelmatch 工业链）、音频 **BS.1770/R128**、保存学 **significant properties** 框架 + CLIR 的 execution/experiential fidelity 二分。
+② **映射修正（本轮最重要认知）**：det 241/241 是**自锚**（防回归层），oracle-gold 对拍网才是**原版锚**（复刻度层）——评估"复刻是否成功"只能用后者，两层不能混。项目已 homemade：oracle-gold 对拍（tolerance 30px、风相位 float64 闭环 3.55e-14、旋转 1.9e-4°）、visual-diff 自动分数带（90.55–92.86，容差像素匹配口径）、F4 逐键音量对表、动画状态级对拍、内容证据库——配置已高于 OpenRA/ScummVM 同类项目实践。
+③ **真缺口**：oracle-gold 覆盖 6/48 关（=旧挂账 1，卡 oracle 路线供给）；SSIM/LUFS 两个**可外部引用**的标准分量缺。候选登记复刻 INDEX §3.1 #11（①SSIM 分量 ~30 行待裁；②LUFS 默认不做；③Ruffle 不做——capture 基建已原版直跑）。
+④ 调研档 `note/research/2026-11-06-replica-fidelity-metrics/`（00-INDEX+01-survey，引用全链接）；主索引已登记。纯调研轮，无代码改动。
+
 **更新**：2026-11-05（r56 性能轮：内存常驻画像——判不立项，CPU/网络/内存三维度全闭环）
 
 ① **最后一个未量维度**：55 轮全是 CPU/网络口径，内存常驻从未作主轴（r47 是分配速率、审计 H4 只裁有界性）。新量具 `perf-mem-residency.mjs`：双页真实会话 150s 浸泡 ×2，`--enable-precise-memory-info` 逐秒采样 + 每 10s 注入 1s 输入防死房假设。
