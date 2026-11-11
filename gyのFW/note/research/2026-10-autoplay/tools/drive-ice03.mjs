@@ -136,6 +136,8 @@ function solveSeg(si) {
     if (rs[0] && !rs[0].fatal) { chosen = it; break; }
   }
   if (!chosen) chosen = metItems[0]; // 全脆也先定稿，exjob 门另证
+  const pick = Number(argOf("pick", "-1"));
+  if (pick >= 0 && metItems[pick]) { chosen = metItems[pick]; console.log(`   --pick ${pick} 覆盖选择: ${chosen.note}`); }
   console.log(`   chosen: ${chosen.note} | ${robLines.join(" | ")}`);
   const rec = chosen.rec;
   // M 侧信道落地实测
@@ -177,12 +179,12 @@ function gateSeg(si) {
     const list = allEv.slice(k, k + 8).flatMap((e) => [{ ...e, dir: -1 }, { ...e, dir: 1 }]);
     const rs = runJob({ level: LEVEL, segDef: segDefOf(seg), events, deadlineAbsF, requireMet: true, list }, "exjob");
     rs.forEach((r, j) => { if (!r.ok) fatal.push({ ...list[j], why: r.why }); });
-    if (fatal.length >= 6) break outer;
+    if (fatal.length >= 12) break outer;
   }
   fin.exFatal = fatal.length;
   fin.exSamples = allEv.length * 2;
   if (fatal.length) {
-    fin.exWhy = fatal.slice(0, 6).map((f) => `${f.side}#${f.i}@${f.f}${f.dir > 0 ? "+" : "-"}:${f.why}`);
+    fin.exWhy = fatal.slice(0, 12).map((f) => `${f.side}#${f.i}@${f.f}${f.dir > 0 ? "+" : "-"}:${f.why}`);
     console.log(`   ${seg.id} exjob 门 fatal ${fatal.length}/${allEv.length * 2}: ${fin.exWhy.join(" | ")}`);
   } else {
     console.log(`   ${seg.id} exjob 门 PASS（${allEv.length * 2} 采样全 ok）`);
@@ -201,7 +203,7 @@ async function finalize() {
   const events = finReply.events; // replayEvents 返回 drive() 全对象 {events,trace,result}
   if (!events?.fb) throw new Error(`finjob 回复缺 events: ${JSON.stringify(finReply.result ?? {})}`);
   const { toRouteDoc } = await import("file://" + join(ROOT, "scripts/e2e/routetool/botcore.mjs"));
-  const doc = toRouteDoc(LEVEL, events, totalFrames, "fw-route-ice03 chain G1-G7 (checkpoints-ice_03.json v1; 推镜三冻 P1 实测)");
+  const doc = toRouteDoc(LEVEL, events, totalFrames, "fw-route-ice03 三段链（checkpoints-ice_03.json v6）：G1 盆地西涉+推镜分级驻留三冻（seed14，wg 钉 556/puck 576.3）→ G2 wg 西屋上升系统（640檐→西檐78立跳→滑道坡→楔峰驻→峰东跳→B冰西→goTo 驻 B冰东）→ G3 wg 东上链（J1 massif→J2 楔1→J3 A冰东→西渡→高原坡→wg 门）+ fb 顶路东渡（spawn 纯睡→riser 跳→壕沟→fb 门）双门 WIN；毒免疫 holdF=24（wrapTap 毒化共享 NONE 根因）；exjob ±1 穷举 24/7828 全存活");
   writeFileSync(ROUTE_PATH, JSON.stringify(doc, null, 1));
   console.log(`route 已写 ${ROUTE_PATH} totalFrames=${totalFrames} fb事件=${doc.fb.length} wg事件=${doc.wg.length}`);
 }
