@@ -1109,10 +1109,10 @@
   }
  ],
  "archive": {
-  "status": "blocked——未出路线 JSON（门禁：exjob 全零 + route-node 3/3 PASS；G2 卡 ~10% 鲁棒性地板）",
+  "status": "blocked——未出路线 JSON（门禁：exjob 全零 + route-node 3/3 PASS；G2 地板由 fw-route-ice03b 复活槽从 12/112≈10.7% 深挖至 4/462≈0.87%，α面梯 v5=α-θ3 为实测最优，见 archive.revivalB 与 11 号档）",
   "date": "2026-11-12",
   "branch": "perf/r44",
-  "slot": "fw-route-ice03",
+  "slot": "fw-route-ice03 → fw-route-ice03b（2026-11-12 复活续攻）",
   "segments": {
    "G1": "solved v8，exjob 门 PASS 0/86，endF=907。全链唯一满分段。",
    "G2": "solved v14（sleep3/3 hf36 锚106）：met ✓ metAt=1136 endF=2043 wg[638,540]；robjob 首过 fatal=1；exjob 门 FAIL 12/112（~10.7% 地板）。六轮架构迭代（v8扫/v10 jumpOnto/v11直上/v12锚544-mid/v13逐级锚/v14刃角去险）均钉在 ~10% 单点位移致命率，致命签名单一：西楔立跳#1(jumpDrift(1,0,24) 自 (150-230,690-790)) ±1f 起跳相位差 → 楔峰落点 ±20-45px → 低西 (48,809) 永滞（楼梯下台阶 attractor）。",
@@ -1130,6 +1130,17 @@
    "2. node --import tsx note/research/2026-10-autoplay/tools/drive-ice03.mjs --solve 2 过 exjob 0 fatal 后 --solve 3（v14 种子上重解，finjob 种子自动取 state.segs[1].final）。",
    "3. --gate 1 --gate 2 --gate 3 全 0 fatal 后 --finalize，再 node --import tsx scripts/e2e/route-node.mjs --level ice_03 --repeat 3 全 PASS 才准提交 routes/ice_03.json。",
    "4. 纪律不变：BATCH=1、probe 串行、--maxminutes 30、逐件 wip commit、禁 co-author。"
-  ]
+  ],
+  "revivalB": {
+   "date": "2026-11-12",
+   "best": "v5=α-θ3：[sl400, wt(-1,108,999), sl12, jd(1,0,24), wt(1,260,999), sl12, jd(-1,0,24), wt(-1,116,999), sl3, jd(1,0,36), wt(1,260,30), sl3, jd(1,0,24), wt(1,618,40), sl6]；endF=2067 settle wg[619,541g]；exjob 4/462（wg#43@909±, wg#45@910-, wg#50@1440- → (189,765) 梯基楔块），其余 458 采样全净",
+   "attempts": "v6 低vMax 51-237/734-894（脉冲事件面爆炸）；v7 J2'h30/36 11-16/32prune（下游重掷）；v8 两段西粗调 18-58（捕捉未重锚）；v9 零位移两段 15-17/482-490（残余噪声>4.8px唇口）；v10 h30+face 27-33；v12 v350分级 21/490；v13 h36 22/478；相位彩票 δ1∈0..60 31点全灭",
+   "mechanisms": "M1 编译窗截断律(endF+2 末帧endF+1，≥截)；M2 hold闩键泄漏(松键不入表/met=撞墙)；M3 冰面长距v999 walk 到达类相位混沌(±1f→330→500px/s→过冲45→102px→西坡腾空→done多解刀口)；M4 45°楔面高度耦合(±1px横=±1.1px高)×J2'唇口4.8px<噪声下限5px=结构性必炸；M5 串行刀口链(~8决策，任何修正重掷下游)；M6 相位彩票空(地板对相位不变)；M7 两段式walk零位移重锚(150/106/120→98.8→J1@204.8 精确复刻v5几何)",
+   "nextEntries": [
+    "J2' 从 tile-2 平顶 x[224,256] 直接起跳的弧线几何（绕开楔背；tile-2 顶面高程未精测，先 geo-dump）",
+    "本地全保真门禁复刻（expandFlat 同帧 up 先于 down；deadline=max(entryF+horizonF,endF+25)；表=真 finjob 编译）是迭代杠杆：100s/轮替代 30min/轮",
+    "先 --gate 2 复现 4/462 作锚；过 0 fatal 后 --solve 3（G3 在 v5 种子上重解）→ --gate 1/2/3 → --finalize → route-node --repeat 3 全 PASS 才准提交 routes/ice_03.json"
+   ]
+  }
  }
 }
