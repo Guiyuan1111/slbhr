@@ -10,6 +10,16 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-11-12（路线战役收官：crystal_04 判死关第八案+独立复核；ice_03 G2 地板 4/462 深化收容；elements/fairytales 两案死关；SSIM+显著属性表+oracle-gold 普查落地；三门禁绿，停下待用户验收）
+
+① **crystal_04 → 死关候选第八案**（fw-route-crystal04 槽，10号档+research/10 号收容档）：可达世界=出生岛∪西高原∪中板西段，其中零门零水晶——P5 东段闸实体墙双向弹离（fb 永振 231↔441.3，冷却冲刺 5.4px<31px）+底厅唯二入口死链+14 水晶全在闭包外+不动点 f1199 目标物计数=0；fw-route-crystal04b 槽独立复核 2 断点+1 附加全成立（零新提交）。C0 段真机解 PASS 维持。台账 `note/research/2026-11-02-dead-level-ledger.md` 现 **八案待追认**。
+② **ice_03 → 深化收容**（fw-route-ice03 前槽 G2 12/112 → ice03b 槽 **4/462=0.87%**，11 号档）：v5=α-θ3 定稿，七轮架构续攻全劣于 v5，31 相位点全灭；结构性根因=45°楔面高度耦合×J2' 唇口余量 4.8px<捕捉噪声下限 5px 必炸；G1 门 0/86 满分维持、G3 stale 无从重解；kernel 全链 WIN 本身已实证，卡点唯鲁棒零门。复活线索在档。
+③ **elements/fairytales 立足点→两案死关**：eforest_1（第六案，机械闭包 BFS 138/272 段固定点，plateau 双门孤立上半区递归无基例，07号档）；fairies-02（第七案，四重断点：束圆挡/光死链/row24 角色封死/仙女袋 p1 竖板堵死，09号档）。两部首关全部阵亡；fairies-01 本就是第二案。
+④ **oracle-gold 铺开前置普查（18号档）**：复刻侧净版路线 9 关全 C 类（3 关 oracle 中途死+6 关超时，BITEXACT 9/9），「内核路线不可移植」首次系统实证且结局翻而非轨迹漂——铺开唯一有效供给=oracle 原生路线产线（单关时-天级），登记待裁候选复刻 INDEX §3.1 #12。
+⑤ **主会话三件落地**：SSIM 标准分量（visual-diff `diff.ssim`，基线带 0.7813–0.7887 三跑，benchmark/README 视觉差分节）；显著属性→量具→阈值总表（research/2026-11-06-replica-fidelity-metrics/02，11 行）；§3.1 #11① 收口。
+⑥ **收官门禁全绿**：typecheck 0 / vitest 64 文件 512/512 / det 241 关位级一致 vs r44-full（引擎与 packages 本轮零改动，全部产线/文档/工具件）。TEMP 陈槽已清。
+⑦ **停下待用户验收**，四件：八案死关追认（README 注记+corpus 标注；ice_02 可选 timeMs 5800 放行）、oracle-gold 铺开方向（§3.1 #12 立项与否）、三部游玩验收（用户保留）、perf/r44→main 回灌/发版（~260 笔领先）。
+
 **更新**：2026-11-06（复刻保真度评估标准调研——无单一国际标准，六域事实标准映射：oracle 对拍体系已 homemade 大半，真缺口=覆盖率与可引用分量）
 
 ① **结论**（用户新需求调研）：数字保存领域 2025 权威综述（CLIR pub194）明示连模拟环境描述都无通用标准，更无"复刻度"评分标准；学术上 fidelity 几乎总作自变量不作被测指标。可用的=六域事实标准组合：反编译社区**字节级匹配**（zeldaret/oot shasum）、模拟器社区**录像回放+状态哈希/容差对照**（NESdev 工作流 + AccuracyCoin 147 测试）、形式化 **ioco 一致性**（Tretmans，ISO/IEC 9646 前身）、视觉 **SSIM/阈值像素差**（Wang 2004 IEEE TIP / pixelmatch 工业链）、音频 **BS.1770/R128**、保存学 **significant properties** 框架 + CLIR 的 execution/experiential fidelity 二分。
