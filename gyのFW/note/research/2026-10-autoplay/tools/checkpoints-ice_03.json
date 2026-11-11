@@ -1283,5 +1283,29 @@
     }
    ]
   }
- ]
+ ],
+ "archive": {
+  "status": "blocked——未出路线 JSON（门禁：exjob 全零 + route-node 3/3 PASS；G2 卡 ~10% 鲁棒性地板）",
+  "date": "2026-11-12",
+  "branch": "perf/r44",
+  "slot": "fw-route-ice03",
+  "segments": {
+   "G1": "solved v8，exjob 门 PASS 0/86，endF=907。全链唯一满分段。",
+   "G2": "solved v14（sleep3/3 hf36 锚106）：met ✓ metAt=1136 endF=2043 wg[638,540]；robjob 首过 fatal=1；exjob 门 FAIL 12/112（~10.7% 地板）。六轮架构迭代（v8扫/v10 jumpOnto/v11直上/v12锚544-mid/v13逐级锚/v14刃角去险）均钉在 ~10% 单点位移致命率，致命签名单一：西楔立跳#1(jumpDrift(1,0,24) 自 (150-230,690-790)) ±1f 起跳相位差 → 楔峰落点 ±20-45px → 低西 (48,809) 永滞（楼梯下台阶 attractor）。",
+   "G3": "stale——state.segs[2] 为旧 v6 链遗留（endF=4725 ex 9/1942），从未在 v14 种子上重解（G3 程序为累积制，G2 定稿改变即整体失效）。"
+  },
+  "realServer": "v6 全链（kernel WIN，endF=4725 双门）真服 route-node 3/3 FAIL（2026-11-11 实测 timeout；2026-11-12 复测归档于 note/research/2026-10-autoplay/09-ice03-counterfactual-west-house.md）。routes/ice_03.json 未提交（从未过门禁）。",
+  "rootCauses": [
+   "drive() 每帧每角色只推进一个原语（无 done 链连进）——手工探测件若 done 即连进必与真身分歧；evalchild/真 drive 是唯一真值。",
+   "prohibitJump 顶限：板西半 x[160,192] 处于 640檐 x[64,192] 下 → 顶跳被禁；jumpDrift 被禁则 jumped 永置位、air 永假 → 永滞 (189,764)。",
+   "西屋 4 连边落+立跳#1 为 ±1f 噪声放大器：v13 逐级锚定后前 1600f 已压到 ±4px，但立跳#1 落点（楔峰 (96,544) 尖角）结构性敏感，无法用锚定消除。",
+   "服务器滑帧 ~2-3% 事件/run（意图跨度 +4ms deadline，ForestRoom.ts:703）→ route-node 需全事件 ±1f 鲁棒；exjob 12/112 外推必挂。"
+  ],
+  "revival": [
+   "1. G2 重构是唯一瓶颈：需绕开西楔立跳#1 落点敏感（候选方向：东墙外 B 冰直上被 pj/墙角双堵已证伪；西柱 x[0,32] 顶 704→384 未探；若立跳换两级矮跳或 sleep 对齐楔峰窗口需重新 exjob）。",
+   "2. node --import tsx note/research/2026-10-autoplay/tools/drive-ice03.mjs --solve 2 过 exjob 0 fatal 后 --solve 3（v14 种子上重解，finjob 种子自动取 state.segs[1].final）。",
+   "3. --gate 1 --gate 2 --gate 3 全 0 fatal 后 --finalize，再 node --import tsx scripts/e2e/route-node.mjs --level ice_03 --repeat 3 全 PASS 才准提交 routes/ice_03.json。",
+   "4. 纪律不变：BATCH=1、probe 串行、--maxminutes 30、逐件 wip commit、禁 co-author。"
+  ]
+ }
 }
