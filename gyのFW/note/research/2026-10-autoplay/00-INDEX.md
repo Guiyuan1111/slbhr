@@ -15,6 +15,7 @@
 | 04 | [04-ice02-i4-gate.md](04-ice02-i4-gate.md) ice_02 I4 闸门段攻坚档卷（探针 v19-v29+beam 8000 evals） | 未解开卷：窗口律=首次按压+~390f（三跑交叉）、横渡 470-535f>445f 几何缺口、池缘擦碰/斜坡栈双轮盘、种子 rob=0/6、四条复攻入口 | ⏸ 断点保留 |
 | 05 | [05-ice-survey.md](05-ice-survey.md) ice 系 50 关盘点（parseLevel 权威解码） | 全库无液体危险；零机构三关 ice_27/25/20 短名单；slider 有 light_01 路线实证、beamer/镜面族/lightPusher 未实证；管线 LEVELS_DIRS 已含 ice 目录 | ✓ 选型依据 |
 | 09 | [09-ice03-counterfactual-west-house.md](09-ice03-counterfactual-west-house.md) ice_03 收容档卷：西屋上升系统鲁棒性地板（fw-route-ice03 槽 2026-11-12） | blocked 未出路线：G1 门 0/86 满分、G2 六轮架构 7-11% 致命率震荡（v14 最优 12/112，单一吸引子 (48,809) 双入口）、G3 stale 未重解、真服 route-node 0/3；断点=checkpoints-ice_03.json archive 块+state-ice03.json（含全 exjob 签名与复活点） | ⏸ 断点保留 |
+| 10 | [10-crystal04-containment-unwinnable.md](10-crystal04-containment-unwinnable.md) crystal_04 收容档卷：可达世界闭包证明（fw-route-crystal04 槽 2026-11-12） | blocked 未出路线：C0 真机解维持 PASS；三轮策略收敛闭包（R1 西跳死支系原语伪象——jumpDrift holdF≥900 修复后越酸登高原真机成立、R2 东回路梯台拦截、R3 机关权威账）；断点=P5 东段闸顶天立地墙+双向弹离、底厅入口唯二死链、14 水晶闭包外、出生岛闭合环；可达不动点 fb 441.3/wg 203.1 零目标物；断点=checkpoints-crystal_04.json closureProof 块+tools/out/crystal04-containment/ 五件实测 | ⏸ 断点保留 |
 
 ## §2 tools/ 目录速查
 
