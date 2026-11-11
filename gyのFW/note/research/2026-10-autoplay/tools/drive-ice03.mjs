@@ -161,12 +161,17 @@ function gateSeg(si) {
   const events = finReply.events; // replayEvents 返回 drive() 全对象 {events,trace,result}
   if (!events?.fb) throw new Error(`finjob 回复缺 events: ${JSON.stringify(finReply.result ?? {})}`);
   const allEv = [];
-  const minF = Math.max(0, (fin.final.entryF ?? 0) - 30);
+  // 每段只穷举本段新增跨度（≥前段 endF-30）；前段跨度已由前段门穷举（逐段穷举=整关穷举）
+  const prevEndF = si === 0 ? 0 : (loadState().segs[si - 1]?.final?.endF ?? 0);
+  const minF = Math.max(0, prevEndF - 30);
   for (const side of ["fb", "wg"]) for (let i = 0; i < events[side].length; i++) {
     if (events[side][i].f < minF) continue;
     allEv.push({ side, i, f: events[side][i].f });
   }
-  const deadlineAbsF = (fin.final.entryF ?? 0) + seg.horizonF;
+  // entry 组在链式起始（下段 jd 立即起跳）可能只存活 1 帧而漏记（G3 entryF=-1 实例），
+  // 期限兜底 = endF+GRACE（无扰动基线自身在 endF 达标）
+  const entryF = fin.final.entryF ?? 0;
+  const deadlineAbsF = Math.max((entryF >= 0 ? entryF : 0) + seg.horizonF, fin.final.endF + GRACE_F);
   let fatal = [];
   outer: for (let k = 0; k < allEv.length; k += 8) {
     const list = allEv.slice(k, k + 8).flatMap((e) => [{ ...e, dir: -1 }, { ...e, dir: 1 }]);
