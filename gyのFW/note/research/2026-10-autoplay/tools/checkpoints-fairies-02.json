@@ -1,8 +1,8 @@
 {
   "level": "fairies-02",
-  "slot": "fw-foothold-ef",
+  "slot": "fw-fairies02",
   "date": "2026-11-11",
-  "status": "SCOUTED / CP0-CP2 REAL / CP3+ INFERRED",
+  "status": "CLOSED / MECHANICALLY UNWINNABLE（CP0-CP2 REAL；CP3-CP8 全证伪；四重独立断点闭包）",
   "physical": {
     "jumpRise": 103.0,
     "jumpApexT": 10,
@@ -11,34 +11,44 @@
     "trap": "同 elements：spawn 未落地帧给输入会卡死，起手 ≥5f NONE"
   },
   "entities": {
-    "spawn": { "fb": "(800,1151.7)", "wg": "(544,1151.7)", "fairy": "(80,1120)" },
-    "doors": { "fb": "(1024,160)", "wg": "(1152,160)", "ledge": "[960,1280]×160 顶台，西端 '/'col29 (928,192)→(960,160)" },
-    "boxes": { "bm0": "(572,1122) 地板箱镜（可推、镜面）", "bm1": "(120,514) 中层箱镜" },
+    "spawn": { "fb": "(800,1151.7)", "wg": "(544,1151.7)", "fairy": "(80,1120) 出生凹袋 x[36,130]×y[1088,1152]" },
+    "doors": { "fb": "sensor x[1024,1088]×y[160,168]", "wg": "sensor x[1152,1216]×y[160,168]", "ledge": "[960,1280]×160 顶台（顶层，角色不可达）" },
+    "boxes": { "bm0": "(572→654,1122.1) 地板箱镜；中心 portal-sensor 圆 r3.2px 对光不透明", "bm1": "(120,514) 中层箱镜（角色不可达）" },
     "platforms": {
-      "p0": "(1120,768) g42 dy-5 → 按压沉至 928（地板↔中层电梯）",
-      "p1": "(128,1088) g41 dy+2 → 按压升至 1024",
-      "p2": "(608,768) g43 dy+4 → 按压升至 640",
-      "p3": "(544,208) g2 dx-5 → 按压右移 160 至 (704,208)",
-      "p4": "(384,128) g2 dy-5 → 按压下沉 160 至 (384,288)；rest 与门台同层"
+      "p0": "(1120,768) g42 → 按压沉至 928；需 lp1",
+      "p1": "fixture=竖板 x[129.9,158.1]×y[1088,1152]（rest 中心 144,1120）g41 → 上提 32px（中心 1088）；需 lp0；兼仙女出生袋唯一出口闸板",
+      "p2": "(608,768) g43 → 升至 640；需 lp2",
+      "p3": "g2 → 右移 160（592→752 实测）；需仙女入杯",
+      "p4": "g2 → 下沉 160（144→304 实测）；需仙女入杯"
     },
     "lightPath": {
-      "beamer": "(1280,1088) g4 —— b0 按压后亮（实测 beam s1）",
-      "lightpushers": "lp0(848,800)g41 lp1(1248,600)g42 lp2(32,608)g43",
-      "windows": "w1[352,544]×768 w2[384,512]×960 w3[736,928]×960（透光横墙口）",
-      "rotmirror": "(416,640) g5 —— lever(96,800) 拉动转 45°"
+      "beamer": "(1280,1088) rot180 实际出束 (1248,1120) 西照 y1120；b0 按压后亮（实测）",
+      "lightpushers": "lp0(848,800)g41 lp1(1248,600)g42 lp2(32,608)g43 —— 全部永不亮（光死链）",
+      "windows": "w1[352,544]×768 w2[384,512]×960 w3[736,928]×960 —— 玻璃无 lightProperties=对光不透明（实测束止于 y992 玻璃顶）；对角色实心（玻璃顶可站立）",
+      "rotmirror": "(416,640) g5 —— 束永远到不了，转向无意义"
     },
-    "g2": "fairycup fc0(0,160) + 仙女锁定 g2 + p3/p4（仙女入杯双电梯动）"
+    "g2": "fairycup fc0(32,128) + 仙女入杯 → p3/p4（机制本体实测健康，但仙女送不到——出生袋密封）"
   },
-  "checkpoints": [
-    { "id": "CP0", "where": "fb(800)/wg(544) 地板 1152；箱镜 bm0 (572,1122) 挡路", "evidence": "probe28 初始快照" },
-    { "id": "CP1", "where": "fb 跳 LU 上 bm0 箱顶 → 再跳 LU 越至西侧地板（617→482→322 实测）", "evidence": "probe28b" },
-    { "id": "CP2", "where": "fb 驻 b0 (288±16) 按压（push s1@y1170、beam s1 实测）——需驻留 6.4px 压深，走过不触发", "evidence": "probe28b 回驻实验" },
-    { "id": "CP3", "where": "[推断] 推 bm0 至窗口 w2[384,512]×960 正下方 → beamer 西照光北折穿窗", "evidence": "几何：bm0 初始 x572 对 r30 墙段 [512,576]（光被挡），窗口在 [384,512]" },
-    { "id": "CP4", "where": "[推断] 光路穿 w1[352,544]×768 → rotmirror(416,640)；lever(96,800) 拉杆转向 → lp2(32,608)/lp0(848,800) 之一受光", "evidence": "几何布局；未实测" },
-    { "id": "CP5", "where": "[推断] lp1(1248,600) 受光 → g42 → p0 沉至地板 (1120,928) = 中层电梯；载人后断光回升", "evidence": "g42 链；未实测" },
-    { "id": "CP6", "where": "[推断] fdrag 拖仙女 (80,1120) → fc0(0,160)（botcore fairydrag 槽原语已备，巡航 ~9px/f）→ g2 → p3 右移/p4 下沉", "evidence": "botcore.mjs L195-243；未实测" },
-    { "id": "CP7", "where": "[推断] 中层→门台：p2 升至 640 / p4 下沉 288 与门台关系待解；门台 [960,1280]×160 唯一西口 '/'col29 (928,192)", "evidence": "网格 r5-r7" },
-    { "id": "CP8", "where": "[推断] fb 门(1024,160) + wg 门(1152,160) 同帧驻留 21f → WIN（world.ts checkEnd 双 isUp）", "evidence": "kernel Door sensor 语义（角色站入即 isOpen，无光路门控）" }
+  "closureProof": [
+    "断点1 束线圆挡：bm0 静置 cy=1122.1，束 y1120 距箱心 2.1px < 中心 portal-sensor 圆 r3.2px（无 lightProperties=不透明）→ 地板上箱永远挡束；probe3 走廊全扫 46/46 位零镜反射（终点全为箱圆/p1/西墙）；箱在按压者西侧时按压者身体挡束（probe3b）→ 北折不存在",
+    "断点2 光效死链：窗玻璃对光不透明（probe2 实测）；假想北折束最深止于 row24 墙 y800 / row30 实体 y992，lp0/lp1/lp2 触达数为 0（lp0 凸出感应带在 w3 玻璃正后方）→ p0/p1/p2 永不动（probe4 全程 lp=0 终态实测）",
+    "断点3 row24 角色封死：w1 玻璃实心 [352,544]、岩浆池 [896,1056]（杀 wg 无可立面）、p0 平台需 lp1=死链、col38 缺口被 r22 '/' 楔封口（最大开口 32px < 角色高 ~57px；probe4 竖井跳 apex feet=857，落楔需 ≤736，差 121px）→ 角色诚实可达上限 = row30 东平台 (1203,960)（fb/wg 双实证）",
+    "断点4 仙女出生袋密封：p1 竖板把凹袋口从顶 1088 到底 1152 完全堵死（fixture 实测 poly (158.1,1088)-(158.1,1152)-(129.9,1152)-(129.9,1088)）；probe6C 拖仙女东行精确停在 x=120.1=p1 西脸 129.9−半径 9.6；唯一出口=p1 上提 32px 后板下 32px 缝（probe6B 强提实证 x319 出袋），开启器 g41=lp0=断点2 死链 → 杯永远空 → g2/p3/p4 永不动（probe6A 直送杯口实测 p3 592→752、p4 144→304，机制本体健康，断点只在送不到）"
   ],
-  "next": "解光路全链（推箱镜位+rotmirror 转向时刻+窗口时序）与仙女拖拽路径（ fairy mask 与地形碰撞、不能穿墙直拖）后接 autosearch"
+  "checkpoints": [
+    { "id": "CP0", "where": "fb(800)/wg(544) 地板 1152；箱镜 bm0 (572,1122) 挡路", "evidence": "probe0 初始快照（本槽复核）", "state": "REAL" },
+    { "id": "CP1", "where": "fb 跳 LU 上 bm0 箱顶 → 再跳 LU 越至西侧地板", "evidence": "probe4 v2 head 段复现（goBox/upBox/overBox）", "state": "REAL" },
+    { "id": "CP2", "where": "fb 驻 b0 (288±16) 按压（需 6.4px 压深）→ beamer 亮", "evidence": "probe3/3b/4 press 段复现", "state": "REAL" },
+    { "id": "CP3", "where": "推 bm0 至窗下北折光路", "evidence": "证伪：断点1（箱圆挡 46/46 零反射+按压者挡束），地板箱无任何北折位", "state": "FALSIFIED" },
+    { "id": "CP4", "where": "光穿 w1 → rotmirror → lp 受光", "evidence": "证伪：断点1 无北折光；断点2 玻璃对光不透明+北折光效用扫零 lp", "state": "FALSIFIED" },
+    { "id": "CP5", "where": "lp1 → g42 → p0 沉至 928 中层电梯", "evidence": "证伪：断点2 lp 全程 0（probe4 终态实测 P0=P1=P2=0）", "state": "FALSIFIED" },
+    { "id": "CP6", "where": "fdrag 拖仙女 (80,1120) → 杯 (32,128) → g2 → p3/p4", "evidence": "证伪：断点4 出生袋密封（probe6 C/B/A 三重实测）；杯与 p3/p4 机制本体健康但仙女永送不到", "state": "FALSIFIED" },
+    { "id": "CP7", "where": "中层→门台攀梯", "evidence": "证伪：断点3 row24 封死，角色上限 row30 东 (1203,960)；p3/p4 亦为死链（断点4）", "state": "FALSIFIED" },
+    { "id": "CP8", "where": "fb(1024,160)+wg(1152,160) 门同帧驻留 21f → WIN", "evidence": "不可达：门在顶层 [960,1280]×160，顶层唯一通道=p3/p4（死）/col38 竖井（封）", "state": "UNREACHABLE" }
+  ],
+  "charHonestCeiling": "row30 东平台 (1203,960)；全程最高 feet=857（竖井跳 apex）",
+  "fairyHonestCeiling": "出生凹袋内（x≤120.1）；唯一出口需 p1 上提（死链）",
+  "verdict": "无任何真实输入序列（键盘+仙女拖拽）可 WIN——四重独立断点互备闭包；不产出 route JSON（不造假纪律）",
+  "dossier": "note/evidence/2026-10-31-route-samples/09号档-fairies-02.md",
+  "next": "仅当未来 kernel/关卡数据出现上行原语或 p1/凹袋结构改动时方可重开；否则维持收容"
 }
