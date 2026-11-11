@@ -16,6 +16,7 @@
 | 05 | [05-ice-survey.md](05-ice-survey.md) ice 系 50 关盘点（parseLevel 权威解码） | 全库无液体危险；零机构三关 ice_27/25/20 短名单；slider 有 light_01 路线实证、beamer/镜面族/lightPusher 未实证；管线 LEVELS_DIRS 已含 ice 目录 | ✓ 选型依据 |
 | 09 | [09-ice03-counterfactual-west-house.md](09-ice03-counterfactual-west-house.md) ice_03 收容档卷：西屋上升系统鲁棒性地板（fw-route-ice03 槽 2026-11-12） | blocked 未出路线：G1 门 0/86 满分、G2 六轮架构 7-11% 致命率震荡（v14 最优 12/112，单一吸引子 (48,809) 双入口）、G3 stale 未重解、真服 route-node 0/3；断点=checkpoints-ice_03.json archive 块+state-ice03.json（含全 exjob 签名与复活点） | ⏸ 断点保留 |
 | 10 | [10-crystal04-containment-unwinnable.md](10-crystal04-containment-unwinnable.md) crystal_04 收容档卷：可达世界闭包证明（fw-route-crystal04 槽 2026-11-12） | blocked 未出路线：C0 真机解维持 PASS；三轮策略收敛闭包（R1 西跳死支系原语伪象——jumpDrift holdF≥900 修复后越酸登高原真机成立、R2 东回路梯台拦截、R3 机关权威账）；断点=P5 东段闸顶天立地墙+双向弹离、底厅入口唯二死链、14 水晶闭包外、出生岛闭合环；可达不动点 fb 441.3/wg 203.1 零目标物；断点=checkpoints-crystal_04.json closureProof 块+tools/out/crystal04-containment/ 五件实测 | ⏸ 断点保留 |
+| 11 | [11-ice03b-revival-floor.md](11-ice03b-revival-floor.md) ice03b 复活档卷：G2 鲁棒地板 4/462 收容（fw-route-ice03b 槽 2026-11-12） | blocked 维持加深：α面梯 v5 把 G2 ±1f 穷举门 10.7%→**0.87%**（4/462，其余 458 采样全净），七轮架构续攻全劣于 v5、相位彩票 31 点全灭；新证机制 7 条（编译窗截断律量化/hold 闩键泄漏/walkTo 到达类相位混沌/45°楔面耦合×J2'唇口4.8px 结构必炸/串行刀口链律/相位彩票空/两段式 walk 零位移重锚）；断点=state-ice03.json（α-θ3）+checkpoints archive.revivalB | ⏸ 断点保留 |
 
 ## §2 tools/ 目录速查
 
