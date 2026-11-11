@@ -203,7 +203,8 @@ async function finalize() {
   const events = finReply.events; // replayEvents 返回 drive() 全对象 {events,trace,result}
   if (!events?.fb) throw new Error(`finjob 回复缺 events: ${JSON.stringify(finReply.result ?? {})}`);
   const { toRouteDoc } = await import("file://" + join(ROOT, "scripts/e2e/routetool/botcore.mjs"));
-  const doc = toRouteDoc(LEVEL, events, totalFrames, "fw-route-ice03 三段链（checkpoints-ice_03.json v6）：G1 盆地西涉+推镜分级驻留三冻（seed14，wg 钉 556/puck 576.3）→ G2 wg 西屋上升系统（640檐→西檐78立跳→滑道坡→楔峰驻→峰东跳→B冰西→goTo 驻 B冰东）→ G3 wg 东上链（J1 massif→J2 楔1→J3 A冰东→西渡→高原坡→wg 门）+ fb 顶路东渡（spawn 纯睡→riser 跳→壕沟→fb 门）双门 WIN；毒免疫 holdF=24（wrapTap 毒化共享 NONE 根因）；exjob ±1 穷举 24/7828 全存活");
+  // 描述串只写链结构，不写任何门禁结果——exjob/route-node 结论必须以当时实测为准，禁止预写"全存活/PASS"。
+  const doc = toRouteDoc(LEVEL, events, totalFrames, "fw-route-ice03 三段链（checkpoints-ice_03.json）：G1 盆地西涉+推镜分级驻留三冻（wg 钉 556/puck 576.3）→ G2 wg 西屋上升系统（640檐→西檐78立跳→滑道坡→楔峰驻→峰东跳→B冰西→驻 B冰东）→ G3 wg 东上链（J1 massif→J2 楔1→J3 A冰东→西渡→高原坡→wg 门）+ fb 顶路东渡（spawn 纯睡→riser 跳→壕沟→fb 门）双门 WIN；毒免疫 holdF=24（wrapTap 毒化共享 NONE 根因）；门禁结果见 checkpoints-ice_03.json archive 块与提交时实测");
   writeFileSync(ROUTE_PATH, JSON.stringify(doc, null, 1));
   console.log(`route 已写 ${ROUTE_PATH} totalFrames=${totalFrames} fb事件=${doc.fb.length} wg事件=${doc.wg.length}`);
 }
