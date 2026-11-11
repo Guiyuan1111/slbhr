@@ -22,7 +22,8 @@ const STATE_PATH = join(OUT_DIR, "state-ice03.json");
 const ROUTE_PATH = join(ROOT, "scripts/e2e/inputs/routes/ice_03.json");
 const LEVEL = "ice_03";
 const GRACE_F = 25;
-const BATCH = 15;
+// BATCH=1：多世界同进程发散实证（ev.mjs），world#1 唯一可信；批量采样必失真（fw-route-ice03 槽规约）
+const BATCH = 1;
 
 const argOf = (k, d = null) => {
   const i = process.argv.indexOf(`--${k}`);
