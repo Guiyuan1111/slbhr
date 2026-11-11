@@ -8,6 +8,7 @@
 | 档 | 内容 | 状态 |
 |---|---|---|
 | 01 | [01-survey.md](01-survey.md) 六域标准调研 + 映射到本项目（已有/缺口）+ 待裁候选 | ✅ 调研收官 |
+| 02 | [02-significant-properties.md](02-significant-properties.md) 显著属性→量具→阈值总表（11 行：execution 七维+experiential 用户侧） | ✅ 2026-11-11 |
 
 - 挂账：oracle-gold 铺开仍为行为复刻 INDEX §3.1 #1（卡路线供给）；
   **候选① SSIM 分量已于 2026-11-11 落地**（`benchmark/visual-diff.mjs` 增
