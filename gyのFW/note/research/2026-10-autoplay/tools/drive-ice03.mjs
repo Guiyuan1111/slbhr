@@ -157,7 +157,9 @@ function gateSeg(si) {
   if (!fin?.solved) { console.error(`段 ${seg.id} 未定稿`); process.exit(1); }
   const { sf, sw } = fin.final;
   const totalFrames = fin.final.endF + 2;
-  const events = runJob({ level: LEVEL, sf, sw, totalFrames }, "finjob");
+  const finReply = runJob({ level: LEVEL, sf, sw, totalFrames }, "finjob");
+  const events = finReply.events; // replayEvents 返回 drive() 全对象 {events,trace,result}
+  if (!events?.fb) throw new Error(`finjob 回复缺 events: ${JSON.stringify(finReply.result ?? {})}`);
   const allEv = [];
   const minF = Math.max(0, (fin.final.entryF ?? 0) - 30);
   for (const side of ["fb", "wg"]) for (let i = 0; i < events[side].length; i++) {
@@ -190,7 +192,9 @@ async function finalize() {
   if (!last) { console.error("无定稿段"); process.exit(1); }
   const { sf, sw } = last.final;
   const totalFrames = last.final.endF + 3;
-  const events = runJob({ level: LEVEL, sf, sw, totalFrames }, "finjob");
+  const finReply = runJob({ level: LEVEL, sf, sw, totalFrames }, "finjob");
+  const events = finReply.events; // replayEvents 返回 drive() 全对象 {events,trace,result}
+  if (!events?.fb) throw new Error(`finjob 回复缺 events: ${JSON.stringify(finReply.result ?? {})}`);
   const { toRouteDoc } = await import("file://" + join(ROOT, "scripts/e2e/routetool/botcore.mjs"));
   const doc = toRouteDoc(LEVEL, events, totalFrames, "fw-route-ice03 chain G1-G7 (checkpoints-ice_03.json v1; 推镜三冻 P1 实测)");
   writeFileSync(ROUTE_PATH, JSON.stringify(doc, null, 1));
