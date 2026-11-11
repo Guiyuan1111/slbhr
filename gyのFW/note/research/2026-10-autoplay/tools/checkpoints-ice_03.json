@@ -1,6 +1,6 @@
 {
  "level": "ice_03",
- "note": "v5 全链重构（2026-11-11，fw-route-ice03）。pr22 全链 WIN 实证（双门 atDoor + 双 isUp，poison-free）。核心破案：autosearch wrapTap 对【返回共享 NONE 的原语】（jumpDrift t>holdF、walkTo 刹车完、jumpOnto/jump 后段）写 inp.up=true 会毒化 botcore 模块级 NONE——此后一切 {...NONE} 展开恒带 up=true，prohibitJump 永不释放，后续跳跃被 character.ts:321 门禁吞掉（楔面跳跃失效的根因，非 45° 摩擦）。⇒ 毒免疫纪律：全链 jumpDrift holdF 只用 24（t>holdF 首帧 jAt+25 恰在 25f 展宽窗外）或 ≥900；runJump/jump 安全。三段：G1 盆地西涉+推镜三冻（seed14 实证 14 原语，wg 钉 556）；G2 wg 西屋上升系统（640檐→西檐78立跳→滑道坡→楔峰驻→峰东跳→mid→B冰西→B冰东620）+ fb 睡眠等冻；G3 wg 东上链（J1 东跳落 massif 顶→massif 西740→J2 西跳落楔1(645,351)→J3 西跳落 A 冰东(550,255)→A 冰西渡→高原 45° 坡西爬→wg 门[48,112]x192）；fb 顶路东渡（wt715,60 单件实证 spawn→massif 717）→riser 跳→384 板→东行走落壕沟→fb 门[1104,1168]x896→双门 isUp=WIN。几何勘误（dump6/dump7 m_count 精确）：B 冰东缘无 flank 45° 坡——实为 32px 裸 riser 阶梯（640/672 块顶544/512→massif 顶512x[704,896]→480/448/416/384 板叠→352 块 x[896,928]→(928,352)→(960,320) 东坡），bare riser 步行必卡死故全跳越；楔1/楔2 (640,384)→(672,416)/(608,352)→(640,384) 45° 斜楔在 y[352,416]，西向跳弧可立驻；A 冰顶288 x[288,544] 冻面、A 床顶320 x[288,576]、床东面 x=576 y[320,608]为西跳必须越过的墙（J3 起跳线=楔1 顶 640,345 → 弧顶(543,223) 落 A 冰东 487-550）。kernel 法线门（character.ts:321）：n.y>0.2 即可起跳、n.y>0.65 满速——45° 斜坡 n.y=0.707 本可全跳；floor 实测 (0,1)、640檐缘 (-0.707,0.707)、楔峰角 (-0.539,0.842)。 G1 met 判据 v2：met 需晚于三冻完成——wg 在 A 窗[556,560] 驻 120f 触发冻结后东蠕至 572（推 puck ~592），target px[566,576]+vx[-25,25] 与西行 transit（vx≈-60）与早位钉（556）均不相交。 G1 met 判据 v3：puck 槽位钉死 576.3（蠕钉不可行），wg 终位=556（puck 西侧极限）；target px[545,568]+vx[-25,25]（排除 transit vx≈-60）；三冻 f1210 完成、met f1612，extras 恒过（pr24b 实证）。 检尾纪律（gate1 实证）：程序必须以 sleep 收尾——queue-latch 会锁存最后输入，walkTo 刹车相位若在 done 帧处于推进相，latch 锁 right 使 fb 无界加速滑入 ~324 未冻水死亡；sleep 恒发 NONE 且 kernel 无输入支路对 fb 主动反刹（i.x=7·−vx）、对 wg 硬零速，终点有界。G1 wg 尾例外：latch 锁 right 顶死槽位 puck 为吸引子（gate1 后段零 fatal），保持原样。 检尾纪律 v6（gate1 实证 expandFlat 同帧 up 先 down 后）：末位同键 1 帧 tap 对 ±1 平移即同帧碰撞→键被长锁→fb 东奔入水/wg 东滑坠 B 冰东缘。修复：fb 零事件（spawn 已在区），段尾驻留一律 goTo（3 帧最小驻留+收尾松键 vx<40）；G1 wg 例外保持 walkTo 钉 puck（latch 锁 right 顶死槽=吸引子，gate1 后段零 fatal）；G3 双尾向门滑为助向（西滑入门/东滑入门）。 v7（route-node 3/3 timeout 实证链必须全事件 ±1f 鲁棒——服务器意图跨度排水 +4ms deadline，净迟到>4ms 的事件随机 +1f 滑帧，本次实测 60/2060 帧输入错位）：全部 walkTo vMax→999（autosearch 自注：vMax 限速脉冲步进是脆弱性发生器，80 脉冲事件 136 败）——满速过线+反刹停定，事件表每走段仅 2 事件，终态由线锚定与 ±1f 解耦；G2 尾驻留 goTo→walkTo(1,620,999)（精确定点件）。",
+ "note": "v5 全链重构（2026-11-11，fw-route-ice03）。pr22 全链 WIN 实证（双门 atDoor + 双 isUp，poison-free）。核心破案：autosearch wrapTap 对【返回共享 NONE 的原语】（jumpDrift t>holdF、walkTo 刹车完、jumpOnto/jump 后段）写 inp.up=true 会毒化 botcore 模块级 NONE——此后一切 {...NONE} 展开恒带 up=true，prohibitJump 永不释放，后续跳跃被 character.ts:321 门禁吞掉（楔面跳跃失效的根因，非 45° 摩擦）。⇒ 毒免疫纪律：全链 jumpDrift holdF 只用 24（t>holdF 首帧 jAt+25 恰在 25f 展宽窗外）或 ≥900；runJump/jump 安全。三段：G1 盆地西涉+推镜三冻（seed14 实证 14 原语，wg 钉 556）；G2 wg 西屋上升系统（640檐→西檐78立跳→滑道坡→楔峰驻→峰东跳→mid→B冰西→B冰东620）+ fb 睡眠等冻；G3 wg 东上链（J1 东跳落 massif 顶→massif 西740→J2 西跳落楔1(645,351)→J3 西跳落 A 冰东(550,255)→A 冰西渡→高原 45° 坡西爬→wg 门[48,112]x192）；fb 顶路东渡（wt715,60 单件实证 spawn→massif 717）→riser 跳→384 板→东行走落壕沟→fb 门[1104,1168]x896→双门 isUp=WIN。几何勘误（dump6/dump7 m_count 精确）：B 冰东缘无 flank 45° 坡——实为 32px 裸 riser 阶梯（640/672 块顶544/512→massif 顶512x[704,896]→480/448/416/384 板叠→352 块 x[896,928]→(928,352)→(960,320) 东坡），bare riser 步行必卡死故全跳越；楔1/楔2 (640,384)→(672,416)/(608,352)→(640,384) 45° 斜楔在 y[352,416]，西向跳弧可立驻；A 冰顶288 x[288,544] 冻面、A 床顶320 x[288,576]、床东面 x=576 y[320,608]为西跳必须越过的墙（J3 起跳线=楔1 顶 640,345 → 弧顶(543,223) 落 A 冰东 487-550）。kernel 法线门（character.ts:321）：n.y>0.2 即可起跳、n.y>0.65 满速——45° 斜坡 n.y=0.707 本可全跳；floor 实测 (0,1)、640檐缘 (-0.707,0.707)、楔峰角 (-0.539,0.842)。 G1 met 判据 v2：met 需晚于三冻完成——wg 在 A 窗[556,560] 驻 120f 触发冻结后东蠕至 572（推 puck ~592），target px[566,576]+vx[-25,25] 与西行 transit（vx≈-60）与早位钉（556）均不相交。 G1 met 判据 v3：puck 槽位钉死 576.3（蠕钉不可行），wg 终位=556（puck 西侧极限）；target px[545,568]+vx[-25,25]（排除 transit vx≈-60）；三冻 f1210 完成、met f1612，extras 恒过（pr24b 实证）。 检尾纪律（gate1 实证）：程序必须以 sleep 收尾——queue-latch 会锁存最后输入，walkTo 刹车相位若在 done 帧处于推进相，latch 锁 right 使 fb 无界加速滑入 ~324 未冻水死亡；sleep 恒发 NONE 且 kernel 无输入支路对 fb 主动反刹（i.x=7·−vx）、对 wg 硬零速，终点有界。G1 wg 尾例外：latch 锁 right 顶死槽位 puck 为吸引子（gate1 后段零 fatal），保持原样。 检尾纪律 v6（gate1 实证 expandFlat 同帧 up 先 down 后）：末位同键 1 帧 tap 对 ±1 平移即同帧碰撞→键被长锁→fb 东奔入水/wg 东滑坠 B 冰东缘。修复：fb 零事件（spawn 已在区），段尾驻留一律 goTo（3 帧最小驻留+收尾松键 vx<40）；G1 wg 例外保持 walkTo 钉 puck（latch 锁 right 顶死槽=吸引子，gate1 后段零 fatal）；G3 双尾向门滑为助向（西滑入门/东滑入门）。 v7（route-node 3/3 timeout 实证链必须全事件 ±1f 鲁棒——服务器意图跨度排水 +4ms deadline，净迟到>4ms 的事件随机 +1f 滑帧，本次实测 60/2060 帧输入错位）：全部 walkTo vMax→999（autosearch 自注：vMax 限速脉冲步进是脆弱性发生器，80 脉冲事件 136 败）——满速过线+反刹停定，事件表每走段仅 2 事件，终态由线锚定与 ±1f 解耦；G2 尾驻留 goTo→walkTo(1,620,999)（精确定点件）。 v8（v7 gate 实证 5/84：残差=walkTo done vx≤20 余速 0-20px/s 经 40f 弧放大 ±13px 着陆、32px 窄台偶尔失足；冰面无输入支路 wg 速度硬零）→ 走→跳手递一律 sleep(3) 硬零（takeoff vx=0 位级精确）；末推接触敏感（puck 入槽速度决定卡/越槽分岔）回 vMax40 温和爬行（v6 实证钉相零脆弱）。",
  "segments": [
   {
    "id": "G1",
@@ -109,7 +109,7 @@
    "targetNote": "wg 钉 556（puck 槽位钉死 576.3，556= puck 西侧极限驻位）；vx 门排除西行 transit；三冻 f1210 完成 ≪ met f1612（pr24b 实证）；fb 顶西 latch 滑行余量",
    "cands": [
     {
-     "note": "v6: seed14 实证 14 原语；fb 改纯睡（spawn 80,160 已在区，零事件零脆性）",
+     "note": "v8: v7 + hop 手递 sleep 硬零（takeoff vx=0 精确）+ 末推 vMax40 慢接触（卡槽温和进入）",
      "dfb": [
       {
        "n": "sleep",
@@ -134,6 +134,12 @@
        ]
       },
       {
+       "n": "sleep",
+       "a": [
+        4
+       ]
+      },
+      {
        "n": "jumpDrift",
        "a": [
         -1,
@@ -142,11 +148,23 @@
        ]
       },
       {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
        "n": "jumpDrift",
        "a": [
         -1,
         20,
         25
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
        ]
       },
       {
@@ -171,6 +189,12 @@
         -1,
         0,
         25
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
        ]
       },
       {
@@ -220,7 +244,7 @@
        "a": [
         1,
         556,
-        999
+        40
        ]
       }
      ]
@@ -353,7 +377,7 @@
    "targetNote": "wg B冰东 (621.1,540.4 pr22 实证)；fb 顶西(230,~200)；峰驻 wg 钻石 (96,480) 顺路拾取",
    "cands": [
     {
-     "note": "v6: pr22 verified 13 原语（毒免疫 holdF=24）+ 尾驻留 goTo（min-3f tap 免 ±1 碰撞，收键防坠东缘）",
+     "note": "v6: v8 + walk→jd 手递 sleep(3) 硬零",
      "dfb": [
       {
        "n": "sleep",
@@ -378,6 +402,12 @@
        ]
       },
       {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
        "n": "jumpDrift",
        "a": [
         1,
@@ -398,6 +428,12 @@
         1,
         282,
         999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
        ]
       },
       {
@@ -439,6 +475,12 @@
        ]
       },
       {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
        "n": "jumpDrift",
        "a": [
         1,
@@ -465,7 +507,7 @@
      ]
     },
     {
-     "note": "v6b: 西走 84 备份（缘口安全边更大）+ 尾驻留 goTo（同 cand0 检尾）",
+     "note": "v6b: v8 + walk→jd 手递 sleep(3) 硬零",
      "dfb": [
       {
        "n": "sleep",
@@ -490,6 +532,12 @@
        ]
       },
       {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
        "n": "jumpDrift",
        "a": [
         1,
@@ -510,6 +558,12 @@
         1,
         282,
         999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
        ]
       },
       {
@@ -548,6 +602,12 @@
         -1,
         100,
         999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
        ]
       },
       {
@@ -695,7 +755,7 @@
    "targetNote": "pr22 WIN f4750：fb(1136,860.5) wg(88.8,156.3) 双 atDoor+双 isUp",
    "cands": [
     {
-     "note": "v5: pr22 verified 7+6 原语+双 sleep150 检尾（=pr22 实证程序原样）",
+     "note": "v8: + fb walk→jd 手递 sleep(3) 硬零",
      "dfb": [
       {
        "n": "walkTo",
@@ -711,6 +771,12 @@
         1,
         760,
         999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
        ]
       },
       {
