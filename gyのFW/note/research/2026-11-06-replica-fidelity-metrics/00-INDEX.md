@@ -9,5 +9,8 @@
 |---|---|---|
 | 01 | [01-survey.md](01-survey.md) 六域标准调研 + 映射到本项目（已有/缺口）+ 待裁候选 | ✅ 调研收官 |
 
-- 挂账：无新开工级挂账；候选补充量具（SSIM 分量、LUFS 总响度）登记为
-  行为复刻 INDEX §3.1 #11（待用户裁决），oracle-gold 铺开本就是 §3.1 #1。
+- 挂账：oracle-gold 铺开仍为行为复刻 INDEX §3.1 #1（卡路线供给）；
+  **候选① SSIM 分量已于 2026-11-11 落地**（`benchmark/visual-diff.mjs` 增
+  `diff.ssim`/`diff.ssimZero`，基线带 0.7813–0.7887，见 benchmark/README.md
+  视觉差分节）——用户 2026-11-11「继续开发直至全部完毕」指令下执行；
+  候选② LUFS 默认不做（F4 源级对表已强于响度判据）、候选③ Ruffle 不做，维持原判。
