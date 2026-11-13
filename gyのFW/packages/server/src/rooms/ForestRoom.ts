@@ -22,8 +22,17 @@ import { Room, ServerError, matchMaker } from "../colyseus.cjs.js";
 import { ROLES, EMPTY_INPUT, type Role, type InputState } from "@fw/shared";
 import { World, m2px, type WorldEvent, type WorldPhase } from "@fw/shared/kernel";
 import { levelExists, loadLevel, type LevelBundle } from "../levels.js";
+import type { LevelData } from "@fw/shared/level2";
 import { BeamState,
-  TimedPusherState, RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState } from "./state.js";
+  TimedPusherState, RoomState, PlayerState, DiamondState, LeverState, PusherState, BodyState, WindState, FairyState, FairyCupState, PortalState } from "./state.js";
+
+/**
+ * 屏幕 px → 物理 m（shared/src/kernel/b2.ts px2m 同式：physics = −screen/32）。
+ * kernel 出口 world.ts 只再导出 m2px（r1 perf 件3 注记），本槽禁改 packages/shared/kernel，
+ * 故此处单点复制；换算一致性由 fairy-net 集成测试端到端锚定（把仙女拖到杯口 px 坐标 →
+ * 杯 state=1——系数错了仙女就落不进杯）。
+ */
+const px2m = (px: number): number => -px / 32;
 
 interface JoinOptions {
   password?: string;
@@ -251,6 +260,23 @@ export class ForestRoom extends Room<RoomState> {
       if (this.inputQueue.length > 128) this.inputQueue.splice(0, this.inputQueue.length - 128);
     });
 
+    // F 部仙女拖拽（fw-net/fw-fairy-view 契约）：{id, x, y}（屏幕 px）→ px2m 后
+    // world.fairies[i].setDrag；x 非有限数/缺失 = 松手（oracle L59203 maxForce 降 5%）。
+    // 任何客户端可拖任何仙女（oracle 单机鼠标口径的联机化，无角色归属校验）。
+    // 仅 started（=内核 playing，物理运转中）受理——lobby/ready/won/gameover 无可拖物理；
+    // 玩家暂停期不拦（相位仍 started，拖拽目标照常更新，恢复即生效——同 input 键掩码语义）。
+    // id 找不到（非 fy{n} / 序号越界，含换关重建窗的瞬时错位）一律静默忽略。
+    this.onMessage("fairydrag", (_client, data: { id?: unknown; x?: unknown; y?: unknown }) => {
+      if (this.state.phase !== "started") return;
+      const m = /^fy(\d+)$/.exec(typeof data?.id === "string" ? data.id : "");
+      if (!m) return;
+      const fairy = this.world.fairies[Number(m[1])];
+      if (!fairy) return;
+      const x = typeof data.x === "number" && Number.isFinite(data.x) ? data.x : null;
+      const y = typeof data.y === "number" && Number.isFinite(data.y) ? data.y : null;
+      fairy.setDrag(x !== null && y !== null ? { x: px2m(x), y: px2m(y) } : null);
+    });
+
     this.onMessage("restart", () => {
       // won/gameover 阶段任意客户端可重开（原版 GameOverMenu/EndMenu Retry 的联机化映射）
       if (this.state.phase === "won" || this.state.phase === "gameover") {
@@ -267,6 +293,19 @@ export class ForestRoom extends Room<RoomState> {
       }
     });
 
+    // F 部免费复活一次（R2；oracle GameOverMenu 第三钮 showRewardedAndRevive 的联机化，
+    // 原版走激励广告，我方裁定免费）：gameover 相位受理 → world.revive()（内核门禁
+    // revived 一次性+重建双角+检查点回放）→ 成功即回 started 广播 revived，失败静默
+    // （客户端维持 gameover，可照常 Retry）。
+    this.onMessage("revive", () => {
+      if (this.state.phase !== "gameover") return;
+      const ok = this.world.revive();
+      if (!ok) return;
+      this.state.phase = "started";
+      this.syncState();
+      this.broadcast("revived", { timerMs: this.state.timerMs });
+    });
+
     // 结算「继续」直进下一关（原版 EndMenu Continue 的联机化，2026-10-12 实玩反馈）：
     // 活房间内换关、双方席位保留，不再回大厅重建房间。下一关 id 由发起端按 temple.json
     // 序算好带上（关卡合法性以服务端为准），仅 won 受理——双端各点一次时第二发在
@@ -276,7 +315,6 @@ export class ForestRoom extends Room<RoomState> {
       const id = String(data?.levelId ?? "");
       if (!id || !levelExists(id) || id === this.state.levelId) return;
       this.bundle = loadLevel(id);
-      this.buildWorld();
       this.state.levelId = id;
       // 旧关条目不能带进新关（syncState 只增不删，残留=幽灵机关/钻石/刚体）
       this.state.diamonds.clear();
@@ -296,7 +334,15 @@ export class ForestRoom extends Room<RoomState> {
       this.state.timedPushers.clear();
       this.state.liquids = "";
       this.state.romans.clear();
-      this.restartLevel();
+      // F 部仙女/杯：换关必重建（新关数量/组色不同；数组序=新 world 数组序，
+      // syncState 在 restartLevel 里按空数组重新 push 并派生 fy{n}/fc{n} id）
+      this.state.fairies.clear();
+      this.state.fairyCups.clear();
+      this.state.portals.clear();
+      // r45：换关构建在此一次完成（改绑新关 + 全量重建），不再先 buildWorld 再 reset。
+      // 这里必须传新关的 level：restartLevel 内 world.reset(nextLevel) 的语义与
+      // 「new World(nextLevel)」逐项等价（含 startFrozen 初始冻结）。
+      this.restartLevel(this.bundle.level);
     });
 
     // 玩家暂停（F3 翻转，原版 E4 togglePause=game.paused 全场冻结）：任一端 P 键都打给
@@ -586,10 +632,14 @@ export class ForestRoom extends Room<RoomState> {
     }, READY_MS);
   }
 
-  /** 整关重开（原版 retry：整状态重载） */
-  private restartLevel() {
+  /** 整关重开（原版 retry：整状态重载）。
+   *  r45：`nextLevel` 非空时改绑新关并一并构建——advance 换关此前是
+   *  `buildWorld()`（按新关整建一次）+ `restartLevel()`（`reset()` 又整建一次），
+   *  第一次构建的 World 立刻被丢弃，白付一整次 buildLevelWorld+buildMechanisms+
+   *  双 Character（全库均 1.43ms，最重 4.4ms）。改绑后只建一次。 */
+  private restartLevel(nextLevel?: LevelData) {
     if (this.readyTimer) clearTimeout(this.readyTimer); // H-02：同 beginReady，防钟叠加
-    this.world.reset();
+    this.world.reset(nextLevel);
     // L-02：旧关结算不跨重开
     this.lastFinish = null;
     // 玩家暂停不跨重开（原版 retry 走完整 startLevel，game.paused 归 false）
@@ -706,8 +756,12 @@ export class ForestRoom extends Room<RoomState> {
         // 原版语义（F2 翻转）：gameover 静置，GameOverMenu Retry 点击才整关重开（onMessage restart）
         this.state.phase = "gameover";
       } else if (ev.type === "mech") {
-        // 机关音效/灯事件直发（lever/pusher 翻转）
-        this.broadcast("sfx", { kind: ev.event.kind, group: ev.event.group, state: ev.event.state });
+        // 机关音效/灯事件直发（lever/pusher 翻转；portal 音效只有 kind 无 group/state）
+        if ("group" in ev.event) {
+          this.broadcast("sfx", { kind: ev.event.kind, group: ev.event.group, state: ev.event.state });
+        } else {
+          this.broadcast("sfx", { kind: ev.event.kind, sfx: ev.event.sfx });
+        }
       } else if (ev.type === "liquid-frozen") {
         this.broadcast("sfx", { kind: "liquid-frozen" });
       } else if (ev.type === "liquid-melted") {
@@ -911,6 +965,48 @@ export class ForestRoom extends Room<RoomState> {
       ps.x = Math.round(m2px(pos.x) * 10) / 10;
       ps.y = Math.round(m2px(pos.y) * 10) / 10;
     }
+    // ---- F 部仙女/仙女杯（fairies_000 等非空；forest 等恒零循环零开销）----
+    // 位置每 tick 全量写（同 BodyState/角色节奏，patch 帧出增量）；locked/杯 state
+    // 同写法（timedPusher 先例：逐 tick 写，框架只在值变化帧出字节=事件沿同步）。
+    // 杯 state 迁移的音效广播不在此处——world.step 已产 {kind:"fairycup"} mech 事件，
+    // handleEvents 统一 sfx 下发。数组条目按内核数组序首次补建，id=fy{n}/fc{n}（state.ts 注）。
+    for (let i = 0; i < this.world.fairies.length; i++) {
+      const f = this.world.fairies[i];
+      let fs = this.state.fairies.at(i);
+      if (!fs) {
+        fs = new FairyState();
+        fs.id = `fy${i}`;
+        this.state.fairies.push(fs);
+      }
+      const fpos = f.body.GetPosition();
+      fs.x = Math.round(m2px(fpos.x) * 10) / 10;
+      fs.y = Math.round(m2px(fpos.y) * 10) / 10;
+      fs.group = f.group;
+      fs.locked = f.locked;
+    }
+    for (let i = 0; i < this.world.fairyCups.length; i++) {
+      const c = this.world.fairyCups[i];
+      let cs = this.state.fairyCups.at(i);
+      if (!cs) {
+        cs = new FairyCupState();
+        cs.id = `fc${i}`;
+        this.state.fairyCups.push(cs);
+      }
+      cs.state = c.state;
+    }
+    // ---- D/E 部传送门开关态（静态体只同步 state；id=pt{数组序}）----
+    for (let i = 0; i < this.world.portals.length; i++) {
+      const p = this.world.portals[i];
+      let ps = this.state.portals.at(i);
+      if (!ps) {
+        ps = new PortalState();
+        ps.id = `pt${i}`;
+        this.state.portals.push(ps);
+      }
+      ps.state = p.state;
+    }
+    // F 部复活门禁镜像（R2：复活钮显隐；restart/advance 重建 world 时自动回 false）
+    this.state.revived = this.world.revived;
     // 液体冻结旗标（行段序 0/1 串）
     const liquidsFlag = this.world.liquids.map((l: any) => (l.frozen ? "1" : "0")).join("");
     if (this.state.liquids !== liquidsFlag) this.state.liquids = liquidsFlag;

@@ -1,11 +1,13 @@
 /**
- * 设置/制作人员/全通关三个弹窗（原版 SettingsMenu/CreditsMenu/GameCompleteMenu 复刻）。
+ * 设置/制作人员/全通关/软锁四个弹窗（原版 SettingsMenu/CreditsMenu/GameCompleteMenu/SoftLockMenu 复刻）。
  * 复用 overlays 的板与 StoneButton（IngameMenu 基类形制）；子元素一律板内局部坐标
  * （板 1082×642，容器 (99,159)，板内中心 (541,321)）；进出为弹簧滑入/滑出（overlays.buildBoard）。
  * - SettingsScene：Music/Fx 双开关（原版 keyboard 模式布局，bundle:43824-43920），
  *   切换即时生效并持久化（settings.ts）。
  * - CreditsScene：右上"?"进入，制作名单按原版 ch 字典（bundle:45885-45925）。
  * - CompleteScene：48 关全 3 星首通一次性彩带雨（Confetti0000-3）+ 恭喜弹窗（bundle:45603-45721）。
+ * - SoftLockScene（E 部 multi 选关，0.4.x）：rows 网格 state=0 节点点击的"完成更多关卡"提示
+ *   （原版 SoftLockMenu renderContent :1917010 区；TempleScene 运行时 scene.add 注册后 launch）。
  */
 import Phaser from "phaser";
 import { ATLAS_MENU, ATLAS_POPUP, FONT_MAIN } from "./BootScene";
@@ -89,6 +91,44 @@ export class CreditsScene extends Phaser.Scene {
     });
     board.add(this.add.bitmapText(CX, 401, FONT_MAIN, "septimania 2018", 16).setOrigin(0.5, 0.5));
     stoneButton(this, board, CX, 498, "继续", () => board.hide(() => this.scene.stop()));
+  }
+}
+
+/**
+ * 软锁提示（原版 States/Common/SoftLockMenu，E 包 bundle :1916970 区逐句）：
+ * IngameMenu 板 + 三行 fontStone 文案 + "Ok!" StoneButton；关闭=hide 后 1000ms 收场景
+ * （oracle close 的 _.delay(1e3) 同构）。launch 入参 { label }：
+ * - 网格节点点击：label 固定 "level"（LevelMenuButtons.showPopup :1923980 区硬编码）；
+ * - 条带软锁庙图标：原版 dispatch onShowPopup 但 HybridMenu 无消费者（:1965000 区 define 块
+ *   无 onShowPopup.add）→ 点击无弹窗，故 temple 路径在本复刻不触达，仅留词典完备性。
+ * 文案 = ch 词典（:2223208 区逐键）；locale 回退 = `key+"|locale"`（:2224051 原句）。
+ */
+const SOFTLOCK_CH: Record<string, string> = {
+  this: "这个",
+  level: "级别",
+  not_yet: "这个级别尚不可用",
+  complete_more: "完成更多关卡",
+  to_unlock: "解锁",
+  "Ok!": "继续",
+};
+export class SoftLockScene extends Phaser.Scene {
+  constructor() {
+    super("SoftLock");
+  }
+  create(data: { label?: string }): void {
+    const board = buildBoard(this);
+    const locale = (k: string): string => SOFTLOCK_CH[k] ?? `${k}|locale`;
+    const label = data?.label ?? "level";
+    // 三行 y=板内 321+(−321/2+30/140/200)：oracle renderContent 的 −halfH/2+offset
+    board.add(this.add.bitmapText(CX, 321 - 130.5, FONT_MAIN, `${locale("this")} ${locale(label)} ${locale("not_yet")}`, 26).setOrigin(0.5));
+    board.add(this.add.bitmapText(CX, 321 - 20.5, FONT_MAIN, locale("complete_more"), 22).setOrigin(0.5));
+    board.add(this.add.bitmapText(CX, 321 + 39.5, FONT_MAIN, locale("to_unlock"), 22).setOrigin(0.5));
+    // Ok! 位置 = 1.1·halfH/2（与 Settings/Credits 的 Ok 同式，板内 497.55≈498）
+    stoneButton(this, board, CX, 498, locale("Ok!"), () =>
+      board.hide(() => {
+        this.time.delayedCall(1000, () => this.scene.stop());
+      }),
+    );
   }
 }
 

@@ -59,6 +59,16 @@ export const SCENE_STATE_KEYS = [
   "hangingSnaps",
   "pulleySnaps",
   "romanSnaps",
+  // F 部 fairytales（fw-fairy-view）：仙女/仙女杯视图 + 逐帧仙女点位表
+  "fairyViews",
+  "fairyCupViews",
+  // r44：快照 id → 视图解析首见缓存（与视图同生命周期，换关必须清，否则引用已销毁对象）
+  "fairySnaps",
+  "fairyCupSnaps",
+  // D/E 部传送门视图（portal 渲染批）
+  "portalViews",
+  "portalSnaps",
+  "fairyPts",
 ] as const;
 
 export type SceneStateKey = (typeof SCENE_STATE_KEYS)[number];
@@ -71,7 +81,11 @@ export const FX_STATE_INIT = {
   staticHaloSig: null,
   dustContainer: null,
   dustMask: null,
-  dustMaskSig: "",
+  // r44：掩膜几何指纹缓冲（原 dustMaskSig 字符串退役）——不清会让新关首帧误判「几何未变」
+  // 而跳过掩膜重建，尘埃带沿用上一关空 Graphics（=浮尘全不可见）
+  dustSigPrev: new Float64Array(0),
+  dustSigCur: new Float64Array(0),
+  dustSigLen: 0,
   dustWobble: [] as never[],
 } as const;
 

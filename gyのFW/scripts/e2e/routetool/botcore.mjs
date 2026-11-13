@@ -191,13 +191,68 @@ export const S2 = {
       done: (c) => off && c.me.grounded && c.me.vy >= -8,
     };
   },
+
+  // ── 仙女拖拽件（fw-fairydrag 槽，2026-10-31）───────────────────────────
+  // F 部仙女拖拽：独立于 fb/wg 键位通道，直接调 world.fairies[i].setDrag（内核米制）。
+  // 坐标口径与既有原语一致（关卡屏幕 px），米制换算内部做（b2.ts px2m 同式 -px/32，
+  // 服务器 ForestRoom fairydrag 消息同式）。不产出键盘输入（恒 NONE），可串入任一角色
+  // 程序（通常挂在驻留侧角色的程序上）。语义（mechanisms.ts Fairy.setDrag）：起拖=
+  // MouseJoint maxForce 3.5、仙女每帧朝目标飘（实测巡航 ~9px/f，非瞬移）；松手=maxForce
+  // 降 5%。拖拽状态粘滞（无 frelease 即长持），杯感应仅认仙女（Pusher 按钮 Fairy 压不动）。
+  // 事件外发：run 首帧经 w.__fyEvents 刮痕通道上报，drive 每帧排干入 events.fy。
+  /** 拖仙女到 (x,y)：hold>0 = 按住 hold 帧后完成（杯口驻留）；hold=0 = 仙女进入
+   *  (x,y)±tol 后完成（到点交棒，弧线余速由后续件/粘滞拖拽消化） */
+  fdrag: (fyIdx, x, y, hold = 0, tol = 32, name = `fd${fyIdx}@${x},${y}${hold > 0 ? "#" + hold : ""}`) => {
+    let t = 0, set = false;
+    const distPx = (c) => {
+      const fy = c.w.fairies?.[fyIdx];
+      if (!fy) return Infinity;
+      const p = fy.body.GetPosition();
+      return Math.hypot(-p.x * 32 - x, -p.y * 32 - y);
+    };
+    return {
+      name,
+      run: (c) => {
+        const fy = c.w.fairies?.[fyIdx];
+        if (fy && !set) {
+          fy.setDrag({ x: -x / 32, y: -y / 32 });
+          c.w.__fyEvents?.push({ i: fyIdx, x, y });
+          set = true;
+        }
+        t++;
+        return NONE;
+      },
+      done: (c) => (hold > 0 ? t >= hold : t >= 2 && distPx(c) <= tol),
+    };
+  },
+  /** 松手（setDrag(null)）；完成于起效后 2 帧。松手后仙女原地悬浮（零重力） */
+  frelease: (fyIdx, name = `fre${fyIdx}`) => {
+    let t = 0, set = false;
+    return {
+      name,
+      run: (c) => {
+        const fy = c.w.fairies?.[fyIdx];
+        if (fy && !set) {
+          fy.setDrag(null);
+          c.w.__fyEvents?.push({ i: fyIdx, x: null, y: null });
+          set = true;
+        }
+        t++;
+        return NONE;
+      },
+      done: () => set && t >= 2,
+    };
+  },
 };
 
-/** 驱动：programs = {fb:[steps], wg:[steps]}；返回 {events, trace, result} */
+/** 驱动：programs = {fb:[steps], wg:[steps]}；返回 {events, trace, result}。
+ *  events.fy（fw-fairydrag 槽）：仙女拖拽事件轨 [{f,i,x,y}]（关卡 px；x=y=null 松手），
+ *  由 S2.fdrag/frelease 经 w.__fyEvents 刮痕通道上报、每帧尾排干——既有 fb/wg 语义零改动。 */
 export function drive(w, programs, totalFrames, opts = {}) {
   const idx = { fb: 0, wg: 0 };
   const state = { fb: { ...NONE }, wg: { ...NONE } };
-  const events = { fb: [], wg: [] };
+  const events = { fb: [], wg: [], fy: [] };
+  w.__fyEvents = []; // 本轮刮痕归零（世界实例一次一回跑，防御性复位）
   const trace = [];
   const snapOf = (role) => {
     const s = w.snapshotPlayer(role);
@@ -228,6 +283,14 @@ export function drive(w, programs, totalFrames, opts = {}) {
       if (d) { idx[role]++; if (opts.logSteps) console.log(`[bot] f${f} ${role} 完成 ${step.name} → ${prog[idx[role]]?.name ?? "END"}`); }
     }
     w.step(1 / 60, { fireboy: state.fb, watergirl: state.wg });
+    // 帧尾排干仙女拖拽刮痕（同帧多事件去重连发：与上一条 i/x/y 全同则丢弃）
+    if (w.__fyEvents?.length) {
+      for (const ev of w.__fyEvents.splice(0)) {
+        const prev = events.fy[events.fy.length - 1];
+        if (prev && prev.i === ev.i && prev.x === ev.x && prev.y === ev.y) continue;
+        events.fy.push({ f, i: ev.i, x: ev.x, y: ev.y });
+      }
+    }
     if (opts.traceEvery && f % opts.traceEvery === 0) {
       trace.push({ f, fb: [meS.fb.x.toFixed(1), meS.fb.y.toFixed(1)], wg: [meS.wg.x.toFixed(1), meS.wg.y.toFixed(1)], ph: w.phase });
     } else if (opts.traceAll) {
@@ -241,10 +304,11 @@ export function drive(w, programs, totalFrames, opts = {}) {
   return { events, trace, result: { won: false, deathF: -1 } };
 }
 
-/** 事件表 → 路线 JSON 文档 */
+/** 事件表 → 路线 JSON 文档。fy（fw-fairydrag 槽）：仙女拖拽轨（可选，空轨不写——
+ *  既有 57 条 route 无 fy 键，消费端缺轨=零行为差） */
 export function toRouteDoc(level, events, totalFrames, source) {
   const clean = (arr) => arr.filter((e, i) => !(i > 0 && arr.slice(0, i).some((p) => p.f === e.f && p.dir === e.dir && p.type === e.type)));
-  return {
+  const doc = {
     level,
     source,
     tickHz: 60,
@@ -252,4 +316,6 @@ export function toRouteDoc(level, events, totalFrames, source) {
     fb: events.fb.map((e) => ({ f: e.f, dir: e.dir, type: e.type })),
     wg: events.wg.map((e) => ({ f: e.f, dir: e.dir, type: e.type })),
   };
+  if (events.fy?.length) doc.fy = events.fy.map((e) => ({ f: e.f, i: e.i, x: e.x, y: e.y }));
+  return doc;
 }

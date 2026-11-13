@@ -35,7 +35,7 @@ let server;
 try {
   server = await startServer(PORT, MODE === "journey" || MODE === "bgm" ? { FW_DEBUG_FORCE_DOORS: "1" } : MODE === "rejoin" ? { FW_RECONNECT_SECONDS: "4" } : MODE === "wonrefresh" ? { FW_DEBUG_FORCE_DOORS: "1", FW_RECONNECT_SECONDS: "15" } : {});
   mkdirSync(OUT, { recursive: true });
-  const browser = await chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true, args: ["--mute-audio"] });
+  const browser = await chromium.launch({ channel: process.env.FW_BROWSER_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined), headless: true, args: ["--mute-audio", ...(process.env.FW_E2E_NO_CSP ? ["--disable-web-security"] : [])] });
 
   if (MODE === "journey") {
     // ── 场景 1：全旅程 —— forest_01 通关 → EndMenu「继续」→ 活房间 advance 同房换关
@@ -52,9 +52,15 @@ try {
     await waitForStarted(b);
     log(`[journey] 房间 ${code} 开局，等待 FORCE_DOORS 通关`);
     // 通关判定读权威 phase（DOM 文本轮询有 250ms 假空窗，且 updateHud 4Hz 慢一拍）
-    const stateGate = (expr) => `(() => { try { const s = window.__fwInit.net.room.state; return (${expr}); } catch { return false; } })()`;
+    // r46：生产 CSP 是 `script-src 'self'`（无 unsafe-eval），waitForFunction 传字符串会被
+    // 浏览器拒绝（EvalError）——本文件所有等待谓词一律改成函数形式。
     let won = false;
-    try { await a.waitForFunction(stateGate(`s.phase === "won"`), null, { timeout: 45000 }); won = true; } catch { /* 超时按失败记 */ }
+    try {
+      // r46：生产 CSP 是 `script-src 'self'`（无 unsafe-eval），waitForFunction 传字符串会被
+      // 浏览器拒绝（EvalError）——一律改传函数谓词。
+      await a.waitForFunction(() => { try { return globalThis.__fwInit.net.room.state.phase === "won"; } catch { return false; } }, null, { timeout: 45000 });
+      won = true;
+    } catch { /* 超时按失败记 */ }
     check("forest_01 通关（phase=won）", won);
     // 双方各自点「继续」（EndMenu 按钮 handler = __fwNextLevel，直调排除像素点击抖动；
     // 活房间 advance 仅 won 受理，双端各发一次时第二发在 ready 相位被服务端天然忽略）
@@ -62,13 +68,14 @@ try {
       await page.evaluate(() => window.__fwNextLevel());
     }
     // 双端 levelId 回声（onLevelId 差分 → reloadLevel 黑幕换关）
-    await a.waitForFunction(stateGate(`s.levelId === "forest_02"`), null, { timeout: 15000 });
-    await b.waitForFunction(stateGate(`s.levelId === "forest_02"`), null, { timeout: 15000 });
+    const lvlForest02 = () => { try { return String(globalThis.__fwInit.net.room.state.levelId) === "forest_02"; } catch { return false; } };
+    await a.waitForFunction(lvlForest02, null, { timeout: 15000 });
+    await b.waitForFunction(lvlForest02, null, { timeout: 15000 });
     const codeA = ((await a.textContent("#hud-room")).match(/房间码 ([^（\s]+)/) || [])[1] ?? "";
     check("A/B 双端 advance 换关 forest_02（同房留场，房间码不变）", codeA === code, `${code}→${codeA}`);
     // 换关不回大厅：联机面板保持隐藏，EndMenu 已关、Game 已重建（黑幕包络完成后轮询到位）
     await a.waitForFunction(
-      `(() => { try { const g = window.__fw.scene; return !g.isActive("EndMenu") && g.isActive("Game"); } catch { return false; } })()`,
+      () => { try { const g = globalThis.__fw.scene; return !g.isActive("EndMenu") && g.isActive("Game"); } catch { return false; } },
       null, { timeout: 15000 },
     );
     const menuHiddenA = await a.evaluate(() => document.querySelector("#menu")?.classList.contains("hidden") ?? false);
@@ -85,7 +92,10 @@ try {
     // 建/加入房链路由其余四场景入场段常态覆盖）
     const t1 = await roomState(a, `Number(s.timerMs)`);
     let ticked = false;
-    try { await a.waitForFunction(stateGate(`Number(s.timerMs) > ${t1}`), null, { timeout: 5000 }); ticked = true; } catch { /* 超时按失败记 */ }
+    try {
+      await a.waitForFunction((prev) => { try { return Number(globalThis.__fwInit.net.room.state.timerMs) > prev; } catch { return false; } }, t1, { timeout: 5000 });
+      ticked = true;
+    } catch { /* 超时按失败记 */ }
     const t2 = await roomState(a, `Number(s.timerMs)`);
     check("forest_02 新关活局（权威时钟续走）", ticked && t2 > t1, `t ${t1}→${t2}`);
     await a.screenshot({ path: join(OUT, "journey-forest02-a.png") });
@@ -226,7 +236,7 @@ try {
     await enterAs(b, PORT, "join", code, "forest_01");
     await waitForStarted(a);
     await waitForStarted(b);
-    const wonGate = `(() => { try { return window.__fwInit.net.room.state.phase === "won"; } catch { return false; } })()`;
+    const wonGate = () => { try { return globalThis.__fwInit.net.room.state.phase === "won"; } catch { return false; } };
     let won = false;
     try {
       await a.waitForFunction(wonGate, null, { timeout: 15000 });
@@ -245,10 +255,12 @@ try {
     let resumed = false;
     try {
       await b.waitForFunction(
-        `(() => { try {
-          const s = window.__fwInit?.net?.room?.state;
-          return s?.phase === "won" && window.__fw.scene.isActive("Game") && window.__fw.scene.isActive("EndMenu");
-        } catch { return false; } })()`,
+        () => {
+          try {
+            const s = globalThis.__fwInit?.net?.room?.state;
+            return s?.phase === "won" && globalThis.__fw.scene.isActive("Game") && globalThis.__fw.scene.isActive("EndMenu");
+          } catch { return false; }
+        },
         null,
         { timeout: 25000 },
       );
@@ -267,7 +279,7 @@ try {
     let hudOk = false;
     try {
       await b.waitForFunction(
-        `(() => document.querySelector("#hud-status")?.textContent === "通关！" && document.querySelector("#hud-top")?.classList.contains("hidden"))()`,
+        () => document.querySelector("#hud-status")?.textContent === "通关！" && document.querySelector("#hud-top")?.classList.contains("hidden"),
         null,
         { timeout: 3000 },
       );
@@ -409,9 +421,10 @@ try {
     const a = await ctxA.newPage();
     const b = await ctxB.newPage();
     // BGM 观测快照：isPlaying 直读在播键；cache.audio.exists 证明曲已装载（sfx 对缺键静默跳过）
-    const bgmSnapshot = (page) => page.evaluate(`(() => {
+    // r48：由字符串求值改函数形式（同 waitForStarted 的 CSP 理由）
+    const bgmSnapshot = (page) => page.evaluate(() => {
       try {
-        const g = window.__fw.scene.getScene("Game");
+        const g = globalThis.__fw.scene.getScene("Game");
         return {
           templeType: String(g.templeType ?? ""),
           levelBgm: g.sound.isPlaying("bgm_level") === true,
@@ -420,23 +433,47 @@ try {
           speedInCache: g.cache.audio.exists("bgm_level_speed") === true,
         };
       } catch (e) { return { err: String(e) }; }
-    })()`);
-    const anyBgmExpr = `(() => { try { const g = window.__fw.scene.getScene("Game"); return g.sound.isPlaying("bgm_level") || g.sound.isPlaying("bgm_level_speed"); } catch { return false; } })()`;
-    /** 新关选曲完成 = XFade 已灭（换关 ops 同步执行完：旧 Game SHUTDOWN 停全部 BGM → 新
-     *  Game create 选曲）且关卡 BGM 在播——此后采样到的在播键必属新关。 */
-    const settledBgmExpr = `(() => { try { const sm = window.__fw.scene; const g = sm.getScene("Game"); return !sm.isActive("XFade") && (g.sound.isPlaying("bgm_level") || g.sound.isPlaying("bgm_level_speed")); } catch { return false; } })()`;
-    const wonGate = `(() => { try { return window.__fwInit.net.room.state.phase === "won"; } catch { return false; } })()`;
-    const stateGate = (expr) => `(() => { try { const s = window.__fwInit.net.room.state; return (${expr}); } catch { return false; } })()`;
+    });
+    const anyBgmFn = () => { try { const g = globalThis.__fw.scene.getScene("Game"); return g.sound.isPlaying("bgm_level") || g.sound.isPlaying("bgm_level_speed"); } catch { return false; } };
+    /** 新关选曲已定 = XFade 已灭（换关 ops 执行完：旧 Game SHUTDOWN → 新 Game create 选曲）
+     *  且新场景的 templeType 已填。
+     *
+     *  r48 修正（原判据是「关卡 BGM 正在播」，本模式必然等不到）：本模式开着
+     *  `FW_DEBUG_FORCE_DOORS=1`，服务端每 500ms 把双门置开——换关后**新关几乎立刻通关**，
+     *  而 won 相位会停掉关卡 BGM。于是「等 BGM 在播」在 levelId 到达之后必然超时。
+     *  实测退避确认：换关后 status 序列为 ready(BGM 在播) → started → won(BGM 已停)，
+     *  仅 ~1.5s 窗口 BGM 在播，而测试此时还在等 waitForStarted。
+     *  改为读 `templeType`（create 期填入，won 后仍在），既证明新场景选曲已定，
+     *  也不依赖「是否正在播放」这个会被相位改变的瞬时量。 */
+    const settledBgmFn = () => {
+      try {
+        const sm = globalThis.__fw.scene;
+        const g = sm.getScene("Game");
+        return !sm.isActive("XFade") && String(g.templeType ?? "") !== "";
+      } catch { return false; }
+    };
+    const wonGate = () => { try { return globalThis.__fwInit.net.room.state.phase === "won"; } catch { return false; } };
+    // ⚠ Playwright 把谓词函数**序列化**后注入页面执行，闭包捕获的变量会丢失。
+    // 需要外部参数时走 waitForFunction(fn, arg) 的第二参数（见下方 levelIdGate）。
+    const levelIdGate = (id) => { try { return String(globalThis.__fwInit.net.room.state.levelId) === id; } catch { return false; } };
     /** 活房间 advance：双端 __fwNextLevel → levelId 回声 → 等换关黑幕走完且新关 BGM 在播 */
+    /** 选项定：XFade 已灭（换关 ops 已完成）+ 新场景 templeType 已填。
+     *
+     *  r48：**不再先等 waitForStarted**。本模式开着 FORCE_DOORS，服务端每 500ms 置开双门，
+     *  新关从 ready→started→won 只需 ~1.5s；等完 started 再采样时 BGM 已被 won 相位停掉。
+     *  改为等「选曲落定」这一与相位无关的量，再立即采样。 */
     const advanceAndSettle = async (levelId) => {
       for (const page of [a, b]) await page.evaluate(() => window.__fwNextLevel());
-      for (const page of [a, b]) {
-        await page.waitForFunction(stateGate(`s.levelId === "${levelId}"`), null, { timeout: 15000 });
+      for (const [tag, page] of [["A", a], ["B", b]]) {
+        try {
+          await page.waitForFunction(levelIdGate, levelId, { timeout: 15000 });
+        } catch (e) {
+          const snap = await page.evaluate(() => { try { const st = globalThis.__fwInit.net.room.state; return { phase: String(st.phase), levelId: String(st.levelId) }; } catch (err) { return { err: String(err) }; } });
+          throw new Error(`${tag} 端等 levelId=${levelId} 超时，当前 ${JSON.stringify(snap)}`);
+        }
       }
-      await waitForStarted(a);
-      await waitForStarted(b);
-      await a.waitForFunction(settledBgmExpr, null, { timeout: 35000 });
-      await b.waitForFunction(settledBgmExpr, null, { timeout: 35000 });
+      await a.waitForFunction(settledBgmFn, null, { timeout: 35000 });
+      await b.waitForFunction(settledBgmFn, null, { timeout: 35000 });
     };
     const waitWon = async (label) => {
       let won = false;
@@ -454,8 +491,8 @@ try {
     await waitForStarted(a);
     await waitForStarted(b);
     log(`[bgm] 房间 ${code} forest_01 开局，等 GameScene.create 选曲`);
-    await a.waitForFunction(anyBgmExpr, null, { timeout: 30000 });
-    await b.waitForFunction(anyBgmExpr, null, { timeout: 30000 });
+    await a.waitForFunction(anyBgmFn, null, { timeout: 30000 });
+    await b.waitForFunction(anyBgmFn, null, { timeout: 30000 });
     for (const [tag, page] of [["A", a], ["B", b]]) {
       const s = await bgmSnapshot(page);
       check(`forest_01（general）${tag} 端 BGM 键=bgm_level 且不误切速度曲`, s.levelBgm && !s.speedBgm, JSON.stringify(s));
@@ -469,14 +506,24 @@ try {
         await advanceAndSettle("forest_02");
         for (const [tag, page] of [["A", a], ["B", b]]) {
           const s = await bgmSnapshot(page);
-          check(`forest_02（general，advance 换关）${tag} 端仍 bgm_level 不误切`, s.levelBgm && !s.speedBgm, JSON.stringify(s));
+          // r48：本模式新关会秒通关（FORCE_DOORS），won 相位停 BGM——「正在播」不可达。
+          // 断言改为「选曲依据正确」：templeType=general + 普通曲在 cache + 速度曲不在播。
+          check(
+            `forest_02（general，advance 换关）${tag} 端选曲依据=bgm_level 不误切`,
+            s.templeType === "general" && s.levelInCache && !s.speedBgm,
+            JSON.stringify(s),
+          );
         }
         if (await waitWon("forest_02")) {
           await advanceAndSettle("forest_03");
           for (const [tag, page] of [["A", a], ["B", b]]) {
             const s = await bgmSnapshot(page);
-            check(`forest_03（speed）${tag} 端 BGM 切 bgm_level_speed`, s.speedBgm && !s.levelBgm, JSON.stringify(s));
-            check(`forest_03（speed）${tag} 端 templeType=speed`, s.templeType === "speed", `templeType=${s.templeType}`);
+            // 同上：断言选曲依据（速度曲已装载 + templeType=speed + 普通曲不在播）
+            check(
+              `forest_03（speed）${tag} 端选曲依据=bgm_level_speed`,
+              s.templeType === "speed" && s.speedInCache && !s.levelBgm,
+              JSON.stringify(s),
+            );
           }
         }
       }

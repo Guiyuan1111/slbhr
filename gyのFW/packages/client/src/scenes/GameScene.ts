@@ -23,7 +23,7 @@ import { AUDIO_SFX, LEVEL_BGM_KEYS, bgmFamilyOf, bgmLoopOf, bgmTerminalOf, loadA
 import type { FinishData, Net } from "../net";
 import type { KeyboardInput } from "../input";
 import { createSeedrandomFactory } from "../vendor/seedrandom.js";
-import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_POPUP, ATLAS_TEMPLE, FONT_MAIN, PLAYER_SCALE, buildGameAnims, loadGameAtlases } from "./BootScene";
+import { ATLAS_CHARS, ATLAS_GROUND, ATLAS_MECH, ATLAS_MENU, ATLAS_NEWCHAR, ATLAS_POPUP, ATLAS_TEMPLE, FONT_MAIN, PLAYER_SCALE, buildFairyAnims, buildGameAnims, buildPortalAnims, loadGameAtlases } from "./BootScene";
 import { CameraRig, PAD, type CamApply } from "./cameraRig";
 import { clearSceneStates, resetFxStates, SCENE_STATE_KEYS } from "./sceneState";
 import { getSettings } from "../settings";
@@ -34,6 +34,7 @@ import { MechanismSmoother } from "./mechSmoothing";
 import { PlatformSoundTracker } from "./platformSound";
 import { GroundCache } from "./groundCache";
 import { clockSoundDecision, needsDarkRt, needsDust, resolveBeamCache } from "./gameGuards";
+import { deviceTintOf, lerpColorTowardWhite, pickFairy, type CoverRect, type FairyCupSnap, type FairySnap } from "./fairyView";
 
 export interface GameInit {
   net: Net;
@@ -42,13 +43,14 @@ export interface GameInit {
   /** 服务端入关时附带的 temple.json 条目（main.ts 注入）：create 同步选 BGM 用；
    *  缺省时仍由 fetchTempleTime 异步兜底。 */
   templeEntry?: { filename: string; time: number; type: string } | null;
+  /** cover 纯视觉矩形（main.ts fetchLevel 顺带从关卡原始 JSON Objects 层提取，
+   *  extractCovers；level2 解析不收——shared 禁改。fairytales/elements 部分关卡非空） */
+  covers?: CoverRect[];
 }
 
-/** 关卡四周留白（原版 groundTexture 1312×992 @(-32,-32) 实测）——常量本体已移 cameraRig.ts 统一导出 */
-/** 机关组色（原版 Device.groupColors），用于点亮贴图 tint */
-const GROUP_COLORS: Record<number, number> = {
-  1: 0xff0000, 2: 0x00cc00, 3: 0x0d3eff, 4: 0xffff00, 5: 0xec0ef1, 6: 0x57beff, 7: 0x9933ff,
-};
+/** 关卡四周留白（原版 groundTexture 1312×992 @(-32,-32) 实测）——常量本体已移 cameraRig.ts 统一导出
+ *  机关组色已迁 fairyView.ts（deviceTintOf：fairytales 庙走 F 部表，其余庙共享表——
+ *  oracle F 部 Device.groupColors 与 A–E 部不同，逐 bundle 字证） */
 
 const EMPTY_TYPE = -99;
 const LIQUID_ATLAS: Record<string, string> = { water: "WaterBox", lava: "FireBox", green: "GreenBox" };
@@ -72,6 +74,8 @@ interface PlayerView {
   cy: number; // 平滑后的角色组中心 y
   anim: string;
   legsKey: string;
+  /** 上次腿部动画是否为 running（r44：布尔比较替代逐帧模板串比较） */
+  legsRun: boolean;
   dying: boolean;
   /** r3 脏守卫：上次写入的渲染状态（值未变跳过 setter，免无谓 dirty 标记/排序请求） */
   lx: number; // 上次写入的组中心 x
@@ -145,6 +149,66 @@ interface PulleyView {
 /** 罗马杠（原版 §10）：杠容器（杠面+两端）随 bar 体位姿，中轴/底座静态 */
 interface RomanView {
   bar: Phaser.GameObjects.Container;
+}
+
+/**
+ * 仙女视图（oracle States/Level/Characters/Fairy createSprites L59294：body 精灵 +
+ * 双层 flying_glow，glow scale1.2/α.7、innerGlow scale.4/α.5 恒白+逐帧随机闪烁；
+ * body+glow tint 组色，双层辉光 LIGHTEN——档卷 §2.1 口径；body 恒常混合保留 NORMAL，
+ * oracle 的 LIGHTEN 挂在空白载体精灵上，档卷按辉光层记录）。
+ * R1 锁定：oracle 无锁形标记（锁定仅门控相机 focus/教学矩形），不做任何视觉差异；
+ * targetAngle 视觉朝向不在状态契约（{id,x,y,group,locked}）→ 不转（记档）。
+ */
+interface PortalView {
+  frame: Phaser.GameObjects.Image;
+  center: Phaser.GameObjects.Sprite;
+  glowL: Phaser.GameObjects.Sprite;
+  glowR: Phaser.GameObjects.Sprite;
+  light: Phaser.GameObjects.Image;
+  lastState: number;
+}
+
+interface FairyView {
+  body: Phaser.GameObjects.Sprite;
+  glow: Phaser.GameObjects.Image;
+  innerGlow: Phaser.GameObjects.Image;
+  group: number;
+  /** 快照 locked 镜像（当前无视觉消费，保留供调试/后续消费） */
+  locked: boolean;
+  /** 上次写入位置（脏守卫） */
+  lx: number;
+  ly: number;
+  /** 尾迹粒子（oracle Fairy.createParticles/updateParticles；background 层≈深度 0.8） */
+  trail?: Phaser.GameObjects.Particles.ParticleEmitter;
+  /** 上一帧位移（px/帧，速度分档发射用） */
+  pvx: number;
+  pvy: number;
+  /** 上帧位移的再上一帧（加速度差分用） */
+  lvx?: number;
+  lvy?: number;
+}
+
+/**
+ * 仙女杯视图（oracle States/Level/Devices/FairyCup：back 常驻 overGround；glow=12fps
+ * 循环挂 liquids 层 sendToBack；base（BoxedDevice 主帧）+light 挂 overChars；glowFront
+ * 为 base 顶层子帧。glow/glowFront/light tint=杯组首位色；glow/glowFront 随 state=1 显，
+ * α=1−最近杯仙女距离/64，百搭杯（首位 0）glow 染入杯仙女组色）。
+ */
+interface FairyCupView {
+  back: Phaser.GameObjects.Image;
+  glow: Phaser.GameObjects.Sprite;
+  base: Phaser.GameObjects.Image;
+  light: Phaser.GameObjects.Image;
+  glowFront: Phaser.GameObjects.Image;
+  group: number;
+  cupGroupFirst: number;
+  /** 杯口（关卡 px：def 中心上方 20.8px=0.65m，rotation 恒 0） */
+  mouthX: number;
+  mouthY: number;
+  state: number;
+  /** α/tint 脏守卫（state=1 期间逐帧计算，值不变不写） */
+  lastAlpha: number;
+  lastTint: number;
 }
 
 interface WindView {
@@ -236,7 +300,14 @@ export class GameScene extends Phaser.Scene {
   //  掩膜=光束路径 40px 描线，尘只在光柱内可见；仅带 beamer 的关创建）----
   private dustContainer: Phaser.GameObjects.Container | null = null;
   private dustMask: Phaser.GameObjects.Graphics | null = null;
-  private dustMaskSig = "";
+  /** 上次掩膜几何指纹（r44：Float64 逐位，替代每帧拼字符串签名）。
+   *  dustSigCur 每帧由 lastBeamPts 填（键序 + 点数 + 逐点 x/y），dustSigPrev 存上次重建时的值。 */
+  private dustSigPrev = new Float64Array(0);
+  private dustSigCur = new Float64Array(0);
+  /** dustSigCur 的已填长度（0=本帧无光束） */
+  private dustSigLen = 0;
+  /** cbDustSig 写入游标（dustSigEquals 前清零） */
+  private dustSigCursor = 0;
   private dustWobble: Array<{ img: Phaser.GameObjects.Image; dir: number; angle: number }> = [];
   /** Round B 静态/动态分层：静态晕擦除图案缓存层（与 darkRt 同尺寸/同位/同原点，不上屏）。
    *  rotmirror/wind/platform 的晕画进本层（erase 只在此三者点亮集合/位姿变化时整层重画），
@@ -249,6 +320,25 @@ export class GameScene extends Phaser.Scene {
   private hangingViews = new Map<string, HangingView>();
   private pulleyViews = new Map<string, PulleyView>();
   private romanViews = new Map<string, RomanView>();
+  // ---- F 部 fairytales（fw-fairy-view）：仙女/仙女杯视图 ----
+  private fairyViews = new Map<string, FairyView>();
+  private fairyCupViews = new Map<string, FairyCupView>();
+  /** 仙女/杯快照 id → 视图解析首见缓存（r44；null=已确认无视图），同 portalSnaps 口径 */
+  private fairySnaps = new Map<string, FairyView | null>();
+  private fairyCupSnaps = new Map<string, FairyCupView | null>();
+  /** D/E 部传送门视图（portal 渲染批）：静态几何自 level.portals，开关态自 st.portals */
+  private portalViews = new Map<string, PortalView>();
+  /** 传送门快照 id → 视图解析首见缓存（r44；null=已确认无视图） */
+  private portalSnaps = new Map<string, PortalView | null>();
+  /** 逐帧仙女点位（关卡 px，updateFairies 收集；杯口 α/百搭 recolor 与拖拽命中共用） */
+  private fairyPts: Array<{ id: string; x: number; y: number; group: number }> = [];
+  // ---- F 部仙女拖拽输入态（bindFairyDragInput 接线；init 复位，离屏/抬起即 null）----
+  /** 当前拖拽的仙女 id（null=未拖拽） */
+  private dragFairyId: string | null = null;
+  /** 指针最新关卡坐标（pointermove 记账，update 每帧统一发送——节流到帧率） */
+  private dragPending: { x: number; y: number } | null = null;
+  /** 上次已发送坐标（未变不发） */
+  private dragLastSent: { x: number; y: number } | null = null;
   private doorSprites = new Map<Role, Phaser.GameObjects.Sprite>();
   private doorFrames = new Map<Role, number>();
   private clockText!: Phaser.GameObjects.BitmapText;
@@ -321,6 +411,8 @@ export class GameScene extends Phaser.Scene {
   private cbRomans!: (s: { x: number; y: number; angle: number }, id: string) => void;
   private cbDiamonds!: (ds: { collected: boolean }, id: string) => void;
   private cbPlatSnd!: (b: { x: number; y: number }, id: string) => void;
+  private cbFairies!: (s: FairySnap, idx: number) => void;
+  private cbFairyCups!: (s: FairyCupSnap, idx: number) => void;
 
   constructor() {
     super("Game");
@@ -362,6 +454,16 @@ export class GameScene extends Phaser.Scene {
     this.hangingViews.clear();
     this.pulleyViews.clear();
     this.romanViews.clear();
+    this.fairyViews.clear();
+    this.fairyCupViews.clear();
+    this.fairySnaps.clear();
+    this.fairyCupSnaps.clear();
+    this.portalViews.clear();
+    this.portalSnaps.clear();
+    this.fairyPts.length = 0;
+    this.dragFairyId = null;
+    this.dragPending = null;
+    this.dragLastSent = null;
     this.doorSprites.clear();
     this.doorFrames.clear();
     this.navyItems = [];
@@ -415,6 +517,9 @@ export class GameScene extends Phaser.Scene {
     // 游戏内动画注册（r5 随装载序从 BootScene 迁来：wind/liquid/finish_stone 的帧在
     // ground/mech/popup 图集，Boot 阶段尚未装载；exists 幂等，重开/换关不重复建）
     buildGameAnims(this.anims);
+    // F 部 fairytales 动画（仙女机身/杯 glow——帧只在 fairytales 变体图集，他庙注册即缺帧告警源）
+    if (templeIdOf(level.id) === "fairytales") buildFairyAnims(this.anims);
+    if (level.portals.length > 0) buildPortalAnims(this.anims);
     // 相机管理（F4 翻转，原版 CameraManager @1881500）：此前固定全景（冻结偏离）。
     // 原版行为：加载期 camFreeze 在全图 minScale，started 解冻后每帧自动适配双角色。
     // settled 口径（F2 后）：标准关 settled 恒钉关卡矩形中心 → scroll(16,16)
@@ -432,6 +537,8 @@ export class GameScene extends Phaser.Scene {
     this.cbRomans = this.stepRomans.bind(this);
     this.cbDiamonds = this.stepDiamonds.bind(this);
     this.cbPlatSnd = this.stepPlatSnd.bind(this);
+    this.cbFairies = this.stepFairies.bind(this);
+    this.cbFairyCups = this.stepFairyCups.bind(this);
 
     for (const d of level.diamonds) {
       this.diamondKinds.set(d.id, d.kind);
@@ -448,6 +555,7 @@ export class GameScene extends Phaser.Scene {
     this.buildDoors(level); // 原版门挂在 background 层（背景之上、地面之下）
     this.buildTutorial(level);
     this.buildDiamonds(level);
+    this.buildCovers(); // cover 纯视觉黑矩形（fairytales/elements 部分关卡；overGround 层）
     this.buildMechs(level);
     // dark 关黑幕（templeType 异步填充，ensureDarkRt 幂等兜底）
     this.ensureDarkRt(level);
@@ -459,6 +567,7 @@ export class GameScene extends Phaser.Scene {
     this.buildLiquids(level);
     this.buildNavies(level); // 替换 0.2.0 臆造 buildDust（G13：森林从不出现 BeamDust/Dust）
     this.buildHud();
+    this.bindFairyDragInput(); // F 部仙女拖拽（fairydrag 消息；他庙无仙女视图时命中恒空）
     this.fetchTempleTime(level);
 
     this.stopLevelBgm();
@@ -496,6 +605,8 @@ export class GameScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.stopWater();
       this.platformSounds.clear();
+      // 仙女拖拽在拖即松手（服务端 mouse joint 降 5% 力回落悬浮，防跨场景残留拖拽目标）
+      this.releaseFairyDrag();
       // #22：clock 是 this.sound.add 挂在全局 SoundManager 上的实例，不随场景关闭销毁——
       // 反复重开/换关会累积 WebAudioSound，旧实例仍可能发声。逐视图 stop+destroy，
       // sfx_clock 另入下方兜底 stopByKey 列表。
@@ -507,7 +618,7 @@ export class GameScene extends Phaser.Scene {
         }
       }
       // bgm_level 三键清单与 stopLevelBgm 同源（LEVEL_BGM_KEYS，#49）
-      for (const k of ["bgm_menu", ...LEVEL_BGM_KEYS, "sfx_clock", "bgm_over", "bgm_finish", "bgm_finish_speed", "sfx_wind", "sfx_door"]) {
+      for (const k of ["bgm_menu", ...LEVEL_BGM_KEYS, "sfx_clock", "bgm_over", "bgm_finish", "bgm_finish_speed", "sfx_wind", "sfx_door", "sfx_portalLoop"]) {
         this.sound.stopByKey(k);
       }
     });
@@ -798,6 +909,8 @@ export class GameScene extends Phaser.Scene {
    * LevelData v2 的 id（l0/b0/p0/x0/a0/f0），消费时按下标回映射。
    */
   private buildMechs(level: LevelData): void {
+    // 组色按庙选表（oracle F 部 Device.groupColors 与 A–E 部不同——fairyView.ts 字证注）
+    const temple = templeIdOf(level.id);
     // 推块（underGround）：block + 点亮层（tint 组色）。快照只有压下二值（state 0|1），
     // 贴图压下取 6px≈0.2m 阈值位移（0.3.1 起快照下发连续 x/y，块体贴图随体——原版 0.7m 连续行程已对齐）
     for (const m of level.pushers) {
@@ -805,7 +918,7 @@ export class GameScene extends Phaser.Scene {
       const light = this.add
         .image(m.x + PAD, m.y + PAD, ATLAS_MECH, "pusher_block_light0000")
         .setOrigin(0.5)
-        .setTint(GROUP_COLORS[m.group] ?? 0xffffff)
+        .setTint(deviceTintOf(temple, m.group))
         .setDepth(1.2);
       this.pusherViews.set(m.id, { block, light, state: 0 });
     }
@@ -820,13 +933,13 @@ export class GameScene extends Phaser.Scene {
         .image(m.x + PAD, m.y + PAD, ATLAS_MECH, "pusher_block_light0000")
         .setOrigin(0.5)
         .setAngle(m.rotation)
-        .setTint(GROUP_COLORS[m.group] ?? 0xffffff)
+        .setTint(deviceTintOf(temple, m.group))
         .setDepth(1.2);
       const base = this.add.image(m.x + PAD, m.y + 16 + PAD, ATLAS_MECH, "timed_pusher_base0000").setOrigin(0.5).setDepth(3);
       const ring = this.add
         .image(m.x + PAD, m.y + 16 + PAD, ATLAS_MECH, "timed_pusher_light_off0000")
         .setOrigin(0.5)
-        .setTint(GROUP_COLORS[m.group] ?? 0xffffff)
+        .setTint(deviceTintOf(temple, m.group))
         .setDepth(3.01);
       const maskG = this.add.graphics().setVisible(false);
       this.timedPusherViews.set(m.id, { block, blockLight, base, ring, maskG, mask: maskG.createGeometryMask(), timeMs: m.time, on: false, lastH: null, clockSnd: null });
@@ -844,7 +957,7 @@ export class GameScene extends Phaser.Scene {
       const rad = (phi0 * Math.PI) / 180;
       const sx = pivotX + 4.8 * Math.sin(rad);
       const sy = pivotY - 4.8 * Math.cos(rad);
-      const tint = GROUP_COLORS[m.group] ?? 0xffffff;
+      const tint = deviceTintOf(temple, m.group);
       const stick = this.add.image(sx, sy, ATLAS_MECH, "lever_stick0000").setOrigin(0.5).setAngle(phi0).setDepth(3);
       const stickLight = this.add
         .image(sx, sy, ATLAS_MECH, "lever_stick_light_off0000")
@@ -898,7 +1011,7 @@ export class GameScene extends Phaser.Scene {
       const light = this.add
         .image(0, 0, ATLAS_MECH, "moving_platform_light_off0000")
         .setOrigin(0.5)
-        .setTint(GROUP_COLORS[p.group] ?? 0xffffff);
+        .setTint(deviceTintOf(temple, p.group));
       light.scaleX = (wSw / 32 - 1) / 3; // 原版 scale.x=(宽格-1)/3
       const inner = this.add.container(0, 0, [capL, capR, mid, light]);
       if (vert) inner.setAngle(-90); // 内组 n=−π/2 常驻（原版 shapeSprite.rotation）
@@ -1040,7 +1153,7 @@ export class GameScene extends Phaser.Scene {
         .setOrigin(0.5)
         .setDepth(7.1)
         .setAngle(base.angle)
-        .setTint(GROUP_COLORS[w.group] ?? 0xffffff);
+        .setTint(deviceTintOf(temple, w.group));
       this.windViews.set(w.id, { base, light, effect, on: false });
     }
 
@@ -1076,7 +1189,7 @@ export class GameScene extends Phaser.Scene {
     }
     // ---- 灯光神庙机关视图（light 关非空；02号档 §2-§7 帧名/层级逐条对齐）----
     // 灯层为独立 Image（Phaser Image 无子树），消费端与宿主同位同角同步
-    const lightTint = (group: number): number => GROUP_COLORS[Number(String(group)[0])] ?? 0xffffff; // 原版取组号首位
+    const lightTint = (group: number): number => deviceTintOf(temple, group); // 原版取组号首位
     for (const m of level.beamers) {
       const base = this.add.image(m.x + PAD, m.y + PAD, ATLAS_MECH, "beamer0000").setOrigin(0.5).setAngle(m.rotation).setDepth(3);
       const light = this.add
@@ -1155,6 +1268,126 @@ export class GameScene extends Phaser.Scene {
       this.iceViews.set(`${run.row}:${run.col0}`, c);
     }
 
+    // ---- F 部 fairytales：仙女/仙女杯（01号档 §2；其余庙 def 恒空数组，此段整体跳过）----
+    if (temple === "fairytales") {
+      // 仙女（oracle Characters/Fairy L58979）：chars 层。body=flying_body_idle 30fps 循环
+      // （图集实有 0..3）；双层辉光 flying_glow0000 静帧（图集仅 0000，R4）——glow scale1.2/
+      // α.7 tint 组色，innerGlow scale.4/α.5 恒白；辉光层 LIGHTEN（档卷 §2.1），body 恒常
+      // 混合（oracle LIGHTEN 挂空白载体精灵上，档卷按辉光层记录）。位置=快照体心（kernel
+      // Lissajous 悬浮已在服务端物理内，客户端不做二次摆动；targetAngle 朝向不在状态契约，
+      // 不转——记档）。层序：三层均在角色下方（4.4<legs 4.9）。
+      // R1 锁定：oracle 无锁形标记，不做视觉差异；拖拽亦不受限（见拖拽输入段）。
+      for (const f of level.fairies) {
+        const x = f.x + PAD;
+        const y = f.y + PAD;
+        const tint = deviceTintOf(temple, f.group);
+        const body = this.add.sprite(x, y, ATLAS_NEWCHAR, "flying_body_idle0000").setOrigin(0.5).setDepth(4.4);
+        body.play("fairy_body");
+        const glow = this.add
+          .image(x, y, ATLAS_NEWCHAR, "flying_glow0000")
+          .setOrigin(0.5)
+          .setScale(1.2)
+          .setAlpha(0.7)
+          .setTint(tint)
+          .setBlendMode(Phaser.BlendModes.LIGHTEN)
+          .setDepth(4.41);
+        const innerGlow = this.add
+          .image(x, y, ATLAS_NEWCHAR, "flying_glow0000")
+          .setOrigin(0.5)
+          .setScale(0.4)
+          .setAlpha(0.5)
+          .setBlendMode(Phaser.BlendModes.LIGHTEN)
+          .setDepth(4.42);
+        // 尾迹粒子（oracle createParticles：MenuAssets Navy0000、700ms、scale 1.5→0.1、
+        // α .5→0、LIGHTEN、gravity 300、minSpeed(5,5)（二次赋值覆盖为正=原版死存储怪味照抄）、
+        // tint=组色向白 3/5；挂 background 层≈0.8（地形之下）。发射频率按 updateParticles
+        // 速度分档动态切（e=0/4/8 档 → 18/90/162 粒·秒⁻¹，慢速关断）。
+        const trail = this.add.particles(0, 0, ATLAS_MENU, {
+          frame: "Navy0000",
+          lifespan: 700,
+          speedX: { min: 5, max: 100 },
+          speedY: { min: 5, max: 100 },
+          gravityY: 300,
+          scale: { start: 1.5, end: 0.1 },
+          alpha: { start: 0.5, end: 0 },
+          blendMode: Phaser.BlendModes.LIGHTEN,
+          tint: lerpColorTowardWhite(tint, 0.6),
+          emitting: false,
+        }).setDepth(0.8);
+        this.fairyViews.set(f.id, { body, glow, innerGlow, group: f.group, locked: f.lockGroup !== undefined, lx: x, ly: y, trail, pvx: 0, pvy: 0 });
+      }
+      // 仙女杯（oracle Devices/FairyCup L53157）：back 常驻 overGround(3) 不 tint；
+      // glow=fairycup_glow 12fps 循环挂 liquids(7)——先于 buildLiquids 建入（同深度稳定
+      // 排序垫底 ≡ oracle sendToBack）；base+light 挂 overChars(4.95/4.96，light off 起、
+      // 双态同 tint=Device.setupLight 字证)；glowFront 为 base 顶子帧(4.97)。glow/glowFront
+      // 初始隐藏随 state=1 显（updateFairies）。杯口=def 中心上方 20.8px（cupOffset 0.65m）。
+      for (const c of level.fairyCups) {
+        const x = c.x + PAD;
+        const y = c.y + PAD;
+        const tint = deviceTintOf(temple, c.group);
+        const back = this.add.image(x, y, ATLAS_MECH, "fairycup_back0000").setOrigin(0.5).setDepth(3);
+        const glow = this.add.sprite(x, y, ATLAS_MECH, "fairycup_glow0000").setOrigin(0.5).setDepth(7).setTint(tint).setVisible(false);
+        glow.play("fairycup_glow");
+        const base = this.add.image(x, y, ATLAS_MECH, "fairycup_base0000").setOrigin(0.5).setDepth(4.95);
+        const light = this.add.image(x, y, ATLAS_MECH, "fairycup_light_off0000").setOrigin(0.5).setDepth(4.96).setTint(tint);
+        const glowFront = this.add
+          .image(x, y, ATLAS_MECH, "fairycup_glow_front0000")
+          .setOrigin(0.5)
+          .setDepth(4.97)
+          .setTint(tint)
+          .setVisible(false);
+        this.fairyCupViews.set(c.id, {
+          back,
+          glow,
+          base,
+          light,
+          glowFront,
+          group: c.group,
+          cupGroupFirst: Number(String(c.group)[0]) || 0,
+          mouthX: c.x,
+          mouthY: c.y - 20.8,
+          state: 0,
+          lastAlpha: -1,
+          lastTint: -1,
+        });
+      }
+    }
+
+    // ---- D/E 部传送门（01号档 §1.7 视觉构成；其余庙 def 恒空数组，此段整体跳过）----
+    // 门框 portal0000 常驻 + center 40帧循环（开门可见/关门隐藏）+ 双侧 glow（左片镜像）
+    // + 子灯 off（lights 机制仅 dark 关点亮，crystal 无 dark → 恒 off）。inverted 整体
+    // 水平翻转。全部挂 liquids 层（§1.7）≈ 深度 7 带；开关态每帧 updatePortals 消费。
+    for (const p of level.portals) {
+      const x = p.x + PAD;
+      const y = p.y + PAD;
+      const frame = this.add.image(x, y, ATLAS_MECH, "portal0000").setOrigin(0.5).setDepth(6.9);
+      const center = this.add.sprite(x, y, ATLAS_MECH, "portal_center0000").setOrigin(0.5).setDepth(6.95).setFlipX(p.inverted).setVisible(false);
+      center.play("portal_center");
+      const glowL = this.add.sprite(x - 32, y, ATLAS_MECH, "portal_glow0000").setOrigin(0.5).setDepth(6.96).setScale(p.inverted ? 1 : -1, 1).setVisible(false);
+      glowL.play("portal_glow");
+      const glowR = this.add.sprite(x + 32, y, ATLAS_MECH, "portal_glow0000").setOrigin(0.5).setDepth(6.96).setScale(p.inverted ? -1 : 1, 1).setVisible(false);
+      glowR.play("portal_glow");
+      const light = this.add.image(x, y, ATLAS_MECH, "portal_light_off0000").setOrigin(0.5).setDepth(6.97);
+      this.portalViews.set(p.id, { frame, center, glowL, glowR, light, lastState: -1 });
+    }
+  }
+
+  /**
+   * cover 纯视觉黑矩形（oracle States/Level/Devices/BackgroundCover @1696081：
+   * BackgroundCover0000 32×32 黑帧以 width/height 拉伸到对象矩形、overGround 层、
+   * anchor 缺省(0,0)；options.rotation 不消费——oracle 亦忽略）。帧共享 MechAssets
+   * 163 帧版已含（A–E 全庙通用）。数据=关卡原始 JSON Objects 层 type=cover
+   * （main.ts fetchLevel 经 extractCovers 注入 GameInit.covers）。
+   */
+  private buildCovers(): void {
+    for (const c of this.d.covers ?? []) {
+      if (!(c.w > 0) || !(c.h > 0)) continue;
+      this.add
+        .image(c.x + PAD, c.y + PAD, ATLAS_MECH, "BackgroundCover0000")
+        .setOrigin(0, 0)
+        .setDisplaySize(c.w, c.h)
+        .setDepth(3);
+    }
   }
 
   /** props 快照 key（"box:0"/"boxheavy:2"/"ball:3"）→ 视图 key（x 下标 / a 下标-boxes 数） */
@@ -1240,7 +1473,7 @@ export class GameScene extends Phaser.Scene {
       smoke.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => smoke.setVisible(false));
       legs.play(`${p}_legs_idle`);
       head.play(`${p}_idle`);
-      this.views.set(role, { glow, legs, head, smoke, cx, cy, anim: "idle", legsKey: `${p}_legs_idle`, dying: false, lx: NaN, ly: NaN, legsDepth: 4.9, flip: false, tilt: 0 });
+      this.views.set(role, { glow, legs, head, smoke, cx, cy, anim: "idle", legsKey: `${p}_legs_idle`, legsRun: false, dying: false, lx: NaN, ly: NaN, legsDepth: 4.9, flip: false, tilt: 0 });
     }
   }
 
@@ -1569,6 +1802,9 @@ export class GameScene extends Phaser.Scene {
     this.updatePlayers(st, delta);
     this.updateDiamonds(st);
     this.updateMechs(st, nowMs, delta);
+    this.updateFairies(st);
+    this.updatePortals(st);
+    this.flushFairyDrag();
     this.updateDust();
     this.drawDarkness();
     this.updatePlatformSound(st);
@@ -1694,6 +1930,8 @@ export class GameScene extends Phaser.Scene {
       else if (m.kind === "slider") this.sfx("sfx_slider");
       else if (m.kind === "liquid-frozen") this.sfx("sfx_freeze");
       else if (m.kind === "liquid-melted") this.sfx("sfx_melt");
+      // D/E 部传送门音效（oracle Portal.sounds 四键；sfx 载荷=portal.soundQueue 排水）
+      else if (m.kind === "portal") this.sfx(`sfx_${m.sfx}`);
     }
   }
 
@@ -1813,10 +2051,13 @@ export class GameScene extends Phaser.Scene {
       }
       // 腿部规则（原版逐字）：b==="jumping" 无条件播 running（含地面顶墙跑），否则停帧 idle0000；
       // 此前的 |vx|>20 阈值是多余近似（空中低速带指令、地面顶墙两场景与原版不符）
-      const wantLegs = anim === "jumping" ? `${p}_legs_run` : `${p}_legs_idle`;
-      if (view.legsKey !== wantLegs) {
-        view.legsKey = wantLegs;
-        view.legs.play(wantLegs);
+      // r44：先比对布尔态再建键——原式每帧每角色新建 1 个模板串（`${p}_legs_run/idle`），
+      // 而状态绝大多数帧不变；改为布尔标志比较，仅切换帧建串并 play。
+      const wantLegsRun = anim === "jumping";
+      if (view.legsRun !== wantLegsRun) {
+        view.legsRun = wantLegsRun;
+        view.legsKey = wantLegsRun ? `${p}_legs_run` : `${p}_legs_idle`;
+        view.legs.play(view.legsKey);
       }
 
       // 水声（原版 @1868233：左右键按住 && isOnLiquid → waterSteps loop volume .5）
@@ -2042,6 +2283,250 @@ export class GameScene extends Phaser.Scene {
     v.light.setPosition(Number(bs.x) + PAD, Number(bs.y) + PAD);
   };
 
+  // ---- F 部 fairytales 快照消费（fw-fairy-view）：仙女位姿/闪烁 + 杯 glow 显隐/α/百搭 recolor ----
+  // 状态契约（net 槽当日落地，消费端先行）：state.fairies=ArraySchema<{id,x,y,group,locked}>
+  // （x/y=屏幕 px 同 BodyState 口径）、state.fairyCups=ArraySchema<{id,state}>。字段未落地
+  // 期间 `st.fairies?.forEach?.` 静默跳过，渲染零影响。
+
+  /** 快照条目 → 仙女视图：id 键优先（契约 id=关卡 def id），空/未命中回退下标键 f{idx}。
+   *  r44：首见缓存，免每帧 String(s.id) + 两次 Map 查找（视图在 create 期建定，稳定）。 */
+  private fairyViewOf(s: { id?: string }, idx: number): FairyView | null {
+    if (s.id !== undefined && s.id !== null && String(s.id) !== "") {
+      const key = String(s.id);
+      const cached = this.fairySnaps.get(key);
+      if (cached !== undefined) return cached;
+      const v = this.fairyViews.get(key) ?? this.fairyViews.get(`f${idx}`) ?? null;
+      this.fairySnaps.set(key, v);
+      return v;
+    }
+    return this.fairyViews.get(`f${idx}`) ?? null;
+  }
+
+  /** 快照条目 → 仙女杯视图：同上，回退键 fc{idx}（r44：首见缓存） */
+  private fairyCupViewOf(s: { id?: string }, idx: number): FairyCupView | null {
+    if (s.id !== undefined && s.id !== null && String(s.id) !== "") {
+      const key = String(s.id);
+      const cached = this.fairyCupSnaps.get(key);
+      if (cached !== undefined) return cached;
+      const v = this.fairyCupViews.get(key) ?? this.fairyCupViews.get(`fc${idx}`) ?? null;
+      this.fairyCupSnaps.set(key, v);
+      return v;
+    }
+    return this.fairyCupViews.get(`fc${idx}`) ?? null;
+  }
+
+  /** 每帧传送门消费（开关态迁移沿驱动显隐 + portalLoop 循环音全局单键，wind 同式）。
+   *  状态契约：state.portals=ArraySchema<{id,state}>（服务器 PortalState，id=pt{序}）；
+   *  字段未落地期间 st.portals?.forEach?. 静默跳过，渲染零影响。 */
+  /**
+   * r50：闭包改绑定回调 + 成员标志（原实现每帧 `forEach((s, idx) => ...)` 新建一个
+   * 捕获 `anyOpen` 的闭包——portal 关每帧一次，纯垃圾）。
+   * 与 updatemechs 的 `cbXxx` 同一模式（r3 已在该处采用）。
+   */
+  private portalAnyOpen = false;
+
+  private updatePortals(st: any): void {
+    if (this.portalViews.size === 0) return;
+    this.portalAnyOpen = false;
+    st.portals?.forEach?.(this.cbPortals);
+    const anyOpen = this.portalAnyOpen;
+    if (anyOpen && !this.sound.isPlaying("sfx_portalLoop")) this.sfx("sfx_portalLoop", { loop: true, volume: 0.3 });
+    if (!anyOpen) this.sound.stopByKey("sfx_portalLoop");
+  }
+
+  private readonly cbPortals = (s: { id?: string; state?: number }, idx: number): void => {
+    const v = this.portalViewOf(s, idx);
+    if (!v) return;
+    const state = Number(s.state) || 0;
+    if (state === v.lastState) {
+      if (state === 1) this.portalAnyOpen = true;
+      return;
+    }
+    v.lastState = state;
+    const open = state === 1;
+    v.center.setVisible(open);
+    v.glowL.setVisible(open);
+    v.glowR.setVisible(open);
+    if (open) this.portalAnyOpen = true;
+  };
+
+  /** 快照条目 → 传送门视图：id 键优先，回退 P{idx}（level2 def id 序=world 数组序）。
+   *  r44：首见缓存——原每帧每门做一次 `String(s.id).replace(/^pt/,"P")`（正则匹配 +
+   *  两次字符串分配），与 r3 已在同链消除的「快照键→视图解析」同类。缓存值为视图或
+   *  null（null=该 id 确无视图，避免每帧重复回退查找）；键为快照 id 本身（稳定）。 */
+  private portalViewOf(s: { id?: string }, idx: number): PortalView | null {
+    if (s.id !== undefined && s.id !== null && String(s.id) !== "") {
+      const key = String(s.id);
+      const cached = this.portalSnaps.get(key);
+      if (cached !== undefined) return cached;
+      const v = this.portalViews.get(key.replace(/^pt/, "P")) ?? this.portalViews.get(`P${idx}`) ?? null;
+      this.portalSnaps.set(key, v);
+      return v;
+    }
+    return this.portalViews.get(`P${idx}`) ?? null;
+  }
+
+  /** 每帧仙女/杯消费（updateMechs 后调用；fairyPts 先清后填——杯 α 与拖拽命中共用） */
+  private updateFairies(st: any): void {
+    if (this.fairyViews.size === 0 && this.fairyCupViews.size === 0) return;
+    this.fairyPts.length = 0;
+    st.fairies?.forEach?.(this.cbFairies);
+    st.fairyCups?.forEach?.(this.cbFairyCups);
+  }
+
+  private stepFairies(s: FairySnap, idx: number): void {
+    const v = this.fairyViewOf(s, idx);
+    if (!v) return;
+    const x = (Number(s.x) || 0) + PAD;
+    const y = (Number(s.y) || 0) + PAD;
+    if (x !== v.lx || y !== v.ly) {
+      v.lx = x;
+      v.ly = y;
+      v.body.setPosition(x, y);
+      v.glow.setPosition(x, y);
+      v.innerGlow.setPosition(x, y);
+    }
+    // 尾迹发射分档（oracle updateParticles：c=|Δv|·0.8、h=|v|，m/s 口径——客户端以
+    // px/帧差分换算 32px/m；档位 e=0/4/8 → 频率 18/90/162 粒·秒⁻¹，其余关断）
+    if (v.trail) {
+      const vx = x - (v.pvx || x);
+      const vy = y - (v.pvy || y);
+      v.pvx = x;
+      v.pvy = y;
+      const K = 60 / 32; // px/帧 → m/s（60fps、32px/m）
+      const h = Math.hypot(vx, vy) * K;
+      const c = Math.hypot(vx - (v.lvx ?? vx), vy - (v.lvy ?? vy)) * K * 0.8;
+      v.lvx = vx;
+      v.lvy = vy;
+      const e = c < 1 ? (h < 14 ? -1 : 0) : c < 3 ? 4 : c < 6 ? 8 : -1;
+      const freq = e < 0 ? 0 : 1000 / (18 * (e + 1));
+      v.trail.setPosition(x, y);
+      if (freq > 0 && !v.trail.emitting) {
+        v.trail.setFrequency(freq);
+        v.trail.start();
+      } else if (freq > 0 && v.trail.emitting) {
+        v.trail.setFrequency(freq);
+      } else if (v.trail.emitting) {
+        v.trail.stop();
+      }
+    }
+    // innerGlow 逐帧随机闪烁（oracle updateSprites：random()>0.7 → α=.4+.3·random()）
+    if (Math.random() > 0.7) v.innerGlow.setAlpha(0.4 + 0.3 * Math.random());
+    // 锁定镜像（R1：oracle 无视觉差异，仅存态；拖拽不门控）
+    v.locked = s.locked === true;
+    v.group = Number(s.group) || 0;
+    // 点位表：关卡 px 坐标 + 快照 id（fairydrag 上行回带同一 id；id 缺省回退下标键）
+    this.fairyPts.push({ id: String(s.id ?? `f${idx}`), x: Number(s.x) || 0, y: Number(s.y) || 0, group: v.group });
+  }
+
+  private stepFairyCups(s: FairyCupSnap, idx: number): void {
+    const v = this.fairyCupViewOf(s, idx);
+    if (!v) return;
+    const on = Number(s.state) === 1;
+    if (on !== (v.state === 1)) {
+      v.state = on ? 1 : 0;
+      // state1 显 glow/glowFront + light_on（oracle update L53289：显隐切 visible，动画建时
+      // 即播不停→相位连续）；state0 全隐（α 脏值一并作废）
+      v.glow.setVisible(on);
+      v.glowFront.setVisible(on);
+      v.light.setFrame(on ? "fairycup_light_on0000" : "fairycup_light_off0000");
+      v.lastAlpha = -1;
+      v.lastTint = -1;
+    }
+    if (!on) return;
+    // 杯口辉光 α=1−dist/64（oracle 同函数：取 currentFairies 最近者到杯口距离；客户端以
+    // 快照全体仙女最近者近似——state=1 时在杯仙女必为最近，近似偏差记档）
+    let best = Infinity;
+    for (const p of this.fairyPts) {
+      const d = Math.hypot(p.x - v.mouthX, p.y - v.mouthY);
+      if (d < best) best = d;
+    }
+    const alpha = best === Infinity ? 1 : Math.max(0, 1 - best / 64);
+    if (alpha !== v.lastAlpha) {
+      v.lastAlpha = alpha;
+      v.glow.setAlpha(alpha);
+      v.glowFront.setAlpha(alpha);
+    }
+    // 百搭杯（首位 0）glow/glowFront 染入杯仙女组色（oracle 0===getColorIndex 分支）——
+    // 以「最近且进入感应圈（sensor 1.3m+仙女 0.3m=51.2px）」近似 currentFairies 成员
+    if (v.cupGroupFirst === 0) {
+      let inCup: { x: number; y: number; group: number } | null = null;
+      let bestIn = 51.2;
+      for (const p of this.fairyPts) {
+        const d = Math.hypot(p.x - v.mouthX, p.y - v.mouthY);
+        if (d < bestIn) {
+          bestIn = d;
+          inCup = p;
+        }
+      }
+      const want = inCup ? deviceTintOf("fairytales", inCup.group) : 0xffffff;
+      if (want !== v.lastTint) {
+        v.lastTint = want;
+        v.glow.setTint(want);
+        v.glowFront.setTint(want);
+      }
+    }
+  }
+
+  // ---- F 部仙女拖拽输入（oracle Fairy.startDrag/endDrag L59177 区：pointerdown 命中
+  //  即拖、持续跟随指针、抬起/离屏松手（mouse joint maxForce 降 5% 由服务端执行）。
+  //  R1：无 locked 门控——oracle 锁定只门控相机 focus/教学矩形，拖拽照常允许；
+  //  无 phase 门控——server 权威裁决消息，客户端不预判）。命中半径 40px（oracle
+  //  hitArea=2×身高≈136px，2026-10-31 用户裁定跟原版口径，见 pickFairy 注）。
+  private bindFairyDragInput(): void {
+    this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onFairyDragDown, this);
+    this.input.on(Phaser.Input.Events.POINTER_MOVE, this.onFairyDragMove, this);
+    this.input.on(Phaser.Input.Events.POINTER_UP, this.onFairyDragUp, this);
+    this.input.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onFairyDragUp, this);
+    this.input.on(Phaser.Input.Events.GAME_OUT, this.onFairyDragUp, this);
+  }
+
+  /** 屏幕指针坐标 → 关卡 px（静态相机 zoom/scroll 由 getWorldPoint 统一换算） */
+  private pointerToLevel(pointer: Phaser.Input.Pointer): { x: number; y: number } {
+    const w = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+    return { x: w.x - PAD, y: w.y - PAD };
+  }
+
+  private onFairyDragDown(pointer: Phaser.Input.Pointer): void {
+    if (this.dragFairyId) return;
+    const p = this.pointerToLevel(pointer);
+    const id = pickFairy(this.fairyPts, p.x, p.y, 136); // oracle hitArea≈136px（2026-10-31 用户裁定跟原版）
+    if (!id) return;
+    this.dragFairyId = id;
+    this.dragPending = p;
+    this.dragLastSent = null; // 首发交本帧 flushFairyDrag
+  }
+
+  private onFairyDragMove(pointer: Phaser.Input.Pointer): void {
+    if (!this.dragFairyId) return;
+    this.dragPending = this.pointerToLevel(pointer);
+  }
+
+  private onFairyDragUp(): void {
+    this.releaseFairyDrag();
+  }
+
+  /** 松手（x=null 契约）：服务端把 mouse joint maxForce 降到 5%，仙女回落悬浮 */
+  private releaseFairyDrag(): void {
+    const id = this.dragFairyId;
+    if (!id) return;
+    this.dragFairyId = null;
+    this.dragPending = null;
+    this.dragLastSent = null;
+    this.d.net.sendFairyDrag(id, null, null);
+  }
+
+  /** 每帧统一发送（节流到帧率）：坐标未变不发；仅拖拽激活期有开销 */
+  private flushFairyDrag(): void {
+    const id = this.dragFairyId;
+    const p = this.dragPending;
+    if (!id || !p) return;
+    const last = this.dragLastSent;
+    if (last && last.x === p.x && last.y === p.y) return;
+    this.dragLastSent = { x: p.x, y: p.y };
+    this.d.net.sendFairyDrag(id, p.x, p.y);
+  }
+
   /** 光柱浮尘装配（原版 fillDustLayer @1908496 逐字：ceil(width/10) 粒 BeamDust0000、
    *  随机位/随机转角；几何掩膜=光束路径描线，dust 仅光柱内可见） */
   private buildDust(level: LevelData): void {
@@ -2062,32 +2547,93 @@ export class GameScene extends Phaser.Scene {
     this.dustContainer.setVisible(false); // 无光束=不可见（原版 a=true 分支）
   }
 
+  /**
+   * 掩膜几何指纹（r44）：把 lastBeamPts 的全部折线按「键长+键字符码 / 点数 / 逐点 x,y」
+   * 写入 dustSigCur，与 dustSigPrev 逐位比较。键也入指纹——光束集合变化（新 beamer 亮起/
+   * 熄灭）即便坐标巧合也不能误判为相同。返回 true=几何未变（可跳过掩膜重建）。
+   * 零分配要点：遍历走 create 期绑定的 cbDustSig（免每帧闭包），且**不用解构遍历**
+   * （`for (const [,v] of map)` 每项会建一个 entry 数组）。
+   */
+  private cbDustSig = (pts: number[][], k: string): void => {
+    if (!pts || pts.length === 0) return;
+    const needN = this.dustSigCursor + 3 + k.length + pts.length * 2;
+    let cur = this.dustSigCur;
+    if (needN > cur.length) {
+      const grown = new Float64Array(Math.max(needN, cur.length * 2 + 64));
+      grown.set(cur.subarray(0, this.dustSigCursor));
+      this.dustSigCur = cur = grown;
+    }
+    let n = this.dustSigCursor;
+    cur[n++] = k.length;
+    for (let c = 0; c < k.length; c++) cur[n++] = k.charCodeAt(c);
+    cur[n++] = pts.length;
+    for (let i = 0; i < pts.length; i++) {
+      cur[n++] = pts[i][0];
+      cur[n++] = pts[i][1];
+    }
+    this.dustSigCursor = n;
+  };
+
+  /** 掩膜重建（几何变化帧）：把 lastBeamPts 全部折线描进 dustMask（40px 描线，原版口径） */
+  private cbDustBuild = (pts: number[][]): void => {
+    const mask = this.dustMask;
+    if (!mask || !pts || pts.length === 0) return;
+    mask.beginPath();
+    mask.moveTo(pts[0][0] + PAD, pts[0][1] + PAD);
+    for (let i = 1; i < pts.length; i++) mask.lineTo(pts[i][0] + PAD, pts[i][1] + PAD);
+    mask.strokePath();
+  };
+
+  private dustSigEquals(): boolean {
+    this.dustSigCursor = 0;
+    this.lastBeamPts.forEach(this.cbDustSig);
+    const n = this.dustSigCursor;
+    this.dustSigLen = n;
+    const prev = this.dustSigPrev;
+    if (prev.length !== n) return false;
+    const cur = this.dustSigCur;
+    for (let i = 0; i < n; i++) if (prev[i] !== cur[i]) return false;
+    return true;
+  }
+
+  /** 存下本帧指纹（仅在确认变化、即将重建掩膜时调用一次；原地写入免新建数组） */
+  private dustSigCopy(): void {
+    const n = this.dustSigLen;
+    if (this.dustSigPrev.length !== n) this.dustSigPrev = new Float64Array(n);
+    this.dustSigPrev.set(this.dustSigCur.subarray(0, n));
+  }
+
   /** 逐帧浮尘（原版 updateDust @1908842）：光束变化才重建掩膜（40px 描线）；锚点正余弦摆动 */
   private updateDust(): void {
     const dust = this.dustContainer;
     if (!dust || !this.dustMask) return;
-    let anyBeam = false;
-    const sigs: string[] = [];
-    this.beamerViews.forEach((v, k) => {
-      const pts = this.lastBeamPts.get(k);
-      if (pts && pts.length > 0) {
-        anyBeam = true;
-        sigs.push(k + ":" + pts.map((p) => p[0] + "," + p[1]).join(";"));
+    // r44：尘埃不可见 = 无光束 = 无掩膜可重建——先判可见堆叠再决定是否付签名构建成本。
+    // 原实现无条件逐帧为每条光束拼 `k + ":" + pts.map(...).join(";")`（每帧 1 数组 +
+    // 每点 2 字符串 + 拼接串），再在签名单中重扫一遍完整几何——而乡大多数帧尘埃本就隐藏
+    // （无 beamer 关、光束熄灭关），这笔分配纯属白付。
+    // lastBeamPts 的每个键都由 cbBeamers 保证「视图在 + 亮 + 折线有效」才 set，其余路径 delete
+    // （见 resolveBeamCache 注释）——因此 size>0 即等价于原「任一 beamer 有非空折线」。
+    const anyBeam = this.lastBeamPts.size > 0;
+    if (!anyBeam) {
+      // 与下方签名路径逐操作等价（原实现：sig="" → 与残留比较 → 空掩膜 + 隐藏）
+      this.dustSigLen = 0;
+      if (this.dustSigPrev.length !== 0) {
+        this.dustSigPrev = new Float64Array(0);
+        this.dustMask.clear();
       }
-    });
-    const sig = sigs.join("|");
-    if (sig !== this.dustMaskSig) {
-      this.dustMaskSig = sig;
+      if (dust.visible) dust.setVisible(false);
+      return;
+    }
+    // r44：几何指纹走 Float64 缓冲逐位比较——原实现每帧为每条光束拼
+    // `k + ":" + pts.map(...).join(";")`（每帧 1 数组 + 每点 2 字符串 + 拼接串）再
+    // join 成总签名。掩膜重建只依赖「折线几何是否变化」，逐位比数值即可，判定与字符串
+    // 签名等价（同 Map 插入序 → 同 k 序，同点序，同坐标）。
+    if (!this.dustSigEquals()) {
+      this.dustSigCopy();
       this.dustMask.clear();
       this.dustMask.lineStyle(40, 0x000000, 1);
-      this.beamerViews.forEach((v, k) => {
-        const pts = this.lastBeamPts.get(k);
-        if (!pts || pts.length === 0) return;
-        this.dustMask!.beginPath();
-        this.dustMask!.moveTo(pts[0][0] + PAD, pts[0][1] + PAD);
-        for (let i = 1; i < pts.length; i++) this.dustMask!.lineTo(pts[i][0] + PAD, pts[i][1] + PAD);
-        this.dustMask!.strokePath();
-      });
+      // 重建路径只在几何变化帧走（光束移动/开关），闭包成本可忽略；仍用绑定回调免分配
+      this.lastBeamPts.forEach(this.cbDustBuild);
     }
     dust.setVisible(anyBeam);
     // 原版逐字：angle += 0.002·(±1 交替)；anchor.set(sin(angle), cos(angle))（纹理原点振荡=原地漂闪；
@@ -2150,6 +2696,12 @@ export class GameScene extends Phaser.Scene {
     // 角色 r180（bundle character 20→180，无条件）
     if (this.pFb) halo(Number(this.pFb.x) + PAD, Number(this.pFb.y) + PAD, 180);
     if (this.pWg) halo(Number(this.pWg.x) + PAD, Number(this.pWg.y) + PAD, 180);
+    // F 部仙女/杯（fairies-XX-dark）：仙女 r220 恒亮（oracle Fairy.drawDarkMask 20→180
+    // 渐变半径 220）；杯 r60 仅 state1（oracle FairyCup.drawDarkMask，晕心=杯口上 0.8m）
+    this.fairyViews.forEach((v) => halo(v.lx, v.ly, 220));
+    this.fairyCupViews.forEach((v) => {
+      if (v.state === 1) halo(v.mouthX + PAD, v.mouthY + PAD, 60);
+    });
     // lever r50（state 1；晕心=杆尖≈stick 位——杆微动，留动态层逐帧擦）
     this.leverViews.forEach((v) => {
       if (v.lightOn) halo(v.stick.x, v.stick.y, 50);
@@ -2365,7 +2917,10 @@ export class GameScene extends Phaser.Scene {
       });
     }
     // 原版 Wind.updateState：激活 playInstance 循环、失活停止（森林 14 关有风区）
-    const anyOn = [...this.windViews.values()].some((w) => w.on);
+    // r51：`[...values()]` 每帧每个风区各建一个数组（森林关最多 7 区 → 7 数组/帧）。
+    // 改为惰性短路遍历：`v.on` 是本类唯一显隐状态，语义等价于 `.some(w => w.on)`。
+    let anyOn = false;
+    for (const w of this.windViews.values()) if (w.on) { anyOn = true; break; }
     if (anyOn && !this.sound.isPlaying("sfx_wind")) this.sfx("sfx_wind", { loop: true, volume: 0.2 }); // 原版显式 0.2（bundle:1968490 附近）
     if (!anyOn) this.sound.stopByKey("sfx_wind");
   }
@@ -2476,24 +3031,54 @@ export class GameScene extends Phaser.Scene {
     st.platforms?.forEach?.(this.cbPlatSnd);
   }
 
+  /**
+   * r50：位姿对象改实例 scratch 复用。
+   *
+   * `platformSounds.update` 只读 `pose.x/y/angle` 三个数，不持有引用（见
+   * `platformSound.ts:44` 的 `update`：首见时把三值拷进 `Track`，之后只做差值比较）。
+   * 原实现每帧每个平台**新建一个对象字面量**——`forest_bonus_2` 47 个平台 × ~60fps
+   * = 2820 个对象/秒的纯垃圾。这是 r47 在服务端 `character.update` 修过的同类问题，
+   * 但客户端这一处从未被覆盖。
+   *
+   * 复用安全性：`forEach` 串行调用，前一次 `update` 已把三值拷进 `Track` 才返回，
+   * 下一次覆盖 scratch 不影响任何已存状态。
+   */
+  private readonly platPoseScratch: { x: number; y: number; angle: number } = { x: 0, y: 0, angle: 0 };
+
   private stepPlatSnd(b: { x: number; y: number; angle?: number }, id: string): void {
-    this.platformSounds.update(id, {
-      x: Number(b.x) || 0,
-      y: Number(b.y) || 0,
-      angle: Number(b.angle) || 0,
-    });
+    const p = this.platPoseScratch;
+    p.x = Number(b.x) || 0;
+    p.y = Number(b.y) || 0;
+    p.angle = Number(b.angle) || 0;
+    this.platformSounds.update(id, p);
   }
+
+  /**
+   * r52：平台电机声实例池。
+   *
+   * 改造前每次起步 `sound.add("sfx_platform")` 新建 Phaser 音效实例、限位时
+   * `stop + destroy` 销毁——`forest_bonus_2` 300 帧实测 17 次新建 + 19 次销毁
+   * （`perf-sound-churn.mjs`），单次 add+play ≈ 0.09ms（页内实测 add 0.067 + play 0.025）。
+   *
+   * 池化语义：停掉的实例 `play()` 会从头重播，与新建实例的听感一致；每个平台
+   * 各持独立实例，重叠数不变（上限 = 同时运动平台数，`forest_bonus_2` 峰值 2）。
+   * 池不设上限也自然有界：池内实例数 ≤ 历史峰值并发数。
+   *
+   * 生命周期安全：GameScene 重建（换关/重开）时本字段随实例重建为空池，
+   * 旧实例由 Phaser 声音管理器随场景销毁，不会跨场景引用。
+   */
+  private readonly platSndPool: Phaser.Sound.BaseSound[] = [];
 
   private startPlatformSound(_id: string): Phaser.Sound.BaseSound | null {
     if (!getSettings().fx || !this.cache.audio.exists("sfx_platform")) return null;
-    const s = this.sound.add("sfx_platform");
+    const s = this.platSndPool.pop() ?? this.sound.add("sfx_platform");
     s.play();
     return s;
   }
 
   private stopPlatformSound(s: Phaser.Sound.BaseSound): void {
     s.stop();
-    s.destroy();
+    this.platSndPool.push(s);
   }
 
   /** Navies 漂移（原版每帧：r′+=speed.r → pos.r=offset.r·sin r′ → 极坐标转直角坐标） */

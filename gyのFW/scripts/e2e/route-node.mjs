@@ -93,12 +93,15 @@ async function runOnce(runTag) {
   for (;;) { if (phaseMs.ready) break; await new Promise((r) => setTimeout(r, 2)); }
   const t0 = phaseMs.ready + 2000; // 开钟预估（墙 ms）
 
-  // 合并时间线：doc.fb → A(fireboy)，doc.wg → B(watergirl)
+  // 合并时间线：doc.fb → A(fireboy)，doc.wg → B(watergirl)，doc.fy → A 侧 fairydrag 消息
+  // （fw-fairydrag 槽：服务器任意客户端可拖任意仙女，id 约定 fy{n}=内核数组序；
+  //   x/y=null 松手。缺轨=零额外消息，既有 route 行为不变。）
   const st = { A: { up: false, left: false, right: false }, B: { up: false, left: false, right: false } };
   const KEYS = { fb: { up: "up", left: "left", right: "right" }, wg: { up: "up", left: "left", right: "right" } };
   const timeline = [
     ...doc.fb.map((e) => ({ t: e.f * MS + OFFSET, room: "A", dir: KEYS.fb[e.dir], type: e.type, f: e.f })),
     ...doc.wg.map((e) => ({ t: e.f * MS + OFFSET, room: "B", dir: KEYS.wg[e.dir], type: e.type, f: e.f })),
+    ...(doc.fy ?? []).map((e) => ({ t: e.f * MS + OFFSET, fy: e })),
   ].sort((a, b) => a.t - b.t || (a.type === "up" ? -1 : 1));
 
   const trace = [];
@@ -109,6 +112,11 @@ async function runOnce(runTag) {
       const now = nowRel();
       while (i < timeline.length && timeline[i].t <= now) {
         const ev = timeline[i++];
+        if (ev.fy) {
+          sendA("fairydrag", { id: `fy${ev.fy.i}`, x: ev.fy.x, y: ev.fy.y });
+          trace.push({ dispatch: { t: Math.round(ev.t), done: Math.round(nowRel()), f: ev.fy.f, role: "fy", dir: `fy${ev.fy.i}`, type: ev.fy.y === null ? "up" : "down" } });
+          continue;
+        }
         const cur = st[ev.room];
         cur[ev.dir] = ev.type === "down";
         (ev.room === "A" ? sendA : sendB)({ up: cur.up, left: cur.left, right: cur.right });

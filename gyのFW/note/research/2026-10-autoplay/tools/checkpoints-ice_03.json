@@ -1,0 +1,1146 @@
+{
+ "level": "ice_03",
+ "note": "v5 全链重构（2026-11-11，fw-route-ice03）。pr22 全链 WIN 实证（双门 atDoor + 双 isUp，poison-free）。核心破案：autosearch wrapTap 对【返回共享 NONE 的原语】（jumpDrift t>holdF、walkTo 刹车完、jumpOnto/jump 后段）写 inp.up=true 会毒化 botcore 模块级 NONE——此后一切 {...NONE} 展开恒带 up=true，prohibitJump 永不释放，后续跳跃被 character.ts:321 门禁吞掉（楔面跳跃失效的根因，非 45° 摩擦）。⇒ 毒免疫纪律：全链 jumpDrift holdF 只用 24（t>holdF 首帧 jAt+25 恰在 25f 展宽窗外）或 ≥900；runJump/jump 安全。三段：G1 盆地西涉+推镜三冻（seed14 实证 14 原语，wg 钉 556）；G2 wg 西屋上升系统（640檐→西檐78立跳→滑道坡→楔峰驻→峰东跳→mid→B冰西→B冰东620）+ fb 睡眠等冻；G3 wg 东上链（J1 东跳落 massif 顶→massif 西740→J2 西跳落楔1(645,351)→J3 西跳落 A 冰东(550,255)→A 冰西渡→高原 45° 坡西爬→wg 门[48,112]x192）；fb 顶路东渡（wt715,60 单件实证 spawn→massif 717）→riser 跳→384 板→东行走落壕沟→fb 门[1104,1168]x896→双门 isUp=WIN。几何勘误（dump6/dump7 m_count 精确）：B 冰东缘无 flank 45° 坡——实为 32px 裸 riser 阶梯（640/672 块顶544/512→massif 顶512x[704,896]→480/448/416/384 板叠→352 块 x[896,928]→(928,352)→(960,320) 东坡），bare riser 步行必卡死故全跳越；楔1/楔2 (640,384)→(672,416)/(608,352)→(640,384) 45° 斜楔在 y[352,416]，西向跳弧可立驻；A 冰顶288 x[288,544] 冻面、A 床顶320 x[288,576]、床东面 x=576 y[320,608]为西跳必须越过的墙（J3 起跳线=楔1 顶 640,345 → 弧顶(543,223) 落 A 冰东 487-550）。kernel 法线门（character.ts:321）：n.y>0.2 即可起跳、n.y>0.65 满速——45° 斜坡 n.y=0.707 本可全跳；floor 实测 (0,1)、640檐缘 (-0.707,0.707)、楔峰角 (-0.539,0.842)。 G1 met 判据 v2：met 需晚于三冻完成——wg 在 A 窗[556,560] 驻 120f 触发冻结后东蠕至 572（推 puck ~592），target px[566,576]+vx[-25,25] 与西行 transit（vx≈-60）与早位钉（556）均不相交。 G1 met 判据 v3：puck 槽位钉死 576.3（蠕钉不可行），wg 终位=556（puck 西侧极限）；target px[545,568]+vx[-25,25]（排除 transit vx≈-60）；三冻 f1210 完成、met f1612，extras 恒过（pr24b 实证）。 检尾纪律（gate1 实证）：程序必须以 sleep 收尾——queue-latch 会锁存最后输入，walkTo 刹车相位若在 done 帧处于推进相，latch 锁 right 使 fb 无界加速滑入 ~324 未冻水死亡；sleep 恒发 NONE 且 kernel 无输入支路对 fb 主动反刹（i.x=7·−vx）、对 wg 硬零速，终点有界。G1 wg 尾例外：latch 锁 right 顶死槽位 puck 为吸引子（gate1 后段零 fatal），保持原样。 检尾纪律 v6（gate1 实证 expandFlat 同帧 up 先 down 后）：末位同键 1 帧 tap 对 ±1 平移即同帧碰撞→键被长锁→fb 东奔入水/wg 东滑坠 B 冰东缘。修复：fb 零事件（spawn 已在区），段尾驻留一律 goTo（3 帧最小驻留+收尾松键 vx<40）；G1 wg 例外保持 walkTo 钉 puck（latch 锁 right 顶死槽=吸引子，gate1 后段零 fatal）；G3 双尾向门滑为助向（西滑入门/东滑入门）。 v7（route-node 3/3 timeout 实证链必须全事件 ±1f 鲁棒——服务器意图跨度排水 +4ms deadline，净迟到>4ms 的事件随机 +1f 滑帧，本次实测 60/2060 帧输入错位）：全部 walkTo vMax→999（autosearch 自注：vMax 限速脉冲步进是脆弱性发生器，80 脉冲事件 136 败）——满速过线+反刹停定，事件表每走段仅 2 事件，终态由线锚定与 ±1f 解耦；G2 尾驻留 goTo→walkTo(1,620,999)（精确定点件）。 v8（v7 gate 实证 5/84：残差=walkTo done vx≤20 余速 0-20px/s 经 40f 弧放大 ±13px 着陆、32px 窄台偶尔失足；冰面无输入支路 wg 速度硬零）→ 走→跳手递一律 sleep(3) 硬零（takeoff vx=0 位级精确）；末推接触敏感（puck 入槽速度决定卡/越槽分岔）回 vMax40 温和爬行（v6 实证钉相零脆弱）。 v9（gate2 15/96 实证）：walkTo 方向参必须=实际运动方向——落点在西侧且 d=+1 时 past 即真、overshoot 门（vx 符号）永不触发→冰面 passive 滑行 done 点漂移，手递下跳 takeoff ±5px/±15pxs；改 d=-1 过线即主动反刹线锚停定。",
+ "segments": [
+  {
+   "id": "G1",
+   "title": "wg 盆地西涉+金字塔链跳+推镜分级驻留三冻；fb 顶西驻留",
+   "entry": [],
+   "horizonF": 1800,
+   "extras": [
+    "liquidsAllFrozen"
+   ],
+   "waypoints": [
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 826,
+      "max": 984
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 630,
+      "max": 686
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 468,
+      "max": 512
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 840,
+      "max": 882
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 380,
+      "max": 412
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 840,
+      "max": 882
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 545,
+     "max": 568
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 840,
+     "max": 882
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "vx",
+     "role": "wg",
+     "min": -25,
+     "max": 25
+    },
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 60,
+     "max": 285
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 150,
+     "max": 270
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    }
+   ],
+   "targetNote": "wg 钉 556（puck 槽位钉死 576.3，556= puck 西侧极限驻位）；vx 门排除西行 transit；三冻 f1210 完成 ≪ met f1612（pr24b 实证）；fb 顶西 latch 滑行余量",
+   "cands": [
+    {
+     "note": "v8: v7 + hop 手递 sleep 硬零（takeoff vx=0 精确）+ 末推 vMax40 慢接触（卡槽温和进入）",
+     "dfb": [
+      {
+       "n": "sleep",
+       "a": [
+        1400
+       ]
+      }
+     ],
+     "dwg": [
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        1075,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        4
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        40,
+        40
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        20,
+        25
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        780,
+        999
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        520,
+        999
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        25
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        450,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        120
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        502,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        120
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        538,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        120
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        556,
+        40
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "G2",
+   "title": "G2 α面梯版v5：J1(sl12) + J2'(sl12) + v999持续爬面116 + hf36顶跳 + J4'落B冰 + walkTo(1,618,40)锚定停窗(done离窗边≥3f) + S6表尾释放",
+   "entry": [
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 545,
+     "max": 568
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 840,
+     "max": 882
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "vx",
+     "role": "wg",
+     "min": -25,
+     "max": 25
+    },
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 60,
+     "max": 285
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 150,
+     "max": 270
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    }
+   ],
+   "horizonF": 2400,
+   "extras": null,
+   "waypoints": [
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 150,
+      "max": 230
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 690,
+      "max": 790
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 340,
+      "max": 430
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 520,
+      "max": 560
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 600,
+     "max": 640
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 520,
+     "max": 560
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "vx",
+     "role": "wg",
+     "min": -25,
+     "max": 25
+    },
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 60,
+     "max": 285
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 150,
+     "max": 270
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    }
+   ],
+   "targetNote": "wg B冰东 (638,539.5 probe3 实证)；fb 顶西驻(80,156.5)；α 全链 probe3 真drive 无死亡：J1(200.7,753.4)→J2'落面(182.1,591.6)→爬面(100.7,545.8)→J3'mid(261.7,512.3)→J4'冰(372,540.6)→(638.1,539.5)",
+   "cands": [
+    {
+     "note": "α-ω3 锚268 爬面116 v999 + sl12 + walkTo(1,618,40)+S6（done提前离窗边）",
+     "dwg": [
+      {
+       "n": "sleep",
+       "a": [
+        400
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        108,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        12
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        268,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        12
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        116,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        36
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        260,
+        30
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        618,
+        40
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        6
+       ]
+      }
+     ],
+     "dfb": [
+      {
+       "n": "sleep",
+       "a": [
+        1650
+       ]
+      }
+     ]
+    },
+    {
+     "note": "α-θ3 锚260 爬面116 v999 + sl12 + walkTo(1,618,40)+S6",
+     "dwg": [
+      {
+       "n": "sleep",
+       "a": [
+        400
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        108,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        12
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        260,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        12
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        116,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        36
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        260,
+        30
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        618,
+        40
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        6
+       ]
+      }
+     ],
+     "dfb": [
+      {
+       "n": "sleep",
+       "a": [
+        1650
+       ]
+      }
+     ]
+    },
+    {
+     "note": "α-λ3 锚268 爬面116 v999 + sl12 + walkTo(1,616,40)+S6",
+     "dwg": [
+      {
+       "n": "sleep",
+       "a": [
+        400
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        108,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        12
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        268,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        12
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        116,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        36
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        260,
+        30
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        616,
+        40
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        6
+       ]
+      }
+     ],
+     "dfb": [
+      {
+       "n": "sleep",
+       "a": [
+        1650
+       ]
+      }
+     ]
+    },
+    {
+     "note": "α-ψ3 锚260 爬面116 v999 + sl12 + walkTo(1,617,40)+S6",
+     "dwg": [
+      {
+       "n": "sleep",
+       "a": [
+        400
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        108,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        12
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        260,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        12
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        116,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        36
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        260,
+        30
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        617,
+        40
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        6
+       ]
+      }
+     ],
+     "dfb": [
+      {
+       "n": "sleep",
+       "a": [
+        1650
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "G3",
+   "title": "wg 东上链（J1→massif→J2→楔1→J3→A冰东→西渡→高原坡→wg 门）；fb 顶路东渡→riser 跳→壕沟→fb 门；双门 WIN",
+   "entry": [
+    {
+     "kind": "px",
+     "role": "wg",
+     "min": 600,
+     "max": 640
+    },
+    {
+     "kind": "py",
+     "role": "wg",
+     "min": 520,
+     "max": 560
+    },
+    {
+     "kind": "grounded",
+     "role": "wg"
+    },
+    {
+     "kind": "vx",
+     "role": "wg",
+     "min": -25,
+     "max": 25
+    },
+    {
+     "kind": "px",
+     "role": "fb",
+     "min": 60,
+     "max": 285
+    },
+    {
+     "kind": "py",
+     "role": "fb",
+     "min": 150,
+     "max": 270
+    },
+    {
+     "kind": "grounded",
+     "role": "fb"
+    }
+   ],
+   "horizonF": 1800,
+   "extras": null,
+   "waypoints": [
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 610,
+      "max": 672
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 300,
+      "max": 370
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "wg",
+      "min": 450,
+      "max": 560
+     },
+     {
+      "kind": "py",
+      "role": "wg",
+      "min": 235,
+      "max": 265
+     },
+     {
+      "kind": "grounded",
+      "role": "wg"
+     }
+    ],
+    [
+     {
+      "kind": "px",
+      "role": "fb",
+      "min": 800,
+      "max": 928
+     },
+     {
+      "kind": "py",
+      "role": "fb",
+      "min": 420,
+      "max": 460
+     },
+     {
+      "kind": "grounded",
+      "role": "fb"
+     }
+    ]
+   ],
+   "target": [
+    {
+     "kind": "atDoor",
+     "role": "fb"
+    },
+    {
+     "kind": "atDoor",
+     "role": "wg"
+    },
+    {
+     "kind": "phaseWon"
+    }
+   ],
+   "targetNote": "pr22 WIN f4750：fb(1136,860.5) wg(88.8,156.3) 双 atDoor+双 isUp",
+   "cands": [
+    {
+     "note": "v8: + fb walk→jd 手递 sleep(3) 硬零",
+     "dfb": [
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        715,
+        999
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        760,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        3
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        975,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        400
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        1,
+        1135,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        150
+       ]
+      }
+     ],
+     "dwg": [
+      {
+       "n": "jumpDrift",
+       "a": [
+        1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        740,
+        999
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "jumpDrift",
+       "a": [
+        -1,
+        0,
+        24
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        262,
+        999
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        160,
+        999
+       ]
+      },
+      {
+       "n": "walkTo",
+       "a": [
+        -1,
+        80,
+        999
+       ]
+      },
+      {
+       "n": "sleep",
+       "a": [
+        150
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "archive": {
+  "status": "blocked——未出路线 JSON（门禁：exjob 全零 + route-node 3/3 PASS；G2 地板由 fw-route-ice03b 复活槽从 12/112≈10.7% 深挖至 4/462≈0.87%，α面梯 v5=α-θ3 为实测最优，见 archive.revivalB 与 11 号档）",
+  "date": "2026-11-12",
+  "branch": "perf/r44",
+  "slot": "fw-route-ice03 → fw-route-ice03b（2026-11-12 复活续攻）",
+  "segments": {
+   "G1": "solved v8，exjob 门 PASS 0/86，endF=907。全链唯一满分段。",
+   "G2": "solved v14（sleep3/3 hf36 锚106）：met ✓ metAt=1136 endF=2043 wg[638,540]；robjob 首过 fatal=1；exjob 门 FAIL 12/112（~10.7% 地板）。六轮架构迭代（v8扫/v10 jumpOnto/v11直上/v12锚544-mid/v13逐级锚/v14刃角去险）均钉在 ~10% 单点位移致命率，致命签名单一：西楔立跳#1(jumpDrift(1,0,24) 自 (150-230,690-790)) ±1f 起跳相位差 → 楔峰落点 ±20-45px → 低西 (48,809) 永滞（楼梯下台阶 attractor）。",
+   "G3": "stale——state.segs[2] 为旧 v6 链遗留（endF=4725 ex 9/1942），从未在 v14 种子上重解（G3 程序为累积制，G2 定稿改变即整体失效）。"
+  },
+  "realServer": "v6 全链（kernel WIN，endF=4725 双门）真服 route-node 3/3 FAIL（2026-11-11 实测 timeout；2026-11-12 复测归档于 note/research/2026-10-autoplay/09-ice03-counterfactual-west-house.md）。routes/ice_03.json 未提交（从未过门禁）。",
+  "rootCauses": [
+   "drive() 每帧每角色只推进一个原语（无 done 链连进）——手工探测件若 done 即连进必与真身分歧；evalchild/真 drive 是唯一真值。",
+   "prohibitJump 顶限：板西半 x[160,192] 处于 640檐 x[64,192] 下 → 顶跳被禁；jumpDrift 被禁则 jumped 永置位、air 永假 → 永滞 (189,764)。",
+   "西屋 4 连边落+立跳#1 为 ±1f 噪声放大器：v13 逐级锚定后前 1600f 已压到 ±4px，但立跳#1 落点（楔峰 (96,544) 尖角）结构性敏感，无法用锚定消除。",
+   "服务器滑帧 ~2-3% 事件/run（意图跨度 +4ms deadline，ForestRoom.ts:703）→ route-node 需全事件 ±1f 鲁棒；exjob 12/112 外推必挂。"
+  ],
+  "revival": [
+   "1. G2 重构是唯一瓶颈：需绕开西楔立跳#1 落点敏感（候选方向：东墙外 B 冰直上被 pj/墙角双堵已证伪；西柱 x[0,32] 顶 704→384 未探；若立跳换两级矮跳或 sleep 对齐楔峰窗口需重新 exjob）。",
+   "2. node --import tsx note/research/2026-10-autoplay/tools/drive-ice03.mjs --solve 2 过 exjob 0 fatal 后 --solve 3（v14 种子上重解，finjob 种子自动取 state.segs[1].final）。",
+   "3. --gate 1 --gate 2 --gate 3 全 0 fatal 后 --finalize，再 node --import tsx scripts/e2e/route-node.mjs --level ice_03 --repeat 3 全 PASS 才准提交 routes/ice_03.json。",
+   "4. 纪律不变：BATCH=1、probe 串行、--maxminutes 30、逐件 wip commit、禁 co-author。"
+  ],
+  "revivalB": {
+   "date": "2026-11-12",
+   "best": "v5=α-θ3：[sl400, wt(-1,108,999), sl12, jd(1,0,24), wt(1,260,999), sl12, jd(-1,0,24), wt(-1,116,999), sl3, jd(1,0,36), wt(1,260,30), sl3, jd(1,0,24), wt(1,618,40), sl6]；endF=2067 settle wg[619,541g]；exjob 4/462（wg#43@909±, wg#45@910-, wg#50@1440- → (189,765) 梯基楔块），其余 458 采样全净",
+   "attempts": "v6 低vMax 51-237/734-894（脉冲事件面爆炸）；v7 J2'h30/36 11-16/32prune（下游重掷）；v8 两段西粗调 18-58（捕捉未重锚）；v9 零位移两段 15-17/482-490（残余噪声>4.8px唇口）；v10 h30+face 27-33；v12 v350分级 21/490；v13 h36 22/478；相位彩票 δ1∈0..60 31点全灭",
+   "mechanisms": "M1 编译窗截断律(endF+2 末帧endF+1，≥截)；M2 hold闩键泄漏(松键不入表/met=撞墙)；M3 冰面长距v999 walk 到达类相位混沌(±1f→330→500px/s→过冲45→102px→西坡腾空→done多解刀口)；M4 45°楔面高度耦合(±1px横=±1.1px高)×J2'唇口4.8px<噪声下限5px=结构性必炸；M5 串行刀口链(~8决策，任何修正重掷下游)；M6 相位彩票空(地板对相位不变)；M7 两段式walk零位移重锚(150/106/120→98.8→J1@204.8 精确复刻v5几何)",
+   "nextEntries": [
+    "J2' 从 tile-2 平顶 x[224,256] 直接起跳的弧线几何（绕开楔背；tile-2 顶面高程未精测，先 geo-dump）",
+    "本地全保真门禁复刻（expandFlat 同帧 up 先于 down；deadline=max(entryF+horizonF,endF+25)；表=真 finjob 编译）是迭代杠杆：100s/轮替代 30min/轮",
+    "先 --gate 2 复现 4/462 作锚；过 0 fatal 后 --solve 3（G3 在 v5 种子上重解）→ --gate 1/2/3 → --finalize → route-node --repeat 3 全 PASS 才准提交 routes/ice_03.json"
+   ]
+  }
+ }
+}

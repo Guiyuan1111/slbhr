@@ -42,7 +42,7 @@ describe("serverHeaders（#45）", () => {
     }
   });
 
-  it("中间件落位四个安全头并放行", () => {
+  it("中间件落位六个安全头并放行", () => {
     const store: Record<string, string> = {};
     const res = { setHeader: (k: string, v: string) => { store[k] = v; } } as never;
     let next = false;
@@ -51,6 +51,8 @@ describe("serverHeaders（#45）", () => {
     expect(store["X-Frame-Options"]).toBe("DENY");
     expect(store["Referrer-Policy"]).toBe("no-referrer");
     expect(store["Content-Security-Policy"]).toBe("csp-value");
+    expect(store["Cross-Origin-Opener-Policy"]).toBe("same-origin");
+    expect(store["Cross-Origin-Embedder-Policy"]).toBe("require-corp");
     expect(next).toBe(true);
   });
 

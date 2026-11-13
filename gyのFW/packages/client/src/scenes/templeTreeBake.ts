@@ -161,14 +161,24 @@ export function bevelColorMatrix(
   const maxOff = offs.length > 1 ? offs[offs.length - 1] * Math.max(WTX, WTY) : 0;
   const R = Math.ceil(maxOff) + 2;
   const sat = opts.sat ?? buildSAT(alpha, w, h);
+  // r49：`o * WTX/WTY` 与像素无关，hoist 到循环外（offs 只有 3–4 项，但每个像素都要重算
+  // 两遍）。纯常量提取，与逐次乘法位级相同。
+  //
+  // 已试并撤回：把 sampleA2 的坐标分解 (xa,xb,fx)/(ya,yb,fy) 也建成表。微基准看似
+  // −51.7%，但真实全链配对 A/B 三层只有 −3.3%/−11.1%/−2.5%，**全部带内**——建表开销
+  // （7 项 × (w+h) + 每像素多一次表索引）抵消了省下的 Math.floor。且表驱动改写漏掉
+  // own 采样的 fr() 时只产生 1 ULP 偏差：33 条合成单测全绿而真实数据必红。
+  // 收益带内 + 复杂度上升 + 曾踩 1 ULP 坑 → 不留。
+  const offXY: number[] = [];
+  for (const o of offs) offXY.push(o * WTX, o * WTY);
   for (let y = y0; y < y1; y++) {
     for (let x = 0; x < w; x++) {
       const i = (y * w + x) * 4;
       if (alpha[y * w + x] === 0 && satSum(sat, w + 1, x - R, y - R, x + R + 1, y + R + 1) === 0) continue;
       const t0x = (x + 0.5) * FX, t0y = (y + 0.5) * FY;
       let a1 = 0, a2 = 0;
-      for (const o of offs) {
-        const ox = o * WTX, oy = o * WTY;
+      for (let k = 0; k < offXY.length; k += 2) {
+        const ox = offXY[k], oy = offXY[k + 1];
         a1 = fr(a1 + sampleA2(alpha, w, h, t0x + ox, t0y + oy));
         a2 = fr(a2 + sampleA2(alpha, w, h, t0x - ox, t0y - oy));
       }
@@ -208,6 +218,11 @@ export function outlinePass(
   const offX = 3 * (WTX / Cf), offY = 3 * (WTY / Kf);
   const angles: number[] = [];
   for (let a = fr(-Math.PI); a <= Math.PI; a = fr(a + 0.3142)) angles.push(a);
+  // r49：20 个角度的 cos/sin 与像素无关。原实现写在逐像素内层，实测每个像素重算 20 次
+  // 三角函数（真树数据下 202k 像素进入本循环 → 810 万次调用）。预计算成 (cos,sin) 对后
+  // 内层只做乘法。三角函数只依赖 ang，两种写法结果位级相同。
+  const cosSin: number[] = [];
+  for (const ang of angles) cosSin.push(Math.cos(ang), Math.sin(ang));
   const y0 = opts.y0 ?? 0, y1 = opts.y1 ?? h;
   const R = Math.ceil(offX) + 2;
   for (let y = y0; y < y1; y++) {
@@ -221,8 +236,8 @@ export function outlinePass(
       if (satSum(sat, w + 1, x - R, y - R, x + R + 1, y + R + 1) === 0) continue; // 全零已是
       const t0x = (x + 0.5) * FX, t0y = (y + 0.5) * FY;
       let maxA = 0;
-      for (const ang of angles) {
-        const v = sampleA2(alpha, w, h, t0x - offX * Math.cos(ang), t0y - offY * Math.sin(ang));
+      for (let k = 0; k < cosSin.length; k += 2) {
+        const v = sampleA2(alpha, w, h, t0x - offX * cosSin[k], t0y - offY * cosSin[k + 1]);
         if (v > maxA) maxA = v;
       }
       const resA = Math.max(maxA, ownA);

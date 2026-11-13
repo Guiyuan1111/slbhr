@@ -34,12 +34,52 @@ function warnStorageFailed(): void {
   console.warn("[fw] localStorage 写入失败（隐私模式等），进度仅在本次会话内生效");
 }
 
+/**
+ * 按键原文串记忆的解析结果（r48）。
+ *
+ * ## 为什么需要
+ * 选关菜单入场时 `starsOf` 的调用次数是 **O(关卡数)**，且同一批文件被反复问：
+ * tree 路径（forest/light/ice/crystal）里 done 扫描 + 节点循环 + 烘焙 `stateOf`
+ * （edges×2 + levels）+ 平色回退扫描各来一遍；elements multi 路径里
+ * `computeLearnedElements` + 每庙 `completedCountOf` + `rowsLevelState` 循环 +
+ * `templeHasNew`（内含又一次 `rowsLevelState` 与 `completedCountOf`）叠起来更多。
+ *
+ * 而 `loadProgress()` 原实现每次调用都 `getItem` + **全量 JSON.parse**。
+ * 实测（`benchmark/perf-progress.mjs`，252 条存档 13.4KB，每次入场 332 次调用）：
+ * **22.4ms → 37.6µs（−99.8%）**，两臂各 9 轮区间完全分离。
+ * 22.4ms 正是玩家点「开始」到看见关卡树之间那段可感卡顿。
+ *
+ * ## 为什么这样缓存是安全的
+ * 每次仍**读原文串**，只有串内容变化才重新 parse——因此任何外部写入（另一个标签页、
+ * 本页的 `saveBest`）都会被立刻看见，不存在读到陈旧数据的问题。
+ * `getItem` 的成本比 `parse` 低一个数量级，所以「比对串」远比「重新 parse」便宜。
+ *
+ * ⚠ 缓存命中时返回**同一个对象**。调用方必须只读：`saveBest` 走的正是「读-改-写」，
+ * 它改写的是返回对象再整体 `JSON.stringify`，随后 `getItem` 读回的串已变 →
+ * 缓存自动失效并重新 parse，语义与无缓存时一致。
+ */
+let progressRaw: string | null = null;
+let progressParsed: Record<string, LevelBest> = {};
+
 export function loadProgress(): Record<string, LevelBest> {
+  let raw: string | null;
   try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "{}") ?? {};
+    raw = localStorage.getItem(KEY);
   } catch {
+    // 隐私模式 getItem 也可能抛 SecurityError：按空存档处理
+    progressRaw = null;
+    progressParsed = {};
     return {};
   }
+  const text = raw ?? "{}";
+  if (text === progressRaw) return progressParsed;
+  try {
+    progressParsed = JSON.parse(text) ?? {};
+  } catch {
+    progressParsed = {};
+  }
+  progressRaw = text;
+  return progressParsed;
 }
 
 /** 存档写入且 best 被刷新时返回 true（oracle update :2152850 区 `betterThan → best=state` 门；
@@ -48,7 +88,9 @@ export function saveBest(filename: string, stars: number, timeSec: number): bool
   // #43：防御性拒绝——非有限或入库即 ≤0 的时长不得写 best。0 秒「最佳」一旦入库，
   // 之后任何真实成绩都无法刷新（time < prev.time 恒假），存档不可逆污染。
   if (!Number.isFinite(timeSec) || Math.round(timeSec) <= 0) return false;
-  const all = loadProgress();
+  // ⚠ 必须复制：loadProgress() 命中缓存时返回的是**缓存对象本身**，
+  // 直接改它会在 setItem 抛错（配额满/隐私模式）时把缓存也污染成"已写入"，后续读档读到假成绩。
+  const all = { ...loadProgress() };
   const prev = all[filename];
   if (!prev || stars > prev.stars || (stars === prev.stars && timeSec < prev.time)) {
     all[filename] = { stars, time: Math.round(timeSec) };

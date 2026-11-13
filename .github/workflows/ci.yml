@@ -70,7 +70,10 @@ jobs:
         run: npm run test:coverage
 
   determinism:
-    name: determinism (forest r0-baseline)
+    # 六部锚全量比对（forest/light/ice + 三续作 crystal/elements/fairytales，2026-10-31
+    # 三续作锚入库；ice 锚=r2-tpgate 2026-10-28 重锚）。多部共库后任何内核改动都
+    # 必须六锚同绿——只绿自家部而打崩别部物理的改动拦在这里。
+    name: determinism (all 6 anchors)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -84,38 +87,16 @@ jobs:
         run: npm ci
       - name: Compare forest 48-level determinism against r0-baseline
         run: node --import tsx benchmark/perf-determinism.mjs --compare r0-baseline --filter forest
-
-  determinism-ice:
-    name: determinism (ice r2-tpgate)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22.x
-          cache: npm
-          cache-dependency-path: gyのFW/package-lock.json
-      - name: Install
-        run: npm ci
-      - name: Compare ice 51-level determinism against r2-tpgate
-        run: node --import tsx benchmark/perf-determinism.mjs --compare r2-tpgate --filter ice
-
-  determinism-light:
-    name: determinism (light r0-light)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22.x
-          cache: npm
-          cache-dependency-path: gyのFW/package-lock.json
-      - name: Install
-        run: npm ci
       - name: Compare light 40-level determinism against r0-light
         run: node --import tsx benchmark/perf-determinism.mjs --compare r0-light --filter light
+      - name: Compare ice 51-level determinism against r2-tpgate
+        run: node --import tsx benchmark/perf-determinism.mjs --compare r2-tpgate --filter ice
+      - name: Compare crystal 36-level determinism against r0-crystal
+        run: node --import tsx benchmark/perf-determinism.mjs --compare r0-crystal --filter crystal
+      - name: Compare elements 35-level determinism against r0-elements
+        run: node --import tsx benchmark/perf-determinism.mjs --compare r0-elements --filter e
+      - name: Compare fairytales 31-level determinism against r0-fairytales
+        run: node --import tsx benchmark/perf-determinism.mjs --compare r0-fairytales --filter fairies
 
   routes-smoke:
     name: routes smoke (route-node real-server sample)
@@ -131,11 +112,9 @@ jobs:
       - name: Install
         run: npm ci
       # 正式门禁仍为本地 repeat>=3（见 AGENTS.md）；CI 只做回归冒烟。
-      # light_01 不入样本：±1f 刀锋时序对调度抖动敏感（本地约 1/5 假阴），避免 CI 常红。
+      # 1.0（forest-only 分发）不含 light/ice：原 light_02 冒烟步随内容剪除移除。
       - name: route-node forest_01
         run: node --import tsx scripts/e2e/route-node.mjs --level forest_01 --repeat 1
-      - name: route-node light_02
-        run: node --import tsx scripts/e2e/route-node.mjs --level light_02 --repeat 1 --offset -10
 
   browser-room:
     # 2026-10-28 P0 回归门禁：浏览器真实建房链路冒烟——seedrandom 的 new Function 被
@@ -176,6 +155,7 @@ jobs:
     # 旧验收第 ⑥ 步只 create→leave，房间状态从未广播过增量，于是「schema 编码崩溃」
     # 完全隐形。本作业补上那一段：双人到齐进 started → 断言 patch 持续在流 →
     # 断言进程存活 → 浏览器建房进 Game 且 pageerror=0。
+    # （2026-11-14 回灌合并：main 侧与 perf/r44 侧各自新增作业，并集保留两门。）
     name: deploy smoke (lobby→started, patch 持续)
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -194,6 +174,38 @@ jobs:
         run: npm run build
       - name: deploy-smoke（源码树布局）
         run: node scripts/e2e/deploy-smoke.mjs --serve-dir . --port 2599 --window 8000
+
+  temple-smoke:
+    # 2026-11-01 三续作（crystal/elements/fairytales）真浏览器 journey 冒烟门禁（fw-journey-3temples
+    # 槽）：?level= 深链装载→建房/房码加入（火娃/水娃席位）→started→FORCE_DOORS 通关(won)→
+    # 活房间 advance→下一关 started，三部各一轮共 33 断言。browser-room 只罩 forest_01 单关
+    # 装载，三部新客户端视图/网络链（E 部条带选关/F 部仙女拖拽）此前无真浏览器门禁——
+    # 0.3.51–0.3.55 浏览器全断潜伏五版的前车之鉴。断言全走权威 state 函数门（客户端 CSP
+    # 无 unsafe-eval，字符串表达式 waitForFunction 会被 EvalError 拦截——templesmoke.mjs 已
+    # 全函数化；journey.mjs 的字符串门系 0.3.51 前所写，同因不可直接复用）。
+    # 本地先跑绿证据：最终版连续 10 轮 ALL PASS（33/33），数字与取舍见
+    # note/research/2026-11-01-temple-smoke.md。
+    name: temple-smoke (3temples journey via FORCE_DOORS)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.x
+          cache: npm
+          cache-dependency-path: gyのFW/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Install chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Server (FORCE_DOORS) + temple-smoke
+        run: |
+          FW_DEBUG_FORCE_DOORS=1 node --import tsx packages/server/src/index.ts &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:2567/healthz >/dev/null && break; sleep 1; done
+          node scripts/e2e/templesmoke.mjs --port 2567
 
   servers-smoke:
     # #37：干净 checkout 冒烟——无 TEMP/ 目录起服 + /healthz 探活，专抓

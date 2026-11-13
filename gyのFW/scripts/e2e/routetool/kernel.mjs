@@ -16,13 +16,41 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { ROOT } from "../lib.mjs";
 
-const LEVELS_DIRS = ["data/tutorials/levels", "data/forest/levels", "data/light/levels", "data/ice/levels"]
+// 关卡目录与服务器 levels.ts LEVEL_DIRS 检索序对齐（fw-fairydrag 槽 2026-10-31：补
+// data/fairytales/levels F 部；tutorials 仍兜底最后——与既有 forest/light/ice 关卡解析零交集，
+// 前插会改变 tutorials 兜底前的命中序，故按服务器同位次插在 tutorials 之前）。
+const LEVELS_DIRS = ["data/forest/levels", "data/light/levels", "data/ice/levels", "data/fairytales/levels", "data/tutorials/levels"]
   .map((rel) => join(ROOT, rel))
   .filter((dir) => {
     try { readdirSync(dir); return true; } catch { return false; }
   });
 const { parseLevel } = await import(pathToFileURL(join(ROOT, "packages", "shared", "src", "level2.ts")).href);
 const { World } = await import(pathToFileURL(join(ROOT, "packages", "shared", "src", "kernel", "world.ts")).href);
+// fw-fairydrag 槽（2026-10-31）：fy 轨回放的坐标换算与服务器 ForestRoom.fairydrag 同源
+// （b2.ts px2m，屏幕 px → 物理米，-px/32），禁本地复写防漂移。
+const { px2m } = await import(pathToFileURL(join(ROOT, "packages", "shared", "src", "kernel", "b2.ts")).href);
+
+/** 路线 doc.fy 轨 → 按帧分组（{f,i,x,y}；x/y=null=松手；同帧保持文件序） */
+export function fyByFrame(fy) {
+  const byF = new Map();
+  for (const e of fy ?? []) {
+    if (typeof e?.f !== "number" || typeof e?.i !== "number") continue;
+    if (!byF.has(e.f)) byF.set(e.f, []);
+    byF.get(e.f).push(e);
+  }
+  return byF;
+}
+
+/** 帧首施加仙女拖拽事件（服务器 ForestRoom fairydrag 同语义：非有限数=松手） */
+export function applyFy(w, events) {
+  if (!events) return;
+  for (const e of events) {
+    const fy = w.fairies?.[e.i];
+    if (!fy) continue;
+    const ok = (v) => typeof v === "number" && Number.isFinite(v);
+    fy.setDrag(ok(e.x) && ok(e.y) ? { x: px2m(e.x), y: px2m(e.y) } : null);
+  }
+}
 
 /** 关卡 JSON 的 tileset 引用解析（source 相对关卡所在目录） */
 export function makeProvider(baseDir) {
@@ -101,10 +129,12 @@ export function runKernel(level, routeDoc, opts = {}) {
   const total = routeDoc.totalFrames;
   const ins = expandFlat(routeDoc.fb, routeDoc.wg, total);
   const w = makeWorld(level);
+  const fyF = fyByFrame(routeDoc.fy); // 缺轨=空 Map，逐帧零查找开销之外无行为差
   const traceTo = opts.traceTo ?? null;
   const fbC = w.players.fireboy;
   const wgC = w.players.watergirl;
   for (let f = 0; f < total; f++) {
+    applyFy(w, fyF.get(f));
     w.step(1 / 60, { fireboy: ins.fb[f], watergirl: ins.wg[f] });
     if (traceTo) {
       const fb = w.snapshotPlayer("fireboy"), wg = w.snapshotPlayer("watergirl");

@@ -46,6 +46,11 @@ export const AUDIO_SFX: ReadonlyArray<readonly [string, string]> = [
   ["sfx_slider", "Slider.mp3"],
   ["sfx_lightpusher", "LightPusher.mp3"],
   ["sfx_clock", "Clock.mp3"],
+  // D/E 部传送门四键（oracle Portal.sounds @1690517；装载映射 PortalOpen→PortalOpen.mp3 @1889882）
+  ["sfx_portalOpen", "PortalOpen.mp3"],
+  ["sfx_portalLoop", "PortalLoop.mp3"],
+  ["sfx_portalClose", "PortalClose.mp3"],
+  ["sfx_portalTransport", "PortalTransport.mp3"],
 ] as const;
 
 /** 失败曲：三种类型都用它（oracle 同式，bundle:1887237 的 levelMusicOver） */

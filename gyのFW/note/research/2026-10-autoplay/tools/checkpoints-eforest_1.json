@@ -1,0 +1,31 @@
+{
+  "level": "eforest_1",
+  "slot": "fw-foothold-ef",
+  "date": "2026-11-11",
+  "status": "FOOTHOLD-REACHED / WIN-BLOCKED",
+  "physical": {
+    "jumpRise": 70.5,
+    "jumpApexT": 10,
+    "runSpeed": 4.9,
+    "airControl": "起跳保留水平速度（probe22b），静止跳 0.35/f² 加速 cap 4.9",
+    "trap": "第0帧输入会卡死 spawn（物理病态），起手必须 ≥5f NONE"
+  },
+  "checkpoints": [
+    { "id": "CP0", "where": "spawn fb(248,928) wg(1024,928)", "evidence": "probe25c 起点实测" },
+    { "id": "CP1", "where": "wg 东行站 b1(1152-1216) 按住 → p0 沉（p0 组 g0）", "evidence": "probe25: wg@1176 → p1 pusher state=1（pushers[1] 是 b1 实体）；p0 平台沉、fb 穿西井" },
+    { "id": "CP2", "where": "fb 穿西井 [384,416]（走沉柱顶 936）过到中部 [416,850]", "evidence": "probe25: fb 370→735.8（p0 沉时井口通行）" },
+    { "id": "CP3", "where": "fb 停 505-510 跳 UR 贴 '/'col17 西楔面滑升 → 落楔尖 (572,833) → 走东上桌顶 [576,704]×832", "evidence": "probe25c: fb (518.7) 跳 UR → (614.2,798.4) 落桌顶 (624,831.9)；probe17 同法先证" },
+    { "id": "CP4", "where": "fb 桌顶向东推 id1 箱（中心初始 640,802）→ 箱掉桌东缘 → 沿 '\\'col22 斜面滑落地板 (836.9,898)", "evidence": "probe25c: box 651.7→674.5→701→836.9 落地板（箱底 926.4≈928）" },
+    { "id": "CP5", "where": "fb 跳 RU 站箱顶 (837,871.4) → 跳 UR 落 r25-east (882,800.9)", "evidence": "probe21 BFS 边 [832,896]box→[928,960]y800 canLand ✓（apex 800.9 落窗 [799.5,806]）" },
+    { "id": "CP6", "where": "r25-east → 走 '/'col30 东上 → r24-east (768) → 东端 '\\'col34 斜面 → r20-east (640) → 站 b3 (992,640)", "evidence": "dbg12 回溯路径：箱顶→[928,960]y800→[1024,1056]y768→[1088,1120]y(672,704)→[1024,1056]y640→[928,960]y640" },
+    { "id": "CP7-West", "where": "对称西链：箱推西位 (~450) → 箱顶跳 UL → r25-west (800) → r24-west (768) → V 谷 (704) → r21-west (672) → r20-west (640) → b2 (288,640)", "evidence": "probe21 BFS 可达 138 段含全部" }
+  ],
+  "deadEnd": {
+    "point": "r20 层 (640) 之上",
+    "gap": "512 层（slab[512,768]/r16-west[224,256]/r16-east[1024,1056]）距 r20 层 rise 128 > 70.5；p2 电梯（b2/b3 触发、行程 544→416）只服务 slab 层（从 slab 512 中途登台），r20 层距 p2-rest 顶 544 rise 128 ✗",
+    "recursion": "512 层唯一入口 = 从 416 层（r13）下行；416 层唯一入口 = p2-up 同高跳（须先在 slab）→ 无基例循环",
+    "box": "id1 箱只能落地板层（压 b0/b1 仅门禁）；id14 箱困于 row9 层（p5 桥上）不可达；无任何常驻伺服能桥接 512 层",
+    "upper": "plateau [320,960]×160 双门（fb[544,608]/wg[672,736]）在孤立上半区，WIN 条件 doors 双 isUp 永不可满足"
+  },
+  "bfs": { "segments": 138, "total": 272, "fixedPoint": true, "reachable": "地板+桌顶+箱顶(假设位)+r25/r24+r21-west+r20-west+东岸链(r21-east/r20-east)+r18死台×2" }
+}

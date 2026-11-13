@@ -21,6 +21,14 @@ export const WORLD = {
 } as const;
 
 /** 角色（火/水共用同一 character 类，原型常量 @1863650–1863990 + 构造体 @1857531–1862500） */
+/**
+ * 部别跳跃初速（m/s）：A–E 全系原型 15.5（init bundle jumpVelocity 字证），唯 F 部
+ * fairy-tales.min.js 为 16.5（2026-10-31 fairies-01 槽实证——F 全图台沿按 96px 精确
+ * 设计，15.5 使贴边跳 0.3-7px 临界 vs 16.5 的 5-15px 余量）。fairies 前缀=F 部 vintage。 */
+export function jumpVelocityOf(levelId: string): number {
+  return levelId.startsWith("fairies") ? 16.5 : CHAR.jumpVelocity;
+}
+
 export const CHAR = {
   // ---- 复合碰撞体（body 原点=贴图中心；fixture 局部坐标，米）----
   /** 躯干圆半径（m() 助手，位于 (0,y1)，friction 0，density 0） */

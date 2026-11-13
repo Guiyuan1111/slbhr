@@ -15,6 +15,7 @@ import { KeyboardInput } from "./input";
 import { TouchControls } from "./touch";
 import { BootScene, bgWarmSettled, setWarmBgmFamily } from "./scenes/BootScene";
 import { releaseGameBgms } from "./audio";
+import { templeIdOf } from "./templeData";
 import { MenuScene } from "./scenes/MenuScene";
 import { TempleScene } from "./scenes/TempleScene";
 import { GameScene } from "./scenes/GameScene";
@@ -24,6 +25,7 @@ import { FadeScene, fadeSwitch } from "./scenes/transition";
 import { loadTempleLevels } from "./templeData";
 import { markPlayed, processWinResult, saveBest, starsOf } from "./progress";
 import { getSettings } from "./settings";
+import { extractCovers, type CoverRect } from "./scenes/fairyView";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => {
   const el = document.querySelector(sel);
@@ -83,6 +85,8 @@ async function fetchLevel(id: string): Promise<LevelData> {
     throw new Error(msg);
   }
   const { json } = (await res.json()) as { id: string; json: unknown };
+  // cover 纯视觉矩形（F 部 fairytales/elements 部分关卡有；无 cover 关为空数组）
+  coversByLevel.set(id, extractCovers(json));
   // parseLevel 是同步取用，必须先预取全部图块集再以同步 getter 提供（直接传
   // Promise 会让 tileTypeOf 全部失败，地面/液体类型全部退化为 0）。
   const sources = new Set<string>();
@@ -101,6 +105,10 @@ async function fetchLevel(id: string): Promise<LevelData> {
     return ts;
   });
 }
+
+/** 关卡 cover 矩形按 id 缓存（fetchLevel 顺带从原始 JSON Objects 层提取——level2 解析
+ *  不收 cover（shared 禁改，纯视觉对象）；GameScene 经 GameInit.covers 消费渲染） */
+const coversByLevel = new Map<string, CoverRect[]>();
 
 /** 关卡数据客户端缓存（r8 perf 件4）：LevelData 只读（场景构建遍历读，不改写），
  *  同关重进（离房再建/邀请深链重复进出）零重复拉取；失败逐出保证可重试。 */
@@ -157,24 +165,34 @@ function restartWithFade(): void {
 }
 
 /** 活房间换关（服务端 advance 的 levelId 差分回声，双端同触发）：拉新关数据重建 Game
- *  场景；席位/键盘/触屏链路不动（仍绑在同一房间）。 */
+ *  场景；席位/键盘/触屏链路不动（仍绑在同一房间）。
+ *
+ *  r46：黑幕与 fetch 并行。原实现先 `await fetchLevelCached` 再 `fadeSwitch`——新关数据的
+ *  HTTP 往返（perf-advance 实测中位 266–320ms）整段暴露在玩家等待里，而黑幕淡入的 500ms
+ *  画面本来就是黑的，完全可以并行。改法：黑幕先起（fetch 同时已在飞），ops 返回 promise，
+ *  `FadeScene` 等它落定才揭幕（见 transition.ts 的异步 ops 分支）。
+ *  语义等价：`currentLevel` / `__fwInit` 仍在 `sm.start("Game")` 之前赋值，顺序不变；
+ *  fetch 失败时抛错 → FadeScene 把黑幕揭掉、不切场景（旧实现是黑幕根本不起，行为面同为
+ *  「玩家留在旧关」）。 */
 async function reloadLevel(levelId: string): Promise<void> {
   if (!net || !gameStarted) return;
-  try {
-    currentLevel = await fetchLevelCached(levelId);
-  } catch (e) {
-    console.error("[fw] 换关失败:", e);
-    return;
-  }
-  currentTempleEntry = findTempleEntry(levelId);
-  // NewSign played 标记（13 号档 #13，0.3.39）：oracle setPlayed 于 startLevel 进关即置
-  // （bundle:1935016）；换关亦属进关（advance 回声同达）。
-  if (currentTempleEntry) markPlayed(currentTempleEntry.filename);
-  (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level: currentLevel, keyboard, templeEntry: currentTempleEntry, game: phaser };
+  // 先发起请求不 await——与黑幕淡入并行；失败由 FadeScene 的 reject 分支处理
+  const levelPromise = fetchLevelCached(levelId);
   hudTopShow(); // 换关同样展示几秒（双人可能在新关前重新约人），随后自动收起
   // 换关黑幕（oracle LevelMenu.startLevel fade("level") :1935281；EndMenu Continue→advance 回声双侧同达）
   const sm = phaser!.scene;
-  fadeSwitch(phaser!, () => {
+  fadeSwitch(phaser!, async () => {
+    try {
+      currentLevel = await levelPromise;
+    } catch (e) {
+      console.error("[fw] 换关失败:", e);
+      throw e; // 交给 FadeScene 揭幕，不切场景（玩家留在旧关，与服务端相位可能短暂不一致）
+    }
+    currentTempleEntry = findTempleEntry(levelId);
+    // NewSign played 标记（13 号档 #13，0.3.39）：oracle setPlayed 于 startLevel 进关即置
+    // （bundle:1935016）；换关亦属进关（advance 回声同达）。
+    if (currentTempleEntry) markPlayed(currentTempleEntry.filename);
+    (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level: currentLevel, keyboard, templeEntry: currentTempleEntry, covers: coversByLevel.get(levelId), game: phaser };
     sm.stop("EndMenu");
     sm.stop("GameOverMenu");
     sm.stop("PauseMenu");
@@ -384,7 +402,7 @@ async function enterGame(): Promise<void> {
   // （bundle:1935016）。时点注记：oracle 单机=点击节点直进；我方联机=此处真进关
   // （弹面板间隔不计），语义取「进过这关」。
   if (currentTempleEntry) markPlayed(currentTempleEntry.filename);
-  (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level, keyboard, templeEntry: currentTempleEntry, game: phaser };
+  (globalThis as unknown as Record<string, unknown>).__fwInit = { net, level, keyboard, templeEntry: currentTempleEntry, covers: coversByLevel.get(levelId), game: phaser };
   (globalThis as unknown as Record<string, unknown>).__fwRestart = () => net?.restart();
   (globalThis as unknown as Record<string, unknown>).__fwPauseKeyboard = (b: boolean) => keyboard?.setPaused(b);
   // F3：P 键/暂停菜单「继续」统一入口——只发请求，画面以服务端 pause-changed 回声为准
@@ -435,6 +453,8 @@ async function enterGame(): Promise<void> {
   // 黑幕包络下停面板+发 restart，服务端重置回声链不变。0.3.39 R 键同走此信封（restartWithFade），
   // 键盘/鼠标路径归一。
   (globalThis as unknown as Record<string, unknown>).__fwRestart = restartWithFade;
+  // F 部免费复活（R2）：GameOverMenu「复活」钮 → 服务端 gameover 相位门禁受理
+  (globalThis as unknown as Record<string, unknown>).__fwRevive = () => net?.sendRevive();
   // 结算「继续」：原版 Continue 直进下一关（bundle EndMenu 44360 区段）。联机形态
   // = 活房间内 advance 换关（席位保留、双端同跳，2026-10-12 实玩反馈：不再回大厅
   // 重建房间）；无后继或已离房 → 回选关树（原版最后一关无 Continue 后继）。
@@ -559,6 +579,14 @@ function netHandlers(): NetCallbacks {
         else phaser?.scene.stop("PauseMenu");
       }
     },
+    onRevived: () => {
+      // 复活成功（服务端 world.revive() 过）：关失败面板回对战；计时回拨已在服务端 state
+      const gm = phaser?.scene.getScene("GameOverMenu");
+      if (gm) phaser?.scene.stop("GameOverMenu");
+      keyboard?.setPaused(false);
+      $("#toast").textContent = "复活成功！";
+      setTimeout(() => ($("#toast").textContent = ""), 2000);
+    },
     onPhase: (phase) => {
       updateHud();
       if (phase === "won") {
@@ -571,6 +599,10 @@ function netHandlers(): NetCallbacks {
         phaser?.scene.stop("EndMenu");
         phaser?.scene.stop("GameOverMenu");
       } else if (phase === "gameover") {
+        // F 部复活钮显隐（oracle canRevive && !level.revived :60509）：庙域 + 服务端
+        // revived 旗标（R2 免费一次；A-E 部恒 false 不出钮）
+        (globalThis as unknown as Record<string, unknown>).__fwCanRevive =
+          currentLevel != null && templeIdOf(currentLevel.id) === "fairytales" && net?.room?.state?.revived !== true;
         if (!pausedByUser) phaser?.scene.start("GameOverMenu");
       }
     },

@@ -17,10 +17,35 @@ export interface TempleEntry {
   type?: string;
 }
 
-/** 关卡 id → 神庙目录名（第二部 light 入驻：/data/<temple>/temple.json；未知前缀回 forest） */
-export function templeIdOf(levelId: string | null | undefined): "forest" | "light" | "ice" {
-  const m = /^(forest|light|ice)_/.exec(levelId ?? "");
-  return (m?.[1] as "forest" | "light" | "ice") ?? "forest";
+/** 神庙键（=data 目录与 Temples 图集子目录；E 部七元素为 elements/<x> 共七键） */
+export type TempleKey =
+  | "forest"
+  | "light"
+  | "ice"
+  | "crystal"
+  | "elements/crystal"
+  | "elements/fire"
+  | "elements/forest"
+  | "elements/ice"
+  | "elements/light"
+  | "elements/water"
+  | "elements/wind"
+  | "fairytales";
+
+/** 关卡 id → 神庙键（light/ice/crystal 各部前缀；E 部元素关 e<x>_ 前缀 → elements/<x>；
+ *  E 教学 e_tutorial_<元素> → elements/<元素>（oracle elements/<x>/temple.json 含该教学关
+ *  条目，time/type 由此取——2026-10-31 勘误，前版回 forest 兜底取不到计时）；其余回 forest 兜底） */
+export function templeIdOf(levelId: string | null | undefined): TempleKey {
+  const tut = /^e_tutorial_(fire|water|wind)$/.exec(levelId ?? "");
+  if (tut) return `elements/${tut[1]}` as TempleKey;
+  const m = /^(eforest|efire|eice|elight|ewater|ewind|ecrystal|fairies|forest|light|ice|crystal)[-_/]?/.exec(levelId ?? "");
+  if (!m) return "forest";
+  const p = m[1];
+  if (p === "fairies") return "fairytales";
+  if (p.startsWith("e") && p.length > 1 && !"forest light ice crystal".split(" ").includes(p)) {
+    return `elements/${p.slice(1)}` as TempleKey;
+  }
+  return p as TempleKey;
 }
 
 /** 逐庙单例（forest/light 各一份；失败清对应项支持重试） */

@@ -10,6 +10,199 @@
   - 单条目 ≤2000 字符；超长细节（证据链/引文/逐项清单）写入 `note/` 对应档卷，此处只留档卷路径指针。
 - **归档规则**：条目老于 5 天，或本文件 >40KB 时，把最旧条目逐字原样迁入 `note/handoff/archive-2026-10.md`（插在该归档头部说明行之后，保持时间倒序）。
 
+**更新**：2026-11-12（路线战役收官：crystal_04 判死关第八案+独立复核；ice_03 G2 地板 4/462 深化收容；elements/fairytales 两案死关；SSIM+显著属性表+oracle-gold 普查落地；三门禁绿，停下待用户验收）
+
+① **crystal_04 → 死关候选第八案**（fw-route-crystal04 槽，10号档+research/10 号收容档）：可达世界=出生岛∪西高原∪中板西段，其中零门零水晶——P5 东段闸实体墙双向弹离（fb 永振 231↔441.3，冷却冲刺 5.4px<31px）+底厅唯二入口死链+14 水晶全在闭包外+不动点 f1199 目标物计数=0；fw-route-crystal04b 槽独立复核 2 断点+1 附加全成立（零新提交）。C0 段真机解 PASS 维持。台账 `note/research/2026-11-02-dead-level-ledger.md` 现 **八案待追认**。
+② **ice_03 → 深化收容**（fw-route-ice03 前槽 G2 12/112 → ice03b 槽 **4/462=0.87%**，11 号档）：v5=α-θ3 定稿，七轮架构续攻全劣于 v5，31 相位点全灭；结构性根因=45°楔面高度耦合×J2' 唇口余量 4.8px<捕捉噪声下限 5px 必炸；G1 门 0/86 满分维持、G3 stale 无从重解；kernel 全链 WIN 本身已实证，卡点唯鲁棒零门。复活线索在档。
+③ **elements/fairytales 立足点→两案死关**：eforest_1（第六案，机械闭包 BFS 138/272 段固定点，plateau 双门孤立上半区递归无基例，07号档）；fairies-02（第七案，四重断点：束圆挡/光死链/row24 角色封死/仙女袋 p1 竖板堵死，09号档）。两部首关全部阵亡；fairies-01 本就是第二案。
+④ **oracle-gold 铺开前置普查（18号档）**：复刻侧净版路线 9 关全 C 类（3 关 oracle 中途死+6 关超时，BITEXACT 9/9），「内核路线不可移植」首次系统实证且结局翻而非轨迹漂——铺开唯一有效供给=oracle 原生路线产线（单关时-天级），登记待裁候选复刻 INDEX §3.1 #12。
+⑤ **主会话三件落地**：SSIM 标准分量（visual-diff `diff.ssim`，基线带 0.7813–0.7887 三跑，benchmark/README 视觉差分节）；显著属性→量具→阈值总表（research/2026-11-06-replica-fidelity-metrics/02，11 行）；§3.1 #11① 收口。
+⑥ **收官门禁全绿**：typecheck 0 / vitest 64 文件 512/512 / det 241 关位级一致 vs r44-full（引擎与 packages 本轮零改动，全部产线/文档/工具件）。TEMP 陈槽已清。
+⑦ **停下待用户验收**，四件：八案死关追认（README 注记+corpus 标注；ice_02 可选 timeMs 5800 放行）、oracle-gold 铺开方向（§3.1 #12 立项与否）、三部游玩验收（用户保留）、perf/r44→main 回灌/发版（~260 笔领先）。
+
+**更新**：2026-11-06（复刻保真度评估标准调研——无单一国际标准，六域事实标准映射：oracle 对拍体系已 homemade 大半，真缺口=覆盖率与可引用分量）
+
+① **结论**（用户新需求调研）：数字保存领域 2025 权威综述（CLIR pub194）明示连模拟环境描述都无通用标准，更无"复刻度"评分标准；学术上 fidelity 几乎总作自变量不作被测指标。可用的=六域事实标准组合：反编译社区**字节级匹配**（zeldaret/oot shasum）、模拟器社区**录像回放+状态哈希/容差对照**（NESdev 工作流 + AccuracyCoin 147 测试）、形式化 **ioco 一致性**（Tretmans，ISO/IEC 9646 前身）、视觉 **SSIM/阈值像素差**（Wang 2004 IEEE TIP / pixelmatch 工业链）、音频 **BS.1770/R128**、保存学 **significant properties** 框架 + CLIR 的 execution/experiential fidelity 二分。
+② **映射修正（本轮最重要认知）**：det 241/241 是**自锚**（防回归层），oracle-gold 对拍网才是**原版锚**（复刻度层）——评估"复刻是否成功"只能用后者，两层不能混。项目已 homemade：oracle-gold 对拍（tolerance 30px、风相位 float64 闭环 3.55e-14、旋转 1.9e-4°）、visual-diff 自动分数带（90.55–92.86，容差像素匹配口径）、F4 逐键音量对表、动画状态级对拍、内容证据库——配置已高于 OpenRA/ScummVM 同类项目实践。
+③ **真缺口**：oracle-gold 覆盖 6/48 关（=旧挂账 1，卡 oracle 路线供给）；SSIM/LUFS 两个**可外部引用**的标准分量缺。候选登记复刻 INDEX §3.1 #11（①SSIM 分量 ~30 行待裁；②LUFS 默认不做；③Ruffle 不做——capture 基建已原版直跑）。
+④ 调研档 `note/research/2026-11-06-replica-fidelity-metrics/`（00-INDEX+01-survey，引用全链接）；主索引已登记。纯调研轮，无代码改动。
+
+**更新**：2026-11-05（r56 性能轮：内存常驻画像——判不立项，CPU/网络/内存三维度全闭环）
+
+① **最后一个未量维度**：55 轮全是 CPU/网络口径，内存常驻从未作主轴（r47 是分配速率、审计 H4 只裁有界性）。新量具 `perf-mem-residency.mjs`：双页真实会话 150s 浸泡 ×2，`--enable-precise-memory-info` 逐秒采样 + 每 10s 注入 1s 输入防死房假设。
+② **判据要点（本轮方法论产出）**：JS 堆是 GC 锯齿，**原始斜率不可作泄漏判据**——两场会话都测出 −750 KB/分钟「负斜率」（排空加载垃圾），符号由排空节奏决定。正确判据是 **GC 地板线**（30s 桶堆最低点）：五桶 26.8/26.3/26.6/26.2/27.0 MB，**地板斜率 +0.1 MB/分钟=平坦，无泄漏**。
+③ **缓存确定性计数（两场一致）**：纹理 20 键/24.6 MP 恒定、音频 26 键恒定（`BaseCache.getKeys()`——`cache.audio.keys` 不是可靠公开面）、房间实体 47/35 恒定；结合 r52 声实例上界，**四个分配源全部有界恒定**。堆常驻 ~27 MB，纹理像素属保真参数。
+④ **判不立项**：无可回收项亦无增长项。跨换关链累积驻留不在本轮口径（量具现成，实玩反馈触发即复测）。**战役格局：CPU/网络/内存三维度全部有实测裁决，射程内候选清零在三维度上成立；后续只剩 vendor 层（需专项授权）或实玩反馈驱动的定向轮。**
+⑤ **量具坑**：`window.__fw` 即 Phaser.Game 实例（无 `.game` 子柄）；房间在 `scene.d.net.room`。无产线改动。报告 `note/report/perf/2026-11-05-r56-mem-residency.md`，总账 §五十三。
+
+**更新**：2026-11-05（r55 性能轮：网络载荷口径实测——判不立项，战役域覆盖闭环）
+
+① **最后一个从未量过的域**：55 轮覆盖物理/分配/换关/选关/update/声池/时钟/布局，唯独没量过网络。新量具 `perf-net-payload.mjs`：双页真实会话，对底层 WS（`room.connection.transport.ws`，0.16 是 events/transport 包装）挂字节计数，怠速/运动双窗各 150 started 帧。
+② **量级即否决**：下行怠速 **~5.9 KB/s**（均长 17.2 B/msg）→ 运动 ~8.7 KB/s（+47%，载荷由真实状态变化驱动）；上行 ~2 KB/s 恒定。合计 ~8–11 KB/s/客户端。**注意口径**：per-frame msg 数随 headless 渲染 fps 漂移，per-second 才是真预算（消息率≈patch 率 60Hz）。
+③ **恒脏字段判不立项**：服务端每 tick 写 `state.f`（帧锚）+`timerMs`（HUD），每 patch 必带 4–6B ≈ 占怠速下行 ~30%（1.8 KB/s）——`f` 是 r50 起全部量具/e2e 的承重墙、`timerMs` 是显示语义、60Hz 又是 netopt 有意保真升频：红线三重。
+④ **出站恒发判不立项**：客户端每帧上报输入（~2 KB/s，怠速=运动），改变化触发可省 ~2 KB/s，但服务端「按住不放=恢复瞬间生效」的排水语义依赖持续上报——节奏即复刻语义。
+⑤ **量具坑两枚**：双窗探针前窗只还原 `sys.sceneUpdate` 不还原 `scene.update`，后窗把残留闭包当原件再包→首帧被踩死永挂（修法：以 `sys.sceneUpdate` 为活原件，完成时两处都还原）；Colyseus 0.16 connection 是 events/transport 包装。**战役格局：九域全部有实测裁决（已做/判负/不立项），射程内候选清零。**
+⑥ **门禁**：无产线改动（纯观测量具）。报告 `note/report/perf/2026-11-05-r55-net-payload.md`，总账 §五十二。
+
+**更新**：2026-11-05（r54 性能轮：`updateMechs` 数据布局重写信号预估——判负，r51 最后挂账关闭）
+
+① **量具先行再动代码**（r53.8 裁决线：整帧信号须 ≥15µs 才可判）：新量具 `perf-smoother-layout.mjs` 四臂括弧——Old 锚 / New 位级基准 / Arr 槽位布局原型（`slots[pos].key===key` 校验 + Map 兜底 + `beginFrame()` 游标）/ **NoMap 零 Map 天花板**（一次测量封死整个方向）。回放 400 真实帧 × 100 次/帧。
+② **确定性事实**：Arr 槽位直中率 **99.8%**、对 New 位级 **0 不一致**（帧内调用序稳定，槽位假设成立）；Old 5.38 vs New 3.69µs/帧（−31% 分离）证明量具区分力健在。
+③ **判负**：实型 Arr −0.14µs/帧（重叠不主张，×10 ≈ −1.4µs）；**天花板 NoMap −0.47µs/帧（分离）→ 整帧 ≈ −4.7µs ≪ 15µs**。Map.get 只占 ~5ns/次，大头是属性访问 × 缓存驱逐（JS 层物理成本）——**重写不做，产线零改动**。读码与测量互证：连续存储类改动可触及部分 ≤5µs/帧。
+④ **战役格局**：客户端射程候选至此**全部有裁决**——已做（r50 分配/r51 平滑器/r52 声池）、判负有测量（r51 合并/r54 布局）、不可判有理由（r50 两处分配整帧口径）。后续方向在射程外：服务端步进内核（vendor 83–97%）或网络载荷口径（从未量过）。
+⑤ **门禁**：无产线改动，量具纯 Node 侧不涉 tsc/vitest/det；trace 快照按 r51 口径用后即删（可 `--capture` 再生）。报告 `note/report/perf/2026-11-05-r54-layout-signal.md`，总账 §五十一。
+
+**更新**：2026-11-05（r53 性能轮：COOP/COEP 跨源隔离——页内时钟 100µs→5µs，r51 页内口径全数补判）
+
+① **改动只有两个响应头**（`serverHeadersMiddleware`，单测 4→6 头）：COOP `same-origin` + COEP `require-corp`——Spectre 类侧信道标准缓解（安全加固）恰好是解除计时器粗化的前提，两事合一。页内确定性验收（`perf-timer-res.mjs`，r51 TEMP 探针转正）：`crossOriginIsolated` false→true，`performance.now()` 量化 **100µs→5µs**（20 倍）；`Date.now` 1ms 不变（战役量具全在 performance.now，无影响）。
+② **兼容零破坏**：全站子资源同源豁免 CORP；WS 升级与 `/matchmake` 不经 express 中间件；e2e 浸泡（真实双浏览器 30s）PASS `errors=0`。生产注意：反向代理若剥这两头，页内回退 100µs 量化（游戏无感，量具口径退化）。
+③ **噪声底真相**：量化解除后消融噪声底仍 ±5.1–7.3µs——主要来自 headless **帧调度抖动**，量化只是其一。解锁的是块计时类量具；整帧消融分辨率未系统性改善，<10µs 段改动依旧不可判。
+④ **r51 整帧口径补判（最大收获）**：换臂重建法——旧平滑器入源→重建→**exp 断言故意失败确认旧码在跑**→同参数消融→恢复→exp ✓。旧 `__smoother` 43.0µs vs 新 32.9µs：**Δ−10.1µs/帧（−23.5%）可主张**。r51 四级主张齐备：确定性 −99.0% / 进程内 −32.4~44.5% / 页内 −40.6% / 整帧 −10.1µs（占整帧 ~5.5%）。
+⑤ **r51 页内 A/B 补判**：新 4.75 vs 旧 8.00µs/帧，**Δ−40.6% 分布分离可主张**（r51 时全被量化活埋）——热循环收益在页内不衰减。**合并判负维持**：Δ−7.7% 区间重叠，可回收真值 ~0.3µs/趟，三度确认。
+⑥ **门禁**：typecheck 0；vitest **512/512**；det **241/241**；e2e soak PASS。报告 `note/report/perf/2026-11-05-r53-coop-coep-timer.md`，总账 §五十。遗留：`updateMechs` 数据布局重写需信号预估 ≥15µs 才可判。
+
+**更新**：2026-11-05（r52 性能轮：平台电机声实例池——`sound.add` 新建/destroy 双归零）
+
+① **新角度**（来自 r51 顺带发现）：`startPlatformSound` 每次起步 `sound.add` 新建 Phaser 音效实例、限位即 `stop+destroy`——实例生命周期从未被量化。新量具 `perf-sound-churn.mjs`（包 `sound.add`/`BaseSound.destroy/play/stop`）在真实页面计确定性生命周期事件。基线（`forest_bonus_2` 300 帧）：**17 新建 + 19 销毁**，峰值并发 2；单次 add+play ≈0.09ms，新建占 ~75%。
+② **改动**：`platSndPool` 实例池——起步 `pool.pop() ?? sound.add(...)`，限位 `stop` 后 `pool.push`（原为 `destroy`）。语义等价四点：停掉的实例 `play()` 从头重播；每平台独立实例重叠数不变；池自然有界 ≤ 峰值并发；GameScene 重建时字段随实例重建无跨场景泄漏，`fx` 关/静音路径不变。
+③ **确定性量化**：同口径复测 **`sound.add` 17→0、destroy 19→0（双 −100%）**；play/stop 事件数随运动模式浮动非指标。耗时口径不主张（~5µs/帧期望节省低于噪声底，事件密度随玩法浮动）——r51 纪律第三次执行。
+④ **门禁**：typecheck 0；vitest **512/512**；det **241/241**。报告 `note/report/perf/2026-11-05-r52-platform-sound-pool.md`，总账 §四十九。遗留不变：`updateMechs` 需数据布局级重写、计时器粗化需隔离上下文。
+
+**更新**：2026-11-05（r51 性能轮：`updateMechs` 归因重构 + 平滑器确定性优化——并纠错 r50 的分段表）
+
+① **纠错优先（本轮最重要产出）**：实测 `performance.now()` 在本环境**量化到 100µs**（headless 非隔离上下文的 Chrome 计时器粗化，20000 次采样只有 0.1ms 一个非零差值）。**r50 分段表中小于 100µs 的段全部作废**：`updatePlatformSound` 真值 ~1.3–12.5µs（~7%），r50 报的 40.5µs（18.9%）是「撞 tick 帧数占比」的换算值。批量/消融/直方图三件独立量具同框交叉验证。
+② **消融法立为新口径**（`perf-update-ablate.mjs`）：不测段内耗时，测「把段拿掉整帧少多少」。`forest_bonus_2` 实测 `__views`（15 回调全空桩）**104.5µs（67.0%）**、`__smoother`（平滑管线归零）**34.5µs（22.1%）**、噪声底 ±5.5µs。坑：`cbXxx` 是 `bind` 出的**实例属性**，钩原型无效（r50 `sys.sceneUpdate` 快照同类坑）——首版 `cbPlatforms`/`cbLevers` 臂测出负值即症状。
+③ **热循环 ≠ 真实帧（6–15 倍）**：`updateMechs` 批量口径 8µs vs 消融 104.5µs；smoother 进程内 4.82–5.97µs vs 消融 27.5–34.7µs。页内工作集被 Phaser 渲染栈挤出缓存。**r49「合成输入只能探路」的量化版：批量口径连量级都给不出。**
+④ **主线（`MechanismSmoother` 两处，确定性可证）**：a) `k=1-exp(-RATE·Δ/1000)` 同帧单槽缓存（同帧 100 次调用同 `nowMs/deltaMs`）；b) 静止收敛快路（`vx=vy=va=0` 且 `rx/ry/ra` 逐位等于输入时三步收敛是 `+=0*k`，保留 `+0` 因 `-0` 符号位归一化是原语义）。**页内确定性计数：exp 100/帧→1/帧（−99.0%）、快路命中 60.2%**（`perf-exp-count.mjs`，300 真实帧，exp 桩只装 smoother 窗口内——首测 102/帧是因窗口外相机 `GameScene.ts:1967` 每帧还有 2 次）。
+⑤ **逐位等价自证**（客户端平滑器不在服务端 det 门禁覆盖内）：差分单测 40 试验 × 120 帧 × 7 关键（`Object.is` 含 ±0/NaN）+ ±0 专项 + 缓存跨帧隔离，**0 不一致**。进程内热循环 −32.4%～−44.5%（区间分离）——**页面口径不主张**（热循环不迁移；消融噪声底 18µs 埋掉信号）。按 r47 纪律分账：可主张=确定性计数，不主张=耗时。
+⑥ **r50 遗留候选判负（现已实测）**：`updatePlatformSound` 并入 `updateMechs`——`perf-plat-merge.mjs` 同页配对 15 轮：双趟 4.500µs vs 合并 4.500µs，**Δ0.0% 区间重叠**。可回收只有 0.90µs/帧（占整帧 0.5%）。r50 的定性判断有了定量支撑。**「按 16 类拆细优化」同样判负**：逐类回调成本全部低于噪声底。
+⑦ **顺带**：`stepWinds` 的 `[...values()].some()` → 惰性短路遍历，消除每帧每风区一个数组分配；`forest_14` 8 秒行为验证 `onCount>0 ⟺ sfx_wind playing` 全程一致。
+⑧ **量具坑三连**（全写进量具注释）：①`performance.now()` 量化 100µs；②实例属性钩原型无效；③**页内量具跑在旧构建上**——`dist` 是改动前构建的，`perf-smoother-ab` 两臂因此测出「新=旧」，靠确定性断言（exp/帧≤1.02）当场抓住。**页内量具必须先验证被测代码真的在跑。**
+⑨ **门禁**：typecheck 0；vitest **512/512**（+3 逐位等价测试）；det **241/241**。报告 `note/report/perf/2026-11-05-r51-update-mech.md`，总账 §四十八。新量具 7 件。
+
+**更新**：2026-11-05（r50 性能轮：客户端逐帧零分配化 + r45 stash 处置）
+
+① **新角度**：前 49 轮的量具覆盖服务端物理/分配/换关链/选关菜单/树烘焙，**唯独没拆过客户端 `GameScene.update` 内部**（r47 只量过「86.8% 分配在 Phaser 内部」这个总量）。
+② **新量具 `perf-update.mjs`（13 段分解）**：`forest_bonus_2` 实测 `updateMechs` **123.5µs/帧（57.7%）** + `updatePlatformSound` **40.5µs（18.9%）** = **76.6%**，且两者**都在遍历 `st.platforms`**；update 全程 214.0µs/帧。
+③ **两个量具坑（重要）**：**①包装原型上的 `update` 完全无效**——Phaser 在 `bootScene` 里 `sys.sceneUpdate = scene.update`（`SceneManager.js:636-638`）做了**一次性快照**，之后不走原型链；首版实测 `calls: 0` 采集 0 帧。必须包**实例**并重指 `sys.sceneUpdate`（12 个分段方法走原型链，包原型有效——两类分开处理）。**②单页进不了 `started`**——服务端权威双人房要双人到齐→ready 2s→started，须用 `scripts/e2e/lib.mjs` 的 `enterAs` 双页。
+④ **主线（两处逐帧分配，均从未覆盖）**：**a)** `stepPlatSnd` 每帧每平台新建 `{x,y,angle}` 字面量（47 平台 × 60fps = **2820 对象/秒**），而 `PlatformSoundTracker.update` 只读三值不持引用 → 改实例级 scratch。**b)** `updatePortals` 每帧新建捕获 `anyOpen` 的 `forEach` 闭包 → 改绑定回调 `cbPortals` + 成员标志。
+⑤ **量化（确定性，非统计）**：新量具 `perf-update-alloc.mjs` 用**对象实例身份计数**——28200 次 update：A 臂 **28200** 个实例 → B 臂 **1** 个（**−100%**）。耗时口径 −72.7% 但区间重叠 → **带内不主张**（分配是本轮主指标，耗时不是）。**口径坑：堆差对短命对象失明**——首版 `--expose-gc` + `heapUsed` 前后差两臂几乎相同（2,034,416 vs 2,034,560 字节），V8 把短命对象放 new space，回收后堆差归零。
+⑥ **探测后判定不做：静态资源压缩**。新量具 `perf-static.mjs`（真 HTTP）：首屏 3 chunk burst(cold) **88.96ms** / warm 12.21ms / 304 0.46ms；`brotliCompressSync` q5 单 1.4MB chunk **23.91ms** 同步阻塞。**不立项**：一次性成本（systemd 长期运行，每文件只在 cache 冷时压一次；全量 280 文件 77ms），预压缩只影响「重启后第一个玩家」且启动反慢 67ms。另 `statSync` 每请求仅 0.95µs、`compCache` 全量常驻仅 1.3MB。
+⑦ **r45 stash@{0} 处置：丢弃**（已 `git stash drop`，ref `3eeeec7`）。**但 r45 的数字是错的**：241 关聚合真值 **−1.43%**（CI95 [−7.63,−1.75]，t=−3.22，p=0.0022；空对照 Δ+0.14% t=0.90 证明量具无偏），r45 当年是**测量力不足**（8 轮臂内散布 ~80ms ≫ 4.7ms 信号）。**结论仍成立**：真实工作单元是**单关**（`World.reset(level)` 每次一关），−4.69ms 摊到单关 **0.019ms/关**，而单关构建 1.5–2.7ms、单轮散布 0.6–16ms（亲自复跑 `forest_bonus_3` 40 轮：2.32 vs 2.67ms）。**方法论：判定构建期改动用哪件量具取决于生产的工作单元——口径选错会让真实但无用的效果看起来像可优化项。**
+⑧ **门禁**：typecheck 0；vitest **509/509**；det **241/241**。报告 `note/report/perf/2026-11-05-r50-client-update.md` + `2026-11-05-r50-stash-disposition.md`，总账 §四十七。
+
+**更新**：2026-11-05（r49 性能轮：选关树烘焙内核——outlinePass 三角函数外提 −61.8%，内核合计 −27.8%）
+
+① **新角度**：前 48 轮从未拆过「选关树浮雕纹理烘焙」的内部（r48 只量过入场总时长）。本轮用新量具把它拆到 stage 级并做配对 A/B。
+② **先纠正错误前提（本轮最重要的方法论产出）**：首版量具用合成输入 `sparse`（2.1% 覆盖率）得出「行级短路只有 +0.6%」，**这是错的**——从未量过真实 alpha。用 `TEMP/r49-alphadump.mjs` 钩 `getImageData` 导出 forest 真实 alpha：**厚层覆盖率 39.83% / 29.57%，93% 的行有 alpha（稠密），不是稀疏**。合成输入把结论量反了，行级短路优化已撤回。**教训：合成输入只能探路，绝不能用来下「对产品是否有效」的结论。**
+③ **新量具 `perf-bake-cpu.mjs`（分阶段绝对耗时）**：真实 alpha 1036×864 重放纯 CPU 链——`outlinePass` **138.27ms（48.7%）** + `bevelColorMatrix` **114.76ms（40.4%）** 占 **89.1%**，合计 283.74ms。另查明 `toBaked` 1.5–2.0s 里 `(program)` 占 **70.3%**（headless SwiftShader 合成等待），JS 仅约 350ms → **headless 延迟不能代表真机**。
+④ **主线一（可主张）**：`outlinePass` 把 20 个角度的 `Math.cos/sin` 写在逐像素内层——真树数据 202,271 像素进入循环 = **810 万次三角函数**，而 `angles` 是循环不变量。预计算 `(cos,sin)` 对后：**138.3 → 53.7ms（−61.8%），区间分离**。
+⑤ **主线二（带内，零风险故保留）**：`bevelColorMatrix` 的 `o*WTX/WTY` 逐像素重算 → hoist 成 `offXY` 表：三层 −10.3%/−14.6%/−4.2%，合计 **−11.6%，带内不主张**（纯常量提取，位级必然相同）。
+⑥ **撤回的方向**：`sampleA2` 采样坐标表驱动——微基准 **−51.7%**，真实全链只有 **−6.6%（带内）**。原因：微基准只测采样循环，不含建表与缓存压力，而 bevel 有 61.4% 像素被 `satSum` 空盒判定提前跳过。已 revert，代码留注释记录失败。
+⑦ **本轮抓到实际缺陷（重要）**：表驱动改写漏掉 own 采样的 `fr()`，**33 条合成单测全绿而真实数据必红**（偏移 613864）。事后量化：漏 `fr` 在 24×20 随机噪声 144000 像素显形 **0 次**、均匀块 255 种 alpha 也 **0 次**，只在全画布真实结构下跨过 Uint8 台阶。→ **合成输入不能替代真实数据做等价性判定**，已写入测试注释与量具头注。另修两处位级必要条件：坐标分解须逐字同序（合并写法产生 1 ULP 偏差）；`FX=canvasW/Cf=0.99923`（不是 1）。
+⑧ **页面口径诚实分面（本轮最重要的负面结论）**：跨会话对比 toBaked 3968.6→1599.7ms（−59.7%）**不可采信**——非配对且基线录于改造前，差距主要来自当次 headless 帧率（budget=8ms 时帧率本身仅 ~13fps，`bakeSegment` 被帧数而非 CPU 主导）。**同会话交替 A/B（装 dist 交替，各 10 轮）：2254.0 → 2251.7ms，−0.1%，完全带内。** 三层账：内核只占总时长 12.5%，省下的 71ms 占 3.2%，被 ±20% 页面噪声淹死；其余 87.5% 是 headless 合成等待。**因此烘焙内核的 −27.8% 是真实但不可感知的收益，真机才可能兑现。**
+⑨ **门禁**：typecheck 0；vitest **509/509**（原 483 + 新增 26）；det **241/241**；`perf-bevel` 真实数据位级全一致。**另：收尾时发现 `packages/shared/src/kernel/build.ts` 挂着 r45 §5.1 的「已回退」实验改动（报告写已回退但工作区没清），已 `git stash` 隔离（`stash@{0}`，待裁决是否 drop）。教训：报告写「已回退」必须落到 `git status` 干净这一可验证事实上。**报告 `note/report/perf/2026-11-05-r49-tree-bake.md`，总账 §四十六。
+
+**更新**：2026-11-05（r48 性能轮：选关菜单进度读取 −99.8%，物理优化空间量到顶）
+
+① **新角度**：前几轮都在量服务端物理与换关链，本轮转到**从未量过的客户端选关菜单入场**；同时用新量具把「服务端物理还能不能继续优化」一次量到底。
+② **主线**：`starsOf` = `loadProgress()[f]?.stars`，而 `loadProgress` 每次 `getItem` + **全量 `JSON.parse`**；菜单入场时调用次数是 O(关卡数)（tree 路径 done 扫描+节点循环+烘焙 `stateOf`+平色回退；multi 路径 `computeLearnedElements`+每庙 `completedCountOf`+`rowsLevelState`+`templeHasNew`）。微基准（252 条 13.4KB × 332 次调用 × 9 轮）：**22410.6 → 37.6 µs，−99.8%，区间完全分离 → 可主张**。
+③ **改动**：`loadProgress` 按原文串记忆（每次仍读串，变则重 parse）；`saveBest` 先 `{ ...loadProgress() }` 复制——否则命中缓存时改的是缓存对象本身，`setItem` 抛错会把缓存污染成"已写入"。新增 4 条单测钉语义边界（外部写入立即可见/写入后读到新值/抛错不污染缓存/损坏降级），13/13。
+④ **页面端诚实分面**：新量具 `perf-temple.mjs`（冷缓存每轮新 context）基线 1147.0ms → 975.9ms(7轮)/1060.8ms(15轮)，**区间重叠 → 不可主张**。22ms 落在 1000ms 入场路径里只占 2%。**收益只在 `starsOf` 这一段可主张，不能说菜单快了 15%。**
+⑤ **新量具 `perf-step-cpu.mjs`（CPU 自时间归因）+ 可复用上限结论**：vendor 占 **83–97%**，自有内核合计仅 **2–16%**，`forest_bonus_2` 甚至 97.5%/1.5%。**内核微优化的收益上限被 vendor 压死**——这就是 r44/r47 CPU 收益全落噪声带内的原因。两个口径坑：vendor 是 `new Function` 装载、栈帧 url 恒空（不能按 url 分桶）；剖析器自开销会超墙钟、必须剔出分母。
+⑥ **四个量化证否**：**①「关节卡限位→整岛永不睡」现象真实但不可修**——新量具 `perf-sleep.mjs` 扫描 241 关有 **15 关**中招（`forest_bonus_2` 5 平台 |v|≤4.4e−16、sleepTime 14s、3000 步位移精确为 0）；上界收益 `ice_03` −79% 等区间分离，但四个修法全被否——平台经关节**直连 ground**，box2d 岛构建必然并入同一岛（实测 `[dynamic, static(ground), dynamic]`），"排除静态体"判据放行次数归零；"位形逐位不变即睡"则 det 13 关漂移。**②光束签名收窄**前提错误——无 `lightProperties` 的 fixture 走 `if (!lp) h.hit=true`，是**不透明挡光体**。**③`syncState` 的 `String(id)`** 只值 0.35µs/tick（0.002%）。**④`getSettings`** 12 处全在菜单/场景初始化，无一在逐帧。
+⑦ **量具噪声底披露**：`perf-sleep` 配对 A/B 的**对照组（226 关无卡睡体）平均 Δ 也是 10.6%、81 关假阳性"区间分离"**→ 单关噪声底约 ±10%，±15% 内数字一律不采信。
+⑧ **门禁**：typecheck 0；vitest **483/483**（原 479 + 新增 4）；det **241/241** 位级一致。报告 `note/report/perf/2026-11-05-r48-temple-progress.md`，总账 §四十五。
+
+**更新**：2026-11-05（r47 性能轮：服务端每步分配归因——character.update 占自有代码 9.8%，零分配化后 −9.9%）
+
+① **新量具 `perf-server-alloc.mjs`**：`node:inspector` HeapProfiler 采样，**只覆盖步进窗口**。关键坑：整进程 profile 会被启动期 module loader 淹没（首版 top1 是 `compileForInternalLoader` 20.9%，与步进无关）。
+② **归因**（`crystal_20`，分配最重关）：vendor 的 `b2PrismaticJoint.InitVelocityConstraints` 13.6% + `b2Island.Solve` 13.0%（禁区不动），**自有代码里 `character.update` 9.8% 是最大一块**，`updateAnim` 2.9%。
+③ **改动（`a533aa3`）**：脚底法线排序 `[...arr].sort` → 索引表；力向量/速度/冲量/原点由每步 6–8 个对象字面量 → 4 个实例 scratch；`updateAnim` 去掉 `GetLinearVelocity()` 结果的冗余拷贝。逐项核对 vendor 语义（`Copy` 逐字段保 −0 / `ApplyForce` 只读 .x.y 不引用 / `GetWorldVector` 写 out）确认位级中性。
+④ **量化分面**：分配 **11758 → 10594 B/step（−9.9%）**，两臂 3 次区间完全不重叠 → **可主张**；`character.update` 占比 9.8%→5.4%。单步 CPU（3 关×5 轮配对 A/B）**全部带内**（−2.9%~+1.3%，散布 19–65µs）→ **不可主张**。收益在 GC 压力不在单步耗时。
+⑤ **负结论**：客户端逐帧分配 **86.8% 在 Phaser 内部**（`batchSprite` 61.3%，查源码确认零分配，是采样内联假象），自有 client 代码 **0%**。客户端 WebGL 11.1fps 但帧内 JS 仅 1.7ms → headless SwiftShader present 阻塞，非产品问题。vendor 侧 26.6% 属永挂账禁区。
+⑥ **门禁**：typecheck 0；vitest 479/479；det 241/241。报告 `note/report/perf/2026-11-05-r47-server-alloc.md`，总账 §四十四。
+
+**更新**：2026-11-05（r46 性能轮：换关链客户端半边——黑幕与 fetch 并行，拉关等待 −67.4%）
+
+① **先量清结构再动手（本轮最大价值）**：新量具 `benchmark/perf-advance.mjs` 首次拆出换关 1.1s 的真实构成——黑幕淡入 **720.6ms（65%）**、拉关+回声 **319.7ms（29%）**、客户端场景重建**仅 61.9ms（5.6%）**。我最初假设重建是瓶颈，测量推翻了它。黑幕是 oracle 固定动画（改=复刻性偏差），故唯一可优化项是网络往返。
+② **改动（`7d627c0`）**：`reloadLevel` 原 `await fetchLevelCached` 再 `fadeSwitch`——网络往返整段暴露在玩家等待里，而黑幕淡入 500ms 画面本就是黑的。改为黑幕先起、fetch 并行；`FadeScene` 支持异步 ops（同步 ops 的 6 个调用点走 `Promise.resolve()` 路径，逐帧行为不变）；ops 抛错时立刻揭幕，不把玩家困在黑幕。
+③ **量化（配对 A/B 6 轮×5 次，内容回退法）**：`advanceSentToFadeIn` **312.4 → 101.7ms（−67.4%）**，两臂 24/22 样本区间**完全不重叠**（A 最低 191.2 / B 最高 160.5）→ **可主张**。总链 1117.3 → 958.2ms（−14.2%）但臂内散布 299–312ms → **带内，不主张**（收益被 500ms 固定黑幕稀释）。
+④ **顺带修的既有缺陷（`f2d83e4`）**：生产 CSP `script-src 'self'`（无 unsafe-eval），而 e2e 用**字符串**传给 `waitForFunction` → 浏览器拒绝（EvalError），`journey` 一进门就挂。11 处谓词改函数形式后 **7/7 全过**。`bgm` 模式另有测试自身采样时机问题，已确认与本次改动无关（未改客户端复跑同样失败），记录未修。
+⑤ **负结论（探测后判定不做）**：服务端真服 16 房 `--cpu-prof` 按窗归因——物理整体 22.4%、**自有内核仅 3.5%**、node internal 26.2%、colyseus 15.6%；容量已有 ~157 房/单核余量，服务端无 percent 级空间。每步构造器计数无可观分配（`b2Timer` 5/步已是零桩）。`syncState` 先比再写只省 1.4KB/tick、5µs/tick（预算 16667µs）。`updatePortals`/Beamer 闭包外提绝对收益 0.3–7.5µs/步且要动热路径。
+⑥ **门禁**：typecheck 0；vitest 479/479；det 241/241（含 switched 自洽断言）；e2e journey 7/7。报告 `note/report/perf/2026-11-05-r46-advance-client.md`，总账 §四十三。
+
+**更新**：2026-11-05 深夜（r45 性能轮：换关链 −48.8%、构建 −15.4%、world 常驻 −27.9%，首次拿到可主张正向收益）
+
+① **换关链双重构建（`da871b0`）**：`advance` 原是 `buildWorld()`（按新关整建）+ `restartLevel()`→`world.reset()`（同关再整建），第一次建的 World 从未使用。改法：`World.reset(level?)` 改绑 + 构造器/reset 抽出**同一条**构建链；`advance` 只建一次。配对 A/B（内容回退法 4 轮/臂）：**2.284 → 1.169ms，−48.8%**，噪声上界 6.2% → 超出噪声可主张。分部 −45.6%~−54.8%。
+② **b2Island 惰性预分配（`271ce12`）**：vendor 一次铺 5×1024 槽（positions/velocities 各 1024 对象），单空 b2World 224KiB 里 island 占 185KiB（83%）。`load.ts` 覆写构造器空数组起步，只改容量不碰方法体。**坑**：vendor 方法体直引 `b2Island.s_timer`/`s_solverData`，漏搬静态成员 → 首次 Solve `TypeError`，已逐个搬运。纯构建 241 关：434.01 → 367.11ms（**−15.4%**，六轮交替两臂分布完全不重叠）；单 world 常驻 896.9 → 646.6KiB（**−27.9%**）。
+③ **顺带修的复刻性缺陷（重要）**：`World.reset()` 此前不执行构造器的 `startFrozen` 初始冻结（oracle `if (f.startFrozen) _.delay(this.initialFreeze,10)`）。10 个含 55 型冰面砖的关（eice_1/ice_02/04/04_1/07_1/12/14/31/35/35_1）在 **retry 与 advance 后丢失初始冻结**。两条路径合并后一处修复；`perf-switch` 内置断言 0/10 → **10/10**。
+④ **门禁缺口填补**：`perf-determinism` 原只 `new World`，**reset 路径零覆盖**（正是③能长期存活的原因）。新增第三路哈希 `switched`（`reset(本关)` 后跑同一 scripted，须与 `scripted` 逐位相同）→ **241/241 逐位等价**；原锚 r44-full 仍 241/241。
+⑤ **新增量具**：`benchmark/perf-switch.mjs`（换关链 + startFrozen 断言）、`benchmark/perf-build.mjs`（纯构建 + `--mem`）。**口径教训**：同一 lazyIsland 在 perf-switch 口径仅 −3.4%（带内）、perf-build 口径 −15.4%（不重叠）——物理步进把构建占比稀释约 5 倍，构建期改动一律用纯构建口径判定。
+⑥ **回退的候选（负结论）**：groundFixture/quadFixture 顶点 scratch 复用。隔离实验 −19.2%，`-0` 陷阱已实证（vendor `b2Vec2` 构造器 `a||0` 归一 `-0`、`SetXY` 不归一，须补 `|| 0`），但真实全库 8 轮交替 A/B 仅 +0.68%（噪声 7.94%）→ 带内，**已回退**。ground shape 模板缓存同未实施。旧 b2World 泄漏担忧证伪（连换 50 次 GC 后仅 +5.87MiB）。
+⑦ **门禁**：typecheck 0；vitest 64 文件 479/479；det 241/241（含 switched 断言）。报告 `note/report/perf/2026-11-05-r45-switch-build.md`，战役总账 §四十二。
+
+**更新**：2026-11-05（r44 性能轮：六部 241 关首次进基准/位级锚；收益诚实判「不可量化」）
+
+① **测量基础设施补齐（本轮唯一硬产出）**：新增 `benchmark/perf-r44.mjs`（六部 241 关 step/build/alloc，分部聚合）、`perf-r44-alloc.mjs`（9 代表用例分配专测）、`ab-r44.sh`（内容回退法配对 A/B，交替跑取中位+臂内散布）、`results/det-r44-full.json`（**首个 241 关位级锚**，链哈希 `16650daa83db0548…`）。此前三个锚只覆盖 forest/light/ice 139 关，第 4–6 部与 portal/仙女/复活内核**从未有位级门禁**。
+② **收益判定：不可量化（如实记录）**。剖析显示全库 self-time 88.2% 在 box2d vendor；自有代码最大项 `world.step` 自身 2.2%、`mechanisms.ts` 2.0%。自有稳态分配差分法实测仅 ~29B/步且集中在 vendor 内部写法。客户端 CDP 堆采样配对 A/B：短窗单次见 −8.7%，**长窗（25s×3）两臂重合、臂内散布 4% > 臂间差 2.8% → 带内不主张**。故本轮**不作为性能提升上报**。
+③ **勘误（必读）**：`3a57b13` 提交信息列了 `world.ts` 改动但实际只提交 `mechanisms.ts`——内核免分配三件（仙女位置缓冲/传送门载体表/锁回调单例）当时**并未落地**，由 `08d5cf5` 补落。此后核对提交信息与实际 diff 须逐文件看 stat。
+④ **红线事实归档**：`ice_17` 0.356ms/步 = 94% vendor `SolveTOI`，oracle bundle（`output/A/js/init.eb02fbdab2aa1d24.js`，md5 `d637cb8c…`）逐字同含 `j.SetAwake(!0),k.SetAwake(!0)` → 原版行为，不动。`forest_bonus_2` 0.548ms/步 同为 vendor 求解主导。
+⑤ **顺带修复**：`9f9fd25` font-subset census 清单刷新（**既有失败**，`git stash` 验证在 `6c65c8d` 亦失败，非本轮回退）。
+⑥ **分支与版本线披露**：本轮在 `perf/r44`（自 `release/1.0-forest` 切出）。之所以未从 `main` 切：第 4–6 部与 portal/仙女/复活内核**只存在于 release 线**，`note/plans/2026-10-28-version-lines.md` 的「main 为源」规则当前与实际不符，回灌待用户定。
+⑦ **门禁**：typecheck 0；vitest 64 文件 479/479；det 241/241 位级一致。报告 `note/report/perf/2026-11-05-r44-six-temple-round.md`。
+
+**更新**：2026-11-02 晚（ice_02 批次收官：双侧收敛=第五死关候选 + etw/B2 终审 + oracle harness 抖动发现）
+
+① **C2 三部冒烟（814f3ff/6ec65ea/bc786f4）**：33/33 绿、CI temple-smoke 作业入门禁。重要发现：客户端 CSP（0.3.51 起）把 Playwright 字符串表达式拦成 EvalError——journey.mjs/lib.mjs 旧 e2e 件不可直接复用，新件须全函数化。
+② **etw 终审（79093b9/5ef82b4/a2b3d2f+复核 276ac9a/6960ae3）**：e_tutorial_water=oracle 固有死关（第四关）——唯一咽喉走廊 x[1120,1152] 三重封死，9/9 相位全灭（差 ≥60px）。主会话复跑发现 **oracle harness 运行间抖动**（中途采样 ±0.3px、末帧收敛）：oracle 档卷数值口径应读 ±~1.5px；复跑会覆写收容件（etw-harness.mjs:153），须先拷 case 到临时路径。
+③ **B2 oracle ice_02（d6de2e8..dd334c9）**：TimedPusher=hold-to-reset（压住每帧重置，推翻「一次性首压」）；末位过闸者窗口 ~337f<最优路 ~410f（缺口 ~73f），双侧同构死点候选。
+④ **ice02b 路线收官（f1b8673，诚实判负）**：内核 hold-to-reset 源码双证（mechanisms.ts:1335-1339，K=240f 主会话独立复算 246f@2f 步长）；正确窗口模型=末次离开+264f；fb 最优 262-266f 差 2-6f 刀锋、wg 314-319f 差 52f 冰拖角色物理墙（无动词可调）；60+ 配方 14 波，混沌三带交集空集。routes/ice_02.json 不出（无全链 WIN）。**ice_02=第五死关候选（双侧同构）**；台账 note/research/2026-11-02-dead-level-ledger.md。A2 前槽额度阵亡由 ice02b 继承收官（遗产 TEMP/fw-ri2-1 已归档清理）。
+⑤ **下一批已派**：ice_02 机制反事实（timeMs 4000→5600 副本因果验证）+ crystal_04 路线复产 + ice_03 路线复产。待用户：五死关追认/另一 crystal3 窗口去留/push（~48 笔领先）/三部游玩验收。
+
+**更新**：2026-11-02 早（ice_02 批次：A2 槽额度阵亡零提交后继派遣 + 三部冒烟 C2 槽收官）
+
+① **A2 槽（fw-route-ice02）额度耗尽阵亡**：53 分钟零提交（遗产全在 TEMP/fw-ri2-1 未落库），但未弄脏任何已跟踪文件。终态：I4 计时板开门/出板/腾空全通，v28 种子越池弧 fb 落 619 差生还界 ~630 约 11px 坠池（death=1893，wg[481,187] 存活）；阵亡前写好未跑的变体批 v-batch1.json（W1 前缘修剪/W2 超级跳三档）。遗产=evalchild 直评探针管线（probe1/probe2/surface/surface2/trace-v28）。
+② **后继派遣**：fw-route-ice02b（继承 TEMP/fw-ri2-1 现场，第一步跑 v-batch1，目标 I4→全链→routes/ice_02.json 或诚实失败档卷，细粒度提交防额度中断）；fw-oracle-etwater（e_tutorial_water 通关性终审——三部冒烟替代选关的挂账项，补全死关台账，档卷入 2026-10-31-oracle-adjudication/ 下一空闲号）。
+③ **B2 槽（fw-oracle-ice02）仍在运行**：oracle ice_02 取证进行时（note/evidence/2026-10-25-ice-temple/tools/oracle-ice02-* 未跟踪件为其文件域，勿动）。C2 槽（三部冒烟+CI）已收官验证：814f3ff/6ec65ea/bc786f4，33/33 绿，CSP 拦 Playwright 字符串表达式发现记档。
+
+**更新**：2026-11-01 晚（autosearch 定稿管线三修落地 + f0 NaN 机理勘误——e_tutorial_fire 十二轮「定稿必败」史终结）
+
+① **三修（fw-autosearch-fix 槽，ded4ef3/00a2b9c/53bb772/dc5972b）**：a) trim 驻留件地板 dwellFloorOf+goTo 完成帧零出力包装实修；b) 缓沉行程窗=链侧 v5.1 已解（37c87b8）；c) evalchild 残留面收口（finalize drive 重放下沉 finjob 子进程，父进程全程零 makeWorld）。**E0 实战回归 2/2 段解**（E0 trim[5,2] seamEntry@382 / E1 trim[5,7] seamEntry@520，12 轮假败史终结）；crystal_03 冒烟 2/2 无回归。档卷 note/research/2026-10-autoplay/06-autosearch-finalize-fix.md；单测 4 例（node:test）。残留穷举Fatal=1=配方族头部 ±1f 物理脆性，非进程漂移，如实记档。
+② **f0 NaN 机理勘误（主会话，86dfe80）**：A 槽「首帧按键 NaN 力永久毒化」误诊——NaN 力被 character.ts:297-298 施加守卫静默丢弃（oracle @63321-63330 逐字同构），实测松键一帧即初始化、再按唤醒睡眠体完全恢复（probe12-f0nan 直测件收容）。内核零缺陷不改内核；06号档 §7.6 勘误。
+③ 门禁：typecheck 0；vitest 64 文件 479/479；autosearch.test 4/4；packages/** 零触碰。根 TEMP 归零（4 个 10-28 废提交草稿+fw-of-1 孤儿件清除）。
+
+**更新**：2026-11-01（四槽并发批收官：crystal_03 终审=oracle 固有死关（wg 门不可达，双侧同构）+ e_tutorial_fire 复核维持 + oracle 连续通关档卷；门禁全绿、零内核改动）
+
+① **crystal_03 终审（05号档-oracle-crystal_03-wg.md，2da9091）**：oracle 侧 wg 自然机制不可达 door2——col-8 竖墙+P7 实体带 isSensor:false+448 板东段无自然登板，22 变体/6 进路零入舱；门机制健康（预置舱内 isUp/双门同帧 WIN@f159 正控）。内核五重封死（route-samples/06号档 §7）逐条同构=双侧同构封锁非内核缺陷；01号档「可通关」环 12 系 fb 侧单边证据，已追加勘误。**crystal_03 入 oracle 固有死关候选（第三关），账目处置待用户追认**；route JSON（C0-C4 诚实未胜稿）与 checkpoints v13 留库。
+② **A 槽环 9-12 内核连链（51758f7/83229a7）**：fb 全通至门（atDoor=true 零死亡，站门 446.32）；环 9 落点 749.7 与 oracle 槽逐位互证；wg 五重封死（板东段不可达/带东向强制/horizon 钉 278.4/落点右界 17.8<25/腔室闭环）。附带实证 currentRunForce 首帧 NaN=全部配方 sleep(3) 根因，f0 护栏候选待裁。
+③ **e_tutorial_fire 独立复核（B 槽，cf041d2/0d3776e/73524ac）**：02号档 追加式复核 11 案承重数字全一致（站跳 118.9 逐位复现/削顶 537.2/mesa 自锁 p1→848），维持 oracle 原件不可通关（该裁决昨日 fw-oracle-efire 已完成，本次系重复派发后改复核）。
+④ **oracle 连续通关（C 槽，04号档，01a9e99..d25c4cb）**：10 轮 v9-v20 无 WIN；环 1-9 单脚本连续链+环 9 首次连续捕获+帧级时序表；压板质量感应 platTr 0→−0.7333→0 42f 扫摆实证；三存疑由 05号档 收敛（钉位=接触法向抵消非引擎冻结/柱体几何修正 [256,288]×[64,160]/出口散布 1.4-12px 有界）。
+⑤ **并行会话注记**：同日 13:38-14:09 前一 crystal3 窗口落五笔（11ec875 checkpoints v12/693fcad route 导出/117dc49 06号档/ffdb607 收容/68af028 本文件「## 条目」区前插）——与本批三槽文件域无冲突且互证良好；其 TEMP 清理使 resume 件缺失（可由 v13 配方重建，fw-rc3-1/README 注记）；窗口去留待用户定夺。
+⑥ **门禁**：typecheck 0；vitest 64 文件 479/479；det forest 48/48+crystal 36/36 位级一致；packages/** 自 723e934 零触碰。全部产物在 note/evidence/{2026-10-31-oracle-adjudication,2026-10-31-route-samples}/。
+
+**更新**：2026-10-30（续作开发并发批启动——六槽分工并发推进；契约与待办序沿用同日"续作三部开发启动"条目（e735e1c））
+① **分工**：主会话=portal 内核（crystal 184+E 50+F 16 处依赖）；并发子槽六路：fairy-view（F 部仙女/杯客户端 View）、emenu（E 部 multi 选关 UI：条带+rows 网格+元素学习门）、respawn（RespawnManager 检查点/复活）、net（仙女拖拽输入/状态同步/netDto 契约更新）、cov（覆盖率阈值恢复抬升，接 cb697dd 临时下移注记）、docs（文档收容：三部取证要点入 playbook §9–§11+00-INDEX 登记+README 进行时注记）。
+② **契约**：各槽以 e735e1c 条目为共享契约源——待办序 portal 内核→respawn→net→三部 det 锚（r0-crystal/r0-elements/r0-fairytales）→客户端 View→路线样例→总门禁+发版；ice 锚用 r2-tpgate；验收口径=免我方视觉测试、逻辑一致，游玩验收归用户。
+③ **边界**：并发期间子槽禁改 packages/**（主会话落码中），文档改动限定 note/ 与 README；取证一律以已落库档卷为准（note/evidence/2026-10-30-{crystal-temple,elements,fairytales}/）。
+
+**更新**：2026-10-29（1.0.4——外网真机测试：修窄屏 HUD 裁切 + DEPLOY 关卡构成更正）
+① **外部测试面**：从公网（非本机回环）对 110.42.36.114:2567 全量打真机——双客户端 58-61 patch/s 两端角色坐标逐位一致（服务端权威实证）、5 房并发房号唯一/超员锁房、断网 paused 冻结→恢复 started、刷新回座、iPhone 描述符触屏三键驱动角色。报告 note/research/2026-10-29-external-deploy-testing.md，脚本留档同目录 2026-10-29-external-test-tools/。
+② **唯一真缺陷**：390px 竖屏 HUD 顶栏 nowrap + 居中无上限 → 内容 617px 左右各溢出 113px，房间码与邀请钮被裁。修法是 max-width:calc(100vw-16px)+flex-wrap+≤560px 媒体查询；320px 档 `#hud-room` 作为 flex item 仍按 min-content 撑出 ±12px，需再给 white-space:normal+min-width:0。实测 390px 由 -113..503 收敛到 98..293。
+③ **回归门禁**：新增 scripts/e2e/hud-narrow.mjs（6 视口×5 断言=30 条）接入 ci.yml browser-room 作业；负对照实测——回退 CSS 精确产 5 条 FAIL，证明门禁真能抓。
+④ **文档勘误**：DEPLOY.md 原称「48 关（forest_01–47）」事实错误，实为 32 主关+12 `_1`+3 bonus+教学关，编号止于 forest_32，无 forest_33–47。已改；多关卡冒烟改测真实关卡全绿。
+⑤ **测法两坑（曾造成假失败）**：跳跃高度不能 Node 侧定时 evaluate（跨公网往返 100ms 漏顶点，随机 0~39px）；触屏须 CDP 顺序注入并按压 240ms（90ms 只抬 23px，tap 并发对消恒 0）。详见留档 README。
+⑥ **上线**：1.0.4 已部署 /opt/slbhr/gy-fw-forest-1.0.4，NRestarts=0、内存 53MB、负载 0.03、零 error 日志；线上 dist 复跑 hud-narrow 30/30 ALL GREEN。旧版目录与 tar 已清。
+⑦ **二次部署（用户令「推送后再次部署」）**：从 HEAD 重建→打包（01dba89）→上传校验→停服换目录→`./deploy.sh --public` 八项验收全绿（patch 59.4/s）。公网复测四组全绿：hud-narrow 30/30、net-test 双端 58.2/58.8、play-test x96→482 两端一致、reconnect paused→started。线上 HTML 与本地 dist 同哈希 75b25413。旧目录已删。
+⑧ **回灌补齐（重要）**：HUD 修复与 hud-narrow 门禁原先只落在 release/1.0-forest，违反本仓版本线方案 §四（UI/引擎修复必须回灌 main）。已 cherry-pick 至 main（f610723 / 5e6c2b9），main 上重建+门禁 30/30 全绿、typecheck 零错、CI success；两分支 index.html 与 hud-narrow.mjs blob 现已逐字节相同。
+
+**更新**：2026-10-28（1.0.2——一键部署闭环 + 三部分发共用打包链）
+① **交付形态**：包内新增 `deploy.sh`（自检→生成 systemd unit→起服→验收，一条命令到底）与 `verify.mjs`（9 项：healthz/首页/关卡清单==包内实装/本部首关 200+别部 404/音频流/建房/双人 started/patch 持续/浏览器进 Game）。服务名 `gy-fw-<部>`、端口缺省、本部首关、成员边界全部由包内 `data/` 自动认定，三种包共用同一份脚本。实测干净目录 `./deploy.sh --no-service` 全绿。
+② **打包链参数化**：`package-deploy.mjs --temple forest|light|ice`，剪裁集由该部 `temple.json` 清单推导（不再硬编码文件名；清单对别部教学关的交叉引用属本部内容、保留）；`--plan` 只打印计划。首关推导收口到 `scripts/first-level.mjs`（处理「首关在 tutorials」「ice 清单 initial 指别部关」两陷阱），打包器/verify/CI 三处复用。
+③ **修 1.0.1 验收假阳性**：③ 原按 `forest_` 前缀判，对 light/ice 包会误报（其清单合法含 forest_01）→ 改为「服务端清单 == 包内实装」，多则夹带、少则漏剪。
+④ **CI**：release-asset tag 守卫扩为 `1.*/2.*/3.*`，主线号→分部映射写死 Guard 内，解包复验新增「别部 data/图集不得残留」；新增 drift-check.yml 周检各 release/* 相对 main 的落后量（阈值 20 提交/7 天）——补 #51 里「分发线安静腐烂」的流程缺口。
+⑤ **实测**：forest 包 48 关全绿；light 包 41 关用同一套脚本全绿（含干净目录一条命令部署），包内确认无别部 data/图集、无 .ts、无 __tests__。版本 1.0.2 六处一致。
+
 **更新**：2026-10-28（1.0.1——分发线开局必崩根治 + 真开局验收门禁；#51）
 ① **根因三层**：①编译链——包发 TS + `node --import tsx`，tsx 4.23.15 的 useDefineForClassFields 归一化只在 CJS 钩子、ESM loader 不读，包内又缺 tsconfig → `x!: number` 编成原生 class field 覆盖 schema 访问器 → 首次增量广播 encodeValue 崩、整进程带崩；②分发线停在 0.3.55，缺 0.3.56 的 seedrandom CSP P0（浏览器也进不去 Game）；③§5 第⑥步只 create→leave，状态从未广播增量，崩溃路径零覆盖。复盘 note/issues-2026-10-20/51-deploy-startup-crash.md。
 ② **修复**：state.ts 64 字段改 `declare`（任何转译器都不产运行时字段，根治）；package-deploy 改 esbuild 逐文件预转译（不打包→import.meta 锚点天然正确），目标机直跑 .js 不需 tsx；新增 schemaSelfCheck 启动期 fail-fast（坏产物实测报 64 项）。
@@ -75,6 +268,13 @@
 ⑥ **挂账分流**：Colyseus 0.18（12 漏洞含 1 高危 nanoid，候选待裁档已有）；#49/#50；noUncheckedIndexedAccess 实测 304 错随 #49 推进；staticGz 预压缩可选；~/.qoder detached 工作树含 209 未并入提交（10-23 r42/r43 线，patch-id 与 main 全不等价）去留待用户裁决。
 ⑦ **0.3.52 发版**：45 文件 319 测试绿（+4）、typecheck 零输出、bump --verify 六处一致；CI run 40511798794 八作业绿后注解 tag 0.3.52（同指 477c484）+Release 已发（Latest，无附件口径）。
 
+**更新**：2026-10-30（续作三部开发启动——crystal/elements/fairytales Phase 1 全落 + F 部内核两批，用户令"继续开发后面几部，免视觉测试保逻辑一致，之后用户验收"）
+① **三部 Phase 1 入库**：crystal 35+4 关（44b62c1，portal×184 唯一新机关）/elements 32+3 关（2935bb7，六元素 1.json 撞车以 e<元素>_ 命名空间化+temple.json filename 同步改写；cover=纯视觉忽略）/fairytales 30+2 关（5e79de8，Tiled 1.x 归一化解析+共享 Chars/Objects tileset 加性合并 id8 fairy/id3 fairycup）。三部 tileset 与 repo 语义级一致或加性空洞合并，A–E det 三锚（r0-baseline/r0-light/r2-tpgate）位级一致零影响实锤。
+② **F 部内核**（dc2cd83+da42ec2）：Fairy 零重力体+anchor-elbow-ball 刚性链+mouse 拖拽关节+Lissajous 悬浮（仿真钟/按序偏移替代 oracle 墙钟/构造随机，偏差记档）；FairyCup 杯口 r1.3 sensor 色配+按钮语义派发；锁链 25+3 只解析。fairies_000 拖 group4 仙女入 group41 杯 state 0→1 与 oracle 实跑逐点吻合；363 测试绿。
+③ **取证槽**：E/F 槽已收官（note/evidence/2026-10-30-{elements,fairytales}/，cover 语义/multi 结构/引擎同源/fairy 三件套全解）；**D 槽（portal 语义）超 2h 未归已问询**。E 槽勘误：portal gid 逐关随 LargeObjects firstgid 漂移，严禁硬编码。
+④ **待办序**：portal 内核（等 D 槽，crystal 184+E 42+F 16 处依赖）→ RespawnManager 检查点/复活（canRevive 复刻为免费一次，档卷 R2）→ net 批（仙女拖拽输入/状态同步/netDto 契约更新）→ 三部 det 锚（r0-crystal/r0-elements/r0-fairytales）+CI 作业 → 客户端 View（portal/仙女/杯/E 条带 UI）→ 路线样例 → 总门禁+发版。ice 锚注意：现行=r2-tpgate（10-28 重锚，勿再用 r1-ice）。
+⑤ 用户验收口径：免我方视觉测试，逻辑一致为准；游玩验收由用户做。
+
 **更新**：2026-10-27（GitHub Issues 全量清偿批 + 0.3.51 发版——该批 16 件开放 issue 全数关闭（#49/#50 同日新挂账另立，见⑦）、TEMP 清库归零（口径：gyのFW/TEMP））
 ① **16 issue 修复关闭附证据**（#32、#34–#48）：ice 雪地碰撞+冰面摩擦移植（det 重锚 r1-ice，4870d55/ec03e06）；won 双断线补发解耦（a7d08e3）；重连 5s 护栏+tryResume 清理（c7a62b0）；冰膜索引同域化+机关视图跨关清空（1a52f66）；客户端低危七件（097a2f7）；占座 DoS 密码前置（6852825）；matchmake GET 放行（afffb28）；bump 脚本跨平台事务化（86b112f）。教训：issue 关闭曾只落一半（8 个开放 0 评论），gh issue list 实查后补齐——"自述不算完成"再次验证。
 ② **安全面 #45**（791501c/c3bb076）：Origin allowlist（FW_ALLOWED_ORIGINS）+WS verifyClient+CSP（内联 hash 启动提取）+/api 固定窗口限流+levelExists stat 缓存+房间 onUncaughtException 隔离+staticGz 方法闸门；vite ^6.4.5。
@@ -106,6 +306,43 @@
 今日（2026-10-20）起新条目写在文件顶部。
 
 ## 条目
+
+**更新**：2026-11-01（oracle 四裁决批收官：两关原版固有死关定谳 + portal 贴面语义修正落地 + fairydrag 产线 + crystal_03 C0-C4 求解/C5 封印）
+
+- **oracle 实机裁决×3**（output/D/E/F 本地快照 headless 探针，全程只读）：①e_tutorial_fire=**oracle 原件不可通关**（双门与出生区零物理通路，实测跳升 118.9px vs 需 160）；②fairies-01=**oracle 原件不可通关**（上层四道封顶隔绝+杆-柱循环自锁，两轮全流程无 WIN）；③crystal_03=**oracle 可通关**（12 环路径逐环实测）。档卷 note/evidence/2026-10-31-oracle-adjudication/01-03 号档+工具集。三样本关数据与 oracle 逐字节一致（38 件审计）。
+- **内核语义复核（主会话直测）**：A 槽五项缺口候选全否决（P6 带扫掠=oracle 一致/平台柱受压上移 96px=oracle 一致/Pusher-Lever 逐字同源）；F 杆解析锚点偏差（oracle (256,448) vs 我方 (288,416)）记档为后续课题。
+- **portal 贴面即传修正（真内核修复，b0566ae）**：checkTransport 近面带 0.2+ε（ε=0.02m）——oracle=begin-contact 贴面即传，我方求解器分离距 0.2003 使慢走贴门永不触发（须快穿）；crystal_03 三度封锁根因。r0-crystal（6 关）/r0-elements（1 关）重锚（漂移纯 scripted），余四锚不变。
+- **fairydrag 产线（C 槽）**：botcore S2.fdrag/frelease+fy 轨双通道（kernel 回放+route-node 派发）+autosearch SEGF；F0-F2 段实证（仙女拖入杯端到端）。
+- **crystal_03 route**：三槽累计——C0-C4' 全链搜索求解并导出（route JSON 1285 帧在库，**非通关稿**：C5 未解真服 0/3 如实记录）；C5=穿 544 屏障段，净升 119<128 封印（oracle 可通 vs 我方不可达的矛盾留档，06号档 §6/05号档 §7——下一步=oracle/内核同坐标系并排站位探针裁决）。CI 未纳入（无通关 route）。
+- **工具链**：fixture 四 main 基线重录（纯新增快照键 9 枚，6/6 PASS）；autosearch 多项定稿管线修复（beam 摊平/finPass 直传/walkTo 刹车门/holdLev）。
+- **门禁**：typecheck 0；vitest 64 文件 479/479；build 过；det 六锚 241 关位级一致。
+- **待用户**：三部游玩验收（crystal/elements/fairytales 已可玩；两教学关原版固有死关与验收无关）；验收后 bump 1.0.5 + 归并 main 裁决。
+
+**更新**：2026-10-31 三（夜批：route 样本关三槽 0/3 全撞硬边界如实写档 + F 部打磨/跳速修正落库）
+
+- **route 样本关批结果（零造假，全部档卷化）**：fairies-01=通关必须仙女拖拽（botcore 无该原语，p1 封锁 R25L 实证，03号档）；e_tutorial_fire=12 轮搜索 E0 段内达成但定稿 trim/seam 败（autosearch 工具链已知问题）+疑似结构不可通关（02号档 §4）；crystal_03=C0-C3 内核实证解、C4 必经触发态不可达（停驻升降柱封死，01号档）。**关键交叉证据**：e_tutorial_fire 等三样本关 JSON 与 oracle 逐字节一致（主会话 38 件字节审计）→「不可通关」若实属 oracle 原件固有或我方平台/电梯语义保真缺口，两条候选待 oracle 实机裁决。
+- **route 批衍生内核修正（已落）**：F 部跳速 per-vintage——fairies 前缀 16.5、A–E 15.5（六部原型字证；fairies-01 槽量化背书 0.3-7px 临界 vs 5-15px 余量），jumpVelocityOf(levelId) 注入 Character，r0-fairytales 重锚。
+- **F 部打磨两件（已落 263fc98）**：仙女尾迹粒子（Navy0000/700ms/LIGHTEN/速度分档 18-90-162 粒·秒⁻¹）+ dark 关仙女 r220/杯 r60 光源。
+- **后续裁决项（归用户/5.3）**：①oracle 实机探针裁决 crystal_03 电梯初位与 P6 带、e_tutorial_fire 门区（oracle 快照本地可跑，headless 探针件先例齐）；②botcore fairydrag 原语扩展（route 通道+fairydrag 消息，解 F 部 route 族前提）；③autosearch 定稿管线三修（trim 保驻留件/缓沉行程建模/进程隔离，02号档 §5）。
+- **门禁**：typecheck 0；vitest 64 文件 478/478；build 过；det 六锚 241 关位级一致。样本关未入 CI（无 route 产出，按计划只收已验路线）。
+
+**更新**：2026-10-31 二（代码逻辑验证轮：数据矩阵零差异 + 三缺口补链 + route 评估挂账）
+
+- **数据接线矩阵**（241 关×13 庙）：oracle↔我方 temple.json 序配对逐字段 diff=0（time/mobileTime/required/unlock_key/elements/type 全同）；E 部条目无 type 字段=oracle 忠实；e_tutorial 前缀映射勘误后 241 关 templeIdOf 全命中；portalId 桶普查 218 门 109 对零异常。
+- **三缺口补链**（逻辑验证查出）：①客户端 portal 渲染全链（门框/center40f/glow30f/子灯，30fps oracle 字证；开关态走新 PortalState 下发）；②F 部复活 UI 链（GameOverMenu 第三钮 canRevive&&!revived→revive 消息→world.revive→revived 广播，R2 免费一次）；③e_tutorial_(fire|water|wind)→elements/<元素> 映射（teaching 关 time 不再 forest 兜底）。仙女拖拽命中 40→136px（oracle hitArea 字证）。
+- **验证**：typecheck 0；vitest 64 文件 477/477（新增 portal-net 真房集成 3 例：crystal_04/ecrystal_ez-1/revive 相位门禁）；build 过；det 六锚 241 关位级一致（portal/revive 批纯 net/客户端面+world 复用，物理零扰动）。
+- **route 评估（如实挂账）**：autosearch 产线就绪但每关需人工检查点链设计（先例 light_01/02 各占独立批次）；三部样本关（crystal_03/e_tutorial_fire/fairies-01）未做，挂账为后续逐关批次，不阻塞游玩验收（真房冒烟+单测+det 已罩逻辑面）。
+- **待用户**：游玩验收三部（dev 起服即可）；验收通过后 bump 1.0.5 发版 + release/1.0-forest 归并 main。
+
+**更新**：2026-10-31（三部并发批收官：portal 内核全链路 + F 部客户端/网络 + 三部 det 锚 + 覆盖率恢复）
+
+- **portal 内核**（D/E 部）：0978a05 内核（portalId 配对/双 fixture 4096/组电路开闭/transport 数学逐字/低速钳 10·mass⁻¹/200ms 每体冷却/假墙 connectToWall）→ 02efc1d 光束穿门（getOutput/getPoint 两套公式照抄）+ 体角正号勘误 → crystal_04 真数据集成测试（9 件）。与原版两处已记偏离：接触回调改逐帧几何近面判定、transport 不嵌套积分一步（01号档 §1.3/§1.4）。
+- **F 部收口**：RespawnManager 内核（ce7f130）+ world 四挂点/revive() 免费一次（602de18）；net 槽 schema/fairydrag/syncState（e4d3e9c/4460b61/30830cf）；fairy-view 槽仙女/杯/cover 渲染+拖拽+组色异表（70420bb/50de49b/e000404/cd11ecd）；emenu 槽 E 部 multi 选关+SoftLock（45bae04/66e6def）。
+- **勘误**：仙女出生点 y 恒低 32px → 图块中心（oracle F L59002 字证，7254417，r0-fairytales 重锚）。
+- **det 六锚**：r0-crystal(36)/r0-elements(35)/r0-fairytales(31) 入库（fdf9638），CI determinism 扩六锚全量比对；portalId 桶普查 218 门 109 对零异常。
+- **覆盖率**：fw-cov 批 50 例补测，阈值恢复抬升 90.78/82.23/90.33/91.53（3814638；cb697dd 临时下移注记清账）。
+- **门禁**：typecheck 0 错 / vitest 63 文件 472 例全绿 / build 过 / 六 det 锚 241 关位级一致。
+- **待用户**：①三部游玩验收（免我方视觉测试口径）；②分支归并——本会话全部工作在 release/1.0-forest（与 main 互有领先），是否合 main 待裁决。
 **更新**：2026-10-26 六（**light 路线批收官 + 0.3.49 发版——前会话五项计划（light 路线→体验定稿→打包轮→ice 立项）全数完成**）
 ① **light_01 通关路线入库**（9e57372）：箱舞 mount（东推带镜箱≥1045 让缝→穿缝→越箱过东→点喷推回 988-1034 亮窗→1048 静定 {up,left} 飞越 c29 坡链）+ 伺服滑钮（亮窗实测 S∈[455,466]，走推必过冲至 473，1-2f 点喷+滑停入窗）。FSM WIN@f2914×3 逐位一致→路线 JSON 内核回放 WIN@f2943+validate 0+真服 route-node 3/3 PASS。
 ② **接线考古**（light_01 攻坚最大产出）：lever(g2) 体在基座台顶 (862,385) **走近即翻（sensor，不按键）**→rotMirror(1021,163) 转 90°→黄光上折→g42(1024,32) 亮→p1 沉（+90f）；翻杆不可逆——黄光永离东侧→g41(1208,736) 永灭→p2 永升台口封死⇒**双人须先过台口再翻杆**；fb 候杆驻停必须 ≤810（v34 停 859 压杆 sensor 酿无翻杆翻杆）。档卷 note/evidence/2026-10-26-light01-route/（接线表+l1both35.mjs）+note/light01-route.md。

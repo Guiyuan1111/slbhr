@@ -40,6 +40,8 @@ export interface SfxMessage {
   group?: number;
   state?: number;
   role?: Role;
+  /** 传送门音效键（kind="portal" 专用：portalOpen/portalClose/portalTransport） */
+  sfx?: string;
 }
 
 /** pause-changed 消息载荷（F3：服务端权威玩家暂停，双端广播/重连补发） */
@@ -55,6 +57,8 @@ export interface NetCallbacks {
   onSfx?: (p: SfxMessage) => void;
   /** 玩家暂停状态翻转（服务端权威；本端发起的也会经广播回来，不本地抢先置位） */
   onPauseChanged?: (p: PauseChangedMessage) => void;
+  /** F 部免费复活成功（服务端 world.revive() 过；参数=回拨后的关卡计时 ms） */
+  onRevived?: (p: { timerMs: number }) => void;
   /** phase 迁移（onStateChange 差分，带前值） */
   onPhase?: (phase: string, prev: string) => void;
   /** 关卡切换（onStateChange 差分；活房间 advance 换关回声，双端同触发） */
@@ -151,6 +155,7 @@ export class Net {
       cb.onRole(role);
     });
     room.onMessage("death", (payload: { role: Role }) => cb.onDeath(payload));
+    room.onMessage("revived", (payload: { timerMs: number }) => cb.onRevived?.(payload));
     room.onMessage("finish", (payload: FinishData) => {
       this.lastFinish = payload;
       cb.onFinish?.(payload);
@@ -326,6 +331,20 @@ export class Net {
 
   sendInput(input: InputMessage | InputState): void {
     this.room.send("input", input);
+  }
+
+  /**
+   * F 部仙女拖拽（fw-fairy-view；状态契约与 net 槽对齐）：{id, x, y}（关卡 px，
+   * 服务端换算 mouse joint target）；x=null=松手（maxForce 降 5% 回落悬浮）。
+   * 服务端 handler 由 net 槽当日落地——先发不炸（Colyseus 未知消息类型服务端忽略）。
+   */
+  sendFairyDrag(id: string, x: number | null, y: number | null): void {
+    this.room.send("fairydrag", { id, x, y });
+  }
+
+  /** F 部免费复活一次（R2）：gameover 相位受理，服务端 world.revive() 门禁 */
+  sendRevive(): void {
+    this.room.send("revive", {});
   }
 
   restart(): void {

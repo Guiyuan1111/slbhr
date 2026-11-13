@@ -18,6 +18,8 @@ import { GROUND_TYPE } from "../level2.js";
 import { buildLevelWorld, type BuiltWorld, type DoorInfo } from "./build.js";
 import { Character, type AnimState, type InputState } from "./character.js";
 import { buildMechanisms, type MechEvent, type Mechanisms } from "./mechanisms.js";
+import { jumpVelocityOf } from "../params.js";
+import { RespawnManager } from "./respawn.js";
 
 /** 坐标换算再导出（r1 perf 件3）：服务器序列化侧（ForestRoom/基准镜像）直读 mechanisms
  *  写 RoomState 时需要 m2px——保持单一换算定义，避免内联魔数漂移 */
@@ -85,13 +87,27 @@ const jumpSoundHook = (): void => {
 };
 
 export class World {
-  readonly level: LevelData;
-  private built: BuiltWorld;
-  private mechs: Mechanisms;
+  /** 当前关卡数据。r45 起可在 `loadLevel` 换关后经 `reset(level)` 改绑——构造器与 reset
+   *  共用同一条构建链，避免"先按新关建一次、再 reset 重建一次"的双重构建。 */
+  level: LevelData;
+  private built!: BuiltWorld;
+  private mechs!: Mechanisms;
   private B: B2;
-  private chars: Record<Role, Character>;
+  private chars!: Record<Role, Character>;
   /** 原版 data.diamonds 等价物从 Character 取 */
   private simTimeS = 0;
+  /** 传送门 200ms 每体冷却（oracle body.lastTransport；键=body 跨门共享） */
+  private portalLastTransport = new WeakMap<object, number>();
+  /** 传送门载体表（r44：免每帧新建 body 包装对象数组；元素为稳定壳，仅 body 字段改写） */
+  private portalBodies: Array<{ body: any }> = [];
+  /** 仙女步进用的角色位置缓冲（r44：免每帧 2 元素数组分配） */
+  private fairyCharPos: Array<{ x: number; y: number }> = [];
+  /** 仙女锁判定回调（r44：实例单例，免每帧每仙女新建闭包） */
+  private fairyGroupActive = (g: number): boolean => this.mechs.manager.queryActive(g);
+  /** F 部检查点/复活管理器（构造尾创建；respawn.ts 档头=oracle L61065-61179 对位） */
+  respawn!: RespawnManager;
+  /** R2 免费复活一次门禁（oracle 走激励广告，我方裁定=免费一次） */
+  revived = false;
   /** 风力时基（F6）：缺省仿真时间，生产传墙钟（见 WorldOptions 注释） */
   private windClockS: () => number;
 
@@ -115,32 +131,20 @@ export class World {
   private lightSigLen = -1;
   private lightSigStable = false;
   lightEpoch = 0;
+  /** 传送门开闭态签名（态变 bump lightEpoch，防 Beamer 折线缓存吃到过期穿门路径） */
+  private portalSig = "";
   private listener: any;
   private pendingRemove: any[] = [];
 
   constructor(level: LevelData, options: WorldOptions = {}) {
     this.level = level;
     this.B = b2();
-    this.built = buildLevelWorld(level);
-    this.mechs = buildMechanisms(this.B, this.built.world, this.built.groundBody, level);
-    this.chars = {
-      fireboy: new Character(this.B, this.built.world, "fireboy", level.spawn.fireboy),
-      watergirl: new Character(this.B, this.built.world, "watergirl", level.spawn.watergirl),
-    };
     this.windClockS = options.windClockS ?? (() => this.simTimeS);
-    for (const wind of this.mechs.winds) {
-      wind.registerCharBodies([
-        ["fireboy", this.chars.fireboy.body],
-        ["watergirl", this.chars.watergirl.body],
-      ]);
-    }
-    this.installContactListener();
-    // startFrozen（type55 冰面）：初始冻结（原版 _.delay(initialFreeze,10)——含一步 settle 物理，
-    // light 数据无 55 砖不走此路；语义保留，02号档 §10-5）
-    const startEvents: WorldEvent[] = [];
-    for (const liq of this.built.liquids) {
-      if (liq.startFrozen && liq.liquidType === GROUND_TYPE.WATER) this.freezeLiquid(liq, startEvents);
-    }
+    // r45：构造与 reset 共用同一条构建链（此前两份代码逐项重复，startFrozen 只在构造
+    // 分支里，导致 reset 走的那条链漏掉初始冻结）。
+    // RespawnManager 必须先建（reset 尾部调 respawn.clear()）。
+    this.respawn = new RespawnManager(this);
+    this.reset();
   }
 
   private installContactListener(): void {
@@ -209,6 +213,7 @@ export class World {
     lightPushers: Array<{ id: number; group: number; state: number; x: number; y: number }>;
     sliders: Array<{ id: number; x: number; y: number }>;
     timedPushers: Array<{ id: number; state: number; x: number; y: number }>;
+    portals: Array<{ id: number; state: number; x: number; y: number; angle: number }>;
     liquidsFrozen: boolean[];
   } {
     return {
@@ -270,6 +275,11 @@ export class World {
         const pos = m.body.GetPosition();
         return { id, state: m.state, x: m2px(pos.x), y: m2px(pos.y) };
       }),
+      // 传送门（D/E 部；开门态+体位供客户端帧动画/开关演出，角度同 rotMirror 体角原值）
+      portals: this.mechs.portals.map((m, id) => {
+        const pos = m.body.GetPosition();
+        return { id, state: m.state, x: m2px(pos.x), y: m2px(pos.y), angle: m.body.GetAngle() };
+      }),
       liquidsFrozen: this.built.liquids.map((l) => l.frozen),
     };
   }
@@ -301,6 +311,20 @@ export class World {
 
   // -------------------------------------------------- 步进
 
+  /** F 部仙女/杯访问（视图与测试用；mechs 本体保持私有） */
+  get fairies() {
+    return this.mechs.fairies;
+  }
+
+  get fairyCups() {
+    return this.mechs.fairyCups;
+  }
+
+  /** D/E 部传送门访问（视图与测试用；mechs 本体保持私有） */
+  get portals() {
+    return this.mechs.portals;
+  }
+
   /** 推进一帧。dt 秒（服务端 1/60；对拍时喂录制 dt 序列）。返回本帧事件。 */
   step(dt: number, inputs: Record<Role, InputState>): WorldEvent[] {
     const events: WorldEvent[] = [];
@@ -311,6 +335,17 @@ export class World {
     for (const wind of this.mechs.winds) wind.applyForce(this.windClockS(), dt);
     this.chars.fireboy.update(this.B, dt, inputs.fireboy, jumpSoundHook);
     this.chars.watergirl.update(this.B, dt, inputs.watergirl, jumpSoundHook);
+
+    // F 部仙女步进（oracle Fairy.update 每帧；时基=仿真钟保 det，oracle 墙钟偏差记档）
+    if (this.mechs.fairies.length > 0) {
+      // r44：位置缓冲与锁回调复用实例字段（原每帧分配 2 元素数组 + 每仙女一个闭包）
+      const cps = this.fairyCharPos;
+      cps[0] = this.chars.fireboy.body.GetPosition();
+      cps[1] = this.chars.watergirl.body.GetPosition();
+      const tMs = this.simTimeS * 1000;
+      for (const f of this.mechs.fairies) f.update(tMs, cps);
+      for (const f of this.mechs.fairies) f.checkLock(this.fairyGroupActive);
+    }
 
     // 原版帧序（运行时探针 2026-10-09，forest_01 实测）：doors → wg → fb → 设备(逆注册序) → Step。
     // 机关检查与门扫帧在 Step【前】：checkState 读的是上一步的关节角，状态变化当帧进入求解。
@@ -330,6 +365,15 @@ export class World {
       // Slider.checkState（连续 state 派发）→ RotMirror.update（钳角）；InfiniteMirror 走信号。
       // 派发即调 deviceChanged(group)（原版 signal.dispatch 同步语义）。
       if (this.mechs.lightDevices.length > 0) {
+        // 传送门开闭影响光束续射（D 槽 §1.5）：态变即失效 Beamer 折线缓存（bump epoch）
+        if (this.mechs.portals.length > 0) {
+          let sig = "";
+          for (const p of this.mechs.portals) sig += p.state ? "1" : "0";
+          if (sig !== this.portalSig) {
+            this.portalSig = sig;
+            this.lightEpoch++;
+          }
+        }
         this.collectLightSig();
         const lightEvents: MechEvent[] = [];
         for (let i = this.mechs.lightDevices.length - 1; i >= 0; i--) {
@@ -341,7 +385,7 @@ export class World {
         }
         for (const ev of lightEvents) {
           events.push({ type: "mech", event: ev });
-          this.mechs.manager.deviceChanged(ev.group);
+          if ("group" in ev) this.mechs.manager.deviceChanged(ev.group);
         }
         // 液体光照检查（原版 Liquid.update：蓝照水冻/红照水融，iluminated 不清=原版 quirk）
         for (const liq of this.built.liquids) {
@@ -362,6 +406,21 @@ export class World {
         }
         for (const ev of this.tpEvents) events.push({ type: "mech", event: ev });
       }
+      // F 部仙女杯（oracle 走 contact 回调；内核确定性全量重算——圆-圆重叠与
+      // TestOverlap 等价）：新成员设杯口吸附目标，checkState 迁移沿同步派发组信号
+      if (this.mechs.fairyCups.length > 0) {
+        const fEvents: MechEvent[] = [];
+        for (const cup of this.mechs.fairyCups) {
+          cup.refreshMembership(this.mechs.fairies);
+          const prev = cup.state;
+          cup.checkState(fEvents);
+          if (cup.state !== prev) this.mechs.manager.deviceChanged(cup.group);
+        }
+        for (const ev of fEvents) events.push({ type: "mech", event: ev });
+      }
+      // D/E 部传送门：开门近面判定 + transport（oracle begin-contact 回调的确定性等价）。
+      // 放 Step 前：出门位置当帧进求解；冷却=仿真钟 200ms 每体跨门共享（oracle body.lastTransport）
+      if (this.mechs.portals.length > 0) this.updatePortals(events);
       this.updateDoors(dt, events);
     }
 
@@ -372,6 +431,8 @@ export class World {
     this.flushPendingRemove();
 
     if (this.phase === "playing") {
+      // F 部站定检查点（oracle Level.update 每帧 respawnManager.update；纯记录不改物理）
+      this.respawn.maybeCheckpoint(this.simTimeS * 1000, inputs);
       this.checkEnd(events);
       this.timerMs += dt * 1000;
     }
@@ -489,6 +550,32 @@ export class World {
   private roleOfBody(body: any): Role | undefined {
     if (!body || body.GetUserData() !== "pers") return undefined;
     return this.chars.fireboy.body === body ? "fireboy" : this.chars.watergirl.body === body ? "watergirl" : undefined;
+  }
+
+  /** 传送门逐帧步进（Step 前）：开门对全部可传载体（角色/箱/球/仙女——均带
+   *  portal-sensor 标记）做近面判定，命中即 transport；音效队列排水为 mech 事件。 */
+  private updatePortals(events: WorldEvent[]): void {
+    // r44：载体表复用（原每帧新建 N+2 个 {body} 包装对象；表内壳对象稳定，仅改写 body）
+    const bodies = this.portalBodies;
+    let n = 0;
+    const add = (body: any): void => {
+      if (n < bodies.length) bodies[n].body = body;
+      else bodies.push({ body });
+      n++;
+    };
+    add(this.chars.fireboy.body);
+    add(this.chars.watergirl.body);
+    for (const p of this.mechs.props) add(p.body);
+    for (const f of this.mechs.fairies) add(f.body);
+    if (bodies.length > n) bodies.length = n;
+    const nowMs = this.simTimeS * 1000;
+    for (const p of this.mechs.portals) {
+      p.checkTransport(bodies, this.portalLastTransport, nowMs);
+      for (const sfx of p.soundQueue) {
+        events.push({ type: "mech", event: { kind: "portal", sfx } });
+      }
+      p.soundQueue.length = 0;
+    }
   }
 
   /** 门 25fps 扫帧（原版 Door.update：isOpen 推进 25·dt 帧，21 帧到位，闭合反向） */
@@ -611,13 +698,15 @@ export class World {
     }
   }
 
-  /** 整关重开（原版 retry 语义 = 重建世界；房间层调这个而不是复用实例） */
-  reset(): void {
-    this.built = buildLevelWorld(this.level);
+  /** 整关重开（原版 retry 语义 = 重建世界；房间层调这个而不是复用实例）。
+   *  r45：`level` 非空即改绑——语义与「新建 World(level)」逐项等价（含构造器里的
+   *  startFrozen 初始冻结；此前 reset 漏掉，10 个冰关 retry/换关后丢失初始冻结）。 */
+  reset(level?: LevelData): void {
+    if (level !== undefined) this.level = level;    this.built = buildLevelWorld(this.level);
     this.mechs = buildMechanisms(this.B, this.built.world, this.built.groundBody, this.level);
     this.chars = {
-      fireboy: new Character(this.B, this.built.world, "fireboy", this.level.spawn.fireboy),
-      watergirl: new Character(this.B, this.built.world, "watergirl", this.level.spawn.watergirl),
+      fireboy: new Character(this.B, this.built.world, "fireboy", this.level.spawn.fireboy, jumpVelocityOf(this.level.id)),
+      watergirl: new Character(this.B, this.built.world, "watergirl", this.level.spawn.watergirl, jumpVelocityOf(this.level.id)),
     };
     for (const wind of this.mechs.winds) {
       wind.registerCharBodies([
@@ -631,5 +720,40 @@ export class World {
     this.stepEvents = null;
     this.pendingRemove.length = 0;
     this.installContactListener();
+    // r45：与构造器同一套 startFrozen 初始冻结（oracle Liquid 构造尾
+    // `f.startFrozen && _.delay(this.initialFreeze,10)`，bundle @1660900 区）。
+    // 此前 reset 走的是另一个分支、从不执行本段 —— 10 个含 55 型冰面砖的关
+    // （ice_02/04/04_1/07_1/12/14/31/35/35_1、eice_1）在 retry 与 advance 换关后
+    // 丢失初始冻结，与原版不符。冻结是状态写入（不改体/夹具），且发生在 Step 前，
+    // 位级影响只经由既有的 frozen 分支，与构造路径同值。
+    const startEvents: WorldEvent[] = [];
+    for (const liq of this.built.liquids) {
+      if (liq.startFrozen && liq.liquidType === GROUND_TYPE.WATER) this.freezeLiquid(liq, startEvents);
+    }
+    this.respawn.clear(); // 旧快照引用的 body 已随重建销毁
+    this.revived = false;
+  }
+
+  /** F 部免费复活一次（R2；oracle Level.revive @L62017：销毁重建双角 → 检查点回放 →
+   *  计时回拨）。队列空（开局即死未抓过）返回 false，宿主退化整关 retry。 */
+  revive(): boolean {
+    if (this.revived || this.phase !== "gameover") return false;
+    for (const c of [this.chars.fireboy, this.chars.watergirl]) this.built.world.DestroyBody(c.body);
+    this.chars = {
+      fireboy: new Character(this.B, this.built.world, "fireboy", this.level.spawn.fireboy, jumpVelocityOf(this.level.id)),
+      watergirl: new Character(this.B, this.built.world, "watergirl", this.level.spawn.watergirl, jumpVelocityOf(this.level.id)),
+    };
+    for (const wind of this.mechs.winds) {
+      wind.registerCharBodies([
+        ["fireboy", this.chars.fireboy.body],
+        ["watergirl", this.chars.watergirl.body],
+      ]);
+    }
+    const t = this.respawn.loadLatest(this.simTimeS * 1000);
+    if (t === null) return false;
+    this.phase = "playing";
+    this.timerMs = t; // oracle clock.resumeAt(gameTime) 的计时回拨
+    this.revived = true;
+    return true;
   }
 }

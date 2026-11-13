@@ -39,13 +39,19 @@ export function composeCsp(scriptHashes: string): string {
   ].join("; ");
 }
 
-/** 全响应安全头中间件：nosniff / DENY / no-referrer / CSP（#45 纵深防御） */
+/** 全响应安全头中间件：nosniff / DENY / no-referrer / CSP / COOP / COEP（#45 纵深防御）
+ *  COOP+COEP（r53）：跨源隔离双头——既是 Spectre 类侧信道的标准缓解（安全加固），
+ *  又让页面进入 crossOriginIsolated 态，`performance.now()` 粒度从 100µs 解除到 ~5µs，
+ *  页内量具恢复亚百微秒分辨率（见 benchmark/perf-timer-res.mjs）。全站子资源同源，
+ *  require-corp 无额外配头需求；WS 升级与 /matchmake 路由不经本中间件，不受影响。 */
 export function securityHeadersMiddleware(csp: string): RequestHandler {
   return (_req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Referrer-Policy", "no-referrer");
     res.setHeader("Content-Security-Policy", csp);
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+    res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
     next();
   };
 }

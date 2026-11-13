@@ -22,12 +22,15 @@ export type MechEvent =
   | { kind: "lever"; group: number; state: number }
   | { kind: "pusher"; group: number; state: number }
   | { kind: "lightpusher"; group: number; state: number }
-  | { kind: "slider"; group: number; state: number };
+  | { kind: "slider"; group: number; state: number }
+  | { kind: "fairycup"; group: number; state: number }
+  /** 传送门音效（portal.soundQueue 排水；客户端按 sfx 键放音） */
+  | { kind: "portal"; sfx: "portalOpen" | "portalClose" | "portalTransport" };
 
 /** 光束交互属性（fixture userData.lightProperties；02号档 §8/§9）。
  * iluminated/lightAt 由 Beamer raycast 写入，LightPusher 消费后自清，Liquid 只读不清（原版 quirk）。 */
 export interface LightProperties {
-  type: "normal" | "transparent" | "mirror";
+  type: "normal" | "transparent" | "mirror" | "portal";
   sensor?: boolean;
   iluminated?: string | null;
   lightAt?: { x: number; y: number } | null;
@@ -81,6 +84,12 @@ export class MechManager {
    * group 缺省=全组遍历（forest 0/1 源下与旧布尔 OR 等价；传 group 时只处理该组——
    * 滑轨连续态下全组遍历会把其它组的分数态布尔化成 1，2026-10-25 light 集成修正）。
    */
+  /** 组内任一成员 state 真（Fairy 锁定/解锁判定用，oracle fairy.lockedBy 语义） */
+  queryActive(group: number): boolean {
+    const list = this.groups.get(group);
+    return list ? list.some((m) => m.state !== 0) : false;
+  }
+
   deviceChanged(group?: number): void {
     const process = (list: GroupMember[]): void => {
       const sources = list.filter((d) => d.hasSignal);
@@ -768,6 +777,8 @@ interface RayHit {
   ny: number;
   mirror: boolean;
   sensorLp: LightProperties | null;
+  /** 光学传送门命中（D 槽 §1.5：开门入射面）——Beamer 跳出口门续射 */
+  portal: any;
 }
 const rcCtx = {
   hit: null as RayHit | null,
@@ -782,6 +793,7 @@ const rcCtx = {
       h.py = point.y;
       h.mirror = false;
       h.sensorLp = null;
+      h.portal = null;
       return fraction;
     }
     if (lp.type === "transparent") {
@@ -797,6 +809,7 @@ const rcCtx = {
       h.py = point.y;
       h.mirror = false;
       h.sensorLp = lp.sensor ? lp : null;
+      h.portal = null;
       return fraction;
     }
     if (lp.type === "mirror") {
@@ -807,9 +820,25 @@ const rcCtx = {
       h.ny = normal.y;
       h.mirror = true;
       h.sensorLp = lp.sensor ? lp : null;
+      h.portal = null;
       return fraction;
     }
-    return undefined; // portal 等：light 数据未用
+    if (lp.type === "portal") {
+      // 光学传送门（D 槽 §1.5）：开门且已配对=入射面命中，束线跳出口门续射；
+      // 关门（filter 已 0，oracle 语义=光不交互）/未配对 → 直穿
+      const portal = ud.portal;
+      if (portal && portal.state === 1 && portal.other) {
+        h.hit = true;
+        h.px = point.x;
+        h.py = point.y;
+        h.mirror = false;
+        h.sensorLp = null;
+        h.portal = portal;
+        return fraction;
+      }
+      return undefined;
+    }
+    return undefined;
   },
 };
 
@@ -835,7 +864,7 @@ export class Beamer extends Device {
   private readonly tmpDir: any;
   private readonly tmpB: any;
   private readonly tmpF: any;
-  private readonly hit: RayHit = { hit: false, px: 0, py: 0, nx: 0, ny: 0, mirror: false, sensorLp: null };
+  private readonly hit: RayHit = { hit: false, px: 0, py: 0, nx: 0, ny: 0, mirror: false, sensorLp: null, portal: null };
 
   constructor(B: B2, world: any, def: BeamerDef) {
     super(B, def.group, false);
@@ -910,7 +939,16 @@ export class Beamer extends Device {
       for (let i = 0; i < this.marksLen; i++) {
         const mk = this.marks[i];
         mk.lp.iluminated = this.color;
-        mk.lp.lightAt = { x: mk.x, y: mk.y };
+        // r44：lightAt 原位改写（原每帧每 sensor 新建 {x,y}）。消费方（LightPusher /
+        // Liquid）只读 .x/.y，或整体判 null；不持有跨帧引用——标记载体本身在 marks 池里
+        // 逐帧重放，故原位写与新建对象在下游观测上等价。
+        const at = mk.lp.lightAt;
+        if (at) {
+          at.x = mk.x;
+          at.y = mk.y;
+        } else {
+          mk.lp.lightAt = { x: mk.x, y: mk.y };
+        }
       }
       return;
     }
@@ -943,7 +981,8 @@ export class Beamer extends Device {
       }
       marksLen++;
     };
-    for (let seg = 0; seg < 10 && len < 11; seg++) {
+    let extraSeg = 0; // 光学传送门 hop 预算（D 槽 §1.5：一次射线最多 12 段，逐 hop 放宽）
+    for (let seg = 0; seg < 10 + extraSeg && len < 11 + extraSeg; seg++) {
       const from = this.tmpB;
       from.SetXY(p.x, p.y);
       const to = this.tmpTo;
@@ -974,6 +1013,32 @@ export class Beamer extends Device {
         const dot = bvec.x * f.x + bvec.y * f.y;
         dir.SetXY(bvec.x - f.x * 2 * dot, bvec.y - f.y * 2 * dot);
         p.SetXY(hit.px, hit.py);
+      } else if (hit.portal) {
+        // 光学传送门（§1.5，getOutput @1687274 / getPoint @1687675）：束线画到入口命中点
+        // （已 put），跳到出口门映射点续射。方向=dir 旋 Δ（同 inverted 再 +π）；点映射=
+        // transport 偏移同式（inv 不同才门平面镜像，再旋 Δ，加 other 位）。⚠ 原版光与
+        // 实体在同 inverted 对的出口变换本就不一致（vy 符号差），两套公式照抄不统一。
+        const portal: Portal = hit.portal;
+        const other = portal.other!;
+        const rot = portal.body.GetAngle();
+        const delta = other.body.GetAngle() - rot;
+        const ex = -Math.sin(rot);
+        const ey = Math.cos(rot); // e=(0,1).SelfRotate(rot)：门平面方向
+        const ppos = portal.body.GetPosition();
+        let dx = hit.px - ppos.x;
+        let dy = hit.py - ppos.y;
+        if (other.inverted !== portal.inverted) {
+          const k = (2 * (dx * ex + dy * ey)) / (ex * ex + ey * ey);
+          dx = ex * k - dx;
+          dy = ey * k - dy;
+        }
+        const cd = Math.cos(delta);
+        const sd = Math.sin(delta);
+        const opos = other.body.GetPosition();
+        p.SetXY(opos.x + dx * cd - dy * sd, opos.y + dx * sd + dy * cd);
+        put(p.x, p.y); // 出口门映射点入折线（束线段从出口门画起）
+        dir.SelfRotateRadians(delta + (other.inverted === portal.inverted ? Math.PI : 0));
+        extraSeg++;
       } else {
         break; // 停束
       }
@@ -1347,6 +1412,518 @@ export class Slider extends Device {
 
 // ---------------------------------------------------------------- 总装
 
+// ---------------------------------------------------------------- FairyCup / Fairy（F 部 fairytales）
+// oracle F fairy-tales.min.js：FairyCup L53157（extends BoxedDevice）、Fairy L58979。
+// 逐条参数锚见 note/evidence/2026-10-30-fairytales/01号档 §2。
+
+/** 仙女（L58979，extends Phaser.Group；物理段 createShapes L59058）：
+ *  主圆 r=0.3（density .1/friction 0/mask 257/cat 4112）+ portal-sensor 圆 r=0.1
+ *  （cat/mask 4096、groupIndex -1、density 0）；gravityScale 0、linearDamping 5、
+ *  angularDamping 5、bullet、fixedRotation、userData "pers"。
+ *  骨架 anchor—elbow—ball 两根刚性 b2DistanceJoint（Initialize，collideConnected=false，
+ *  L59115-59148；anchor/elbow 零重力小圆 r=0.1 density .1 不与任何东西碰撞）。
+ *  拖拽=anchor 上的 b2MouseJoint（maxForce 3.5 / dampingRatio .3 / frequencyHz 10，
+ *  L59052/59177；松手 maxForce 降为 5%，L59203）。 */
+export class Fairy {
+  readonly body: any;
+  readonly anchor: any;
+  readonly elbow: any;
+  private readonly B: B2;
+  private readonly joint: any;
+  private readonly jointForce = 3.5;
+  /** 组色（properties.group 首位数字，L52418 色表；0=白/百搭） */
+  readonly group: number;
+  /** 锁定（lockToDeviceGroup/reLockToDeviceGroup）——oracle 仅门控相机 focus 与教学
+   *  矩形（L59692/L61934），无物理门控（01号档 R1）；内核保留态供视图/教学消费 */
+  locked = false;
+  readonly lockGroups: number[];
+  readonly relockGroups: number[];
+  /** 杯口吸附目标（FairyCup 感应色配后设置；null=自由态） */
+  externalTarget: { x: number; y: number } | null = null;
+  externalCup: FairyCup | null = null;
+  dragging = false;
+  private dragTarget: { x: number; y: number };
+  /** oracle toffset/aoffset 为构造期 Math.random（L59010，非确定）；det 内核改为按
+   *  序确定性偏移（值域同 oracle：toffset∈[0,1000)/aoffset∈[0,2000)）——偏差记档 */
+  private readonly toffset: number;
+  private readonly aoffset: number;
+  /** r44 分配收口：SetTarget 复用的目标缓冲（vendor SetTarget 内部 m_targetA.Copy(a)） */
+  private readonly setTargetVec: any;
+  /** 视觉朝向（L59253 平滑；纯表现，内核仅维护供视图取用） */
+  targetAngle = 0;
+
+  constructor(B: B2, world: any, groundBody: any, def: { x: number; y: number; group: number; idx: number; lockGroups?: number[]; relockGroups?: number[] }) {
+    this.B = B;
+    this.group = def.group;
+    this.lockGroups = def.lockGroups ?? [];
+    this.relockGroups = def.relockGroups ?? [];
+    this.locked = this.lockGroups.length > 0;
+    this.toffset = (def.idx * 618) % 1000;
+    this.aoffset = (def.idx * 1337) % 2000;
+    const c = phys(B, def.x, def.y);
+    const bd = () => {
+      const b = new B.b2BodyDef();
+      b.type = B.b2BodyType.b2_dynamicBody;
+      return b;
+    };
+    // 主体
+    const mb = bd();
+    mb.bullet = true;
+    mb.fixedRotation = true;
+    this.body = world.CreateBody(mb);
+    this.body.SetUserData("pers");
+    this.body.SetGravityScale(0);
+    this.body.SetLinearDamping(5);
+    this.body.SetAngularDamping(5);
+    const main = new B.b2CircleShape(0.3);
+    const mf = new B.b2FixtureDef();
+    mf.shape = main;
+    mf.density = 0.1;
+    mf.friction = 0;
+    mf.filter.maskBits = 257;
+    mf.filter.categoryBits = 4112;
+    this.body.CreateFixture(mf);
+    // portal-sensor（供 Portal 检测仙女；不与任何常规体碰撞）
+    const ps = new B.b2CircleShape(0.1);
+    const pf = new B.b2FixtureDef();
+    pf.shape = ps;
+    pf.density = 0;
+    pf.friction = 0;
+    pf.filter.categoryBits = 4096;
+    pf.filter.maskBits = 4096;
+    pf.filter.groupIndex = -1;
+    pf.isSensor = true;
+    this.body.CreateFixture(pf);
+    // anchor / elbow（零重力、不碰撞、fixedRotation）
+    const mkLimb = (withGroup: boolean) => {
+      const b = bd();
+      b.fixedRotation = true;
+      const body = world.CreateBody(b);
+      const sh = new B.b2CircleShape(0.1);
+      const fd = new B.b2FixtureDef();
+      fd.shape = sh;
+      fd.density = 0.1;
+      fd.friction = 0;
+      fd.filter.categoryBits = 0;
+      fd.filter.maskBits = 0;
+      if (withGroup) fd.filter.groupIndex = 22;
+      body.CreateFixture(fd);
+      body.SetGravityScale(0);
+      return body;
+    };
+    this.anchor = mkLimb(true);
+    this.elbow = mkLimb(false);
+    this.anchor.SetPosition(c);
+    this.elbow.SetPosition(new B.b2Vec2(c.x, c.y - 0.5)); // oracle h=.5（y 向上取负 0.5m）
+    this.body.SetPosition(this.anchor.GetPosition());
+    const link = (a: any, b: any) => {
+      const dj = new B.b2DistanceJointDef();
+      dj.collideConnected = false;
+      dj.Initialize(a, b, a.GetPosition(), b.GetPosition());
+      return world.CreateJoint(dj);
+    };
+    link(this.anchor, this.elbow);
+    link(this.elbow, this.body);
+    // 拖拽 mouse joint（anchor—groundBody）
+    const mj = new B.b2MouseJointDef();
+    mj.bodyA = groundBody;
+    mj.bodyB = this.anchor;
+    mj.target = new B.b2Vec2(c.x, c.y);
+    mj.maxForce = this.jointForce;
+    mj.frequencyHz = 10;
+    mj.dampingRatio = 0.3;
+    this.joint = world.CreateJoint(mj);
+    this.dragTarget = { x: c.x, y: c.y };
+    this.setTargetVec = new B.b2Vec2(c.x, c.y);
+  }
+
+  /** ApplyForce 免分配入口。
+   *  注：力顶点缓冲**不可**)复用——ApplyForce 的第二参 `at` 在调用点常是
+   *  GetPosition() 的返回对象（vendor 的 m_out_xf.p 单例输出缓冲），与力向量若共用
+   *  同一对象会自引用成 NaN 力，F 部仙女关会退化成永不静止（实测 fairies-01 死循环）。 */
+  private applyForceXY(fx: number, fy: number, at: { x: number; y: number }): void {
+    this.body.ApplyForce(new this.B.b2Vec2(fx, fy), at);
+  }
+
+  /** 拖拽入口（net 层）：target=null 松手（oracle 松手 maxForce 降 5%，L59203） */
+  setDrag(target: { x: number; y: number } | null): void {
+    if (target) {
+      this.dragging = true;
+      this.dragTarget = { ...target };
+      this.joint.SetMaxForce(this.jointForce);
+    } else {
+      this.dragging = false;
+      this.joint.SetMaxForce(0.05 * this.jointForce);
+    }
+  }
+
+  /** 每帧步进（oracle Fairy.update L59210 逐句；simTimeMs=仿真钟毫秒，
+   *  oracle 用 game.time.time 墙钟——内核换仿真钟保 det，偏差记档）。
+   *  r44 分配收口：dragTarget 原位改写（原每帧多次 {...} 替身）、ApplyForce 顶点缓冲
+   *  复用（原每帧 2 个 new b2Vec2）——数值算式与调用序逐字不变，仅免对象分配。 */
+  update(simTimeMs: number, charBodies: Array<{ x: number; y: number }>): void {
+    const B = this.B;
+    const bp = this.body.GetPosition();
+    if (this.externalTarget) {
+      // 吸附力=位移矢量×1（L59213）
+      this.applyForceXY(this.externalTarget.x - bp.x, this.externalTarget.y - bp.y, bp);
+      if (!this.dragging) {
+        this.dragTarget.x = this.externalTarget.x;
+        this.dragTarget.y = this.externalTarget.y;
+        this.joint.SetMaxForce(this.jointForce);
+      }
+    } else if (!this.dragging) {
+      const v = this.body.GetLinearVelocity();
+      if (Math.hypot(v.x, v.y) > 2) {
+        const ap0 = this.anchor.GetPosition();
+        this.dragTarget.x = ap0.x;
+        this.dragTarget.y = ap0.y;
+      }
+    }
+    // dragTarget 与双角色保持 ≥1.2m（L59223：f.Length()<1.2 → 推到 1.2m 外）
+    for (const ch of charBodies) {
+      const fx = this.dragTarget.x - ch.x;
+      const fy = this.dragTarget.y - ch.y;
+      const fl = Math.hypot(fx, fy);
+      if (fl < 1.2 && fl > 1e-9) {
+        this.dragTarget.x = ch.x + (fx / fl) * 1.2;
+        this.dragTarget.y = ch.y + (fy / fl) * 1.2;
+      }
+    }
+    this.joint.SetTarget(this.setTargetVec.SetXY(this.dragTarget.x, this.dragTarget.y));
+    // Lissajous 悬浮目标 h（相对 anchor；externalTarget 态用小抖动分支，L59228-59236）
+    const t = simTimeMs;
+    let hx: number;
+    let hy: number;
+    if (this.externalTarget) {
+      const p = (t + this.toffset) / 1000;
+      const a = 0.4 * (Math.sin((t + this.aoffset) / 2300) - 0.5);
+      const s = a / Math.abs(a || 1);
+      hx = a * Math.sin(p * s);
+      hy = a * Math.cos(p * s);
+    } else {
+      const p = (t + this.toffset) / 1000;
+      const a = 0.5 + 0.2 * Math.sin((t + this.aoffset) / (2300 * Math.sin(p || 1e-9) || 1e-9));
+      const den = 1 + Math.sin(p) * Math.sin(p);
+      hx = (a * Math.SQRT2 * Math.cos(p)) / den;
+      hy = (a * Math.SQRT2 * Math.cos(p) * Math.sin(p)) / den;
+      const deg = ((t + this.aoffset) / this.toffset) * (Math.PI / 180);
+      const rx = hx * Math.cos(deg) - hy * Math.sin(deg);
+      const ry = hx * Math.sin(deg) + hy * Math.cos(deg);
+      hx = rx;
+      hy = ry;
+    }
+    const ap = this.anchor.GetPosition();
+    this.applyForceXY(hx - (bp.x - ap.x), hy - (bp.y - ap.y), bp);
+    // anchor 速度钳 40（absoluteMaxSpeed，L59055）
+    const q = this.anchor.GetLinearVelocity();
+    const ql = Math.hypot(q.x, q.y);
+    if (ql > 40) this.anchor.SetLinearVelocity(new B.b2Vec2((q.x / ql) * 40, (q.y / ql) * 40));
+  }
+
+  /** lockGroups 任一机关 state 变真解锁 / relockGroups 任一变真重锁（L59266-59279）。
+   *  由 world 每帧在 deviceChanged 后调用（组内含信号源即视为真）。 */
+  checkLock(groupsActive: (g: number) => boolean): void {
+    if (this.locked && this.lockGroups.some((g) => groupsActive(g))) this.locked = false;
+    else if (!this.locked && this.relockGroups.some((g) => groupsActive(g))) this.locked = true;
+  }
+}
+
+/** 仙女杯（L53157，extends BoxedDevice；hasSignal=按钮语义）：
+ *  本体静态（body.mass=0，L53191）+ 杯形 polygon（pusherWidth .4/pusherHeight .3 外扩，
+ *  L53252-53260）+ 杯口圆 sensor r=1.3 @cupOffset(0,.65) 随 rotation 旋转（L53191-53200）。
+ *  checkState（L53326）：currentFairies>0 → state=1 + signal.dispatch（接通 device group）；
+ *  清空 → state=0。色配（L53252）：fairy.group === 杯组首位 || fairy.group===0 || 杯组首位===0。 */
+export class FairyCup extends Device {
+  readonly body: any;
+  /** 杯口世界坐标（sensor 圆心；每帧从 body 变换重算，供色配吸附目标） */
+  private cupCenter: { x: number; y: number };
+  readonly cupGroupFirst: number;
+  currentFairies: Fairy[] = [];
+
+  constructor(B: B2, world: any, def: { x: number; y: number; group: number; rotation: number }) {
+    super(B, def.group, true);
+    this.cupGroupFirst = Number(String(def.group)[0]) || 0;
+    const bd = new B.b2BodyDef();
+    bd.type = B.b2BodyType.b2_staticBody;
+    bd.position = phys(B, def.x, def.y);
+    const th = (def.rotation * Math.PI) / 180;
+    if (th) bd.angle = th;
+    this.body = world.CreateBody(bd);
+    // 杯形（oracle 顶点表：x 外扩 ±(pw/2+.5)，y 上沿 ph-0.1；pw=.4 ph=.3）
+    const pw = 0.4;
+    const ph = 0.3;
+    const poly = new B.b2PolygonShape();
+    poly.Set([
+      new B.b2Vec2(-pw / 2 - 0.5, 0),
+      new B.b2Vec2(pw / 2 + 0.5, 0),
+      new B.b2Vec2(pw / 2, ph - 0.1),
+      new B.b2Vec2(-pw / 2, ph - 0.1),
+    ]);
+    const fd = new B.b2FixtureDef();
+    fd.shape = poly;
+    fd.density = 0;
+    fd.friction = 0.7;
+    fd.restitution = 0;
+    this.body.CreateFixture(fd);
+    // 杯口 sensor（r=1.3 @ (0,0.65)，本体系；世界中心由 GetWorldPoint 派生）
+    const cshape = new B.b2CircleShape(1.3);
+    cshape.m_p.SetXY(0, 0.65);
+    const sfd = new B.b2FixtureDef();
+    sfd.shape = cshape;
+    sfd.density = 0;
+    sfd.friction = 0.7;
+    sfd.restitution = 0;
+    sfd.isSensor = true;
+    this.body.CreateFixture(sfd);
+    // 杯口世界中心（静态体构造期一次）：local (0,0.65) 随 body 角旋转 + 平移
+    const oc = new B.b2Vec2(0, 0.65);
+    const cpos = this.body.GetPosition();
+    const cang = this.body.GetAngle();
+    this.cupCenter = {
+      x: cpos.x + oc.x * Math.cos(cang) - oc.y * Math.sin(cang),
+      y: cpos.y + oc.x * Math.sin(cang) + oc.y * Math.cos(cang),
+    };
+  }
+
+  /** 杯口世界坐标（body 静态恒定；构造期缓存） */
+  get center(): { x: number; y: number } {
+    return this.cupCenter;
+  }
+
+  /** 色配（L53252） */
+  matches(fairy: Fairy): boolean {
+    return fairy.group === this.cupGroupFirst || fairy.group === 0 || this.cupGroupFirst === 0;
+  }
+
+  /** 感应：sensor r=1.3 与 fairy 主圆 r=0.3 的圆-圆重叠（圆对圆与 TestOverlap 等价） */
+  contains(fairy: Fairy): boolean {
+    const p = fairy.body.GetPosition();
+    return Math.hypot(p.x - this.cupCenter.x, p.y - this.cupCenter.y) < 1.3 + 0.3;
+  }
+
+  /** 每帧成员重建（oracle 走 contact begin/end；内核按确定性序全量重算，语义等价）：
+   *  新入成员设 externalTarget（杯口，L53257），离席清除。 */
+  refreshMembership(fairies: Fairy[]): void {
+    for (const f of fairies) {
+      const inRange = this.contains(f);
+      const member = this.currentFairies.includes(f);
+      if (inRange && this.matches(f)) {
+        if (!member) {
+          this.currentFairies.push(f);
+          f.externalTarget = { ...this.cupCenter };
+          f.externalCup = this;
+        }
+      } else if (member) {
+        this.currentFairies = this.currentFairies.filter((x) => x !== f);
+        if (f.externalCup === this) {
+          f.externalTarget = null;
+          f.externalCup = null;
+        }
+      }
+    }
+  }
+
+  checkState(events: MechEvent[]): void {
+    if (this.state === 0 && this.currentFairies.length > 0) {
+      this.state = 1;
+      events.push({ kind: "fairycup", group: this.group, state: 1 });
+    } else if (this.state === 1 && this.currentFairies.length === 0) {
+      this.state = 0;
+      events.push({ kind: "fairycup", group: this.group, state: 0 });
+    }
+  }
+
+  updateState(): void {
+    /* 杯静态无物理迁移；state 由 checkState 维护 */
+  }
+}
+
+// ---------------------------------------------------------------- Portal（D/E 部传送门）
+
+/** 传送门（oracle States/Level/Devices/Portal @1683669；档卷 2026-10-30-crystal-temple §1.1-1.7）。
+ *  静态体挂双 fixture，filter 均 cat/mask 4096——只与角色/箱/球/仙女的 portal-sensor 标记圆
+ *  相互作用：sensorFixture 4×3m 感应区（isSensor）+ eventHorizon 0.2×3m 实体触发面。
+ *  配对=portalId 桶（connectPortals @1835885，与 group 无关）；group 是电路（拉杆/推杆 OR →
+ *  开关门，portal 为接收者）。state 1=开（filter 4096，可传）、0=关（filter 0 + 假墙实体化
+ *  mask 4369/cat 1 = 一堵墙）。
+ *
+ *  与原版的两处已记偏离（均落在确定性口径上，01号档 §1.3/§1.4）：
+ *  ① 触发不用 Phaser fixture 回调（墙钟），改每帧几何近面判定 + 仿真钟 200ms 每体冷却——
+ *    begin-contact「贴面即传」语义等价，时序落在同帧 Step 前；
+ *  ② transport 不做嵌套一步物理推进（原版回调内 game.physics.update() 把出体再积分一步）
+ *    ——由本帧后续 Step 统一积分，出口位置差一步积分量，det 锁定我方口径。 */
+export class Portal extends Device {
+  readonly id: string;
+  readonly portalId: number;
+  readonly inverted: boolean;
+  /** 配对另一端（buildMechanisms connectPortals 装配） */
+  other: Portal | null = null;
+  readonly body: any;
+  readonly sensorFixture: any;
+  readonly eventHorizon: any;
+  /** 假墙体（connectToWall：Ground type=-1 背衬；关门实体化） */
+  readonly wallBodies: any[] = [];
+  /** 音效队列（world 每帧排水 → sfx 事件；silent 重置不产生） */
+  readonly soundQueue: Array<"portalOpen" | "portalClose" | "portalTransport"> = [];
+
+  constructor(
+    B: B2,
+    world: any,
+    def: { id: string; x: number; y: number; rotation: number; group: number; portalId: number; inverted: boolean; initialState: number },
+    tileTypeAt?: (px: number, py: number) => number,
+  ) {
+    super(B, def.group, false);
+    this.id = def.id;
+    this.portalId = def.portalId;
+    this.inverted = def.inverted;
+    const c = phys(B, def.x, def.y);
+    const bd = new B.b2BodyDef();
+    bd.type = B.b2BodyType.b2_staticBody;
+    bd.position = c;
+    bd.angle = (def.rotation * Math.PI) / 180; // 同全族机关正号口径（MovingPlatform/Beamer/RotMirror…）
+    this.body = world.CreateBody(bd);
+    const f = { friction: 0, density: 0 };
+    this.sensorFixture = boxFixture(this.body, B, 2, 1.5, { x: 0, y: 0 }, 0, {
+      ...f,
+      categoryBits: FILTER.PORTAL_CAT,
+      maskBits: FILTER.PORTAL_MASK,
+      isSensor: true,
+      userData: { lightProperties: { type: "transparent" } as LightProperties },
+    });
+    this.eventHorizon = boxFixture(this.body, B, 0.1, 1.5, { x: 0, y: 0 }, 0, {
+      ...f,
+      categoryBits: FILTER.PORTAL_CAT,
+      maskBits: FILTER.PORTAL_MASK,
+      // userData.portal：Beamer raycast 命中入射面后由此取门状态与配对（§1.5）
+      userData: { lightProperties: { type: "portal" } as LightProperties, portal: this },
+    });
+    this.state = def.initialState || 0;
+    if (tileTypeAt) this.connectToWall(B, world, tileTypeAt);
+    this.updateState(true);
+  }
+
+  /** connectToWall（@1837020、-1 判定 @1837100）：门面两侧 ±0.5m 探 Ground，凡 type=-1
+   *  背衬瓦处造 0.5×1.5m 假墙块（独立静态体，随门旋转）——关着的传送门是实体墙。 */
+  private connectToWall(B: B2, world: any, tileTypeAt: (px: number, py: number) => number): void {
+    const ang = this.body.GetAngle();
+    const nx = Math.cos(ang);
+    const ny = Math.sin(ang); // 门本地 +x 轴（法向）的世界向量
+    const pos = this.body.GetPosition();
+    for (const side of [1, -1]) {
+      const q = { x: pos.x + nx * 0.5 * side, y: pos.y + ny * 0.5 * side };
+      if (tileTypeAt(m2px(q.x), m2px(q.y)) !== -1) continue;
+      const wd = new B.b2BodyDef();
+      wd.type = B.b2BodyType.b2_staticBody;
+      wd.position = new B.b2Vec2(q.x, q.y);
+      wd.angle = ang;
+      const wall = world.CreateBody(wd);
+      boxFixture(wall, B, 0.25, 0.75, { x: 0, y: 0 }, 0, {
+        categoryBits: FILTER.GROUND_CAT,
+        maskBits: FILTER.GROUND_MASK,
+        friction: 0.5,
+        density: 0,
+      });
+      this.wallBodies.push(wall);
+    }
+  }
+
+  /** updateState（@1692242）：开=两 fixture 4096 + 假墙失效；关=两 fixture 0 + 假墙实体化
+   *  （mask 4369/cat 1，与普通地面同位）。silent=true 对应 resetStates 静默重置。 */
+  updateState(silent: boolean): void {
+    const open = this.state !== 0;
+    const pf = open ? { categoryBits: 4096, maskBits: 4096 } : { categoryBits: 0, maskBits: 0 };
+    this.sensorFixture.SetFilterData(pf);
+    this.eventHorizon.SetFilterData(pf);
+    for (const w of this.wallBodies) {
+      const wf = w.GetFixtureList();
+      if (wf) {
+        wf.SetFilterData(
+          open ? { categoryBits: 0, maskBits: 0 } : { categoryBits: FILTER.GROUND_CAT, maskBits: FILTER.GROUND_MASK },
+        );
+      }
+    }
+    if (!silent) this.soundQueue.push(open ? "portalOpen" : "portalClose");
+  }
+
+  checkState(_events: MechEvent[]): void {
+    /* 传送门无逐帧自检：state 由组电路 deviceChanged 驱动，传送由 world 调 checkTransport */
+  }
+
+  /** 每帧传送检测（world 在 Step 前调；oracle eventHorizon begin-contact 的确定性等价）：
+   *  载体（带 portal-sensor 标记者）落在触发面近带（|本地 x| ≤ 0.2+ε = 半厚 0.1 + 标记半径 0.1
+   *  + 贴面驻留容差，|本地 y| ≤ 1.5）且过 200ms 每体冷却 → transport。
+   *  ε=0.02m（0.64px）：oracle 语义=begin-contact 贴面即传（走到门面即触发）；我方求解器
+   *  把慢走角色钉在分离距 ~0.2003（面外 0.3px），若带严格取 0.2 则永远采样不到带内——
+   *  2026-10-31 crystal_03 C5 封锁根因（05号档 §7/01号档复核），容差覆盖分离距即对齐
+   *  oracle「贴面即传」。冷却键=body（oracle body.lastTransport），出体贴近出口门时由
+   *  同一张表拦回传——跨门共享，由 world 持有。 */
+  checkTransport(bodies: Array<{ body: any }>, lastTransport: WeakMap<object, number>, nowMs: number): void {
+    if (this.state !== 1 || !this.other) return;
+    const ang = this.body.GetAngle();
+    const pos = this.body.GetPosition();
+    const cos = Math.cos(ang);
+    const sin = Math.sin(ang);
+    const band = 0.2 + 0.02;
+    for (const { body } of bodies) {
+      const bp = body.GetPosition();
+      const dx = bp.x - pos.x;
+      const dy = bp.y - pos.y;
+      const lx = dx * cos + dy * sin; // R(−ang)·d 的 x 分量
+      if (lx > band || lx < -band) continue;
+      const ly = -dx * sin + dy * cos;
+      if (ly > 1.5 || ly < -1.5) continue;
+      const last = lastTransport.get(body);
+      if (last !== undefined && nowMs - last < 200) continue;
+      this.transport(body, lastTransport, nowMs);
+    }
+  }
+
+  /** transport()（@1691425 逐字）：出口偏移 = 入口相对偏移（混合对先关于门平面镜像）再旋 Δ；
+   *  速度：混合对只旋 Δ（方向不变直穿）；同 inverted 对旋 −Δ 后关于门平面镜像（Δ=0 即
+   *  vx 反号向回弹，出口朝门 → 乒乓连环是原版固有行为，照抄不修）。低速钳 |g|<10 →
+   *  normalize×(10/mass)（原版把冲量当速度用，重箱更慢——照抄）。 */
+  transport(body: any, lastTransport: WeakMap<object, number>, nowMs: number): void {
+    const other = this.other;
+    if (!other) return;
+    const rot = this.body.GetAngle();
+    const delta = other.body.GetAngle() - rot;
+    const cd = Math.cos(delta);
+    const sd = Math.sin(delta);
+    const e = { x: -Math.sin(rot), y: Math.cos(rot) }; // (0,1).SelfRotate(rot)：门平面方向
+    const pos = this.body.GetPosition();
+    const opos = other.body.GetPosition();
+    const bp = body.GetPosition();
+    let d = { x: bp.x - pos.x, y: bp.y - pos.y };
+    if (other.inverted !== this.inverted) {
+      const k = (2 * (d.x * e.x + d.y * e.y)) / (e.x * e.x + e.y * e.y);
+      d = { x: e.x * k - d.x, y: e.y * k - d.y };
+    }
+    const rd = { x: d.x * cd - d.y * sd, y: d.x * sd + d.y * cd };
+    body.SetPosition(new this.B.b2Vec2(opos.x + rd.x, opos.y + rd.y));
+    const g0 = body.GetLinearVelocity();
+    let v = { x: g0.x, y: g0.y };
+    if (other.inverted === this.inverted) {
+      const cn = Math.cos(-delta);
+      const sn = Math.sin(-delta);
+      const r = { x: v.x * cn - v.y * sn, y: v.x * sn + v.y * cn };
+      const k = (2 * (r.x * e.x + r.y * e.y)) / (e.x * e.x + e.y * e.y);
+      v = { x: e.x * k - r.x, y: e.y * k - r.y };
+    } else {
+      v = { x: v.x * cd - v.y * sd, y: v.x * sd + v.y * cd };
+    }
+    const len = Math.hypot(v.x, v.y);
+    if (len < 10) {
+      const mag = 10 / Math.max(body.GetMass(), 1e-6);
+      if (len > 1e-9) v = { x: (v.x / len) * mag, y: (v.y / len) * mag };
+      else v = { x: 0, y: 0 };
+    }
+    body.SetLinearVelocity(new this.B.b2Vec2(v.x, v.y));
+    lastTransport.set(body, nowMs);
+    this.soundQueue.push("portalTransport");
+  }
+}
+
 export interface Mechanisms {
   manager: MechManager;
   levers: Lever[];
@@ -1365,6 +1942,10 @@ export interface Mechanisms {
   lightPushers: LightPusher[];
   sliders: Slider[];
   timedPushers: TimedPusher[];
+  fairies: Fairy[];
+  fairyCups: FairyCup[];
+  /** 传送门（crystal/elements 部；forest/light/ice/fairytales 数据恒为空） */
+  portals: Portal[];
   /** 光设备统一创建序（world 按【逆序】逐帧步进——原版 sprite 更新序探针口径） */
   lightDevices: Array<{ order: number; beamer?: Beamer; rotMirror?: RotMirror; lightPusher?: LightPusher; slider?: Slider; infiniteMirror?: InfiniteMirror }>;
 }
@@ -1448,6 +2029,55 @@ export function buildMechanisms(B: B2, world: any, groundBody: any, level: Level
     lightDevices.push({ order: lightDevices.length, slider: m });
   }
   const timedPushers: TimedPusher[] = [];
+  const fairies: Fairy[] = [];
+  const fairyCups: FairyCup[] = [];
+  // D/E 部传送门：先建体（connectToWall 需 groundType 探针），再 connectPortals 配对
+  const portals: Portal[] = [];
+  if (level.portals.length > 0) {
+    const tileTypeAt = (px: number, py: number): number => {
+      const col = Math.floor(px / 32);
+      const row = Math.floor(py / 32);
+      if (col < 0 || row < 0 || col >= level.cols || row >= level.rows) return -99;
+      return level.groundType[row * level.cols + col];
+    };
+    for (const d of level.portals) {
+      const p = new Portal(B, world, d, tileTypeAt);
+      portals.push(p);
+      manager.register(p);
+    }
+    // connectPortals（@1835885）：portalId 桶 i[0].other=i[1]（与 group 无关；单元素桶
+    // 无守卫会抛——oracle 靠默认 portalId=0 归并保证成对，数据已验 92/92 对，>2 取前二）
+    const buckets = new Map<number, Portal[]>();
+    for (const p of portals) {
+      const b = buckets.get(p.portalId) ?? [];
+      b.push(p);
+      buckets.set(p.portalId, b);
+    }
+    for (const list of buckets.values()) {
+      if (list.length >= 2) {
+        list[0].other = list[1];
+        list[1].other = list[0];
+      }
+    }
+  }
+  // F 部仙女/仙女杯（lockToDeviceGroup 解析随 net 批补，暂空）
+  for (const d of level.fairies) {
+    fairies.push(
+      new Fairy(B, world, groundBody, {
+        x: d.x,
+        y: d.y,
+        group: d.group,
+        idx: fairies.length,
+        lockGroups: d.lockGroup === undefined ? [] : [d.lockGroup],
+        relockGroups: d.relockGroup === undefined ? [] : [d.relockGroup],
+      }),
+    );
+  }
+  for (const d of level.fairyCups) {
+    const cup = new FairyCup(B, world, { x: d.x, y: d.y, group: d.group, rotation: 0 });
+    fairyCups.push(cup);
+    manager.register(cup);
+  }
   for (const d of level.timedPushers) {
     // oracle C @1726729：构造器末尾 registerDevice() → 入组为信号源（doRegister 空覆盖
     // 只废 Pusher 构造器那条路径，TimedPusher 自身的基类注册仍生效）——ice_02 闸门链
@@ -1456,5 +2086,5 @@ export function buildMechanisms(B: B2, world: any, groundBody: any, level: Level
     manager.register(tp);
   }
 
-  return { manager, levers, pushers, platforms, props, winds, hangings, pulleys, romans, beamers, rotMirrors, boxMirrors, infiniteMirrors, lightPushers, sliders, timedPushers, lightDevices };
+  return { manager, levers, pushers, platforms, props, winds, hangings, pulleys, romans, beamers, rotMirrors, boxMirrors, infiniteMirrors, lightPushers, sliders, timedPushers, fairies, fairyCups, portals, lightDevices };
 }

@@ -21,6 +21,8 @@
 //           （截图瞬间 #hud/#menu/#toast 已按上口径隐藏，流程语义不变）。
 //   差分：页内把两张 PNG 归一化到 480×360 灰度，±48px 平移搜索取最优对齐，
 //         报告容差 24/48 匹配率与平均绝对差；顶部 64px（原版画布内 HUD 区）单列。
+//         2026-11-11 起附带 SSIM 标准指标（IEEE TIP 2004，11×11 高斯 σ=1.5，
+//         C1/C2 标准参数，最优平移重叠区均值；调研 2026-11-06 §4 候选① 落地）。
 import { chromium } from "playwright";
 import http from "node:http";
 import { spawn } from "node:child_process";
@@ -269,6 +271,61 @@ const DIFF_PROG = async (bufA, bufB) => {
       }
     const top = score(0, 0, "top");
     const zero = score(0, 0, "full");
+    // SSIM（Wang 等，IEEE TIP 2004 标准指标；调研 2026-11-06 §4 候选①）：
+    //   11×11 高斯窗 σ=1.5，L=255 → C1=(0.01·255)²=6.5025 / C2=(0.03·255)²=58.5225；
+    //   在给定平移对齐后的重叠区上算，边缘复制填充 5px 保证窗完整，全区取均值。
+    const ssimAt = (ox, oy) => {
+      const X0 = Math.max(0, -ox), X1 = Math.min(W, W - ox);
+      const Y0 = Math.max(0, -oy), Y1 = Math.min(H, H - oy);
+      const w = X1 - X0, h = Y1 - Y0;
+      if (w < 12 || h < 12) return NaN;
+      const la = new Float64Array(w * h), lb = new Float64Array(w * h);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        la[y * w + x] = ga[(Y0 + y) * W + (X0 + x)];
+        lb[y * w + x] = gb[(Y0 + y + oy) * W + (X0 + x + ox)];
+      }
+      const PW = w + 10, PH = h + 10;
+      const K = new Float64Array(11); let ks = 0;
+      for (let i = 0; i < 11; i++) { K[i] = Math.exp(-((i - 5) * (i - 5)) / (2 * 1.5 * 1.5)); ks += K[i]; }
+      for (let i = 0; i < 11; i++) K[i] /= ks;
+      const cl = (v, hi) => (v < 0 ? 0 : v > hi ? hi : v);
+      const pad = (src) => {
+        const p = new Float64Array(PW * PH);
+        for (let y = 0; y < PH; y++) { const sy = cl(y - 5, h - 1);
+          for (let x = 0; x < PW; x++) p[y * PW + x] = src[sy * w + cl(x - 5, w - 1)]; }
+        return p;
+      };
+      const blur = (p) => {
+        const t = new Float64Array(PW * PH), o = new Float64Array(PW * PH);
+        for (let y = 0; y < PH; y++) for (let x = 0; x < PW; x++) {
+          let s = 0;
+          for (let k = 0; k < 11; k++) s += p[y * PW + cl(x + k - 5, PW - 1)] * K[k];
+          t[y * PW + x] = s;
+        }
+        for (let y = 0; y < PH; y++) for (let x = 0; x < PW; x++) {
+          let s = 0;
+          for (let k = 0; k < 11; k++) s += t[cl(y + k - 5, PH - 1) * PW + x] * K[k];
+          o[y * PW + x] = s;
+        }
+        return o;
+      };
+      const sq = (a) => { const o = new Float64Array(a.length); for (let i = 0; i < a.length; i++) o[i] = a[i] * a[i]; return o; };
+      const mul = (a, b) => { const o = new Float64Array(a.length); for (let i = 0; i < a.length; i++) o[i] = a[i] * b[i]; return o; };
+      const mu1 = blur(pad(la)), mu2 = blur(pad(lb));
+      const aa = blur(pad(sq(la))), bb = blur(pad(sq(lb))), ab = blur(pad(mul(la, lb)));
+      const C1 = 6.5025, C2 = 58.5225;
+      let sum = 0, n = 0;
+      for (let y = 5; y < h + 5; y++) for (let x = 5; x < w + 5; x++) {
+        const i = y * PW + x;
+        const m1 = mu1[i], m2 = mu2[i];
+        const s1 = aa[i] - m1 * m1, s2 = bb[i] - m2 * m2, s12 = ab[i] - m1 * m2;
+        sum += ((2 * m1 * m2 + C1) * (2 * s12 + C2)) / ((m1 * m1 + m2 * m2 + C1) * (s1 + s2 + C2));
+        n++;
+      }
+      return sum / n;
+    };
+    const ssim = ssimAt(best.ox, best.oy);
+    const ssimZero = ssimAt(0, 0);
     // 12×9 区域网格热图（在最优偏移下），定位最大失配区块
     const GX = 12, GY = 9, CW = W / GX, CH = H / GY;
     const grid = [];
@@ -290,6 +347,8 @@ const DIFF_PROG = async (bufA, bufB) => {
       full: { rate24: +best.s.rate24.toFixed(4), rate48: +best.s.rate48.toFixed(4), mad: +best.s.mad.toFixed(2) },
       zeroOffset: { rate24: +zero.rate24.toFixed(4), rate48: +zero.rate48.toFixed(4), mad: +zero.mad.toFixed(2) },
       topBand: { rate24: +top.rate24.toFixed(4), rate48: +top.rate48.toFixed(4), mad: +top.mad.toFixed(2) },
+      ssim: +ssim.toFixed(4), // SSIM @最优平移（IEEE TIP 2004，标准参数）
+      ssimZero: +ssimZero.toFixed(4), // SSIM @零偏移（未对齐参照）
       worstGrid: grid.slice(0, 8),
       grid: gridFull, // 12×9 全网格遥测（gx,gy 升序；区域带分析用，如底部水体带 gy≥6）
     };
@@ -334,8 +393,9 @@ let globalScope = { ours: null, srv: null };
     console.log("\n=== 视觉差分（forest_01 idle @60物理帧）===");
     console.log("最优平移:", JSON.stringify(diff.bestOffset));
     console.log("全帧  容差48匹配率:", (diff.full.rate48 * 100).toFixed(2) + "%", " 容差24:", (diff.full.rate24 * 100).toFixed(2) + "%", " 平均|Δ|:", diff.full.mad);
-    console.log("零偏移 容差48:", (diff.zeroOffset.rate48 * 100).toFixed(2) + "%");
+    console.log("零偏移 容差48:", (diff.zeroOffset.rate48 * 100).toFixed(2) + "%", " SSIM零偏移:", diff.ssimZero);
     console.log("顶部HUD带 容差48:", (diff.topBand.rate48 * 100).toFixed(2) + "%");
+    console.log("SSIM @最优平移:", diff.ssim, "（IEEE TIP 2004，11×11 高斯 σ=1.5）");
     console.log("最差区块(格x,格y 匹配率):", diff.worstGrid.map((g) => `(${g.gx},${g.gy})${(g.rate48 * 100).toFixed(0)}%`).join(" "));
     console.log("████ 视觉复刻度指数（容差48匹配率）:", visualScore, "/ 100 ████");
     if (saveIdx >= 0) {

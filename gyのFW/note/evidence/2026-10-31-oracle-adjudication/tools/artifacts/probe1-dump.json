@@ -1,0 +1,3572 @@
+{
+ "devices": [
+  {
+   "type": "lever",
+   "state": 0,
+   "props": {
+    "group": 2,
+    "onis": 1,
+    "startPos": -1
+   },
+   "posScreen": {
+    "x": 496,
+    "y": 736
+   },
+   "rotation": 0,
+   "body": {
+    "world": {
+     "x": -15.4235,
+     "y": -23.021
+    },
+    "screen": {
+     "x": 493.5522,
+     "y": 736.671
+    },
+    "angle": -0.5351,
+    "type": 2,
+    "mass": 0.672
+   },
+   "fixtures": [
+    {
+     "shape": 2,
+     "isSensor": false,
+     "userData": "null",
+     "filter": {
+      "cat": 1,
+      "mask": 61695
+     },
+     "vertsScreen": [
+      {
+       "x": 500.129,
+       "y": 738.3522
+      },
+      {
+       "x": 491.871,
+       "y": 743.2478
+      },
+      {
+       "x": 469.0253,
+       "y": 704.7106
+      },
+      {
+       "x": 477.2832,
+       "y": 699.8151
+      }
+     ]
+    }
+   ],
+   "joint": {
+    "cls": "",
+    "angle": 0.5351,
+    "motorSpeed": 0,
+    "lower": -0.6283,
+    "upper": 0.6283,
+    "maxMotorForce": null,
+    "maxMotorTorque": 10
+   },
+   "onis": 1,
+   "startPos": -1
+  },
+  {
+   "type": "box",
+   "state": 0,
+   "props": {},
+   "posScreen": {
+    "x": 960,
+    "y": 288
+   },
+   "rotation": 0,
+   "body": {
+    "world": {
+     "x": -30,
+     "y": -9.067
+    },
+    "screen": {
+     "x": 959.9999,
+     "y": 290.144
+    },
+    "angle": 0,
+    "type": 2,
+    "mass": 1.4008
+   },
+   "fixtures": [
+    {
+     "shape": 0,
+     "isSensor": false,
+     "userData": "{\"portal-sensor\":true,\"lightProperties\":{\"type\":\"transparent\"}}",
+     "filter": {
+      "cat": 4096,
+      "mask": 4096
+     },
+     "centerScreen": {
+      "x": 959.9999,
+      "y": 290.144
+     },
+     "radiusPx": 3.2
+    },
+    {
+     "shape": 0,
+     "isSensor": false,
+     "userData": "{\"lightProperties\":{\"type\":\"transparent\"}}",
+     "filter": {
+      "cat": 17,
+      "mask": 4097
+     },
+     "centerScreen": {
+      "x": 933.5999,
+      "y": 263.7441
+     },
+     "radiusPx": 3.2
+    },
+    {
+     "shape": 0,
+     "isSensor": false,
+     "userData": "{\"lightProperties\":{\"type\":\"transparent\"}}",
+     "filter": {
+      "cat": 17,
+      "mask": 4097
+     },
+     "centerScreen": {
+      "x": 986.3999,
+      "y": 263.744
+     },
+     "radiusPx": 3.2
+    },
+    {
+     "shape": 0,
+     "isSensor": false,
+     "userData": "{\"lightProperties\":{\"type\":\"transparent\"}}",
+     "filter": {
+      "cat": 17,
+      "mask": 4097
+     },
+     "centerScreen": {
+      "x": 933.5999,
+      "y": 316.5441
+     },
+     "radiusPx": 3.2
+    },
+    {
+     "shape": 0,
+     "isSensor": false,
+     "userData": "{\"lightProperties\":{\"type\":\"transparent\"}}",
+     "filter": {
+      "cat": 17,
+      "mask": 4097
+     },
+     "centerScreen": {
+      "x": 986.3999,
+      "y": 316.544
+     },
+     "radiusPx": 3.2
+    },
+    {
+     "shape": 2,
+     "isSensor": false,
+     "userData": "null",
+     "filter": {
+      "cat": 1,
+      "mask": 65535
+     },
+     "vertsScreen": [
+      {
+       "x": 931.6799,
+       "y": 315.2641
+      },
+      {
+       "x": 931.6799,
+       "y": 265.0241
+      },
+      {
+       "x": 934.8799,
+       "y": 261.8241
+      },
+      {
+       "x": 985.1199,
+       "y": 261.824
+      },
+      {
+       "x": 988.3199,
+       "y": 265.024
+      },
+      {
+       "x": 988.3199,
+       "y": 315.264
+      },
+      {
+       "x": 985.1199,
+       "y": 318.464
+      },
+      {
+       "x": 934.8799,
+       "y": 318.4641
+      }
+     ]
+    }
+   ],
+   "spriteScreen": {
+    "x": 959.9999,
+    "y": 290.144
+   }
+  },
+  {
+   "type": "pusher",
+   "state": 0,
+   "props": {
+    "group": 4
+   },
+   "posScreen": {
+    "x": 1056,
+    "y": 608
+   },
+   "rotation": 0,
+   "joint": {
+    "cls": "",
+    "translation": 0,
+    "motorSpeed": -15,
+    "lower": 0,
+    "upper": 0.7,
+    "maxMotorForce": 5,
+    "maxMotorTorque": null
+   }
+  },
+  {
+   "type": "platform",
+   "state": 0,
+   "props": {
+    "dx": 0,
+    "dy": 3,
+    "group": 4
+   },
+   "posScreen": {
+    "x": 720,
+    "y": 528
+   },
+   "rotation": 0,
+   "body": {
+    "world": {
+     "x": -22.5,
+     "y": -16.5
+    },
+    "screen": {
+     "x": 720,
+     "y": 528
+    },
+    "angle": 0,
+    "type": 2,
+    "mass": 1
+   },
+   "fixtures": [
+    {
+     "shape": 2,
+     "isSensor": false,
+     "userData": "{\"reflection\":true}",
+     "filter": {
+      "cat": 256,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 734.08,
+       "y": 480
+      },
+      {
+       "x": 734.08,
+       "y": 576
+      },
+      {
+       "x": 705.92,
+       "y": 576
+      },
+      {
+       "x": 705.92,
+       "y": 480
+      }
+     ]
+    }
+   ],
+   "joint": {
+    "cls": "",
+    "translation": 0,
+    "motorSpeed": 2,
+    "lower": -3,
+    "upper": 0,
+    "maxMotorForce": 220,
+    "maxMotorTorque": null
+   }
+  },
+  {
+   "type": "portal",
+   "state": 1,
+   "props": {
+    "group": 5,
+    "initialState": 1,
+    "portalId": 5,
+    "inverted": false
+   },
+   "posScreen": {
+    "x": 32,
+    "y": 848
+   },
+   "rotation": 0,
+   "body": {
+    "world": {
+     "x": -1,
+     "y": -26.5
+    },
+    "screen": {
+     "x": 32,
+     "y": 848
+    },
+    "angle": 0,
+    "type": 0,
+    "mass": 0
+   },
+   "fixtures": [
+    {
+     "shape": 2,
+     "isSensor": false,
+     "userData": "[object Object]",
+     "filter": {
+      "cat": 4096,
+      "mask": 4096
+     },
+     "vertsScreen": [
+      {
+       "x": 35.2,
+       "y": 896
+      },
+      {
+       "x": 28.8,
+       "y": 896
+      },
+      {
+       "x": 28.8,
+       "y": 800
+      },
+      {
+       "x": 35.2,
+       "y": 800
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "isSensor": true,
+     "userData": "{\"lightProperties\":{\"type\":\"transparent\"}}",
+     "filter": {
+      "cat": 4096,
+      "mask": 4096
+     },
+     "vertsScreen": [
+      {
+       "x": 96,
+       "y": 896
+      },
+      {
+       "x": -32,
+       "y": 896
+      },
+      {
+       "x": -32,
+       "y": 800
+      },
+      {
+       "x": 96,
+       "y": 800
+      }
+     ]
+    }
+   ],
+   "portalId": 5,
+   "inverted": false
+  },
+  {
+   "type": "portal",
+   "state": 1,
+   "props": {
+    "group": 5,
+    "initialState": 1,
+    "portalId": 5,
+    "inverted": true
+   },
+   "posScreen": {
+    "x": 1216,
+    "y": 848
+   },
+   "rotation": 0,
+   "body": {
+    "world": {
+     "x": -38,
+     "y": -26.5
+    },
+    "screen": {
+     "x": 1216,
+     "y": 848
+    },
+    "angle": 0,
+    "type": 0,
+    "mass": 0
+   },
+   "fixtures": [
+    {
+     "shape": 2,
+     "isSensor": false,
+     "userData": "[object Object]",
+     "filter": {
+      "cat": 4096,
+      "mask": 4096
+     },
+     "vertsScreen": [
+      {
+       "x": 1219.2,
+       "y": 896
+      },
+      {
+       "x": 1212.8,
+       "y": 896
+      },
+      {
+       "x": 1212.8,
+       "y": 800
+      },
+      {
+       "x": 1219.2,
+       "y": 800
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "isSensor": true,
+     "userData": "{\"lightProperties\":{\"type\":\"transparent\"}}",
+     "filter": {
+      "cat": 4096,
+      "mask": 4096
+     },
+     "vertsScreen": [
+      {
+       "x": 1280,
+       "y": 896
+      },
+      {
+       "x": 1152,
+       "y": 896
+      },
+      {
+       "x": 1152,
+       "y": 800
+      },
+      {
+       "x": 1280,
+       "y": 800
+      }
+     ]
+    }
+   ],
+   "portalId": 5,
+   "inverted": true
+  },
+  {
+   "type": "portal",
+   "state": 0,
+   "props": {
+    "group": 2,
+    "portalId": 2,
+    "inverted": false
+   },
+   "posScreen": {
+    "x": 1216,
+    "y": 112
+   },
+   "rotation": 0,
+   "body": {
+    "world": {
+     "x": -38,
+     "y": -3.5
+    },
+    "screen": {
+     "x": 1216,
+     "y": 112
+    },
+    "angle": 0,
+    "type": 0,
+    "mass": 0
+   },
+   "fixtures": [
+    {
+     "shape": 2,
+     "isSensor": false,
+     "userData": "[object Object]",
+     "filter": {
+      "cat": 0,
+      "mask": 0
+     },
+     "vertsScreen": [
+      {
+       "x": 1219.2,
+       "y": 160
+      },
+      {
+       "x": 1212.8,
+       "y": 160
+      },
+      {
+       "x": 1212.8,
+       "y": 64
+      },
+      {
+       "x": 1219.2,
+       "y": 64
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "isSensor": true,
+     "userData": "{\"lightProperties\":{\"type\":\"transparent\"}}",
+     "filter": {
+      "cat": 0,
+      "mask": 0
+     },
+     "vertsScreen": [
+      {
+       "x": 1280,
+       "y": 160
+      },
+      {
+       "x": 1152,
+       "y": 160
+      },
+      {
+       "x": 1152,
+       "y": 64
+      },
+      {
+       "x": 1280,
+       "y": 64
+      }
+     ]
+    }
+   ],
+   "portalId": 2,
+   "inverted": false
+  },
+  {
+   "type": "portal",
+   "state": 0,
+   "props": {
+    "group": 2,
+    "portalId": 2,
+    "inverted": true
+   },
+   "posScreen": {
+    "x": 32,
+    "y": 624
+   },
+   "rotation": 0,
+   "body": {
+    "world": {
+     "x": -1,
+     "y": -19.5
+    },
+    "screen": {
+     "x": 32,
+     "y": 624
+    },
+    "angle": 0,
+    "type": 0,
+    "mass": 0
+   },
+   "fixtures": [
+    {
+     "shape": 2,
+     "isSensor": false,
+     "userData": "[object Object]",
+     "filter": {
+      "cat": 0,
+      "mask": 0
+     },
+     "vertsScreen": [
+      {
+       "x": 35.2,
+       "y": 672
+      },
+      {
+       "x": 28.8,
+       "y": 672
+      },
+      {
+       "x": 28.8,
+       "y": 576
+      },
+      {
+       "x": 35.2,
+       "y": 576
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "isSensor": true,
+     "userData": "{\"lightProperties\":{\"type\":\"transparent\"}}",
+     "filter": {
+      "cat": 0,
+      "mask": 0
+     },
+     "vertsScreen": [
+      {
+       "x": 96,
+       "y": 672
+      },
+      {
+       "x": -32,
+       "y": 672
+      },
+      {
+       "x": -32,
+       "y": 576
+      },
+      {
+       "x": 96,
+       "y": 576
+      }
+     ]
+    }
+   ],
+   "portalId": 2,
+   "inverted": true
+  },
+  {
+   "type": "portal",
+   "state": 1,
+   "props": {
+    "initialState": 1,
+    "group": 0,
+    "inverted": true,
+    "portalId": 0
+   },
+   "posScreen": {
+    "x": 1216,
+    "y": 560
+   },
+   "rotation": 0,
+   "body": {
+    "world": {
+     "x": -38,
+     "y": -17.5
+    },
+    "screen": {
+     "x": 1216,
+     "y": 560
+    },
+    "angle": 0,
+    "type": 0,
+    "mass": 0
+   },
+   "fixtures": [
+    {
+     "shape": 2,
+     "isSensor": false,
+     "userData": "[object Object]",
+     "filter": {
+      "cat": 4096,
+      "mask": 4096
+     },
+     "vertsScreen": [
+      {
+       "x": 1219.2,
+       "y": 608
+      },
+      {
+       "x": 1212.8,
+       "y": 608
+      },
+      {
+       "x": 1212.8,
+       "y": 512
+      },
+      {
+       "x": 1219.2,
+       "y": 512
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "isSensor": true,
+     "userData": "{\"lightProperties\":{\"type\":\"transparent\"}}",
+     "filter": {
+      "cat": 4096,
+      "mask": 4096
+     },
+     "vertsScreen": [
+      {
+       "x": 1280,
+       "y": 608
+      },
+      {
+       "x": 1152,
+       "y": 608
+      },
+      {
+       "x": 1152,
+       "y": 512
+      },
+      {
+       "x": 1280,
+       "y": 512
+      }
+     ]
+    }
+   ],
+   "portalId": 0,
+   "inverted": true
+  },
+  {
+   "type": "portal",
+   "state": 1,
+   "props": {
+    "initialState": 1,
+    "group": 0,
+    "inverted": true,
+    "portalId": 0
+   },
+   "posScreen": {
+    "x": 1216,
+    "y": 272
+   },
+   "rotation": 0,
+   "body": {
+    "world": {
+     "x": -38,
+     "y": -8.5
+    },
+    "screen": {
+     "x": 1216,
+     "y": 272
+    },
+    "angle": 0,
+    "type": 0,
+    "mass": 0
+   },
+   "fixtures": [
+    {
+     "shape": 2,
+     "isSensor": false,
+     "userData": "[object Object]",
+     "filter": {
+      "cat": 4096,
+      "mask": 4096
+     },
+     "vertsScreen": [
+      {
+       "x": 1219.2,
+       "y": 320
+      },
+      {
+       "x": 1212.8,
+       "y": 320
+      },
+      {
+       "x": 1212.8,
+       "y": 224
+      },
+      {
+       "x": 1219.2,
+       "y": 224
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "isSensor": true,
+     "userData": "{\"lightProperties\":{\"type\":\"transparent\"}}",
+     "filter": {
+      "cat": 4096,
+      "mask": 4096
+     },
+     "vertsScreen": [
+      {
+       "x": 1280,
+       "y": 320
+      },
+      {
+       "x": 1152,
+       "y": 320
+      },
+      {
+       "x": 1152,
+       "y": 224
+      },
+      {
+       "x": 1280,
+       "y": 224
+      }
+     ]
+    }
+   ],
+   "portalId": 0,
+   "inverted": true
+  },
+  {
+   "type": "portal",
+   "state": 1,
+   "props": {
+    "group": 1,
+    "initialState": 1,
+    "portalId": 1,
+    "inverted": true
+   },
+   "posScreen": {
+    "x": 272,
+    "y": 400
+   },
+   "rotation": 0,
+   "body": {
+    "world": {
+     "x": -8.5,
+     "y": -12.5
+    },
+    "screen": {
+     "x": 272,
+     "y": 400
+    },
+    "angle": 0,
+    "type": 0,
+    "mass": 0
+   },
+   "fixtures": [
+    {
+     "shape": 2,
+     "isSensor": false,
+     "userData": "[object Object]",
+     "filter": {
+      "cat": 4096,
+      "mask": 4096
+     },
+     "vertsScreen": [
+      {
+       "x": 275.2,
+       "y": 448
+      },
+      {
+       "x": 268.8,
+       "y": 448
+      },
+      {
+       "x": 268.8,
+       "y": 352
+      },
+      {
+       "x": 275.2,
+       "y": 352
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "isSensor": true,
+     "userData": "{\"lightProperties\":{\"type\":\"transparent\"}}",
+     "filter": {
+      "cat": 4096,
+      "mask": 4096
+     },
+     "vertsScreen": [
+      {
+       "x": 336,
+       "y": 448
+      },
+      {
+       "x": 208,
+       "y": 448
+      },
+      {
+       "x": 208,
+       "y": 352
+      },
+      {
+       "x": 336,
+       "y": 352
+      }
+     ]
+    }
+   ],
+   "portalId": 1,
+   "inverted": true
+  },
+  {
+   "type": "portal",
+   "state": 1,
+   "props": {
+    "group": 1,
+    "initialState": 1,
+    "portalId": 1,
+    "inverted": false
+   },
+   "posScreen": {
+    "x": 272,
+    "y": 208
+   },
+   "rotation": 0,
+   "body": {
+    "world": {
+     "x": -8.5,
+     "y": -6.5
+    },
+    "screen": {
+     "x": 272,
+     "y": 208
+    },
+    "angle": 0,
+    "type": 0,
+    "mass": 0
+   },
+   "fixtures": [
+    {
+     "shape": 2,
+     "isSensor": false,
+     "userData": "[object Object]",
+     "filter": {
+      "cat": 4096,
+      "mask": 4096
+     },
+     "vertsScreen": [
+      {
+       "x": 275.2,
+       "y": 256
+      },
+      {
+       "x": 268.8,
+       "y": 256
+      },
+      {
+       "x": 268.8,
+       "y": 160
+      },
+      {
+       "x": 275.2,
+       "y": 160
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "isSensor": true,
+     "userData": "{\"lightProperties\":{\"type\":\"transparent\"}}",
+     "filter": {
+      "cat": 4096,
+      "mask": 4096
+     },
+     "vertsScreen": [
+      {
+       "x": 336,
+       "y": 256
+      },
+      {
+       "x": 208,
+       "y": 256
+      },
+      {
+       "x": 208,
+       "y": 160
+      },
+      {
+       "x": 336,
+       "y": 160
+      }
+     ]
+    }
+   ],
+   "portalId": 1,
+   "inverted": false
+  }
+ ],
+ "groundRegions": {
+  "R1_col16_base": {
+   "region": [
+    470,
+    590,
+    220,
+    330
+   ],
+   "fixtures": [
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 576,
+       "y": 256
+      },
+      {
+       "x": 608,
+       "y": 256
+      },
+      {
+       "x": 608,
+       "y": 288
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 512,
+       "y": 288
+      },
+      {
+       "x": 512,
+       "y": 256
+      },
+      {
+       "x": 544,
+       "y": 256
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 0,
+       "y": 288
+      },
+      {
+       "x": 0,
+       "y": 256
+      },
+      {
+       "x": 512,
+       "y": 256
+      },
+      {
+       "x": 512,
+       "y": 288
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 576,
+       "y": 256
+      },
+      {
+       "x": 576,
+       "y": 224
+      },
+      {
+       "x": 608,
+       "y": 256
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 544,
+       "y": 224
+      },
+      {
+       "x": 576,
+       "y": 224
+      },
+      {
+       "x": 576,
+       "y": 256
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 512,
+       "y": 256
+      },
+      {
+       "x": 512,
+       "y": 224
+      },
+      {
+       "x": 544,
+       "y": 224
+      },
+      {
+       "x": 544,
+       "y": 256
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 544,
+       "y": 224
+      },
+      {
+       "x": 544,
+       "y": 192
+      },
+      {
+       "x": 576,
+       "y": 224
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 512,
+       "y": 224
+      },
+      {
+       "x": 512,
+       "y": 192
+      },
+      {
+       "x": 544,
+       "y": 192
+      },
+      {
+       "x": 544,
+       "y": 224
+      }
+     ]
+    }
+   ]
+  },
+  "R2_row18_west": {
+   "region": [
+    0,
+    240,
+    470,
+    660
+   ],
+   "fixtures": [
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 160,
+       "y": 608
+      },
+      {
+       "x": 160,
+       "y": 576
+      },
+      {
+       "x": 768,
+       "y": 576
+      },
+      {
+       "x": 768,
+       "y": 608
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 128,
+       "y": 576
+      },
+      {
+       "x": 160,
+       "y": 576
+      },
+      {
+       "x": 160,
+       "y": 608
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 128,
+       "y": 576
+      },
+      {
+       "x": 128,
+       "y": 544
+      },
+      {
+       "x": 160,
+       "y": 576
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 96,
+       "y": 544
+      },
+      {
+       "x": 128,
+       "y": 544
+      },
+      {
+       "x": 128,
+       "y": 576
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 32,
+       "y": 576
+      },
+      {
+       "x": 32,
+       "y": 544
+      },
+      {
+       "x": 64,
+       "y": 544
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 0,
+       "y": 576
+      },
+      {
+       "x": 0,
+       "y": 544
+      },
+      {
+       "x": 32,
+       "y": 544
+      },
+      {
+       "x": 32,
+       "y": 576
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 96,
+       "y": 544
+      },
+      {
+       "x": 96,
+       "y": 512
+      },
+      {
+       "x": 128,
+       "y": 544
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 0,
+       "y": 544
+      },
+      {
+       "x": 0,
+       "y": 512
+      },
+      {
+       "x": 96,
+       "y": 512
+      },
+      {
+       "x": 96,
+       "y": 544
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 0,
+       "y": 512
+      },
+      {
+       "x": 0,
+       "y": 480
+      },
+      {
+       "x": 32,
+       "y": 480
+      },
+      {
+       "x": 32,
+       "y": 512
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 224,
+       "y": 480
+      },
+      {
+       "x": 224,
+       "y": 448
+      },
+      {
+       "x": 320,
+       "y": 448
+      },
+      {
+       "x": 320,
+       "y": 480
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 192,
+       "y": 480
+      },
+      {
+       "x": 224,
+       "y": 448
+      },
+      {
+       "x": 224,
+       "y": 480
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 0,
+       "y": 480
+      },
+      {
+       "x": 0,
+       "y": 448
+      },
+      {
+       "x": 32,
+       "y": 448
+      },
+      {
+       "x": 32,
+       "y": 480
+      }
+     ]
+    }
+   ]
+  },
+  "R3_row18_east_lift": {
+   "region": [
+    630,
+    850,
+    430,
+    670
+   ],
+   "fixtures": [
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 832,
+       "y": 640
+      },
+      {
+       "x": 864,
+       "y": 640
+      },
+      {
+       "x": 864,
+       "y": 672
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 800,
+       "y": 640
+      },
+      {
+       "x": 800,
+       "y": 608
+      },
+      {
+       "x": 1248,
+       "y": 608
+      },
+      {
+       "x": 1248,
+       "y": 640
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 768,
+       "y": 608
+      },
+      {
+       "x": 800,
+       "y": 608
+      },
+      {
+       "x": 800,
+       "y": 640
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 768,
+       "y": 608
+      },
+      {
+       "x": 768,
+       "y": 576
+      },
+      {
+       "x": 800,
+       "y": 608
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 160,
+       "y": 608
+      },
+      {
+       "x": 160,
+       "y": 576
+      },
+      {
+       "x": 768,
+       "y": 576
+      },
+      {
+       "x": 768,
+       "y": 608
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 736,
+       "y": 480
+      },
+      {
+       "x": 736,
+       "y": 448
+      },
+      {
+       "x": 768,
+       "y": 448
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 704,
+       "y": 480
+      },
+      {
+       "x": 704,
+       "y": 448
+      },
+      {
+       "x": 736,
+       "y": 448
+      },
+      {
+       "x": 736,
+       "y": 480
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 800,
+       "y": 448
+      },
+      {
+       "x": 800,
+       "y": 416
+      },
+      {
+       "x": 832,
+       "y": 448
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 704,
+       "y": 448
+      },
+      {
+       "x": 704,
+       "y": 416
+      },
+      {
+       "x": 800,
+       "y": 416
+      },
+      {
+       "x": 800,
+       "y": 448
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 672,
+       "y": 416
+      },
+      {
+       "x": 704,
+       "y": 416
+      },
+      {
+       "x": 704,
+       "y": 448
+      }
+     ]
+    }
+   ]
+  },
+  "R4_row14_slab": {
+   "region": [
+    140,
+    420,
+    410,
+    640
+   ],
+   "fixtures": [
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 160,
+       "y": 608
+      },
+      {
+       "x": 160,
+       "y": 576
+      },
+      {
+       "x": 768,
+       "y": 576
+      },
+      {
+       "x": 768,
+       "y": 608
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 128,
+       "y": 576
+      },
+      {
+       "x": 160,
+       "y": 576
+      },
+      {
+       "x": 160,
+       "y": 608
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 128,
+       "y": 576
+      },
+      {
+       "x": 128,
+       "y": 544
+      },
+      {
+       "x": 160,
+       "y": 576
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 320,
+       "y": 480
+      },
+      {
+       "x": 320,
+       "y": 448
+      },
+      {
+       "x": 352,
+       "y": 480
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 224,
+       "y": 480
+      },
+      {
+       "x": 224,
+       "y": 448
+      },
+      {
+       "x": 320,
+       "y": 448
+      },
+      {
+       "x": 320,
+       "y": 480
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 192,
+       "y": 480
+      },
+      {
+       "x": 224,
+       "y": 448
+      },
+      {
+       "x": 224,
+       "y": 480
+      }
+     ]
+    }
+   ]
+  },
+  "R5_row9_structure": {
+   "region": [
+    140,
+    420,
+    250,
+    410
+   ],
+   "fixtures": [
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 288,
+       "y": 352
+      },
+      {
+       "x": 288,
+       "y": 320
+      },
+      {
+       "x": 320,
+       "y": 320
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 256,
+       "y": 352
+      },
+      {
+       "x": 256,
+       "y": 320
+      },
+      {
+       "x": 288,
+       "y": 320
+      },
+      {
+       "x": 288,
+       "y": 352
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 224,
+       "y": 320
+      },
+      {
+       "x": 256,
+       "y": 320
+      },
+      {
+       "x": 256,
+       "y": 352
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 320,
+       "y": 320
+      },
+      {
+       "x": 320,
+       "y": 288
+      },
+      {
+       "x": 352,
+       "y": 288
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 288,
+       "y": 320
+      },
+      {
+       "x": 320,
+       "y": 288
+      },
+      {
+       "x": 320,
+       "y": 320
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 224,
+       "y": 320
+      },
+      {
+       "x": 224,
+       "y": 288
+      },
+      {
+       "x": 256,
+       "y": 320
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 192,
+       "y": 288
+      },
+      {
+       "x": 224,
+       "y": 288
+      },
+      {
+       "x": 224,
+       "y": 320
+      }
+     ]
+    }
+   ]
+  },
+  "R6_P3_leftwall": {
+   "region": [
+    0,
+    90,
+    550,
+    730
+   ],
+   "fixtures": [
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 0,
+       "y": 736
+      },
+      {
+       "x": 0,
+       "y": 704
+      },
+      {
+       "x": 32,
+       "y": 704
+      },
+      {
+       "x": 32,
+       "y": 736
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 0,
+       "y": 704
+      },
+      {
+       "x": 0,
+       "y": 672
+      },
+      {
+       "x": 32,
+       "y": 672
+      },
+      {
+       "x": 32,
+       "y": 704
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 32,
+       "y": 576
+      },
+      {
+       "x": 32,
+       "y": 544
+      },
+      {
+       "x": 64,
+       "y": 544
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 0,
+       "y": 576
+      },
+      {
+       "x": 0,
+       "y": 544
+      },
+      {
+       "x": 32,
+       "y": 544
+      },
+      {
+       "x": 32,
+       "y": 576
+      }
+     ]
+    }
+   ]
+  },
+  "R7_row6_row4_east": {
+   "region": [
+    590,
+    1265,
+    80,
+    250
+   ],
+   "fixtures": [
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 992,
+       "y": 224
+      },
+      {
+       "x": 992,
+       "y": 192
+      },
+      {
+       "x": 1248,
+       "y": 192
+      },
+      {
+       "x": 1248,
+       "y": 224
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 960,
+       "y": 192
+      },
+      {
+       "x": 992,
+       "y": 192
+      },
+      {
+       "x": 992,
+       "y": 224
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 1216,
+       "y": 192
+      },
+      {
+       "x": 1216,
+       "y": 160
+      },
+      {
+       "x": 1248,
+       "y": 160
+      },
+      {
+       "x": 1248,
+       "y": 192
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 1184,
+       "y": 192
+      },
+      {
+       "x": 1216,
+       "y": 160
+      },
+      {
+       "x": 1216,
+       "y": 192
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 960,
+       "y": 192
+      },
+      {
+       "x": 960,
+       "y": 160
+      },
+      {
+       "x": 992,
+       "y": 192
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 928,
+       "y": 160
+      },
+      {
+       "x": 960,
+       "y": 160
+      },
+      {
+       "x": 960,
+       "y": 192
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 928,
+       "y": 160
+      },
+      {
+       "x": 928,
+       "y": 128
+      },
+      {
+       "x": 960,
+       "y": 160
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 672,
+       "y": 160
+      },
+      {
+       "x": 672,
+       "y": 128
+      },
+      {
+       "x": 928,
+       "y": 128
+      },
+      {
+       "x": 928,
+       "y": 160
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 640,
+       "y": 160
+      },
+      {
+       "x": 672,
+       "y": 128
+      },
+      {
+       "x": 672,
+       "y": 160
+      }
+     ]
+    }
+   ]
+  },
+  "R8_row19_east": {
+   "region": [
+    740,
+    1265,
+    550,
+    730
+   ],
+   "fixtures": [
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 928,
+       "y": 736
+      },
+      {
+       "x": 928,
+       "y": 704
+      },
+      {
+       "x": 1248,
+       "y": 704
+      },
+      {
+       "x": 1248,
+       "y": 736
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 896,
+       "y": 704
+      },
+      {
+       "x": 928,
+       "y": 704
+      },
+      {
+       "x": 928,
+       "y": 736
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 1216,
+       "y": 704
+      },
+      {
+       "x": 1216,
+       "y": 672
+      },
+      {
+       "x": 1248,
+       "y": 672
+      },
+      {
+       "x": 1248,
+       "y": 704
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 1184,
+       "y": 704
+      },
+      {
+       "x": 1184,
+       "y": 672
+      },
+      {
+       "x": 1216,
+       "y": 704
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 1120,
+       "y": 704
+      },
+      {
+       "x": 1120,
+       "y": 672
+      },
+      {
+       "x": 1184,
+       "y": 672
+      },
+      {
+       "x": 1184,
+       "y": 704
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 1088,
+       "y": 672
+      },
+      {
+       "x": 1120,
+       "y": 672
+      },
+      {
+       "x": 1120,
+       "y": 704
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 896,
+       "y": 704
+      },
+      {
+       "x": 896,
+       "y": 672
+      },
+      {
+       "x": 928,
+       "y": 704
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 864,
+       "y": 672
+      },
+      {
+       "x": 896,
+       "y": 672
+      },
+      {
+       "x": 896,
+       "y": 704
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 1216,
+       "y": 672
+      },
+      {
+       "x": 1216,
+       "y": 640
+      },
+      {
+       "x": 1248,
+       "y": 640
+      },
+      {
+       "x": 1248,
+       "y": 672
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 1152,
+       "y": 672
+      },
+      {
+       "x": 1152,
+       "y": 640
+      },
+      {
+       "x": 1184,
+       "y": 672
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 1024,
+       "y": 672
+      },
+      {
+       "x": 1024,
+       "y": 640
+      },
+      {
+       "x": 1152,
+       "y": 640
+      },
+      {
+       "x": 1152,
+       "y": 672
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 992,
+       "y": 640
+      },
+      {
+       "x": 1024,
+       "y": 640
+      },
+      {
+       "x": 1024,
+       "y": 672
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 864,
+       "y": 672
+      },
+      {
+       "x": 864,
+       "y": 640
+      },
+      {
+       "x": 896,
+       "y": 672
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 832,
+       "y": 640
+      },
+      {
+       "x": 864,
+       "y": 640
+      },
+      {
+       "x": 864,
+       "y": 672
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 800,
+       "y": 640
+      },
+      {
+       "x": 800,
+       "y": 608
+      },
+      {
+       "x": 1248,
+       "y": 608
+      },
+      {
+       "x": 1248,
+       "y": 640
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 768,
+       "y": 608
+      },
+      {
+       "x": 800,
+       "y": 608
+      },
+      {
+       "x": 800,
+       "y": 640
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 768,
+       "y": 608
+      },
+      {
+       "x": 768,
+       "y": 576
+      },
+      {
+       "x": 800,
+       "y": 608
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 160,
+       "y": 608
+      },
+      {
+       "x": 160,
+       "y": 576
+      },
+      {
+       "x": 768,
+       "y": 576
+      },
+      {
+       "x": 768,
+       "y": 608
+      }
+     ]
+    }
+   ]
+  },
+  "R9_doors": {
+   "region": [
+    0,
+    520,
+    220,
+    300
+   ],
+   "fixtures": [
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 320,
+       "y": 320
+      },
+      {
+       "x": 320,
+       "y": 288
+      },
+      {
+       "x": 352,
+       "y": 288
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 288,
+       "y": 320
+      },
+      {
+       "x": 320,
+       "y": 288
+      },
+      {
+       "x": 320,
+       "y": 320
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 224,
+       "y": 320
+      },
+      {
+       "x": 224,
+       "y": 288
+      },
+      {
+       "x": 256,
+       "y": 320
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 192,
+       "y": 288
+      },
+      {
+       "x": 224,
+       "y": 288
+      },
+      {
+       "x": 224,
+       "y": 320
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 0,
+       "y": 320
+      },
+      {
+       "x": 0,
+       "y": 288
+      },
+      {
+       "x": 32,
+       "y": 288
+      },
+      {
+       "x": 32,
+       "y": 320
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 512,
+       "y": 288
+      },
+      {
+       "x": 512,
+       "y": 256
+      },
+      {
+       "x": 544,
+       "y": 256
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 0,
+       "y": 288
+      },
+      {
+       "x": 0,
+       "y": 256
+      },
+      {
+       "x": 512,
+       "y": 256
+      },
+      {
+       "x": 512,
+       "y": 288
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 512,
+       "y": 256
+      },
+      {
+       "x": 512,
+       "y": 224
+      },
+      {
+       "x": 544,
+       "y": 224
+      },
+      {
+       "x": 544,
+       "y": 256
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 0,
+       "y": 256
+      },
+      {
+       "x": 0,
+       "y": 224
+      },
+      {
+       "x": 32,
+       "y": 224
+      },
+      {
+       "x": 32,
+       "y": 256
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 512,
+       "y": 224
+      },
+      {
+       "x": 512,
+       "y": 192
+      },
+      {
+       "x": 544,
+       "y": 192
+      },
+      {
+       "x": 544,
+       "y": 224
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 0,
+       "y": 224
+      },
+      {
+       "x": 0,
+       "y": 192
+      },
+      {
+       "x": 32,
+       "y": 192
+      },
+      {
+       "x": 32,
+       "y": 224
+      }
+     ]
+    }
+   ]
+  },
+  "R10_bottom_stair": {
+   "region": [
+    560,
+    860,
+    750,
+    930
+   ],
+   "fixtures": [
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 768,
+       "y": 896
+      },
+      {
+       "x": 768,
+       "y": 864
+      },
+      {
+       "x": 800,
+       "y": 896
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 736,
+       "y": 864
+      },
+      {
+       "x": 768,
+       "y": 864
+      },
+      {
+       "x": 768,
+       "y": 896
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 736,
+       "y": 864
+      },
+      {
+       "x": 736,
+       "y": 832
+      },
+      {
+       "x": 768,
+       "y": 864
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 704,
+       "y": 832
+      },
+      {
+       "x": 736,
+       "y": 832
+      },
+      {
+       "x": 736,
+       "y": 864
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 704,
+       "y": 832
+      },
+      {
+       "x": 704,
+       "y": 800
+      },
+      {
+       "x": 736,
+       "y": 832
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 672,
+       "y": 832
+      },
+      {
+       "x": 672,
+       "y": 800
+      },
+      {
+       "x": 704,
+       "y": 800
+      },
+      {
+       "x": 704,
+       "y": 832
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 640,
+       "y": 800
+      },
+      {
+       "x": 672,
+       "y": 800
+      },
+      {
+       "x": 672,
+       "y": 832
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 640,
+       "y": 800
+      },
+      {
+       "x": 640,
+       "y": 768
+      },
+      {
+       "x": 672,
+       "y": 800
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 608,
+       "y": 768
+      },
+      {
+       "x": 640,
+       "y": 768
+      },
+      {
+       "x": 640,
+       "y": 800
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 608,
+       "y": 768
+      },
+      {
+       "x": 608,
+       "y": 736
+      },
+      {
+       "x": 640,
+       "y": 768
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 64,
+       "y": 768
+      },
+      {
+       "x": 64,
+       "y": 736
+      },
+      {
+       "x": 608,
+       "y": 736
+      },
+      {
+       "x": 608,
+       "y": 768
+      }
+     ]
+    }
+   ]
+  },
+  "R11_spawn": {
+   "region": [
+    480,
+    720,
+    830,
+    930
+   ],
+   "fixtures": [
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 704,
+       "y": 832
+      },
+      {
+       "x": 736,
+       "y": 832
+      },
+      {
+       "x": 736,
+       "y": 864
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 704,
+       "y": 832
+      },
+      {
+       "x": 704,
+       "y": 800
+      },
+      {
+       "x": 736,
+       "y": 832
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 672,
+       "y": 832
+      },
+      {
+       "x": 672,
+       "y": 800
+      },
+      {
+       "x": 704,
+       "y": 800
+      },
+      {
+       "x": 704,
+       "y": 832
+      }
+     ]
+    },
+    {
+     "shape": 2,
+     "filter": {
+      "cat": 1,
+      "mask": 4369
+     },
+     "vertsScreen": [
+      {
+       "x": 640,
+       "y": 800
+      },
+      {
+       "x": 672,
+       "y": 800
+      },
+      {
+       "x": 672,
+       "y": 832
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "meta": {
+  "gravityWorld": {
+   "x": 0,
+   "y": -31.25
+  },
+  "px2World": "world = -screen/32 (empirical, portal-probe 01号档 §5.1)"
+ },
+ "portalPairs": [
+  {
+   "idx": 0,
+   "portalId": 5,
+   "state": 1,
+   "inverted": false,
+   "centerScreen": {
+    "x": 32,
+    "y": 848
+   },
+   "otherIdx": 5
+  },
+  {
+   "idx": 1,
+   "portalId": 5,
+   "state": 1,
+   "inverted": true,
+   "centerScreen": {
+    "x": 1216,
+    "y": 848
+   },
+   "otherIdx": 4
+  },
+  {
+   "idx": 2,
+   "portalId": 2,
+   "state": 0,
+   "inverted": false,
+   "centerScreen": {
+    "x": 1216,
+    "y": 112
+   },
+   "otherIdx": 7
+  },
+  {
+   "idx": 3,
+   "portalId": 2,
+   "state": 0,
+   "inverted": true,
+   "centerScreen": {
+    "x": 32,
+    "y": 624
+   },
+   "otherIdx": 6
+  },
+  {
+   "idx": 4,
+   "portalId": 0,
+   "state": 1,
+   "inverted": true,
+   "centerScreen": {
+    "x": 1216,
+    "y": 560
+   },
+   "otherIdx": 9
+  },
+  {
+   "idx": 5,
+   "portalId": 0,
+   "state": 1,
+   "inverted": true,
+   "centerScreen": {
+    "x": 1216,
+    "y": 272
+   },
+   "otherIdx": 8
+  },
+  {
+   "idx": 6,
+   "portalId": 1,
+   "state": 1,
+   "inverted": true,
+   "centerScreen": {
+    "x": 272,
+    "y": 400
+   },
+   "otherIdx": 11
+  },
+  {
+   "idx": 7,
+   "portalId": 1,
+   "state": 1,
+   "inverted": false,
+   "centerScreen": {
+    "x": 272,
+    "y": 208
+   },
+   "otherIdx": 10
+  }
+ ],
+ "doors": [
+  {
+   "k": "door1",
+   "char": "fb",
+   "pos": {
+    "x": 448,
+    "y": 256
+   },
+   "isUp": false,
+   "isOpen": false,
+   "bodyScreen": {
+    "x": 448,
+    "y": 260
+   },
+   "fixtures": [
+    {
+     "shape": 2,
+     "isSensor": true,
+     "userData": "\"door-fb\"",
+     "filter": {
+      "cat": 1,
+      "mask": 65535
+     },
+     "vertsScreen": [
+      {
+       "x": 480,
+       "y": 264
+      },
+      {
+       "x": 416,
+       "y": 264
+      },
+      {
+       "x": 416,
+       "y": 256
+      },
+      {
+       "x": 480,
+       "y": 256
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "k": "door2",
+   "char": "wg",
+   "pos": {
+    "x": 96,
+    "y": 256
+   },
+   "isUp": false,
+   "isOpen": false,
+   "bodyScreen": {
+    "x": 96,
+    "y": 260
+   },
+   "fixtures": [
+    {
+     "shape": 2,
+     "isSensor": true,
+     "userData": "\"door-wg\"",
+     "filter": {
+      "cat": 1,
+      "mask": 65535
+     },
+     "vertsScreen": [
+      {
+       "x": 128,
+       "y": 264
+      },
+      {
+       "x": 64,
+       "y": 264
+      },
+      {
+       "x": 64,
+       "y": 256
+      },
+      {
+       "x": 128,
+       "y": 256
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "chars": [
+  {
+   "k": "pers1",
+   "char": "fb",
+   "body": {
+    "world": {
+     "x": -19.75,
+     "y": -26.892
+    },
+    "screen": {
+     "x": 632,
+     "y": 860.544
+    },
+    "angle": 0,
+    "type": 2,
+    "mass": 0.9548
+   },
+   "isDead": false
+  },
+  {
+   "k": "pers2",
+   "char": "wg",
+   "body": {
+    "world": {
+     "x": -17.5,
+     "y": -26.892
+    },
+    "screen": {
+     "x": 560,
+     "y": 860.544
+    },
+    "angle": 0,
+    "type": 2,
+    "mass": 0.9548
+   },
+   "isDead": false
+  }
+ ]
+}

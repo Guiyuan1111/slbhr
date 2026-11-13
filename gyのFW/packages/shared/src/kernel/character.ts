@@ -55,6 +55,33 @@ export class Character {
   /** 脚底接触表（b2Contact[]，begin/end 由世界接触监听维护） */
   readonly feetContacts: any[] = [];
 
+  /** r47：每步零分配复用的向量/标量 scratch。
+   *
+   *  改造缘起：`perf-server-alloc`（r47 新增）对最重关 `crystal_20` 做采样归因，
+   *  `character.update` 一项占 9.8%，是自有内核里最大的一块——每步至少 2–4 个
+   *  `new b2Vec2`（SetLinearVelocity/ApplyForce/ApplyLinearImpulse 的参数）+ 2–3 个
+   *  力向量字面量 `{x,y}` + 一次 `[...feetContacts]` 数组拷贝与排序。
+   *
+   *  位级中性依据（逐项核对 vendor 实现）：
+   *  - `b2Body.SetLinearVelocity(a)` = `m_linearVelocity.Copy(a)` → 逐字段赋值（保 −0）；
+   *  - `b2Body.ApplyForce(a, b)` / `ApplyLinearImpulse(a, b, c)` 只读 `a.x/a.y/b.x/b.y`，
+   *    不保留引用；本文件传的 `b` 恒是原点 (0,0)，故用同一个 `zeroVec`；
+   *  - `b2Body.GetWorldVector(local, out)` 走 `b2MulRV(q, local, out)`，写入 out。
+   *  因此这些 scratch 只在「写出 → 立即消费 → 下次覆盖」之间存活，不会跨调用被观测。
+   *  ⚠ 不可跨步复用同一个 scratch 给「需要保留到下一步」的量——本文件没有这种用法。 */
+  private readonly scratchVel = { x: 0, y: 0 };
+  private readonly scratchForce = { x: 0, y: 0 };
+  /** 跳跃钳速目标（与 scratchVel 分开：冲量算完 i 还要用，不能互相踩） */
+  private readonly scratchJump = { x: 0, y: 0 };
+  /** reactable 的 −1 冲量（同上，独立于 force/jump 两个 scratch） */
+  private readonly scratchJump2 = { x: 0, y: 0 };
+  /** 原点常量（ApplyForce/ApplyLinearImpulse 的第二参恒为 (0,0)） */
+  private readonly zeroVec = { x: 0, y: 0 };
+  /** 脚底法线排序用的索引缓冲（避免每步 `[...feetContacts]` 拷贝） */
+  private readonly feetOrder: number[] = [];
+  /** 排序基准（恒 (0,−1)，原每步新建对象字面量） */
+  private readonly downVec = { x: 0, y: -1 };
+
   /** 输出（供快照/客户端）：动画与朝向 */
   anim: AnimState = "idle";
   /** 头部贴图水平翻转：−1=朝左，1=朝右 */
@@ -63,7 +90,11 @@ export class Character {
 
   private jumpedThisFrame = false;
 
-  constructor(B: B2, world: any, role: Role, spawn: { x: number; y: number }) {
+  /** 本角色跳跃初速（部别 vintage：F=16.5、A–E=15.5；World 按 level.id 注入） */
+  private readonly jumpV: number;
+
+  constructor(B: B2, world: any, role: Role, spawn: { x: number; y: number }, jumpVelocity?: number) {
+    this.jumpV = jumpVelocity ?? CHAR.jumpVelocity;
     this.role = role;
     this.char = role === "fireboy" ? "fb" : "wg";
     // 原版：d += mpx(1), f -= mpx(1)（自 RAW 图块对象 (o.x, o.y底边)）。
@@ -190,7 +221,12 @@ export class Character {
   update(B: B2, dt: number, cursors: InputState, onJumpSound: (role: Role) => void): void {
     if (this.dying) {
       // 原版：dying 时只播烟雾，dead 后每帧清零速度
-      if (this.dead) this.body.SetLinearVelocity(new B.b2Vec2(0, 0));
+      if (this.dead) {
+        // r47：复用 zeroVec（SetLinearVelocity 只做 Copy，不保留引用）
+        this.zeroVec.x = 0;
+        this.zeroVec.y = 0;
+        this.body.SetLinearVelocity(this.zeroVec);
+      }
       this.smokeT += dt;
       if (!this.isDead && this.smokeT >= 45 / 30) {
         this.isDead = true; // 原版烟雾 onComplete 后 isDead → checkEndGame gameOver
@@ -199,22 +235,30 @@ export class Character {
     }
 
     const k = CHAR.jumpImpulse;
-    const jumpVelocity = CHAR.jumpVelocity;
+    const jumpVelocity = this.jumpV;
     const s = CHAR.runForce;
     const h = CHAR.floatForce;
     const m = this.maxSpeed;
 
     // 脚底接触法线：世界系，按与 (0,−1) 点积升序取最上者
     let n: { x: number; y: number } | undefined;
-    const down = { x: 0, y: -1 };
+    const down = this.downVec;
     if (this.feetContacts.length > 0) {
-      for (const c of this.feetContacts) {
+      const fc = this.feetContacts;
+      for (let idx = 0; idx < fc.length; idx++) {
+        const c = fc[idx];
         if (!c.m_normal) c.m_normal = new B.b2Vec2();
         const manifold = c.GetManifold ? c.GetManifold() : c.m_manifold;
         c.m_fixtureA.m_body.GetWorldVector(manifold.localNormal, c.m_normal);
       }
-      const sorted = [...this.feetContacts].sort((a, b) => a.m_normal.Dot(down) - b.m_normal.Dot(down));
-      n = sorted[0].m_normal;
+      // r47：原为 `[...this.feetContacts].sort(...)` —— 每步拷一份数组。改为对**索引表**
+      // 排序：比较函数与 stable 语义完全一致（相等项按原下标先后，Array.sort 自 ES2019
+      // 稳定），取首项即原 sorted[0]，位级同值；索引表是实例字段，复用不分配。
+      const order = this.feetOrder;
+      order.length = fc.length;
+      for (let idx = 0; idx < fc.length; idx++) order[idx] = idx;
+      order.sort((ia, ib) => fc[ia].m_normal.Dot(down) - fc[ib].m_normal.Dot(down));
+      n = fc[order[0]].m_normal;
     }
 
     // 力爬升增量：e = 130·dt / currentRunForce；慢速且已过半程则整帧给满
@@ -222,60 +266,86 @@ export class Character {
     const vel = this.body.GetLinearVelocity();
     if (vel.Length() < 1 && this.currentRunForce! > 0.5 * s) e = s;
 
-    let i: { x: number; y: number } | undefined;
+    // r47：力向量复用 `scratchForce`（原来每个分支各造 1–2 个 `{x,y}` 字面量）。
+    // 注意：原代码 left/right 分支先造 i 再乘 f 覆盖成新对象——这里改成两步都写同一
+    // 对象的字段，**顺序与算术完全相同**（先算 n 相关分量，再乘 f，再按条件加 y）。
+    const i = this.scratchForce;
     if (cursors.left) {
       if (n) {
         if (this.currentRunForce! < s) this.currentRunForce = Math.min(this.currentRunForce! + e, s);
         const p = n.y > 0.6 ? n.y : 0;
         // n × (−F)：SelfCrossSV(a) ⇒ (x,y) ← (−a·y, a·x)
-        i = { x: -(-this.currentRunForce!) * n.y, y: -this.currentRunForce! * n.x };
+        i.x = -(-this.currentRunForce!) * n.y;
+        i.y = -this.currentRunForce! * n.x;
         const f = Math.max(0, Math.sqrt(p));
-        i = { x: i.x * f, y: i.y * f };
+        i.x *= f;
+        i.y *= f;
         if (p > 0.6 && i.y >= 0 && i.y < 20) i.y += 20;
       } else {
-        i = { x: h, y: 0 };
+        i.x = h;
+        i.y = 0;
       }
     } else if (cursors.right) {
       if (n) {
         if (this.currentRunForce! < s) this.currentRunForce = Math.min(this.currentRunForce! + e, s);
         const p = n.y > 0.6 ? n.y : 0;
-        i = { x: -this.currentRunForce! * n.y, y: this.currentRunForce! * n.x };
+        i.x = -this.currentRunForce! * n.y;
+        i.y = this.currentRunForce! * n.x;
         const f = Math.max(0, Math.sqrt(p));
-        i = { x: i.x * f, y: i.y * f };
+        i.x *= f;
+        i.y *= f;
         if (p > 0.6 && i.y >= 0 && i.y < 20) i.y += 20;
       } else {
-        i = { x: -h, y: 0 };
+        i.x = -h;
+        i.y = 0;
       }
     } else {
       this.currentRunForce = 0.475 * s;
       // 无输入减速（原版 @63254-63264）：wg 在冰面硬停（反速度×20 + 速度清零），其余 i = (7·−vx, 0)
       const vx = this.body.GetLinearVelocity().x;
       if (this.isOnIce && this.char === "wg") {
-        i = { x: -vx * 20, y: 0 };
-        this.body.SetLinearVelocity(new B.b2Vec2(0, 0));
+        i.x = -vx * 20;
+        i.y = 0;
+        // scratchVel 必须先清零再传——不能直接传未初始化的共享 scratch
+        this.scratchVel.x = 0;
+        this.scratchVel.y = 0;
+        this.body.SetLinearVelocity(this.scratchVel);
       } else {
-        i = { x: 7 * -vx, y: 0 };
+        i.x = 7 * -vx;
+        i.y = 0;
       }
     }
 
     // 跳跃：prohibitJump 边沿 + 法线门控
     if (this.prohibitJump && !cursors.up) this.prohibitJump = false;
     if (!this.prohibitJump && cursors.up && ((n !== undefined && n.y > 0.2) || this.feetContacts.length >= 2)) {
-      this.body.ApplyLinearImpulse({ x: 0, y: k }, { x: 0, y: 0 });
+      // 跳跃冲量与随后的钳速各用一个 scratch：impulse 用完即弃，弹簧式复用给 v 是安全的，
+      // 但为了可读性这里分开：scratchVel 给冲量、scratchJump 给钳速后的速度。
+      const jimp0 = this.scratchVel;
+      jimp0.x = 0;
+      jimp0.y = k;
+      this.body.ApplyLinearImpulse(jimp0, this.zeroVec);
       // 起跳只走非冰分支（oracle jumpIceVelocity @63028 同样定义未消费）
-      let v = { x: this.body.GetLinearVelocity().x, y: n!.y > 0.65 ? jumpVelocity : Math.sqrt(Math.sqrt(n!.y)) * jumpVelocity };
+      const v = this.scratchJump;
+      v.x = this.body.GetLinearVelocity().x;
+      v.y = n!.y > 0.65 ? jumpVelocity : Math.sqrt(Math.sqrt(n!.y)) * jumpVelocity;
       const len = Math.hypot(v.x, v.y);
       if (len > jumpVelocity) {
-        v = { x: (v.x / len) * jumpVelocity, y: (v.y / len) * jumpVelocity };
+        v.x = (v.x / len) * jumpVelocity;
+        v.y = (v.y / len) * jumpVelocity;
       }
-      this.body.SetLinearVelocity(new B.b2Vec2(v.x, v.y));
+      this.body.SetLinearVelocity(v);
       this.jumpedThisFrame = true;
       // 对脚下 reactable（摆/平台）施 −1 冲量
       let q = this.body.GetContactList();
       while (q) {
         const other = q.contact.m_fixtureA.m_body;
         if (other.GetUserData() === "reactable") {
-          other.ApplyLinearImpulse(new B.b2Vec2(0, -1), new B.b2Vec2(0, 0), true);
+          // ⚠ 不可复用 i（scratchForce）：下方「施力」段还要读它
+          const jimp = this.scratchJump2;
+          jimp.x = 0;
+          jimp.y = -1;
+          other.ApplyLinearImpulse(jimp, this.zeroVec, true);
         }
         q = q.next;
       }
@@ -284,15 +354,15 @@ export class Character {
     }
 
     // 施力：跳跃帧强制 i.y=0；x 分量速度未超 maxSpeed 才 ApplyForce
-    if (i !== undefined) {
-      if (this.jumpedThisFrame) {
-        i = { x: i.x, y: 0 };
-        this.jumpedThisFrame = false;
-      }
-      const u = this.body.GetLinearVelocity();
-      if (i.x > 0 && u.x < m) this.body.ApplyForce(new B.b2Vec2(i.x, i.y), new B.b2Vec2(0, 0));
-      if (i.x < 0 && u.x > -m) this.body.ApplyForce(new B.b2Vec2(i.x, i.y), new B.b2Vec2(0, 0));
+    // r47：原每步最多 2 个 `new b2Vec2(i)` + 2 个原点对象。ApplyForce 只读 a.x/a.y/b.x/b.y，
+    // 不保留引用，故直接传复用的 i 与 zeroVec（i 是本步最后一个消费者）。
+    if (this.jumpedThisFrame) {
+      i.y = 0;
+      this.jumpedThisFrame = false;
     }
+    const u = this.body.GetLinearVelocity();
+    if (i.x > 0 && u.x < m) this.body.ApplyForce(i, this.zeroVec);
+    if (i.x < 0 && u.x > -m) this.body.ApplyForce(i, this.zeroVec);
     // 硬钳 absoluteMaxSpeed（无条件）
     const u2 = this.body.GetLinearVelocity();
     if (u2.Length() > CHAR.absoluteMaxSpeed) {
@@ -306,7 +376,10 @@ export class Character {
   /** 动画状态机（原版 update 后半段：idle/jumping/rising/falling + 头部倾角） */
   private updateAnim(cursors: InputState, n: { x: number; y: number } | undefined): void {
     const u = this.body.GetLinearVelocity();
-    const o = { x: u.x, y: u.y };
+    // r47：原为 `const o = {x:u.x, y:u.y}` 再对 o 归一——GetLinearVelocity() 返回的是
+    // vendor 的 m_out_linearVelocity（每体独享的复用临时对象），本方法之后再无读者，
+    // 故直接就地归一，省一次对象分配；算术与逐位结果完全相同。
+    const o = u;
     const len = Math.hypot(o.x, o.y);
     if (len > 1e-5) {
       o.x /= len;

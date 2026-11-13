@@ -37,6 +37,17 @@ forest_01 就绪后第 60 物理帧（无输入 idle）对 canvas 元素截图�
 双浏览器入房。页内 480×360 灰度归一 + ±48px 平移搜索取最优对齐，报告容差
 24/48 匹配率。**视觉复刻度指数 = 容差48匹配率**。
 
+**SSIM 分量（2026-11-11 增）**：同一对齐灰度图上顺带计算 SSIM（Wang 等，
+IEEE TIP 2004 标准指标；11×11 高斯窗 σ=1.5，L=255 → C1=6.5025/C2=58.5225，
+最优平移重叠区均值，边缘复制填充保窗完整；零偏移 SSIM 同报 `diff.ssim`/
+`diff.ssimZero`）。落点 = 复刻保真度标准调研
+（note/research/2026-11-06-replica-fidelity-metrics/01-survey.md §4 候选①）：
+容差匹配率是自造数，SSIM 可直接对标外部文献。**基线带（2026-11-11，forest_01
+idle 三跑）SSIM 0.7813–0.7887**（散布 0.0074；同跑容差48 95.93–96.10，快照
+`visual-ssim-base*.json`）。带纪律：越带（>±0.01）才记显著位移，期内不可直列
+历史带；另记——本次三跑 rate48 明显高于 0.3.42 复验带（91.11–92.45），为
+0.3.42 之后保真轮次的正向漂移，待后续复跑复核后再议带演变。
+
 **捕获口径（2026-10-20 修）**：我方侧截帧前以 `display:none!important` 隐藏
 `#hud/#menu/#toast` DOM 覆盖层，双 rAF 后截 canvas，随即恢复——39 号档
 （note/research/2026-10-fidelity/39-visual-diff-drift.md §3.2/§7）定谳 Playwright
@@ -78,6 +89,92 @@ node --import tsx benchmark/perf-idle.mjs [--secs 8] [--modes ...] --save <label
 node benchmark/perf-toolchain.mjs --save <label>                                    # 工具链（r10）
 node --expose-gc --import tsx benchmark/perf-gc.mjs --save <label>                  # GC 拆账（r11）
 ```
+
+### 六部全库基准（r44 起，覆盖全部 241 关）
+
+```bash
+node --expose-gc --import tsx benchmark/perf-r44.mjs                        # 跑分打印
+node --expose-gc --import tsx benchmark/perf-r44.mjs --save r44-after       # 存档
+node --expose-gc --import tsx benchmark/perf-r44.mjs --compare r44-before   # 与快照对比
+PERF_R44_TEMPLE=crystal,fairies   只跑指定部
+PERF_R44_STEPS=1200 PERF_R44_ALLOC_STEPS=3000
+
+node --expose-gc --import tsx benchmark/perf-r44-alloc.mjs --compare r44-alloc-before  # 分配专项
+bash benchmark/ab-r44.sh 6c65c8d 3        # 配对 A/B（<基线提交> [轮次] [--save 前缀]）
+```
+
+- `perf-r44`：**241 关**（forest 48 / light 40 / ice 51 / crystal 36 / elements 35 /
+  fairytales 31）的 step（idle+scripted）、build（中位 3 次）、alloc（GC 堆差）三面，
+  按「部」聚合避免轻关稀释；快照 `results/r44-<label>.json`。
+  **为何需要它**：r0–r43 的全部基准与位级锚只覆盖前三部 139 关，第 4–6 部是 2026-10-30
+  之后入库的代码，此前从未进入任何性能口径。
+- `perf-r44-alloc`：9 个代表用例（forest 轻/重、light 光束、ice 定时闸、ice TOI 极端、
+  crystal 传送门、elements、fairytales 仙女 ×2）的 GC 事件数与耗时；`results/r44alloc-*.json`。
+- `ab-r44`：**内容回退法**换臂（`git show <rev>:./<file> > <file>`，不切工作树，避免
+  `meta.git` 记成检出 HEAD 的旧坑），两臂在同会话内**交替**跑 A B A B…，取中位并打印
+  臂内散布；**散布 ≥ 臂间差时脚本明确拒绝给结论**。参与换臂的文件登记在脚本 `FILES`
+  数组——改动面变了要同步加。
+- 分配指标的已知局限：`allocBPerStep` 用 GC 前后堆差法，同代码两跑在服务端全库口径下
+  有 216/241 关给出不同数值，**不具 percent 级分辨力**；判定请以配对 A/B + 臂内散布为准。
+
+### 换关链与纯构建口径（r45/r46 起）
+
+```bash
+PERF_SWITCH_ROUNDS=9 node --import tsx benchmark/perf-switch.mjs --save r45-final
+node --expose-gc --import tsx benchmark/perf-build.mjs --mem --save build-r45
+node --expose-gc --import tsx benchmark/perf-build.mjs --compare build-r44-baseline
+```
+
+- `perf-switch`：241 关 × ROUNDS 轮（`PERF_SWITCH_ROUNDS`，默认 15）量「换关链总成本」。
+  每轮对同一关交替跑两臂：`legacy`（`new World(next)` + `reset()`，复刻修复前双建语义）与
+  `current`（`reset(next)` 单建）——**同进程相邻执行**消时段漂移。内置 **startFrozen 一致性
+  断言**：10 个含 55 型冰面砖的关，构造路径与 reset 路径的冻结位串必须相同，不符即退出码 1。
+  快照 `results/switch-<label>.json`。
+- `perf-build`：**纯构建口径**，241 关按 id 序整轮 `new World`，预热 30 关后跑
+  `BUILD_ROUNDS`（默认 7）轮取中位；`--mem` 报 GC 后单 world 常驻堆（需 `--expose-gc`）。
+  快照 `results/build-<label>.json`。
+  **口径纪律**：只作用于构建期的改动（fixture 构造、island 预分配、shape 模板）必须用本件
+  判定，不能用换关链口径——每轮 60 步物理会把构建占比稀释近 5 倍（同一优化实测
+  switch 口径 −3.4% 带内 / build 口径 −15.4% 两臂不重叠）。
+- `perf-determinism` 的第三条哈希 `switched`：`reset(本关)` 后跑同一 scripted 脚本，
+  须与新建路径**逐位相同**（自洽断言，不依赖历史快照）。reset 路径此前零覆盖，
+  正是 `startFrozen` 缺陷能长期存活的原因；现 241/241 逐位等价。
+
+### 每步分配归因（r47 起）
+
+```bash
+LEVELS=crystal_20,light_23 STEPS=1500 WARM=600 PROF_MODE=1 \
+  node --expose-gc --import tsx benchmark/perf-server-alloc.mjs
+node --expose-gc --max-semi-space-size=1 --import tsx benchmark/perf-server-alloc.mjs   # 净堆量级（噪声大）
+```
+
+- `perf-server-alloc`：两种口径——**净堆增量**（GC×2 前后差，噪声大、同代码两跑可差 2 倍，
+  只作量级参考）与**采样归因**（`PROF_MODE=1`，`node:inspector` HeapProfiler，**只覆盖步进
+  窗口**，按函数聚合 selfSize）。
+- **关键坑**：整进程 `--heap-prof` 会被启动期 module loader/tsx 转译淹没（首版 top1 是
+  `compileForInternalLoader` 20.9%，与步进无关）。必须手动 start/stopSampling 圈窗口。
+- 首次归因结论（2026-11-05，`crystal_20`）：vendor 的 prismatic joint（13.6%）+ island solve
+  （13.0%）为禁区；**自有代码里 `character.update` 9.8% 是最大一块**，零分配化后降至 5.4%，
+  每步分配 11758→10594 B/step（−9.9%，两臂不重叠），但单步 CPU 带内——**分配与耗时分开主张**。
+
+### 换关链客户端半边（r46 起）
+
+```bash
+node --import tsx benchmark/perf-advance.mjs --runs 5 --save adv-r46   # 双页真房，FORCE_DOORS 真通关
+node --import tsx benchmark/perf-advance.mjs --no-build --compare adv-baseline
+```
+
+- `perf-advance`：量「won 点继续 → 下一关可玩」的**客户端半边**。双页入房（`enterAs` 走
+  DOM 表单，生产同构），通关走 `FW_DEBUG_FORCE_DOORS=1`（真实 25fps 扫帧，不注入假事件）。
+  六段里程碑：`clickToAdvanceSent` / `advanceSentToFadeIn` / `fadeInToOp` /
+  `opToGameCreate` / `createToFirstPlayable` / `clickToFirstPlayable`。
+  快照 `results/advance-<label>.json`。
+  **量具陷阱**（已写进脚本注释）：Phaser 把 `scene.stop+start` 排到下一帧批处理，2ms 轮询
+  永远看不到 inactive；`sys.events` 监听器在 shutdown 时被清空，需每 20ms 重挂；
+  入关时也会记 `firstPlayable`，须在点击时清空窗口。
+- 首次测量结论（2026-11-05）：换关 1.1s 中黑幕淡入占 **65%**（oracle 固定动画，不可动）、
+  拉关+回声 **29%**、客户端场景重建仅 **5.6%**。因此优化面只有网络往返——
+  黑幕与 fetch 并行后拉关等待 312→102ms（−67.4%，两臂不重叠）。
 
 - `perf-step`：每关预热 90 步 + 600 步计时（`PERF_STEPS`/`PERF_LEVELS` 可覆盖），
   产出 avg/p95/p99、每仿真秒物理占用；快照 `results/perf-<label>.json`。
@@ -199,3 +296,383 @@ node benchmark/audio-loudness.mjs --runtime --save f4
 静态解析客户端逐键音量对表原版（master 0.1 + waterSteps 0.5 / wind 0.2，余 1.0），
 --runtime 另起服读实机 `__fw.sound.volume`（WebAudio 挂起态需先派发手势解锁）。
 结果存 benchmark/results/audio-<tag>.json；exit 0 = 全对齐。
+
+### perf-progress.mjs — 选关菜单进度读取成本（r48 起）
+
+```bash
+node --import tsx benchmark/perf-progress.mjs
+N=332 ENTRIES=252 ROUNDS=9 node --import tsx benchmark/perf-progress.mjs
+```
+
+量 `progress.ts` 的 `starsOf` —— 原实现每次调用都 `getItem` + **全量 `JSON.parse`**，而
+选关菜单入场时它的调用次数是 O(关卡数)（同一批文件被反复问）。两臂在同一进程内**交替**
+测量（A=每次 parse，B=按原文串记忆），消除进程间 JIT/频率差异。
+
+**关键坑**：这是微基准，只代表 `starsOf` 这一段本身。页面端的整体入场耗时
+（`perf-temple.mjs`）噪声大得多，22ms 的省时在 1000ms 路径里只占 2%——**不要把微基准的
+−99.8% 说成"菜单快了 15%"**。
+
+### perf-temple.mjs — 选关菜单入场延迟（r48 起）
+
+```bash
+npm run build
+ROUNDS=15 node --import tsx benchmark/perf-temple.mjs --save r48-opt
+```
+
+真实浏览器测「点开始 → TempleScene 烘焙完成可交互」。里程碑：`click` / `templeActive` /
+`interactive`（节点数稳定 120ms 判定）。
+
+**口径要点**：每轮开新 browser context（冷缓存 + 干净 localStorage），否则
+`templeTreeBake` 的进程内 LRU 会让复访显著偏快。预置 252 条存档使 `starsOf` 成本落在
+真实上限。页内打点，不经 CDP。
+
+### perf-step-cpu.mjs — 单步 CPU 自时间归因（r48 起）
+
+```bash
+LEVELS=crystal_20,light_23,fairies-30 node --import tsx benchmark/perf-step-cpu.mjs
+STEPS=2500 WARM=600 INTERVAL=50 node --import tsx benchmark/perf-step-cpu.mjs
+```
+
+`Profiler`（samples + timeDeltas）按 self time 聚合，只覆盖步进窗口。与
+`perf-server-alloc.mjs` 分工：**那个量分配，这个量耗时**。
+
+**两个必须知道的口径坑**：
+
+1. **vendor 不能按 url 分类**——`box2d.js` 是 `new Function` 装载的，栈帧 url 恒空。
+   首版按 url 分桶，全部物理帧掉进 `native/other`，得出「vendor 不耗时」的荒谬结论。
+   现以函数名前缀 `box2d.` 为主判据。
+2. **剖析器自开销必须剔出分母**——实测 profile 总时长可超过墙钟（134ms 墙 vs 174ms 采样），
+   混进去会把 vendor 从 93% 稀释到 71%。
+
+**可复用结论**：vendor 占 **83–97%**，自有内核合计仅 **2–16%**。内核代码的 percent 级
+微优化收益上限被 vendor 压死——这是 r44/r47 CPU 收益全部落在噪声带内的根本原因。
+
+### perf-sleep.mjs — 「关节卡限位 → 整岛永不入睡」扫描（r48 起）
+
+```bash
+node --import tsx benchmark/perf-sleep.mjs --save r48-baseline
+LEVELS=ice_03,forest_bonus_2 ROUNDS=7 node --import tsx benchmark/perf-sleep.mjs
+```
+
+扫描全库：静止 900 步后统计「`m_sleepTime` 已越过 `b2_timeToSleep` 却仍醒着」的体，
+并用配对 A/B（B 臂=每步强制让静止体入睡）给出**上界**收益。
+
+**为什么单独建**：box2d 的岛入睡要求「低速够 0.5s」**且**「位置约束收敛」；被电机压在
+行程限位上的平台、以及互相挤压的紧贴平台让后者恒假 → 整岛永不入睡，哪怕位形几千步逐位
+不变。全库 241 关有 **15 关**中招，典型 `forest_bonus_2` 5 个紧贴平台
+（|v| ≤ 4.4e−16、sleepTime 14s、**3000 步位移精确为 0**）。
+
+**⚠ 这个量具的噪声底约 ±10%**：对照组（226 个无卡睡体的关）平均 Δ 也是 10.6%，
+其中 81 关假阳性"区间分离"。只有远超该量级（如 `ice_03` 的 −79%）才可信。
+
+**结论（r48）**：现象真实但**不可修**。平台经 prismatic/distance 关节直连 ground，
+box2d 的岛构建必然并入同一岛（实测 `ice_03` 孤岛 = `[dynamic, static(ground), dynamic]`），
+"排除静态体的岛"判据放行次数归零；"位形逐位不变即睡"则 det 门 13 关漂移。详见报告 §四。
+
+### perf-bake-cpu.mjs — 选关树烘焙 CPU 分阶段（r49 起）
+
+```bash
+node --import tsx benchmark/dump-tree-alpha.mjs           # 先导出真实 alpha（一次性）
+node --import tsx benchmark/perf-bake-cpu.mjs
+ROUNDS=7 node --import tsx benchmark/perf-bake-cpu.mjs --save r49-bake-cpu
+node --import tsx benchmark/perf-bake-cpu.mjs --compare r49-bake-cpu
+```
+
+把 `stepTreeBake` 的**纯 CPU 部分**拆到 stage 级（`alphaSat` / `bevel` / `satOut` /
+`outline` / `premult`），用**真实 alpha** 重放，Node 口径无 DOM。
+
+**为什么要它**：浏览器里 `toBaked` 的 1.5–2.0s 中有 **70.3% 是 `(program)`**
+（headless SwiftShader 合成等待），JS 只有约 350ms。要判断内核改动值多少，必须把 CPU
+单独拿出来量。r49 实测：`outlinePass` **48.7%** + `bevelColorMatrix` **40.4%** = 89.1%。
+
+**⚠ 数据来源是硬依赖**：缺 `benchmark/results/alpha-<temple>.json` 与对应 `.bin` 时报错
+退出，**不退回合成输入**——见下条。
+
+### perf-bevel.mjs — 烘焙内核配对 A/B（r49 起）
+
+```bash
+node --import tsx benchmark/perf-bevel.mjs
+ROUNDS=9 node --import tsx benchmark/perf-bevel.mjs --save r49-final
+```
+
+同进程**交替**跑参照臂（改造前实现）与当前臂，用区间是否分离判定，并把
+**位级一致作为每轮硬门禁**（不一致立即 exit 1）。覆盖 `bevelColorMatrix`（三层）与
+`outlinePass`。
+
+**为什么必须用真实数据（r49 最痛的教训）**：把 `sampleA2` 坐标分解改表驱动时漏了一个
+`fr()`，**33 条合成单测全绿，真实数据一跑就红**（偏移 613864）。事后量化盲区：
+
+| 探测 | 漏 `fr` 显形次数 |
+|---|---|
+| 24×20 随机噪声，144000 像素 | **0** |
+| 均匀块，255 种 alpha 全试 | **0** |
+| 真实全画布 1036×864 | **必红** |
+
+原因：`fr()` 直接作用于 alpha 通道时 0/256 值受影响（`round(a*255)` 吸收舍入），差异只在
+`gray*a` 的 double 乘法跨过 Uint8 台阶时显形。
+
+> **合成输入不能替代真实数据做等价性判定。** 单测保证"常规路径等价"，真实数据等价性
+> 必须靠本量具。
+
+**另两个位级必要条件**（写进实现注释）：
+- 坐标分解须逐字同序：`t0x=(x+0.5)*FX → tx=t0x+ox → px=tx−0.5`。合并成
+  `(x+0.5)*FX+ox−0.5` 会在边缘像素产生 1 ULP 偏差。
+- `FX = canvasW/Cf = 1036/1036.8 = 0.99923`（**不是 1**），`FY = 1`。
+
+### perf-bake.mjs — 选关树烘焙分帧预算（r49 起）
+
+```bash
+BUDGET=8 ROUNDS=7 node --import tsx benchmark/perf-bake.mjs --save r49-b8
+BUDGET=48 node --import tsx benchmark/perf-bake.mjs --compare r49-b8
+```
+
+浏览器口径：点 Play → 烘焙纹理上屏（`flatFallbacks` 清空）。量 `toActive` /
+`bakeSegment` / `toBaked`。两臂靠改 `TempleScene.mountBaked` 的预算常量区分，需重新 build。
+
+**⚠ 这个口径不可跨会话比较。** budget=8ms 时 headless 帧率本身只有 ~13fps，
+`bakeSegment` 由**帧数**而非 CPU 主导（实测 8→48ms 时 −53.3%、8→200ms −81.0%，
+但单帧 p95 飙到 240–280ms，玩家可感知卡顿）。r49 同会话交替 A/B 显示内核 −27.8%
+在这里只兑现 **−0.1%（带内）**——因为内核只占总时长 12.5%，其余 87.5% 是合成等待。
+
+### perf-create.mjs — GameScene.create 分段（r49 起）
+
+```bash
+node --import tsx benchmark/perf-create.mjs
+LEVEL=forest_bonus_2 ROUNDS=7 node --import tsx benchmark/perf-create.mjs --save r49-base
+```
+
+钩 `GameScene.create` 与 12 个 `build*` 方法，报每个的 self 时间 + `__buildSum` +
+`__unaccounted`。r49 实测总计仅 **9.5–14.4ms**（`buildMechs` 3.5ms 最大），
+相对换关链 1.1s 太小，**未立项优化**。
+
+### perf-update.mjs — GameScene.update 逐帧分段（r50 起）
+
+```bash
+FRAMES=200 ROUNDS=3 node --import tsx benchmark/perf-update.mjs --save r50-update
+node --import tsx benchmark/perf-update.mjs --compare r50-update
+```
+
+把 `GameScene.update` 拆到 13 个子步骤（角色/钻石/机关/仙女/传送门/浮尘/黑幕/教学…），
+页内 `performance.now()` 逐段累计，仅 `started` 相位。r50 实测 `forest_bonus_2`：
+`updateMechs` **57.7%** + `updatePlatformSound` **18.9%** = 76.6%，全程 214.0 µs/帧。
+
+**⚠ r51 勘误：本环境的 `performance.now()` 量化到 100µs**（headless 非隔离上下文的
+Chrome 计时器粗化）——**信号 < 100µs 的段读数是「撞 tick 帧数占比」的换算值，不是耗时**。
+`updatePlatformSound` 真值 ~1.3–12.5µs（约 7%，非 18.9%）；其余小段同理作废。
+亚百微秒段请改用下面的 `perf-update-ablate`（消融法）或确定性计数。
+r51 版还曾把 16 个机关回调也逐个包计时——钩子自身让整帧 214→270.5µs（+26.5%），
+测的是钩子不是代码，已保留但仅作反例快照（`results/update-r51-mech.json`）。
+
+**⚠ 两个坑（都踩过）**：
+1. **包装原型上的 `update` 完全无效。** Phaser 在 `SceneManager.bootScene` 里
+   `sys.sceneUpdate = scene.update`（`phaser/src/scene/SceneManager.js:636-638`）——
+   `create()` 结束后的**一次性快照**，之后不走原型链。只包原型会得到 `calls: 0`。
+   必须包**实例**的 `update` 并重指 `sys.sceneUpdate`。12 个分段方法走 `this.xxx()`
+   原型链，包原型有效——两类分开处理。
+2. **单页进不了 `started`。** 服务端权威双人房要求双人到齐 → ready 2s → started。
+   本件沿用 `scripts/e2e/lib.mjs` 的 `enterAs` / `waitForStarted` 双页流程。
+
+### perf-update-alloc.mjs — 逐帧分配消除的 A/B（r50 起）
+
+```bash
+ROUNDS=9 PLATFORMS=47 node --import tsx benchmark/perf-update-alloc.mjs --save r50-alloc
+```
+
+**主指标：对象实例身份计数**（把 `update` 桩收到的每个 `pose` 塞进 `Set`，
+`Set.size` = 不同实例数）——确定性，不依赖统计判据。r50 实测 28200 次 update：
+A 臂 28200 个实例 → B 臂 1 个（−100%）。耗时口径为次要指标。
+
+**⚠ 口径坑：堆差对短命对象失明。** 首版用 `--expose-gc` + `heapUsed` 前后差，
+两臂几乎相同（**2,034,416 vs 2,034,560 字节**）——V8 把短命对象分配在 new space，
+回收后堆差归零。与 r47「typed array 大块对采样器失明」同类。
+`perf-client` 的总量分配速率也不适用（r47 已量到 86.8% 在 Phaser 内部）。
+
+### perf-static.mjs — 静态资源服务（r50 起）
+
+```bash
+ROUNDS=7 node --import tsx benchmark/perf-static.mjs --save r50-static
+```
+
+真 HTTP 口径（**不用 mock req/res**：`compCache` 是模块级私有清不掉，冷测从第二轮起
+就是热缓存；mock res 缺 `getHeader` 时 express.static 异步回调会崩）。冷/热靠
+**重启服务进程**区分。
+
+r50 基线：首屏 3 chunk burst(cold) **88.96ms** / warm 12.21ms / 304 0.46ms；
+`brotliCompressSync` q5 单 1.4MB chunk **23.91ms**、`gzipSync` 6 27.01ms、
+`readFileSync` 0.87ms。
+
+**结论：不立项。** 一次性成本（systemd 长期运行，每文件只在 cache 冷时压一次；
+全量 280 文件 77ms、首屏 67ms），预压缩只影响「重启后第一个玩家」且启动反慢 67ms。
+另 `statSync` 每请求仅 0.95µs（1000 req/s 占 0.10% CPU），`compCache` 全量
+br+gz 常驻仅 1.3MB。
+
+### perf-update-ablate.mjs — GameScene.update 消融归因（r51 起，现役口径）
+
+```bash
+LEVEL=forest_bonus_2 ROUNDS=4 TOTAL_FRAMES=200 node --import tsx benchmark/perf-update-ablate.mjs --save r51-ablate
+MECH_MODE=1 ROUNDS=4 TOTAL_FRAMES=200 node --import tsx benchmark/perf-update-ablate.mjs --save r51-ablate-mech   # 逐机关类
+ABLATE_TARGETS=__smoother ROUNDS=8 TOTAL_FRAMES=150 node --import tsx benchmark/perf-update-ablate.mjs --save x   # 只跑指定臂
+```
+
+**口径：消融（ablation）**——不测「段内耗时」，测「把段拿掉后整帧少多少」。
+A 臂=真实 `update`，B 臂=目标方法换空桩，交替多轮取中位差。整帧 ~160–270µs
+是**信号 > 100µs 量子**的量，逐帧相对误差 ~2%，配对后更小。
+
+r51 实测 `forest_bonus_2`：`__views`（15 回调全空桩）**104.5µs（67.0%）**、
+`__smoother`（平滑管线归零）**34.5µs（22.1%）**、噪声底 ±5.5µs。
+
+**⚠ 固有局限**：①消融会改变下游工作量（视图停摆 → 脏守卫整链变便宜），
+是**上界估计**；②有跨段副作用的段（`updatePlayers` 提供 `pFb/pWg`）只能作参考值。
+**⚠ 坑**：`cbXxx` 是 create 期 `bind` 出的**实例属性**（`GameScene.ts:530-539`），
+不在原型上——钩 `proto[name]` 无效，会得到随机符号的无效臂（r50 `sys.sceneUpdate`
+快照坑同类）。结构性臂 `__smoother`/`__views` 走实例级钩子，始终有效。
+
+### perf-mech-class.mjs — `updateMechs` 批量按类分解 + 脏守卫对照（r51）
+
+```bash
+LEVEL=forest_bonus_2 ROUNDS=7 node --import tsx benchmark/perf-mech-class.mjs --save r51-mechclass
+```
+
+批量法（一趟只取 1 对时钟，趟数自适应到 ≥20ms）拆三类口径：稳态同值
+（8.02µs/趟）、脏守卫打开（+5.78µs）、真实 Colyseus 访问器 + 推进时间（8.38µs）。
+**与消融口径 104.5µs 差 13 倍 = 热循环 ≠ 真实帧**（页内工作集被渲染栈挤出缓存）。
+批量口径只能用于 A/B 相对比较与确定性计数，不能当量级看。
+
+### perf-plat-pass.mjs / perf-plat-merge.mjs — `st.platforms` 双趟遍历（r51）
+
+```bash
+node --import tsx benchmark/perf-plat-pass.mjs --save r51-platpass
+node --import tsx benchmark/perf-plat-merge.mjs --save r51-platmerge
+```
+
+`plat-pass` 拆双趟遍历的可回收量：纯遍历 0.23µs + 三属性读 0.48µs +
+tracker 0.44µs ≈ **0.90µs/帧**。`plat-merge` 直接 A/B「双趟 vs 合并单趟」：
+**Δ 0.0% 区间重叠 → 合并候选判负**（r50 的定性判断获得定量支撑）。
+
+### perf-smoother-ab.mjs / perf-smoother-micro.mjs — 平滑器 A/B（r51）
+
+```bash
+FRAMES=400 node --import tsx benchmark/perf-smoother-ab.mjs --save r51-smoother   # 页内配对 + 块计时
+FRAMES=400 node --import tsx benchmark/perf-smoother-ab.mjs --capture             # 导出真实调用序列
+node benchmark/perf-smoother-micro.mjs --trace benchmark/results/trace-r51-smoother.json --rounds 12 --repeat 20 --save r51-smoother
+```
+
+页内件把真实 `mechSmoother` 的调用参数逐帧抓下来，同页并联新/参考两实现交替计时
+（块计时：20 帧/块只取 1 对时钟）。微基准件回放**真实序列**（非合成数据），
+内置逐位一致性断言 + **确定性计数器**（exp 调用数、快路命中数）。
+r51 结果：热循环 −32.4%～−44.5%（区间分离），**页面口径不主张**（热循环不迁移）。
+
+### perf-exp-count.mjs — 页内确定性计数（r51）
+
+```bash
+LEVEL=forest_bonus_2 FRAMES=300 node --import tsx benchmark/perf-exp-count.mjs --save r51-expcount
+```
+
+在真实开局页面统计 smoother 的 `Math.exp` 调用与静止快路命中。**exp 桩只装在
+smoother 调用窗口内**——窗口外 `GameScene.ts:1967` 的相机收敛每帧还有 2 次 exp，
+首版全局计数实测 102 次/帧即此因。内置断言「每帧 exp ≤1.02」，不满足 exit 1。
+
+r51 实测（`forest_bonus_2`，300 帧）：exp **100/帧 → 1/帧（−99.0%）**、
+快路命中 **60.2%**——确定性事实，本轮主张的主指标。
+
+**⚠ r51 最大教训：页内量具必须先验证被测代码真的在跑。**
+`dist` 是改动前构建的，`perf-smoother-ab` 两臂因此测出「新=旧」；
+靠确定性断言当场抓住，而不是靠时间数字的异常反推。改源码后先 `npm run build`。
+
+### perf-sound-churn.mjs — 平台电机声实例生命周期计数（r52）
+
+```bash
+LEVEL=forest_bonus_2 FRAMES=300 node --import tsx benchmark/perf-sound-churn.mjs --save r52-churn
+```
+
+包 `scene.sound.add` 与 `BaseSound.destroy/play/stop`（按 key `sfx_platform` 过滤），
+统计 N 个真实 started 帧内的实例生命周期事件：`sound.add` 新建数、destroy 数、
+play/stop 事件数（运动模式随会话浮动，仅作分母参照）、同时存活峰值。
+
+**确定性口径**（r50 实例计数、r51 exp 计数同一纪律）：池化前后新建/销毁数
+是结构性事实，不依赖统计判据。
+
+r52 实测（`forest_bonus_2`，300 帧）：基线 **17 新建 + 19 销毁**（destroy > add
+的差值来自探针挂上之前已建的 2 个实例在窗口内被销毁，账目自洽），峰值并发 2；
+`platSndPool` 池化后 **双归零（−100%）**。首版报告口径（`forest_bonus_2` 128 帧
+18 play + 18 stop、峰值 4）与终版（300 帧 17/19、峰值 2）的差异说明事件密度
+随会话浮动——**新建/销毁的归零才是指标，play/stop 计数不是**。
+
+### perf-timer-res.mjs — 页内时钟分辨率测定（r53）
+
+```bash
+node --import tsx benchmark/perf-timer-res.mjs --save r53-coop
+```
+
+连采 N 个 `performance.now()` 差值：隔离标志、非零差值集合、最小正差值、
+零差占比、`Date.now` 对照。r53 加 COOP/COEP 双头后 `crossOriginIsolated=true`，
+量化 **100µs→5µs**——r51 发现的「亚百微秒段不可测」自本轮解除，
+块计时类量具（perf-plat-merge / perf-smoother-ab）单趟/单帧信号直接可测。
+
+**⚠ 噪声底真相（r53）**：量化解除后，整帧消融（perf-update-ablate）的噪声底
+仍 ±5–7µs——主要来自 headless **帧调度抖动**，不是时钟。<10µs 的段改动在
+整帧口径依旧不可判，别指望精细时钟救消融。
+
+**换臂重建法（r53 立例）**：整帧 A/B 需要旧实现时——旧码入源 → 重建 →
+**用确定性断言（如 exp 计数）故意验证它失败，确认旧码真的在跑** → 测 →
+恢复 → 重建 → 断言 ✓ 确认还原。r51 教训（页内量具必须验证被测代码在跑）
+的跨构建版。
+
+### perf-smoother-layout.mjs — 数据布局重写信号预估（r54）
+
+```bash
+node benchmark/perf-smoother-layout.mjs --trace benchmark/results/trace-r51-smoother.json --save r54-layout
+# trace 用 perf-smoother-ab.mjs --capture 抓取（2.8MB，用后即删，可再生）
+```
+
+四臂括弧回放真实调用序列：**Old**（r51 前锚点）/ **New**（现行，位级基准）/
+**Arr**（槽位布局原型：位置命中 + key 校验 + Map 兜底 + `beginFrame()` 游标）/
+**NoMap**（零 Map 零校验**天花板**）。天花板臂的存在理由：连它都够不到裁决线，
+则任何合法布局变体都够不到——一次测量封死整个方向。
+
+r54 实测：Arr 直中率 99.8%、位级 0 不一致（布局机械成立），但进程内信号
+−0.14µs（重叠）；**天花板 −0.47µs/帧 → ×10 整帧 ≈ −4.7µs ≪ 15µs 裁决线 →
+判负**。教训：**先量「方向的天花板」再动产线代码**——布局重写这类结构级
+改动的可行性，用一个不合法但上界最大的假想臂就能裁决。
+
+### perf-net-payload.mjs — 网络载荷字节计数（r55）
+
+```bash
+LEVEL=forest_bonus_2 FRAMES=150 node --import tsx benchmark/perf-net-payload.mjs --save r55-net
+```
+
+双页真实会话，对**底层 WebSocket**（`room.connection.transport.ws`——Colyseus
+0.16 的 `connection` 是 events/transport 包装，不是 ws 本体）挂字节计数：
+入站 `message` 事件按 `byteLength/size/length` 计，出站包同实例 `send`。
+怠速/运动双窗各 N 个 started 帧。
+
+r55 实测：下行怠速 ~5.9 KB/s → 运动 ~8.7 KB/s（均长 17.2 B/msg，载荷由真实
+状态变化驱动）；上行 ~2 KB/s 恒定（客户端每帧上报输入）。**量级即否决，
+判不立项**。候选（恒脏字段 f+timerMs、出站改变化触发）分别栽在：帧锚/HUD
+红线、服务端「按住恢复」排水语义——**网络口径的复刻语义是承重墙，别碰**。
+
+**⚠ 双窗探针坑**：前一窗完成时若只还原 `sys.sceneUpdate` 不还原
+`scene.update`，下一窗把残留闭包当原件再包，首帧即被旧闭包踩死（第二窗永挂）。
+修法：以 `sys.sceneUpdate` 为活原件，完成时**两处都还原**。
+
+### perf-mem-residency.mjs — 内存常驻画像（r56）
+
+```bash
+LEVEL=forest_bonus_2 SECS=150 node --import tsx benchmark/perf-mem-residency.mjs --save r56-mem
+```
+
+双页真实会话长浸泡：`--enable-precise-memory-info` 逐秒采样 `usedJSHeapSize`，
+同场确定性计数纹理（键数 + 源像素和）、音频（**`BaseCache.getKeys()`**——
+`cache.audio.keys` 不是可靠公开面）、房间实体。每 10s 注入 1s 移动输入，
+防「全静死房」假设失真。
+
+**⚠ 泄漏判据：用 GC 地板线，不用原始斜率。** JS 堆是锯齿，斜率符号由
+加载期垃圾排空节奏决定——r56 两场会话都测出 −750 KB/分钟「负斜率」（堆在
+缩小），拿它当趋势就是误读。正确做法：按 30s 桶取堆最低点（地板），
+**地板上升才叫泄漏**（r56 实测 +0.1 MB/分钟 = 平坦）。
+
+另一个坑：`window.__fw` **就是** Phaser.Game 实例（`main.ts:726`），没有
+`.game` 子柄；房间在 `scene.d.net.room`。
+
+r56 结论：堆常驻 ~27 MB、地板平坦、四缓存恒定 → **判不立项**（会话内存
+无可优化项）。
