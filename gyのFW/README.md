@@ -17,8 +17,11 @@ npm run dev:client    # 终端 2：开发前端 http://localhost:5173
 生产形态（开服）：
 
 ```bash
-start.bat             # 构建 + 起服务器，配合樱花穿透使用（见计划附录 B）
+start.bat             # 构建 + 起服务器，配合樱花穿透使用（计划附录 B：note/PLAN.md）
 ```
+
+Windows 玩家一键开始（拉取→依赖→构建→起服一条龙）：双击仓库根 `Windows_test.bat`
+（2026-11-14 恢复 #46 时删除的旧入口；工程目录改通配符定位防「の」编码死路，启动链同 start.bat）。
 
 部署安全（公网/隧道场景）：优先同源部署（页面与 `/matchmake`、WebSocket 同域），由
 Nginx/Caddy 等反代层终止 HTTPS、限制请求速率与并发，并把 `FW_HOST` 保持在 `127.0.0.1`
